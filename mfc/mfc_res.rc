@@ -2682,7 +2682,7 @@ STRINGTABLE
 BEGIN
     IDM_MOOPEN              "1MOƒCƒ[ƒW‚ðƒ}ƒEƒ“ƒg"
     IDM_MOEJECT             "2MOƒCƒ[ƒW‚ðƒCƒWƒFƒNƒg"
-    IDM_MOWRITEP            "3‘‚«ž‚Ý‹ÖŽ~ƒ^ƒu‚Ì‘€ì"
+    IDM_MOWRITEP            "E‘‚«ž‚Ý‹ÖŽ~ƒ^ƒu‚Ì‘€ì"
     IDM_MOFORCE             "4MOƒCƒ[ƒW‚ð‹­§ƒCƒWƒFƒNƒg"
 END
 
@@ -2702,7 +2702,7 @@ BEGIN
     IDM_INT                 "5Š„‚èž‚ÝƒEƒBƒ“ƒhƒE‚ð•\\Ž¦"
     IDM_DISASM              "6‹tƒAƒZƒ“ƒuƒ‹ƒEƒBƒ“ƒhƒE‚ð•\\Ž¦"
     IDM_MEMORY              "7ƒƒ‚ƒŠƒ_ƒ“ƒvƒEƒBƒ“ƒhƒE‚ð•\\Ž¦"
-    IDM_BREAKP              "8ƒ8uƒŒ[ƒNƒ|ƒCƒ“ƒgƒEƒBƒ“ƒhƒE‚ð•\\Ž¦"
+    IDM_BREAKP              "8EuƒŒ[ƒNƒ|ƒCƒ“ƒgƒEƒBƒ“ƒhƒE‚ð•\\Ž¦"
 END
 
 STRINGTABLE
@@ -2751,7 +2751,7 @@ BEGIN
     IDM_REND_PCG            "2PCGƒoƒbƒtƒ@ƒEƒBƒ“ƒhƒE‚ð•\\Ž¦"
     IDM_REND_BGSPRITE       "3BG/ƒXƒvƒ‰ƒCƒgƒoƒbƒtƒ@ƒEƒBƒ“ƒhƒE‚ð•\\Ž¦"
     IDM_REND_PALET          "4ƒpƒŒƒbƒgƒoƒbƒtƒ@ƒEƒBƒ“ƒhƒE‚ð•\\Ž¦"
-    IDM_REND_MIX            "5‡¬ƒoƒbƒtƒ@ƒEƒBƒ“ƒhƒE‚ð•\\Ž¦"
+    IDM_REND_MIX            "Eà¬ƒoƒbƒtƒ@ƒEƒBƒ“ƒhƒE‚ð•\\Ž¦"
     IDM_COMPONENT           "6ƒRƒ“ƒ|[ƒlƒ“ƒgƒEƒBƒ“ƒhƒE‚ð•\\Ž¦"
     IDM_OSINFO              "7OSî•ñƒEƒBƒ“ƒhƒE‚ð•\\Ž¦"
     IDM_SOUND               "8ƒTƒEƒ“ƒhƒEƒBƒ“ƒhƒE‚ð•\\Ž¦"
@@ -2781,10 +2781,10 @@ BEGIN
     IDM_TIMEADJ             "1ŽžŒv‚ðŒ»ÝŽž‚É•â³"
     IDM_TRAP0               "2d0‚ÉŽw’è’l‚ðƒZƒbƒg‚µAtrap#0–½—ß‚ðŽÀs"
     IDM_SAVEWAV             "3ƒTƒEƒ“ƒh‚ðWAVƒtƒ@ƒCƒ‹‚É‹L˜^"
-    IDM_NEWFD               "4V‚µ‚¢ƒtƒƒbƒs[ƒfƒBƒXƒNƒCƒ[ƒW‚ðì¬"
-    IDM_NEWSASI             "5V‚µ‚¢SASI ƒn[ƒhƒfƒBƒXƒNƒCƒ[ƒW‚ðì¬"
-    IDM_NEWSCSI             "6V‚µ‚¢SCSI ƒn[ƒhƒfƒBƒXƒNƒCƒ[ƒW‚ðì¬"
-    IDM_NEWMO               "7V‚µ‚¢SCSI MO(ŒõŽ¥‹C)ƒfƒBƒXƒNƒCƒ[ƒW‚ðì¬"
+    IDM_NEWFD               "EV‚µ‚¢ƒtƒƒbƒs[ƒfƒBƒXƒNƒCƒ[ƒW‚ðì¬"
+    IDM_NEWSASI             "EV‚µ‚¢SASI ƒn[ƒhƒfƒBƒXƒNƒCƒ[ƒW‚ðì¬"
+    IDM_NEWSCSI             "EV‚µ‚¢SCSI ƒn[ƒhƒfƒBƒXƒNƒCƒ[ƒW‚ðì¬"
+    IDM_NEWMO               "EV‚µ‚¢SCSI MO(ŒõŽ¥‹C)ƒfƒBƒXƒNƒCƒ[ƒW‚ðì¬"
     IDM_OPTIONS             "8XM6‚Ì“®ìƒIƒvƒVƒ‡ƒ“"
 END
 
@@ -2827,7 +2827,7 @@ BEGIN
     IDS_SWND_LOG_LEVEL      "5ƒŒƒxƒ‹"
     IDS_SWND_LOG_DEVICE     "6ƒfƒoƒCƒX"
     IDS_SWND_LOG_MSG        "7ƒƒbƒZ[ƒW"
-    IDS_SWND_LOG_DETAIL     "8Ú×"
+    IDS_SWND_LOG_DETAIL     "EÚ×"
 END
 
 STRINGTABLE
@@ -2905,7 +2905,7 @@ STRINGTABLE
 BEGIN
     IDS_SWND_REND_BGSPRITE  "1BG/ƒXƒvƒ‰ƒCƒgƒoƒbƒtƒ@"
     IDS_SWND_REND_PALET     "2ƒpƒŒƒbƒgƒoƒbƒtƒ@"
-    IDS_SWND_REND_MIX       "3‡¬ƒoƒbƒtƒ@"
+    IDS_SWND_REND_MIX       "Eà¬ƒoƒbƒtƒ@"
 END
 
 STRINGTABLE
@@ -3048,7 +3048,7 @@ BEGIN
     IDC_MOUSE_KPORT         "6ƒ}ƒEƒX‚ðƒL[ƒ{[ƒh‘¤–Êƒ}ƒEƒXƒRƒlƒNƒ^‚ÖÚ‘±‚µ‚Ü‚·"
     IDC_MOUSE_NPORT         "7ƒ}ƒEƒX‚ðÚ‘±‚µ‚Ü‚¹‚ñ"
     IDC_MOUSE_OPTG          "8ƒ}ƒEƒX‚Ì“®ì‚ð’²®‚µ‚Ü‚·"
-    IDC_MOUSE_SWAPB         "9¶ƒ{ƒ^ƒ“E‰Eƒ{ƒ^ƒ“‚ð“ü‚ê‘Ö‚¦‚Ü‚·BƒfƒtƒHƒ‹ƒg‚ÍOFF‚Å‚·"
+    IDC_MOUSE_SWAPB         "E¶ƒ{ƒ^ƒ“E‰Eƒ{ƒ^ƒ“‚ð“ü‚ê‘Ö‚¦‚Ü‚·BƒfƒtƒHƒ‹ƒg‚ÍOFF‚Å‚·"
     IDC_MOUSE_MIDB          "0’†ƒ{ƒ^ƒ“‚É‚æ‚éƒ}ƒEƒXƒ‚[ƒhØ‚è‘Ö‚¦‚ðs‚¢‚Ü‚¹‚ñBƒfƒtƒHƒ‹ƒg‚ÍOFF‚Å‚·"
     IDC_MOUSE_TBG           "1ƒ}ƒEƒX— –ÊƒXƒCƒbƒ`‚ðƒ}ƒEƒX(M)‚©‚çƒgƒ‰ƒbƒNƒ{[ƒ‹(T)‚ÉØ‚è‘Ö‚¦‚Ü‚·BƒfƒtƒHƒ‹ƒg‚ÍOFF‚Å‚·"
 END
@@ -3227,9 +3227,9 @@ BEGIN
     IDS_INIT_CGERR          "6CGROM‚Ì“à—e‚ªX680x0‚ÆˆÙ‚È‚Á‚Ä‚¢‚Ü‚·B\n‘±‚¯‚Ü‚·‚©H"
     IDS_FDOPEN              "7‘Î‰ž‚µ‚Ä‚¢‚é‚·‚×‚Ä‚ÌƒfƒBƒXƒNƒCƒ[ƒW|*.XDF;*.HDM;*.2HD;*.DUP;*.IMG;*.DIM;*.D68;*.D88;*.2DD;*.2HQ|1.25MBƒfƒBƒXƒNƒCƒ[ƒW (XDF;HDM;2HD;DUP;IMG)|*.XDF;*.HDM;*.2HD;*.DUP;*.IMG|DIMƒfƒBƒXƒNƒCƒ[ƒW (DIM)|*.DIM|D68ƒfƒBƒXƒNƒCƒ[ƒW (D68;D88)|*.D68;*.D88|720KBƒfƒBƒXƒNƒCƒ[ƒW (2DD)|*.2DD|1.44MBƒfƒBƒXƒNƒCƒ[ƒW (2HQ)|*.2HQ|‚·‚×‚Ä‚Ìƒtƒ@ƒCƒ‹ (*.*)|*.*||"
     IDS_FDERR               "8ƒfƒBƒXƒNƒCƒ[ƒWƒtƒ@ƒCƒ‹‚ªŒ©‚Â‚©‚ç‚È‚¢‚©AƒTƒ|[ƒg‚µ‚Ä‚¢‚È‚¢Œ`Ž®‚Å‚·"
-    IDS_NEWFD               "9V‚µ‚¢ƒtƒƒbƒs[ƒfƒBƒXƒNƒCƒ[ƒW‚ðì¬‚µ‚Ü‚µ‚½"
+    IDS_NEWFD               "EV‚µ‚¢ƒtƒƒbƒs[ƒfƒBƒXƒNƒCƒ[ƒW‚ðì¬‚µ‚Ü‚µ‚½"
     IDS_SASIOPEN            "0SASIƒn[ƒhƒfƒBƒXƒNƒCƒ[ƒW (*.HDF)|*.HDF|‘S‚Ä‚Ìƒtƒ@ƒCƒ‹ (*.*)|*.*||"
-    IDS_NEWSASI             "1V‚µ‚¢SASI ƒn[ƒhƒfƒBƒXƒNƒCƒ[ƒW‚ðì¬‚µ‚Ü‚µ‚½"
+    IDS_NEWSASI             "EV‚µ‚¢SASI ƒn[ƒhƒfƒBƒXƒNƒCƒ[ƒW‚ðì¬‚µ‚Ü‚µ‚½"
     IDS_CREATEERR           "2ƒtƒ@ƒCƒ‹ì¬‚ÉŽ¸”s‚µ‚Ü‚µ‚½"
     IDS_OPTIONS             "3XM6‚Ì“®ìÝ’è"
     IDS_MOUSE_X68K          "4ƒ}ƒEƒXƒGƒ~ƒ…ƒŒ[ƒVƒ‡ƒ“‚ð—LŒø‚É‚µ‚Ü‚µ‚½"
@@ -3339,12 +3339,12 @@ END
 
 STRINGTABLE
 BEGIN
-    IDM_US_OPEN             "Open a state file"
-    IDM_US_SAVE             "Save the active state file"
-    IDM_US_SAVEAS           "Save the active state file with a new name"
-    IDM_US_RESET            "Press 'RESET' button"
-    IDM_US_INTERRUPT        "Press 'INTERRUPT' button"
-    IDM_US_POWER            "Turn on or off 'POWER' switch"
+    IDM_US_OPEN             "Abre rapido un archivo de estado"
+    IDM_US_SAVE             "Guarda un archivo de estado"
+    IDM_US_SAVEAS           "Guarda rapido un archivo de estado"
+    IDM_US_RESET            "Presionar 'RESET'"
+    IDM_US_INTERRUPT        "Presionar 'INTERRUPT'"
+    IDM_US_POWER            "switch 'POWER'"
 END
 
 STRINGTABLE

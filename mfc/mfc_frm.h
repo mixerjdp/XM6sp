@@ -73,10 +73,15 @@ public:
 									// コマンドライン処理 サブ
 	BOOL m_bFullScreen;
 
-	/* Nombre de Archivo XM6  */
+	// Nombre de Archivo XM6   *-*
 	CString NombreArchivoXM6;
 	CString RutaCompletaArchivoXM6;
 	CString RutaSaveStates;
+
+	// Guardar estado de ventana
+	void SaveFrameWnd();
+	// Guardar Estado de disco
+	void SaveDiskState();
 
 
 protected:
@@ -530,10 +535,7 @@ private:
 	static const DWORD SigTable[];
 										// SRAMシグネチャテーブル
 
-	// 終了
-	void SaveFrameWnd();
-										// ウィンドウ保存
-	void SaveDiskState();
+	
 										// ディスク・ステート保存
 	void FASTCALL CleanSub();
 										// クリーンアップ

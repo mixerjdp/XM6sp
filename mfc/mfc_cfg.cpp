@@ -229,7 +229,6 @@ BOOL FASTCALL CConfig::CustomInit(BOOL ArchivoDefault)
 	_tcscpy(m_IniFile, path.GetPath());
 
 
-
    /* CString sz;
 	sz.Format(_T("\n\nRutaArchivoXM6: %s\n\n"), m_pFrmWnd->RutaCompletaArchivoXM6);
 	OutputDebugStringW(CT2W(sz)); */	
@@ -280,23 +279,28 @@ void FASTCALL CConfig::Cleanup()
 void FASTCALL CConfig::Cleanup2()
 {
 	int i;
+	
+	// Guardar estatus de ventana y de disco
+	m_pFrmWnd->SaveFrameWnd();
+	m_pFrmWnd->SaveDiskState();
 
 	ASSERT(this);
 
 
-	// 設定データ
+	// 触uardar configuracion
 	SaveConfig();
 
-	// MRU
+	// Guardar MRU
 	for (i = 0; i < MruTypes; i++) {
 		SaveMRU(i);
 	}
 
-	// キー
+	// Guardar claves
 	SaveKey();
 
 	// TrueKey
 	SaveTKey();
+		
 
 	// 基本クラス
 	//CComponent::Cleanup();

@@ -770,7 +770,7 @@ void CFrmWnd::OnSccUI(CCmdUI* pCmdUI)
 }
 
 
-
+// Comando para guardar la configuracion global
 void CFrmWnd::OnSgc()
 {		
 		m_pConfig->CustomInit(TRUE);
