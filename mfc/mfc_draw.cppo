@@ -1,0 +1,1542 @@
+//---------------------------------------------------------------------------
+//
+//	X68000 EMULATOR "XM6"
+//
+//	Copyright (C) 2001-2006 ‚o‚hD(ytanaka@ipc-tokai.or.jp)
+//	[ MFC Drawƒrƒ…[ ]
+//
+//---------------------------------------------------------------------------
+
+#if defined(_WIN32)
+
+#include "os.h"
+#include "xm6.h"
+#include "vm.h"
+#include "render.h"
+#include "crtc.h"
+#include "config.h"
+#include "mfc_sub.h"
+#include "mfc_frm.h"
+#include "mfc_com.h"
+#include "mfc_sch.h"
+#include "mfc_cpu.h"
+#include "mfc_cfg.h"
+#include "mfc_res.h"
+#include "mfc_sch.h"
+#include "mfc_inp.h"
+#include "mfc_draw.h"
+
+//===========================================================================
+//
+//	Drawƒrƒ…[
+//
+//===========================================================================
+
+//---------------------------------------------------------------------------
+//
+//	ƒRƒ“ƒXƒgƒ‰ƒNƒ^
+//
+//---------------------------------------------------------------------------
+CDrawView::CDrawView()
+{
+	// ƒ[ƒN‰Šú‰»(Šî–{)
+	m_bEnable = FALSE;
+	m_pSubWnd = NULL;
+	m_pFrmWnd = NULL;
+
+	// ƒRƒ“ƒ|[ƒlƒ“ƒg
+	m_pScheduler = NULL;
+	m_pInput = NULL;
+
+	// ƒ[ƒN‰Šú‰»(•`‰æ‘S”Ê)
+	m_Info.bPower = FALSE;
+	m_Info.pRender = NULL;
+	m_Info.pWork = NULL;
+	m_Info.dwDrawCount = 0;
+
+	// ƒ[ƒN‰Šú‰»(DIBƒZƒNƒVƒ‡ƒ“)
+	m_Info.hBitmap = NULL;
+	m_Info.pBits = NULL;
+	m_Info.nBMPWidth = 0;
+	m_Info.nBMPHeight = 0;
+
+	// ƒ[ƒN‰Šú‰»(ƒTƒCƒY®‡)
+	m_Info.nRendWidth = 0;
+	m_Info.nRendHeight = 0;
+	m_Info.nRendHMul = 0;
+	m_Info.nRendVMul = 0;
+	m_Info.nLeft = 0;
+	m_Info.nTop = 0;
+	m_Info.nWidth = 0;
+	m_Info.nHeight = 0;
+
+	// ƒ[ƒN‰Šú‰»(Blt)
+	m_Info.nBltTop = 0;
+	m_Info.nBltBottom = 0;
+	m_Info.nBltLeft = 0;
+	m_Info.nBltRight = 0;
+	m_Info.bBltAll = TRUE;
+	m_Info.bBltStretch = FALSE;
+}
+
+//---------------------------------------------------------------------------
+//
+//	ƒƒbƒZ[ƒW ƒ}ƒbƒv
+//
+//---------------------------------------------------------------------------
+BEGIN_MESSAGE_MAP(CDrawView, CView)
+	ON_WM_CREATE()
+	ON_WM_DESTROY()
+	ON_WM_SIZE()
+	ON_WM_PAINT()
+	ON_WM_ERASEBKGND()
+	ON_MESSAGE(WM_DISPLAYCHANGE, OnDisplayChange)
+	ON_WM_DROPFILES()
+#if _MFC_VER >= 0x600
+	ON_WM_MOUSEWHEEL()
+#endif	// _MFC_VER
+	ON_WM_KEYDOWN()
+	ON_WM_SYSKEYDOWN()
+	ON_WM_KEYUP()
+	ON_WM_SYSKEYUP()
+	ON_WM_MOVE()
+END_MESSAGE_MAP()
+
+//---------------------------------------------------------------------------
+//
+//	‰Šú‰»
+//
+//---------------------------------------------------------------------------
+BOOL FASTCALL CDrawView::Init(CWnd *pParent)
+{
+	ASSERT(pParent);
+
+	// ƒtƒŒ[ƒ€ƒEƒBƒ“ƒhƒE‹L‰¯
+	m_pFrmWnd = (CFrmWnd*)pParent;
+
+	// Å‰‚Ìƒrƒ…[‚Æ‚µ‚Äì¬
+	if (!Create(NULL, NULL, WS_CHILD | WS_VISIBLE | WS_CLIPCHILDREN,
+				CRect(0, 0, 0, 0), pParent, AFX_IDW_PANE_FIRST, NULL)) {
+		return FALSE;
+	}
+
+	return TRUE;
+}
+
+//---------------------------------------------------------------------------
+//
+//	ƒEƒBƒ“ƒhƒEì¬€”õ
+//
+//---------------------------------------------------------------------------
+BOOL CDrawView::PreCreateWindow(CREATESTRUCT& cs)
+{
+	// Šî–{ƒNƒ‰ƒX
+	if (!CView::PreCreateWindow(cs)) {
+		return FALSE;
+	}
+
+	// WS_CLIPCHILDREN‚ğ’Ç‰Á
+	cs.style |= WS_CLIPCHILDREN;
+
+	// ƒNƒ‰ƒCƒAƒ“ƒgƒGƒbƒW‚ğ’Ç‰Á
+	cs.dwExStyle |= WS_EX_CLIENTEDGE;
+
+	return TRUE;
+}
+
+//---------------------------------------------------------------------------
+//
+//	ƒEƒBƒ“ƒhƒEì¬
+//
+//---------------------------------------------------------------------------
+int CDrawView::OnCreate(LPCREATESTRUCT lpCreateStruct)
+{
+	// Šî–{ƒNƒ‰ƒX
+	if (CView::OnCreate(lpCreateStruct) != 0) {
+		return -1;
+	}
+
+	// IMEƒIƒt
+	::ImmAssociateContext(m_hWnd, (HIMC)NULL);
+
+	// ƒeƒLƒXƒgƒtƒHƒ“ƒgì¬
+	if (IsJapanese()) {
+		// “ú–{ŒêŠÂ‹«
+		m_TextFont.CreateFont(14, 0, 0, 0,
+							FW_NORMAL, 0, 0, 0,
+							SHIFTJIS_CHARSET, OUT_DEFAULT_PRECIS,
+							CLIP_DEFAULT_PRECIS, DEFAULT_QUALITY,
+							FIXED_PITCH, NULL);
+	}
+	else {
+		// ‰pŒêŠÂ‹«
+		m_TextFont.CreateFont(14, 0, 0, 0,
+							FW_NORMAL, 0, 0, 0,
+							DEFAULT_CHARSET, OUT_DEFAULT_PRECIS,
+							CLIP_DEFAULT_PRECIS, DEFAULT_QUALITY,
+							FIXED_PITCH, NULL);
+	}
+
+	// ƒhƒ‰ƒbƒO•ƒhƒƒbƒv‹–‰Â
+	DragAcceptFiles(TRUE);
+
+	return 0;
+}
+
+//---------------------------------------------------------------------------
+//
+//	ƒEƒBƒ“ƒhƒEíœ
+//
+//---------------------------------------------------------------------------
+void CDrawView::OnDestroy()
+{
+	// “®ì’â~
+	Enable(FALSE);
+
+	// ƒrƒbƒgƒ}ƒbƒv‚ğíœ
+	if (m_Info.hBitmap) {
+		::DeleteObject(m_Info.hBitmap);
+		m_Info.hBitmap = NULL;
+		m_Info.pBits = NULL;
+	}
+
+	// ƒeƒLƒXƒgƒtƒHƒ“ƒgíœ
+	m_TextFont.DeleteObject();
+
+	// Šî–{ƒNƒ‰ƒX‚Ö
+	CView::OnDestroy();
+}
+
+//---------------------------------------------------------------------------
+//
+//	ƒTƒCƒY•ÏX
+//
+//---------------------------------------------------------------------------
+void CDrawView::OnSize(UINT nType, int cx, int cy)
+{
+	// ƒrƒbƒgƒ}ƒbƒv‚ÌXV
+	SetupBitmap();
+
+	// Šî–{ƒNƒ‰ƒX
+	CView::OnSize(nType, cx, cy);
+}
+
+//---------------------------------------------------------------------------
+//
+//	•`‰æ
+//
+//---------------------------------------------------------------------------
+void CDrawView::OnPaint()
+{
+	Render *pRender;
+	CRTC *pCRTC;
+	const CRTC::crtc_t *p;
+	CFrmWnd *pFrmWnd;
+	PAINTSTRUCT ps;
+
+	// VMƒƒbƒN
+	::LockVM();
+
+	// ‘S•`‰æƒtƒ‰ƒOON
+	m_Info.bBltAll = TRUE;
+
+	// ƒCƒl[ƒuƒ‹‚ÅƒXƒPƒWƒ…[ƒ‰‚ªOFF‚È‚çAMixƒoƒbƒtƒ@‚Éì¬(‚©‚È‚è‹­ˆø)
+	if (m_bEnable) {
+		pFrmWnd = (CFrmWnd*)GetParent();
+		ASSERT(pFrmWnd);
+		if (!pFrmWnd->GetScheduler()->IsEnable()) {
+			// ƒCƒl[ƒuƒ‹‚È‚ç•K‚¸Render,CRTC‚Í‘¶İ
+			pRender = (Render*)::GetVM()->SearchDevice(MAKEID('R', 'E', 'N', 'D'));
+			ASSERT(pRender);
+			pCRTC = (CRTC*)::GetVM()->SearchDevice(MAKEID('C', 'R', 'T', 'C'));
+			ASSERT(pCRTC);
+			p = pCRTC->GetWorkAddr();
+
+			// ì¬
+			m_Info.bPower = ::GetVM()->IsPower();
+			if (m_Info.bPower) {
+				pRender->Complete();
+				pRender->EnableAct(TRUE);
+				pRender->StartFrame();
+				pRender->HSync(p->v_dots);
+				pRender->EndFrame();
+			}
+			else {
+				// ƒrƒbƒgƒ}ƒbƒv‚ğ‚·‚×‚ÄÁ‹
+				memset(m_Info.pBits, 0, m_Info.nBMPWidth * m_Info.nBMPHeight * 4);
+			}
+
+			// •`‰æ(CDrawView::OnDraw‚Ö‚Â‚È‚°‚é)
+			CView::OnPaint();
+
+			// VMƒAƒ“ƒƒbƒN
+			::UnlockVM();
+			return;
+		}
+	}
+
+	// DC‚¾‚¯“¾‚Ä‚¨‚­(ƒ_ƒ~[)
+	BeginPaint(&ps);
+	EndPaint(&ps);
+
+	// VMƒAƒ“ƒƒbƒN
+	::UnlockVM();
+}
+
+//---------------------------------------------------------------------------
+//
+//	”wŒi•`‰æ
+//
+//---------------------------------------------------------------------------
+BOOL CDrawView::OnEraseBkgnd(CDC *pDC)
+{
+	CRect rect;
+
+	// ƒCƒl[ƒuƒ‹‚Å‚È‚¯‚ê‚ÎA•‚Å“h‚è‚Â‚Ô‚·
+	if (!m_bEnable) {
+		GetClientRect(&rect);
+		pDC->FillSolidRect(&rect, RGB(0, 0, 0));
+	}
+
+	return TRUE;
+}
+
+//---------------------------------------------------------------------------
+//
+//	•\¦ŠÂ‹«•ÏX
+//
+//---------------------------------------------------------------------------
+LRESULT CDrawView::OnDisplayChange(WPARAM /* wParam */, LPARAM /* lParam */)
+{
+	// ƒrƒbƒgƒ}ƒbƒv€”õ
+	SetupBitmap();
+
+	return 0;
+}
+
+//---------------------------------------------------------------------------
+//
+//	ƒtƒ@ƒCƒ‹ƒhƒƒbƒv
+//
+//---------------------------------------------------------------------------
+void CDrawView::OnDropFiles(HDROP hDropInfo)
+{
+	TCHAR szPath[_MAX_PATH];
+	POINT point;
+	CRect rect;
+	int nFiles;
+	int nDrive;
+
+	// ƒhƒƒbƒv‚³‚ê‚½ƒtƒ@ƒCƒ‹‚ÌŒÂ”‚ğ“¾‚é
+	nFiles = ::DragQueryFile(hDropInfo, 0xffffffff, szPath, _MAX_PATH);
+	ASSERT(nFiles > 0);
+
+	// ƒhƒƒbƒv‚³‚ê‚½ˆÊ’u‚©‚çAƒhƒ‰ƒCƒu‚ğŠ„‚èo‚·
+	::DragQueryPoint(hDropInfo, &point);
+	GetClientRect(rect);
+	if (point.x < (rect.right >> 1)) {
+		// ¶”¼•ª(ƒhƒ‰ƒCƒu0)
+		nDrive = 0;
+	}
+	else {
+		// ‰E”¼•ª(ƒhƒ‰ƒCƒu1)
+		nDrive = 1;
+	}
+
+	// ƒtƒ@ƒCƒ‹”‚Å•ª‚¯‚é
+	if (nFiles == 1) {
+		// ƒVƒ“ƒOƒ‹ƒtƒ@ƒCƒ‹‚ÍAƒEƒBƒ“ƒhƒE‚Ì¶”¼•ªE‰E”¼•ª
+		::DragQueryFile(hDropInfo, 0, szPath, _MAX_PATH);
+		m_pFrmWnd->InitCmdSub(nDrive, szPath);
+	}
+	else {
+		// ƒ_ƒuƒ‹ƒtƒ@ƒCƒ‹‚ÍA‚»‚ê‚¼‚ê0,1
+		::DragQueryFile(hDropInfo, 0, szPath, _MAX_PATH);
+		m_pFrmWnd->InitCmdSub(0, szPath);
+		::DragQueryFile(hDropInfo, 1, szPath, _MAX_PATH);
+		m_pFrmWnd->InitCmdSub(1, szPath);
+	}
+
+	// ˆ—I—¹
+	::DragFinish(hDropInfo);
+
+	// ƒ_ƒuƒ‹ƒtƒ@ƒCƒ‹‚ÍƒŠƒZƒbƒg‚·‚é
+	if (nFiles > 1) {
+		m_pFrmWnd->PostMessage(WM_COMMAND, IDM_RESET, 0);
+	}
+}
+
+//---------------------------------------------------------------------------
+//
+//	ƒ}ƒEƒXƒzƒC[ƒ‹
+//
+//---------------------------------------------------------------------------
+BOOL CDrawView::OnMouseWheel(UINT /*nFlags*/, short zDelta, CPoint /*pt*/)
+{
+	CConfig *pConfig;
+
+	// ƒRƒ“ƒtƒBƒOæ“¾
+	pConfig = m_pFrmWnd->GetConfig();
+
+	// VM‚ğƒƒbƒN
+	::LockVM();
+
+	// Z²‚ÌŒü‚«‚É‚æ‚Á‚Ä•ÏX
+	if (zDelta > 0) {
+		// ‰œŒü‚«|Šg‘å‚·‚é
+		Stretch(TRUE);
+		pConfig->SetStretch(TRUE);
+	}
+	else {
+		// è‘OŒü‚«|Šg‘å‚µ‚È‚¢
+		Stretch(FALSE);
+		pConfig->SetStretch(FALSE);
+	}
+
+	// VMƒAƒ“ƒƒbƒN
+	::UnlockVM();
+
+	return TRUE;
+}
+
+//---------------------------------------------------------------------------
+//
+//	ƒL[‰Ÿ‰º
+//
+//---------------------------------------------------------------------------
+void CDrawView::OnKeyDown(UINT nChar, UINT nRepCnt, UINT nFlags)
+{
+	// œŠO‚µ‚½‚¢ƒL[‚ğ”»•Ê
+	if (!KeyUpDown(nChar, nFlags, TRUE)) {
+		return;
+	}
+
+	// Šî–{ƒNƒ‰ƒX‚Ö—¬‚·
+	CView::OnKeyDown(nChar, nRepCnt, nFlags);
+}
+
+//---------------------------------------------------------------------------
+//
+//	ƒVƒXƒeƒ€ƒL[‰Ÿ‰º
+//
+//---------------------------------------------------------------------------
+void CDrawView::OnSysKeyDown(UINT nChar, UINT nRepCnt, UINT nFlags)
+{
+	// œŠO‚µ‚½‚¢ƒL[‚ğ”»•Ê
+	if (!KeyUpDown(nChar, nFlags, TRUE)) {
+		return;
+	}
+
+	// Šî–{ƒNƒ‰ƒX‚Ö—¬‚·
+	CView::OnSysKeyDown(nChar, nRepCnt, nFlags);
+}
+
+//---------------------------------------------------------------------------
+//
+//	ƒL[—£‚µ‚½
+//
+//---------------------------------------------------------------------------
+void CDrawView::OnKeyUp(UINT nChar, UINT nRepCnt, UINT nFlags)
+{
+	// œŠO‚µ‚½‚¢ƒL[‚ğ”»•Ê
+	if (!KeyUpDown(nChar, nFlags, FALSE)) {
+		return;
+	}
+
+	// Šî–{ƒNƒ‰ƒX‚Ö—¬‚·
+	CView::OnKeyUp(nChar, nRepCnt, nFlags);
+}
+
+//---------------------------------------------------------------------------
+//
+//	ƒVƒXƒeƒ€ƒL[—£‚µ‚½
+//
+//---------------------------------------------------------------------------
+void CDrawView::OnSysKeyUp(UINT nChar, UINT nRepCnt, UINT nFlags)
+{
+	// œŠO‚µ‚½‚¢ƒL[‚ğ”»•Ê
+	if (!KeyUpDown(nChar, nFlags, FALSE)) {
+		return;
+	}
+
+	// Šî–{ƒNƒ‰ƒX‚Ö—¬‚·
+	CView::OnSysKeyUp(nChar, nRepCnt, nFlags);
+}
+
+//---------------------------------------------------------------------------
+//
+//	ƒL[”»•Ê
+//
+//---------------------------------------------------------------------------
+BOOL FASTCALL CDrawView::KeyUpDown(UINT nChar, UINT nFlags, BOOL bDown)
+{
+#if defined(INPUT_MOUSE) && defined(INPUT_KEYBOARD) && defined(INPUT_HARDWARE)
+	INPUT input;
+
+	ASSERT(this);
+	ASSERT(nChar < 0x100);
+
+	// ƒXƒPƒWƒ…[ƒ‰‚ğæ“¾
+	if (!m_pScheduler) {
+		m_pScheduler = m_pFrmWnd->GetScheduler();
+		if (!m_pScheduler) {
+			// ƒXƒPƒWƒ…[ƒ‰‚ª‘¶İ‚µ‚È‚¢‚Ì‚ÅAœŠO‚µ‚È‚¢
+			return TRUE;
+		}
+	}
+
+	// ƒCƒ“ƒvƒbƒg‚ğæ“¾
+	if (!m_pInput) {
+		m_pInput = m_pFrmWnd->GetInput();
+		if (!m_pScheduler) {
+			// ƒCƒ“ƒvƒbƒg‚ª‘¶İ‚µ‚È‚¢‚Ì‚ÅAœŠO‚µ‚È‚¢
+			return TRUE;
+		}
+	}
+
+	// ƒXƒPƒWƒ…[ƒ‰‚ª’â~‚µ‚Ä‚¢‚ê‚ÎAœŠO‚µ‚È‚¢
+	if (!m_pScheduler->IsEnable()) {
+		return TRUE;
+	}
+
+	// ƒCƒ“ƒvƒbƒg‚ª”ñƒAƒNƒeƒBƒu–”‚Íƒƒjƒ…[’†‚È‚çAœŠO‚µ‚È‚¢
+	if (!m_pInput->IsActive()) {
+		return TRUE;
+	}
+	if (m_pInput->IsMenu()) {
+		return TRUE;
+	}
+
+	// ƒL[‚Ì”»•Ê
+	switch (nChar) {
+		// F10
+		case VK_F10:
+			if (m_pInput->IsKeyMapped(DIK_F10)) {
+				// ƒ}ƒbƒv‚³‚ê‚Ä‚¢‚é
+				return FALSE;
+			}
+			// ƒ}ƒbƒv‚³‚ê‚Ä‚¢‚È‚¢
+			return TRUE;
+
+		// ¶ALT
+		case VK_LMENU:
+			if (m_pInput->IsKeyMapped(DIK_LMENU)) {
+				if (bDown) {
+					// ‘¼‚ÌƒL[‚ğŠ„‚è‚Ü‚¹‚é
+					memset(&input, 0, sizeof(input));
+					input.type = INPUT_KEYBOARD;
+					input.ki.wVk = VK_SHIFT;
+					::SendInput(1, &input, sizeof(INPUT));
+					input.type = INPUT_KEYBOARD;
+					input.ki.wVk = VK_SHIFT;
+					input.ki.dwFlags = KEYEVENTF_KEYUP;
+					::SendInput(1, &input, sizeof(INPUT));
+				}
+
+				// ƒ}ƒbƒv‚³‚ê‚Ä‚¢‚é
+				return FALSE;
+			}
+			// ƒ}ƒbƒv‚³‚ê‚Ä‚¢‚È‚¢
+			return TRUE;
+
+		// ‰EALT
+		case VK_RMENU:
+			if (m_pInput->IsKeyMapped(DIK_RMENU)) {
+				// ƒ}ƒbƒv‚³‚ê‚Ä‚¢‚é
+				return FALSE;
+			}
+			// ƒ}ƒbƒv‚³‚ê‚Ä‚¢‚È‚¢
+			return TRUE;
+
+		// ‹¤’ÊALT
+		case VK_MENU:
+			if (m_pInput->IsKeyMapped(DIK_LMENU) || m_pInput->IsKeyMapped(DIK_RMENU)) {
+				// ƒ}ƒbƒv‚³‚ê‚Ä‚¢‚é
+				return FALSE;
+			}
+			// ƒ}ƒbƒv‚³‚ê‚Ä‚¢‚È‚¢
+			return TRUE;
+
+		// ¶Windows
+		case VK_LWIN:
+			if (m_pInput->IsKeyMapped(DIK_LWIN)) {
+				// ƒ}ƒbƒv‚³‚ê‚Ä‚¢‚é
+				if (bDown) {
+					memset(&input, 0, sizeof(input));
+					input.type = INPUT_KEYBOARD;
+					input.ki.wVk = VK_SHIFT;
+					::SendInput(1, &input, sizeof(INPUT));
+					input.type = INPUT_KEYBOARD;
+					input.ki.wVk = VK_SHIFT;
+					input.ki.dwFlags = KEYEVENTF_KEYUP;
+					::SendInput(1, &input, sizeof(INPUT));
+				}
+				return FALSE;
+			}
+			// ƒ}ƒbƒv‚³‚ê‚Ä‚¢‚È‚¢
+			return TRUE;
+
+		// ‰EWindows
+		case VK_RWIN:
+			if (m_pInput->IsKeyMapped(DIK_RWIN)) {
+				// ƒ}ƒbƒv‚³‚ê‚Ä‚¢‚é
+				if (bDown) {
+					// WindowsƒL[‚ğƒuƒƒbƒN‚·‚é‚Ì‚Å‚Í‚È‚­A‘¼‚ÌƒL[‚ğŠ„‚è‚Ü‚¹‚é
+					memset(&input, 0, sizeof(input));
+					input.type = INPUT_KEYBOARD;
+					input.ki.wVk = VK_SHIFT;
+					::SendInput(1, &input, sizeof(INPUT));
+					input.type = INPUT_KEYBOARD;
+					input.ki.wVk = VK_SHIFT;
+					input.ki.dwFlags = KEYEVENTF_KEYUP;
+					::SendInput(1, &input, sizeof(INPUT));
+				}
+				return FALSE;
+			}
+			// ƒ}ƒbƒv‚³‚ê‚Ä‚¢‚È‚¢
+			return TRUE;
+
+		// ‚»‚Ì‘¼
+		default:
+			// ALT‚Â‚«‚ÌƒL[‚©
+			if (nFlags & 0x2000) {
+				// ¶ALT‚Ü‚½‚Í‰EALT‚ªƒ}ƒbƒv‚³‚ê‚Ä‚¢‚é‚©
+				if (m_pInput->IsKeyMapped(DIK_LMENU) || m_pInput->IsKeyMapped(DIK_RMENU)) {
+					// ‚Ç‚¿‚ç‚©‚ÌALT‚ªƒ}ƒbƒv‚³‚ê‚Ä‚¢‚ê‚ÎAALT+ƒL[‚ğ–³Œø‰»‚·‚é
+					return FALSE;
+				}
+			}
+			break;
+	}
+#endif	// INPUT_MOUSE && INPUT_KEYBOARD && INPUT_HARDWARE
+
+	// ‚»‚êˆÈŠO‚ÍA‹–‰Â
+	return TRUE;
+}
+
+//---------------------------------------------------------------------------
+//
+//	ƒEƒBƒ“ƒhƒEˆÚ“®
+//
+//---------------------------------------------------------------------------
+void CDrawView::OnMove(int x, int y)
+{
+	ASSERT(m_pFrmWnd);
+
+	// Šî–{ƒNƒ‰ƒX
+	CView::OnMove(x, y);
+
+	// ƒtƒŒ[ƒ€ƒEƒBƒ“ƒhƒE‚ÌÄ”z’u‚ğŒÄ‚Ô
+	m_pFrmWnd->RecalcStatusView();
+}
+
+//---------------------------------------------------------------------------
+//
+//	ƒrƒbƒgƒ}ƒbƒv€”õ
+//
+//---------------------------------------------------------------------------
+void FASTCALL CDrawView::SetupBitmap()
+{
+	CClientDC *pDC;
+	BITMAPINFOHEADER *p;
+	CRect rect;
+
+	// ƒrƒbƒgƒ}ƒbƒv‚ª‚ ‚ê‚ÎAˆê’U‰ğ•ú
+	if (m_Info.hBitmap) {
+		if (m_Info.pRender) {
+			m_Info.pRender->SetMixBuf(NULL, 0, 0);
+		}
+		::DeleteObject(m_Info.hBitmap);
+		m_Info.hBitmap = NULL;
+		m_Info.pBits = NULL;
+	}
+
+	// Å¬‰»‚Í“Á•Êˆµ‚¢
+	GetClientRect(&rect);
+	if ((rect.Width() == 0) || (rect.Height() == 0)) {
+		return;
+	}
+
+	// ƒrƒbƒgƒ}ƒbƒvƒwƒbƒ_‚Ì‚½‚ß‚Ìƒƒ‚ƒŠ‚ğŠm•Û
+	p = (BITMAPINFOHEADER*) new BYTE[sizeof(BITMAPINFOHEADER) + sizeof(RGBQUAD)];
+	memset(p, 0, sizeof(BITMAPINFOHEADER) + sizeof(RGBQUAD));
+
+	// ƒrƒbƒgƒ}ƒbƒvî•ñì¬
+	m_Info.nBMPWidth = rect.Width();
+	m_Info.nBMPHeight = rect.Height();
+	p->biSize = sizeof(BITMAPINFOHEADER);
+	p->biWidth = m_Info.nBMPWidth;
+	p->biHeight = -m_Info.nBMPHeight;
+	p->biPlanes = 1;
+	p->biBitCount = 32;
+	p->biCompression = BI_RGB;
+	p->biSizeImage = m_Info.nBMPWidth * m_Info.nBMPHeight * (32 >> 3);
+
+	// DCæ“¾ADIBƒZƒNƒVƒ‡ƒ“ì¬
+	pDC = new CClientDC(this);
+	m_Info.hBitmap = ::CreateDIBSection(pDC->m_hDC, (BITMAPINFO*)p, DIB_RGB_COLORS,
+								(void**)&(m_Info.pBits), NULL, 0);
+	// ¬Œ÷‚µ‚½‚çAƒŒƒ“ƒ_ƒ‰‚É“`‚¦‚é
+	if (m_Info.hBitmap && m_Info.pRender) {
+		m_Info.pRender->SetMixBuf(m_Info.pBits, m_Info.nBMPWidth, m_Info.nBMPHeight);
+	}
+	delete pDC;
+	delete[] p;
+
+	// ÄŒvZ
+	m_Info.nRendHMul = -1;
+	m_Info.nRendVMul = -1;
+	ReCalc(rect);
+}
+
+//---------------------------------------------------------------------------
+//
+//	“®ì§Œä
+//
+//---------------------------------------------------------------------------
+void FASTCALL CDrawView::Enable(BOOL bEnable)
+{
+	CSubWnd *pWnd;
+
+	// ƒtƒ‰ƒO‹L‰¯
+	m_bEnable = bEnable;
+
+	// —LŒø‚È‚çƒŒƒ“ƒ_ƒ‰‹L‰¯
+	if (m_bEnable) {
+		if (!m_Info.pRender) {
+			m_Info.pRender = (Render*)::GetVM()->SearchDevice(MAKEID('R', 'E', 'N', 'D'));
+			ASSERT(m_Info.pRender);
+			m_Info.pWork = m_Info.pRender->GetWorkAddr();
+			ASSERT(m_Info.pWork);
+			if (m_Info.pBits) {
+				m_Info.pRender->SetMixBuf(m_Info.pBits, m_Info.nBMPWidth, m_Info.nBMPHeight);
+			}
+		}
+	}
+
+	// ƒTƒuƒEƒBƒ“ƒhƒE‚É‘Î‚µAw¦
+	pWnd = m_pSubWnd;
+	while (pWnd) {
+		pWnd->Enable(bEnable);
+		pWnd = pWnd->m_pNextWnd;
+	}
+}
+
+//---------------------------------------------------------------------------
+//
+//	“®ìƒtƒ‰ƒOæ“¾
+//
+//---------------------------------------------------------------------------
+BOOL FASTCALL CDrawView::IsEnable() const
+{
+	return m_bEnable;
+}
+
+//---------------------------------------------------------------------------
+//
+//	ƒŠƒtƒŒƒbƒVƒ…•`‰æ
+//
+//---------------------------------------------------------------------------
+void FASTCALL CDrawView::Refresh()
+{
+	CSubWnd *pWnd;
+	CClientDC dc(this);
+
+	// Drawƒrƒ…[‚ğÄ•`‰æ
+	OnDraw(&dc);
+
+	// ƒTƒuƒEƒBƒ“ƒhƒE‚ğÄ•`‰æ
+	pWnd = m_pSubWnd;
+	while (pWnd) {
+		pWnd->Refresh();
+
+		// Ÿ‚ÌƒTƒuƒEƒBƒ“ƒhƒE
+		pWnd = pWnd->m_pNextWnd;
+	}
+}
+
+//---------------------------------------------------------------------------
+//
+//	•`‰æ(ƒXƒPƒWƒ…[ƒ‰‚æ‚è)
+//
+//---------------------------------------------------------------------------
+void FASTCALL CDrawView::Draw(int nChildWnd)
+{
+	CSubWnd *pSubWnd;
+	CClientDC *pDC;
+
+	ASSERT(nChildWnd >= -1);
+
+	// -1‚ÍDrawƒrƒ…[
+	if (nChildWnd < 0) {
+		pDC = new CClientDC(this);
+		OnDraw(pDC);
+		delete pDC;
+		return;
+	}
+
+	// 0ˆÈ~‚ÍƒTƒuƒEƒBƒ“ƒhƒE
+	pSubWnd = m_pSubWnd;
+
+	while (nChildWnd > 0) {
+		// Ÿ‚ÌƒTƒuƒEƒBƒ“ƒhƒE
+		pSubWnd = pSubWnd->m_pNextWnd;
+		ASSERT(pSubWnd);
+		nChildWnd--;
+	}
+
+	// ƒŠƒtƒŒƒbƒVƒ…
+	pSubWnd->Refresh();
+}
+
+//---------------------------------------------------------------------------
+//
+//	ƒƒbƒZ[ƒWƒXƒŒƒbƒh‚©‚ç‚ÌXV
+//
+//---------------------------------------------------------------------------
+void FASTCALL CDrawView::Update()
+{
+	CSubWnd *pWnd;
+
+	// ƒTƒuƒEƒBƒ“ƒhƒE‚É‘Î‚µAw¦
+	pWnd = m_pSubWnd;
+	while (pWnd) {
+		pWnd->Update();
+		pWnd = pWnd->m_pNextWnd;
+	}
+}
+
+//---------------------------------------------------------------------------
+//
+//	İ’è“K—p
+//
+//---------------------------------------------------------------------------
+void FASTCALL CDrawView::ApplyCfg(const Config *pConfig)
+{
+	CSubWnd *pWnd;
+
+	ASSERT(pConfig);
+
+	// ƒXƒgƒŒƒbƒ`
+	Stretch(pConfig->aspect_stretch);
+
+	// ƒTƒuƒEƒBƒ“ƒhƒE‚É‘Î‚µAw¦
+	pWnd = m_pSubWnd;
+	while (pWnd) {
+		pWnd->ApplyCfg(pConfig);
+		pWnd = pWnd->m_pNextWnd;
+	}
+}
+
+//---------------------------------------------------------------------------
+//
+//	•`‰æî•ñæ“¾
+//
+//---------------------------------------------------------------------------
+void FASTCALL CDrawView::GetDrawInfo(LPDRAWINFO pDrawInfo) const
+{
+	ASSERT(this);
+	ASSERT(pDrawInfo);
+
+	// “à•”ƒ[ƒN‚ğƒRƒs[
+	*pDrawInfo = m_Info;
+}
+
+//---------------------------------------------------------------------------
+//
+//	•`‰æ
+//
+//---------------------------------------------------------------------------
+void CDrawView::OnDraw(CDC *pDC)
+{
+	CRect rect;
+	HDC hMemDC;
+	HBITMAP hDefBitmap;
+	int i;
+	int vmul;
+	int hmul;
+
+	// ƒrƒbƒgƒ}ƒbƒv‚Ì€”õ‚ªo—ˆ‚Ä‚È‚¯‚ê‚Î“h‚è‚Â‚Ô‚µ
+	GetClientRect(&rect);
+	if (!m_Info.hBitmap || !m_bEnable || !m_Info.pWork) {
+		pDC->FillSolidRect(&rect, RGB(0, 0, 0));
+		return;
+	}
+
+	// ÄŒvZ
+	ReCalc(rect);
+
+	// “dŒ¹OFF‘Îô
+	if (::GetVM()->IsPower() != m_Info.bPower) {
+		m_Info.bPower = ::GetVM()->IsPower();
+		if (!m_Info.bPower) {
+			// ƒrƒbƒgƒ}ƒbƒv‚ğ‚·‚×‚ÄÁ‹
+			memset(m_Info.pBits, 0, m_Info.nBMPWidth * m_Info.nBMPHeight * 4);
+			m_Info.bBltAll = TRUE;
+		}
+	}
+
+	// ‹÷‚ğ•`‰æ
+	if (m_Info.bBltAll) {
+		DrawRect(pDC);
+	}
+
+	// ÅI•\¦”{—¦‚ğŠm’è
+	hmul = 1;
+	if (m_Info.nRendHMul == 2) {
+		// ‰¡256‚È‚Ç
+		hmul = 2;
+	}
+	if ((m_Info.nRendWidth < 600) && m_Info.bBltStretch) {	// if•¶‰ü—Ç—v
+		// 768~512ˆÈŠO‚ÅAƒAƒXƒyƒNƒg“¯ˆêƒ‚[ƒhw’è
+		hmul *= 5;
+	}
+	else {
+		// ƒAƒXƒyƒNƒg”ä“¯ˆê‚Í‚µ‚È‚¢B“™”{Šg‘å
+		hmul <<= 2;
+	}
+	vmul = 4;
+	if (m_Info.nRendVMul == 2) {
+		// c256‚È‚Ç
+		vmul = 8;
+	}
+
+	// bBltAll‚Ì‚Í‘S—Ìˆæ‚ÅŒˆ‚Ü‚è
+	if (m_Info.bBltAll) {
+		// ƒƒ‚ƒŠDCì¬AƒZƒŒƒNƒg
+		hMemDC = CreateCompatibleDC(pDC->m_hDC);
+		if (!hMemDC) {
+			return;
+		}
+		hDefBitmap = (HBITMAP)SelectObject(hMemDC, m_Info.hBitmap);
+		if (!hDefBitmap) {
+			DeleteDC(hMemDC);
+			return;
+		}
+
+		// Blt
+		if ((hmul == 4) && (vmul == 4)) {
+			::BitBlt(pDC->m_hDC,
+				m_Info.nLeft, m_Info.nTop,
+				m_Info.nWidth, m_Info.nHeight,
+				hMemDC, 0, 0,
+				SRCCOPY);
+		}
+		else {
+			::StretchBlt(pDC->m_hDC,
+				m_Info.nLeft, m_Info.nTop,
+				(m_Info.nWidth * hmul) >> 2,
+				(m_Info.nHeight * vmul) >> 2,
+				hMemDC, 0, 0,
+				m_Info.nWidth, m_Info.nHeight,
+				SRCCOPY);
+		}
+		::GdiFlush();
+		m_Info.bBltAll = FALSE;
+
+		// ƒrƒbƒgƒ}ƒbƒv–ß‚·
+		SelectObject(hMemDC, hDefBitmap);
+		DeleteDC(hMemDC);
+
+		// •`‰æƒtƒ‰ƒO‚ğ~‚ë‚·‚±‚Æ‚ğ–Y‚ê‚¸‚É
+		for (i=0; i<m_Info.nHeight * 64; i++) {
+			m_Info.pWork->drawflag[i] = FALSE;
+		}
+		m_Info.dwDrawCount++;
+		m_Info.nBltLeft = 0;
+		m_Info.nBltTop = 0;
+		m_Info.nBltRight = m_Info.nWidth - 1;
+		m_Info.nBltBottom = m_Info.nHeight - 1;
+		return;
+	}
+
+	// •`‰æ—Ìˆæ‚ğ’²‚×‚é
+	if (!CalcRect()) {
+		return;
+	}
+	ASSERT(m_Info.nBltTop <= m_Info.nBltBottom);
+	ASSERT(m_Info.nBltLeft <= m_Info.nBltRight);
+
+	// ƒƒ‚ƒŠDCì¬AƒZƒŒƒNƒg
+	hMemDC = CreateCompatibleDC(pDC->m_hDC);
+	if (!hMemDC) {
+		m_Info.bBltAll = TRUE;
+		return;
+	}
+	hDefBitmap = (HBITMAP)SelectObject(hMemDC, m_Info.hBitmap);
+	if (!hDefBitmap) {
+		DeleteDC(hMemDC);
+		m_Info.bBltAll = TRUE;
+		return;
+	}
+
+	// ˆê•”—Ìˆæ‚Ì‚İ•`‰æ
+	if ((hmul == 4) && (vmul == 4)) {
+		::BitBlt(pDC->m_hDC,
+			m_Info.nLeft + m_Info.nBltLeft,
+			m_Info.nTop + m_Info.nBltTop,
+			m_Info.nBltRight - m_Info.nBltLeft + 1,
+			m_Info.nBltBottom - m_Info.nBltTop + 1,
+			hMemDC,
+			m_Info.nBltLeft,
+			m_Info.nBltTop,
+			SRCCOPY);
+	}
+	else {
+		::StretchBlt(pDC->m_hDC,
+			m_Info.nLeft + ((m_Info.nBltLeft * hmul) >> 2),
+			m_Info.nTop + ((m_Info.nBltTop * vmul) >> 2),
+			((m_Info.nBltRight - m_Info.nBltLeft + 1) * hmul) >> 2,
+			((m_Info.nBltBottom - m_Info.nBltTop + 1) * vmul) >> 2,
+			hMemDC,
+			m_Info.nBltLeft,
+			m_Info.nBltTop,
+			m_Info.nBltRight - m_Info.nBltLeft + 1,
+			m_Info.nBltBottom - m_Info.nBltTop + 1,
+			SRCCOPY);
+	}
+	::GdiFlush();
+
+	// ƒrƒbƒgƒ}ƒbƒv–ß‚·
+	SelectObject(hMemDC, hDefBitmap);
+	DeleteDC(hMemDC);
+
+	// ƒtƒ‰ƒO‚ÍCalcRect‚Å~‚ë‚µ‚Ä‚¢‚é
+	m_Info.dwDrawCount++;
+}
+
+//---------------------------------------------------------------------------
+//
+//	ÄŒvZ
+//
+//---------------------------------------------------------------------------
+void FASTCALL CDrawView::ReCalc(CRect& rect)
+{
+	int width;
+	int height;
+	BOOL flag;
+
+	// ƒŒƒ“ƒ_ƒ‰ƒ[ƒNAƒrƒbƒgƒ}ƒbƒv‚ª‚È‚¯‚ê‚Îreturn
+	if (!m_Info.pWork || !m_Info.hBitmap) {
+		return;
+	}
+
+	// ”äŠr
+	flag = FALSE;
+	if (m_Info.nRendWidth != m_Info.pWork->width) {
+		m_Info.nRendWidth = m_Info.pWork->width;
+		flag = TRUE;
+	}
+	if (m_Info.nRendHeight != m_Info.pWork->height) {
+		m_Info.nRendHeight = m_Info.pWork->height;
+		flag = TRUE;
+	}
+	if (m_Info.nRendHMul != m_Info.pWork->h_mul) {
+		m_Info.nRendHMul = m_Info.pWork->h_mul;
+		flag = TRUE;
+	}
+	if (m_Info.nRendVMul != m_Info.pWork->v_mul) {
+		m_Info.nRendVMul = m_Info.pWork->v_mul;
+		flag = TRUE;
+	}
+	if (!flag) {
+		return;
+	}
+
+	// ƒŒƒ“ƒ_ƒ‰Aƒrƒbƒgƒ}ƒbƒv‚Ì‚¤‚¿¬‚³‚¢‚Ù‚¤‚ğ‚Æ‚é
+	m_Info.nWidth = m_Info.nRendWidth;
+	if (m_Info.nBMPWidth < m_Info.nWidth) {
+		m_Info.nWidth = m_Info.nBMPWidth;
+	}
+	m_Info.nHeight = m_Info.nRendHeight;
+	if (m_Info.nRendVMul == 0) {
+		// 15kƒCƒ“ƒ^ƒŒ[ƒX‚Ì‚½‚ß‚Ìˆ—
+		m_Info.nHeight <<= 1;
+	}
+	if (m_Info.nBMPHeight < m_Info.nRendHeight) {
+		m_Info.nHeight = m_Info.nBMPHeight;
+	}
+
+	// ”{—¦‚ğl—¶‚µ‚ÄƒZƒ“ƒ^ƒŠƒ“ƒO‚µA—]”’‚ğZo
+	width = m_Info.nWidth * m_Info.nRendHMul;
+	if ((m_Info.nRendWidth < 600) && m_Info.bBltStretch) {	// if‰ü—Ç—v
+		width = (width * 5) >> 2;
+	}
+	height = m_Info.nHeight;
+	if (m_Info.nRendVMul == 2) {
+		height <<= 1;
+	}
+	 
+	m_Info.nLeft = 0;
+	if (width < rect.Width()) {
+		m_Info.nLeft = (rect.Width() - width) >> 1;
+	}
+	m_Info.nTop = 0;
+	if (height < rect.Height()) {
+		m_Info.nTop = (rect.Height() - height) >> 1;
+	}
+
+	// —Ìˆæ•`‰æ‚ğw’è
+	m_Info.bBltAll = TRUE;
+}
+
+//---------------------------------------------------------------------------
+//
+//	Šg‘åƒ‚[ƒh
+//
+//---------------------------------------------------------------------------
+void FASTCALL CDrawView::Stretch(BOOL bStretch)
+{
+	CRect rect;
+
+	ASSERT(this);
+
+	// ˆê’v‚È‚ç‰½‚à‚µ‚È‚¢
+	if (bStretch == m_Info.bBltStretch) {
+		return;
+	}
+	m_Info.bBltStretch = bStretch;
+
+	// 768~512‚Å‚È‚¯‚ê‚ÎAÄŒvZ
+	if ((m_Info.nRendWidth > 0) && (m_Info.nRendWidth < 600)) {		// if•¶‰ü—Ç—v
+		m_Info.nRendWidth = m_Info.pWork->width + 1;
+		GetClientRect(&rect);
+		ReCalc(rect);
+	}
+}
+
+//---------------------------------------------------------------------------
+//
+//	‹÷‚ğ•`‰æ
+//
+//---------------------------------------------------------------------------
+void FASTCALL CDrawView::DrawRect(CDC *pDC)
+{
+	CRect crect;
+	CRect brect;
+
+	ASSERT(m_Info.bBltAll);
+	ASSERT(pDC);
+
+	// ‘S•”g‚¤‚æ‚¤‚È‚ç•K—v–³‚¢
+	if ((m_Info.nLeft == 0) && (m_Info.nTop == 0)) {
+		return;
+	}
+
+	// ƒNƒ‰ƒCƒAƒ“ƒg‹éŒ`‚ğ“¾‚é
+	GetClientRect(&crect);
+
+	if (m_Info.nLeft > 0) {
+		// ¶”¼•ª
+		brect.left = 0;
+		brect.top = 0;
+		brect.right = m_Info.nLeft;
+		brect.bottom = crect.bottom;
+		pDC->FillSolidRect(&brect, RGB(0, 0, 0));
+
+		// ‰E”¼•ª
+		brect.right = crect.right;
+		brect.left = brect.right - m_Info.nLeft - 1;
+		pDC->FillSolidRect(&brect, RGB(0, 0, 0));
+	}
+
+	if (m_Info.nTop > 0) {
+		// ã”¼•ª
+		brect.left = 0;
+		brect.top = 0;
+		brect.right = crect.right;
+		brect.bottom = m_Info.nTop;
+		pDC->FillSolidRect(&brect, RGB(0, 0, 0));
+
+		// ‰E”¼•ª
+		brect.bottom = crect.bottom;
+		brect.top = brect.bottom - m_Info.nTop - 1;
+		pDC->FillSolidRect(&brect, RGB(0, 0, 0));
+	}
+}
+
+//---------------------------------------------------------------------------
+//
+//	•`‰æ”ÍˆÍ‚ğ’²‚×‚é
+//
+//---------------------------------------------------------------------------
+BOOL FASTCALL CDrawView::CalcRect()
+{
+	int i;
+	int j;
+	int left;
+	int top;
+	int right;
+	int bottom;
+	BOOL *p;
+	BOOL flag;
+
+	// ‰Šú‰»
+	left = 64;
+	top = 2048;
+	right = -1;
+	bottom = -1;
+	p = m_Info.pWork->drawflag;
+
+	// yƒ‹[ƒv
+	for (i=0; i<m_Info.nHeight; i++) {
+		flag = FALSE;
+
+		// xƒ‹[ƒv
+		for(j=0; j<64; j++) {
+			if (*p) {
+				// Á‚·
+				*p = FALSE;
+
+				// ‚±‚Ì16dot‚Í•`‰æ‚ª•K—v
+				if (left > j) {
+					left = j;
+				}
+				if (right < j) {
+					right = j;
+				}
+				flag = TRUE;
+			}
+			p++;
+		}
+
+		if (flag) {
+			// ‚±‚Ìƒ‰ƒCƒ“‚Í•`‰æ‚ª•K—v
+			if (top > i) {
+				top = i;
+			}
+			if (bottom < i) {
+				bottom = i;
+			}
+		}
+	}
+
+	// y‚ª•Ï‰»‚È‚¯‚ê‚Î•K—v–³‚µ
+	if (bottom < top) {
+		return FALSE;
+	}
+
+	// x‚ğ•â³(x16)
+	left <<= 4;
+	right = ((right + 1) << 4) - 1;
+	if (right >= m_Info.nWidth) {
+		right = m_Info.nWidth - 1;
+	}
+
+	// ƒRƒs[
+	m_Info.nBltLeft = left;
+	m_Info.nBltTop = top;
+	m_Info.nBltRight = right;
+	m_Info.nBltBottom = bottom;
+
+	return TRUE;
+}
+
+//---------------------------------------------------------------------------
+//
+//	ƒTƒuƒEƒBƒ“ƒhƒEV‹KƒCƒ“ƒfƒbƒNƒXæ“¾
+//
+//---------------------------------------------------------------------------
+int FASTCALL CDrawView::GetNewSWnd() const
+{
+	CSubWnd *pWnd;
+	int nSubWnd;
+
+	ASSERT(this);
+	ASSERT_VALID(this);
+
+	// Å‰‚ÌƒTƒuƒEƒBƒ“ƒhƒE‚©
+	if (!m_pSubWnd) {
+		return 0;
+	}
+
+	// ‰Šú‰»
+	nSubWnd = 1;
+	pWnd = m_pSubWnd;
+
+	// ƒ‹[ƒv
+	while (pWnd->m_pNextWnd) {
+		pWnd = pWnd->m_pNextWnd;
+		nSubWnd++;
+	}
+
+	// ƒCƒ“ƒfƒbƒNƒX‚ğ•Ô‚·
+	return nSubWnd;
+}
+
+//---------------------------------------------------------------------------
+//
+//	ƒTƒuƒEƒBƒ“ƒhƒE’Ç‰Á
+//	¦’Ç‰Á‚µ‚½‚¢CSubWnd‚©‚çŒÄ‚Ño‚·
+//
+//---------------------------------------------------------------------------
+void FASTCALL CDrawView::AddSWnd(CSubWnd *pSubWnd)
+{
+	CSubWnd *pWnd;
+
+	ASSERT(this);
+	ASSERT(pSubWnd);
+	ASSERT_VALID(this);
+
+	// Å‰‚ÌƒTƒuƒEƒBƒ“ƒhƒE‚©
+	if (!m_pSubWnd) {
+		// ‚±‚ÌƒEƒBƒ“ƒhƒE‚ªÅ‰B“o˜^‚·‚é
+		m_pSubWnd = pSubWnd;
+		ASSERT(!pSubWnd->m_pNextWnd);
+		return;
+	}
+
+	// I’[‚ğ’T‚·
+	pWnd = m_pSubWnd;
+	while (pWnd->m_pNextWnd) {
+		pWnd = pWnd->m_pNextWnd;
+	}
+
+	// pWnd‚ÌŒã‚ë‚É’Ç‰Á
+	pWnd->m_pNextWnd = pSubWnd;
+	ASSERT(!pSubWnd->m_pNextWnd);
+}
+
+//---------------------------------------------------------------------------
+//
+//	ƒTƒuƒEƒBƒ“ƒhƒEíœ
+//	¦íœ‚µ‚½‚¢CSubWnd‚©‚çŒÄ‚Ño‚·
+//
+//---------------------------------------------------------------------------
+void FASTCALL CDrawView::DelSWnd(CSubWnd *pSubWnd)
+{
+	CSubWnd *pWnd;
+
+	// assert
+	ASSERT(pSubWnd);
+
+	// VM‚ğƒƒbƒN
+	::LockVM();
+
+	// Å‰‚ÌƒTƒuƒEƒBƒ“ƒhƒE‚©
+	if (m_pSubWnd == pSubWnd) {
+		// Ÿ‚ª‚ ‚é‚È‚çAŸ‚ğ“o˜^B‚È‚¯‚ê‚ÎNULL
+		if (pSubWnd->m_pNextWnd) {
+			m_pSubWnd = pSubWnd->m_pNextWnd;
+		}
+		else {
+			m_pSubWnd = NULL;
+		}
+		::UnlockVM();
+		return;
+	}
+
+	// pSubWnd‚ğ‹L‰¯‚µ‚Ä‚¢‚éƒTƒuƒEƒBƒ“ƒhƒE‚ğ’T‚·
+	pWnd = m_pSubWnd;
+	while (pWnd->m_pNextWnd != pSubWnd) {
+		ASSERT(pWnd->m_pNextWnd);
+		pWnd = pWnd->m_pNextWnd;
+	}
+
+	// pSubWnd->m_pNextWnd‚ğApWnd‚ÉŒ‹‚Ñ‚Â‚¯ƒXƒLƒbƒv‚³‚¹‚é
+	pWnd->m_pNextWnd = pSubWnd->m_pNextWnd;
+
+	// VM‚ğƒAƒ“ƒƒbƒN
+	::UnlockVM();
+}
+
+//---------------------------------------------------------------------------
+//
+//	ƒTƒuƒEƒBƒ“ƒhƒE‚ğ‚·‚×‚Äíœ
+//
+//---------------------------------------------------------------------------
+void FASTCALL CDrawView::ClrSWnd()
+{
+	CSubWnd *pWnd;
+    CSubWnd *pNext;
+
+	ASSERT(this);
+
+	// Å‰‚ÌƒTƒuƒEƒBƒ“ƒhƒE‚ğæ“¾
+	pWnd = GetFirstSWnd();
+
+	// ƒ‹[ƒv
+	while (pWnd) {
+		// Ÿ‚ğæ“¾
+		pNext = pWnd->m_pNextWnd;
+
+		// ‚±‚ÌƒEƒBƒ“ƒhƒE‚ğíœ
+		pWnd->DestroyWindow();
+
+		// ˆÚ“®
+		pWnd = pNext;
+	}
+}
+
+//---------------------------------------------------------------------------
+//
+//	Å‰‚ÌƒTƒuƒEƒBƒ“ƒhƒE‚ğæ“¾
+//	¦‚È‚¯‚ê‚ÎNULL‚ğ•Ô‚·
+//
+//---------------------------------------------------------------------------
+CSubWnd* FASTCALL CDrawView::GetFirstSWnd() const
+{
+	return m_pSubWnd;
+}
+
+//---------------------------------------------------------------------------
+//
+//	ƒTƒuƒEƒBƒ“ƒhƒE‚ğŒŸõ
+//	¦Œ©‚Â‚©‚ç‚È‚¯‚ê‚ÎNULL‚ğ•Ô‚·
+//
+//---------------------------------------------------------------------------
+CSubWnd* FASTCALL CDrawView::SearchSWnd(DWORD dwID) const
+{
+	CSubWnd *pWnd;
+
+	// ƒEƒBƒ“ƒhƒE‚ğ‰Šú‰»
+	pWnd = m_pSubWnd;
+
+	// ŒŸõƒ‹[ƒv
+	while (pWnd) {
+		// ID‚ªˆê’v‚·‚é‚©ƒ`ƒFƒbƒN
+		if (pWnd->GetID() == dwID) {
+			return pWnd;
+		}
+
+		// Ÿ‚Ö
+		pWnd = pWnd->m_pNextWnd;
+	}
+
+	// Œ©‚Â‚©‚ç‚È‚©‚Á‚½
+	return NULL;
+}
+
+//---------------------------------------------------------------------------
+//
+//	ƒeƒLƒXƒgƒtƒHƒ“ƒg‚ğæ“¾
+//
+//---------------------------------------------------------------------------
+CFont* FASTCALL CDrawView::GetTextFont()
+{
+	ASSERT(m_TextFont.m_hObject);
+
+	return &m_TextFont;
+}
+
+//---------------------------------------------------------------------------
+//
+//	V‚µ‚¢ƒEƒBƒ“ƒhƒE‚ğì¬
+//
+//---------------------------------------------------------------------------
+CSubWnd* FASTCALL CDrawView::NewWindow(BOOL bDis)
+{
+	DWORD dwID;
+	int i;
+	CSubWnd *pWnd;
+	CDisasmWnd *pDisWnd;
+	CMemoryWnd *pMemWnd;
+
+	// Šî€IDì¬
+	if (bDis) {
+		dwID = MAKEID('D', 'I', 'S', 'A');
+	}
+	else {
+		dwID = MAKEID('M', 'E', 'M', 'A');
+	}
+
+	// 8‰ñƒ‹[ƒv
+	for (i=0; i<8; i++) {
+		// ƒEƒBƒ“ƒhƒE‚ªŒ©‚Â‚©‚ç‚È‚¯‚ê‚ÎAV‹Kì¬‰Â”
+		pWnd = SearchSWnd(dwID);
+		if (!pWnd) {
+			if (bDis) {
+				pDisWnd = new CDisasmWnd(i);
+				VERIFY(pDisWnd->Init(this));
+				return pDisWnd;
+			}
+			else {
+				pMemWnd = new CMemoryWnd(i);
+				VERIFY(pMemWnd->Init(this));
+				return pMemWnd;
+			}
+		}
+
+		// Ÿ‚ÌƒEƒBƒ“ƒhƒEID‚ğ‚Â‚­‚é
+		dwID++;
+	}
+
+	// ì¬‚Å‚«‚È‚©‚Á‚½
+	return NULL;
+}
+
+//---------------------------------------------------------------------------
+//
+//	V‚µ‚¢ƒEƒBƒ“ƒhƒE‚ğì¬‚Å‚«‚é‚©ƒ`ƒFƒbƒN
+//
+//---------------------------------------------------------------------------
+BOOL FASTCALL CDrawView::IsNewWindow(BOOL bDis)
+{
+	DWORD dwID;
+	int i;
+	CSubWnd *pWnd;
+
+	// Šî€IDì¬
+	if (bDis) {
+		dwID = MAKEID('D', 'I', 'S', 'A');
+	}
+	else {
+		dwID = MAKEID('M', 'E', 'M', 'A');
+	}
+
+	// 8‰ñƒ‹[ƒv
+	for (i=0; i<8; i++) {
+		// ƒEƒBƒ“ƒhƒE‚ªŒ©‚Â‚©‚ç‚È‚¯‚ê‚ÎAV‹Kì¬‰Â”
+		pWnd = SearchSWnd(dwID);
+		if (!pWnd) {
+			return TRUE;
+		}
+
+		// Ÿ‚ÌƒEƒBƒ“ƒhƒEID‚ğ‚Â‚­‚é
+		dwID++;
+	}
+
+	// ‚·‚×‚Ä‚ÌƒEƒBƒ“ƒhƒE‚ª‚ ‚é¨V‹Kì¬‚Å‚«‚È‚¢
+	return FALSE;
+}
+
+//---------------------------------------------------------------------------
+//
+//	ƒTƒuƒEƒBƒ“ƒhƒE‚ÌŒÂ”‚ğæ“¾
+//	¦Œ©‚Â‚©‚ç‚È‚¯‚ê‚ÎNULL‚ğ•Ô‚·
+//
+//---------------------------------------------------------------------------
+int FASTCALL CDrawView::GetSubWndNum() const
+{
+	CSubWnd *pWnd;
+	int num;
+
+	// ‰Šú‰»
+	pWnd = m_pSubWnd;
+	num = 0;
+
+	// ƒ‹[ƒv
+	while (pWnd) {
+		// ŒÂ”++
+		num++;
+
+		// Ÿ‚Ö
+		pWnd = pWnd->m_pNextWnd;
+	}
+
+	return num;
+}
+
+//---------------------------------------------------------------------------
+//
+//	ƒEƒBƒ“ƒhƒEƒNƒ‰ƒX–¼æ“¾
+//
+//---------------------------------------------------------------------------
+LPCTSTR FASTCALL CDrawView::GetWndClassName() const
+{
+	ASSERT(this);
+	ASSERT(m_pFrmWnd);
+	return m_pFrmWnd->GetWndClassName();
+}
+
+#endif	// _WIN32

@@ -1,0 +1,332 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup Label="ProjectConfigurations">
+    <ProjectConfiguration Include="Debug|Win32">
+      <Configuration>Debug</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|Win32">
+      <Configuration>Release</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+  </ItemGroup>
+  <PropertyGroup Label="Globals">
+    <ProjectGuid>{F21B3E9E-2CAE-40AD-8DF6-B849B96E0EB4}</ProjectGuid>
+    <Keyword>MFCProj</Keyword>
+    <WindowsTargetPlatformVersion>10.0</WindowsTargetPlatformVersion>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
+    <ConfigurationType>Application</ConfigurationType>
+    <PlatformToolset>v110</PlatformToolset>
+    <UseOfMfc>Dynamic</UseOfMfc>
+    <CharacterSet>MultiByte</CharacterSet>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
+    <ConfigurationType>Application</ConfigurationType>
+    <PlatformToolset>v110</PlatformToolset>
+    <UseOfMfc>Dynamic</UseOfMfc>
+    <CharacterSet>MultiByte</CharacterSet>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
+  <ImportGroup Label="ExtensionSettings">
+  </ImportGroup>
+  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <PropertyGroup Label="UserMacros" />
+  <PropertyGroup>
+    <_ProjectFileVersion>11.0.50727.1</_ProjectFileVersion>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <OutDir>Debug\</OutDir>
+    <IntDir>Debug\</IntDir>
+    <LinkIncremental>true</LinkIncremental>
+    <LibraryPath>$(VCInstallDir)lib;$(VCInstallDir)atlmfc\lib;$(WindowsSDK_LibraryPath_x86);C:\mssdk\lib</LibraryPath>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <OutDir>Release\</OutDir>
+    <IntDir>Release\</IntDir>
+    <LinkIncremental>false</LinkIncremental>
+    <LibraryPath>$(VCInstallDir)lib;$(VCInstallDir)atlmfc\lib;$(WindowsSDK_LibraryPath_x86);C:\mssdk\lib;</LibraryPath>
+  </PropertyGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <ClCompile>
+      <Optimization>Disabled</Optimization>
+      <IntrinsicFunctions>true</IntrinsicFunctions>
+      <OmitFramePointers>true</OmitFramePointers>
+      <AdditionalIncludeDirectories>../mfc;../vm;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>WIN32;_WINDOWS;_DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <MinimalRebuild>true</MinimalRebuild>
+      <BasicRuntimeChecks>EnableFastChecks</BasicRuntimeChecks>
+      <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
+      <EnableEnhancedInstructionSet>StreamingSIMDExtensions</EnableEnhancedInstructionSet>
+      <TreatWChar_tAsBuiltInType>true</TreatWChar_tAsBuiltInType>
+      <PrecompiledHeader />
+      <PrecompiledHeaderFile>os.h</PrecompiledHeaderFile>
+      <AssemblerOutput />
+      <WarningLevel>Level4</WarningLevel>
+      <DebugInformationFormat>EditAndContinue</DebugInformationFormat>
+    </ClCompile>
+    <Link>
+      <AdditionalDependencies>imm32.lib;winmm.lib;version.lib;dinput.lib;dsound.lib;dxguid.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <SubSystem>Windows</SubSystem>
+      <TargetMachine>MachineX86</TargetMachine>
+      <ImageHasSafeExceptionHandlers>false</ImageHasSafeExceptionHandlers>
+    </Link>
+    <Midl>
+      <PreprocessorDefinitions>_DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <MkTypLibCompatible>false</MkTypLibCompatible>
+    </Midl>
+    <ResourceCompile>
+      <PreprocessorDefinitions>_DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <Culture>0x0411</Culture>
+      <AdditionalIncludeDirectories>$(IntDir);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+    </ResourceCompile>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <ClCompile>
+      <InlineFunctionExpansion>AnySuitable</InlineFunctionExpansion>
+      <IntrinsicFunctions>true</IntrinsicFunctions>
+      <FavorSizeOrSpeed>Speed</FavorSizeOrSpeed>
+      <OmitFramePointers>true</OmitFramePointers>
+      <AdditionalIncludeDirectories>../mfc;../vm;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>WIN32;_WINDOWS;NDEBUG;_CRT_SECURE_NO_WARNINGS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <MinimalRebuild>false</MinimalRebuild>
+      <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
+      <BufferSecurityCheck>false</BufferSecurityCheck>
+      <EnableEnhancedInstructionSet>StreamingSIMDExtensions</EnableEnhancedInstructionSet>
+      <TreatWChar_tAsBuiltInType>true</TreatWChar_tAsBuiltInType>
+      <PrecompiledHeader />
+      <PrecompiledHeaderFile>os.h</PrecompiledHeaderFile>
+      <AssemblerOutput>AssemblyAndSourceCode</AssemblerOutput>
+      <WarningLevel>Level4</WarningLevel>
+      <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
+    </ClCompile>
+    <Link>
+      <AdditionalDependencies>imm32.lib;winmm.lib;version.lib;dinput.lib;dsound.lib;dxguid.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <GenerateMapFile>false</GenerateMapFile>
+      <MapFileName />
+      <SubSystem>Windows</SubSystem>
+      <OptimizeReferences>true</OptimizeReferences>
+      <EnableCOMDATFolding>true</EnableCOMDATFolding>
+      <TargetMachine>MachineX86</TargetMachine>
+      <ImageHasSafeExceptionHandlers>false</ImageHasSafeExceptionHandlers>
+    </Link>
+    <Midl>
+      <PreprocessorDefinitions>NDEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <MkTypLibCompatible>false</MkTypLibCompatible>
+    </Midl>
+    <ResourceCompile>
+      <PreprocessorDefinitions>NDEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <Culture>0x0411</Culture>
+      <AdditionalIncludeDirectories>$(IntDir);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+    </ResourceCompile>
+  </ItemDefinitionGroup>
+  <ItemGroup>
+    <ClCompile Include="..\vm\adpcm.cpp" />
+    <ClCompile Include="..\vm\areaset.cpp" />
+    <ClCompile Include="..\vm\cpu.cpp" />
+    <ClCompile Include="..\vm\cpudebug.c">
+      <ObjectFileName Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(IntDir)%(Filename)1.obj</ObjectFileName>
+      <ObjectFileName Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(IntDir)%(Filename)1.obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\vm\crtc.cpp" />
+    <ClCompile Include="..\vm\device.cpp" />
+    <ClCompile Include="..\vm\disk.cpp" />
+    <ClCompile Include="..\vm\dmac.cpp" />
+    <ClCompile Include="..\vm\event.cpp" />
+    <ClCompile Include="..\vm\fdc.cpp" />
+    <ClCompile Include="..\vm\fdd.cpp" />
+    <ClCompile Include="..\vm\fdi.cpp" />
+    <ClCompile Include="..\vm\fileio.cpp" />
+    <ClCompile Include="..\vm\filepath.cpp" />
+    <ClCompile Include="..\vm\fmgen.cpp" />
+    <ClCompile Include="..\vm\fmtimer.cpp" />
+    <ClCompile Include="..\vm\gvram.cpp" />
+    <ClCompile Include="..\vm\iosc.cpp" />
+    <ClCompile Include="..\vm\keyboard.cpp" />
+    <ClCompile Include="..\vm\log.cpp" />
+    <ClCompile Include="..\vm\memory.cpp" />
+    <ClCompile Include="..\vm\mercury.cpp" />
+    <ClCompile Include="..\vm\mfp.cpp" />
+    <ClCompile Include="..\vm\midi.cpp" />
+    <ClCompile Include="..\vm\mouse.cpp" />
+    <ClCompile Include="..\vm\neptune.cpp" />
+    <ClCompile Include="..\vm\opm.cpp" />
+    <ClCompile Include="..\vm\opmif.cpp" />
+    <ClCompile Include="..\vm\ppi.cpp" />
+    <ClCompile Include="..\vm\printer.cpp" />
+    <ClCompile Include="..\vm\render.cpp" />
+    <ClCompile Include="..\vm\rtc.cpp" />
+    <ClCompile Include="..\vm\sasi.cpp" />
+    <ClCompile Include="..\vm\scc.cpp" />
+    <ClCompile Include="..\vm\schedule.cpp" />
+    <ClCompile Include="..\vm\scsi.cpp" />
+    <ClCompile Include="..\vm\sprite.cpp" />
+    <ClCompile Include="..\vm\sram.cpp" />
+    <ClCompile Include="..\vm\sync.cpp" />
+    <ClCompile Include="..\vm\sysport.cpp" />
+    <ClCompile Include="..\vm\tvram.cpp" />
+    <ClCompile Include="..\vm\vc.cpp" />
+    <ClCompile Include="..\vm\vm.cpp" />
+    <ClCompile Include="..\vm\windrv.cpp" />
+    <ClCompile Include="..\mfc\mfc_app.cpp" />
+    <ClCompile Include="..\mfc\mfc_cfg.cpp" />
+    <ClCompile Include="..\mfc\mfc_cmd.cpp" />
+    <ClCompile Include="..\mfc\mfc_com.cpp" />
+    <ClCompile Include="..\mfc\mfc_cpu.cpp" />
+    <ClCompile Include="..\mfc\mfc_dev.cpp" />
+    <ClCompile Include="..\mfc\mfc_draw.cpp" />
+    <ClCompile Include="..\mfc\mfc_frm.cpp" />
+    <ClCompile Include="..\mfc\mfc_host.cpp" />
+    <ClCompile Include="..\mfc\mfc_info.cpp" />
+    <ClCompile Include="..\mfc\mfc_inp.cpp" />
+    <ClCompile Include="..\mfc\mfc_midi.cpp" />
+    <ClCompile Include="..\mfc\mfc_port.cpp" />
+    <ClCompile Include="..\mfc\mfc_que.cpp" />
+    <ClCompile Include="..\mfc\mfc_rend.cpp" />
+    <ClCompile Include="..\mfc\mfc_sch.cpp" />
+    <ClCompile Include="..\mfc\mfc_snd.cpp" />
+    <ClCompile Include="..\mfc\mfc_stat.cpp" />
+    <ClCompile Include="..\mfc\mfc_sub.cpp" />
+    <ClCompile Include="..\mfc\mfc_sys.cpp" />
+    <ClCompile Include="..\mfc\mfc_tkey.cpp" />
+    <ClCompile Include="..\mfc\mfc_tool.cpp" />
+    <ClCompile Include="..\mfc\mfc_ver.cpp" />
+    <ClCompile Include="..\mfc\mfc_vid.cpp" />
+    <ClCompile Include="..\mfc\mfc_w32.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <CustomBuild Include="..\vm\core_asm.asm">
+      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">nasmw -f win32 -o $(IntDir)%(Filename).obj %(FullPath)
+</Command>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(IntDir)%(Filename).obj;%(Outputs)</Outputs>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">nasmw -f win32 -o $(IntDir)%(Filename).obj %(FullPath)
+</Command>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(IntDir)%(Filename).obj;%(Outputs)</Outputs>
+    </CustomBuild>
+    <CustomBuild Include="..\vm\rend_asm.asm">
+      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">nasmw -f win32 -o $(IntDir)%(Filename).obj %(FullPath)
+</Command>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(IntDir)%(Filename).obj;%(Outputs)</Outputs>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">nasmw -f win32 -o $(IntDir)%(Filename).obj %(FullPath)
+</Command>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(IntDir)%(Filename).obj;%(Outputs)</Outputs>
+    </CustomBuild>
+    <CustomBuild Include="..\cpu\star.asm">
+      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">%(RootDir)%(Directory)\star %(RootDir)%(Directory)\star.asm
+nasmw -f win32 -o $(IntDir)%(Filename).obj %(FullPath)
+</Command>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(IntDir)%(Filename).obj;%(Outputs)</Outputs>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">%(RootDir)%(Directory)\star %(RootDir)%(Directory)\star.asm
+nasmw -f win32 -o $(IntDir)%(Filename).obj %(FullPath)
+</Command>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(IntDir)%(Filename).obj;%(Outputs)</Outputs>
+    </CustomBuild>
+    <CustomBuild Include="..\mfc\mfc_asm.asm">
+      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">nasmw -f win32 -o $(IntDir)%(Filename).obj %(FullPath)
+</Command>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(IntDir)%(Filename).obj;%(Outputs)</Outputs>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">nasmw -f win32 -o $(IntDir)%(Filename).obj %(FullPath)
+</Command>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(IntDir)%(Filename).obj;%(Outputs)</Outputs>
+    </CustomBuild>
+  </ItemGroup>
+  <ItemGroup>
+    <ResourceCompile Include="..\mfc\mfc_res.rc">
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(IntDir);..\;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(IntDir);..\;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+    </ResourceCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="adpcm.h" />
+    <ClInclude Include="areaset.h" />
+    <ClInclude Include="cisc.h" />
+    <ClInclude Include="config.h" />
+    <ClInclude Include="core_asm.h" />
+    <ClInclude Include="cpu.h" />
+    <ClInclude Include="crtc.h" />
+    <ClInclude Include="device.h" />
+    <ClInclude Include="disk.h" />
+    <ClInclude Include="dmac.h" />
+    <ClInclude Include="event.h" />
+    <ClInclude Include="fdc.h" />
+    <ClInclude Include="fdd.h" />
+    <ClInclude Include="fdi.h" />
+    <ClInclude Include="fileio.h" />
+    <ClInclude Include="filepath.h" />
+    <ClInclude Include="fmgen.h" />
+    <ClInclude Include="fmgeninl.h" />
+    <ClInclude Include="fmtimer.h" />
+    <ClInclude Include="gvram.h" />
+    <ClInclude Include="iosc.h" />
+    <ClInclude Include="keyboard.h" />
+    <ClInclude Include="log.h" />
+    <ClInclude Include="memory.h" />
+    <ClInclude Include="mfp.h" />
+    <ClInclude Include="midi.h" />
+    <ClInclude Include="mouse.h" />
+    <ClInclude Include="opm.h" />
+    <ClInclude Include="opmif.h" />
+    <ClInclude Include="os.h" />
+    <ClInclude Include="ppi.h" />
+    <ClInclude Include="printer.h" />
+    <ClInclude Include="rend_asm.h" />
+    <ClInclude Include="render.h" />
+    <ClInclude Include="renderin.h" />
+    <ClInclude Include="rtc.h" />
+    <ClInclude Include="sasi.h" />
+    <ClInclude Include="scc.h" />
+    <ClInclude Include="schedule.h" />
+    <ClInclude Include="sprite.h" />
+    <ClInclude Include="sram.h" />
+    <ClInclude Include="starcpu.h" />
+    <ClInclude Include="sync.h" />
+    <ClInclude Include="sysport.h" />
+    <ClInclude Include="tvram.h" />
+    <ClInclude Include="vc.h" />
+    <ClInclude Include="vm.h" />
+    <ClInclude Include="windrv.h" />
+    <ClInclude Include="xm6.h" />
+    <ClInclude Include="cpudebug.h" />
+    <ClInclude Include="mfc.h" />
+    <ClInclude Include="mfc_app.h" />
+    <ClInclude Include="mfc_asm.h" />
+    <ClInclude Include="mfc_cfg.h" />
+    <ClInclude Include="mfc_com.h" />
+    <ClInclude Include="mfc_cpu.h" />
+    <ClInclude Include="mfc_dev.h" />
+    <ClInclude Include="mfc_draw.h" />
+    <ClInclude Include="mfc_frm.h" />
+    <ClInclude Include="mfc_inp.h" />
+    <ClInclude Include="mfc_midi.h" />
+    <ClInclude Include="mfc_port.h" />
+    <ClInclude Include="mfc_que.h" />
+    <ClInclude Include="mfc_rend.h" />
+    <ClInclude Include="mfc_res.h" />
+    <ClInclude Include="mfc_sch.h" />
+    <ClInclude Include="mfc_snd.h" />
+    <ClInclude Include="mfc_stat.h" />
+    <ClInclude Include="mfc_sub.h" />
+    <ClInclude Include="mfc_sys.h" />
+    <ClInclude Include="mfc_tool.h" />
+    <ClInclude Include="mfc_ver.h" />
+    <ClInclude Include="mfc_vid.h" />
+    <ClInclude Include="mfc_w32.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="star.vcxproj">
+      <Project>{73cb5212-2ebc-4b6f-9b40-8daa46fb0ab2}</Project>
+      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
+    </ProjectReference>
+  </ItemGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
+  <ImportGroup Label="ExtensionTargets">
+  </ImportGroup>
+</Project>
