@@ -64,7 +64,7 @@ Scheduler::Scheduler(VM *p) : Device(p)
 
 	// CPU
 	sch.clock = 0;
-	sch.speed = 979;
+	sch.speed = 2200;
 	sch.cycle = 0;
 	sch.time = 0;
 
@@ -1164,7 +1164,7 @@ const DWORD Scheduler::ClockTable[] = {
 	1460,			// 15MHz
 	1556,			// 16MHz
 	1689,			// 17.4MHz
-	3000			// 30MHz
+	2200			// 22MHz
 };
 
 //---------------------------------------------------------------------------

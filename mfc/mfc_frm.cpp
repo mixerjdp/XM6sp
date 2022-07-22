@@ -1134,7 +1134,7 @@ BOOL FASTCALL CFrmWnd::InitCmdSub(int nDrive, LPCTSTR lpszPath)
 	if (pFDI) {
 		if (pFDI->GetID() == MAKEID('B', 'A', 'D', ' ')) {
 			::GetMsg(IDS_BADFDI_WARNING, strMsg);
-			MessageBox(strMsg, NULL, MB_ICONSTOP | MB_OK);
+			//MessageBox(strMsg, NULL, MB_ICONSTOP | MB_OK);
 		}
 
 		// Se reinicia solo cuando se asigna el disquete

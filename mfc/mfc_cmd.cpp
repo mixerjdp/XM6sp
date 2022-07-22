@@ -1012,7 +1012,7 @@ void FASTCALL CFrmWnd::OnFDOpen(int nDrive)
 	// 成功なら、BADイメージ警告
 	if (pFDI->GetID() == MAKEID('B', 'A', 'D', ' ')) {
 		::GetMsg(IDS_BADFDI_WARNING, strMsg);
-		MessageBox(strMsg, NULL, MB_ICONSTOP | MB_OK);
+		//MessageBox(strMsg, NULL, MB_ICONSTOP | MB_OK);
 	}
 }
 
@@ -1163,7 +1163,7 @@ void FASTCALL CFrmWnd::OnFDMRU(int nDrive, int nMRU)
 		// BADイメージ警告
 		if (pFDI->GetID() == MAKEID('B', 'A', 'D', ' ')) {
 			::GetMsg(IDS_BADFDI_WARNING, strMsg);
-			MessageBox(strMsg, NULL, MB_ICONSTOP | MB_OK);
+			//MessageBox(strMsg, NULL, MB_ICONSTOP | MB_OK);
 		}
 	}
 }
