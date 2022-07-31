@@ -1355,7 +1355,8 @@ void FASTCALL CFrmWnd::ApplyCfg()
 	// Ventana del marco (raton)
 	m_bMouseMid = config.mouse_mid;
 	m_bAutoMouse = config.auto_mouse;
-	RutaSaveStates = config.ruta_savestate;
+	if (RutaSaveStates.GetLength() == 0)
+		RutaSaveStates = config.ruta_savestate;
 	//int msgboxID = MessageBox(RutaSaveStates,"rutasave",  2 );	
 	if (config.mouse_port == 0) {
 		// Modo raton desactivado si no hay conexion con el raton.

@@ -390,40 +390,40 @@ BEGIN
         MENUITEM "&Interrupcion",               IDM_INTERRUPT
         MENUITEM "&Encendido",                  IDM_POWER        
         MENUITEM SEPARATOR
-        MENUITEM "E&xit\tAlt+F4",               IDM_EXIT
+        MENUITEM "&Salir\tAlt+F4",               IDM_EXIT
     END
     POPUP "Floppy Disco #&0"
     BEGIN
-        MENUITEM "&Open...",                    IDM_D0OPEN
-        MENUITEM "&Eject",                      IDM_D0EJECT
-        MENUITEM "&Write Protect",              IDM_D0WRITEP
+        MENUITEM "&Abrir...",                    IDM_D0OPEN
+        MENUITEM "&Expulsar",                      IDM_D0EJECT
+        MENUITEM "&Proteger contra escritura",              IDM_D0WRITEP
         MENUITEM SEPARATOR
-        MENUITEM "&Force Eject",                IDM_D0FORCE
+        MENUITEM "Expulsion &forzada",                IDM_D0FORCE
         MENUITEM "&Insertar inv·lido",          IDM_D0INVALID
     END
     POPUP "Floppy Disco #&1"
     BEGIN
-        MENUITEM "&Open...",                    IDM_D1OPEN
-        MENUITEM "&Eject",                      IDM_D1EJECT
-        MENUITEM "&Write Protect",              IDM_D1WRITEP
+        MENUITEM "&Abrir...",                    IDM_D1OPEN
+        MENUITEM "&Expulsar",                      IDM_D1EJECT
+        MENUITEM "&Proteger contra escritura",              IDM_D1WRITEP
         MENUITEM SEPARATOR
-        MENUITEM "&Force Eject",                IDM_D1FORCE
+        MENUITEM "Expulsion &forzada",                IDM_D1FORCE
         MENUITEM "&Insertar inv·lido",          IDM_D1INVALID
     END
     POPUP "&MO Disco"
     BEGIN
-        MENUITEM "&Open...",                    IDM_MOOPEN
-        MENUITEM "&Eject",                      IDM_MOEJECT
-        MENUITEM "&Write Protect",              IDM_MOWRITEP
+        MENUITEM "&Abrir...",                    IDM_MOOPEN
+        MENUITEM "&Expulsar",                      IDM_MOEJECT
+        MENUITEM "&Proteger contra escritura",              IDM_MOWRITEP
         MENUITEM SEPARATOR
-        MENUITEM "&Force Eject",                IDM_MOFORCE
+        MENUITEM "Expulsion &forzada",                IDM_MOFORCE
     END
     POPUP "&CD-ROM"
     BEGIN
-        MENUITEM "&Open...",                    IDM_CDOPEN
-        MENUITEM "&Eject",                      IDM_CDEJECT
+        MENUITEM "&Abrir...",                    IDM_CDOPEN
+        MENUITEM "&Expulsar",                      IDM_CDEJECT
         MENUITEM SEPARATOR
-        MENUITEM "&Force Eject",                IDM_CDFORCE
+        MENUITEM "Expulsion &forzada",                IDM_CDFORCE
     END
     POPUP "&Ver"
     BEGIN
@@ -512,7 +512,7 @@ BEGIN
     END
     POPUP "&Depurar"
     BEGIN
-        MENUITEM "E&xecute",                    IDM_EXEC
+        MENUITEM "E&jecutar",                    IDM_EXEC
         MENUITEM "&Break\tAlt+F12",             IDM_BREAK
         MENUITEM "&Trace\tShift+F12",           IDM_TRACE
         MENUITEM SEPARATOR
@@ -520,7 +520,7 @@ BEGIN
     END
     POPUP "&Herramientas"
     BEGIN
-        MENUITEM "&Mouse Mode\tF12",            IDM_MOUSEMODE
+        MENUITEM "&Modo Mouse\tF12",            IDM_MOUSEMODE
         MENUITEM "Software &Keyboard",          IDM_SOFTKEY
         MENUITEM SEPARATOR
         MENUITEM "Adjust &Time",                IDM_TIMEADJ
@@ -557,53 +557,54 @@ BEGIN
     BEGIN
         POPUP "&Archivo"
         BEGIN
-            MENUITEM "&Open...",                    IDM_OPEN
-            MENUITEM "&Save",                       IDM_SAVE
-            MENUITEM "Guardado R·pido...",                 IDM_SAVEAS
+            MENUITEM "&Abrir...",                   IDM_OPEN
+            MENUITEM "Carga r·pida\tF7",            ID_FILE_CARGAR40006
+            MENUITEM "&Guardar",                    IDM_SAVE
+            MENUITEM "Guardado R·pido\tF5",         IDM_SAVEAS
             MENUITEM SEPARATOR
             MENUITEM "&Reset",                      IDM_RESET            
             MENUITEM SEPARATOR
-            MENUITEM "&Interrupt",                  IDM_INTERRUPT
-            MENUITEM "&Power Switch",               IDM_POWER            
+            MENUITEM "&Interrupcion",                  IDM_INTERRUPT
+            MENUITEM "&Encender/Apagar",               IDM_POWER            
             MENUITEM SEPARATOR
-            MENUITEM "E&xit\tAlt+F4",               IDM_EXIT
+            MENUITEM "&Salir\tAlt+F4",               IDM_EXIT
         END
         POPUP "Floppy Disco #&0"
         BEGIN
-            MENUITEM "&Open...",                    IDM_D0OPEN
-            MENUITEM "&Eject",                      IDM_D0EJECT
-            MENUITEM "&Write Protect",              IDM_D0WRITEP
+            MENUITEM "&Abrir...",                    IDM_D0OPEN
+            MENUITEM "&Expulsar",                      IDM_D0EJECT
+            MENUITEM "&Proteger contra escritura",              IDM_D0WRITEP
             MENUITEM SEPARATOR
-            MENUITEM "&Force Eject",                IDM_D0FORCE
-            MENUITEM "&Invalid Insert",             IDM_D0INVALID
+            MENUITEM "Expulsion &forzada",                IDM_D0FORCE
+            MENUITEM "&Insertar inv·lido",             IDM_D0INVALID
         END
         POPUP "Floppy Disco #&1"
         BEGIN
-            MENUITEM "&Open...",                    IDM_D1OPEN
-            MENUITEM "&Eject",                      IDM_D1EJECT
-            MENUITEM "&Write Protect",              IDM_D1WRITEP
+            MENUITEM "&Abrir...",                    IDM_D1OPEN
+            MENUITEM "&Expulsar",                      IDM_D1EJECT
+            MENUITEM "&Proteger contra escritura",              IDM_D1WRITEP
             MENUITEM SEPARATOR
-            MENUITEM "&Force Eject",                IDM_D1FORCE
-            MENUITEM "&Invalid Insert",             IDM_D1INVALID
+            MENUITEM "Expulsion &forzada",                IDM_D1FORCE
+            MENUITEM "&Insertar inv·lido",             IDM_D1INVALID
         END
         POPUP "&MO Drive"
         BEGIN
-            MENUITEM "&Open...",                    IDM_MOOPEN
-            MENUITEM "&Eject",                      IDM_MOEJECT
-            MENUITEM "&Write Protect",              IDM_MOWRITEP
+            MENUITEM "&Abrir...",                    IDM_MOOPEN
+            MENUITEM "&Expulsar",                      IDM_MOEJECT
+            MENUITEM "&Proteger contra escritura",              IDM_MOWRITEP
             MENUITEM SEPARATOR
-            MENUITEM "&Force Eject",                IDM_MOFORCE
+            MENUITEM "Expulsion &forzada",                IDM_MOFORCE
         END
         POPUP "&CD-ROM"
         BEGIN
-            MENUITEM "&Open...",                    IDM_CDOPEN
-            MENUITEM "&Eject",                      IDM_CDEJECT
+            MENUITEM "&Abrir...",                    IDM_CDOPEN
+            MENUITEM "&Expulsar",                      IDM_CDEJECT
             MENUITEM SEPARATOR
-            MENUITEM "&Force Eject",                IDM_CDFORCE
+            MENUITEM "Expulsion &forzada",                IDM_CDFORCE
         END
         POPUP "&Vista"
         BEGIN
-            POPUP "&System"
+            POPUP "&Sistema"
             BEGIN
                 MENUITEM "&Log",                        IDM_LOG
                 MENUITEM "&Scheduler",                  IDM_SCHEDULER
@@ -697,7 +698,7 @@ BEGIN
         END
         POPUP "&Herramientas"
         BEGIN
-            MENUITEM "&Mouse Mode\tF12",            IDM_MOUSEMODE
+            MENUITEM "&Modo mouse\tF12",            IDM_MOUSEMODE
             MENUITEM "Software &Keyboard",          IDM_SOFTKEY
             MENUITEM SEPARATOR
             MENUITEM "Adjust &Time",                IDM_TIMEADJ
@@ -715,12 +716,12 @@ BEGIN
         END
         POPUP "&Ventana"
         BEGIN
-            MENUITEM "&Cascade",                    IDM_CASCADE
+            MENUITEM "&Cascada",                    IDM_CASCADE
             MENUITEM "&Tile",                       IDM_TILE
             MENUITEM "&Iconic",                     IDM_ICONIC
             MENUITEM "&Arrange Icon",               IDM_ARRANGEICON
             MENUITEM "&Hide",                       IDM_HIDE
-            MENUITEM "&Restore",                    IDM_RESTORE
+            MENUITEM "&Restaurar",                    IDM_RESTORE
         END
         POPUP "&Ayuda"
         BEGIN
@@ -1410,14 +1411,14 @@ END
 
 IDD_US_ABOUTDLG DIALOGEX 0, 0, 184, 149
 STYLE DS_SETFONT | DS_MODALFRAME | WS_POPUP | WS_CAPTION | WS_SYSMENU
-CAPTION "About XM6"
+CAPTION "Sobre XM6"
 FONT 8, "MS Sans Serif", 0, 0, 0x0
 BEGIN
     DEFPUSHBUTTON   "Correcto",IDOK,52,128,89,14
     CONTROL         "",IDC_ABOUT_ICON,"Static",SS_BLACKFRAME,7,5,72,44
     LTEXT           "X68000 EMULATOR XM6",IDC_ABOUT_XM6,85,11,91,8
     LTEXT           "version %x.%02x (10/23/2006)",IDC_ABOUT_VER,85,27,91,8
-    LTEXT           "Copyright (C) 2001-2006 PI.",IDC_ABOUT_PI,47,57,88,8
+    LTEXT           "Trad: MiXeR CrÈdito a PI",IDC_ABOUT_PI,47,57,88,8
     LTEXT           "http://www.ipc-tokai.or.jp/~ytanaka/",IDC_ABOUT_URL,30,66,122,8
     LTEXT           "Starscream 680x0 emulation library\nby Neill Corlett (neill@neillcorlett.com)",IDC_ABOUT_CORLETT,22,83,146,16
     LTEXT           "FM Sound Generator with OPM interface\nCopyright (C) by cisc 1998, 2003.",IDC_ABOUT_CISC,22,104,146,16
@@ -2472,7 +2473,7 @@ BEGIN
     BEGIN
         BLOCK "041104b0"
         BEGIN
-            VALUE "FileDescription", "X68000 EMULATOR XM6"
+            VALUE "FileDescription", "X68000 EMULATOR XM6Sp"
             VALUE "FileVersion", "2, 0, 5, 1"
             VALUE "InternalName", "XM6 "
             VALUE "LegalCopyright", "Copyright (C) 2001-2022 ÇoÇhÅD"
@@ -3358,16 +3359,16 @@ END
 
 STRINGTABLE
 BEGIN
-    IDM_US_D0INVALID        "Insert a invalid media"
+    IDM_US_D0INVALID        "Inserta un medio inv·lido"
 END
 
 STRINGTABLE
 BEGIN
-    IDM_US_D1OPEN           "Open a floppy disk image file"
-    IDM_US_D1EJECT          "Eject disk normally"
-    IDM_US_D1WRITEP         "Protect against writing"
-    IDM_US_D1FORCE          "Eject disk forcedly"
-    IDM_US_D1INVALID        "Insert a invalid media"
+    IDM_US_D1OPEN           "Abre una imagen de floppy disk"
+    IDM_US_D1EJECT          "Expulsa disco normalmente"
+    IDM_US_D1WRITEP         "Protege contra escritura"
+    IDM_US_D1FORCE          "Expulsa disco forzosamente"
+    IDM_US_D1INVALID        "Inserta un medio inv·lido"
 END
 
 STRINGTABLE
@@ -3852,7 +3853,7 @@ END
 
 STRINGTABLE
 BEGIN
-    IDS_US_NEWFD            "New floppy image file has been created."
+    IDS_US_NEWFD            "Se ha creado nuevo archivo de Floppy."
     IDS_US_SASIOPEN         "SASI HD Image Files (*.HDF)|*.HDF|All Files (*.*)|*.*||"
     IDS_US_NEWSASI          "New SASI HD image file has been created."
     IDS_US_CREATEERR        "Creating image file is failed."
