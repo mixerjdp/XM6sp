@@ -1355,6 +1355,8 @@ void FASTCALL CFrmWnd::ApplyCfg()
 	// Ventana del marco (raton)
 	m_bMouseMid = config.mouse_mid;
 	m_bAutoMouse = config.auto_mouse;
+
+	// Para evitar Ruta SaveStates incorrecta *-*
 	if (RutaSaveStates.GetLength() == 0)
 		RutaSaveStates = config.ruta_savestate;
 	//int msgboxID = MessageBox(RutaSaveStates,"rutasave",  2 );	

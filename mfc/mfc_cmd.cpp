@@ -58,7 +58,6 @@ void CFrmWnd::OnOpen()
 	}
 	path.SetPath(szPath);
 			
-
 	// オープン前処理
 	if (!OnOpenPrep(path)) {
 		return;
@@ -69,7 +68,7 @@ void CFrmWnd::OnOpen()
 }
 
 
-
+// Apertura r疳ida de estados
 void CFrmWnd::OnFastOpen()
 {
 	Filepath path;
@@ -451,7 +450,7 @@ void CFrmWnd::OnSaveUI(CCmdUI *pCmdUI)
 
 //---------------------------------------------------------------------------
 //
-//	名前を付けて保存
+//	Guardado r疳ido
 //
 //---------------------------------------------------------------------------
 void CFrmWnd::OnSaveAs()
@@ -950,7 +949,7 @@ void CFrmWnd::OnFD(UINT uID)
 
 //---------------------------------------------------------------------------
 //
-//	フロッピーオープン
+//	Abrir rom floppy
 //
 //---------------------------------------------------------------------------
 void FASTCALL CFrmWnd::OnFDOpen(int nDrive)
@@ -1109,7 +1108,7 @@ void FASTCALL CFrmWnd::OnFDMedia(int nDrive, int nMedia)
 
 //---------------------------------------------------------------------------
 //
-//	フロッピーMRU
+//	Abrir desde MRU guardada
 //
 //---------------------------------------------------------------------------
 void FASTCALL CFrmWnd::OnFDMRU(int nDrive, int nMRU)
@@ -1329,11 +1328,7 @@ void CFrmWnd::OnFDOpenUI(CCmdUI *pCmdUI)
 		}
 
 		// あればメニューに追加
-		_tsplitpath(szMRU, szDrive, szDir, szFile, szExt);
-
-		
-
-
+		_tsplitpath(szMRU, szDrive, szDir, szFile, szExt);	
 		if (_tcslen(szDir) > 1) {
 			_tcscpy(szDir, _T("\\...\\"));
 		}
@@ -3466,7 +3461,7 @@ void CFrmWnd::OnStretchUI(CCmdUI *pCmdUI)
 
 //---------------------------------------------------------------------------
 //
-//	フルスクリーン
+//	Evento de pantalla completa
 //
 //---------------------------------------------------------------------------
 void CFrmWnd::OnFullScreen()
