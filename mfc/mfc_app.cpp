@@ -349,14 +349,14 @@ CApp::CApp() : CWinApp(_T("XM6"))
 
 //---------------------------------------------------------------------------
 //
-//	インスタンス初期化
+//	Iniciar linea de comandos
 //
 //---------------------------------------------------------------------------
 BOOL CApp::InitInstance()
 {
 	CFrmWnd *pFrmWnd;
 
-	
+	// En este apartado se verifica la linea de comando inicial para cargar un posible HDF *-*
 	// Get the string from the command line ('Run' in PocketPC)
 	CString testString(m_lpCmdLine);
 
