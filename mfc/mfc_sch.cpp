@@ -442,7 +442,8 @@ void FASTCALL CScheduler::Run()
 		m_pInput->Process(TRUE);
 
 		// Si dwExecCount supera el numero especificado, muestra una vez y fuerza el ajuste de tiempo
-		if (dwExecCount > 400) {
+		if (dwExecCount > 400) 
+		{
 			Refresh();
 			dwExecCount = 0;
 			m_dwExecTime = GetTime();
@@ -465,7 +466,7 @@ void FASTCALL CScheduler::Run()
 
 //---------------------------------------------------------------------------
 //
-//	リフレッシュ
+//	refrescar (por ejemplo, la memoria)
 //
 //---------------------------------------------------------------------------
 void FASTCALL CScheduler::Refresh()
@@ -477,23 +478,23 @@ void FASTCALL CScheduler::Refresh()
 	ASSERT_VALID(this);
 	ASSERT(m_pFrmWnd);
 
-	// ビューを取得
+	// Consigue la vista.
 	pView = m_pFrmWnd->GetView();
 	ASSERT(pView);
 
-	// サブウィンドウの個数を取得
+	//  Obtiene el numero de subventanas.
 	num = pView->GetSubWndNum();
 
-	// 個数が記憶値と違ったらリセット
+	// Reinicia si el numero de piezas es diferente al valor de la memoria.
 	if (m_nSubWndNum != num) {
 		m_nSubWndNum = num;
 		m_nSubWndDisp = -1;
 	}
 
 	if (m_bEnable) {
-		// 実行中でメイン画面の番か
+		// Esta en marcha y es el turno de la pantalla principal.
 		if (m_nSubWndDisp < 0) {
-			// レンダラの準備ができていなければ描画しない
+			// Si el renderizador no esta listo, no dibujara.
 			if (!m_pRender->IsReady()) {
 				return;
 			}
@@ -501,16 +502,16 @@ void FASTCALL CScheduler::Refresh()
 		}
 	}
 
-	// 表示(一部)
+	// Pantalla (parcial)
 	pView->Draw(m_nSubWndDisp);
 
-	// メイン画面表示なら、カウントダウン
+	// Si se muestra la pantalla principal, cuenta atras.
 	if (m_nSubWndDisp < 0) {
 		m_pRender->Complete();
 		m_dwDrawCount++;
 	}
 
-	// サイクリックに表示
+	// Vista de la ciclica
 	m_nSubWndDisp++;
 	if (m_nSubWndDisp >= m_nSubWndNum) {
 		m_nSubWndDisp = -1;
@@ -519,7 +520,7 @@ void FASTCALL CScheduler::Refresh()
 
 //---------------------------------------------------------------------------
 //
-//	逆アセンブラPCあわせ
+//	combinacion de PC con ensamblador inverso
 //
 //---------------------------------------------------------------------------
 void FASTCALL CScheduler::SyncDisasm()
@@ -532,16 +533,16 @@ void FASTCALL CScheduler::SyncDisasm()
 	ASSERT(this);
 	ASSERT_VALID(this);
 
-	// ビューを取得
+	// Consigue la vista.
 	pView = m_pFrmWnd->GetView();
 	ASSERT(pView);
 
-	// 最大8コまで
+	// Hasta un maximo de 8 piezas.
 	for (i=0; i<8; i++) {
 		dwID = MAKEID('D', 'I', 'S', ('A' + i));
 		pWnd = (CDisasmWnd*)pView->SearchSWnd(dwID);
 		if (pWnd) {
-			// 見つかった
+			// Resultados.
 			pWnd->SetPC(m_pCPU->GetPC());
 		}
 	}
@@ -549,7 +550,7 @@ void FASTCALL CScheduler::SyncDisasm()
 
 //---------------------------------------------------------------------------
 //
-//	フレームレート取得
+//	Adquisicion de la velocidad de fotogramas
 //
 //---------------------------------------------------------------------------
 int FASTCALL CScheduler::GetFrameRate()
@@ -561,12 +562,12 @@ int FASTCALL CScheduler::GetFrameRate()
 	ASSERT(this);
 	ASSERT_VALID(this);
 
-	// 無効チェック
+	// control invalido
 	if (!m_bEnable) {
 		return 0;
 	}
 
-	// 時間取得(ループ対応、長い場合は初期化)
+	// Adquisicion de tiempo (soporte de bucle, inicializacion si es largo)
 	dwTime = GetTime();
 	if (dwTime <= m_dwDrawTime) {
 		m_dwDrawTime = dwTime;
@@ -584,7 +585,7 @@ int FASTCALL CScheduler::GetFrameRate()
 		return 0;
 	}
 
-	// 差が500ms以下なら普通に処理
+	// Si la diferencia es inferior a 500 ms, el proceso es normal.
 	if (dwDiff < 500) {
 		m_dwDrawBackup = 0;
 		dwDiff /= 10;
@@ -595,7 +596,7 @@ int FASTCALL CScheduler::GetFrameRate()
 		return (dwCount / dwDiff);
 	}
 
-	// 差が1000ms以下なら記憶
+	// Memoria si la diferencia es inferior a 1000 ms.
 	if (dwDiff < 1000) {
 		if (m_dwDrawBackup == 0) {
 			m_dwDrawBackup = dwTime;
@@ -606,7 +607,7 @@ int FASTCALL CScheduler::GetFrameRate()
 		return (dwCount / dwDiff);
 	}
 
-	// それ以上なので、Prevに切り替え
+	// Mas que eso, asi que cambia a Prev
 	dwDiff /= 10;
 	dwCount = m_dwDrawCount * 1000;
 	m_dwDrawTime = m_dwDrawBackup;

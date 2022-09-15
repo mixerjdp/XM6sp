@@ -125,6 +125,7 @@ CInput::CInput(CFrmWnd *pWnd) : CComponent(pWnd)
 
 	// キーマップを初期化(Config Managerとの連携を考えた措置)
 	SetDefaultKeyMap(m_KeyMap);
+	xWnd = pWnd;
 }
 
 //---------------------------------------------------------------------------
@@ -180,6 +181,20 @@ BOOL FASTCALL CInput::Init()
 	// ジョイスティック
 	EnumJoy();
 	InitJoy();
+
+	// Obtener Joytypes actuales 
+	Config config;
+	xWnd->GetConfig()->GetConfig(&config);
+	CString sz;
+	for (int contx = 0; contx < 2; contx++)	{
+		joyType[contx] = config.joy_type[contx];
+	}
+	/*
+	sz.Format(_T("JOY[0]: %d   \r\n"), joyType[0]);
+	OutputDebugStringW(CT2W(sz));
+	sz.Format(_T("JOY[1]: %d   \r\n"), joyType[1]);
+	OutputDebugStringW(CT2W(sz));
+	*/
 
 	return TRUE;
 }
@@ -2090,15 +2105,25 @@ void FASTCALL CInput::MakeJoy(BOOL bEnable)
 			}
 #else
 			// Omitir si el eje no es valido.
-			//if (m_lJoyAxisMin[i][nAxis] == m_lJoyAxisMax[i][nAxis]) {
-			//	continue;
-			//}
-			dmy++; // dmy = naxis
-			// if (dmy >= 4) {
-			//	break;
-			// }
-#endif
+			
+			if (joyType[i] != 7)
+			{
+				if (m_lJoyAxisMin[i][nAxis] == m_lJoyAxisMax[i][nAxis]) {
+					continue;
+				}
+			}
 
+				dmy++; // dmy = naxis 
+
+			if (joyType[i] != 7)
+			{
+				if (dmy >= 4) {
+					break;
+				}
+			}
+			 
+#endif
+			 
 			// adquisicion de punteros
 			pOffset = (BYTE*)&m_JoyState[i];
 			pOffset += JoyAxisOffsetTable[nAxis];
@@ -2160,7 +2185,8 @@ void FASTCALL CInput::MakeJoy(BOOL bEnable)
 				//CString sz;
 				//sz.Format(_T("\nAxis: %d  lAxis: %d \n"), nAxis, lAxis);
 				//OutputDebugStringW(CT2W(sz));
-
+               
+			   
 				if (lAxis == 0) // Arriba
 					ji[HIWORD(m_JoyCfg[i].dwAxis[1])].axis[1] = (DWORD)-2048;
 				if (lAxis == 4500) // Arriba-Derecha

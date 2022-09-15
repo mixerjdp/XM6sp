@@ -3859,6 +3859,7 @@ void CJoyPage::OnOK()
 
 		// 設定値を得る
 		m_pConfig->joy_type[i] = pComboBox->GetCurSel();
+		m_pInput->joyType[i] = m_pConfig->joy_type[i];
 	}
 
 	// デバイスコンボボックス

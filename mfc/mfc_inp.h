@@ -38,6 +38,8 @@ public:
 		DWORD dwCount[JoyButtons];		// 連射カウンタ
 	} JOYCFG, *LPJOYCFG;
 
+	CFrmWnd* xWnd;
+	int joyType[2];
 public:
 	// 基本ファンクション
 	CInput(CFrmWnd *pWnd);
