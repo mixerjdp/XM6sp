@@ -2417,6 +2417,7 @@ void FASTCALL JoyCpsf::MakeData()
 		data[0] &= ~0x08;
 	}
 
+
 	// ボタンY
 	if (info->button[0]) {
 		data[1] &= ~0x02;
@@ -2446,6 +2447,42 @@ void FASTCALL JoyCpsf::MakeData()
 	if (info->button[5]) {
 		data[1] &= ~0x01;
 	}
+
+
+/* CPSFMD
+
+// ボタンA
+	if (info->button[0]) {
+		data[0] &= ~0x20;
+	}
+
+	// ボタンB
+	if (info->button[1]) {
+		data[0] &= ~0x40;
+	}
+
+	// ボタンC
+	if (info->button[2]) {
+		data[1] &= ~0x20;
+	}
+
+	// ボタンX
+	if (info->button[3]) {
+		data[1] &= ~0x04;
+	}
+
+	// ボタンY
+	if (info->button[4]) {
+		data[1] &= ~0x02;
+	}
+
+	// ボタンZ
+	if (info->button[5]) {
+		data[1] &= ~0x01;
+	}
+	*/
+
+
 
 	// スタートボタン
 	if (info->button[6]) {
@@ -2481,7 +2518,8 @@ const char* JoyCpsf::ButtonDescTable[] = {
 	"L",
 	"R",
 	"START",
-	"SELECT"
+	"SELECT",
+	"ALT"
 };
 
 //===========================================================================

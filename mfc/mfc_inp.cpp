@@ -92,7 +92,7 @@ CInput::CInput(CFrmWnd *pWnd) : CComponent(pWnd)
 		// 割り当てデバイス+1 (0は未割り当て)
 		m_JoyCfg[i].nDevice = i + 1;
 		for (nAxis=0; nAxis<JoyAxes; nAxis++) {
-			if (nAxis < 4) {
+			if (nAxis < 9) {
 				// dwAxisの設定:
 				// 上位ワード 割り当てポート (0x00000 or 0x10000)
 				// 下位ワード 割り当て軸+1 (1～4、0は未割り当て)
@@ -2097,68 +2097,52 @@ void FASTCALL CInput::MakeJoy(BOOL bEnable)
 		dmy = -1;
 
 		// eje
-		for (nAxis=0; nAxis<JoyAxes; nAxis++) {
-#if 0
-			// anulacion
-			if (LOWORD(m_JoyCfg[i].dwAxis[nAxis]) == 0) {
-				//continue;
-			}
-#else
-			// Omitir si el eje no es valido.
+		for (nAxis = 0; nAxis < JoyAxes; nAxis++) 
+		{
 			
-			if (joyType[i] != 7)
+			/*if (joyType[i] != 7)
 			{
 				if (m_lJoyAxisMin[i][nAxis] == m_lJoyAxisMax[i][nAxis]) {
-					continue;
+				//	continue;
 				}
-			}
-
-				dmy++; // dmy = naxis 
-
-			if (joyType[i] != 7)
+			}*/
+			dmy++; // dmy = naxis 
+			/*if (joyType[i] != 7)
 			{
 				if (dmy >= 4) {
-					break;
+					//break;
 				}
 			}
-			 
-#endif
-			 
-			// adquisicion de punteros
+			*/
+			
+
+		    // Obtener punteros
 			pOffset = (BYTE*)&m_JoyState[i];
 			pOffset += JoyAxisOffsetTable[nAxis];
 			pAxis = (LONG*)pOffset;
-
 			// adquisicion de datos
 			lAxis = *pAxis;
+			
 
 			//  El cero se ignora  ya que se repite, excepcion es el Pad direccion (POV).
 			//  Se hace comparacion con el primer Axis para comprobar que sea entrada nula para el continue
-			if ((lAxis == 0 && nAxis != 8)  || (lAxis == 0 && ji[HIWORD(m_JoyCfg[i].dwAxis[0])].axis[0] == 0))
-			{							
+			if ((lAxis == 0 && nAxis != 8) || (lAxis == 0 && ji[HIWORD(m_JoyCfg[i].dwAxis[0])].axis[0] == 0))
+			{
 				continue;
 			}
+
 			
-			// inversi
+				// inversi
 			if (m_JoyCfg[i].bAxis[nAxis]) {
 				// 7FF→-800 -800→7FF
 				lAxis = -1 - lAxis;
 			}
-
-#if 0
-			// Almacenado en la posicion de destino
-			ASSERT(HIWORD(m_JoyCfg[i].dwAxis[nAxis]) >= 0);
-			ASSERT(HIWORD(m_JoyCfg[i].dwAxis[nAxis]) < 2);
-			ASSERT(LOWORD(m_JoyCfg[i].dwAxis[nAxis]) > 0);
-			ASSERT(LOWORD(m_JoyCfg[i].dwAxis[nAxis]) <= 4);
-			ji[HIWORD(m_JoyCfg[i].dwAxis[nAxis])].axis[LOWORD(m_JoyCfg[i].dwAxis[nAxis]) - 1]
-				 = (DWORD)lAxis;
-#else
-			ji[HIWORD(m_JoyCfg[i].dwAxis[nAxis])].axis[dmy] = (DWORD)lAxis;
+			if (dmy < 4)
+			{
+				ji[HIWORD(m_JoyCfg[i].dwAxis[nAxis])].axis[dmy] = (DWORD)lAxis;
+			}
 			
-
-
-			/*
+		 	/*
 			PAD a Axis
 			
 			Arriba = 0
@@ -2219,17 +2203,15 @@ void FASTCALL CInput::MakeJoy(BOOL bEnable)
 
 
 
-
-
-
-#endif
 		}
 
-		// boton
+
+		// Pulsaci de bot de Joystick
 		for (nButton=0; nButton<JoyButtons; nButton++) {
 
 			if (nButton == 9) // 9 = Bot Start
-			{				
+			{		
+				
 				// Aqui se detecta pulsacion de boton 9 (Start) y Se bindea a tecla F1 *-*
 				if (m_JoyState[i].rgbButtons[nButton] == 0x80)
 				{
@@ -2238,8 +2220,17 @@ void FASTCALL CInput::MakeJoy(BOOL bEnable)
 					OutputDebugStringW(CT2W(sz));*/
 					m_pKeyboard->MakeKey(99);
 					m_pKeyboard->BreakKey(99);
+					//Sleep(1);					
 				}
 			}
+
+			/*
+			if (m_JoyState[i].rgbButtons[nButton] == 0x80)
+			{
+				CString sz;
+				sz.Format(_T("\nNo. Boton: %d  Status:%d \n"), nButton, m_JoyState[i].rgbButtons[nButton]);
+				OutputDebugStringW(CT2W(sz));
+			}*/
 
 
 
@@ -2388,9 +2379,9 @@ LONG FASTCALL CInput::GetJoyAxis(int nJoy, int nAxis) const
 	}
 
 	// 軸が存在しなければ、指定エラー
-	if (m_lJoyAxisMin[nJoy][nAxis] == m_lJoyAxisMax[nJoy][nAxis]) {
+	/*if (m_lJoyAxisMin[nJoy][nAxis] == m_lJoyAxisMax[nJoy][nAxis]) {
 		return 0x10000;
-	}
+	}*/
 
 	// 値を返す
 	pOffset = (BYTE*)&m_JoyState[nJoy];
