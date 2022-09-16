@@ -1890,8 +1890,26 @@ void FASTCALL CSubBMPWnd::Refresh()
 		if (hBitmap) {
 			if (m_nMul == 2) {
 				// “™”{
-				dc.BitBlt(0, 0, m_bmi.biWidth, -m_bmi.biHeight,
-									&mDC, 0, 0, SRCCOPY);
+			//	dc.BitBlt(0, 0, m_bmi.biWidth, -m_bmi.biHeight,
+				//					&mDC, 0, 0, SRCCOPY);
+				int mh = 50;
+				int mw = 50;
+
+				int bmibiwidth = 116 + m_bmi.biWidth;
+				int bmibiheight = 116 + -m_bmi.biHeight;
+				dc.StretchBlt(0, 0,
+					bmibiwidth,
+					bmibiheight,
+					&mDC,
+					0, 0,
+					m_bmi.biWidth, -m_bmi.biHeight,
+					SRCCOPY);
+
+
+				//CString sz;
+				//sz.Format(_T("\nOri biwidth:%d   Ori biheight:%d   Dest bmibiwidth: %d  Dest bmibiheigth: %d \n"), m_bmi.biWidth, -m_bmi.biHeight,  bmibiwidth, bmibiheight);
+				//OutputDebugStringW(CT2W(sz));
+
 			}
 			else {
 				// n”{

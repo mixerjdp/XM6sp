@@ -2215,9 +2215,9 @@ void FASTCALL CInput::MakeJoy(BOOL bEnable)
 				// Aqui se detecta pulsacion de boton 9 (Start) y Se bindea a tecla F1 *-*
 				if (m_JoyState[i].rgbButtons[nButton] == 0x80)
 				{
-					/*CString sz;
-					sz.Format(_T("\nNo. Boton: %d  Status:%d \n"), nButton, m_JoyState[i].rgbButtons[nButton]);
-					OutputDebugStringW(CT2W(sz));*/
+					/*
+					
+					*/
 					m_pKeyboard->MakeKey(99);
 					m_pKeyboard->BreakKey(99);
 					//Sleep(1);					
