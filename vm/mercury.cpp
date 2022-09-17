@@ -185,6 +185,8 @@ void FASTCALL Mercury::WriteByte(DWORD addr, DWORD data)
 	ASSERT(data < 0x100);
 	ASSERT_DIAG();
 
+	printf("%d",data);
+
 	// バスエラー
 	cpu->BusErr(addr, FALSE);
 }
@@ -215,6 +217,7 @@ DWORD FASTCALL Mercury::ReadOnly(DWORD addr) const
 	ASSERT(this);
 	ASSERT((addr >= memdev.first) && (addr <= memdev.last));
 	ASSERT_DIAG();
+	printf("%d", addr);
 
 	return 0xff;
 }

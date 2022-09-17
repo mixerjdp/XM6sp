@@ -301,6 +301,7 @@ void CLogWnd::OnDrawItem(int nID, LPDRAWITEMSTRUCT lpDIS)
 
 	// 文字列バッファ解放
 	delete[] logdata.string;
+	nID = 0;
 }
 
 //---------------------------------------------------------------------------

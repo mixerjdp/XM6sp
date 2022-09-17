@@ -485,6 +485,8 @@ BOOL FASTCALL Render::Save(Fileio *fio, int ver)
 	ASSERT(this);
 	LOG0(Log::Normal, "セーブ");
 
+	printf("%d %d", ver, fio);
+
 	return TRUE;
 }
 
@@ -497,6 +499,7 @@ BOOL FASTCALL Render::Load(Fileio *fio, int ver)
 {
 	ASSERT(this);
 	LOG0(Log::Normal, "ロード");
+	printf("%d %d", ver, fio);
 
 	return TRUE;
 }
@@ -510,6 +513,7 @@ void FASTCALL Render::ApplyCfg(const Config *config)
 {
 	ASSERT(config);
 	LOG0(Log::Normal, "設定適用");
+	printf("%d", config);
 }
 
 //---------------------------------------------------------------------------

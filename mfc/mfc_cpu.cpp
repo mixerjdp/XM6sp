@@ -752,6 +752,8 @@ void CCPURegWnd::OnLButtonDblClk(UINT nFlags, CPoint point)
 		index += 16;
 	}
 
+	printf("%d", nFlags);
+
 	// ダイアログ実行
 	dlg.m_nIndex = index;
 	dlg.DoModal();
@@ -1057,6 +1059,7 @@ void CIntWnd::OnLButtonDblClk(UINT nFlags, CPoint point)
 
 	// データ設定、アンロック
 	m_pCPU->SetCPU(&cpu);
+	printf("%d", nFlags);
 	::UnlockVM();
 }
 
@@ -1098,7 +1101,7 @@ WORD cpudebug_fetch(DWORD addr)
 	ASSERT(cpudebug_memory);
 
 	addr &= 0xfffffe;
-	w = cpudebug_memory->ReadOnly(addr);
+	w = (WORD)(cpudebug_memory->ReadOnly(addr));
 	w <<= 8;
 	w |= cpudebug_memory->ReadOnly(addr + 1);
 
@@ -1326,7 +1329,7 @@ void CDisasmWnd::OnLButtonDblClk(UINT nFlags, CPoint point)
 	else {
 		m_pScheduler->SetBreak(dwAddr);
 	}
-
+	printf("%d", nFlags);
 	// VMアンロック
 	::UnlockVM();
 }
@@ -1389,6 +1392,7 @@ void CDisasmWnd::OnVScroll(UINT nSBCode, UINT nPos, CScrollBar *pBar)
 					m_ScrlY += dwDiff;
 				}
 			}
+			
 			break;
 
 		// 1ページ上へ
@@ -1451,6 +1455,7 @@ void CDisasmWnd::OnVScroll(UINT nSBCode, UINT nPos, CScrollBar *pBar)
 		m_ScrlY = si.nMax;
 	}
 
+	pBar = NULL;
 	// セット
 	SetupScrlV();
 }

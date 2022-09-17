@@ -1140,6 +1140,8 @@ BOOL FASTCALL Disk::ModeSelect(const BYTE *buf, int size)
 	// 設定できない
 	disk.code = DISK_INVALIDPRM;
 
+	printf("%d %d", buf, size);
+
 	return FALSE;
 }
 
@@ -1800,6 +1802,8 @@ int FASTCALL Disk::ReadToc(const DWORD *cdb, BYTE *buf)
 	ASSERT(cdb[0] == 0x43);
 	ASSERT(buf);
 
+	printf("%d %d", buf, cdb);
+
 	// このコマンドはサポートしない
 	disk.code = DISK_INVALIDCMD;
 	return FALSE;
@@ -1815,6 +1819,8 @@ BOOL FASTCALL Disk::PlayAudio(const DWORD *cdb)
 	ASSERT(this);
 	ASSERT(cdb);
 	ASSERT(cdb[0] == 0x45);
+
+	printf("%d", cdb);
 
 	// このコマンドはサポートしない
 	disk.code = DISK_INVALIDCMD;
@@ -1832,6 +1838,7 @@ BOOL FASTCALL Disk::PlayAudioMSF(const DWORD *cdb)
 	ASSERT(cdb);
 	ASSERT(cdb[0] == 0x47);
 
+	printf("%d", cdb);
 	// このコマンドはサポートしない
 	disk.code = DISK_INVALIDCMD;
 	return FALSE;
@@ -1847,7 +1854,7 @@ BOOL FASTCALL Disk::PlayAudioTrack(const DWORD *cdb)
 	ASSERT(this);
 	ASSERT(cdb);
 	ASSERT(cdb[0] == 0x48);
-
+	printf("%d", cdb);
 	// このコマンドはサポートしない
 	disk.code = DISK_INVALIDCMD;
 	return FALSE;
@@ -2420,6 +2427,8 @@ void FASTCALL CDTrack::AddIndex(int index, DWORD lba)
 	ASSERT(first_lba <= lba);
 	ASSERT(lba <= last_lba);
 
+	printf("%d %d", lba, index);
+
 	// 現在はインデックスはサポートしない
 	ASSERT(FALSE);
 }
@@ -2760,6 +2769,7 @@ BOOL FASTCALL SCSICD::OpenCue(const Filepath& path)
 {
 	ASSERT(this);
 
+	printf("%d", path);
 	// 常に失敗
 	return FALSE;
 }
@@ -3113,7 +3123,7 @@ int FASTCALL SCSICD::ReadToc(const DWORD *cdb, BYTE *buf)
 BOOL FASTCALL SCSICD::PlayAudio(const DWORD *cdb)
 {
 	ASSERT(this);
-
+	printf("%d", cdb);
 	disk.code = DISK_INVALIDCDB;
 	return FALSE;
 }
@@ -3126,7 +3136,7 @@ BOOL FASTCALL SCSICD::PlayAudio(const DWORD *cdb)
 BOOL FASTCALL SCSICD::PlayAudioMSF(const DWORD *cdb)
 {
 	ASSERT(this);
-
+	printf("%d", cdb);
 	disk.code = DISK_INVALIDCDB;
 	return FALSE;
 }
@@ -3139,7 +3149,7 @@ BOOL FASTCALL SCSICD::PlayAudioMSF(const DWORD *cdb)
 BOOL FASTCALL SCSICD::PlayAudioTrack(const DWORD *cdb)
 {
 	ASSERT(this);
-
+	printf("%d", cdb);
 	disk.code = DISK_INVALIDCDB;
 	return FALSE;
 }
@@ -3288,4 +3298,6 @@ BOOL FASTCALL SCSICD::NextFrame()
 void FASTCALL SCSICD::GetBuf(DWORD *buffer, int samples, DWORD rate)
 {
 	ASSERT(this);
+	printf("%d", samples);
+	printf("%d %d", buffer, rate);
 }

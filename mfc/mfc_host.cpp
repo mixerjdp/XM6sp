@@ -1790,7 +1790,7 @@ void CHostEntry::Clean()
 		if (nResult != WAIT_OBJECT_0) {
 			// 強制停止
 			ASSERT(FALSE);	// 念のため
-			::TerminateThread(m_hThread, -1);
+			::TerminateThread(m_hThread, (DWORD)-1);
 			nResult = ::WaitForSingleObject(m_hThread, 100);
 		}
 
@@ -3938,6 +3938,8 @@ int FASTCALL CWinFileSys::Close(CWindrv* ps, DWORD nKey, Human68k::fcb_t* pFcb)
 	//pHostFcb->Close();	// Free時に自動実行されるので不要
 	m_cFcb.Free(pHostFcb);
 
+	pFcb = NULL;
+
 	return 0;
 }
 
@@ -4531,6 +4533,7 @@ int FASTCALL CWinFileSys::DiskWrite(CWindrv* ps, DWORD nAddress, DWORD nSector, 
 	// 書き込み禁止チェック
 	if (m_cEntry.isWriteProtect(ps)) return FS_FATAL_WRITEPROTECT;
 
+	printf("%d %d %d", nAddress, nSector, nSize);
 	// 現実を突きつける
 	return FS_NOTIOCTRL;
 }
@@ -4556,7 +4559,7 @@ int FASTCALL CWinFileSys::IoControl(CWindrv* ps, Human68k::ioctrl_t* pIoctrl, DW
 
 	case 1:
 		// Human68k互換のためのダミー
-		pIoctrl->param = -1;
+		pIoctrl->param = (DWORD)-1;
 		return 0;
 
 	case 2:

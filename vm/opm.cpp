@@ -23,7 +23,7 @@ int OPM::pmtable[4][OPM_LFOENTS];
 OPM::OPM()
 {
 	lfo_count_ = 0;
-	lfo_count_prev_ = ~0;
+	lfo_count_prev_ = (UINT)~0;
 	BuildLFOTable();
 	for (int i=0; i<8; i++)
 	{
@@ -194,9 +194,9 @@ void OPM::SetReg(uint addr, uint data)
 		if (data & 2)
 		{
 			lfo_count_ = 0; 
-			lfo_count_prev_ = ~0;
+			lfo_count_prev_ = (uint)~0;
 		}
-		reg01 = data;
+		reg01 = (uint8)data;
 		break;
 		
 	case 0x08:					// KEYON
@@ -225,7 +225,7 @@ void OPM::SetReg(uint addr, uint data)
 		break;
 	
 	case 0x18:					// LFRQ(lfo freq)
-		lfofreq = data;
+		lfofreq = (uint8)data;
 
 		assert(16-4-FM_RATIOBITS >= 0);
 		lfo_count_diff_ = 
@@ -254,14 +254,14 @@ void OPM::SetReg(uint addr, uint data)
 								// KC
 	case 0x28: case 0x29: case 0x2a: case 0x2b:
 	case 0x2c: case 0x2d: case 0x2e: case 0x2f:
-		kc[c] = data;
+		kc[c] = (uint8)data;
 		ch[c].SetKCKF(kc[c], kf[c]);
 		break;
 		
 								// KF
 	case 0x30: case 0x31: case 0x32: case 0x33:
 	case 0x34: case 0x35: case 0x36: case 0x37:
-		kf[c] = data >> 2;
+		kf[c] = (uint8)data >> 2;
 		ch[c].SetKCKF(kc[c], kf[c]);
 		break;
 		

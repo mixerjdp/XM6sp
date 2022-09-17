@@ -183,6 +183,7 @@ BOOL FASTCALL VC::Load(Fileio *fio, int /*ver*/)
 void FASTCALL VC::ApplyCfg(const Config *config)
 {
 	ASSERT(config);
+	printf("%d", config);
 	LOG0(Log::Normal, "ê›íËìKóp");
 }
 

@@ -287,7 +287,7 @@ BOOL FASTCALL CWindrv::Terminate()
 		if (nResult != WAIT_OBJECT_0) {
 			// 強制停止
 			ASSERT(FALSE);	// 念のため
-			::TerminateThread(m_hThread, -1);
+			::TerminateThread(m_hThread, (DWORD)-1);
 			nResult = ::WaitForSingleObject(m_hThread, 100);
 			bResult = FALSE;
 		}
@@ -671,7 +671,8 @@ BOOL FASTCALL Windrv::Save(Fileio *fio, int ver)
 {
 	ASSERT(this);
 	LOG(Log::Normal, "セーブ");
-
+	
+	printf("%d %d", fio, ver);
 	return TRUE;
 }
 
@@ -684,7 +685,7 @@ BOOL FASTCALL Windrv::Load(Fileio *fio, int ver)
 {
 	ASSERT(this);
 	LOG(Log::Normal, "ロード");
-
+	printf("%d %d", fio, ver);
 	return TRUE;
 }
 

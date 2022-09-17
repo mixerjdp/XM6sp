@@ -246,7 +246,7 @@ BOOL FASTCALL Sprite::Load(Fileio *fio, int /*ver*/)
 		}
 		if (addr >= 0xc000) {
 			data = *(WORD*)(&sprite[addr]);
-			render->BGMem(addr, data);
+			render->BGMem(addr, (WORD)data);
 		}
 		render->PCGMem(addr);
 	}
@@ -263,6 +263,7 @@ void FASTCALL Sprite::ApplyCfg(const Config *config)
 {
 	ASSERT(config);
 	LOG0(Log::Normal, "設定適用");
+	printf("%d", config);
 }
 
 //---------------------------------------------------------------------------
@@ -424,7 +425,7 @@ void FASTCALL Sprite::WriteByte(DWORD addr, DWORD data)
 	}
 	if (addr >= 0xc000) {
 		ctrl = *(WORD*)(&sprite[addr]);
-		render->BGMem(addr, ctrl);
+		render->BGMem(addr, (WORD)ctrl);
 	}
 }
 
@@ -450,7 +451,7 @@ void FASTCALL Sprite::WriteWord(DWORD addr, DWORD data)
 
 	// 800～811はコントロールレジスタ
 	if ((addr >= 0x800) && (addr < 0x812)) {
-		*(WORD *)(&sprite[addr]) = data;
+		*(WORD *)(&sprite[addr]) = (WORD)data;
 		Control(addr, data);
 		return;
 	}
@@ -484,7 +485,7 @@ void FASTCALL Sprite::WriteWord(DWORD addr, DWORD data)
 		render->PCGMem(addr);
 	}
 	if (addr >= 0xc000) {
-		render->BGMem(addr, data);
+		render->BGMem(addr, (WORD)data);
 	}
 }
 
