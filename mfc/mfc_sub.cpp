@@ -3,7 +3,7 @@
 //	X68000 EMULATOR "XM6"
 //
 //	Copyright (C) 2001-2005 ÇoÇhÅD(ytanaka@ipc-tokai.or.jp)
-//	[ MFC ÉTÉuÉEÉBÉìÉhÉE ]
+//	[Subventana MFC]
 //
 //---------------------------------------------------------------------------
 
@@ -21,33 +21,33 @@
 
 //===========================================================================
 //
-//	ÉTÉuÉEÉBÉìÉhÉE
+//	subventana
 //
 //===========================================================================
 
 //---------------------------------------------------------------------------
 //
-//	ÉRÉìÉXÉgÉâÉNÉ^
+//	constructor
 //
 //---------------------------------------------------------------------------
 CSubWnd::CSubWnd()
 {
-	// ÉIÉuÉWÉFÉNÉg
+	// objeto
 	m_pSch = NULL;
 	m_pDrawView = NULL;
 	m_pNextWnd = NULL;
 
-	// ÉvÉçÉpÉeÉB
+	// propiedad
 	m_strCaption.Empty();
 	m_bEnable = TRUE;
 	m_dwID = 0;
 	m_bPopup = FALSE;
 
-	// ÉEÉBÉìÉhÉEÉTÉCÉY
+	// tamano de la ventana
 	m_nWidth = -1;
 	m_nHeight = -1;
 
-	// ÉeÉLÉXÉgÉtÉHÉìÉg
+	// fuente de texto
 	m_pTextFont = NULL;
 	m_tmWidth = -1;
 	m_tmHeight = -1;
@@ -55,7 +55,7 @@ CSubWnd::CSubWnd()
 
 //---------------------------------------------------------------------------
 //
-//	ÉÅÉbÉZÅ[ÉW É}ÉbÉv
+//	Mapa de mensajes
 //
 //---------------------------------------------------------------------------
 BEGIN_MESSAGE_MAP(CSubWnd, CWnd)
@@ -67,7 +67,7 @@ END_MESSAGE_MAP()
 
 //---------------------------------------------------------------------------
 //
-//	èâä˙âª
+//	inicializacion
 //
 //---------------------------------------------------------------------------
 BOOL FASTCALL CSubWnd::Init(CDrawView *pDrawView)
@@ -79,23 +79,23 @@ BOOL FASTCALL CSubWnd::Init(CDrawView *pDrawView)
 	ASSERT(pDrawView);
 	ASSERT(m_dwID != 0);
 
-	// DrawÉrÉÖÅ[ãLâØ
+	// Memoria de la vista de dibujo
 	ASSERT(!m_pDrawView);
 	m_pDrawView = pDrawView;
 	ASSERT(m_pDrawView);
 
-	// ÉtÉåÅ[ÉÄÉEÉBÉìÉhÉEéÊìæ
+	// Adquisicion de la ventana del marco
 	pFrmWnd = (CFrmWnd*)AfxGetApp()->m_pMainWnd;
 	ASSERT(pFrmWnd);
 
-	// ÉXÉPÉWÉÖÅ[ÉâéÊìæ
+	// Adquisicion del programador
 	ASSERT(!m_pSch);
 	m_pSch = pFrmWnd->GetScheduler();
 	ASSERT(m_pSch);
 
-	// ÉEÉBÉìÉhÉEçÏê¨
+	// creacion de ventanas
 	if (pFrmWnd->IsPopupSWnd()) {
-		// É|ÉbÉvÉAÉbÉv
+		// ventana emergente
 		m_bPopup = TRUE;
 		bRet = CreateEx(0,
 					pDrawView->GetWndClassName(),
@@ -103,26 +103,26 @@ BOOL FASTCALL CSubWnd::Init(CDrawView *pDrawView)
 					WS_POPUP | WS_OVERLAPPED | WS_SYSMENU | WS_CAPTION |
 					WS_VISIBLE | WS_MINIMIZEBOX | WS_BORDER,
 					0, 0,
-					100, 100,
+					400, 400,
 					pDrawView->m_hWnd,
 					(HMENU)0,
 					0);
 	}
 	else {
-		// É`ÉÉÉCÉãÉh
+		// ventana hija
 		m_bPopup = FALSE;
-		bRet = Create(NULL,
+		bRet = Create(NULL, 
 					m_strCaption,
 					WS_CHILD | WS_OVERLAPPED | WS_SYSMENU | WS_CAPTION |
 					WS_VISIBLE | WS_MINIMIZEBOX | WS_CLIPSIBLINGS,
-					CRect(0, 0, 100, 100),
+					CRect(0, 0, 400, 400),
 					pDrawView,
 					(UINT)m_dwID);
 	}
 
-	// ê¨å˜Ç∑ÇÍÇŒ
+	// Si tiene exito.
 	if (bRet) {
-		// êeÉEÉBÉìÉhÉEÇ÷ìoò^
+		// Registro en la ventana principal
 		m_pDrawView->AddSWnd(this);
 	}
 
@@ -131,7 +131,7 @@ BOOL FASTCALL CSubWnd::Init(CDrawView *pDrawView)
 
 //---------------------------------------------------------------------------
 //
-//	ÉEÉBÉìÉhÉEçÏê¨
+//	creacion de ventanas
 //
 //---------------------------------------------------------------------------
 int CSubWnd::OnCreate(LPCREATESTRUCT lpCreateStruct)
@@ -146,52 +146,54 @@ int CSubWnd::OnCreate(LPCREATESTRUCT lpCreateStruct)
 	ASSERT(m_nWidth > 0);
 	ASSERT(m_nHeight > 0);
 
-	// äÓñ{ÉNÉâÉX
+	// clase basica
 	if (CWnd::OnCreate(lpCreateStruct) != 0) {
 		return -1;
 	}
 
-	// ÉAÉCÉRÉìê›íË
+	//  Configuracion de los iconos
 	SetIcon(AfxGetApp()->LoadIcon(IDI_XICON), TRUE);
 
-	// IMEÉIÉt
+	// IME Off
 	::ImmAssociateContext(m_hWnd, (HIMC)NULL);
 
-	// ÉeÉLÉXÉgÉtÉHÉìÉgÉZÉbÉgÉAÉbÉv
+	// Configuracion de la fuente del texto
 	m_pTextFont = m_pDrawView->GetTextFont();
 	SetupTextFont();
 
-	// ÉEÉBÉìÉhÉEÇÃìKçáÉTÉCÉYÇåvéZ
+	// Calcular el tamano de ajuste de la ventana
 	rectWnd.left = 0;
 	rectWnd.top = 0;
 	rectWnd.right = m_nWidth * m_tmWidth;
-	rectWnd.bottom = m_nHeight * m_tmHeight;
+	rectWnd.bottom = m_nHeight* m_tmHeight;
 	CalcWindowRect(&rectWnd);
 
-	// ÉCÉìÉfÉbÉNÉX(ó\íË)ÇìæÇÈ
+	// Obtener indice (previsto)
 	nSWnd = m_pDrawView->GetNewSWnd();
 
-	// ÉCÉìÉfÉbÉNÉXÇ©ÇÁÉEÉBÉìÉhÉEà íuÇåàíË
+	// Posicion de la ventana determinada a partir del indice.
 	m_pDrawView->GetWindowRect(&rectParent);
 	point.x = (nSWnd * 24) % (rectParent.Width() - 24);
 	point.y = (nSWnd * 24) % (rectParent.Height() - 24);
 
 	if (m_bPopup) {
-		// É|ÉbÉvÉAÉbÉvÉ^ÉCÉvÇÃèÍçáÇÕÅAÉXÉNÉäÅ[Éìç¿ïWÇ™äÓèÄÇ…Ç»ÇÈ
+		// Para los tipos de ventanas emergentes, las coordenadas de la pantalla son la referencia
 		point.x += rectParent.left;
 		point.y += rectParent.top;
 	}
 
-	// ÉEÉBÉìÉhÉEà íuÅAëÂÇ´Ç≥Çê›íË
+	// Fijar la posicion y el tamano de la ventana 
 	SetWindowPos(&wndTop, point.x, point.y,
-				rectWnd.Width(), rectWnd.Height(), 0);
+		rectWnd.right, rectWnd.bottom, 0);
+
+		
 
 	return 0;
 }
 
 //---------------------------------------------------------------------------
 //
-//	ÉEÉBÉìÉhÉEçÌèú
+//	eliminacion de ventanas
 //
 //---------------------------------------------------------------------------
 void CSubWnd::OnDestroy()
@@ -827,7 +829,7 @@ BOOL CSubTextSizeWnd::PreCreateWindow(CREATESTRUCT& cs)
 		return FALSE;
 	}
 
-	// ÉTÉCÉYâ¬ïœÅAç≈ëÂâªâ¬î
+	// ÉTÉCÉYâ¬ïœÅAç≈ëÂâªâ¬ÅE
 	cs.style |= WS_THICKFRAME;
 	cs.style |= WS_MAXIMIZEBOX;
 
@@ -1386,42 +1388,42 @@ void CSubListWnd::OnDrawItem(int /*nID*/, LPDRAWITEMSTRUCT /*lpDIS*/)
 
 //===========================================================================
 //
-//	ÉTÉuBMPÉEÉBÉìÉhÉE
+//	Ventana Sub BMP
 //
 //===========================================================================
 
 //---------------------------------------------------------------------------
 //
-//	ÉRÉìÉXÉgÉâÉNÉ^
+//	constructor
 //
 //---------------------------------------------------------------------------
 CSubBMPWnd::CSubBMPWnd()
 {
-	// ÉrÉbÉgÉ}ÉbÉvÇ»Çµ
+	// sin mapa de bits
 	memset(&m_bmi, 0, sizeof(m_bmi));
 	m_bmi.biSize = sizeof(BITMAPINFOHEADER);
 	m_pBits = NULL;
 	m_hBitmap = NULL;
 
-	// î{ó¶100%
+	//100% de ampliacion
 	m_nMul = 2;
 
-	// âºëzâÊñ ÉTÉCÉY
+	// Tamano de la pantalla virtual
 	m_nScrlWidth = -1;
 	m_nScrlHeight = -1;
 
-	// ÉXÉNÉçÅ[Éã
+	//Desplazamiento
 	m_nScrlX = 0;
 	m_nScrlY = 0;
 
-	// É}ÉEÉXÉJÅ[É\Éã
+	// cursor del raton
 	m_nCursorX = -1;
 	m_nCursorY = -1;
 }
 
 //---------------------------------------------------------------------------
 //
-//	ÉÅÉbÉZÅ[ÉW É}ÉbÉv
+//	Mapa de mensajes
 //
 //---------------------------------------------------------------------------
 BEGIN_MESSAGE_MAP(CSubBMPWnd, CWnd)
@@ -1437,22 +1439,22 @@ END_MESSAGE_MAP()
 
 //---------------------------------------------------------------------------
 //
-//	ÉEÉBÉìÉhÉEçÏê¨
+//	creacion de ventanas
 //
 //---------------------------------------------------------------------------
 int CSubBMPWnd::OnCreate(LPCREATESTRUCT lpCreateStruct)
 {
 	ASSERT(this);
 
-	// äÓñ{ÉNÉâÉX
+	// clase basica
 	if (CWnd::OnCreate(lpCreateStruct) != 0) {
 		return -1;
 	}
 
-	// IMEÉIÉt
+	// IME Off
 	::ImmAssociateContext(m_hWnd, (HIMC)NULL);
 
-	// ÉXÉNÉçÅ[ÉãÉoÅ[Ç†ÇË
+	// Barras de desplazamiento disponibles
 	ShowScrollBar(SB_HORZ, TRUE);
 	ShowScrollBar(SB_VERT, TRUE);
 
@@ -1461,7 +1463,7 @@ int CSubBMPWnd::OnCreate(LPCREATESTRUCT lpCreateStruct)
 
 //---------------------------------------------------------------------------
 //
-//	ÉEÉBÉìÉhÉEçÌèú
+//  eliminacion de la ventana
 //
 //---------------------------------------------------------------------------
 void CSubBMPWnd::OnDestroy()
@@ -1469,7 +1471,7 @@ void CSubBMPWnd::OnDestroy()
 	ASSERT(this);
 	ASSERT_VALID(this);
 
-	// ÉrÉbÉgÉ}ÉbÉvçÌèú
+	//  Eliminacion de mapas de bits
 	if (m_hBitmap) {
 		::DeleteObject(m_hBitmap);
 		m_hBitmap = NULL;
@@ -1477,13 +1479,13 @@ void CSubBMPWnd::OnDestroy()
 		m_pBits = NULL;
 	}
 
-	// äÓñ{ÉNÉâÉX
+	// clase basica
 	CWnd::OnDestroy();
 }
 
 //---------------------------------------------------------------------------
 //
-//	ÉEÉBÉìÉhÉEçÌèúäÆóπ
+//	Eliminacion de la ventana completada.
 //
 //---------------------------------------------------------------------------
 void CSubBMPWnd::PostNcDestroy()
@@ -1492,13 +1494,13 @@ void CSubBMPWnd::PostNcDestroy()
 	ASSERT(!m_hBitmap);
 	ASSERT(!m_pBits);
 
-	// ÉCÉìÉ^ÉtÉFÅ[ÉXóvëfÇçÌèú
+	// Eliminar elementos de la interfaz.
 	delete this;
 }
 
 //---------------------------------------------------------------------------
 //
-//	ÉEÉBÉìÉhÉEÉTÉCÉYïœçX
+//	Cambio de tamano de las ventanas
 //
 //---------------------------------------------------------------------------
 void CSubBMPWnd::OnSize(UINT nType, int cx, int cy)
@@ -1507,17 +1509,17 @@ void CSubBMPWnd::OnSize(UINT nType, int cx, int cy)
 
 	ASSERT(this);
 
-	// äÓñ{ÉNÉâÉX
+	// clase basica
 	CWnd::OnSize(nType, cx, cy);
 
-	// É}ÉEÉXèâä˙âª
+	// inicializacion del raton
 	m_nCursorX = -1;
 	m_nCursorY = -1;
 
-	// ÉçÉbÉN
+	// bloquear
 	::LockVM();
 
-	// ÉrÉbÉgÉ}ÉbÉvÇéùÇ¡ÇƒÇ¢ÇÍÇŒÅAàÍíUâï˙
+	// Si tienes un mapa de bits, liberalo una vez
 	if (m_hBitmap) {
 		::DeleteObject(m_hBitmap);
 		m_hBitmap = NULL;
@@ -1525,13 +1527,13 @@ void CSubBMPWnd::OnSize(UINT nType, int cx, int cy)
 		m_pBits = NULL;
 	}
 
-	// ç≈è¨âªÇ»ÇÁÉäÉ^Å[Éì
+	// Regresar si se minimiza
 	if (nType == SIZE_MINIMIZED) {
 		::UnlockVM();
 		return;
 	}
 
-	// cx,cyÇÉXÉNÉçÅ[ÉãóÃàÊÇ‹Ç≈Ç…âüÇ≥Ç¶ÇÈ
+	// Pulse cx,cy hasta el area de desplazamiento.
 	cx = (cx * 2) / m_nMul;
 	if (cx >= m_nScrlWidth) {
 		cx = m_nScrlWidth;
@@ -1541,7 +1543,7 @@ void CSubBMPWnd::OnSize(UINT nType, int cx, int cy)
 		cy = m_nScrlHeight;
 	}
 
-	// ÉrÉbÉgÉ}ÉbÉvçÏê¨(32bitÅAìôî{)
+	// Creacion de mapas de bits (32 bits, igual tamano)
 	m_bmi.biWidth = cx;
 	m_bmi.biHeight = -cy;
 	m_bmi.biPlanes = 1;
@@ -1550,40 +1552,40 @@ void CSubBMPWnd::OnSize(UINT nType, int cx, int cy)
 	m_hBitmap = ::CreateDIBSection(dc.m_hDC, (BITMAPINFO*)&m_bmi,
 						DIB_RGB_COLORS, (void**)&m_pBits, NULL, 0);
 
-	// èâä˙âª(çïÇ≈ìhÇËÇ¬Ç‘Ç∑)
+	// Inicializar (rellenar en negro)
 	if (m_hBitmap) {
 		memset(m_pBits, 0, m_bmi.biSizeImage);
 	}
 
-	// ÉXÉNÉçÅ[Éãê›íË
+	// Ajustes de la barra de desplazamiento
 	SetupScrlH();
 	SetupScrlV();
 
-	// ÉAÉìÉçÉbÉN
+	// desbloquear
 	::UnlockVM();
 }
 
 //---------------------------------------------------------------------------
 //
-//	îwåiï`âÊ
+//	dibujo de fondo
 //
 //---------------------------------------------------------------------------
 BOOL CSubBMPWnd::OnEraseBkgnd(CDC* /*pDC*/)
 {
-	// âΩÇ‡ÇµÇ»Ç¢
+	// Nada.
 	return TRUE;
 }
 
 //---------------------------------------------------------------------------
 //
-//	çƒï`âÊ
+//	redibujar
 //
 //---------------------------------------------------------------------------
 void CSubBMPWnd::OnPaint()
 {
 	PAINTSTRUCT ps;
 
-	// WindowsÇ…ëŒÇ∑ÇÈÉ|Å[ÉYÇæÇØ
+	// Solo se detiene para Windows.
 	BeginPaint(&ps);
 	EndPaint(&ps);
 }
@@ -1591,7 +1593,7 @@ void CSubBMPWnd::OnPaint()
 #if !defined(NDEBUG)
 //---------------------------------------------------------------------------
 //
-//	êfíf
+//	diagnostico
 //
 //---------------------------------------------------------------------------
 void CSubBMPWnd::AssertValid() const
@@ -1611,7 +1613,7 @@ void CSubBMPWnd::AssertValid() const
 
 //---------------------------------------------------------------------------
 //
-//	ÉXÉNÉçÅ[ÉãèÄîı(êÖïΩ)
+//	Desplazamiento listo (horizontal)
 //
 //---------------------------------------------------------------------------
 void FASTCALL CSubBMPWnd::SetupScrlH()
@@ -1622,12 +1624,12 @@ void FASTCALL CSubBMPWnd::SetupScrlH()
 	ASSERT(this);
 	ASSERT_VALID(this);
 
-	// ÉrÉbÉgÉ}ÉbÉvÇ™Ç»ÇØÇÍÇŒÅAÇ‚ÇÁÇ»Ç¢
+	// Si no hay mapa de bits, no lo haremos.
 	if (!m_hBitmap) {
 		return;
 	}
 
-	// ÉXÉNÉçÅ[ÉãèÓïÒÇÉZÉbÉg
+	// Establecer la informacion de desplazamiento.
 	memset(&si, 0, sizeof(si));
 	si.cbSize = sizeof(si);
 	si.fMask = SIF_ALL;
@@ -1635,7 +1637,7 @@ void FASTCALL CSubBMPWnd::SetupScrlH()
 	si.nMax = m_nScrlWidth - 1;
 	si.nPage = m_bmi.biWidth;
 
-	// à íuÇÕÅAïKóvÇ»ÇÁï‚ê≥Ç∑ÇÈ
+	// La posicion se corrige si es necesario.
 	si.nPos = m_nScrlX;
 	if (si.nPos + (int)si.nPage >= m_nScrlWidth) {
 		si.nPos = m_nScrlWidth - (int)si.nPage;
@@ -1646,13 +1648,13 @@ void FASTCALL CSubBMPWnd::SetupScrlH()
 	m_nScrlX = si.nPos;
 	ASSERT((m_nScrlX >= 0) && (m_nScrlX < m_nScrlWidth));
 
-	// ê›íË
+	// configuracion (de un ordenador o archivo, etc.)
 	SetScrollInfo(SB_HORZ, &si, TRUE);
 }
 
 //---------------------------------------------------------------------------
 //
-//	ÉXÉNÉçÅ[Éã(êÖïΩ)
+//	Desplazamiento (horizontal)
 //
 //---------------------------------------------------------------------------
 void CSubBMPWnd::OnHScroll(UINT nSBCode, UINT nPos, CScrollBar* /*pBar*/)
@@ -1662,38 +1664,38 @@ void CSubBMPWnd::OnHScroll(UINT nSBCode, UINT nPos, CScrollBar* /*pBar*/)
 	ASSERT(this);
 	ASSERT_VALID(this);
 
-	// ÉXÉNÉçÅ[ÉãèÓïÒÇéÊìæ
+	// Obtenga informacion sobre el desplazamiento.
 	memset(&si, 0, sizeof(si));
 	si.cbSize = sizeof(si);
 	GetScrollInfo(SB_HORZ, &si, SIF_ALL);
 
-	// ÉXÉNÉçÅ[ÉãÉoÅ[ÉRÅ[Éhï 
+	// Por codigo de barras de desplazamiento
 	switch (nSBCode) {
-		// ç∂Ç÷
+		// A la izquierda.
 		case SB_LEFT:
 			m_nScrlX = si.nMin;
 			break;
 
-		// âEÇ÷
+		// A la derecha.
 		case SB_RIGHT:
 			m_nScrlX = si.nMax;
 			break;
 
-		// 1ÉâÉCÉìç∂Ç÷
+		// Una linea a la izquierda.
 		case SB_LINELEFT:
 			if (m_nScrlX > 0) {
 				m_nScrlX--;
 			}
 			break;
 
-		// 1ÉâÉCÉìâEÇ÷
+		// Una linea a la derecha.
 		case SB_LINERIGHT:
 			if (m_nScrlX < si.nMax) {
 				m_nScrlX++;
 			}
 			break;
 
-		// 1ÉyÅ[ÉWç∂Ç÷
+		// Pagina 1, izquierda.
 		case SB_PAGELEFT:
 			if (m_nScrlX >= (int)si.nPage) {
 				m_nScrlX -= (int)si.nPage;
@@ -1703,7 +1705,7 @@ void CSubBMPWnd::OnHScroll(UINT nSBCode, UINT nPos, CScrollBar* /*pBar*/)
 			}
 			break;
 
-		// 1ÉyÅ[ÉWâEÇ÷
+		// Pagina 1 derecha.
 		case SB_PAGERIGHT:
 			if ((m_nScrlX + (int)si.nPage) <= si.nMax) {
 				m_nScrlX += (int)si.nPage;
@@ -1713,7 +1715,7 @@ void CSubBMPWnd::OnHScroll(UINT nSBCode, UINT nPos, CScrollBar* /*pBar*/)
 			}
 			break;
 
-		// ÉTÉÄà⁄ìÆ
+		// cambio de pulgar
 		case SB_THUMBPOSITION:
 		case SB_THUMBTRACK:
 			m_nScrlX = nPos;
@@ -1721,13 +1723,13 @@ void CSubBMPWnd::OnHScroll(UINT nSBCode, UINT nPos, CScrollBar* /*pBar*/)
 	}
 	ASSERT((m_nScrlX >= 0) && (m_nScrlX < m_nScrlWidth));
 
-	// ÉZÉbÉg
+	// set
 	SetupScrlH();
 }
 
 //---------------------------------------------------------------------------
 //
-//	ÉXÉNÉçÅ[ÉãèÄîı(êÇíº)
+//	Preparado para el desplazamiento (vertical)
 //
 //---------------------------------------------------------------------------
 void FASTCALL CSubBMPWnd::SetupScrlV()
@@ -1737,12 +1739,12 @@ void FASTCALL CSubBMPWnd::SetupScrlV()
 	ASSERT(this);
 	ASSERT_VALID(this);
 
-	// ÉrÉbÉgÉ}ÉbÉvÇ™Ç»ÇØÇÍÇŒÅAÇ‚ÇÁÇ»Ç¢
+	// Si no hay mapa de bits, no lo haremos.
 	if (!m_hBitmap) {
 		return;
 	}
 
-	// ÉXÉNÉçÅ[ÉãèÓïÒÇÉZÉbÉg
+	// Establecer la informacion de desplazamiento.
 	memset(&si, 0, sizeof(si));
 	si.cbSize = sizeof(si);
 	si.fMask = SIF_ALL;
@@ -1750,7 +1752,7 @@ void FASTCALL CSubBMPWnd::SetupScrlV()
 	si.nMax = m_nScrlHeight - 1;
 	si.nPage = -m_bmi.biHeight;
 
-	// à íuÇÕÅAïKóvÇ»ÇÁï‚ê≥Ç∑ÇÈ
+	// La posicion se corrige si es necesario.
 	si.nPos = m_nScrlY;
 	if (si.nPos + (int)si.nPage >= m_nScrlHeight) {
 		si.nPos = m_nScrlHeight - (int)si.nPage;
@@ -1766,7 +1768,7 @@ void FASTCALL CSubBMPWnd::SetupScrlV()
 
 //---------------------------------------------------------------------------
 //
-//	ÉXÉNÉçÅ[Éã(êÇíº)
+//	Desplazamiento (vertical)
 //
 //---------------------------------------------------------------------------
 void CSubBMPWnd::OnVScroll(UINT nSBCode, UINT nPos, CScrollBar* /*pBar*/)
@@ -1776,38 +1778,38 @@ void CSubBMPWnd::OnVScroll(UINT nSBCode, UINT nPos, CScrollBar* /*pBar*/)
 	ASSERT(this);
 	ASSERT_VALID(this);
 
-	// ÉXÉNÉçÅ[ÉãèÓïÒÇéÊìæ
+	// Obtenga informacion sobre el desplazamiento.
 	memset(&si, 0, sizeof(si));
 	si.cbSize = sizeof(si);
 	GetScrollInfo(SB_VERT, &si, SIF_ALL);
 
-	// ÉXÉNÉçÅ[ÉãÉoÅ[ÉRÅ[Éhï 
+	// Por codigo de barras de desplazamiento
 	switch (nSBCode) {
-		// è„Ç÷
+		// Hacia arriba.
 		case SB_TOP:
 			m_nScrlY = si.nMin;
 			break;
 
-		// â∫Ç÷
+		// abajo
 		case SB_BOTTOM:
 			m_nScrlY = si.nMax;
 			break;
 
-		// 1ÉâÉCÉìè„Ç÷
+		// Una linea.
 		case SB_LINEUP:
 			if (m_nScrlY > 0) {
 				m_nScrlY--;
 			}
 			break;
 
-		// 1ÉâÉCÉìâ∫Ç÷
+		// Una linea menos.
 		case SB_LINEDOWN:
 			if (m_nScrlY < si.nMax) {
 				m_nScrlY++;
 			}
 			break;
 
-		// 1ÉyÅ[ÉWè„Ç÷
+		// Pagina 1 DE 1
 		case SB_PAGEUP:
 			if (m_nScrlY >= (int)si.nPage) {
 				m_nScrlY -= (int)si.nPage;
@@ -1817,7 +1819,7 @@ void CSubBMPWnd::OnVScroll(UINT nSBCode, UINT nPos, CScrollBar* /*pBar*/)
 			}
 			break;
 
-		// 1ÉyÅ[ÉWâ∫Ç÷
+		// Pagina 1 abajo.
 		case SB_PAGEDOWN:
 			if ((m_nScrlY + (int)si.nPage) <= si.nMax) {
 				m_nScrlY += (int)si.nPage;
@@ -1827,7 +1829,7 @@ void CSubBMPWnd::OnVScroll(UINT nSBCode, UINT nPos, CScrollBar* /*pBar*/)
 			}
 			break;
 
-		// ÉTÉÄà⁄ìÆ
+		// cambio de pulgar
 		case SB_THUMBPOSITION:
 			m_nScrlY = nPos;
 			break;
@@ -1838,13 +1840,13 @@ void CSubBMPWnd::OnVScroll(UINT nSBCode, UINT nPos, CScrollBar* /*pBar*/)
 
 	ASSERT((m_nScrlY >= 0) && (m_nScrlY <= m_nScrlHeight));
 
-	// ÉZÉbÉg
+	// set
 	SetupScrlV();
 }
 
 //---------------------------------------------------------------------------
 //
-//	É}ÉEÉXà⁄ìÆ
+//	moviendo el raton
 //
 //---------------------------------------------------------------------------
 void CSubBMPWnd::OnMouseMove(UINT nFlags, CPoint point)
@@ -1852,23 +1854,92 @@ void CSubBMPWnd::OnMouseMove(UINT nFlags, CPoint point)
 	ASSERT(this);
 	ASSERT_VALID(this);
 
-	// É}ÉEÉXà⁄ìÆà íuÇãLâØ
+	// Memoria de la posicion del movimiento del raton
 	m_nCursorX = point.x;
 	m_nCursorY = point.y;
 
-	// î{ó¶Ççló∂
+	// Consideracion del aumento
 	m_nCursorX = (m_nCursorX * 2) / m_nMul;
 	m_nCursorY = (m_nCursorY * 2) / m_nMul;
 
-	// äÓñ{ÉNÉâÉX
+	// clase basica
 	CWnd::OnMouseMove(nFlags, point);
 }
 
 //---------------------------------------------------------------------------
 //
-//	ï`âÊ
+//	dibujo
 //
 //---------------------------------------------------------------------------
+void FASTCALL CSubBMPWnd::Refresh(int nWidth, int nHeight)
+{
+	CClientDC dc(this);
+	CDC mDC;
+	HBITMAP hBitmap;	
+	CRect Rect;
+
+
+	ASSERT(this);
+	ASSERT_VALID(this);
+
+	// Solo si hay un mapa de bits disponible.
+	if (m_hBitmap) {
+		// Creacion de la memoria DC
+		mDC.CreateCompatibleDC(&dc);
+		
+		// seleccion de objetos
+		hBitmap = (HBITMAP)::SelectObject(mDC.m_hDC, m_hBitmap);
+		
+		// BitBlt or StretchBlt
+		if (hBitmap) {
+			if (m_nMul == 2) {
+				// igual tamano
+			    //	dc.BitBlt(0, 0, m_bmi.biWidth, -m_bmi.biHeight,
+				//					&mDC, 0, 0, SRCCOPY);
+				
+				int bmibiwidth =  m_bmi.biWidth;
+				int bmibiheight = -m_bmi.biHeight;
+							
+				
+				// Stretchblt: nHeight y nWidth son par·metros del tamaÒo exacto del bitmap origen en la resolucion origen
+
+				dc.StretchBlt(0, 0,
+					bmibiwidth,
+					bmibiheight,
+					&mDC,
+					0, 0,
+					nHeight, nWidth,
+					SRCCOPY);
+
+							
+
+				/*CString sz;
+				sz.Format(_T("info.nWidth:%d   info.nHeight:%d\r\n"), nWidth, nHeight);
+				OutputDebugStringW(CT2W(sz));*/
+
+			}
+			else {
+				// n veces
+				dc.StretchBlt(  0, 0,
+								(m_bmi.biWidth * m_nMul) >> 1,
+								-((m_bmi.biHeight * m_nMul) >> 1),
+								&mDC,
+								0, 0,
+								m_bmi.biWidth, -m_bmi.biHeight,
+								SRCCOPY);
+			}
+
+			// Fin de la seleccion de objetos
+			::SelectObject(mDC.m_hDC, hBitmap);
+		}
+
+		// Fin de la memoria DC
+		mDC.DeleteDC();
+	}
+}
+
+
+
 void FASTCALL CSubBMPWnd::Refresh()
 {
 	CClientDC dc(this);
@@ -1890,36 +1961,18 @@ void FASTCALL CSubBMPWnd::Refresh()
 		if (hBitmap) {
 			if (m_nMul == 2) {
 				// ìôî{
-			//	dc.BitBlt(0, 0, m_bmi.biWidth, -m_bmi.biHeight,
-				//					&mDC, 0, 0, SRCCOPY);
-				int mh = 50;
-				int mw = 50;
-
-				int bmibiwidth = 116 + m_bmi.biWidth;
-				int bmibiheight = 116 + -m_bmi.biHeight;
+				dc.BitBlt(0, 0, m_bmi.biWidth, -m_bmi.biHeight,
+					&mDC, 0, 0, SRCCOPY);
+			}
+			else {
+				// nî{
 				dc.StretchBlt(0, 0,
-					bmibiwidth,
-					bmibiheight,
+					(m_bmi.biWidth * m_nMul) >> 1,
+					-((m_bmi.biHeight * m_nMul) >> 1),
 					&mDC,
 					0, 0,
 					m_bmi.biWidth, -m_bmi.biHeight,
 					SRCCOPY);
-
-
-				//CString sz;
-				//sz.Format(_T("\nOri biwidth:%d   Ori biheight:%d   Dest bmibiwidth: %d  Dest bmibiheigth: %d \n"), m_bmi.biWidth, -m_bmi.biHeight,  bmibiwidth, bmibiheight);
-				//OutputDebugStringW(CT2W(sz));
-
-			}
-			else {
-				// nî{
-				dc.StretchBlt(  0, 0,
-								(m_bmi.biWidth * m_nMul) >> 1,
-								-((m_bmi.biHeight * m_nMul) >> 1),
-								&mDC,
-								0, 0,
-								m_bmi.biWidth, -m_bmi.biHeight,
-								SRCCOPY);
 			}
 
 			// ÉIÉuÉWÉFÉNÉgëIëèIóπ
@@ -1931,9 +1984,10 @@ void FASTCALL CSubBMPWnd::Refresh()
 	}
 }
 
+
 //---------------------------------------------------------------------------
 //
-//	ç≈ëÂÉEÉBÉìÉhÉEãÈå`éÊìæ
+//	Adquisicion del maximo rectangulo de la ventana
 //
 //---------------------------------------------------------------------------
 void FASTCALL CSubBMPWnd::GetMaximumRect(LPRECT lpRect, BOOL bScroll)
@@ -1942,25 +1996,32 @@ void FASTCALL CSubBMPWnd::GetMaximumRect(LPRECT lpRect, BOOL bScroll)
 	ASSERT(lpRect);
 	ASSERT_VALID(this);
 
-	// BMPÉEÉBÉìÉhÉEÇÃç≈ëÂéûÇÃÉTÉCÉYÇìæÇÈ
+	// Obtiene el tamano de la ventana BMP al maximo.
 	lpRect->left = 0;
 	lpRect->top = 0;
 	lpRect->right = (m_nScrlWidth * m_nMul) >> 1;
 	lpRect->bottom = (m_nScrlHeight * m_nMul) >> 1;
 
-	// ÉXÉNÉçÅ[ÉãÉoÅ[Çâ¡éZ
+	//  Anadir barras de desplazamiento
 	if (bScroll) {
 		lpRect->right += ::GetSystemMetrics(SM_CXVSCROLL);
 		lpRect->bottom += ::GetSystemMetrics(SM_CYHSCROLL);
 	}
 
-	// ÉEÉBÉìÉhÉEãÈå`Ç…ïœä∑
+	// Convertido en rectangulo de ventana
 	CalcWindowRect(lpRect);
+}
+
+
+BOOL FASTCALL CSubBMPWnd::Init(CDrawView* pDrawView)
+{	
+	pDrawView = NULL;
+	return 0;
 }
 
 //---------------------------------------------------------------------------
 //
-//	ÉtÉBÉbÉgãÈå`éÊìæ
+//	Adquisicion de rectangulos de ajuste
 //
 //---------------------------------------------------------------------------
 void FASTCALL CSubBMPWnd::GetFitRect(LPRECT lpRect)
@@ -1969,16 +2030,16 @@ void FASTCALL CSubBMPWnd::GetFitRect(LPRECT lpRect)
 	ASSERT(lpRect);
 	ASSERT_VALID(this);
 
-	// åªç›ÇÃÉNÉâÉCÉAÉìÉgãÈå`ÇìæÇÈ
+	// Obtener el rectangulo actual del cliente
 	GetClientRect(lpRect);
 
-	// ÉEÉBÉìÉhÉEãÈå`Ç…ïœä∑
+	// Convertido en rectangulo de ventana
 	CalcWindowRect(lpRect);
 }
 
 //---------------------------------------------------------------------------
 //
-//	ï`âÊãÈå`éÊìæ
+//	Adquisicion de rectangulos de dibujo
 //
 //---------------------------------------------------------------------------
 void FASTCALL CSubBMPWnd::GetDrawRect(LPRECT lpRect)
@@ -1987,7 +2048,7 @@ void FASTCALL CSubBMPWnd::GetDrawRect(LPRECT lpRect)
 	ASSERT(lpRect);
 	ASSERT_VALID(this);
 
-	// ÉrÉbÉgÉ}ÉbÉvÇ™Ç»ÇØÇÍÇŒÅAÉGÉâÅ[
+	// Si no hay mapa de bits, error
 	if (!m_hBitmap) {
 		ASSERT(!m_pBits);
 		lpRect->top = 0;
@@ -1997,18 +2058,18 @@ void FASTCALL CSubBMPWnd::GetDrawRect(LPRECT lpRect)
 		return;
 	}
 
-	// ÉrÉbÉgÉ}ÉbÉvÇ†ÇË
+	// Mapa de bits disponible
 	ASSERT(m_pBits);
 
-	// ÉXÉNÉçÅ[Éãê›íË
+	// Ajustes de desplazamiento
 	lpRect->left = m_nScrlX;
 	lpRect->top = m_nScrlY;
 
-	// îÕàÕê›íË(m_bmi.biHeightÇÕèÌÇ…ïâ)
+	// Ajuste del rango (m_bmi.biHeight es siempre negativo).
 	lpRect->right = lpRect->left + m_bmi.biWidth;
 	lpRect->bottom = lpRect->top - m_bmi.biHeight;
 
-	// åüç∏
+	// examen
 	ASSERT(lpRect->left <= lpRect->right);
 	ASSERT(lpRect->top <= lpRect->bottom);
 	ASSERT(lpRect->right <= m_nScrlWidth);
@@ -2017,7 +2078,7 @@ void FASTCALL CSubBMPWnd::GetDrawRect(LPRECT lpRect)
 
 //---------------------------------------------------------------------------
 //
-//	ÉrÉbÉgéÊìæ
+//	adquisicion de bits
 //
 //---------------------------------------------------------------------------
 BYTE* FASTCALL CSubBMPWnd::GetBits() const
@@ -2025,13 +2086,13 @@ BYTE* FASTCALL CSubBMPWnd::GetBits() const
 	ASSERT(this);
 	ASSERT_VALID(this);
 
-	// ÉrÉbÉgÉ}ÉbÉvÇ†ÇË
+	// Mapa de bits disponible
 	if (m_pBits) {
 		ASSERT(m_hBitmap);
 		return m_pBits;
 	}
 
-	// ÉrÉbÉgÉ}ÉbÉvÇ»Çµ
+	// sin mapa de bits
 	ASSERT(!m_hBitmap);
 	return NULL;
 }
@@ -2256,10 +2317,17 @@ void FASTCALL CSubBitmapWnd::Refresh()
 	if ((rect.Width() == 0) && (rect.Height() == 0)) {
 		return;
 	}
-
+	
 	// ÉZÉbÉgÉAÉbÉv
 	Setup(rect.left, rect.top, rect.Width(), rect.Height(), m_pBMPWnd->GetBits());
+	//m_pBMPWnd->m_nScrlWidth;
 
+
+	CDrawView::DRAWINFO info;
+	m_pDrawView->GetDrawInfo(&info);
+	/*CString sz;
+	sz.Format(_T("info.nWidth:%d   info.nHeight:%d    \r\n"), info.nWidth, info.nHeight);
+	OutputDebugStringW(CT2W(sz));*/
 	// ï\é¶
 	m_pBMPWnd->Refresh();
 }

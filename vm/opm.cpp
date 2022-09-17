@@ -342,7 +342,7 @@ void OPM::BuildLFOTable()
 		int r = 0;
 		for (int c=0; c<OPM_LFOENTS; c++)
 		{
-			int a, p;
+			int a = 0, p = 0;
 			
 			switch (type)
 			{

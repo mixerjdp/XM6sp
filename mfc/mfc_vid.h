@@ -91,7 +91,7 @@ class CTVRAMWnd : public CSubVideoWnd
 public:
 	CTVRAMWnd();
 										// コンストラクタ
-	void FASTCALL Setup(CRect& rect, BYTE *pBits);
+	void FASTCALL Setup(CRect& rect, BYTE* pBits);
 										// セットアップ
 	void FASTCALL Update();
 										// メッセージスレッドからの更新

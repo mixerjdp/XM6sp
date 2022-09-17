@@ -295,6 +295,7 @@ void FASTCALL CSubVideoWnd::Refresh()
 
 	// セットアップ
 	Setup(rect, m_pBMPWnd->GetBits());
+		
 
 	// 表示
 	m_pBMPWnd->Refresh();
@@ -363,10 +364,11 @@ CTVRAMWnd::CTVRAMWnd()
 //---------------------------------------------------------------------------
 void FASTCALL CTVRAMWnd::Setup(CRect& rect, BYTE *pBits)
 {
-//	int x;
+//	int x
 //	int y;
 //	DWORD bufBit[0x400];
-
+	memset(pBits, 0, sizeof(pBits));
+	memset(rect, 0, sizeof(rect));
 
 #if 0
 	int i;
@@ -835,7 +837,7 @@ void FASTCALL CG16Wnd::Update()
 	int y;
 	DWORD addr;
 	CString string;
-	int value;
+	int value = 0;
 	int r;
 	int g;
 	int b;

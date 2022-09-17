@@ -2150,7 +2150,7 @@ void FASTCALL CWindrv::IoControl()
 	UnlockXM();
 
 #ifdef WINDRV_LOG
-	Log(Log::Normal, "$55 %d IOCTRL ƒpƒ‰ƒ[ƒ^:%X ‹@”\:%X", unit, nParameter, nFunction);
+	Log(Log::Normal, "$55 %d IOCTRL ƒpƒ‰ƒ[ƒ^:%X ‹@”:%X", unit, nParameter, nFunction);
 #endif // WINDRV_LOG
 
 	// ƒtƒ@ƒCƒ‹ƒVƒXƒeƒ€ŒÄ‚Ño‚µ

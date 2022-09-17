@@ -174,7 +174,7 @@ void CAboutDlg::OnCancel()
 
 //---------------------------------------------------------------------------
 //
-//	描画
+//	dibujo
 //
 //---------------------------------------------------------------------------
 void CAboutDlg::OnPaint()
@@ -185,22 +185,22 @@ void CAboutDlg::OnPaint()
 	CBitmap Bitmap;
 	CBitmap *pBitmap;
 
-	// URL描画
+	// Representacion de la URL
 	DrawURL(&dc);
 
-	// メモリDC、互換ビットマップ、コピービットマップを作成
+	//  Crear DCs de memoria, mapas de bits compatibles y copiar mapas de bits.
 	VERIFY(mDC.CreateCompatibleDC(&dc));
 	VERIFY(Bitmap.CreateCompatibleBitmap(&dc,
 						m_IconRect.Width(), m_IconRect.Height()));
 
-	// ビットマップを選択
+	// Seleccionar mapa de bits
 	pBitmap = mDC.SelectObject(&Bitmap);
 	ASSERT(pBitmap);
 
-	// クリア、コピーDC準備
+	// Claro, copia los preparativos de DC.
 	mDC.FillSolidRect(0, 0, m_IconRect.Width(), m_IconRect.Height(), ::GetSysColor(COLOR_3DFACE));
 
-	// ビットマップ描画メイン
+	// Dibujo de mapa de bits Principal
 	DrawCRT(&mDC);
 	DrawX68k(&mDC);
 	DrawLED(0, 0, &mDC);
@@ -210,7 +210,7 @@ void CAboutDlg::OnPaint()
 	VERIFY(dc.BitBlt(m_IconRect.left, m_IconRect.top,
 					m_IconRect.Width(), m_IconRect.Height(), &mDC, 0, 0, SRCCOPY));
 
-	// 描画終了
+	// fin del dibujo
 	VERIFY(mDC.SelectObject(pBitmap));
 	VERIFY(Bitmap.DeleteObject());
 	VERIFY(mDC.DeleteDC());
@@ -218,7 +218,7 @@ void CAboutDlg::OnPaint()
 
 //---------------------------------------------------------------------------
 //
-//	描画(URL)
+//	Dibujo (URL)
 //
 //---------------------------------------------------------------------------
 void FASTCALL CAboutDlg::DrawURL(CDC *pDC)
@@ -230,7 +230,7 @@ void FASTCALL CAboutDlg::DrawURL(CDC *pDC)
 
 	ASSERT(pDC);
 
-	// GUIフォントのメトリックを得る
+	// Obtener las metricas de las fuentes de la interfaz de usuario
 	hFont = (HFONT)::GetStockObject(DEFAULT_GUI_FONT);
 	ASSERT(hFont);
 	hDefFont = (HFONT)::SelectObject(pDC->m_hDC, hFont);
@@ -239,7 +239,7 @@ void FASTCALL CAboutDlg::DrawURL(CDC *pDC)
 	::GetTextFace(pDC->m_hDC, LF_FACESIZE, lf.lfFaceName);
 	::SelectObject(pDC->m_hDC, hDefFont);
 
-	// アンダーラインを付加したフォントを作成
+	// Crear fuentes con subrayados anadidos.
 	lf.lfHeight = tm.tmHeight;
 	lf.lfWidth = 0;
 	lf.lfEscapement = 0;
@@ -256,7 +256,7 @@ void FASTCALL CAboutDlg::DrawURL(CDC *pDC)
 	hFont = ::CreateFontIndirect(&lf);
 	ASSERT(hFont);
 
-	// セレクト、描画
+	// Seleccionar, dibujar.
 	hDefFont = (HFONT)::SelectObject(pDC->m_hDC, hFont);
 	ASSERT(hDefFont);
 	if (m_bURLHit) {
@@ -269,14 +269,14 @@ void FASTCALL CAboutDlg::DrawURL(CDC *pDC)
 	::DrawText(pDC->m_hDC, (LPCTSTR)m_URLString, m_URLString.GetLength(),
 				&m_URLRect, DT_CENTER | DT_SINGLELINE);
 
-	// フォントを戻す
+	// Poniendo la fuente de nuevo.
 	::SelectObject(pDC->m_hDC, hDefFont);
 	::DeleteObject(hFont);
 }
 
 //---------------------------------------------------------------------------
 //
-//	描画(CRT)
+//	Dibujo (CRT)
 //
 //---------------------------------------------------------------------------
 void FASTCALL CAboutDlg::DrawCRT(CDC *pDC)
@@ -289,19 +289,19 @@ void FASTCALL CAboutDlg::DrawCRT(CDC *pDC)
 	RGBQUAD *prgb;
 	DWORD color3d;
 
-	// リソースIDB_CRTを手動ロード
+	// Carga manual del recurso IDB_CRT
 	hResource = ::FindResource(AfxGetApp()->m_hInstance,
 								MAKEINTRESOURCE(IDB_CRT), RT_BITMAP);
 	ASSERT(hResource);
 	hGlobal = ::LoadResource(AfxGetApp()->m_hInstance, hResource);
 	ASSERT(hGlobal);
 
-	// ロードビットマップからヘッダ部をコピー
+	// Copie la seccion de cabecera del mapa de bits de carga.
 	pbmp = (BYTE*)::LockResource(hGlobal);
 	ASSERT(pbmp);
 	memcpy(Info, pbmp, sizeof(Info));
 
-	// パレットを変更
+	// Cambiar la paleta
 	pbmi = (BITMAPINFOHEADER*)Info;
 	prgb = (RGBQUAD*)&Info[pbmi->biSize];
 	color3d = ::GetSysColor(COLOR_3DFACE);
@@ -309,18 +309,18 @@ void FASTCALL CAboutDlg::DrawCRT(CDC *pDC)
 	prgb->rgbGreen = GetGValue(color3d);
 	prgb->rgbRed = GetRValue(color3d);
 
-	// SetDIBitsToDeviceで描画
+	// Dibujo con SetDIBitsToDevice
 	::SetDIBitsToDevice(pDC->m_hDC, 2, 2, 62, 64, 0, 0, 0, 64,
 						&pbmp[pbmi->biSize + sizeof(RGBQUAD) * 256],
 						(BITMAPINFO*)pbmi, DIB_RGB_COLORS);
 
-	// リソースを解放(Win9x系のみ必要)
+	// Liberar recursos (solo es necesario para los sistemas Win9x).
 	::FreeResource(hGlobal);
 }
 
 //---------------------------------------------------------------------------
 //
-//	描画(X68k)
+//	Dibujo (X68k)
 //
 //---------------------------------------------------------------------------
 void FASTCALL CAboutDlg::DrawX68k(CDC *pDC)
@@ -333,19 +333,19 @@ void FASTCALL CAboutDlg::DrawX68k(CDC *pDC)
 	RGBQUAD *prgb;
 	DWORD color3d;
 
-	// リソースIDB_CRTを手動ロード
+	// Carga manual del recurso IDB_CRT
 	hResource = ::FindResource(AfxGetApp()->m_hInstance,
 								MAKEINTRESOURCE(IDB_X68K), RT_BITMAP);
 	ASSERT(hResource);
 	hGlobal = ::LoadResource(AfxGetApp()->m_hInstance, hResource);
 	ASSERT(hGlobal);
 
-	// ロードビットマップからヘッダ部をコピー
+	// Copie la seccion de cabecera del mapa de bits de carga.
 	pbmp = (BYTE*)::LockResource(hGlobal);
 	ASSERT(pbmp);
 	memcpy(Info, pbmp, sizeof(Info));
 
-	// パレットを変更
+	// Cambiar la paleta
 	pbmi = (BITMAPINFOHEADER*)Info;
 	prgb = (RGBQUAD*)&Info[pbmi->biSize];
 	color3d = ::GetSysColor(COLOR_3DFACE);
@@ -353,12 +353,12 @@ void FASTCALL CAboutDlg::DrawX68k(CDC *pDC)
 	prgb[207].rgbGreen = GetGValue(color3d);
 	prgb[207].rgbRed = GetRValue(color3d);
 
-	// SetDIBitsToDeviceで描画
+	// Dibujo con SetDIBitsToDevice
 	::SetDIBitsToDevice(pDC->m_hDC, 67, 2, 30, 64, 0, 0, 0, 64,
 						&pbmp[pbmi->biSize + sizeof(RGBQUAD) * 256],
 						(BITMAPINFO*)pbmi, DIB_RGB_COLORS);
 
-	// リソースを解放(Win9x系のみ必要)
+	// Liberar recursos (solo es necesario para los sistemas Win9x).
 	::FreeResource(hGlobal);
 }
 
@@ -426,7 +426,7 @@ BOOL CAboutDlg::OnSetCursor(CWnd *pWnd, UINT nHitTest, UINT message)
 
 //---------------------------------------------------------------------------
 //
-//	タイマ
+//	temporizador
 //
 //---------------------------------------------------------------------------
 #if _MFC_VER >= 0x700
@@ -439,17 +439,17 @@ void CAboutDlg::OnTimer(UINT /*nID */)
 	CClientDC *pDC;
 	CInfo *pInfo;
 
-	// タイマ削除
+	// borrado del temporizador
 	KillTimer(m_nTimerID);
 	m_nTimerID = NULL;
 
-	// LEDとビューを更新
+	// LEDs y vistas actualizadas
 	pDC = new CClientDC(this);
 	DrawLED(m_IconRect.left, m_IconRect.top, pDC);
 	DrawView(m_IconRect.left, m_IconRect.top, pDC);
 	delete pDC;
 
-	// 情報表示
+	// pantalla de informacion
 	pFrmWnd = (CFrmWnd*)GetParent();
 	ASSERT(pFrmWnd);
 	pInfo = pFrmWnd->GetInfo();
@@ -461,13 +461,13 @@ void CAboutDlg::OnTimer(UINT /*nID */)
 		}
 	}
 
-	// タイマ設定(描画終了後から、最低100msあける)
-	m_nTimerID = SetTimer(IDD_ABOUTDLG, 100, NULL);
+	// Ajuste del temporizador (al menos 100 ms despues del final del dibujo)
+	m_nTimerID = SetTimer(IDD_ABOUTDLG, 10, NULL);
 }
 
 //---------------------------------------------------------------------------
 //
-//	LED描画
+//	Dibujo del LED
 //
 //---------------------------------------------------------------------------
 void FASTCALL CAboutDlg::DrawLED(int x, int y, CDC *pDC)
@@ -486,7 +486,7 @@ void FASTCALL CAboutDlg::DrawLED(int x, int y, CDC *pDC)
 	ASSERT(m_pSASI);
 	ASSERT(m_pFDD);
 
-	// 電源
+	// alimentacion (boton del televisor, etc.)
 	bPower = ::GetVM()->IsPower();
 
 	// HD BUSY
@@ -496,14 +496,14 @@ void FASTCALL CAboutDlg::DrawLED(int x, int y, CDC *pDC)
 	}
 	pDC->SetPixelV(x + 67 + 19, y + 2 + 12, color);
 
-	// タイマ
+	// temporizador
 	color = RGB(0, 0, 0);
 	if (m_pRTC->GetTimerLED()) {
 		color = RGB(208, 31, 31);
 	}
 	pDC->SetPixelV(x + 67 + 23, y + 2 + 12, color);
 
-	// 電源LED
+	// LED de alimentacion
 	if (m_bPowerLED) {
 		// 暗青
 		color = RGB(12, 23, 129);
@@ -613,7 +613,7 @@ void FASTCALL CAboutDlg::DrawLED(int x, int y, CDC *pDC)
 
 //---------------------------------------------------------------------------
 //
-//	ビュー描画
+//	ver renderizado
 //
 //---------------------------------------------------------------------------
 void FASTCALL CAboutDlg::DrawView(int x, int y, CDC *pDC)
@@ -626,23 +626,23 @@ void FASTCALL CAboutDlg::DrawView(int x, int y, CDC *pDC)
 	ASSERT(y >= 0);
 	ASSERT(pDC);
 
-	// 矩形設定
+	// Ajuste del rectangulo
 	rect.left = x + 10;
 	rect.top = y + 8;
 	rect.right = x + 55;
 	rect.bottom  = y + 43;
 
-	// 電源オフなら、黒
+	// Si esta apagado, negro.
 	if (!::GetVM()->IsPower()) {
 		pDC->FillSolidRect(&rect, RGB(0, 0, 0));
 		return;
 	}
 
-	// ビューのワークを得る
+	//Obtenga el trabajo de visualizacion
 	ASSERT(m_pDrawView);
 	m_pDrawView->GetDrawInfo(&info);
 
-	// BITMAPINFO準備
+	// Preparacion de BITMAPINFO.
 	memset(&bmi, 0, sizeof(bmi));
 	bmi.biSize = sizeof(bmi);
 	bmi.biWidth = info.nBMPWidth;
@@ -652,7 +652,7 @@ void FASTCALL CAboutDlg::DrawView(int x, int y, CDC *pDC)
 	bmi.biCompression = BI_RGB;
 	bmi.biSizeImage = info.nBMPWidth * info.nBMPHeight * (32 >> 3);
 
-	// 縮小つきBlt
+	// Blt con reduccion
 	::StretchDIBits(pDC->m_hDC, rect.left, rect.top + rect.Height() - 1,
 					rect.Width(), -rect.Height(),
 					0, 0, info.nWidth, info.nHeight,

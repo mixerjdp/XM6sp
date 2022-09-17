@@ -834,7 +834,7 @@ void FASTCALL CFrmWnd::ReadFile(LPCTSTR pszFileName, CString& str)
    TRY
    {
       CFile file(pszFileName, CFile::modeRead);
-      DWORD dwLength = file.GetLength();
+	  UINT dwLength = (UINT)file.GetLength();
       file.Read(str.GetBuffer(dwLength), dwLength);
       str.ReleaseBuffer();
    }
@@ -853,7 +853,6 @@ CString FASTCALL CFrmWnd::ProcesarM3u(CString str)
 	CString lineas[6];
 	CString cadStr;
 	TCHAR cadTot[1600] = {0};
-	TCHAR szPath[_MAX_PATH];
 	TCHAR nuevaRuta[_MAX_PATH];
 	strcpy(nuevaRuta, RutaCompletaArchivoXM6);
 	
@@ -1561,8 +1560,7 @@ void CFrmWnd::OnClose()
 {
 	CString strFormat;
 	CString strText;
-	Filepath path;
-	int nResult;
+	Filepath path;	
 
 	ASSERT(this);
 	ASSERT(!m_bSaved);
@@ -2116,7 +2114,8 @@ void CFrmWnd::RestoreDiskState()
 LRESULT CFrmWnd::OnDisplayChange(UINT uParam, LONG lParam)
 {
 	LRESULT lResult;
-
+	uParam = 0;
+	lParam = 0;
 	// Clase basica
 	lResult = 0; //CFrameWnd::OnDisplayChange(0, uParam, lParam);
 

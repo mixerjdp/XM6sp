@@ -239,7 +239,10 @@ class CSubBMPWnd : public CWnd
 public:
 	CSubBMPWnd();
 										// コンストラクタ
+
+	BOOL FASTCALL Init(CDrawView* pDrawView);
 	void FASTCALL Refresh();
+	void FASTCALL Refresh(int nWidth, int nHeight);
 										// 描画
 #if !defined(NDEBUG)
 	void AssertValid() const;
@@ -269,7 +272,8 @@ public:
 	int m_nCursorX;
 										// マウスカーソルX
 	int m_nCursorY;
-										// マウスカーソルY
+								        // マウスカーソルY
+	CDrawView* mx_pDrawView;
 
 protected:
 	afx_msg int OnCreate(LPCREATESTRUCT lpCreateStruct);

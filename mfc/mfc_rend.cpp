@@ -3,7 +3,7 @@
 //	X68000 EMULATOR "XM6"
 //
 //	Copyright (C) 2001-2004 ＰＩ．(ytanaka@ipc-tokai.or.jp)
-//	[ MFC サブウィンドウ(レンダラ) ]
+//	[ Subventana MFC (renderizador) ]
 //
 //---------------------------------------------------------------------------
 
@@ -19,27 +19,27 @@
 
 //===========================================================================
 //
-//	レンダラバッファウィンドウ
+//	Ventana del buffer de renderizacion
 //
 //===========================================================================
 
 //---------------------------------------------------------------------------
 //
-//	コンストラクタ
+//	constructor
 //
 //---------------------------------------------------------------------------
 CRendBufWnd::CRendBufWnd(int nType)
 {
 	Render *render;
 
-	// レンダラ取得
+	// Adquisicion de renderizador
 	render = (Render*)::GetVM()->SearchDevice(MAKEID('R', 'E', 'N', 'D'));
 	ASSERT(render);
 
-	// タイプ記憶
+	// tipo de almacenamiento
 	m_nType = nType;
 
-	// スクロールサイズ、ウィンドウパラメータ、バッファアドレス
+	// Tamano de desplazamiento, parametros de la ventana, direccion del buffer
 	switch (nType) {
 		// TEXT
 		case 0:
@@ -98,30 +98,30 @@ CRendBufWnd::CRendBufWnd(int nType)
 
 //---------------------------------------------------------------------------
 //
-//	セットアップ
+//	configuracion
 //
 //---------------------------------------------------------------------------
 void FASTCALL CRendBufWnd::Setup(int x, int y, int width, int height, BYTE *ptr)
 {
 	int i;
 	int delta;
-	int next;
+	int next = 0;
 	const DWORD *p;
 
-	// ポインタ算出
+	// calculo de punteros
 	p = m_pRendBuf;
 	switch (m_nType) {
 		case 0:
-			// テキスト
+			// Texto.
 			p += (y << 10);
 			next = 1024;
 			break;
-		// グラフィック
+		// grafico
 		case 1:
 		case 2:
 		case 3:
 		case 4:
-		// BG/スプライト
+		// BG/Sprite.
 		case 5:
 			p += (y << 9);
 			next = 512;
@@ -132,7 +132,7 @@ void FASTCALL CRendBufWnd::Setup(int x, int y, int width, int height, BYTE *ptr)
 	}
 	p += x;
 
-	// オーバー対策
+	//medida contra la sobrecarga
 	if ((y + height) > m_nScrlHeight) {
 		height = m_nScrlHeight - y;
 	}
@@ -142,7 +142,7 @@ void FASTCALL CRendBufWnd::Setup(int x, int y, int width, int height, BYTE *ptr)
 		width = m_nScrlWidth - x;
 	}
 
-	// ループ
+	// bucle
 	for (i=0; i<height; i++) {
 		// x, widthを勘案してコピー
 		memcpy(ptr, p, (width << 2));
@@ -154,28 +154,28 @@ void FASTCALL CRendBufWnd::Setup(int x, int y, int width, int height, BYTE *ptr)
 
 //---------------------------------------------------------------------------
 //
-//	メッセージスレッドからの更新
+//	Actualizacion del hilo de mensajes
 //
 //---------------------------------------------------------------------------
 void FASTCALL CRendBufWnd::Update()
 {
 	int x;
 	int y;
-	DWORD rgb;
+	DWORD rgb = 0;
 	CString string;
 
-	// BMPウィンドウチェック
+	// Comprobacion de la ventana BMP
 	if (!m_pBMPWnd) {
 		return;
 	}
 
-	// マウスカーソルチェック
+	// Comprobacion del cursor del raton
 	if ((m_pBMPWnd->m_nCursorX < 0) || (m_pBMPWnd->m_nCursorY < 0)) {
 		m_StatusBar.SetPaneText(0, "");
 		return;
 	}
 
-	// 座標計算、オーバーチェック
+	// Calculos de coordenadas, sobrecomprobacion
 	x = m_pBMPWnd->m_nCursorX + m_pBMPWnd->m_nScrlX;
 	y = m_pBMPWnd->m_nCursorY + m_pBMPWnd->m_nScrlY;
 	if (x >= m_nScrlWidth) {
@@ -185,7 +185,7 @@ void FASTCALL CRendBufWnd::Update()
 		return;
 	}
 
-	// 表示データ作成
+	//Creacion de datos en pantalla
 	switch (m_nType) {
 		case 0:
 			rgb = m_pRendBuf[(y << 10) + x];
@@ -208,37 +208,37 @@ void FASTCALL CRendBufWnd::Update()
 
 //===========================================================================
 //
-//	合成バッファウィンドウ
+//	ventana del buffer compuesto
 //
 //===========================================================================
 
 //---------------------------------------------------------------------------
 //
-//	コンストラクタ
+//	constructor
 //
 //---------------------------------------------------------------------------
 CMixBufWnd::CMixBufWnd()
 {
 	Render *render;
 
-	// 基本パラメータ
+	// parametro basico
 	m_nScrlWidth = 1024;
 	m_nScrlHeight = 1024;
 	m_dwID = MAKEID('M', 'I', 'X', 'B');
 	::GetMsg(IDS_SWND_REND_MIX, m_strCaption);
 
-	// レンダラ取得
+	// Adquisicion del renderizador
 	render = (Render*)::GetVM()->SearchDevice(MAKEID('R', 'E', 'N', 'D'));
 	ASSERT(render);
 
-	// アドレス取得
+	// adquisicion de direcciones
 	m_pRendWork = render->GetWorkAddr();
 	ASSERT(m_pRendWork);
 }
 
 //---------------------------------------------------------------------------
 //
-//	セットアップ
+//	configuracion
 //
 //---------------------------------------------------------------------------
 void FASTCALL CMixBufWnd::Setup(int x, int y, int width, int height, BYTE *ptr)
@@ -248,9 +248,9 @@ void FASTCALL CMixBufWnd::Setup(int x, int y, int width, int height, BYTE *ptr)
 	int below;
 	const DWORD *p;
 
-	// x, yチェック
+	// x, y Comprobar.
 	if (x >= m_pRendWork->mixwidth) {
-		// 表示領域なし。すべて黒
+		// No hay zona de visualizacion. Todo negro.
 		for (i=0; i<height; i++) {
 			memset(ptr, 0, (width << 2));
 			ptr += (width << 2);
@@ -258,7 +258,7 @@ void FASTCALL CMixBufWnd::Setup(int x, int y, int width, int height, BYTE *ptr)
 		return;
 	}
 	if (y >= m_pRendWork->mixheight) {
-		// 表示領域なし。すべて黒
+		//No hay zona de visualizacion. Todo negro.
 		for (i=0; i<height; i++) {
 			memset(ptr, 0, (width << 2));
 			ptr += (width << 2);
@@ -266,13 +266,13 @@ void FASTCALL CMixBufWnd::Setup(int x, int y, int width, int height, BYTE *ptr)
 		return;
 	}
 
-	// ポインタ算出
+	// calculo de punteros
 	p = m_pRendWork->mixbuf;
 	ASSERT(p);
 	p += (y * m_pRendWork->mixwidth);
 	p += x;
 
-	// オーバー対策
+	//medida contra la sobrecarga
 	below = 0;
 	if ((y + height) > m_pRendWork->mixheight) {
 		below = height - m_pRendWork->mixheight + y;
@@ -284,7 +284,7 @@ void FASTCALL CMixBufWnd::Setup(int x, int y, int width, int height, BYTE *ptr)
 		width = m_pRendWork->mixwidth - x;
 	}
 
-	// ループ
+	// bucle
 	for (i=0; i<height; i++) {
 		// x, widthを勘案してコピー
 		memcpy(ptr, p, (width << 2));
@@ -294,7 +294,7 @@ void FASTCALL CMixBufWnd::Setup(int x, int y, int width, int height, BYTE *ptr)
 		ptr += (delta << 2);
 	}
 
-	// 余計な下方向を消す
+	// Borrar la direccion descendente extrana.
 	for (i=0; i<below; i++) {
 		memset(ptr, 0, (width << 2));
 		ptr += (width << 2);
@@ -305,7 +305,7 @@ void FASTCALL CMixBufWnd::Setup(int x, int y, int width, int height, BYTE *ptr)
 
 //---------------------------------------------------------------------------
 //
-//	メッセージスレッドからの更新
+//	Actualizacion del hilo de mensajes
 //
 //---------------------------------------------------------------------------
 void FASTCALL CMixBufWnd::Update()
@@ -315,18 +315,18 @@ void FASTCALL CMixBufWnd::Update()
 	DWORD rgb;
 	CString string;
 
-	// BMPウィンドウチェック
+	// Comprobacion de la ventana BMP
 	if (!m_pBMPWnd) {
 		return;
 	}
 
-	// マウスカーソルチェック
+	// Comprobacion del cursor del raton
 	if ((m_pBMPWnd->m_nCursorX < 0) || (m_pBMPWnd->m_nCursorY < 0)) {
 		m_StatusBar.SetPaneText(0, "");
 		return;
 	}
 
-	// 座標計算、オーバーチェック
+	// Calculos de coordenadas, sobrecomprobacion
 	x = m_pBMPWnd->m_nCursorX + m_pBMPWnd->m_nScrlX;
 	y = m_pBMPWnd->m_nCursorY + m_pBMPWnd->m_nScrlY;
 	if (x >= m_nScrlWidth) {
@@ -336,7 +336,7 @@ void FASTCALL CMixBufWnd::Update()
 		return;
 	}
 
-	// 表示データ作成
+	// Creacion de datos de visualizacion
 	if (x >= m_pRendWork->mixwidth) {
 		return;
 	}
@@ -345,9 +345,9 @@ void FASTCALL CMixBufWnd::Update()
 	}
 	rgb = m_pRendWork->mixbuf[(y * m_pRendWork->mixwidth) + x];
 
-	// 表示
-	string.Format("( %d, %d) R%d G%d B%d",
-				x, y, (rgb >> 16) & 0xff, (rgb >> 8) & 0xff, (rgb & 0xff));
+	// mostrar
+	string.Format("( %d, %d) R%d G%d B%d  Width: %d Height: %d",
+				x, y, (rgb >> 16) & 0xff, (rgb >> 8) & 0xff, (rgb & 0xff), m_pRendWork->mixwidth, m_pRendWork->mixheight);
 	m_StatusBar.SetPaneText(0, string);
 }
 

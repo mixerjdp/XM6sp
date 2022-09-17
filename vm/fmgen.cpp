@@ -212,7 +212,7 @@ void MakeLFOTable()
 			double pmb = pms[type][i];
 			for (int j=0; j<FM_LFOENTS; j++)
 			{
-				double v = pow(2.0, pmb * (2 * j - FM_LFOENTS+1) / (FM_LFOENTS-1));
+//				double v = pow(2.0, pmb * (2 * j - FM_LFOENTS+1) / (FM_LFOENTS-1));
 				double w = 0.6 * pmb * sin(2 * j * 3.14159265358979323846 / FM_LFOENTS) + 1;
 //				pmtable[type][i][j] = int(0x10000 * (v - 1));
 //				if (type == 0)
@@ -807,7 +807,7 @@ void Channel4::SetAlgorithm(uint algo)
 //  ‡¬
 ISample Channel4::Calc()
 {
-	int r;
+	int r = 0;
 	switch (algo_)
 	{
 	case 0:
@@ -867,7 +867,7 @@ ISample Channel4::CalcL()
 {
 	chip_->SetPMV(pms[chip_->GetPML()]);
 
-	int r;
+	int r = 0;
 	switch (algo_)
 	{
 	case 0:

@@ -197,8 +197,7 @@ BOOL FASTCALL CConfig::Init()
 
 
 BOOL FASTCALL CConfig::CustomInit(BOOL ArchivoDefault)
-{
-	int i;
+{	
 	Filepath path;
 
 	ASSERT(this);
@@ -213,7 +212,7 @@ BOOL FASTCALL CConfig::CustomInit(BOOL ArchivoDefault)
 
 	// Obtener nombre archivo de juego actual y remover extensión
 	int nLen = m_pFrmWnd->NombreArchivoXM6.GetLength();
-	TCHAR lpszBuf[MAX_PATH], xm6Default[MAX_PATH];
+	TCHAR lpszBuf[MAX_PATH];
 	_tcscpy(lpszBuf, m_pFrmWnd->NombreArchivoXM6.GetBuffer(nLen));
 	PathRemoveExtensionA(lpszBuf);
 
@@ -8504,7 +8503,7 @@ BEGIN_MESSAGE_MAP(CMiscPage, CConfigPage)
 END_MESSAGE_MAP()
 
 
-
+/* ACA SE INICIALIZA EN EL CAMPO DE TEXTO LA RUTA DE GUARDADOS RAPIDOS */
 BOOL CMiscPage::OnInitDialog()
 {
 	CEdit *pEdit;	
@@ -8523,9 +8522,10 @@ BOOL CMiscPage::OnInitDialog()
 	return TRUE;
 }
 
+
+/* ACA SE ABRE DIALOGO PARA SELECCIONAR UNA CARPETA DEL SISTEMA  */
 void CMiscPage::OnBuscarFolder()
-{ 
-	char *hola= "hola";
+{ 	
 	CEdit *pEdit;	
 	
 /*	CFolderPickerDialog folderPickerDialog("c:\\", OFN_FILEMUSTEXIST | OFN_ALLOWMULTISELECT | OFN_ENABLESIZING, this,
@@ -8546,7 +8546,7 @@ void CMiscPage::OnBuscarFolder()
    CFolderPickerDialog m_dlg;
    CString folderPath;
  
-	m_dlg.m_ofn.lpstrTitle = _T("Put your title here");
+	m_dlg.m_ofn.lpstrTitle = _T("Buscar folder");
 	m_dlg.m_ofn.lpstrInitialDir = _T("C:\\");
 	if (m_dlg.DoModal() == IDOK) {
        folderPath = m_dlg.GetPathName();   // Use this to get the selected folder name 
