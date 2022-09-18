@@ -2098,31 +2098,15 @@ void FASTCALL CInput::MakeJoy(BOOL bEnable)
 
 		// eje
 		for (nAxis = 0; nAxis < JoyAxes; nAxis++) 
-		{
-			
-			/*if (joyType[i] != 7)
-			{
-				if (m_lJoyAxisMin[i][nAxis] == m_lJoyAxisMax[i][nAxis]) {
-				//	continue;
-				}
-			}*/
+		{						
 			dmy++; // dmy = naxis 
-			/*if (joyType[i] != 7)
-			{
-				if (dmy >= 4) {
-					//break;
-				}
-			}
-			*/
 			
-
 		    // Obtener punteros
 			pOffset = (BYTE*)&m_JoyState[i];
 			pOffset += JoyAxisOffsetTable[nAxis];
 			pAxis = (LONG*)pOffset;
 			// adquisicion de datos
-			lAxis = *pAxis;
-			
+			lAxis = *pAxis;			
 
 			//  El cero se ignora  ya que se repite, excepcion es el Pad direccion (POV).
 			//  Se hace comparacion con el primer Axis para comprobar que sea entrada nula para el continue
@@ -2130,7 +2114,6 @@ void FASTCALL CInput::MakeJoy(BOOL bEnable)
 			{
 				continue;
 			}
-
 			
 				// inversión
 			if (m_JoyCfg[i].bAxis[nAxis]) {
@@ -2168,8 +2151,7 @@ void FASTCALL CInput::MakeJoy(BOOL bEnable)
 			{
 				//CString sz;
 				//sz.Format(_T("\nAxis: %d  lAxis: %d \n"), nAxis, lAxis);
-				//OutputDebugStringW(CT2W(sz));
-               
+				//OutputDebugStringW(CT2W(sz));               
 			   
 				if (lAxis == 0) // Arriba
 					ji[HIWORD(m_JoyCfg[i].dwAxis[1])].axis[1] = (DWORD)-2048;
@@ -2199,9 +2181,21 @@ void FASTCALL CInput::MakeJoy(BOOL bEnable)
 					ji[HIWORD(m_JoyCfg[i].dwAxis[0])].axis[0] = (DWORD)-2048;
 					ji[HIWORD(m_JoyCfg[i].dwAxis[1])].axis[1] = (DWORD)-2048;
 				}
+
+				// Desactiva teclas especiales de juego asignadas de joystick a teclado *-*
+				if (m_pKeyboard->keyboard.status[0x55] == TRUE)
+					m_pKeyboard->BreakKey(0x55);
+				if (m_pKeyboard->keyboard.status[0x57] == TRUE)
+					m_pKeyboard->BreakKey(0x57);
+				if (m_pKeyboard->keyboard.status[0x63] == TRUE)
+					m_pKeyboard->BreakKey(0x63);
+				if (m_pKeyboard->keyboard.status[0x63] == TRUE)
+					m_pKeyboard->BreakKey(0x63);
+				if (m_pKeyboard->keyboard.status[0x72] == TRUE)
+					m_pKeyboard->BreakKey(0x72);
+				if (m_pKeyboard->keyboard.status[0x73] == TRUE)
+					m_pKeyboard->BreakKey(0x73);
 			}
-
-
 
 		}
 
@@ -2209,20 +2203,23 @@ void FASTCALL CInput::MakeJoy(BOOL bEnable)
 		// Pulsación de botón de Joystick
 		for (nButton=0; nButton<JoyButtons; nButton++) {
 
-			if (nButton == 9) // 9 = Botón Start
-			{		
-				
-				// Aqui se detecta pulsacion de boton 9 (Start) y Se bindea a tecla F1 *-*
-				if (m_JoyState[i].rgbButtons[nButton] == 0x80)
+			if (m_JoyState[i].rgbButtons[nButton] == 0x80) // Joystick a teclado
+			{
+				switch (nButton) // Se asignan Botones 6 y 7 a OPT, OPT2, boton 9 a START *-* 
 				{
-					/*
-					
-					*/
-					m_pKeyboard->MakeKey(99);
-					m_pKeyboard->BreakKey(99);
-					//Sleep(1);					
+					case 6: 
+						m_pKeyboard->MakeKey(0x72); //OPT1
+						m_pKeyboard->MakeKey(0x57); //XF3					
+					break;
+					case 7:
+						m_pKeyboard->MakeKey(0x73); //OPT2
+						m_pKeyboard->MakeKey(0x55); //XF1
+						break;
+					case 9: // 9 = Botón Start
+						m_pKeyboard->MakeKey(0x63);
+						break;
 				}
-			}
+			}									
 
 			/*
 			if (m_JoyState[i].rgbButtons[nButton] == 0x80)
@@ -2230,16 +2227,14 @@ void FASTCALL CInput::MakeJoy(BOOL bEnable)
 				CString sz;
 				sz.Format(_T("\nNo. Boton: %d  Status:%d \n"), nButton, m_JoyState[i].rgbButtons[nButton]);
 				OutputDebugStringW(CT2W(sz));
-			}*/
-
-
+			}
+			*/
 
 			// anulacion
 			if (LOWORD(m_JoyCfg[i].dwButton[nButton]) == 0) {
 				continue;
 			}
-
-		
+					
 			// apagado
 			if ((m_JoyState[i].rgbButtons[nButton] & 0x80) == 0) 
 			{

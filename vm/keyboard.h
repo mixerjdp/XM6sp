@@ -84,14 +84,15 @@ public:
 										// キーデータ送信ウェイト取得
 	void FASTCALL GetKeyboard(keyboard_t *buffer) const;
 										// 内部データ取得
+	keyboard_t keyboard;
+	// 内部データ
 
 private:
 	MFP *mfp;
 										// MFP
 	Mouse *mouse;
 										// マウス
-	keyboard_t keyboard;
-										// 内部データ
+	
 	Event event;
 										// イベント
 	Sync *sync;
