@@ -905,7 +905,7 @@ void CDrawView::OnDraw(CDC *pDC)
 		{						
 			numeroDeMultiplicador++;
 			mihmul = hmul * numeroDeMultiplicador;			
-			anchoCalculado = (m_Info.nRendWidth * mihmul) >> 2;						
+			anchoCalculado = (m_Info.nWidth * mihmul) >> 2;						
 		}
 		numeroDeMultiplicador--;
 		
@@ -935,19 +935,24 @@ void CDrawView::OnDraw(CDC *pDC)
 			while (altoCalculado < rect.Height()) // Ir aumentando multiplicadores hasta que alcance resolucion de pantalla
 			{																	
 				mivmul++;
-				altoCalculado = (m_Info.nRendHeight * mivmul) >> 2;		
+				altoCalculado = (m_Info.nHeight * mivmul) >> 2;		
 			}
 			if (altoCalculado - rect.Height() > 16 )  // aunque falten 16 pix calzar 256 para 240p
 				mivmul--;
-			vmul = mivmul;	
-
-		/*	CString sv;	
-		    sv.Format(_T("altoCalculado: %d  rendheight:%d  mivmul: %d   m_Info.nRendVMul: %d  rect.Height(): %d \r\n"),  altoCalculado, m_Info.nRendHeight, mivmul, m_Info.nRendVMul, rect.Height());	
-			OutputDebugStringW(CT2W(sv));   */
+			vmul = mivmul;				
+			
 		}
 
-	
-        
+		if (m_Info.nWidth == 704 && m_Info.nHeight == 480) // Caso especial Carat
+		{
+			vmul++;
+			hmul++;
+		}
+
+	/*	CString sv;
+		sv.Format(_T("nWidth: %d nHeight:%d   nRendwidth: %d nRendheight:%d  vmul: %d  rect.height:%d \r\n"), m_Info.nWidth, m_Info.nHeight, m_Info.nRendWidth, m_Info.nRendHeight, vmul, rect.Height());		
+		OutputDebugStringW(CT2W(sv));
+        */
 
 
 
@@ -1110,7 +1115,7 @@ void FASTCALL CDrawView::ReCalc(CRect& rect)
 
 	// Centrado y margenes calculados teniendo en cuenta el aumento
 	width = m_Info.nWidth * m_Info.nRendHMul;
-	if ((m_Info.nRendWidth < 600) && m_Info.bBltStretch) {	// si necesita estirar
+	if ((m_Info.nRendWidth < 768) && m_Info.bBltStretch) {	// si necesita estirar
 		width = (width * 5) >> 2;  // Proporcion 5:4
 	}
 	height = m_Info.nHeight;
@@ -1132,34 +1137,34 @@ void FASTCALL CDrawView::ReCalc(CRect& rect)
 		if (cx > m_Info.nRendWidth)
 			bordeAncho = cx % m_Info.nRendWidth;
 	}
-	if (m_Info.nRendHeight < 240)
+	if (m_Info.nRendHeight < 240) 
 	{
 		if (cy > m_Info.nRendHeight)
 			bordeAlto = cy % m_Info.nRendHeight;
 	}
 
 
-	/*CString sz, sz2, sz3, sz4;		
-	sz.Format(_T("nRendHmul: %d   nRendVMul: %d \r\n"),  m_Info.nRendHMul,  m_Info.nRendVMul);	
-	sz2.Format(_T("width: %d   height: %d   bordeAncho: %d  bordeAlto: %d  \r\n "),  width,  height, bordeAncho, bordeAlto);	
-	sz3.Format(_T("nWidth: %d   nHeight: %d   nRendWidth: %d   nRendHeight: %d \r\n"),  m_Info.nWidth,  m_Info.nHeight, m_Info.nRendWidth,  m_Info.nRendHeight);	
-	sz4.Format(_T("rect.Width(): %d   rect.Height(): %d  cx:%d cy:%d\r\n\r\n\r\n"),  rect.Width(),  rect.Height(),cx,cy );		
-	OutputDebugStringW(CT2W(sz));	
-	OutputDebugStringW(CT2W(sz2));
-	OutputDebugStringW(CT2W(sz3));
-	OutputDebugStringW(CT2W(sz4));*/
+	//CString sz, sz2, sz3, sz4;		
+	//sz.Format(_T("nRendHmul: %d   nRendVMul: %d \r\n"),  m_Info.nRendHMul,  m_Info.nRendVMul);	
+	//sz2.Format(_T("width: %d   height: %d   bordeAncho: %d  bordeAlto: %d  \r\n "),  width,  height, bordeAncho, bordeAlto);	
+	//sz3.Format(_T("nWidth: %d   nHeight: %d   nRendWidth: %d   nRendHeight: %d \r\n"),  m_Info.nWidth,  m_Info.nHeight, m_Info.nRendWidth,  m_Info.nRendHeight);	
+	//sz4.Format(_T("rect.Width(): %d   rect.Height(): %d  cx:%d cy:%d\r\n\r\n\r\n"),  rect.Width(),  rect.Height(),cx,cy );		
+	//OutputDebugStringW(CT2W(sz));	
+	//OutputDebugStringW(CT2W(sz2));
+	//OutputDebugStringW(CT2W(sz3));
+	//OutputDebugStringW(CT2W(sz4));*/
 	    
 	
 	/* ACA SE DETERMINAN LAS ESQUINAS SUPERIORES IZQ Y TOP DEL FRAME PRINCIPAL */ 
 	
 		if (m_Info.bBltStretch) 		
-			m_Info.nLeft = (bordeAncho > 0) ? (bordeAncho >> 2) : bordeAncho;
+			m_Info.nLeft = (bordeAncho > 0) ? (bordeAncho >> 3) : bordeAncho;
 		else 
 		    m_Info.nLeft = (rect.Width() - width) >> 1;
 	
 	
 		if (m_Info.bBltStretch) 	
-			m_Info.nTop = (bordeAlto > 0) ? (bordeAlto >> 2) : bordeAlto; 
+			m_Info.nTop = (bordeAlto > 0) ? (bordeAlto >> 3) : bordeAlto; 
 		else
 			m_Info.nTop = (rect.Height() - height) >> 1;
 	
@@ -1193,7 +1198,7 @@ void FASTCALL CDrawView::Stretch(BOOL bStretch)
 	m_Info.bBltStretch = bStretch;
 
 	// Recalcular si no es 768 x 512
-	if ((m_Info.nRendWidth > 0) && (m_Info.nRendWidth < 600)) {		// si se requiere una mejora de la declaracion
+	if ((m_Info.nRendWidth > 0) && (m_Info.nRendWidth < 768)) {		// si se requiere una mejora de la declaracion
 		m_Info.nRendWidth = m_Info.pWork->width + 1;
 		GetClientRect(&rect);
 		ReCalc(rect);
