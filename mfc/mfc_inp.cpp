@@ -2182,15 +2182,15 @@ void FASTCALL CInput::MakeJoy(BOOL bEnable)
 					ji[HIWORD(m_JoyCfg[i].dwAxis[1])].axis[1] = (DWORD)-2048;
 				}
 
-				// Desactiva teclas especiales de juego asignadas de joystick a teclado *-*
+				// Desactiva teclas especiales de juego mapeadas de joystick a teclado *-*
 				if (m_pKeyboard->keyboard.status[0x55] == TRUE)
 					m_pKeyboard->BreakKey(0x55);
 				if (m_pKeyboard->keyboard.status[0x57] == TRUE)
 					m_pKeyboard->BreakKey(0x57);
 				if (m_pKeyboard->keyboard.status[0x63] == TRUE)
 					m_pKeyboard->BreakKey(0x63);
-				if (m_pKeyboard->keyboard.status[0x63] == TRUE)
-					m_pKeyboard->BreakKey(0x63);
+				if (m_pKeyboard->keyboard.status[0x65] == TRUE)
+					m_pKeyboard->BreakKey(0x65);
 				if (m_pKeyboard->keyboard.status[0x72] == TRUE)
 					m_pKeyboard->BreakKey(0x72);
 				if (m_pKeyboard->keyboard.status[0x73] == TRUE)
@@ -2203,19 +2203,22 @@ void FASTCALL CInput::MakeJoy(BOOL bEnable)
 		// Pulsación de botón de Joystick
 		for (nButton=0; nButton<JoyButtons; nButton++) {
 
-			if (m_JoyState[i].rgbButtons[nButton] == 0x80) // Joystick a teclado
+			if (m_JoyState[i].rgbButtons[nButton] == 0x80) // Mapeo de Joystick a teclado
 			{
 				switch (nButton) // Se asignan Botones 6 y 7 a OPT, OPT2, boton 9 a START *-* 
 				{
 					case 6: 
 						m_pKeyboard->MakeKey(0x72); //OPT1
 						m_pKeyboard->MakeKey(0x57); //XF3					
-					break;
+						break;
 					case 7:
 						m_pKeyboard->MakeKey(0x73); //OPT2
 						m_pKeyboard->MakeKey(0x55); //XF1
 						break;
-					case 9: // 9 = Botón Start
+					case 8:
+						m_pKeyboard->MakeKey(0x65); // 8 = Select o Credit (F3)
+						break;
+					case 9:                        // 9 = Botón Start (F1)
 						m_pKeyboard->MakeKey(0x63);
 						break;
 				}
