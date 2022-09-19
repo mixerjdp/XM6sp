@@ -463,6 +463,9 @@
     <ClInclude Include="mfc_w32.h">
       <Filter>ヘッダー ファイル\MFC</Filter>
     </ClInclude>
+    <ClInclude Include="..\mfc\resource.h">
+      <Filter>ヘッダー ファイル</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <CustomBuild Include="..\vm\core_asm.asm">
@@ -477,5 +480,19 @@
     <CustomBuild Include="..\mfc\mfc_asm.asm">
       <Filter>ソース ファイル\MFC</Filter>
     </CustomBuild>
+  </ItemGroup>
+  <ItemGroup>
+    <Image Include="..\mfc\res\x68000.ico">
+      <Filter>リソース ファイル</Filter>
+    </Image>
+    <Image Include="..\mfc\res\xm6.ico">
+      <Filter>リソース ファイル</Filter>
+    </Image>
+    <Image Include="..\mfc\res\x68k.bmp">
+      <Filter>リソース ファイル</Filter>
+    </Image>
+    <Image Include="..\mfc\res\crt.bmp">
+      <Filter>リソース ファイル</Filter>
+    </Image>
   </ItemGroup>
 </Project>

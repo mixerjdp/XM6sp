@@ -945,7 +945,7 @@ void CDrawView::OnDraw(CDC *pDC)
 
 		if (m_Info.nWidth == 704 && m_Info.nHeight == 480) // Caso especial Carat
 		{
-			vmul++;
+			//vmul++;
 			hmul++;
 		}
 

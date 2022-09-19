@@ -256,6 +256,7 @@ nasmw -f win32 -o $(IntDir)%(Filename).obj %(FullPath)
     </ResourceCompile>
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="..\mfc\resource.h" />
     <ClInclude Include="adpcm.h" />
     <ClInclude Include="areaset.h" />
     <ClInclude Include="cisc.h" />
@@ -336,6 +337,12 @@ nasmw -f win32 -o $(IntDir)%(Filename).obj %(FullPath)
       <Project>{73cb5212-2ebc-4b6f-9b40-8daa46fb0ab2}</Project>
       <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
     </ProjectReference>
+  </ItemGroup>
+  <ItemGroup>
+    <Image Include="..\mfc\res\crt.bmp" />
+    <Image Include="..\mfc\res\x68000.ico" />
+    <Image Include="..\mfc\res\x68k.bmp" />
+    <Image Include="..\mfc\res\xm6.ico" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

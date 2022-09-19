@@ -439,7 +439,7 @@ BOOL FASTCALL CApp::CheckMutex()
 	if (hMutex) {
 		// ä˘Ç…ãNìÆÅH
 		if (::GetLastError() == ERROR_ALREADY_EXISTS) {
-			return FALSE;
+			return TRUE;
 		}
 
 		// OK
@@ -448,7 +448,7 @@ BOOL FASTCALL CApp::CheckMutex()
 	}
 
 	// Ç»Ç∫Ç©é∏îs
-	return FALSE;
+	return TRUE;
 }
 
 //---------------------------------------------------------------------------

@@ -14,7 +14,7 @@
 #undef APSTUDIO_READONLY_SYMBOLS
 
 /////////////////////////////////////////////////////////////////////////////
-// Spanish (Spain, International Sort) resources
+// Español (España, alfabetización internacional) resources
 
 #if !defined(AFX_RESOURCE_DLL) || defined(AFX_TARG_ESN)
 LANGUAGE LANG_SPANISH, SUBLANG_SPANISH_MODERN
@@ -385,45 +385,45 @@ BEGIN
         MENUITEM "&Guardar",                    IDM_SAVE
         MENUITEM "Guardado rápido\tF5",         IDM_SAVEAS
         MENUITEM SEPARATOR
-        MENUITEM "&Reset",                      IDM_RESET        
+        MENUITEM "&Reinicio",                   IDM_RESET
         MENUITEM SEPARATOR
         MENUITEM "&Interrupcion",               IDM_INTERRUPT
-        MENUITEM "&Encendido",                  IDM_POWER        
+        MENUITEM "&Encendido",                  IDM_POWER
         MENUITEM SEPARATOR
-        MENUITEM "&Salir\tAlt+F4",               IDM_EXIT
+        MENUITEM "&Salir\tAlt+F4",              IDM_EXIT
     END
     POPUP "Floppy Disco #&0"
     BEGIN
-        MENUITEM "&Abrir...",                    IDM_D0OPEN
-        MENUITEM "&Expulsar",                      IDM_D0EJECT
-        MENUITEM "&Proteger contra escritura",              IDM_D0WRITEP
+        MENUITEM "&Abrir...",                   IDM_D0OPEN
+        MENUITEM "&Expulsar",                   IDM_D0EJECT
+        MENUITEM "&Proteger contra escritura",  IDM_D0WRITEP
         MENUITEM SEPARATOR
-        MENUITEM "Expulsion &forzada",                IDM_D0FORCE
+        MENUITEM "Expulsion &forzada",          IDM_D0FORCE
         MENUITEM "&Insertar inválido",          IDM_D0INVALID
     END
     POPUP "Floppy Disco #&1"
     BEGIN
-        MENUITEM "&Abrir...",                    IDM_D1OPEN
-        MENUITEM "&Expulsar",                      IDM_D1EJECT
-        MENUITEM "&Proteger contra escritura",              IDM_D1WRITEP
+        MENUITEM "&Abrir...",                   IDM_D1OPEN
+        MENUITEM "&Expulsar",                   IDM_D1EJECT
+        MENUITEM "&Proteger contra escritura",  IDM_D1WRITEP
         MENUITEM SEPARATOR
-        MENUITEM "Expulsion &forzada",                IDM_D1FORCE
+        MENUITEM "Expulsion &forzada",          IDM_D1FORCE
         MENUITEM "&Insertar inválido",          IDM_D1INVALID
     END
     POPUP "&MO Disco"
     BEGIN
-        MENUITEM "&Abrir...",                    IDM_MOOPEN
-        MENUITEM "&Expulsar",                      IDM_MOEJECT
-        MENUITEM "&Proteger contra escritura",              IDM_MOWRITEP
+        MENUITEM "&Abrir...",                   IDM_MOOPEN
+        MENUITEM "&Expulsar",                   IDM_MOEJECT
+        MENUITEM "&Proteger contra escritura",  IDM_MOWRITEP
         MENUITEM SEPARATOR
-        MENUITEM "Expulsion &forzada",                IDM_MOFORCE
+        MENUITEM "Expulsion &forzada",          IDM_MOFORCE
     END
     POPUP "&CD-ROM"
     BEGIN
-        MENUITEM "&Abrir...",                    IDM_CDOPEN
-        MENUITEM "&Expulsar",                      IDM_CDEJECT
+        MENUITEM "&Abrir...",                   IDM_CDOPEN
+        MENUITEM "&Expulsar",                   IDM_CDEJECT
         MENUITEM SEPARATOR
-        MENUITEM "Expulsion &forzada",                IDM_CDFORCE
+        MENUITEM "Expulsion &forzada",          IDM_CDFORCE
     END
     POPUP "&Ver"
     BEGIN
@@ -435,10 +435,10 @@ BEGIN
         END
         POPUP "&Procesador"
         BEGIN
-            MENUITEM "&Register",                   IDM_CPUREG
-            MENUITEM "&Interrupt",                  IDM_INT
-            MENUITEM "&Disassemble",                IDM_DISASM
-            MENUITEM "&Memory",                     IDM_MEMORY
+            MENUITEM "&Registros",                  IDM_CPUREG
+            MENUITEM "&Interrupciones",             IDM_INT
+            MENUITEM "&Desensamblado",              IDM_DISASM
+            MENUITEM "&Memoria",                    IDM_MEMORY
             MENUITEM "&Break Point",                IDM_BREAKP
         END
         POPUP "&Dispositivos"
@@ -502,17 +502,17 @@ BEGIN
             MENUITEM "&MIDI Driver",                IDM_MIDIDRV
         END
         MENUITEM SEPARATOR
-        MENUITEM "&Caption",                    IDM_CAPTION
-        MENUITEM "&Menu Bar",                   IDM_MENU
-        MENUITEM "Status &Bar",                 IDM_STATUS
-        MENUITEM "Re&fresh",                    IDM_REFRESH
+        MENUITEM "Barra de &Titulo",            IDM_CAPTION
+        MENUITEM "Barra de &Menu",              IDM_MENU
+        MENUITEM "Barra de &Estado",            IDM_STATUS
+        MENUITEM "Re&frescar",                  IDM_REFRESH
         MENUITEM SEPARATOR
-        MENUITEM "Stretch con &Aspect Ratio",  IDM_STRETCH
-        MENUITEM "F&ull Screen\tAlt+Enter",     IDM_FULLSCREEN
+        MENUITEM "Stretch con &Aspect Ratio",   IDM_STRETCH
+        MENUITEM "Pantalla &Completa\tAlt+Enter", IDM_FULLSCREEN
     END
     POPUP "&Depurar"
     BEGIN
-        MENUITEM "E&jecutar",                    IDM_EXEC
+        MENUITEM "E&jecutar",                   IDM_EXEC
         MENUITEM "&Break\tAlt+F12",             IDM_BREAK
         MENUITEM "&Trace\tShift+F12",           IDM_TRACE
         MENUITEM SEPARATOR
@@ -532,9 +532,10 @@ BEGIN
         MENUITEM "Make a new S&CSI Fixed Disk...", IDM_NEWSCSI
         MENUITEM "Make a new SCSI MO &Disk...", IDM_NEWMO
         MENUITEM SEPARATOR
-        MENUITEM "&Opciones...",                 IDM_OPTIONS
-        MENUITEM "Guardar archivo de config. personalizada", IDM_SAVECUSTOMCONFIG
-        MENUITEM "Guardar archivo de config. global", IDM_SAVEGLOBALCONFIG
+        MENUITEM "&Opciones...",                IDM_OPTIONS
+        MENUITEM "Guardar archivo de config. &personalizada", IDM_SAVECUSTOMCONFIG
+        MENUITEM "Guardar archivo de config. &global", IDM_SAVEGLOBALCONFIG
+        MENUITEM "Guardar archivo de config. global y &reiniciar", IDM_SAVEGLOBALCONFIGANDRESET
     END
     POPUP "&Ventana"
     BEGIN
@@ -547,7 +548,7 @@ BEGIN
     END
     POPUP "&Ayuda"
     BEGIN
-        MENUITEM "&Acerca de...",                   IDM_ABOUT
+        MENUITEM "&Acerca de...",               IDM_ABOUT
     END
 END
 
@@ -562,45 +563,45 @@ BEGIN
             MENUITEM "&Guardar",                    IDM_SAVE
             MENUITEM "Guardado Rápido\tF5",         IDM_SAVEAS
             MENUITEM SEPARATOR
-            MENUITEM "&Reset",                      IDM_RESET            
+            MENUITEM "&Reset",                      IDM_RESET
             MENUITEM SEPARATOR
-            MENUITEM "&Interrupcion",                  IDM_INTERRUPT
-            MENUITEM "&Encender/Apagar",               IDM_POWER            
+            MENUITEM "&Interrupcion",               IDM_INTERRUPT
+            MENUITEM "&Encender/Apagar",            IDM_POWER
             MENUITEM SEPARATOR
-            MENUITEM "&Salir\tAlt+F4",               IDM_EXIT
+            MENUITEM "&Salir\tAlt+F4",              IDM_EXIT
         END
         POPUP "Floppy Disco #&0"
         BEGIN
-            MENUITEM "&Abrir...",                    IDM_D0OPEN
-            MENUITEM "&Expulsar",                      IDM_D0EJECT
-            MENUITEM "&Proteger contra escritura",              IDM_D0WRITEP
+            MENUITEM "&Abrir...",                   IDM_D0OPEN
+            MENUITEM "&Expulsar",                   IDM_D0EJECT
+            MENUITEM "&Proteger contra escritura",  IDM_D0WRITEP
             MENUITEM SEPARATOR
-            MENUITEM "Expulsion &forzada",                IDM_D0FORCE
-            MENUITEM "&Insertar inválido",             IDM_D0INVALID
+            MENUITEM "Expulsion &forzada",          IDM_D0FORCE
+            MENUITEM "&Insertar inválido",          IDM_D0INVALID
         END
         POPUP "Floppy Disco #&1"
         BEGIN
-            MENUITEM "&Abrir...",                    IDM_D1OPEN
-            MENUITEM "&Expulsar",                      IDM_D1EJECT
-            MENUITEM "&Proteger contra escritura",              IDM_D1WRITEP
+            MENUITEM "&Abrir...",                   IDM_D1OPEN
+            MENUITEM "&Expulsar",                   IDM_D1EJECT
+            MENUITEM "&Proteger contra escritura",  IDM_D1WRITEP
             MENUITEM SEPARATOR
-            MENUITEM "Expulsion &forzada",                IDM_D1FORCE
-            MENUITEM "&Insertar inválido",             IDM_D1INVALID
+            MENUITEM "Expulsion &forzada",          IDM_D1FORCE
+            MENUITEM "&Insertar inválido",          IDM_D1INVALID
         END
         POPUP "&MO Drive"
         BEGIN
-            MENUITEM "&Abrir...",                    IDM_MOOPEN
-            MENUITEM "&Expulsar",                      IDM_MOEJECT
-            MENUITEM "&Proteger contra escritura",              IDM_MOWRITEP
+            MENUITEM "&Abrir...",                   IDM_MOOPEN
+            MENUITEM "&Expulsar",                   IDM_MOEJECT
+            MENUITEM "&Proteger contra escritura",  IDM_MOWRITEP
             MENUITEM SEPARATOR
-            MENUITEM "Expulsion &forzada",                IDM_MOFORCE
+            MENUITEM "Expulsion &forzada",          IDM_MOFORCE
         END
         POPUP "&CD-ROM"
         BEGIN
-            MENUITEM "&Abrir...",                    IDM_CDOPEN
-            MENUITEM "&Expulsar",                      IDM_CDEJECT
+            MENUITEM "&Abrir...",                   IDM_CDOPEN
+            MENUITEM "&Expulsar",                   IDM_CDEJECT
             MENUITEM SEPARATOR
-            MENUITEM "Expulsion &forzada",                IDM_CDFORCE
+            MENUITEM "Expulsion &forzada",          IDM_CDFORCE
         END
         POPUP "&Vista"
         BEGIN
@@ -710,7 +711,7 @@ BEGIN
             MENUITEM "Make a new S&CSI Fixed Disk...", IDM_NEWSCSI
             MENUITEM "Make a new SCSI MO &Disk...", IDM_NEWMO
             MENUITEM SEPARATOR
-            MENUITEM "&Opciones...",                 IDM_OPTIONS
+            MENUITEM "&Opciones...",                IDM_OPTIONS
             MENUITEM "Guardar archivo de config. personalizada", IDM_SAVECUSTOMCONFIG
             MENUITEM "Guardar archivo de config. global", IDM_SAVEGLOBALCONFIG
         END
@@ -721,11 +722,11 @@ BEGIN
             MENUITEM "&Iconic",                     IDM_ICONIC
             MENUITEM "&Arrange Icon",               IDM_ARRANGEICON
             MENUITEM "&Hide",                       IDM_HIDE
-            MENUITEM "&Restaurar",                    IDM_RESTORE
+            MENUITEM "&Restaurar",                  IDM_RESTORE
         END
         POPUP "&Ayuda"
         BEGIN
-            MENUITEM "&Acerca de...",                   IDM_ABOUT
+            MENUITEM "&Acerca de...",               IDM_ABOUT
         END
     END
 END
@@ -2497,8 +2498,11 @@ END
 // Icon with lowest ID value placed first to ensure application icon
 // remains consistent on all systems.
 IDI_APPICON             ICON                    "res\\x68000.ico"
+
 IDI_XICON               ICON                    "res\\xm6.ico"
+
 AFX_IDI_STD_FRAME       ICON                    "res\\x68000.ico"
+
 
 /////////////////////////////////////////////////////////////////////////////
 //
@@ -2506,7 +2510,9 @@ AFX_IDI_STD_FRAME       ICON                    "res\\x68000.ico"
 //
 
 IDB_X68K                BITMAP                  "res\\x68k.bmp"
+
 IDB_CRT                 BITMAP                  "res\\crt.bmp"
+
 
 #ifdef APSTUDIO_INVOKED
 /////////////////////////////////////////////////////////////////////////////
@@ -3944,7 +3950,7 @@ BEGIN
     IDS_US_XM6LOADHDR       "Invalid file!"
     IDS_US_XM6LOADVER       "Unrecognized version\n\n[Now]  version%1X.%02X\n[File] version%1X.%02X"
     IDS_US_FILEUPDATE       "The file is updated after saving\n\n[F i l e]  %s\n[Recorded] %d/%d/%d\n[Current]  %d/%d/%d"
-    IDS_US_SCSI_CAPACITY    "Status" 
+    IDS_US_SCSI_CAPACITY    "Status"
     IDS_US_SCSI_FILENAME    "SCSI-HD Image File"
     IDS_US_SCSI_MO          "(SCSI MO Drive)"
     IDS_US_SCSI_CD          "(SCSI CD-ROM Drive)"
@@ -3963,7 +3969,7 @@ BEGIN
     IDS_US_PROCESSOR        "This processor is not supported.\nMMX and CMOV instructions are required."
 END
 
-#endif    // Spanish (Spain, International Sort) resources
+#endif    // Español (España, alfabetización internacional) resources
 /////////////////////////////////////////////////////////////////////////////
 
 

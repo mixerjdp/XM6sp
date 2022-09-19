@@ -161,6 +161,7 @@ protected:
 	afx_msg void OnMRUUI(CCmdUI *pCmdUI);
 										// MRU UI
 	afx_msg void OnReset();
+	afx_msg void OnResetNuevo();
 										// リセット
 	afx_msg void OnResetUI(CCmdUI *pCmdUI);
 										// リセット UI
@@ -172,7 +173,10 @@ protected:
 	afx_msg void OnSgc(); // Configuracion global
 	
 	afx_msg void OnSgcUI(CCmdUI* pCmdUI);
-	
+
+	afx_msg void OnSgcr(); // Configuracion global y reiniciar
+
+	afx_msg void OnSgcrUI(CCmdUI* pCmdUI);
 
 	afx_msg void OnInterrupt();
 										// インタラプト

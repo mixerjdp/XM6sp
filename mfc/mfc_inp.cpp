@@ -2069,7 +2069,7 @@ void FASTCALL CInput::MakeJoy(BOOL bEnable)
 	LONG *pAxis;
 	LONG lAxis;
 	PPI::joyinfo_t ji[PPI::PortMax];
-
+	static bool jtk = FALSE;
 	int dmy;
 
 	ASSERT(this);
@@ -2182,26 +2182,47 @@ void FASTCALL CInput::MakeJoy(BOOL bEnable)
 					ji[HIWORD(m_JoyCfg[i].dwAxis[1])].axis[1] = (DWORD)-2048;
 				}
 
-				// Desactiva teclas especiales de juego mapeadas de joystick a teclado *-*
-				if (m_pKeyboard->keyboard.status[0x55] == TRUE)
-					m_pKeyboard->BreakKey(0x55);
-				if (m_pKeyboard->keyboard.status[0x57] == TRUE)
-					m_pKeyboard->BreakKey(0x57);
-				if (m_pKeyboard->keyboard.status[0x63] == TRUE)
-					m_pKeyboard->BreakKey(0x63);
-				if (m_pKeyboard->keyboard.status[0x65] == TRUE)
-					m_pKeyboard->BreakKey(0x65);
-				if (m_pKeyboard->keyboard.status[0x72] == TRUE)
-					m_pKeyboard->BreakKey(0x72);
-				if (m_pKeyboard->keyboard.status[0x73] == TRUE)
-					m_pKeyboard->BreakKey(0x73);
+				if (jtk)
+				{
+					// Desactiva teclas especiales de juego mapeadas de joystick a teclado *-*
+					if (m_pKeyboard->keyboard.status[0x55] == TRUE) // XF1
+					{
+						m_pKeyboard->BreakKey(0x55);
+						jtk = FALSE;
+					}
+					if (m_pKeyboard->keyboard.status[0x57] == TRUE) // XF3
+					{
+						m_pKeyboard->BreakKey(0x57);
+						jtk = FALSE;
+					}
+					if (m_pKeyboard->keyboard.status[0x63] == TRUE) // F1
+					{
+						m_pKeyboard->BreakKey(0x63);
+						jtk = FALSE;
+					}
+					if (m_pKeyboard->keyboard.status[0x65] == TRUE) // F3
+					{
+						m_pKeyboard->BreakKey(0x65);
+						jtk = FALSE;
+					}
+					if (m_pKeyboard->keyboard.status[0x72] == TRUE) // OPT1
+					{
+						m_pKeyboard->BreakKey(0x72);
+						jtk = FALSE;
+					}
+					if (m_pKeyboard->keyboard.status[0x73] == TRUE) // OPT2
+					{
+						m_pKeyboard->BreakKey(0x73);
+						jtk = FALSE;
+					}
+				}
 			}
 
 		}
 
 
 		// Pulsación de botón de Joystick
-		for (nButton=0; nButton<JoyButtons; nButton++) {
+		for (nButton = 0; nButton < JoyButtons; nButton++) {
 
 			if (m_JoyState[i].rgbButtons[nButton] == 0x80) // Mapeo de Joystick a teclado
 			{
@@ -2209,17 +2230,21 @@ void FASTCALL CInput::MakeJoy(BOOL bEnable)
 				{
 					case 6: 
 						m_pKeyboard->MakeKey(0x72); //OPT1
-						m_pKeyboard->MakeKey(0x57); //XF3					
+						m_pKeyboard->MakeKey(0x57); //XF3	
+						jtk = TRUE;
 						break;
 					case 7:
 						m_pKeyboard->MakeKey(0x73); //OPT2
 						m_pKeyboard->MakeKey(0x55); //XF1
+						jtk = TRUE;
 						break;
 					case 8:
 						m_pKeyboard->MakeKey(0x65); // 8 = Select o Credit (F3)
+						jtk = TRUE;
 						break;
-					case 9:                        // 9 = Botón Start (F1)
-						m_pKeyboard->MakeKey(0x63);
+					case 9:                        
+						m_pKeyboard->MakeKey(0x63); // 9 = Botón Start (F1)
+						jtk = TRUE;
 						break;
 				}
 			}									

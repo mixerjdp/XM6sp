@@ -638,6 +638,7 @@ void CFrmWnd::OnReset()
 	BOOL bFlag;
 	int i;
 
+
 	// 電源OFFなら操作不可
 	if (!::GetVM()->IsPower()) {
 		return;
@@ -724,7 +725,7 @@ void CFrmWnd::OnReset()
 	strReset += _T(" (");
 	strReset += strSub;
 	SetInfo(strReset);
-	OutputDebugString("\n\nSe ejecuto OnReset...\n\n");
+	OutputDebugString("\n\nSe ejecuto OnReset viejo...\n\n");
 }
 
 //---------------------------------------------------------------------------
@@ -740,7 +741,21 @@ void CFrmWnd::OnResetUI(CCmdUI *pCmdUI)
 
 
 
-// Guardar configuracion personalizada por juego
+void CFrmWnd::OnResetNuevo() // Comando para guardar configuracion y luego resetear *-*
+{
+	char buffer[MAX_PATH];
+	GetModuleFileNameA(NULL, buffer, MAX_PATH);
+	//MessageBox(buffer, "Configuraci", MB_OK);
+	ShellExecute(GetSafeHwnd(), "open", buffer, NULL, NULL, 1);
+
+	OutputDebugString("\n\nSe ejecuto OnReset Nuevo...\n\n");
+	PostMessage(WM_CLOSE, 0, 0);
+}
+
+
+
+
+// Guardar configuracion personalizada por juego 
 void CFrmWnd::OnScc()
 {
 	if (NombreArchivoXM6.GetLength() > 0)
@@ -785,6 +800,25 @@ void CFrmWnd::OnSgc()
 
 
 void CFrmWnd::OnSgcUI(CCmdUI* pCmdUI)
+{
+	// 電源ONの場合のみ
+	pCmdUI->Enable(::GetVM()->IsPower());
+}
+
+
+
+
+
+void CFrmWnd::OnSgcr() // Guarda config global y reinicia aplicaci *-*
+{	
+	m_pConfig->CustomInit(TRUE);
+	m_pConfig->Cleanup2();
+	OnResetNuevo();
+}
+
+
+
+void CFrmWnd::OnSgcrUI(CCmdUI* pCmdUI)
 {
 	// 電源ONの場合のみ
 	pCmdUI->Enable(::GetVM()->IsPower());
