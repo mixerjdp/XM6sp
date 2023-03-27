@@ -935,21 +935,29 @@ void CDrawView::OnDraw(CDC *pDC)
 			while (altoCalculado < rect.Height()) // Ir aumentando multiplicadores hasta que alcance resolucion de pantalla
 			{																	
 				mivmul++;
-				altoCalculado = (m_Info.nHeight * mivmul) >> 2;		
+				altoCalculado = (m_Info.nRendHeight * mivmul) >> 2;		
 			}
 			if (altoCalculado - rect.Height() > 16 )  // aunque falten 16 pix calzar 256 para 240p
 				mivmul--;
 			vmul = mivmul;				
 			
 		}
+		
+		if (m_Info.nWidth == 512 && m_Info.nHeight == 480) // Caso especial Code Zero
+		{
+			if  (m_Info.nRendHeight < m_Info.nHeight)
+				vmul = vmul >> 1;
+			//  hmul++;
+		}
 
 		if (m_Info.nWidth == 704 && m_Info.nHeight == 480) // Caso especial Carat
 		{
-			//vmul++;
-			hmul++;
+			 hmul++;
+			//  vmul++;
 		}
 
-	/*	CString sv;
+		/*
+		CString sv;
 		sv.Format(_T("nWidth: %d nHeight:%d   nRendwidth: %d nRendheight:%d  vmul: %d  rect.height:%d \r\n"), m_Info.nWidth, m_Info.nHeight, m_Info.nRendWidth, m_Info.nRendHeight, vmul, rect.Height());		
 		OutputDebugStringW(CT2W(sv));
         */
