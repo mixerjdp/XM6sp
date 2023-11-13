@@ -849,45 +849,27 @@ void FASTCALL CFrmWnd::ReadFile(LPCTSTR pszFileName, CString& str)
 }
 
 
-CString FASTCALL CFrmWnd::ProcesarM3u(CString str)
+
+//Este codigo construye una cadena que contiene las rutas completas de los archivos
+CString CFrmWnd::ProcesarM3u(CString str)
 {
+	CString nuevaRuta = RutaCompletaArchivoXM6;
+	PathRemoveFileSpecA(nuevaRuta.GetBuffer());
+	nuevaRuta.ReleaseBuffer();
 
-	CString lineas[6];
-	CString cadStr;
-	TCHAR cadTot[1600] = {0};
-	TCHAR nuevaRuta[_MAX_PATH];
-	strcpy(nuevaRuta, RutaCompletaArchivoXM6);
-	
-	PathRemoveFileSpecA(nuevaRuta);
-	//int msgboxIDx = MessageBox( szPath, "Contenido en procesarm3u:",  0 );	
-
-
-	// Proceso de Obtener extension de archivo 	
-	//int msgboxID = MessageBox( str, "Contenido en procesarm3u:",  2 );	
-	int curPos = 0, cont = 0;
+	int curPos = 0;
 	CString resToken = str.Tokenize(_T("\r\n"), curPos);
-	TCHAR rutaCompletaArchivos[_MAX_PATH];
-	strcpy(rutaCompletaArchivos, nuevaRuta);
+	CString cadTot;
 
-	while(!resToken.IsEmpty())
+	while (!resToken.IsEmpty())
 	{
-		// Process resToken here - print, store etc
-			
-		// Obtain next token
-		sprintf(rutaCompletaArchivos,"\"%s\\%s\"  ",nuevaRuta, resToken);		
-		
-		//int msgboxID = MessageBox( rutaCompletaArchivos, "lineas:",  2 );
-		strcat(cadTot, rutaCompletaArchivos);
-
+		cadTot += "\"" + nuevaRuta + "\\" + resToken + "\"  ";
 		resToken = str.Tokenize(_T("\r\n"), curPos);
-		cont++;
 	}
-	strcat(cadTot, "\0");
-	cadStr = cadTot;
-	//int msgboxID3 = MessageBox( cadTot, "CadTot",  0 );
-	return cadStr;
 
+	return cadTot;
 }
+
 
 
 //---------------------------------------------------------------------------
@@ -898,140 +880,78 @@ CString FASTCALL CFrmWnd::ProcesarM3u(CString str)
 //---------------------------------------------------------------------------
 void FASTCALL CFrmWnd::InitCmd(LPCTSTR lpszCmd)
 {
-	LPCTSTR lpszCurrent;
-	LPCTSTR lpszNext;
-	TCHAR szPath[_MAX_PATH];
-	int nLen;
-	int i;
-	BOOL bReset;
-
 	ASSERT(this);
 	ASSERT(lpszCmd);
 
-
-	CString sz;	
-	sz.Format(_T("%s"),  lpszCmd);	
-    CString fileName= sz.Mid(sz.ReverseFind('\\')+1);
-	if (RutaCompletaArchivoXM6.GetLength() > 0) // Si RutaCompletaArchivoXM6 ya esta ocupado
-	{
-		//int msgboxID = MessageBox(RutaCompletaArchivoXM6, "Se especifico parametro previo", 2);
-	}
+	CString sz;
+	sz.Format(_T("%s"), lpszCmd);
+	CString fileName = sz.Mid(sz.ReverseFind('\\') + 1);
 
 	RutaCompletaArchivoXM6 = lpszCmd;
 	NombreArchivoXM6 = fileName;
 
+	/* AQUﾍ SE INICIALIZA CUALQUIER PARﾁMETRO DE LA LﾍNEA DE COMANDO */
 
-	/* ACA SE INICIALIZA TODO PARAMETRO DE LA LINEA DE COMANDO  */
-
-
-	// Proceso de Obtener extension de archivo 
+	// Proceso de obtener la extensi del archivo
 	CString str = RutaCompletaArchivoXM6;
 	CString extensionArchivo = "";
-	
-	//sz.Format(_T("Ruta:[%s]   \r\n"),  str);	
-	//OutputDebugStringW(CT2W(sz));
-	 
 
 	int curPos = 0;
-	CString resToken = str.Tokenize(_T("."), curPos); // Obtiene extension de la ruta completa del archivo
-	while(!resToken.IsEmpty())
+	CString resToken = str.Tokenize(_T("."), curPos); // Obtiene la extensi de la ruta completa del archivo
+	while (!resToken.IsEmpty())
 	{
-		// Process resToken here - print, store etc
-		//int msgboxID = MessageBox(  resToken, "Restoken:",  2 );	
-		// Obtain next token
 		extensionArchivo = resToken;
 		resToken = str.Tokenize(_T("."), curPos);
 	}
 
-	/* Si es m3u lo analiza y carga*/
+	/* Si es un archivo M3U, lo analiza y carga */
 	if (extensionArchivo.MakeUpper() == "M3U")
 	{
-		CString contenidoM3u, cont2 ;
-		ReadFile(lpszCmd, contenidoM3u);		 
+		CString contenidoM3u, cont2;
+		ReadFile(lpszCmd, contenidoM3u);
 		cont2 = ProcesarM3u(contenidoM3u).Trim();
-		strcpy((char *)lpszCmd,  cont2);
-	//	sz.Format(_T("[--------------%s-------------]"),  lpszCmd);	
-	//	int msgboxID = MessageBox( sz, "Contenido archivo final",  2 );			  
-	}	
-
-	
-
-	// Inicializacion de punteros y banderas
-	lpszCurrent = lpszCmd;
-	bReset = FALSE;
-
-	// Bucle
-	for (i=0; i<2; i++) {
-		// Saltar espacios y tabulaciones
-		while (lpszCurrent[0] <= _T(0x20)) {
-			if (lpszCurrent[0] == _T('\0')) {
-				break;
-			}
-			lpszCurrent++;
-		}
-		if (lpszCurrent[0] == _T('\0')) {
-			break;
-		}
-
-		// 最初がダブルクォートなら、次のクォートを探す
-		if (lpszCurrent[0] == _T('\x22')) {
-			lpszNext = _tcschr(lpszCurrent + 1, _T('\x22'));
-			if (!lpszNext) {
-				// 対応するダブルクォートが見つからない
-				return;
-			}
-			nLen = (int)(lpszNext - (lpszCurrent + 1));
-			if (nLen >= _MAX_PATH) {
-				// 長すぎる
-				return;
-			}
-
-			// クォートされた内部をコピー
-			_tcsnccpy(szPath, &lpszCurrent[1], nLen);
-			szPath[nLen] = _T('\0');
-
-			// クォートの次を指す
-			lpszCurrent = &lpszNext[1];
-		}
-		else {
-			// 次のスペースを探す
-			lpszNext = _tcschr(lpszCurrent + 1, _T(' '));
-			if (lpszNext) {
-				// スペースまで
-				nLen = (int)(lpszNext - lpszCurrent);
-				if (nLen >= _MAX_PATH) {
-					// 長すぎる
-					return;
-				}
-
-				// スペースまでの部分をコピー
-				_tcsnccpy(szPath, lpszCurrent, nLen);
-				szPath[nLen] = _T('\0');
-
-				// スペースの次を指す
-				lpszCurrent = &lpszNext[1];
-			}
-			else {
-				// 終端まで
-				_tcscpy(szPath, lpszCurrent);
-				lpszCurrent = NULL;
-			}
-		}
-
-		// オープンを試みる
-		bReset = InitCmdSub(i, szPath);
-
-		// 終端なら終了
-		if (!lpszCurrent) {
-			break;
-		}
+		strcpy((char*)lpszCmd, cont2);
 	}
 
-	// Solicitud de restablecimiento, en su caso
-	if (bReset) {
+	// lpszCmd es el comando completo con comillas incluidas
+	// Inicializaci de punteros y banderas
+	BOOL bReset = FALSE;
+
+	// Crear un objeto CString a partir de lpszCmd
+	CString cmdString(lpszCmd);
+
+	// Dividir la cadena en partes
+	curPos = 0;
+	CString part = cmdString.Tokenize(_T(" "), curPos);
+	int i = 0;
+	// Procesar cada parte
+	while (!part.IsEmpty())
+	{
+		// Si la parte comienza y termina con una comilla doble, eliminar las comillas
+		if (part[0] == _T('\"') && part[part.GetLength() - 1] == _T('\"'))
+		{
+			part = part.Mid(1, part.GetLength() - 2);
+		}
+
+		// Convertir la parte a LPCTSTR
+		LPCTSTR szPath = (LPCTSTR)part;
+
+		// Intentar abrir
+		bReset = InitCmdSub(i, szPath);
+
+		// Obtener la siguiente parte
+		part = cmdString.Tokenize(_T(" "), curPos);
+		i++;
+	}
+
+	// En caso de reinicio, solicitarlo
+	if (bReset)
+	{
 		OnReset();
 	}
 }
+
+
 
 //---------------------------------------------------------------------------
 //
