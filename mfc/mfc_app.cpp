@@ -347,6 +347,33 @@ CApp::CApp() : CWinApp(_T("XM6"))
 	m_hUser32 = NULL;
 }
 
+// Quitar comillas dobles
+void CApp::RemoveDoubleQuotes(LPTSTR str) {
+	LPTSTR source = str;
+	LPTSTR destination = str;
+
+	while (*source != _T('\0')) {
+		if (*source != _T('"')) {
+			*destination = *source;
+			++destination;
+		}
+		++source;
+	}
+
+	*destination = _T('\0');
+}
+
+// Reemplazar las diagonales con barras invertidas
+void CApp::ReplaceForwardSlashWithBackslash(LPTSTR str) {
+	while (*str != _T('\0')) {
+		if (*str == _T('/')) {
+			*str = _T('\\');
+		}		
+		++str;
+	}
+}
+
+
 //---------------------------------------------------------------------------
 //
 //	Iniciar linea de comandos
@@ -357,11 +384,10 @@ BOOL CApp::InitInstance()
 	CFrmWnd *pFrmWnd;
 
 	// En este apartado se verifica la linea de comando inicial para cargar un posible HDF *-*
-	// Get the string from the command line ('Run' in PocketPC)
-	CString testString(m_lpCmdLine);
-
+	// Get the string from the command line ('Run' in PocketPC)	
+	ReplaceForwardSlashWithBackslash(m_lpCmdLine);
+	RemoveDoubleQuotes(m_lpCmdLine);
 	//int msgboxIDx = MessageBox(NULL, testString, "BBC", MB_OKCANCEL | MB_DEFBUTTON2);
-
 
 	// Borrar el directorio por defecto
 	Filepath::ClearDefaultDir();
@@ -384,10 +410,18 @@ BOOL CApp::InitInstance()
 	pFrmWnd = new CFrmWnd();
 	m_pMainWnd = (CWnd*)pFrmWnd;
 
-
 	pFrmWnd->RutaCompletaArchivoXM6 = m_lpCmdLine;
-	//MessageBox(NULL, pFrmWnd->RutaCompletaArchivoXM6, "BBC", MB_OKCANCEL | MB_DEFBUTTON2);
 	
+	//Borrar archivo SRAM.DAT	
+	try {
+		CFile::Remove("SRAM.dat");
+	}
+	catch (CFileException* e) {
+		// Manejo de excepciones específicas de CFile
+		// Puedes acceder a la información detallada de la excepción utilizando métodos como GetErrorMessage
+		TRACE(_T("Excepción de CFile\n"));
+		e->Delete();  // Importante liberar la memoria de la excepción
+	}
 
 	// Inicializacion
 	if (!pFrmWnd->Init()) {

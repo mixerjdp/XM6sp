@@ -28,6 +28,9 @@ public:
 										// インスタンス終了
 
 private:
+	void ReplaceForwardSlashWithBackslash(LPTSTR str);
+	void RemoveDoubleQuotes(LPTSTR str);
+
 	BOOL FASTCALL CheckMutex();
 										// Mutexチェック
 	BOOL FASTCALL CheckEnvironment();

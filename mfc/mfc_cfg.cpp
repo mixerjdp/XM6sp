@@ -134,10 +134,9 @@ BOOL FASTCALL CConfig::Init()
 
 	if (m_pFrmWnd->RutaCompletaArchivoXM6.GetLength() > 0) // Si RutaCompletaArchivoXM6 ya esta ocupado
 	{
-
 		CString str = m_pFrmWnd->RutaCompletaArchivoXM6;
 		CString extensionArchivo = "";
-
+	
 		int curPos = 0;
 		CString resToken = str.Tokenize(_T("."), curPos); // Obtiene extension de la ruta completa del archivo
 		while (!resToken.IsEmpty())
@@ -147,10 +146,11 @@ BOOL FASTCALL CConfig::Init()
 			resToken = str.Tokenize(_T("."), curPos);
 		}
 
-		
+		//MessageBox(NULL, m_pFrmWnd->RutaCompletaArchivoXM6, "BBC", MB_OKCANCEL | MB_DEFBUTTON2);
 		/* Si es hdf lo analiza y carga*/
 		if (extensionArchivo.MakeUpper() == "HDF")
 		{
+			
 			// Process resToken here - print, store etc
 		    // int msgboxID = MessageBox(NULL, m_pFrmWnd->RutaCompletaArchivoXM6, "Xm6", 2);
 			_tcscpy(m_Config.sasi_file[0], m_pFrmWnd->RutaCompletaArchivoXM6);

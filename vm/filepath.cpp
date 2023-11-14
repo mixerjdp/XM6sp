@@ -321,7 +321,7 @@ BOOL FASTCALL Filepath::CmpPath(const Filepath& path) const
 //---------------------------------------------------------------------------
 void FASTCALL Filepath::ClearDefaultDir()
 {
-	DefaultDir[0] = _T('\0');
+	DefaultDir[0] = _T('\0');	
 }
 
 //---------------------------------------------------------------------------
