@@ -2779,76 +2779,88 @@ void FASTCALL CFrmWnd::DestroyStatusView()
 }
 
 //---------------------------------------------------------------------------
-//
-//	Vista de estado reorganizada
-//
+//¿Qué hace RecalcStatusView ?
+//Es responsable de recalcular y ajustar la posición / tamaño de dos componentes críticos en la ventana principal :
+//Vista de Dibujo(m_pDrawView) : Donde se renderiza la pantalla emulada.
+//Vista de Estado(m_pStatusView) : Una barra de estado personalizada que reemplaza a la barra estándar de Windows en pantalla completa.
 //---------------------------------------------------------------------------
-void FASTCALL CFrmWnd::RecalcStatusView()
+void CFrmWnd::RecalcStatusView()
 {
-	CRect rectFrame;
-	CRect rectDraw;
-	CRect rectStatus;
-	LONG lDraw;
-	LONG lStatus;
-	BOOL bMove;
+	CRect rectClient;
+	GetClientRect(&rectClient);  // Área cliente actual
 
-	// ƒtƒŒ[ƒ€‚ÌƒTƒCƒY‚ğæ“¾
-	GetClientRect(&rectFrame);
+	const int clientWidth = rectClient.Width();
+	const int clientHeight = rectClient.Height();
 
-	// ƒXƒe[ƒ^ƒXƒrƒ…[‚Ì—L–³‚Å•ª‚¯‚é
-	if (m_pStatusView) {
-		// ƒXƒe[ƒ^ƒXƒrƒ…[‚ ‚èBƒXƒe[ƒ^ƒXƒrƒ…[‚ÌˆÊ’u‚ğ—Dæ
+	// Flags comunes para SetWindowPos
+	const UINT swpFlags = SWP_NOZORDER | SWP_NOACTIVATE;
+
+	if (m_pStatusView && m_pStatusView->GetSafeHwnd())
+	{
+		CRect rectStatus;
 		m_pStatusView->GetWindowRect(&rectStatus);
-		lStatus = rectStatus.Height();
-		lDraw = rectFrame.Height() - lStatus;
+		const int statusHeight = rectStatus.Height();
 
-		// Drawƒrƒ…[‚ÌˆÊ’u‚ğæ“¾
-		m_pDrawView->GetWindowRect(&rectDraw);
-		ScreenToClient(&rectDraw);
+		// Calcular altura para vista de dibujo
+		const int drawHeight = clientHeight - statusHeight;
 
-		// •ÏXƒ`ƒFƒbƒN
-		bMove = FALSE;
-		if ((rectDraw.left != 0) || (rectDraw.top != 0)) {
-			bMove = TRUE;
-		}
-		if ((rectDraw.Width () != rectFrame.Width()) || (rectDraw.Height() != lDraw)) {
-			bMove = TRUE;
-		}
-		if (bMove) {
-			m_pDrawView->SetWindowPos(&wndTop, 0, 0, rectFrame.Width(), lDraw, SWP_NOZORDER);
+		// Solo redimensionar si hubieron cambios
+		if (m_pDrawView->GetSafeHwnd())
+		{
+			CRect currentDrawRect;
+			m_pDrawView->GetWindowRect(&currentDrawRect);
+
+			if (currentDrawRect.Height() != drawHeight ||
+				currentDrawRect.Width() != clientWidth)
+			{
+				m_pDrawView->SetWindowPos(
+					nullptr,
+					0, 0,
+					clientWidth, drawHeight,
+					swpFlags
+				);
+			}
 		}
 
-		// Statusƒrƒ…[‚ÌˆÊ’u‚ğæ“¾
-		m_pStatusView->GetWindowRect(&rectStatus);
-		ScreenToClient(&rectStatus);
+		// Actualizar vista de estado solo si es necesario
+		if (m_pStatusView->GetSafeHwnd())
+		{
+			CRect currentStatusRect;
+			m_pStatusView->GetWindowRect(&currentStatusRect);
 
-		// •ÏXƒ`ƒFƒbƒN
-		bMove = FALSE;
-		if ((rectStatus.left != 0) || (rectStatus.top != lDraw)) {
-			bMove = TRUE;
-		}
-		if ((rectStatus.Width() != rectFrame.Width()) || (rectStatus.Height() != lStatus)) {
-			bMove = TRUE;
-		}
-		if (bMove) {
-			m_pStatusView->SetWindowPos(&wndTop, 0, lDraw, rectFrame.Width(), lStatus, SWP_NOZORDER);
+			if (currentStatusRect.top != drawHeight ||
+				currentStatusRect.Height() != statusHeight ||
+				currentStatusRect.Width() != clientWidth)
+			{
+				m_pStatusView->SetWindowPos(
+					nullptr,
+					0, drawHeight,
+					clientWidth, statusHeight,
+					swpFlags
+				);
+			}
 		}
 	}
-	else {
-		// ƒXƒe[ƒ^ƒXƒrƒ…[‚È‚µBDrawƒrƒ…[‚Ì‚İ
-		m_pDrawView->GetWindowRect(&rectDraw);
-		ScreenToClient(&rectDraw);
+	else
+	{
+		// Modo normal sin vista de estado personalizada
+		if (m_pDrawView->GetSafeHwnd())
+		{
+			m_pDrawView->SetWindowPos(
+				nullptr,
+				0, 0,
+				clientWidth, clientHeight,
+				swpFlags
+			);
+		}
+	}
 
-		// •ÏXƒ`ƒFƒbƒN
-		bMove = FALSE;
-		if ((rectDraw.left != 0) || (rectDraw.top != 0)) {
-			bMove = TRUE;
-		}
-		if ((rectDraw.Width () != rectFrame.Width()) || (rectDraw.Height() != rectFrame.Height())) {
-			bMove = TRUE;
-		}
-		if (bMove) {
-			m_pDrawView->SetWindowPos(&wndTop, 0, 0, rectFrame.Width(), rectFrame.Height(), SWP_NOZORDER);
+	// Forzar actualización visual solo si hay cambios
+	if (!rectClient.IsRectEmpty())
+	{
+		m_pDrawView->InvalidateRect(nullptr, FALSE);
+		if (m_pStatusView) {
+			m_pStatusView->InvalidateRect(nullptr, FALSE);
 		}
 	}
 }
@@ -2967,43 +2979,37 @@ void FASTCALL CFrmWnd::ShowMenu()
 //	Pantalla de subtitulos
 //
 //---------------------------------------------------------------------------
-void FASTCALL CFrmWnd::ShowCaption()
+void CFrmWnd::ShowCaption()
 {
-	DWORD dwStyle;
+	const DWORD dwCaptionStyle = WS_CAPTION | WS_SYSMENU | WS_MINIMIZEBOX | WS_MAXIMIZEBOX;
+	const BOOL bShouldShowCaption = !m_bFullScreen && m_bCaption;
 
-	ASSERT(this);
+	// 1. Verificar si ya está en el estado deseado
+	DWORD dwCurrentStyle = GetStyle();
+	if (bShouldShowCaption == ((dwCurrentStyle & dwCaptionStyle) == dwCaptionStyle)) {
+		return; // No hacer cambios si ya está en el estado correcto
+	}
 
-	// •K—v‚Å‚ ‚ê‚ÎVM‚ğƒƒbƒN
-	if (m_nStatus == 0) {
+	// 2. Bloquear VM solo si es necesario
+	const BOOL bVMLockNeeded = (m_nStatus == 0);
+	if (bVMLockNeeded) {
 		::LockVM();
 	}
 
-	// Œ»İ‚ÌƒLƒƒƒvƒVƒ‡ƒ“ó‘Ô‚ğæ“¾
-	dwStyle = GetStyle() & WS_CAPTION;
+	// 3. Modificar estilos de manera eficiente
+	ModifyStyle(
+		bShouldShowCaption ? 0 : dwCaptionStyle,  // Estilos a remover
+		bShouldShowCaption ? dwCaptionStyle : 0,  // Estilos a añadir
+		SWP_NOMOVE | SWP_NOZORDER | SWP_FRAMECHANGED
+	);
 
-	// ƒLƒƒƒvƒVƒ‡ƒ“‚ª•s•K—v‚Èê‡
-	if (m_bFullScreen || !m_bCaption) {
-		// ƒLƒƒƒvƒVƒ‡ƒ“‚ª‘¶İ‚·‚é‚©
-		if (dwStyle) {
-			// ƒLƒƒƒvƒVƒ‡ƒ“‚ğÁ‹
-			ModifyStyle(WS_CAPTION | WS_SYSMENU | WS_MINIMIZEBOX | WS_MAXIMIZEBOX,
-							0, SWP_NOMOVE | SWP_NOZORDER | SWP_FRAMECHANGED);
-		}
-		if (m_nStatus == 0) {
-			::UnlockVM();
-		}
-		return;
+	// 4. Actualización condicional de la interfaz
+	if (bShouldShowCaption && m_bMenuBar) {
+		DrawMenuBar(); // Redibujar barra de menú si es visible
 	}
 
-	// ƒLƒƒƒvƒVƒ‡ƒ“‚ª•K—v‚Èê‡
-	if (!dwStyle) {
-		// ƒLƒƒƒvƒVƒ‡ƒ“‚ğƒZƒbƒg
-		ModifyStyle(0, WS_CAPTION | WS_SYSMENU | WS_MINIMIZEBOX | WS_MAXIMIZEBOX,
-							SWP_NOMOVE | SWP_NOZORDER | SWP_FRAMECHANGED);
-	}
-
-	// •K—v‚È‚çVM‚ğƒAƒ“ƒƒbƒN
-	if (m_nStatus == 0) {
+	// 5. Desbloquear VM si fue bloqueada
+	if (bVMLockNeeded) {
 		::UnlockVM();
 	}
 }
