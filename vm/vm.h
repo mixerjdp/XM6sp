@@ -36,7 +36,9 @@ public:
 										// 設定適用
 
 	// ステート保存
-	DWORD FASTCALL Save(const Filepath& path);
+	DWORD FASTCALL OriginalSave(const Filepath& path);
+	
+	DWORD FASTCALL Save(const Filepath& googlePath);
 										// セーブ
 	DWORD FASTCALL Load(const Filepath& path);
 										// ロード

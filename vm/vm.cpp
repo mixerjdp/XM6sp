@@ -44,6 +44,9 @@
 #include "filepath.h"
 #include "fileio.h"
 #include "vm.h"
+#include "vm.h"
+#include <vector>
+#include <algorithm>
 
 //===========================================================================
 //
@@ -202,12 +205,35 @@ void FASTCALL VM::Reset()
 	Clear();
 }
 
-//---------------------------------------------------------------------------
-//
-//	セーブ
-//
-//---------------------------------------------------------------------------
-DWORD FASTCALL VM::Save(const Filepath& path)
+
+DWORD FASTCALL VM::Save(const Filepath& googlePath) {
+	ASSERT(this);
+
+	Filepath tempPath;
+	tempPath.SetPath(_T("C:\\Temp\\xm6_temp.sav"));  // Crea C:\Temp manualmente si no existe
+	DWORD pos = OriginalSave(tempPath);  // Llama original Save (renombra tu vieja VM::Save a OriginalSave)
+	if (pos == 0) {
+		// Log error o MessageBox para debug
+		AfxMessageBox(_T("Fallo al guardar temp"));
+		return 0;
+	}
+
+	// Copia temp a google
+	if (!::CopyFile(tempPath.GetPath(), googlePath.GetPath(), FALSE)) {
+		AfxMessageBox(_T("Fallo copia a google - posible corrupci por sync"));
+		_tunlink(tempPath.GetPath());
+		return 0;
+	}
+
+	// Borra temp
+	_tunlink(tempPath.GetPath());
+	current = googlePath;
+	return pos;
+}
+
+
+
+DWORD FASTCALL VM::OriginalSave(const Filepath& path)
 {
 	Fileio fio;
 	char header[0x10];
@@ -300,7 +326,7 @@ DWORD FASTCALL VM::Load(const Filepath& path)
 	current.Clear();
 
 	// ファイルオープン、ヘッダ読み込み
-	if (!fio.Open(path, Fileio::ReadOnly)) {
+	if (!fio.Open(path, Fileio::ReadOnly)) {		
 		return 0;
 	}
 	if (!fio.Read(buf, 0x10)) {

@@ -322,7 +322,8 @@ BOOL FASTCALL CFrmWnd::OnOpenSub(const Filepath& path)
 	AfxGetApp()->BeginWaitCursor();
 
 	// VM
-	dwPos = ::GetVM()->Load(path);
+	dwPos = ::GetVM()->Load(path);	
+	//MessageBox("dwPos: " + dwPos, NULL, MB_ICONSTOP | MB_OK);
 	if (dwPos == 0) {
 		AfxGetApp()->EndWaitCursor();
 
@@ -335,7 +336,10 @@ BOOL FASTCALL CFrmWnd::OnOpenSub(const Filepath& path)
 
 		// ロードエラー
 		::GetMsg(IDS_XM6LOADERR, strMsg);
-		MessageBox(strMsg, NULL, MB_ICONSTOP | MB_OK);
+		CString msg;
+		msg.Format(_T("Lectura de archivo (VM): %u"), dwPos);
+		MessageBox(msg, NULL, MB_ICONSTOP | MB_OK);
+
 		return FALSE;
 	}
 
@@ -352,7 +356,7 @@ BOOL FASTCALL CFrmWnd::OnOpenSub(const Filepath& path)
 
 		// ロードエラー
 		::GetMsg(IDS_XM6LOADERR, strMsg);
-		MessageBox(strMsg, NULL, MB_ICONSTOP | MB_OK);
+		MessageBox("Fallo en Lectura de archivo (MFC)", NULL, MB_ICONSTOP | MB_OK);
 		return FALSE;
 	}
 
@@ -525,7 +529,9 @@ void FASTCALL CFrmWnd::OnSaveSub(const Filepath& path)
 	GetScheduler()->SetSavedEnable(bRun);
 
 	// VM
+	 // Aseg侔ate de incluir un nombre de archivo completo; ajusta seg佖 necesites
 	dwPos = ::GetVM()->Save(path);
+
 	if (dwPos== 0) {
 		AfxGetApp()->EndWaitCursor();
 
@@ -559,7 +565,6 @@ void FASTCALL CFrmWnd::OnSaveSub(const Filepath& path)
 
 	// 実行カウンタをクリア
 	m_dwExec = 0;
-
 	AfxGetApp()->EndWaitCursor();
 
 	// 成功
