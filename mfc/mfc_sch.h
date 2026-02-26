@@ -69,7 +69,9 @@ public:
 private:
 	static UINT ThreadFunc(LPVOID pParam);
 										// ƒXƒŒƒbƒhŠÖ”
-	DWORD FASTCALL GetTime()			{ return timeGetTime(); }
+	unsigned __int64 FASTCALL GetTimeMicro();
+	unsigned __int64 FASTCALL GetTimeMilli();
+	DWORD FASTCALL GetTime()			{ return (DWORD)GetTimeMilli(); }
 										// ŽžŠÔŽæ“¾
 	void FASTCALL Lock()				{ ::LockVM(); }
 										// VMƒƒbƒN
@@ -117,6 +119,8 @@ private:
 										// ƒZ[ƒuŽž‚ÉEnableó‘Ô‚ð•Û‘¶‚µ‚Ä‚¢‚é‚©
 	BOOL m_bSavedEnable;
 										// ƒZ[ƒuŽž‚ÉEnable‚¾‚Á‚½‚©
+	LARGE_INTEGER m_liFreq;
+										// Frecuencia del contador de alto rendimiento
 };
 
 #endif	// mfc_sch_h

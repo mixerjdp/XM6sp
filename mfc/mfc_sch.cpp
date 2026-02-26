@@ -76,6 +76,8 @@ BOOL FASTCALL CScheduler::Init()
 		return FALSE;
 	}
 
+	QueryPerformanceFrequency(&m_liFreq);
+
 	// CPUŽæ“¾
 	ASSERT(!m_pCPU);
 	m_pCPU = (CPU*)::GetVM()->SearchDevice(MAKEID('C', 'P', 'U', ' '));
@@ -285,6 +287,25 @@ UINT CScheduler::ThreadFunc(LPVOID pParam)
 
 //---------------------------------------------------------------------------
 //
+//	Tiempo (QPC)
+//
+//---------------------------------------------------------------------------
+unsigned __int64 FASTCALL CScheduler::GetTimeMicro()
+{
+	LARGE_INTEGER li;
+	QueryPerformanceCounter(&li);
+	return (li.QuadPart * 1000000ULL) / m_liFreq.QuadPart;
+}
+
+unsigned __int64 FASTCALL CScheduler::GetTimeMilli()
+{
+	LARGE_INTEGER li;
+	QueryPerformanceCounter(&li);
+	return (li.QuadPart * 1000ULL) / m_liFreq.QuadPart;
+}
+
+//---------------------------------------------------------------------------
+//
 //	Ejecucion
 //
 //---------------------------------------------------------------------------
@@ -295,7 +316,6 @@ void FASTCALL CScheduler::Run()
 	Render *pRender;
 	DWORD dwExecCount;
 	DWORD dwCycle;
-	DWORD dwTime;
 
 	ASSERT(this);
 	ASSERT_VALID(this);
@@ -316,6 +336,9 @@ void FASTCALL CScheduler::Run()
 	m_dwDrawCount = 0;
 	m_dwDrawPrev = 0;
 	m_bBackup = m_bEnable;
+
+	unsigned __int64 currentTime = GetTimeMicro();
+	unsigned __int64 accumulator = 0;
 
 	//  Bucle hasta que la solicitud de salida se eleva
 	while (!m_bExitReq) {
@@ -344,6 +367,8 @@ void FASTCALL CScheduler::Run()
 			m_pSound->Process(FALSE);
 			m_pInput->Process(FALSE);
 			m_dwExecTime = GetTime();
+			currentTime = GetTimeMicro();
+			accumulator = 0;
 			Unlock();
 
 			// Sleep
@@ -354,99 +379,115 @@ void FASTCALL CScheduler::Run()
 		// Actualizacion de la bandera de respaldo (se estaba ejecutando justo antes)
 		m_bBackup = TRUE;
 
-		// Si la hora se invierte, hay espacio para mostrar
-		dwTime = GetTime();
-		if (m_dwExecTime > dwTime) {
-			// Si hay un hueco importante, se puede ajustar (soporte de bucle de 49 dias).
-			if ((m_dwExecTime - dwTime) > 1000) {
-				m_dwExecTime = dwTime;
-			}
+		unsigned __int64 newTime = GetTimeMicro();
+		unsigned __int64 frameTime = newTime - currentTime;
+		currentTime = newTime;
 
-			// Dibujo
-			Refresh();
-			dwExecCount = 0;
-
-			// Procesamiento en modo rapido
-			if (m_dwExecTime > GetTime()) 
-			{
-				// Hay mucho tiempo
-				if (m_bVMFull) {
-					// Modo VM rápido
-					m_dwExecTime = GetTime();
-				}
-				else {
-					if (!m_bMPUFull) {
-						// Modo normal
-						Unlock();
-						::Sleep(0);
-						continue;
-					}
-				
-					// Modo MPU en rápido
-					dwCycle = pScheduler->GetCPUCycle();
-					while (m_dwExecTime > GetTime()) {
-						m_pCPU->Exec(pScheduler->GetCPUSpeed());
-					}					
-					pScheduler->SetCPUCycle(dwCycle);
-					Unlock();
-					continue;
-
-			       //m_dwExecTime = GetTime(); // Prueba, agilizar ejecución
-				   
-
-				}
-			}
+		// Limitar la espiral de la muerte (ej: si hay lag en el OS de mas de 250ms)
+		if (frameTime > 250000) {
+			frameTime = 250000;
 		}
 
-		// Determinar si es posible el renderizado (1 o 36)
-		if (m_dwExecTime >= dwTime) {
+		// Procesamiento en modo rapido (ignora acumulador)
+		if (m_bVMFull) {
+			if (!pVM->Exec(2000)) {
+				SyncDisasm();
+				dwExecCount++;
+				m_bEnable = FALSE;
+				Unlock();
+				continue;
+			}
+			if (!pVM->IsPower()) {
+				SyncDisasm();
+				dwExecCount++;
+				m_bEnable = FALSE;
+				Unlock();
+				continue;
+			}
+			m_dwExecTime = GetTime();
+			dwExecCount++;
+			m_pSound->Process(TRUE);
+			m_pInput->Process(TRUE);
+			
 			pRender->EnableAct(TRUE);
-		}
-		else {
-			if ((dwTime - m_dwExecTime) <= 1) {
-				// ‡“–
-				pRender->EnableAct(TRUE);
+			
+			if (dwExecCount > 400) {
+				Refresh();
+				dwExecCount = 0;
 			}
-			else {
+			Unlock();
+			continue;
+		}
+		else if (m_bMPUFull) {
+			// Modo MPU en rápido, mantenemos el comportamiento legacy
+			dwCycle = pScheduler->GetCPUCycle();
+			m_pCPU->Exec(pScheduler->GetCPUSpeed());
+			pScheduler->SetCPUCycle(dwCycle);
+			
+			// Dejamos que el acumulador siga corriendo normal para video/audio
+		}
+
+		accumulator += frameTime;
+
+		// Active wait (spin-lock) para micro-resolución si falta muy poco para 1000us
+		// y no estamos en modo menu
+		if (accumulator < 1000 && accumulator > 800 && (!m_bActivate || m_bMenu) == FALSE) {
+			Unlock();
+			continue;
+		}
+
+		while (accumulator >= 1000) {
+			// Determinar si es posible el renderizado: Si quedan menos de 2000, 
+			// es el ultimo ciclo "al dia"
+			if (accumulator < 2000) {
+				pRender->EnableAct(TRUE);
+			} else {
 				pRender->EnableAct(FALSE);
 			}
+
+			// Impulsar la VM
+			if (!pVM->Exec(2000)) {
+				// Puntos de interrupcion
+				SyncDisasm();
+				dwExecCount++;
+				m_bEnable = FALSE;
+				break;
+			}
+
+			// Comprobacion de la fuente de alimentacion
+			if (!pVM->IsPower()) {
+				// Apagado
+				SyncDisasm();
+				dwExecCount++;
+				m_bEnable = FALSE;
+				break;
+			}
+			
+			dwExecCount++;
+			m_dwExecTime++;
+			accumulator -= 1000;
+
+			// Procesamiento de otros componentes
+			m_pSound->Process(TRUE);
+			m_pInput->Process(TRUE);
+
+			// Failsafe para PCs lentas: si el emulador no logra ponerse al día, forzar dibujo cada 400ms
+			if (dwExecCount > 400) {
+				Refresh();
+				dwExecCount = 0;
+			}
 		}
 
-
-		/* ACA SE MODIFICAN LOS FPS*/
-
-		// Impulsar la VM
-		if (!pVM->Exec(2000)) {
-			// Puntos de interrupcion
-			SyncDisasm();
-			dwExecCount++;
-			m_bEnable = FALSE;
+		if (!m_bEnable) {
 			Unlock();
 			continue;
 		}
 
-		// Comprobacion de la fuente de alimentacion
-		if (!pVM->IsPower()) {
-			// Apagado
-			SyncDisasm();
-			dwExecCount++;
-			m_bEnable = FALSE;
-			Unlock();
-			continue;
-		}
-		dwExecCount++;
-		m_dwExecTime++;
-
-		// Procesamiento de otros componentes
-		m_pSound->Process(TRUE);
-		m_pInput->Process(TRUE);
-
-		// Si dwExecCount supera el numero especificado, muestra una vez y fuerza el ajuste de tiempo
-		if (dwExecCount > 400) 
-		{
+		// Hemos salido del bucle, lo que significa que el emulador alcanzó el tiempo real (accumulator < 1000).
+		// Este es nuestro "tiempo libre", el momento ideal para pintar en pantalla si la VM generó un frame.
+		if (dwExecCount > 0) {
 			Refresh();
 			dwExecCount = 0;
-			m_dwExecTime = GetTime();
 		}
 
 		// Dormir una vez cada 8ms si esta inactivo o el menu ON
