@@ -1,11 +1,11 @@
-//---------------------------------------------------------------------------
-//
-//	X68000 EMULATOR "XM6"
-//
-//	Copyright (C) 2001-2005 ＰＩ．(ytanaka@ipc-tokai.or.jp)
-//	[ MFC サブウィンドウ(CPU) ]
-//
-//---------------------------------------------------------------------------
+  //---------------------------------------------------------------------------
+  //
+  //	EMULADOR X68000 "XM6"
+  //
+  //	Copyright (C) 2001-2005 PI.(ytanaka@ipc-tokai.or.jp)
+  //	[ Subventana MFC (CPU) ]
+  //
+  //---------------------------------------------------------------------------
 
 #if defined(_WIN32)
 
@@ -14,404 +14,404 @@
 
 #include "mfc_sub.h"
 
-//===========================================================================
-//
-//	ヒストリ付きダイアログ
-//
-//===========================================================================
+  //===========================================================================
+  //
+  //	Dialogo con historial
+  //
+  //===========================================================================
 class CHistoryDlg : public CDialog
 {
 public:
 	CHistoryDlg(UINT nID, CWnd *pParentWnd);
-										// コンストラクタ
+ 										 // Constructor
 	BOOL OnInitDialog();
-										// ダイアログ初期化
+ 										 // Inicializacion de dialogo
 	void OnOK();
-										// OK
+ 										 // OK
 	DWORD m_dwValue;
-										// エディット値
+ 										 // Valor de edicion
 
 protected:
 	virtual UINT* GetNumPtr() = 0;
-										// ヒストリ個数ポインタ取得
+ 										 // Obtener puntero de conteo de historial
 	virtual DWORD* GetDataPtr() = 0;
-										// ヒストリデータポインタ取得
+ 										 // Obtener puntero de datos de historial
 	UINT m_nBit;
-										// 有効ビット
+ 										 // Bits validos
 	DWORD m_dwMask;
-										// マスク(ビットから内部生成)
+ 										 // Mascara (generada internamente a partir de bits)
 };
 
-//===========================================================================
-//
-//	アドレス入力ダイアログ
-//
-//===========================================================================
+  //===========================================================================
+  //
+  //	Dialogo de entrada de direccion
+  //
+  //===========================================================================
 class CAddrDlg : public CHistoryDlg
 {
 public:
 	CAddrDlg(CWnd *pParent = NULL);
-										// コンストラクタ
+ 										 // Constructor
 	static void SetupHisMenu(CMenu *pMenu);
-										// メニューセットアップ
+ 										 // Configuracion de menu
 	static DWORD GetAddr(UINT nID);
-										// メニュー結果取得
+ 										 // Obtener resultado de menu
 
 protected:
 	UINT* GetNumPtr();
-										// ヒストリ個数ポインタ取得
+ 										 // Obtener puntero de conteo de historial
 	DWORD* GetDataPtr();
-										// ヒストリデータポインタ取得
+ 										 // Obtener puntero de datos de historial
 	static UINT m_Num;
-										// ヒストリ個数
+ 										 // Conteo de historial
 	static DWORD m_Data[10];
-										// ヒストリデータ
+ 										 // Datos de historial
 };
 
-//===========================================================================
-//
-//	レジスタ入力ダイアログ
-//
-//===========================================================================
+  //===========================================================================
+  //
+  //	Dialogo de entrada de registros
+  //
+  //===========================================================================
 class CRegDlg : public CHistoryDlg
 {
 public:
 	CRegDlg(CWnd *pParent = NULL);
-										// コンストラクタ
+ 										 // Constructor
 	BOOL OnInitDialog();
-										// ダイアログ初期化
+ 										 // Inicializacion de dialogo
 	void OnOK();
-										// OK
+ 										 // OK
 	UINT m_nIndex;
-										// レジスタインデックス
+ 										 // Indice de registro
 
 protected:
 	UINT* GetNumPtr();
-										// ヒストリ個数ポインタ取得
+ 										 // Obtener puntero de conteo de historial
 	DWORD* GetDataPtr();
-										// ヒストリデータポインタ取得
+ 										 // Obtener puntero de datos de historial
 	static UINT m_Num;
-										// ヒストリ個数
+ 										 // Conteo de historial
 	static DWORD m_Data[10];
-										// ヒストリデータ
+ 										 // Datos de historial
 };
 
-//===========================================================================
-//
-//	データ入力ダイアログ
-//
-//===========================================================================
+  //===========================================================================
+  //
+  //	Dialogo de entrada de datos
+  //
+  //===========================================================================
 class CDataDlg : public CHistoryDlg
 {
 public:
 	CDataDlg(CWnd *pParent = NULL);
-										// コンストラクタ
+ 										 // Constructor
 	BOOL OnInitDialog();
-										// ダイアログ初期化
+ 										 // Inicializacion de dialogo
 	UINT m_nSize;
-										// サイズ
+ 										 // Tamano
 	DWORD m_dwAddr;
-										// アドレス
+ 										 // Direccion
 
 protected:
 	UINT* GetNumPtr();
-										// ヒストリ個数ポインタ取得
+ 										 // Obtener puntero de conteo de historial
 	DWORD* GetDataPtr();
-										// ヒストリデータポインタ取得
+ 										 // Obtener puntero de datos de historial
 	static UINT m_Num;
-										// ヒストリ個数
+ 										 // Conteo de historial
 	static DWORD m_Data[10];
-										// ヒストリデータ
+ 										 // Datos de historial
 };
 
-//===========================================================================
-//
-//	MPUレジスタウィンドウ
-//
-//===========================================================================
+  //===========================================================================
+  //
+  //	Ventana de registros de MPU
+  //
+  //===========================================================================
 class CCPURegWnd : public CSubTextWnd
 {
 public:
 	CCPURegWnd();
-										// コンストラクタ
+ 										 // Constructor
 	void FASTCALL Setup();
-										// セットアップ
+ 										 // Configuracion
 	static void SetupRegMenu(CMenu *pMenu, CPU *pCPU, BOOL bSR);
-										// メニューセットアップ
+ 										 // Configuracion de menu
 	static DWORD GetRegValue(CPU *pCPU, UINT uID);
-										// レジスタ値取得
+ 										 // Obtener valor de registro
 
 protected:
 	afx_msg void OnContextMenu(CWnd *pWnd, CPoint point);
-										// コンテキストメニュー
+ 										 // Menu de contexto
 	afx_msg void OnLButtonDblClk(UINT nFlags, CPoint point);
-										// 左ダブルクリック
+ 										 // Doble clic izquierdo
 	afx_msg void OnReg(UINT nID);
-										// レジスタ選択
+ 										 // Seleccion de registro
 
 private:
 	CPU *m_pCPU;
-										// CPU
+ 										 // CPU
 
 	DECLARE_MESSAGE_MAP()
-										// メッセージ マップあり
+ 										 // Con mapa de mensajes
 };
 
-//===========================================================================
-//
-//	割り込みウィンドウ
-//
-//===========================================================================
+  //===========================================================================
+  //
+  //	Ventana de interrupcion
+  //
+  //===========================================================================
 class CIntWnd : public CSubTextWnd
 {
 public:
 	CIntWnd();
-										// コンストラクタ
+ 										 // Constructor
 	void FASTCALL Setup();
-										// セットアップ
+ 										 // Configuracion
 
 protected:
 	afx_msg void OnLButtonDblClk(UINT nFlags, CPoint point);
-										// 左ダブルクリック
+ 										 // Doble clic izquierdo
 	afx_msg void OnContextMenu(CWnd *pWnd, CPoint point);
-										// コンテキストメニュー
+ 										 // Menu de contexto
 
 private:
 	CPU* m_pCPU;
-										// CPU
+ 										 // CPU
 
 	DECLARE_MESSAGE_MAP()
-										// メッセージ マップあり
+ 										 // Con mapa de mensajes
 };
 
-//===========================================================================
-//
-//	逆アセンブルウィンドウ
-//
-//===========================================================================
+  //===========================================================================
+  //
+  //	Ventana de desensamblado
+  //
+  //===========================================================================
 class CDisasmWnd : public CSubTextScrlWnd
 {
 public:
 	CDisasmWnd(int index);
-										// コンストラクタ
+ 										 // Constructor
 	void FASTCALL Setup();
-										// セットアップ
+ 										 // Configuracion
 	void FASTCALL SetAddr(DWORD dwAddr);
-										// アドレス指定
+ 										 // Especificacion de direccion
 	void FASTCALL SetPC(DWORD pc);
-										// PC指定
+ 										 // Especificacion de PC
 	void FASTCALL Update();
-										// メッセージスレッドからの更新
+ 										 // Actualizacion desde hilo de mensajes
 	static void FASTCALL SetupBreakMenu(CMenu *pMenu, Scheduler *pScheduler);
-										// ブレークポイントメニュー設定
+ 										 // Configuracion de menu de puntos de interrupcion
 	static DWORD FASTCALL GetBreak(UINT nID, Scheduler *pScheduler);
-										// ブレークポイント取得
+ 										 // Obtener punto de interrupcion
 
 protected:
 	afx_msg int OnCreate(LPCREATESTRUCT lpcs);
-										// ウィンドウ作成
+ 										 // Creacion de ventana
 	afx_msg void OnDestroy();
-										// ウィンドウ削除
+ 										 // Eliminacion de ventana
 	afx_msg void OnSize(UINT nType, int cx, int cy);
-										// サイズ変更
+ 										 // Cambio de tamano
 	afx_msg void OnLButtonDown(UINT nFlags, CPoint point);
-										// 左クリック
+ 										 // Clic izquierdo
 	afx_msg void OnLButtonDblClk(UINT nFlags, CPoint point);
-										// 左ダブルクリック
+ 										 // Doble clic izquierdo
 	afx_msg void OnVScroll(UINT nSBCode, UINT nPos, CScrollBar *pBar);
-										// 垂直スクロール
+ 										 // Desplazamiento vertical
 	afx_msg void OnContextMenu(CWnd *pWnd, CPoint point);
-										// コンテキストメニュー
+ 										 // Menu de contexto
 	afx_msg void OnNewWin();
-										// 新しいウィンドウ
+ 										 // Nueva ventana
 	afx_msg void OnPC();
-										// PCへ移動
+ 										 // Mover al PC
 	afx_msg void OnSync();
-										// PCに同期
+ 										 // Sincronizar con PC
 	afx_msg void OnAddr();
-										// アドレス入力
+ 										 // Entrada de direccion
 	afx_msg void OnReg(UINT nID);
-										// レジスタ
+ 										 // Registro
 	afx_msg void OnStack(UINT nID);
-										// スタック
+ 										 // Stack
 	afx_msg void OnBreak(UINT nID);
-										// ブレークポイント
+ 										 // Punto de interrupcion (Breakpoint)
 	afx_msg void OnHistory(UINT nID);
-										// アドレスヒストリ
+ 										 // Historial de direcciones
 	afx_msg void OnCPUExcept(UINT nID);
-										// CPU例外ベクタ
+ 										 // Vector de excepcion de CPU
 	afx_msg void OnTrap(UINT nID);
-										// trapベクタ
+ 										 // vector trap
 	afx_msg void OnMFP(UINT nID);
-										// MFPベクタ
+ 										 // Vector MFP
 	afx_msg void OnSCC(UINT nID);
-										// SCCベクタ
+ 										 // Vector SCC
 	afx_msg void OnDMAC(UINT uID);
-										// DMACベクタ
+ 										 // Vector DMAC
 	afx_msg void OnIOSC(UINT uID);
-										// IOSCベクタ
+ 										 // Vector IOSC
 
 private:
 	DWORD FASTCALL GetPrevAddr(DWORD dwAddr);
-										// 手前のアドレスを取得
+ 										 // Obtener direccion anterior
 	void FASTCALL SetupContext(CMenu *pMenu);
-										// コンテキストメニューセットアップ
+ 										 // Configuracion de menu de contexto
 	void FASTCALL SetupVector(CMenu *pMenu, UINT index, DWORD vector, int num);
-										// 割り込みベクタセットアップ
+ 										 // Configuracion de vectores de interrupcion
 	void FASTCALL SetupAddress(CMenu *pMenu, UINT index, DWORD addr);
-										// アドレスセットアップ
+ 										 // Configuracion de direccion
 	void FASTCALL OnVector(UINT vector);
-										// ベクタ指定
+ 										 // Especificacion de vector
 	CPU *m_pCPU;
-										// CPU
+ 										 // CPU
 	Scheduler *m_pScheduler;
-										// スケジューラ
+ 										 // Planificador (Scheduler)
 	MFP *m_pMFP;
-										// MFP
+ 										 // MFP
 	Memory *m_pMemory;
-										// メモリ
+ 										 // Memoria
 	SCC * m_pSCC;
-										// SCC
+ 										 // SCC
 	DMAC *m_pDMAC;
-										// DMAC
+ 										 // DMAC
 	IOSC *m_pIOSC;
-										// IOSC
+ 										 // IOSC
 	BOOL m_bSync;
-										// PC同期フラグ
+ 										 // Flag de sincronizacion de PC
 	DWORD m_dwPC;
-										// PC
+ 										 // PC
 	DWORD m_dwAddr;
-										// 表示開始アドレス
+ 										 // Direccion de inicio de visualizacion
 	DWORD m_dwSetAddr;
-										// セットされたアドレス
+ 										 // Direccion establecida
 	DWORD *m_pAddrBuf;
-										// アドレスバッファ
+ 										 // Buffer de direcciones
 	CString m_Caption;
-										// キャプション文字列
+ 										 // Cadena de caption
 	CString m_CaptionSet;
-										// キャプション設定文字列
+ 										 // Cadena de configuracion de caption
 
 	DECLARE_MESSAGE_MAP()
-										// メッセージ マップあり
+ 										 // Con mapa de mensajes
 };
 
-//===========================================================================
-//
-//	メモリウィンドウ
-//
-//===========================================================================
+  //===========================================================================
+  //
+  //	Ventana de memoria
+  //
+  //===========================================================================
 class CMemoryWnd : public CSubTextScrlWnd
 {
 public:
 	CMemoryWnd(int nWnd);
-										// コンストラクタ
+ 										 // Constructor
 	void FASTCALL Setup();
-										// セットアップ
+ 										 // Configuracion
 	void FASTCALL SetAddr(DWORD dwAddr);
-										// アドレス指定
+ 										 // Especificacion de direccion
 	void FASTCALL SetUnit(int nUnit);
-										// 表示単位指定
+ 										 // Especificacion de unidad de visualizacion
 	void FASTCALL Update();
-										// メッセージスレッドからの更新
+ 										 // Actualizacion desde hilo de mensajes
 	static void SetupStackMenu(CMenu *pMenu, Memory *pMemory, CPU *pCPU);
-										// スタックメニューセットアップ
+ 										 // Configuracion de menu de stack
 	static DWORD GetStackAddr(UINT nID, Memory *pMemory, CPU *pCPU);
-										// スタック取得
+ 										 // Obtener stack
 
 protected:
 	afx_msg int OnCreate(LPCREATESTRUCT lpCreateStruct);
-										// ウィンドウ作成
+ 										 // Creacion de ventana
 	afx_msg void OnPaint();
-										// 描画
+ 										 // Dibujo
 	afx_msg void OnLButtonDblClk(UINT nFlags, CPoint point);
-										// 左ダブルクリック
+ 										 // Doble clic izquierdo
 	afx_msg void OnContextMenu(CWnd *pWnd, CPoint point);
-										// コンテキストメニュー
+ 										 // Menu de contexto
 	afx_msg void OnAddr();
-										// アドレス入力
+ 										 // Entrada de direccion
 	afx_msg void OnNewWin();
-										// 新しいウィンドウ
+ 										 // Nueva ventana
 	afx_msg void OnUnit(UINT uID);
-										// 表示単位指定
+ 										 // Especificacion de unidad de visualizacion
 	afx_msg void OnRange(UINT uID);
-										// アドレス範囲指定
+ 										 // Especificacion de rango de direcciones
 	afx_msg void OnReg(UINT uID);
-										// レジスタ値を指定
+ 										 // Especificar valor de registro
 	afx_msg void OnArea(UINT uID);
-										// エリア指定
+ 										 // Especificacion de area
 	afx_msg void OnHistory(UINT uID);
-										// アドレスヒストリ
+ 										 // Historial de direcciones
 	afx_msg void OnStack(UINT uID);
-										// スタック
+ 										 // Stack
 	void FASTCALL SetupScrlV();
-										// スクロール準備(垂直)
+ 										 // Preparacion de desplazamiento (vertical)
 
 private:
 	void FASTCALL SetupContext(CMenu *pMenu);
-										// コンテキストメニュー セットアップ
+ 										 // Configuracion de menu de contexto
 	Memory *m_pMemory;
-										// メモリ
+ 										 // Memoria
 	CPU *m_pCPU;
-										// CPU
+ 										 // CPU
 	DWORD m_dwAddr;
-										// 表示開始アドレス
+ 										 // Direccion de inicio de visualizacion
 	CString m_strCaptionReq;
-										// キャプション文字列(要求)
+ 										 // Cadena de caption (solicitud)
 	CString m_strCaptionSet;
-										// キャプション文字列(設定)
+ 										 // Cadena de caption (configuracion)
 	CCriticalSection m_CSection;
-										// クリティカルセクション
+ 										 // Seccion critica
 	UINT m_nUnit;
-										// 表示サイズ0/1/2=Byte/Word/Long
+ 										 // Tamano de visualizaci?n 0/1/2=Byte/Word/Long
 
 	DECLARE_MESSAGE_MAP()
-										// メッセージ マップあり
+ 										 // Con mapa de mensajes
 };
 
-//===========================================================================
-//
-//	ブレークポイントウィンドウ
-//
-//===========================================================================
+  //===========================================================================
+  //
+  //	Ventana de puntos de interrupcion (breakpoints)
+  //
+  //===========================================================================
 class CBreakPWnd : public CSubTextWnd
 {
 public:
 	CBreakPWnd();
-										// コンストラクタ
+ 										 // Constructor
 	void FASTCALL Setup();
-										// セットアップ
+ 										 // Configuracion
 
 protected:
 	afx_msg void OnLButtonDblClk(UINT nFlags, CPoint point);
-										// 左ダブルクリック
+ 										 // Doble clic izquierdo
 	afx_msg void OnContextMenu(CWnd *pWnd, CPoint point);
-										// コンテキストメニュー
+ 										 // Menu de contexto
 	afx_msg void OnEnable();
-										// 有効・無効
+ 										 // Activar/Desactivar
 	afx_msg void OnClear();
-										// 回数クリア
+ 										 // Limpiar conteo
 	afx_msg void OnDel();
-										// 削除
+ 										 // Eliminar
 	afx_msg void OnAddr();
-										// アドレス指定
+ 										 // Especificacion de direccion
 	afx_msg void OnAll();
-										// 全て削除
+ 										 // Eliminar todos
 	afx_msg void OnHistory(UINT nID);
-										// アドレスヒストリ
+ 										 // Historial de direcciones
 
 private:
 	void FASTCALL SetupContext(CMenu *pMenu);
-										// コンテキストメニュー セットアップ
+ 										 // Configuracion de menu de contexto
 	void FASTCALL SetAddr(DWORD dwAddr);
-										// アドレス設定
+ 										 // Establecer direccion
 	Scheduler* m_pScheduler;
-										// スケジューラ
+ 										 // Planificador (Scheduler)
 	CPoint m_Point;
-										// コンテキストメニューポイント
+ 										 // Punto del menu de contexto
 
 	DECLARE_MESSAGE_MAP()
-										// メッセージ マップあり
+ 										 // Con mapa de mensajes
 };
 
-#endif	// mfc_cpu_h
-#endif	// _WIN32
+ #endif	 // mfc_cpu_h
+ #endif	 // _WIN32

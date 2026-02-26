@@ -1,12 +1,12 @@
 ;
-; X68000 EMULATOR "XM6"
+; EMULADOR X68000 "XM6"
 ;
 ; Copyright (C) 2001-2006 ＰＩ．(ytanaka@ipc-tokai.or.jp)
-; [ MFC アセンブラサブ ]
+; [ Sub-ensamblador MFC ]
 ;
 
 ;
-; 外部宣言
+; Declaraciones externas
 ;
 		section	.text align=16
 		bits	32
@@ -30,13 +30,13 @@
 		global	_VideoBG8
 
 ;
-; MMXサポートチェック
+; Verificacion de soporte MMX
 ;
 ; BOOL IsMMXSupport(void)
 ;
 _IsMMXSupport:
 		pushad
-; CPUIDの有無をチェック
+; Verificar presencia de CPUID
 		pushfd
 		pop	eax
 		xor	eax,00200000h
@@ -46,34 +46,34 @@ _IsMMXSupport:
 		pop	ebx
 		cmp	eax,ebx
 		jnz	.error
-; CPUIDの機能フラグサポートをチェック
+; Verificar soporte de flags de funciones CPUID
 		xor	eax,eax
 		cpuid
 		cmp	eax,0
 		jz	.error
-; MMXテクノロジのサポートをチェック
+; Verificar soporte de tecnologia MMX
 		mov	eax,1
 		cpuid
 		and	edx,00800000h
 		jz	.error
-; MMXあり
+; MMX presente
 		popad
 		mov	eax,1
 		ret
-; MMXなし
+; MMX no presente
 .error:
 		popad
 		xor	eax,eax
 		ret
 
 ;
-; CMOVサポートチェック
+; Verificacion de soporte CMOV
 ;
 ; BOOL IsCMOVSupport(void)
 ;
 _IsCMOVSupport:
 		pushad
-; CPUIDの有無をチェック
+; Verificar presencia de CPUID
 		pushfd
 		pop	eax
 		xor	eax,00200000h
@@ -83,28 +83,28 @@ _IsCMOVSupport:
 		pop	ebx
 		cmp	eax,ebx
 		jnz	.error
-; CPUIDの機能フラグサポートをチェック
+; Verificar soporte de flags de funciones CPUID
 		xor	eax,eax
 		cpuid
 		cmp	eax,0
 		jz	.error
-; CMOVのサポートをチェック
+; Verificar soporte de CMOV
 		mov	eax,1
 		cpuid
 		and	edx,00008000h
 		jz	.error
-; CMOVあり
+; CMOV presente
 		popad
 		mov	eax,1
 		ret
-; CMOVなし
+; CMOV no presente
 .error:
 		popad
 		xor	eax,eax
 		ret
 
 ;
-; サウンドサンプルサイジング(MMX)
+; Redimensionamiento de muestras de sonido (MMX)
 ;
 ; void SoundMMX(DWORD *pSrc, WORD *pDst, int nBytes)
 ;
@@ -117,21 +117,21 @@ _SoundMMX:
 		push	edx
 		push	esi
 		push	edi
-; バッファ取得(pSrc, pDst)
+; Obtener buffers (pSrc, pDst)
 		mov	esi,[ebp+8]
 		mov	edi,[ebp+12]
-; 回数取得(nBytes)
+; Obtener cantidad (nBytes)
 		mov	ecx,[ebp+16]
-; long(128バイト単位)
+; largo (unidades de 128 bytes)
 		cmp	ecx,128
 		jnc	.longchk
 		jmp	.shortchk
-; 回数セット
+; Establecer cantidad
 .longchk:
 		mov	eax,ecx
 		shr	eax,7
 		and	ecx,byte 127
-; ループ
+; Bucle
 .longlp:
 		movq	mm0,[esi]
 		movq	mm1,[esi+16]
@@ -184,19 +184,19 @@ _SoundMMX:
 		movq	[edi+104],mm1
 		movq	[edi+112],mm2
 		movq	[edi+120],mm3
-; 次へ
+; Siguiente
 		add	esi,256
 		add	edi,128
 		dec	eax
 		jnz	.longlp
-; short(16バイト単位)
+; corto (unidades de 16 bytes)
 .shortchk:
 		cmp	ecx,byte 16
 		jc	.normalchk
 		mov	eax,ecx
 		shr	eax,4
 		and	ecx,byte 15
-; ループ
+; Bucle
 .shortlp:
 		movq	mm0,[esi]
 		movq	mm1,[esi+16]
@@ -204,35 +204,35 @@ _SoundMMX:
 		packssdw mm1,[esi+24]
 		movq	[edi],mm0
 		movq	[edi+8],mm1
-; 次へ
+; Siguiente
 		add	esi,byte 32
 		add	edi,byte 16
 		dec	eax
 		jnz	.shortlp
-; normal(MMXを使用しない)
+; normal (sin usar MMX)
 .normalchk:
 		shr	ecx,1
 		or	ecx,ecx
 		jz	.exit
 		mov	ebx,00007fffh
 		mov	edx,0ffff8000h
-; ループ(分岐するケースは少ないと判断。CMOVは使わない)
+; Bucle(分岐するケースは少ないと判断。CMOVは使わない)
 .normallp:
 		mov	eax,[esi]
 		cmp	eax,ebx
 		jg	.over
 		cmp	eax,edx
 		jl	.under
-; セットして次へ
+; セットしてSiguiente
 .next:
 		mov	[edi],ax
 		add	esi,byte 4
 		add	edi,byte 2
 		dec	ecx
 		jnz	.normallp
-; 終了
+; Fin
 .exit:
-; EMMSは行わない(SoundEMMSに任せる)
+; No realizar EMMS (se delega a SoundEMMS)
 		pop	edi
 		pop	esi
 		pop	edx
@@ -241,17 +241,17 @@ _SoundMMX:
 		pop	eax
 		pop	ebp
 		ret
-; オーバーフロー
+; Desbordamiento (Overflow)
 .over:
 		mov	eax,ebx
 		jmp	.next
-; アンダーフロー
+; Subdesbordamiento (Underflow)
 .under:
 		mov	eax,edx
 		jmp	.next
 
 ;
-; サウンドサンプルサイジング(EMMS)
+; Redimensionamiento de muestras de sonido (EMMS)
 ;
 ; void SoundEMMS()
 ;
@@ -260,8 +260,8 @@ _SoundEMMS:
 		ret
 
 ;
-; テキストVRAM
-; レンダリング
+; VRAM de texto
+; Renderizado
 ;
 ; void VideoText(const BYTE *pTVRAM, DWORD *pBits, int nLen, DWORD *pPalette)
 ;
@@ -269,12 +269,12 @@ _VideoText:
 		push	ebp
 		mov	ebp,esp
 		pushad
-; アドレス設定
+; Configuracion de direcciones
 		mov	esi,[ebp+8]
 		mov	edi,[ebp+12]
 		mov	ecx,[ebp+16]
 		mov	ebp,[ebp+20]
-; ループ
+; Bucle
 .loop:
 		push	ecx
 		push	esi
@@ -670,21 +670,21 @@ _VideoText:
 		adc	esi,esi
 		mov	esi,[ebp+esi*4]
 		mov	[edi+124],esi
-; 次のDWORDへ
+; Al siguiente DWORD
 		add	edi,128
 		pop	esi
 		pop	ecx
 		add	esi,4
 		dec	ecx
 		jnz	near .loop
-; 終了
+; Fin
 		popad
 		pop	ebp
 		ret
 
 ;
-; グラフィックVRAM
-; 1024×1024レンダリング(ページ0,1)
+; VRAM de graficos
+; 1024×1024Renderizado(ページ0,1)
 ;
 ; void VideoG1024A(BYTE *src, DWORD *dst, DWORD *plt)
 ;
@@ -697,13 +697,13 @@ _VideoG1024A:
 		push	edx
 		push	esi
 		push	edi
-; アドレス設定
+; Configuracion de direcciones
 		mov	esi,[ebp+8]
 		mov	edi,[ebp+12]
 		mov	ebp,[ebp+16]
 		mov	ecx,64
 		mov	edx,15
-; ブロックループ
+; ブロックBucle
 .block:
 		push	ecx
 ; +0, +1, +512, +513
@@ -786,13 +786,13 @@ _VideoG1024A:
 		and	ecx,edx
 		mov	eax,[ebp+ecx*4]
 		mov	[edi+28+2048],eax
-; 次のブロックへ
+; Al siguiente bloque
 		pop	ecx
 		add	esi,16
 		add	edi,32
 		dec	ecx
 		jnz	near .block
-; 終了
+; Fin
 		pop	edi
 		pop	esi
 		pop	edx
@@ -803,8 +803,8 @@ _VideoG1024A:
 		ret
 
 ;
-; グラフィックVRAM
-; 1024×1024レンダリング(ページ2,3)
+; VRAM de graficos
+; 1024×1024Renderizado(ページ2,3)
 ;
 ; void VideoG1024B(BYTE *src, DWORD *dst, DWORD *plt)
 ;
@@ -817,13 +817,13 @@ _VideoG1024B:
 		push	edx
 		push	esi
 		push	edi
-; アドレス設定
+; Configuracion de direcciones
 		mov	esi,[ebp+8]
 		mov	edi,[ebp+12]
 		mov	ebp,[ebp+16]
 		mov	ecx,64
 		mov	edx,15
-; ブロックループ
+; ブロックBucle
 .block:
 		push	ecx
 ; +0, +1, +512, +513
@@ -910,13 +910,13 @@ _VideoG1024B:
 		and	ecx,edx
 		mov	eax,[ebp+ecx*4]
 		mov	[edi+28+2048],eax
-; 次のブロックへ
+; Al siguiente bloque
 		pop	ecx
 		add	esi,16
 		add	edi,32
 		dec	ecx
 		jnz	near .block
-; 終了
+; Fin
 		pop	edi
 		pop	esi
 		pop	edx
@@ -927,8 +927,8 @@ _VideoG1024B:
 		ret
 
 ;
-; グラフィックVRAM
-; 16色レンダリング(ページ0)
+; VRAM de graficos
+; 16色Renderizado(ページ0)
 ;
 ; void VideoG16A(BYTE *src, DWORD *dst, int len, DWORD *plt)
 ;
@@ -941,7 +941,7 @@ _VideoG16A:
 		push	edx
 		push	esi
 		push	edi
-; アドレス設定
+; Configuracion de direcciones
 		mov	esi,[ebp+8]
 		mov	edi,[ebp+12]
 		mov	ecx,[ebp+16]
@@ -951,7 +951,7 @@ _VideoG16A:
 		shr	edx,3
 		jz	.next
 		push	ecx
-; ブロックループ
+; ブロックBucle
 .block:
 		push	edx
 		mov	edx,15
@@ -995,14 +995,14 @@ _VideoG16A:
 		and	ecx,edx
 		mov	eax,[ebp+ecx*4]
 		mov	[edi+28],eax
-; 次へ
+; Siguiente
 		pop	edx
 		add	esi,16
 		add	edi,32
 		dec	edx
 		jnz	.block
 		pop	ecx
-; 余りループ
+; 余りBucle
 .next:
 		jecxz	.exit
 		mov	ebx,[esi]
@@ -1013,7 +1013,7 @@ _VideoG16A:
 		add	edi,4
 		dec	ecx
 		jmp	short .next
-; 終了
+; Fin
 .exit:
 		pop	edi
 		pop	esi
@@ -1025,8 +1025,8 @@ _VideoG16A:
 		ret
 
 ;
-; グラフィックVRAM
-; 16色レンダリング(ページ1)
+; VRAM de graficos
+; 16色Renderizado(ページ1)
 ;
 ; void VideoG16B(BYTE *src, DWORD *dst, int len, DWORD *plt)
 ;
@@ -1039,7 +1039,7 @@ _VideoG16B:
 		push	edx
 		push	esi
 		push	edi
-; アドレス設定
+; Configuracion de direcciones
 		mov	esi,[ebp+8]
 		mov	edi,[ebp+12]
 		mov	ecx,[ebp+16]
@@ -1049,7 +1049,7 @@ _VideoG16B:
 		shr	edx,3
 		jz	near .next
 		push	ecx
-; ブロックループ
+; ブロックBucle
 .block:
 		push	edx
 		mov	edx,15
@@ -1097,14 +1097,14 @@ _VideoG16B:
 		and	ecx,edx
 		mov	eax,[ebp+ecx*4]
 		mov	[edi+28],eax
-; 次へ
+; Siguiente
 		pop	edx
 		add	esi,16
 		add	edi,32
 		dec	edx
 		jnz	near .block
 		pop	ecx
-; 余りループ
+; 余りBucle
 .next:
 		jecxz	.exit
 		mov	ebx,[esi]
@@ -1116,7 +1116,7 @@ _VideoG16B:
 		add	edi,4
 		dec	ecx
 		jmp	short .next
-; 終了
+; Fin
 .exit:
 		pop	edi
 		pop	esi
@@ -1128,8 +1128,8 @@ _VideoG16B:
 		ret
 
 ;
-; グラフィックVRAM
-; 16色レンダリング(ページ2)
+; VRAM de graficos
+; 16色Renderizado(ページ2)
 ;
 ; void VideoG16C(BYTE *src, DWORD *dst, int len, DWORD *plt)
 ;
@@ -1142,7 +1142,7 @@ _VideoG16C:
 		push	edx
 		push	esi
 		push	edi
-; アドレス設定
+; Configuracion de direcciones
 		mov	esi,[ebp+8]
 		mov	edi,[ebp+12]
 		mov	ecx,[ebp+16]
@@ -1152,7 +1152,7 @@ _VideoG16C:
 		shr	edx,3
 		jz	near .next
 		push	ecx
-; ブロックループ
+; ブロックBucle
 .block:
 		push	edx
 		mov	edx,15
@@ -1200,14 +1200,14 @@ _VideoG16C:
 		and	ecx,edx
 		mov	eax,[ebp+ecx*4]
 		mov	[edi+28],eax
-; 次へ
+; Siguiente
 		pop	edx
 		add	esi,16
 		add	edi,32
 		dec	edx
 		jnz	near .block
 		pop	ecx
-; 余りループ
+; 余りBucle
 .next:
 		jecxz	.exit
 		mov	ebx,[esi]
@@ -1219,7 +1219,7 @@ _VideoG16C:
 		add	edi,4
 		dec	ecx
 		jmp	short .next
-; 終了
+; Fin
 .exit:
 		pop	edi
 		pop	esi
@@ -1231,8 +1231,8 @@ _VideoG16C:
 		ret
 
 ;
-; グラフィックVRAM
-; 16色レンダリング(ページ3)
+; VRAM de graficos
+; 16色Renderizado(ページ3)
 ;
 ; void VideoG16D(BYTE *src, DWORD *dst, int len, DWORD *plt)
 ;
@@ -1245,7 +1245,7 @@ _VideoG16D:
 		push	edx
 		push	esi
 		push	edi
-; アドレス設定
+; Configuracion de direcciones
 		mov	esi,[ebp+8]
 		mov	edi,[ebp+12]
 		mov	ecx,[ebp+16]
@@ -1255,7 +1255,7 @@ _VideoG16D:
 		shr	edx,3
 		jz	near .next
 		push	ecx
-; ブロックループ
+; ブロックBucle
 .block:
 		push	edx
 		mov	edx,15
@@ -1303,14 +1303,14 @@ _VideoG16D:
 		and	ecx,edx
 		mov	eax,[ebp+ecx*4]
 		mov	[edi+28],eax
-; 次へ
+; Siguiente
 		pop	edx
 		add	esi,16
 		add	edi,32
 		dec	edx
 		jnz	near .block
 		pop	ecx
-; 余りループ
+; 余りBucle
 .next:
 		jecxz	.exit
 		mov	ebx,[esi]
@@ -1322,7 +1322,7 @@ _VideoG16D:
 		add	edi,4
 		dec	ecx
 		jmp	short .next
-; 終了
+; Fin
 .exit:
 		pop	edi
 		pop	esi
@@ -1334,8 +1334,8 @@ _VideoG16D:
 		ret
 
 ;
-; グラフィックVRAM
-; 256色レンダリング(ページ0)
+; VRAM de graficos
+; 256色Renderizado(ページ0)
 ;
 ; void VideoG256A(BYTE *src, DWORD *dst, int len, DWORD *plt)
 ;
@@ -1348,7 +1348,7 @@ _VideoG256A:
 		push	edx
 		push	esi
 		push	edi
-; アドレス設定
+; Configuracion de direcciones
 		mov	esi,[ebp+8]
 		mov	edi,[ebp+12]
 		mov	ecx,[ebp+16]
@@ -1358,7 +1358,7 @@ _VideoG256A:
 		shr	edx,3
 		jz	near .next
 		push	ecx
-; ブロックループ
+; ブロックBucle
 .block:
 		push	edx
 		mov	edx,255
@@ -1398,14 +1398,14 @@ _VideoG256A:
 		and	ecx,edx
 		mov	eax,[ebp+ecx*4]
 		mov	[edi+28],eax
-; 次へ
+; Siguiente
 		pop	edx
 		add	esi,16
 		add	edi,32
 		dec	edx
 		jnz	.block
 		pop	ecx
-; 余りループ
+; 余りBucle
 .next:
 		jecxz	.exit
 		movzx	ebx,byte[esi]
@@ -1415,7 +1415,7 @@ _VideoG256A:
 		add	edi,4
 		dec	ecx
 		jmp	short .next
-; 終了
+; Fin
 .exit:
 		pop	edi
 		pop	esi
@@ -1427,8 +1427,8 @@ _VideoG256A:
 		ret
 
 ;
-; グラフィックVRAM
-; 256色レンダリング(ページ1)
+; VRAM de graficos
+; 256色Renderizado(ページ1)
 ;
 ; void VideoG256B(BYTE *src, DWORD *dst, int len, DWORD *plt)
 ;
@@ -1441,7 +1441,7 @@ _VideoG256B:
 		push	edx
 		push	esi
 		push	edi
-; アドレス設定
+; Configuracion de direcciones
 		mov	esi,[ebp+8]
 		mov	edi,[ebp+12]
 		mov	ecx,[ebp+16]
@@ -1451,7 +1451,7 @@ _VideoG256B:
 		shr	edx,3
 		jz	.next
 		push	ecx
-; ブロックループ
+; ブロックBucle
 .block:
 ; +0, +1
 		mov	ecx,[esi]
@@ -1489,13 +1489,13 @@ _VideoG256B:
 		shr	ecx,16
 		mov	eax,[ebp+ecx*4]
 		mov	[edi+28],eax
-; 次へ
+; Siguiente
 		add	esi,16
 		add	edi,32
 		dec	edx
 		jnz	.block
 		pop	ecx
-; 余りループ
+; 余りBucle
 .next:
 		jecxz	.exit
 		movzx	ebx,byte[esi+1]
@@ -1505,7 +1505,7 @@ _VideoG256B:
 		add	edi,4
 		dec	ecx
 		jmp	short .next
-; 終了
+; Fin
 .exit:
 		pop	edi
 		pop	esi
@@ -1517,8 +1517,8 @@ _VideoG256B:
 		ret
 
 ;
-; グラフィックVRAM
-; 65536色レンダリング
+; VRAM de graficos
+; 65536色Renderizado
 ;
 ; void VideoG64K(BYTE *src, DWORD *dst, int len, DWORD *plt)
 ;
@@ -1531,7 +1531,7 @@ _VideoG64K:
 		push	edx
 		push	esi
 		push	edi
-; アドレス設定
+; Configuracion de direcciones
 		mov	esi,[ebp+8]
 		mov	edi,[ebp+12]
 		mov	ecx,[ebp+16]
@@ -1540,7 +1540,7 @@ _VideoG64K:
 		and	ecx,byte 7
 		shr	edx,3
 		jz	.next
-; ブロックループ
+; ブロックBucle
 .block:
 ; +0, +1
 		mov	ebx,[esi]
@@ -1574,12 +1574,12 @@ _VideoG64K:
 		shr	ebx,16
 		mov	eax,[ebp+ebx*4]
 		mov	[edi+28],eax
-; 次へ
+; Siguiente
 		add	esi,16
 		add	edi,32
 		dec	edx
 		jnz	.block
-; 余りループ
+; 余りBucle
 .next:
 		jecxz	.exit
 		movzx	ebx,word[esi]
@@ -1589,7 +1589,7 @@ _VideoG64K:
 		add	edi,4
 		dec	ecx
 		jmp	short .next
-; 終了
+; Fin
 .exit:
 		pop	edi
 		pop	esi
@@ -1601,7 +1601,7 @@ _VideoG64K:
 		ret
 
 ;
-; PCGレンダリング
+; PCGRenderizado
 ;
 ; void VideoPCG(BYTE *src, DWORD *dst, DWORD *plt)
 ;
@@ -1614,13 +1614,13 @@ _VideoPCG:
 		push	edx
 		push	esi
 		push	edi
-; アドレス設定
+; Configuracion de direcciones
 		mov	esi,[ebp+8]
 		mov	edi,[ebp+12]
 		mov	ebp,[ebp+16]
 		mov	ecx,32
 		mov	ebx,15
-; ブロックループ
+; ブロックBucle
 .loop:
 		mov	eax,[esi]
 		rol	eax,16
@@ -1672,12 +1672,12 @@ _VideoPCG:
 		and	edx,ebx
 		mov	edx,[ebp+edx*4]
 		mov	[edi+28],edx
-; 次のブロックへ(8x8で+2)
+; Al siguiente bloque(8x8で+2)
 		add	esi,40h
 		add	edi,32
 		dec	ecx
 		jnz	near .loop
-; 終了
+; Fin
 		pop	edi
 		pop	esi
 		pop	edx
@@ -1688,7 +1688,7 @@ _VideoPCG:
 		ret
 
 ;
-; BG(16x16)レンダリング
+; BG(16x16)Renderizado
 ;
 ; void VideoBG16(BYTE *pcg, DWORD *dst, DWORD bg, int y, DWORD *plt)
 ;
@@ -1701,42 +1701,42 @@ _VideoBG16:
 		push	edx
 		push	esi
 		push	edi
-; アドレス設定
+; Configuracion de direcciones
 		mov	esi,[ebp+8]
 		mov	edi,[ebp+12]
 		mov	ebx,[ebp+16]
 		mov	ecx,[ebp+20]
 		mov	ebp,[ebp+24]
-; パレット設定
+; Configuracion de paleta
 		mov	eax,ebx
 		shr	eax,2
 		and	eax,03c0h
 		add	ebp,eax
-; PCG設定
+; Configuracion de PCG
 		mov	eax,ebx
 		shl	eax,7		; x20->5bit
 		and	eax,7f80h	; あわせて変更
 		add	esi,eax
-; 正しいyオフセットを出す
+; Obtener el offset Y correcto
 		test	ebx,8000h
 		jz	.offset
-; y反転。15 - ECXが正しい
+; Inversion Y. 15 - ECX es correcto
 		sub	ecx,15
 		neg	ecx
 .offset:
 		test	ecx,8
 		jz	.upper
-; 下半分(ブロック1と3)
+; Mitad inferior (Bloques 1 y 3)
 		and	ecx,7
 		add	esi,20h
-; 上半分、下半分ともに共通。正規化済yを加算
+; Comun para mitad superior e inferior. Sumar Y normalizada
 .upper:
 		shl	ecx,2
 		add	esi,ecx
-; ここで水平方向反転は分岐
+; Aqui la inversion horizontal es una bifurcacion
 		test	ebx,4000h
 		jnz	near .reverse
-; 水平方向ノーマル スタート
+; Inicio normal horizontal
 		mov	ebx,15
 		mov	eax,[esi]
 		rol	eax,16
@@ -1788,7 +1788,7 @@ _VideoBG16:
 		and	edx,ebx
 		mov	edx,[ebp+edx*4]
 		mov	[edi+28],edx
-; 次のフェッチ
+; Siguiente busqueda (fetch)
 		mov	eax,[esi+64]
 		rol	eax,16
 ; +8
@@ -1839,7 +1839,7 @@ _VideoBG16:
 		and	edx,ebx
 		mov	edx,[ebp+edx*4]
 		mov	[edi+60],edx
-; 終了
+; Fin
 		pop	edi
 		pop	esi
 		pop	edx
@@ -1848,7 +1848,7 @@ _VideoBG16:
 		pop	eax
 		pop	ebp
 		ret
-; 水平方向反転 スタート
+; Inicio de inversion horizontal
 .reverse:
 		mov	ebx,15
 		mov	eax,[esi]
@@ -1901,7 +1901,7 @@ _VideoBG16:
 		and	edx,ebx
 		mov	edx,[ebp+edx*4]
 		mov	[edi+32],edx
-; 次のフェッチ
+; Siguiente busqueda (fetch)
 		mov	eax,[esi+64]
 		rol	eax,16
 ; +8
@@ -1952,7 +1952,7 @@ _VideoBG16:
 		and	edx,ebx
 		mov	edx,[ebp+edx*4]
 		mov	[edi],edx
-; 終了
+; Fin
 		pop	edi
 		pop	esi
 		pop	edx
@@ -1963,7 +1963,7 @@ _VideoBG16:
 		ret
 
 ;
-; BG(8x8)レンダリング
+; BG(8x8)Renderizado
 ;
 ; void VideoBG8(BYTE *pcg, DWORD *dst, DWORD bg, int y, DWORD *plt)
 ;
@@ -1976,36 +1976,36 @@ _VideoBG8:
 		push	edx
 		push	esi
 		push	edi
-; アドレス設定
+; Configuracion de direcciones
 		mov	esi,[ebp+8]
 		mov	edi,[ebp+12]
 		mov	ebx,[ebp+16]
 		mov	ecx,[ebp+20]
 		mov	ebp,[ebp+24]
-; パレット設定
+; Configuracion de paleta
 		mov	eax,ebx
 		shr	eax,2
 		and	eax,03c0h
 		add	ebp,eax
-; PCG設定
+; Configuracion de PCG
 		mov	eax,ebx
 		shl	eax,5
 		and	eax,1fe0h
 		add	esi,eax
-; 正しいyオフセットを出す
+; Obtener el offset Y correcto
 		test	ebx,8000h
 		jz	.offset
-; y反転。7 - ECXが正しい
+; Inversion Y. 7 - ECX es correcto
 		sub	ecx,7
 		neg	ecx
-; 正規化済yを加算
+; Sumar Y normalizada
 .offset:
 		shl	ecx,2
 		add	esi,ecx
-; ここで水平方向反転は分岐
+; Aqui la inversion horizontal es una bifurcacion
 		test	ebx,4000h
 		jnz	near .reverse
-; 水平方向ノーマル スタート
+; Inicio normal horizontal
 		mov	ebx,15
 		mov	eax,[esi]
 		rol	eax,16
@@ -2057,7 +2057,7 @@ _VideoBG8:
 		and	edx,ebx
 		mov	edx,[ebp+edx*4]
 		mov	[edi+28],edx
-; 終了
+; Fin
 		pop	edi
 		pop	esi
 		pop	edx
@@ -2066,7 +2066,7 @@ _VideoBG8:
 		pop	eax
 		pop	ebp
 		ret
-; X方向反転
+; Inversion en direccion X
 .reverse:
 		mov	ebx,15
 		mov	eax,[esi]
@@ -2119,7 +2119,7 @@ _VideoBG8:
 		and	edx,ebx
 		mov	edx,[ebp+edx*4]
 		mov	[edi],edx
-; 終了
+; Fin
 		pop	edi
 		pop	esi
 		pop	edx
@@ -2130,6 +2130,6 @@ _VideoBG8:
 		ret
 
 ;
-; プログラム終了
+; プログラムFin
 ;
 		end

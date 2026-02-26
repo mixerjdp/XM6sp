@@ -214,7 +214,7 @@ DWORD FASTCALL VM::Save(const Filepath& googlePath) {
 	DWORD pos = OriginalSave(tempPath);  // Llama original Save (renombra tu vieja VM::Save a OriginalSave)
 	if (pos == 0) {
 		// Log error o MessageBox para debug
-		AfxMessageBox(_T("Fallo al guardar temp"));
+		AfxMessageBox(_T("Fallo al guardar a temp"));
 		return 0;
 	}
 

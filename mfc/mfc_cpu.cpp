@@ -1,11 +1,11 @@
-//---------------------------------------------------------------------------
-//
-//	X68000 EMULATOR "XM6"
-//
-//	Copyright (C) 2001-2006 ＰＩ．(ytanaka@ipc-tokai.or.jp)
-//	[ MFC サブウィンドウ(CPU) ]
-//
-//---------------------------------------------------------------------------
+  //---------------------------------------------------------------------------
+  //
+  //	EMULADOR X68000 "XM6"
+  //
+  //	Copyright (C) 2001-2006 PI.(ytanaka@ipc-tokai.or.jp)
+  //	[ Subventana MFC (CPU) ]
+  //
+  //---------------------------------------------------------------------------
 
 #if defined(_WIN32)
 
@@ -25,52 +25,52 @@
 #include "mfc_res.h"
 #include "mfc_cpu.h"
 
-//---------------------------------------------------------------------------
-//
-//	cpudebug.cとの連絡
-//
-//---------------------------------------------------------------------------
+  //---------------------------------------------------------------------------
+  //
+  //	Comunicacion con cpudebug.c
+  //
+  //---------------------------------------------------------------------------
 #if defined(__cplusplus)
 extern "C" {
-#endif	// __cplusplus
+ #endif	 // __cplusplus
 
 void cpudebug_disassemble(int n);
-										// 1行逆アセンブル
+ 										 // Desensamblado de 1 linea
 extern void (*cpudebug_put)(const char*);
-										// 1行出力
+ 										 // Salida de 1 linea
 extern DWORD debugpc;
-										// 逆アセンブルPC
+ 										 // PC de desensamblado
 
 #if defined(__cplusplus)
 }
-#endif	// __cplusplus
+ #endif	 // __cplusplus
 
 static char debugbuf[0x200];
-										// 出力バッファ
+ 										 // Buffer de salida
 
-//===========================================================================
-//
-//	ヒストリ付きダイアログ
-//
-//===========================================================================
+  //===========================================================================
+  //
+  //	Dialogo con historial
+  //
+  //===========================================================================
 
-//---------------------------------------------------------------------------
-//
-//	コンストラクタ
-//
-//---------------------------------------------------------------------------
+  //---------------------------------------------------------------------------
+  //
+  //	Constructor
+  //
+  //---------------------------------------------------------------------------
 CHistoryDlg::CHistoryDlg(UINT nID, CWnd *pParentWnd) : CDialog(nID, pParentWnd)
 {
-	// 初期化
+ 	 // Inicializacion
 	m_dwValue = 0;
 	m_nBit = 32;
 }
 
-//---------------------------------------------------------------------------
-//
-//	ダイアログ初期化
-//
-//---------------------------------------------------------------------------
+  //---------------------------------------------------------------------------
+  //
+  //	Inicializacion de dialogo
+  //
+  //---------------------------------------------------------------------------
 BOOL CHistoryDlg::OnInitDialog()
 {
 	int i;
@@ -79,33 +79,33 @@ BOOL CHistoryDlg::OnInitDialog()
 	CString strText;
 	CComboBox *pComboBox;
 
-	// 基本クラス
+ 	 // Clase base
 	if (!CDialog::OnInitDialog()) {
 		return FALSE;
 	}
 
-	// マスク生成
+ 	 // Generacion de mascara
 	m_dwMask = 0;
 	for (i=0; i<(int)m_nBit; i++) {
 		m_dwMask <<= 1;
 		m_dwMask |= 0x01;
 	}
 
-	// コンボボックスクリア
+ 	 // Limpiar combo box
 	pComboBox = (CComboBox*)GetDlgItem(IDC_ADDR_ADDRE);
 	ASSERT(pComboBox);
 	pComboBox->ResetContent();
 
-	// コンボボックス追加
+ 	 // Anadir combo box
 	nNum = *(int *)GetNumPtr();
 	pData = GetDataPtr();
 	for (i=0; i<nNum; i++) {
 		if (pData[i] > m_dwMask) {
-			// マスクより大きいので、一律32bitでOK
+ 			 // Al ser mayor que la mascara, 32 bits esta bien por defecto
 			strText.Format(_T("%08X"), pData[i]);
 		}
 		else {
-			// マスク以下
+ 			 // Menor o igual que la mascara
 			switch (m_nBit) {
 				case 8:
 					strText.Format(_T("%02X"), pData[i]);
@@ -121,11 +121,11 @@ BOOL CHistoryDlg::OnInitDialog()
 					break;
 			}
 		}
-		// 追加
+ 		 // Anadir
 		pComboBox->AddString(strText);
 	}
 
-	// dwValueは必ずマスク
+ 	 // dwValue siempre es mascara
 	m_dwValue &= m_dwMask;
 	switch (m_nBit) {
 		case 8:
@@ -146,11 +146,11 @@ BOOL CHistoryDlg::OnInitDialog()
 	return TRUE;
 }
 
-//---------------------------------------------------------------------------
-//
-//	ダイアログOK
-//
-//---------------------------------------------------------------------------
+  //---------------------------------------------------------------------------
+  //
+  //	Dialogo OK
+  //
+  //---------------------------------------------------------------------------
 void CHistoryDlg::OnOK()
 {
 	CComboBox *pComboBox;
@@ -160,13 +160,13 @@ void CHistoryDlg::OnOK()
 	int nNum;
 	DWORD *pData;
 
-	// 入力数値を取得
+ 	 // Obtener valor numerico de entrada
 	pComboBox = (CComboBox*)GetDlgItem(IDC_ADDR_ADDRE);
 	ASSERT(pComboBox);
 	pComboBox->GetWindowText(strText);
 	m_dwValue = _tcstoul((LPCTSTR)strText, NULL, 16);
 
-	// 既に入力されたものと同じかチェック
+ 	 // Comprobar si es igual a lo ya ingresado
 	nNum = *(int *)GetNumPtr();
 	pData = GetDataPtr();
 	nHit = -1;
@@ -177,50 +177,50 @@ void CHistoryDlg::OnOK()
 		}
 	}
 
-	// 新規か、採用か
+ 	 // Nuevo o adoptado
 	if (nHit >= 0) {
-		// 既にあるものと同じ。場所入れ替え
+ 		 // Igual al existente. Intercambiar lugar
 		for (i=(nHit - 1); i>=0; i--) {
 			pData[i + 1] = pData[i];
 		}
 		pData[0] = m_dwValue;
 	}
 	else {
-		// 新規。既存ものをひとつ下へ格下げ
+ 		 // Nuevo. Bajar el existente un nivel
 		for (i=9; i>=1; i--) {
 			pData[i] = pData[i - 1];
 		}
 
-		// 最新を[0]へ
+ 		 // Poner el mas reciente en [0]
 		pData[0] = m_dwValue;
 
-		// 10までは追加できる
+ 		 // Se pueden anadir hasta 10
 		if (nNum < 10) {
 			*(int *)GetNumPtr() = (nNum + 1);
 		}
 	}
 
-	// dwValueをマスクしてOK
+ 	 // Enmascarar dwValue y OK
 	m_dwValue &= m_dwMask;
 
-	// 基本クラス
+ 	 // Clase base
 	CDialog::OnOK();
 }
 
-//===========================================================================
-//
-//	アドレス入力ダイアログ
-//
-//===========================================================================
+  //===========================================================================
+  //
+  //	Dialogo de entrada de direccion
+  //
+  //===========================================================================
 
-//---------------------------------------------------------------------------
-//
-//	コンストラクタ
-//
-//---------------------------------------------------------------------------
+  //---------------------------------------------------------------------------
+  //
+  //	Constructor
+  //
+  //---------------------------------------------------------------------------
 CAddrDlg::CAddrDlg(CWnd *pParent) : CHistoryDlg(IDD_ADDRDLG, pParent)
 {
-	// 英語環境への対応
+ 	 // Soporte para entorno en ingles
 	if (!::IsJapanese()) {
 		m_lpszTemplateName = MAKEINTRESOURCE(IDD_US_ADDRDLG);
 		m_nIDHelp = IDD_US_ADDRDLG;
@@ -229,11 +229,11 @@ CAddrDlg::CAddrDlg(CWnd *pParent) : CHistoryDlg(IDD_ADDRDLG, pParent)
 	m_nBit = 24;
 }
 
-//---------------------------------------------------------------------------
-//
-//	メニューセットアップ
-//
-//---------------------------------------------------------------------------
+  //---------------------------------------------------------------------------
+  //
+  //	Configuracion de menu
+  //
+  //---------------------------------------------------------------------------
 void CAddrDlg::SetupHisMenu(CMenu *pMenu)
 {
 	int i;
@@ -241,24 +241,24 @@ void CAddrDlg::SetupHisMenu(CMenu *pMenu)
 
 	ASSERT(pMenu);
 
-	// メニュー文字列
+ 	 // Cadena de menu
 	for (i=0; i<(int)m_Num; i++) {
 		string.Format("$%06X", m_Data[i]);
 		pMenu->ModifyMenu(IDM_HISTORY_0 + i, MF_BYCOMMAND | MF_STRING,
 							IDM_HISTORY_0 + i, (LPCTSTR)string);
 	}
 
-	// メニュー削除
+ 	 // Eliminar menu
 	for (i=m_Num; i<10; i++) {
 		pMenu->DeleteMenu(IDM_HISTORY_0 + i, MF_BYCOMMAND);
 	}
 }
 
-//---------------------------------------------------------------------------
-//
-//	メニュー結果取得
-//
-//---------------------------------------------------------------------------
+  //---------------------------------------------------------------------------
+  //
+  //	Obtener resultado de menu
+  //
+  //---------------------------------------------------------------------------
 DWORD CAddrDlg::GetAddr(UINT nID)
 {
 	DWORD dwAddr;
@@ -266,12 +266,12 @@ DWORD CAddrDlg::GetAddr(UINT nID)
 
 	ASSERT((nID >= IDM_HISTORY_0) && (nID <= IDM_HISTORY_9));
 
-	// アドレス取得
+ 	 // Obtener direccion
 	nID -= IDM_HISTORY_0;
 	ASSERT(nID < 10);
 	dwAddr = m_Data[nID];
 
-	// 場所入れ替え
+ 	 // Intercambiar lugar
 	for (i=(int)(nID - 1); i>=0; i--) {
 		m_Data[i + 1] = m_Data[i];
 	}
@@ -280,56 +280,56 @@ DWORD CAddrDlg::GetAddr(UINT nID)
 	return dwAddr;
 }
 
-//---------------------------------------------------------------------------
-//
-//	ヒストリ個数ポインタ取得
-//
-//---------------------------------------------------------------------------
+  //---------------------------------------------------------------------------
+  //
+  //	Obtener puntero de conteo de historial
+  //
+  //---------------------------------------------------------------------------
 UINT* CAddrDlg::GetNumPtr()
 {
 	return &m_Num;
 }
 
-//---------------------------------------------------------------------------
-//
-//	ヒストリデータポインタ取得
-//
-//---------------------------------------------------------------------------
+  //---------------------------------------------------------------------------
+  //
+  //	Obtener puntero de datos de historial
+  //
+  //---------------------------------------------------------------------------
 DWORD* CAddrDlg::GetDataPtr()
 {
 	return m_Data;
 }
 
-//---------------------------------------------------------------------------
-//
-//	ヒストリ個数
-//
-//---------------------------------------------------------------------------
+  //---------------------------------------------------------------------------
+  //
+  //	Conteo de historial
+  //
+  //---------------------------------------------------------------------------
 UINT CAddrDlg::m_Num = 0;
 
-//---------------------------------------------------------------------------
-//
-//	ヒストリデータ
-//
-//---------------------------------------------------------------------------
+  //---------------------------------------------------------------------------
+  //
+  //	Datos de historial
+  //
+  //---------------------------------------------------------------------------
 DWORD CAddrDlg::m_Data[10] = {
 	0, 0, 0, 0, 0, 0, 0, 0, 0, 0
 };
 
-//===========================================================================
-//
-//	レジスタ入力ダイアログ
-//
-//===========================================================================
+  //===========================================================================
+  //
+  //	Dialogo de entrada de registros
+  //
+  //===========================================================================
 
-//---------------------------------------------------------------------------
-//
-//	コンストラクタ
-//
-//---------------------------------------------------------------------------
+  //---------------------------------------------------------------------------
+  //
+  //	Constructor
+  //
+  //---------------------------------------------------------------------------
 CRegDlg::CRegDlg(CWnd *pParent) : CHistoryDlg(IDD_REGDLG, pParent)
 {
-	// 英語環境への対応
+ 	 // Soporte para entorno en ingles
 	if (!::IsJapanese()) {
 		m_lpszTemplateName = MAKEINTRESOURCE(IDD_US_REGDLG);
 		m_nIDHelp = IDD_US_REGDLG;
@@ -339,11 +339,11 @@ CRegDlg::CRegDlg(CWnd *pParent) : CHistoryDlg(IDD_REGDLG, pParent)
 	m_nBit = 32;
 }
 
-//---------------------------------------------------------------------------
-//
-//	ダイアログ初期化
-//
-//---------------------------------------------------------------------------
+  //---------------------------------------------------------------------------
+  //
+  //	Inicializacion de dialogo
+  //
+  //---------------------------------------------------------------------------
 BOOL CRegDlg::OnInitDialog()
 {
 	CWnd *pWnd;
@@ -354,14 +354,14 @@ BOOL CRegDlg::OnInitDialog()
 	ASSERT(this);
 	ASSERT(m_nIndex < 20);
 
-	// CPUレジスタ取得
+ 	 // Obtener registros de CPU
 	::LockVM();
 	pCPU = (CPU*)::GetVM()->SearchDevice(MAKEID('C', 'P', 'U', ' '));
 	ASSERT(pCPU);
 	pCPU->GetCPU(&reg);
 	::UnlockVM();
 
-	// 文字列作成
+ 	 // Crear cadena
 	if (m_nIndex <= 7) {
 		strRegister.Format("D%d", m_nIndex);
 		m_dwValue = reg.dreg[m_nIndex];
@@ -371,7 +371,7 @@ BOOL CRegDlg::OnInitDialog()
 		m_dwValue = reg.areg[m_nIndex & 7];
 	}
 	switch (m_nIndex) {
-		// USP
+ 		 // USP
 		case 16:
 			strRegister = "USP";
 			if (reg.sr & 0x2000) {
@@ -381,7 +381,7 @@ BOOL CRegDlg::OnInitDialog()
 				m_dwValue = reg.areg[7];
 			}
 			break;
-		// SSP
+ 		 // SSP
 		case 17:
 			strRegister = "SSP";
 			if (reg.sr & 0x2000) {
@@ -391,24 +391,24 @@ BOOL CRegDlg::OnInitDialog()
 				m_dwValue = reg.sp;
 			}
 			break;
-		// PC
+ 		 // PC
 		case 18:
 			strRegister = "PC";
 			m_dwValue = reg.pc;
 			break;
-		// SR
+ 		 // SR
 		case 19:
 			strRegister = "SR";
 			m_dwValue = reg.sr;
 			break;
 	}
 
-	// 基本クラスをここで呼ぶ
+ 	 // Llamar a la clase base aqui
 	if (!CHistoryDlg::OnInitDialog()) {
 		return FALSE;
 	}
 
-	// 値を設定
+ 	 // Establecer valor
 	pWnd = GetDlgItem(IDC_ADDR_ADDRL);
 	ASSERT(pWnd);
 	pWnd->SetWindowText(strRegister);
@@ -416,11 +416,11 @@ BOOL CRegDlg::OnInitDialog()
 	return TRUE;
 }
 
-//---------------------------------------------------------------------------
-//
-//	OK
-//
-//---------------------------------------------------------------------------
+  //---------------------------------------------------------------------------
+  //
+  //	OK
+  //
+  //---------------------------------------------------------------------------
 void CRegDlg::OnOK()
 {
 	CComboBox *pComboBox;
@@ -431,19 +431,19 @@ void CRegDlg::OnOK()
 
 	ASSERT(this);
 
-	// Valueを取得
+ 	 // Obtener valor
 	pComboBox = (CComboBox*)GetDlgItem(IDC_ADDR_ADDRE);
 	ASSERT(pComboBox);
 	pComboBox->GetWindowText(string);
 	dwValue = ::strtoul((LPCTSTR)string, NULL, 16);
 
-	// VMロック、レジスタ取得
+ 	 // Bloqueo de VM, obtener registros
 	::LockVM();
 	pCPU = (CPU*)::GetVM()->SearchDevice(MAKEID('C', 'P', 'U', ' '));
 	ASSERT(pCPU);
 	pCPU->GetCPU(&reg);
 
-	// インデックス別
+ 	 // Por indice
 	if (m_nIndex <= 7) {
 		reg.dreg[m_nIndex] = dwValue;
 	}
@@ -451,7 +451,7 @@ void CRegDlg::OnOK()
 		reg.areg[m_nIndex & 7] = dwValue;
 	}
 	switch (m_nIndex) {
-		// USP
+ 		 // USP
 		case 16:
 			if (reg.sr & 0x2000) {
 				reg.sp = dwValue;
@@ -460,7 +460,7 @@ void CRegDlg::OnOK()
 				reg.areg[7] = dwValue;
 			}
 			break;
-		// SSP
+ 		 // SSP
 		case 17:
 			if (reg.sr & 0x2000) {
 				reg.areg[7] = dwValue;
@@ -469,89 +469,89 @@ void CRegDlg::OnOK()
 				reg.sp = dwValue;
 			}
 			break;
-		// PC
+ 		 // PC
 		case 18:
 			reg.pc = dwValue & 0xfffffe;
 			break;
-		// SR
+ 		 // SR
 		case 19:
 			reg.sr = (WORD)dwValue;
 			break;
 	}
 
-	// レジスタ設定、VMアンロック
+ 	 // Establecer registros, desbloqueo de VM
 	pCPU->SetCPU(&reg);
 	::UnlockVM();
 
-	// 基本クラス
+ 	 // Clase base
 	CHistoryDlg::OnOK();
 }
 
-//---------------------------------------------------------------------------
-//
-//	ヒストリ個数ポインタ取得
-//
-//---------------------------------------------------------------------------
+  //---------------------------------------------------------------------------
+  //
+  //	Obtener puntero de conteo de historial
+  //
+  //---------------------------------------------------------------------------
 UINT* CRegDlg::GetNumPtr()
 {
 	return &m_Num;
 }
 
-//---------------------------------------------------------------------------
-//
-//	ヒストリデータポインタ取得
-//
-//---------------------------------------------------------------------------
+  //---------------------------------------------------------------------------
+  //
+  //	Obtener puntero de datos de historial
+  //
+  //---------------------------------------------------------------------------
 DWORD* CRegDlg::GetDataPtr()
 {
 	return m_Data;
 }
 
-//---------------------------------------------------------------------------
-//
-//	ヒストリ個数
-//
-//---------------------------------------------------------------------------
+  //---------------------------------------------------------------------------
+  //
+  //	Conteo de historial
+  //
+  //---------------------------------------------------------------------------
 UINT CRegDlg::m_Num = 0;
 
-//---------------------------------------------------------------------------
-//
-//	ヒストリデータ
-//
-//---------------------------------------------------------------------------
+  //---------------------------------------------------------------------------
+  //
+  //	Datos de historial
+  //
+  //---------------------------------------------------------------------------
 DWORD CRegDlg::m_Data[10] = {
 	0, 0, 0, 0, 0, 0, 0, 0, 0, 0
 };
 
-//===========================================================================
-//
-//	データ入力ダイアログ
-//
-//===========================================================================
+  //===========================================================================
+  //
+  //	Dialogo de entrada de datos
+  //
+  //===========================================================================
 
-//---------------------------------------------------------------------------
-//
-//	コンストラクタ
-//
-//---------------------------------------------------------------------------
+  //---------------------------------------------------------------------------
+  //
+  //	Constructor
+  //
+  //---------------------------------------------------------------------------
 CDataDlg::CDataDlg(CWnd *pParent) : CHistoryDlg(IDD_DATADLG, pParent)
 {
-	// 英語環境への対応
+ 	 // Soporte para entorno en ingles
 	if (!::IsJapanese()) {
 		m_lpszTemplateName = MAKEINTRESOURCE(IDD_US_DATADLG);
 		m_nIDHelp = IDD_US_DATADLG;
 	}
 
-	// 一応、初期化
+ 	 // Inicializacion por si acaso
 	m_dwAddr = 0;
 	m_nSize = 0;
 }
 
-//---------------------------------------------------------------------------
-//
-//	ダイアログ初期化
-//
-//---------------------------------------------------------------------------
+  //---------------------------------------------------------------------------
+  //
+  //	Inicializacion de dialogo
+  //
+  //---------------------------------------------------------------------------
 BOOL CDataDlg::OnInitDialog()
 {
 	CWnd *pWnd;
@@ -560,35 +560,35 @@ BOOL CDataDlg::OnInitDialog()
 	ASSERT(this);
 	ASSERT(m_dwAddr < 0x1000000);
 
-	// アドレスとビット数決定
+ 	 // Determinar direccion y numero de bits
 	switch (m_nSize) {
-		// Byte
+ 		 // Byte
 		case 0:
 			string.Format("$%06X (B)", m_dwAddr);
 			m_nBit = 8;
 			break;
-		// Word
+ 		 // Word
 		case 1:
 			string.Format("$%06X (W)", m_dwAddr);
 			m_nBit = 16;
 			break;
-		// Long
+ 		 // Long
 		case 2:
 			string.Format("$%06X (L)", m_dwAddr);
 			m_nBit = 32;
 			break;
-		// その他
+ 		 // Otros
 		default:
 			ASSERT(FALSE);
 			break;
 	}
 
-	// 基本クラス
+ 	 // Clase base
 	if (!CHistoryDlg::OnInitDialog()) {
 		return FALSE;
 	}
 
-	// 初期化確立の後で設定
+ 	 // Configurar tras establecer la inicializacion
 	pWnd = GetDlgItem(IDC_ADDR_ADDRL);
 	ASSERT(pWnd);
 	pWnd->SetWindowText(string);
@@ -596,82 +596,82 @@ BOOL CDataDlg::OnInitDialog()
 	return TRUE;
 }
 
-//---------------------------------------------------------------------------
-//
-//	ヒストリ個数ポインタ取得
-//
-//---------------------------------------------------------------------------
+  //---------------------------------------------------------------------------
+  //
+  //	Obtener puntero de conteo de historial
+  //
+  //---------------------------------------------------------------------------
 UINT* CDataDlg::GetNumPtr()
 {
 	return &m_Num;
 }
 
-//---------------------------------------------------------------------------
-//
-//	ヒストリデータポインタ取得
-//
-//---------------------------------------------------------------------------
+  //---------------------------------------------------------------------------
+  //
+  //	Obtener puntero de datos de historial
+  //
+  //---------------------------------------------------------------------------
 DWORD* CDataDlg::GetDataPtr()
 {
 	return m_Data;
 }
 
-//---------------------------------------------------------------------------
-//
-//	ヒストリ個数
-//
-//---------------------------------------------------------------------------
+  //---------------------------------------------------------------------------
+  //
+  //	Conteo de historial
+  //
+  //---------------------------------------------------------------------------
 UINT CDataDlg::m_Num = 0;
 
-//---------------------------------------------------------------------------
-//
-//	ヒストリデータ
-//
-//---------------------------------------------------------------------------
+  //---------------------------------------------------------------------------
+  //
+  //	Datos de historial
+  //
+  //---------------------------------------------------------------------------
 DWORD CDataDlg::m_Data[10] = {
 	0, 0, 0, 0, 0, 0, 0, 0, 0, 0
 };
 
-//===========================================================================
-//
-//	CPUレジスタウィンドウ
-//
-//===========================================================================
+  //===========================================================================
+  //
+  //	Ventana de registros de CPU
+  //
+  //===========================================================================
 
-//---------------------------------------------------------------------------
-//
-//	コンストラクタ
-//
-//---------------------------------------------------------------------------
+  //---------------------------------------------------------------------------
+  //
+  //	Constructor
+  //
+  //---------------------------------------------------------------------------
 CCPURegWnd::CCPURegWnd()
 {
-	// ウィンドウパラメータ定義
+ 	 // Definicion de parametros de ventana
 	m_dwID = MAKEID('M', 'P', 'U', 'R');
 	::GetMsg(IDS_SWND_CPUREG, m_strCaption);
 	m_nWidth = 27;
 	m_nHeight = 10;
 
-	// CPU取得
+ 	 // Obtener CPU
 	m_pCPU = (CPU*)::GetVM()->SearchDevice(MAKEID('C', 'P', 'U', ' '));
 	ASSERT(m_pCPU);
 }
 
-//---------------------------------------------------------------------------
-//
-//	メッセージ マップ
-//
-//---------------------------------------------------------------------------
+  //---------------------------------------------------------------------------
+  //
+  //	Mapa de mensajes
+  //
+  //---------------------------------------------------------------------------
 BEGIN_MESSAGE_MAP(CCPURegWnd, CSubTextWnd)
 	ON_WM_LBUTTONDBLCLK()
 	ON_WM_CONTEXTMENU()
 	ON_COMMAND_RANGE(IDM_REG_D0, IDM_REG_SR, OnReg)
 END_MESSAGE_MAP()
 
-//---------------------------------------------------------------------------
-//
-//	セットアップ
-//
-//---------------------------------------------------------------------------
+  //---------------------------------------------------------------------------
+  //
+  //	Configuracion
+  //
+  //---------------------------------------------------------------------------
 void FASTCALL CCPURegWnd::Setup()
 {
 	CPU::cpu_t buf;
@@ -680,13 +680,13 @@ void FASTCALL CCPURegWnd::Setup()
 
 	ASSERT(this);
 
-	// クリア
+ 	 // Limpiar
 	Clear();
 
-	// CPUレジスタ取得
+ 	 // Obtener registros de CPU
 	m_pCPU->GetCPU(&buf);
 
-	// セット(D, A)
+ 	 // Set (D, A)
 	for (i=0; i<8; i++) {
 		string.Format("D%1d  %08X", i, buf.dreg[i]);
 		SetString(0, i, string);
@@ -695,7 +695,7 @@ void FASTCALL CCPURegWnd::Setup()
 		SetString(15, i, string);
 	}
 
-	// セット(スタック)
+ 	 // Set (Stack)
 	if (buf.sr & 0x2000) {
 		string.Format("USP %08X", buf.sp);
 		SetString(0, 8, string);
@@ -709,18 +709,18 @@ void FASTCALL CCPURegWnd::Setup()
 		SetString(15, 8, string);
 	}
 
-	// セット(その他)
+ 	 // Set (Otros)
 	string.Format("PC    %06X", buf.pc);
 	SetString(0, 9, string);
 	string.Format("SR      %04X", buf.sr);
 	SetString(15, 9, string);
 }
 
-//---------------------------------------------------------------------------
-//
-//	左ボタンダブルクリック
-//
-//---------------------------------------------------------------------------
+  //---------------------------------------------------------------------------
+  //
+  //	Doble clic con boton izquierdo
+  //
+  //---------------------------------------------------------------------------
 void CCPURegWnd::OnLButtonDblClk(UINT nFlags, CPoint point)
 {
 	int x;
@@ -728,18 +728,18 @@ void CCPURegWnd::OnLButtonDblClk(UINT nFlags, CPoint point)
 	int index;
 	CRegDlg dlg(this);
 
-	// x,y算出
+ 	 // Calcular x, y
 	x = point.x / m_tmWidth;
 	y = point.y / m_tmHeight;
 
-	// インデックスを出す
+ 	 // Obtener indice
 	if (y < 8) {
 		if (x < 15) {
-			// D0-D7
+ 			 // D0-D7
 			index = y;
 		}
 		else {
-			// A0-A7
+ 			 // A0-A7
 			index = y + 8;
 		}
 	}
@@ -754,23 +754,23 @@ void CCPURegWnd::OnLButtonDblClk(UINT nFlags, CPoint point)
 
 	printf("%d", nFlags);
 
-	// ダイアログ実行
+ 	 // Ejecutar dialogo
 	dlg.m_nIndex = index;
 	dlg.DoModal();
 }
 
-//---------------------------------------------------------------------------
-//
-//	コンテキストメニュー
-//
-//---------------------------------------------------------------------------
+  //---------------------------------------------------------------------------
+  //
+  //	Menu de contexto
+  //
+  //---------------------------------------------------------------------------
 void CCPURegWnd::OnContextMenu(CWnd *pWnd, CPoint point)
 {
 	CRect rect;
 	CMenu menu;
 	CMenu *pMenu;
 
-	// クライアント領域内で押されたか判定する
+ 	 // Determinar si se presiono dentro del area del cliente
 	GetClientRect(&rect);
 	ClientToScreen(&rect);
 	if (!rect.PtInRect(point)) {
@@ -778,23 +778,23 @@ void CCPURegWnd::OnContextMenu(CWnd *pWnd, CPoint point)
 		return;
 	}
 
-	// メニューロード
+ 	 // Cargar menu
 	menu.LoadMenu(IDR_REGMENU);
 	pMenu = menu.GetSubMenu(0);
 
-	// メニューセットアップ
+ 	 // Configuracion de menu
 	SetupRegMenu(pMenu, m_pCPU, TRUE);
 
-	// メニュー実行
+ 	 // Ejecutar menu
 	pMenu->TrackPopupMenu(TPM_LEFTALIGN | TPM_LEFTBUTTON | TPM_RIGHTBUTTON,
 							point.x, point.y, this);
 }
 
-//---------------------------------------------------------------------------
-//
-//	メニューセットアップ
-//
-//---------------------------------------------------------------------------
+  //---------------------------------------------------------------------------
+  //
+  //	Configuracion de menu
+  //
+  //---------------------------------------------------------------------------
 void CCPURegWnd::SetupRegMenu(CMenu *pMenu, CPU *pCPU, BOOL bSR)
 {
 	int i;
@@ -804,24 +804,24 @@ void CCPURegWnd::SetupRegMenu(CMenu *pMenu, CPU *pCPU, BOOL bSR)
 	ASSERT(pMenu);
 	ASSERT(pCPU);
 
-	// CPUレジスタ取得
+ 	 // Obtener registros de CPU
 	::LockVM();
 	pCPU->GetCPU(&reg);
 	::UnlockVM();
 
-	// セットアップ(D)
+ 	 // Configuracion (D)
 	for (i=0; i<8; i++) {
 		string.Format("D%1d ($%08X)", i, reg.dreg[i]);
 		pMenu->ModifyMenu(IDM_REG_D0 + i, MF_BYCOMMAND | MF_STRING,
 							IDM_REG_D0 + i, (LPCTSTR)string);
 	}
-	// セットアップ(A)
+ 	 // Configuracion (A)
 	for (i=0; i<8; i++) {
 		string.Format("A%1d ($%08X)", i, reg.areg[i]);
 		pMenu->ModifyMenu(IDM_REG_A0 + i, MF_BYCOMMAND | MF_STRING,
 							IDM_REG_A0 + i, (LPCTSTR)string);
 	}
-	// セットアップ(USP,SSP)
+ 	 // Configuracion (USP, SSP)
 	if (reg.sr & 0x2000) {
 		string.Format("USP ($%08X)", reg.sp);
 		pMenu->ModifyMenu(IDM_REG_USP, MF_BYCOMMAND | MF_STRING, IDM_REG_USP, (LPCTSTR)string);
@@ -835,22 +835,22 @@ void CCPURegWnd::SetupRegMenu(CMenu *pMenu, CPU *pCPU, BOOL bSR)
 		pMenu->ModifyMenu(IDM_REG_SSP, MF_BYCOMMAND | MF_STRING, IDM_REG_SSP, (LPCTSTR)string);
 	}
 
-	// セットアップ(PC)
+ 	 // Configuracion (PC)
 	string.Format("PC ($%06X)", reg.pc);
 	pMenu->ModifyMenu(IDM_REG_PC, MF_BYCOMMAND | MF_STRING, IDM_REG_PC, (LPCTSTR)string);
 
-	// セットアップ(SR)
+ 	 // Configuracion (SR)
 	if (bSR) {
 		string.Format("SR ($%04X)", reg.sr);
 		pMenu->ModifyMenu(IDM_REG_SR, MF_BYCOMMAND | MF_STRING, IDM_REG_SR, (LPCTSTR)string);
 	}
 }
 
-//---------------------------------------------------------------------------
-//
-//	レジスタ値取得
-//
-//---------------------------------------------------------------------------
+  //---------------------------------------------------------------------------
+  //
+  //	Obtener valor de registro
+  //
+  //---------------------------------------------------------------------------
 DWORD CCPURegWnd::GetRegValue(CPU *pCPU, UINT uID)
 {
 	CPU::cpu_t reg;
@@ -858,22 +858,22 @@ DWORD CCPURegWnd::GetRegValue(CPU *pCPU, UINT uID)
 	ASSERT(pCPU);
 	ASSERT((uID >= IDM_REG_D0) && (uID <= IDM_REG_SR));
 
-	// CPUレジスタ取得
+ 	 // Obtener registros de CPU
 	::LockVM();
 	pCPU->GetCPU(&reg);
 	::UnlockVM();
 
-	// D0～D7
+ 	 // D0 a D7
 	if (uID <= IDM_REG_D7) {
 		return reg.dreg[uID - IDM_REG_D0];
 	}
 
-	// A0-A7
+ 	 // A0 a A7
 	if (uID <= IDM_REG_A7) {
 		return reg.areg[uID - IDM_REG_A0];
 	}
 
-	// USP
+ 	 // USP
 	if (uID == IDM_REG_USP) {
 		if (reg.sr & 0x2000) {
 			return reg.sp;
@@ -883,7 +883,7 @@ DWORD CCPURegWnd::GetRegValue(CPU *pCPU, UINT uID)
 		}
 	}
 
-	// SSP
+ 	 // SSP
 	if (uID == IDM_REG_SSP) {
 		if (reg.sr & 0x2000) {
 			return reg.areg[7];
@@ -893,73 +893,73 @@ DWORD CCPURegWnd::GetRegValue(CPU *pCPU, UINT uID)
 		}
 	}
 
-	// PC
+ 	 // PC
 	if (uID == IDM_REG_PC) {
 		return reg.pc;
 	}
 
-	// SR
+ 	 // SR
 	ASSERT(uID == IDM_REG_SR);
 	return reg.sr;
 }
 
-//---------------------------------------------------------------------------
-//
-//	レジスタコマンド
-//
-//---------------------------------------------------------------------------
+  //---------------------------------------------------------------------------
+  //
+  //	Comando de registro
+  //
+  //---------------------------------------------------------------------------
 void CCPURegWnd::OnReg(UINT nID)
 {
 	CRegDlg dlg(this);
 
 	ASSERT((nID >= IDM_REG_D0) && (nID <= IDM_REG_SR));
 
-	// 換算して
+ 	 // Convertir
 	nID -= IDM_REG_D0;
 
-	// ダイアログにまかせる
+ 	 // Dejar a cargo del dialogo
 	dlg.m_nIndex = nID;
 	dlg.DoModal();
 }
 
-//===========================================================================
-//
-//	割り込みウィンドウ
-//
-//===========================================================================
+  //===========================================================================
+  //
+  //	Ventana de interrupcion
+  //
+  //===========================================================================
 
-//---------------------------------------------------------------------------
-//
-//	コンストラクタ
-//
-//---------------------------------------------------------------------------
+  //---------------------------------------------------------------------------
+  //
+  //	Constructor
+  //
+  //---------------------------------------------------------------------------
 CIntWnd::CIntWnd()
 {
-	// ウィンドウパラメータ定義
+ 	 // Definicion de parametros de ventana
 	m_dwID = MAKEID('I', 'N', 'T', ' ');
 	::GetMsg(IDS_SWND_INT, m_strCaption);
 	m_nWidth = 47;
 	m_nHeight = 9;
 
-	// CPU取得
+ 	 // Obtener CPU
 	m_pCPU = (CPU*)::GetVM()->SearchDevice(MAKEID('C', 'P', 'U', ' '));
 	ASSERT(m_pCPU);
 }
 
-//---------------------------------------------------------------------------
-//
-//	メッセージ マップ
-//
-//---------------------------------------------------------------------------
+  //---------------------------------------------------------------------------
+  //
+  //	Mapa de mensajes
+  //
+  //---------------------------------------------------------------------------
 BEGIN_MESSAGE_MAP(CIntWnd, CSubTextWnd)
 	ON_WM_LBUTTONDBLCLK()
 END_MESSAGE_MAP()
 
-//---------------------------------------------------------------------------
-//
-//	セットアップ
-//
-//---------------------------------------------------------------------------
+  //---------------------------------------------------------------------------
+  //
+  //	Configuracion
+  //
+  //---------------------------------------------------------------------------
 void FASTCALL CIntWnd::Setup()
 {
 	static const char *desc_table[] = {
@@ -977,123 +977,123 @@ void FASTCALL CIntWnd::Setup()
 	CString string;
 	CPU::cpu_t cpu;
 
-	// CPUデータ取得
+ 	 // Obtener datos de CPU
 	m_pCPU->GetCPU(&cpu);
 	level = (cpu.sr >> 8);
 	level &= 0x07;
 
-	// クリア
+ 	 // Limpiar
 	Clear();
 	y = 0;
 
-	// ガイド
+ 	 // Guia
 	SetString(0, y, "(High)  Device  Mask  Vector     Req        Ack");
 	y++;
 
-	// 7レベル処理
+ 	 // Procesamiento de 7 niveles
 	for (i=7; i>=1; i--) {
-		// 割り込み名称セット
+ 		 // Establecer nombre de interrupcion
 		string.Format("Level%1d  ", i);
 		string += desc_table[7 - i];
 		SetString(0, y, string);
 
-		// マスク
+ 		 // Mascara
 		if (i < 7) {
 			if (i <= level) {
 				SetString(16, y, "Mask");
 			}
 		}
 
-		// リクエスト中か
+ 		 // Esta en peticion?
 		if (cpu.intr[0] & 0x80) {
-			// リクエストあり。ベクタ表示
+ 			 // Hay peticion. Mostrar vector
 			string.Format("$%02X", cpu.intr[i]);
 			SetString(22, y, string);
 		}
 
-		// リクエストカウンタ
+ 		 // Contador de peticiones
 		string.Format("%10d", cpu.intreq[i]);
 		SetString(26, y, string);
 		
-		// 応答カウンタ
+ 		 // Contador de respuestas
 		string.Format("%10d", cpu.intack[i]);
 		SetString(37, y, string);
 
-		// 次へ
+ 		 // Siguiente
 		y++;
 		cpu.intr[0] <<= 1;
 	}
 
-	// ガイド
+ 	 // Guia
 	SetString(0, y, "(Low)");
 }
 
-//---------------------------------------------------------------------------
-//
-//	左ボタンダブルクリック
-//
-//---------------------------------------------------------------------------
+  //---------------------------------------------------------------------------
+  //
+  //	Doble clic con boton izquierdo
+  //
+  //---------------------------------------------------------------------------
 void CIntWnd::OnLButtonDblClk(UINT nFlags, CPoint point)
 {
 	int y;
 	int level;
 	CPU::cpu_t cpu;
 
-	// y算出
+ 	 // Calcular y
 	y = point.y / m_tmHeight;
 
-	// y=1,2,3,4,5,6,7がそれぞれint7,6,5,4,3,2,1に対応
+ 	 // y=1,2,3,4,5,6,7 corresponden respectivamente a int7,6,5,4,3,2,1
 	level = 8 - y;
 	if ((level < 1) || (level > 7)) {
 		return;
 	}
 
-	// ロック、データ取得
+ 	 // Bloqueo, obtener datos
 	::LockVM();
 	m_pCPU->GetCPU(&cpu);
 
-	// クリア
+ 	 // Limpiar
 	ASSERT((level >= 1) && (level <= 7));
 	cpu.intreq[level] = 0;
 	cpu.intack[level] = 0;
 
-	// データ設定、アンロック
+ 	 // Establecer datos, desbloqueo
 	m_pCPU->SetCPU(&cpu);
 	printf("%d", nFlags);
 	::UnlockVM();
 }
 
-//===========================================================================
-//
-//	逆アセンブルウィンドウ
-//
-//===========================================================================
+  //===========================================================================
+  //
+  //	Ventana de desensamblado
+  //
+  //===========================================================================
 
 #if defined(__cplusplus)
 extern "C" {
 #endif
-//---------------------------------------------------------------------------
-//
-//	cpudebug.c 文字列出力
-//
-//---------------------------------------------------------------------------
+  //---------------------------------------------------------------------------
+  //
+  //	cpudebug.c Salida de cadena
+  //
+  //---------------------------------------------------------------------------
 void disasm_put(const char *s)
 {
 	strcpy(debugbuf, s);
 }
 
-//---------------------------------------------------------------------------
-//
-//	メモリデバイス
-//
-//---------------------------------------------------------------------------
+  //---------------------------------------------------------------------------
+  //
+  //	Dispositivo de memoria
+  //
+  //---------------------------------------------------------------------------
 static Memory* cpudebug_memory;
 
-//---------------------------------------------------------------------------
-//
-//	cpudebug.c ワード読み出し
-//
-//---------------------------------------------------------------------------
+  //---------------------------------------------------------------------------
+  //
+  //	cpudebug.c Lectura de palabra
+  //
+  //---------------------------------------------------------------------------
 WORD cpudebug_fetch(DWORD addr)
 {
 	WORD w;
@@ -1111,27 +1111,27 @@ WORD cpudebug_fetch(DWORD addr)
 };
 #endif
 
-//---------------------------------------------------------------------------
-//
-//	コンストラクタ
-//
-//---------------------------------------------------------------------------
+  //---------------------------------------------------------------------------
+  //
+  //	Constructor
+  //
+  //---------------------------------------------------------------------------
 CDisasmWnd::CDisasmWnd(int index)
 {
-	// 逆アセンブルウィンドウは8種類まで
+ 	 // Hasta 8 tipos de ventanas de desensamblado
 	ASSERT((index >= 0) && (index <= 0x07));
 
-	// ウィンドウパラメータ定義
+ 	 // Definicion de parametros de ventana
 	m_dwID = MAKEID('D', 'I', 'S', (index + 'A'));
 	::GetMsg(IDS_SWND_DISASM, m_strCaption);
 	m_nWidth = 70;
 	m_nHeight = 16;
 
-	// ウィンドウパラメータ定義(スクロール)
+ 	 // Definicion de parametros de ventana (scroll)
 	m_ScrlWidth = 70;
 	m_ScrlHeight = 0x8000;
 
-	// 最初のウィンドウはPC同期あり、それ以外は無し
+ 	 // La primera ventana tiene sincronizacion con PC, las demas no
 	if (index == 0) {
 		m_bSync = TRUE;
 	}
@@ -1139,12 +1139,12 @@ CDisasmWnd::CDisasmWnd(int index)
 		m_bSync = FALSE;
 	}
 
-	// その他
+ 	 // Otros
 	m_pAddrBuf = NULL;
 	m_Caption = m_strCaption;
 	m_CaptionSet = "";
 
-	// デバイスを取得
+ 	 // Obtener dispositivo
 	m_pCPU = (CPU*)::GetVM()->SearchDevice(MAKEID('C', 'P', 'U', ' '));
 	ASSERT(m_pCPU);
 	cpudebug_memory = (Memory*)::GetVM()->SearchDevice(MAKEID('M', 'E', 'M', ' '));
@@ -1162,21 +1162,21 @@ CDisasmWnd::CDisasmWnd(int index)
 	m_pIOSC = (IOSC*)::GetVM()->SearchDevice(MAKEID('I', 'O', 'S', 'C'));
 	ASSERT(m_pIOSC);
 
-	// アドレスをPCに初期化
+ 	 // Inicializar direccion al PC
 	m_dwSetAddr = m_pCPU->GetPC();
 	m_dwAddr = m_dwSetAddr;
 	m_dwAddr = m_dwAddr & 0xff0000;
 	m_dwPC = 0xffffffff;
 
-	// 逆アセンブルバッファ接続
+ 	 // Conexion de buffer de desensamblado
 	::cpudebug_put = ::disasm_put;
 }
 
-//---------------------------------------------------------------------------
-//
-//	メッセージ マップ
-//
-//---------------------------------------------------------------------------
+  //---------------------------------------------------------------------------
+  //
+  //	Mapa de mensajes
+  //
+  //---------------------------------------------------------------------------
 BEGIN_MESSAGE_MAP(CDisasmWnd, CSubTextScrlWnd)
 	ON_WM_CREATE()
 	ON_WM_DESTROY()
@@ -1201,56 +1201,56 @@ BEGIN_MESSAGE_MAP(CDisasmWnd, CSubTextScrlWnd)
 	ON_COMMAND_RANGE(IDM_DIS_IOSC0, IDM_DIS_IOSC3, OnIOSC)
 END_MESSAGE_MAP()
 
-//---------------------------------------------------------------------------
-//
-//	ウィンドウ作成
-//
-//---------------------------------------------------------------------------
+  //---------------------------------------------------------------------------
+  //
+  //	Creacion de ventana
+  //
+  //---------------------------------------------------------------------------
 int CDisasmWnd::OnCreate(LPCREATESTRUCT lpcs)
 {
 	int i;
 
-	// アドレスバッファを先に確保
+ 	 // Asegurar el buffer de direcciones primero
 	m_pAddrBuf = new DWORD[ m_nHeight ];
 	for (i=0; i<m_nHeight; i++) {
 		m_pAddrBuf[i] = 0xffffffff;
 	}
 
-	// 基本クラス
+ 	 // Clase base
 	if (CSubTextScrlWnd::OnCreate(lpcs) != 0) {
 		return -1;
 	}
 
-	// アドレス初期化
+ 	 // Inicializacion de direccion
 	SetAddr(m_dwSetAddr);
 
 	return TRUE;
 }
 
-//---------------------------------------------------------------------------
-//
-//	ウィンドウ削除
-//
-//---------------------------------------------------------------------------
+  //---------------------------------------------------------------------------
+  //
+  //	Eliminacion de ventana
+  //
+  //---------------------------------------------------------------------------
 void CDisasmWnd::OnDestroy()
 {
 	m_bEnable = FALSE;
 
-	// アドレスバッファ解放
+ 	 // Liberar buffer de direcciones
 	if (m_pAddrBuf) {
 		delete[] m_pAddrBuf;
 		m_pAddrBuf = NULL;
 	}
 
-	// 基本クラスへ
+ 	 // A la clase base
 	CSubTextScrlWnd::OnDestroy();
 }
 
-//---------------------------------------------------------------------------
-//
-//	サイズ変更
-//
-//---------------------------------------------------------------------------
+  //---------------------------------------------------------------------------
+  //
+  //	Cambio de tamano
+  //
+  //---------------------------------------------------------------------------
 void CDisasmWnd::OnSize(UINT nType, int cx, int cy)
 {
 	CRect rect;
@@ -1260,7 +1260,7 @@ void CDisasmWnd::OnSize(UINT nType, int cx, int cy)
 	ASSERT(cx >= 0);
 	ASSERT(cy >= 0);
 
-	// アドレスバッファがあれば一度解放
+ 	 // Liberar buffer de direcciones si existe
 	::LockVM();
 	if (m_pAddrBuf) {
 		delete[] m_pAddrBuf;
@@ -1268,10 +1268,10 @@ void CDisasmWnd::OnSize(UINT nType, int cx, int cy)
 	}
 	::UnlockVM();
 
-	// 基本クラス(この中で、CDisasmWnd::OnSizeが再度呼ばれる場合あり)
+ 	 // Clase base (dentro de esto, se puede llamar de nuevo a CDisasmWnd::OnSize)
 	CSubTextScrlWnd::OnSize(nType, cx, cy);
 
-	// アドレスバッファを再度確保。解放チェックも行う
+ 	 // Volver a asegurar el buffer de direcciones. Tambien comprobar liberacion
 	::LockVM();
 	if (m_pAddrBuf) {
 		delete[] m_pAddrBuf;
@@ -1283,46 +1283,46 @@ void CDisasmWnd::OnSize(UINT nType, int cx, int cy)
 	}
 	::UnlockVM();
 
-	// 再アドレスセット
+ 	 // Reestablecer direccion
 	SetAddr(m_dwSetAddr);
 }
 
-//---------------------------------------------------------------------------
-//
-//	左クリック
-//
-//---------------------------------------------------------------------------
+  //---------------------------------------------------------------------------
+  //
+  //	Clic izquierdo
+  //
+  //---------------------------------------------------------------------------
 void CDisasmWnd::OnLButtonDown(UINT nFlags, CPoint point)
 {
 	OnLButtonDblClk(nFlags, point);
 }
 
-//---------------------------------------------------------------------------
-//
-//	左ボタンダブルクリック
-//
-//---------------------------------------------------------------------------
+  //---------------------------------------------------------------------------
+  //
+  //	Doble clic con boton izquierdo
+  //
+  //---------------------------------------------------------------------------
 void CDisasmWnd::OnLButtonDblClk(UINT nFlags, CPoint point)
 {
 	int y;
 	DWORD dwAddr;
 
-	// アドレスバッファが無ければ終了
+ 	 // Terminar si no hay buffer de direcciones
 	if (!m_pAddrBuf) {
 		return;
 	}
 
-	// アドレス取得、チェック
+ 	 // Obtener direccion, comprobar
 	y = point.y / m_tmHeight;
 	dwAddr = m_pAddrBuf[y];
 	if (dwAddr >= 0x01000000) {
 		return;
 	}
 
-	// VMロック
+ 	 // Bloqueo de VM
 	::LockVM();
 
-	// アドレスがあれば削除、なければ設定
+ 	 // Si hay direccion, eliminar; si no hay, establecer
 	if (m_pScheduler->IsBreak(dwAddr) >= 0) {
 		m_pScheduler->DelBreak(dwAddr);
 	}
@@ -1330,15 +1330,15 @@ void CDisasmWnd::OnLButtonDblClk(UINT nFlags, CPoint point)
 		m_pScheduler->SetBreak(dwAddr);
 	}
 	printf("%d", nFlags);
-	// VMアンロック
+ 	 // Desbloqueo de VM
 	::UnlockVM();
 }
 
-//---------------------------------------------------------------------------
-//
-//	スクロール(垂直)
-//
-//---------------------------------------------------------------------------
+  //---------------------------------------------------------------------------
+  //
+  //	Desplazamiento (vertical)
+  //
+  //---------------------------------------------------------------------------
 void CDisasmWnd::OnVScroll(UINT nSBCode, UINT nPos, CScrollBar *pBar)
 {
 	SCROLLINFO si;
@@ -1346,32 +1346,32 @@ void CDisasmWnd::OnVScroll(UINT nSBCode, UINT nPos, CScrollBar *pBar)
 	DWORD dwAddr;
 	int i;
 
-	// スクロール情報を取得
+ 	 // Obtener informacion de desplazamiento
 	memset(&si, 0, sizeof(si));
 	si.cbSize = sizeof(si);
 	GetScrollInfo(SB_VERT, &si, SIF_ALL);
 
-	// スクロールバーコード別
+ 	 // Por codigo de barra de desplazamiento
 	switch (nSBCode) {
-		// 上へ
+ 		 // Hacia arriba
 		case SB_TOP:
 			m_ScrlY = si.nMin;
 			break;
 
-		// 下へ
+ 		 // Hacia abajo
 		case SB_BOTTOM:
 			m_ScrlY = si.nMax;
 			break;
 
-		// 1ライン上へ
+ 		 // 1 linea hacia arriba
 		case SB_LINEUP:
-			// アドレスバッファをチェック
+ 			 // Comprobar buffer de direcciones
 			if (m_pAddrBuf) {
-				// 一つ前のアドレスを取得し、差を計算
+ 				 // Obtener direccion anterior y calcular diferencia
 				dwDiff = GetPrevAddr(m_pAddrBuf[0]);
 				dwDiff = m_pAddrBuf[0] - dwDiff;
 
-				// 差あれば減少、差がなければ-1
+ 				 // Si hay diferencia, disminuir; si no, -1
 				if (dwDiff > 0) {
 					dwDiff >>= 1;
 					m_ScrlY -= dwDiff;
@@ -1382,9 +1382,9 @@ void CDisasmWnd::OnVScroll(UINT nSBCode, UINT nPos, CScrollBar *pBar)
 			}
 			break;
 
-		// 1ライン下へ
+ 		 // 1 linea hacia abajo
 		case SB_LINEDOWN:
-			// アドレスバッファを見て、1命令分進める
+ 			 // Mirar buffer de direcciones y avanzar 1 instruccion
 			if (m_nHeight >= 2) {
 				if (m_pAddrBuf) {
 					dwDiff = m_pAddrBuf[1] - m_pAddrBuf[0];
@@ -1395,18 +1395,18 @@ void CDisasmWnd::OnVScroll(UINT nSBCode, UINT nPos, CScrollBar *pBar)
 			
 			break;
 
-		// 1ページ上へ
+ 		 // 1 pagina hacia arriba
 		case SB_PAGEUP:
-			// アドレスバッファをチェック
+ 			 // Comprobar buffer de direcciones
 			if (m_pAddrBuf) {
 				dwAddr = m_pAddrBuf[0];
 				for (i=0; i<m_nHeight-1; i++) {
-					// 一つ前のアドレスを取得し、差を計算
+ 					 // Obtener direccion anterior y calcular diferencia
 					dwDiff = GetPrevAddr(dwAddr);
 					dwDiff = dwAddr - dwDiff;
 					dwAddr -= dwDiff;
 
-					// 差あれば減少、差がなければ-1
+ 					 // Si hay diferencia, disminuir; si no, -1
 					if (dwDiff > 0) {
 						dwDiff >>= 1;
 						m_ScrlY -= dwDiff;
@@ -1415,22 +1415,22 @@ void CDisasmWnd::OnVScroll(UINT nSBCode, UINT nPos, CScrollBar *pBar)
 						m_ScrlY--;
 					}
 
-					// オーバーチェック
+ 					 // Comprobar desbordamiento
 					if (m_ScrlY < 0) {
 						m_ScrlY = 0;
 					}
 				}
 
-				// 全く戻れなかった場合を考慮
+ 				 // Considerar el caso en el que no se pudo volver atras en absoluto
 				if (dwAddr == m_pAddrBuf[0]) {
 					m_ScrlY -= si.nPage;
 				}
 			}
 			break;
 
-		// 1ページ下へ
+ 		 // 1 pagina hacia abajo
 		case SB_PAGEDOWN:
-			// アドレスバッファを見て、m_nHeight命令分進める
+ 			 // Mirar buffer de direcciones y avanzar m_nHeight instrucciones
 			if (m_pAddrBuf) {
 				dwDiff = m_pAddrBuf[m_nHeight - 1] - m_pAddrBuf[0];
 				dwDiff >>= 1;
@@ -1438,7 +1438,7 @@ void CDisasmWnd::OnVScroll(UINT nSBCode, UINT nPos, CScrollBar *pBar)
 			}
 			break;
 
-		// サム移動
+ 		 // Mover thumb
 		case SB_THUMBPOSITION:
 			m_ScrlY = nPos;
 			break;
@@ -1447,7 +1447,7 @@ void CDisasmWnd::OnVScroll(UINT nSBCode, UINT nPos, CScrollBar *pBar)
 			break;
 	}
 
-	// オーバーチェック
+ 	 // Comprobar desbordamiento
 	if (m_ScrlY < 0) {
 		m_ScrlY = 0;
 	}
@@ -1456,22 +1456,22 @@ void CDisasmWnd::OnVScroll(UINT nSBCode, UINT nPos, CScrollBar *pBar)
 	}
 
 	pBar = NULL;
-	// セット
+ 	 // Set
 	SetupScrlV();
 }
 
-//---------------------------------------------------------------------------
-//
-//	コンテキストメニュー
-//
-//---------------------------------------------------------------------------
+  //---------------------------------------------------------------------------
+  //
+  //	Menu de contexto
+  //
+  //---------------------------------------------------------------------------
 void CDisasmWnd::OnContextMenu(CWnd *pWnd, CPoint point)
 {
 	CRect rect;
 	CMenu menu;
 	CMenu *pMenu;
 
-	// クライアント領域内で押されたか判定する
+ 	 // Determinar si se presiono dentro del area del cliente
 	GetClientRect(&rect);
 	ClientToScreen(&rect);
 	if (!rect.PtInRect(point)) {
@@ -1479,7 +1479,7 @@ void CDisasmWnd::OnContextMenu(CWnd *pWnd, CPoint point)
 		return;
 	}
 
-	// メニューロード
+ 	 // Cargar menu
 	if (::IsJapanese()) {
 		menu.LoadMenu(IDR_DISMENU);
 	}
@@ -1488,19 +1488,19 @@ void CDisasmWnd::OnContextMenu(CWnd *pWnd, CPoint point)
 	}
 	pMenu = menu.GetSubMenu(0);
 
-	// セットアップ
+ 	 // Configuracion
 	SetupContext(pMenu);
 
-	// メニュー実行
+ 	 // Ejecutar menu
 	pMenu->TrackPopupMenu(TPM_LEFTALIGN | TPM_LEFTBUTTON | TPM_RIGHTBUTTON,
 							point.x, point.y, this);
 }
 
-//---------------------------------------------------------------------------
-//
-//	コンテキストメニュー セットアップ
-//
-//---------------------------------------------------------------------------
+  //---------------------------------------------------------------------------
+  //
+  //	Configuracion de menu de contexto
+  //
+  //---------------------------------------------------------------------------
 void FASTCALL CDisasmWnd::SetupContext(CMenu *pMenu)
 {
 	CMenu *pSubMenu;
@@ -1508,61 +1508,61 @@ void FASTCALL CDisasmWnd::SetupContext(CMenu *pMenu)
 
 	ASSERT(pMenu);
 
-	// PCに同期
+ 	 // Sincronizar con PC
 	if (m_bSync) {
 		pMenu->CheckMenuItem(IDM_DIS_SYNC, MF_BYCOMMAND | MF_CHECKED);
 	}
 
-	// 新しいウィンドウ
+ 	 // Nueva ventana
 	if (!m_pDrawView->IsNewWindow(TRUE)) {
 		pMenu->EnableMenuItem(IDM_DIS_NEWWIN, MF_BYCOMMAND | MF_GRAYED);
 	}
 
-	// MPUレジスタ・スタック・アドレスヒストリ
+ 	 // Registros de MPU, Stack, Historial de direcciones
 	CCPURegWnd::SetupRegMenu(pMenu, m_pCPU, FALSE);
 	CMemoryWnd::SetupStackMenu(pMenu, m_pMemory, m_pCPU);
 	CAddrDlg::SetupHisMenu(pMenu);
 
-	// ブレークポイント
+ 	 // Punto de interrupcion (Breakpoint)
 	SetupBreakMenu(pMenu, m_pScheduler);
 
-	// VMをロック
+ 	 // Bloquear VM
 	::LockVM();
 
-	// 割り込みベクタ準備
+ 	 // Preparar vectores de interrupcion
 	pSubMenu = pMenu->GetSubMenu(9);
 
-	// MPU標準
+ 	 // MPU estandar
 	SetupVector(pSubMenu, 0, 1, 11);
 
-	// trap #x
+ 	 // trap #x
 	SetupVector(pSubMenu, 12, 0x20, 16);
 
-	// MFP
+ 	 // MFP
 	SetupVector(pSubMenu, 29, (m_pMFP->GetVR() & 0xf0), 16);
 
-	// SCC
+ 	 // SCC
 	for (i=0; i<8; i++) {
 		SetupVector(pSubMenu, 46 + i, m_pSCC->GetVector(i), 1);
 	}
 
-	// DMAC
+ 	 // DMAC
 	for (i=0; i<8; i++) {
 		SetupVector(pSubMenu, 55 + i, m_pDMAC->GetVector(i), 1);
 	}
 
-	// IOSC
+ 	 // IOSC
 	SetupVector(pSubMenu, 64, m_pIOSC->GetVector(), 4);
 
-	// VMをアンロック
+ 	 // Desbloquear VM
 	::UnlockVM();
 }
 
-//---------------------------------------------------------------------------
-//
-//	割り込みベクタセットアップ
-//
-//---------------------------------------------------------------------------
+  //---------------------------------------------------------------------------
+  //
+  //	Configuracion de vectores de interrupcion
+  //
+  //---------------------------------------------------------------------------
 void FASTCALL CDisasmWnd::SetupVector(CMenu *pMenu, UINT index, DWORD vector, int num)
 {
 	int i;
@@ -1571,12 +1571,12 @@ void FASTCALL CDisasmWnd::SetupVector(CMenu *pMenu, UINT index, DWORD vector, in
 	ASSERT(pMenu);
 	ASSERT(num > 0);
 
-	// 割り込みベクタアドレス初期化
+ 	 // Inicializacion de direcciones de vectores de interrupcion
 	vector <<= 2;
 
-	// ループ
+ 	 // Bucle
 	for (i=0; i<num; i++) {
-		// 割り込みハンドラアドレス取得
+ 		 // Obtener direccion del controlador de interrupcion
 		handler = (DWORD)m_pMemory->ReadOnly(vector + 1);
 		handler <<= 8;
 		handler |= (DWORD)m_pMemory->ReadOnly(vector + 2);
@@ -1584,17 +1584,17 @@ void FASTCALL CDisasmWnd::SetupVector(CMenu *pMenu, UINT index, DWORD vector, in
 		handler |= (DWORD)m_pMemory->ReadOnly(vector + 3);
 		vector += 4;
 
-		// アドレスセット
+ 		 // Establecer direccion
 		SetupAddress(pMenu, index, handler);
 		index++;
 	}
 }
 
-//---------------------------------------------------------------------------
-//
-//	アドレスセットアップ
-//
-//---------------------------------------------------------------------------
+  //---------------------------------------------------------------------------
+  //
+  //	Configuracion de direccion
+  //
+  //---------------------------------------------------------------------------
 void FASTCALL CDisasmWnd::SetupAddress(CMenu *pMenu, UINT index, DWORD addr)
 {
 	CString string;
@@ -1605,10 +1605,10 @@ void FASTCALL CDisasmWnd::SetupAddress(CMenu *pMenu, UINT index, DWORD addr)
 	ASSERT(pMenu);
 	ASSERT(addr <= 0xffffff);
 
-	// 現在の文字列を取得
+ 	 // Obtener cadena actual
 	pMenu->GetMenuString(index, string, MF_BYPOSITION);
 
-	// カッコの先頭を探して、あればそれ以降のみ
+ 	 // Buscar el inicio de los parentesis, y si existe, solo lo posterior
 	ext = string.Find(" : ");
 	if (ext >= 0) {
 		menustr = string.Mid(ext + 3);
@@ -1617,29 +1617,29 @@ void FASTCALL CDisasmWnd::SetupAddress(CMenu *pMenu, UINT index, DWORD addr)
 		menustr = string;
 	}
 
-	// ($)の文字列を作成
+ 	 // Crear cadena ($)
 	string.Format("$%06X : ", addr);
 	string += menustr;
 
-	// 文字列セット
+ 	 // Establecer cadena
 	id = pMenu->GetMenuItemID(index);
 	pMenu->ModifyMenu(index, MF_BYPOSITION | MF_STRING, id, string);
 }
 
-//---------------------------------------------------------------------------
-//
-//	新しいウィンドウ
-//
-//---------------------------------------------------------------------------
+  //---------------------------------------------------------------------------
+  //
+  //	Nueva ventana
+  //
+  //---------------------------------------------------------------------------
 void CDisasmWnd::OnNewWin()
 {
 	CDisasmWnd *pDisasmWnd;
 	DWORD dwAddr;
 
-	// 親ウィンドウに対し、新しいウィンドウの作成を要請
+ 	 // Solicitar a la ventana padre la creacion de una nueva ventana
 	pDisasmWnd = (CDisasmWnd*)m_pDrawView->NewWindow(TRUE);
 
-	// 成功したら、自分と同じアドレスを渡す
+ 	 // Si tiene exito, pasar mi propia direccion
 	if (pDisasmWnd) {
 		dwAddr = m_ScrlY * 2;
 		dwAddr += m_dwAddr;
@@ -1647,51 +1647,51 @@ void CDisasmWnd::OnNewWin()
 	}
 }
 
-//---------------------------------------------------------------------------
-//
-//	PCへ移動
-//
-//---------------------------------------------------------------------------
+  //---------------------------------------------------------------------------
+  //
+  //	Mover al PC
+  //
+  //---------------------------------------------------------------------------
 void CDisasmWnd::OnPC()
 {
-	// 現在のPCにアドレスセット(内部でRefreshを行う)
+ 	 // Establecer direccion al PC actual (realiza Refresh internamente)
 	SetAddr(m_pCPU->GetPC());
 }
 
-//---------------------------------------------------------------------------
-//
-//	PCと同期
-//
-//---------------------------------------------------------------------------
+  //---------------------------------------------------------------------------
+  //
+  //	Sincronizar con PC
+  //
+  //---------------------------------------------------------------------------
 void CDisasmWnd::OnSync()
 {
 	m_bSync = (!m_bSync);
 }
 
-//---------------------------------------------------------------------------
-//
-//	アドレス入力
-//
-//---------------------------------------------------------------------------
+  //---------------------------------------------------------------------------
+  //
+  //	Entrada de direccion
+  //
+  //---------------------------------------------------------------------------
 void CDisasmWnd::OnAddr()
 {
 	CAddrDlg dlg(this);
 
-	// ダイアログ実行
+ 	 // Ejecutar dialogo
 	dlg.m_dwValue = m_dwSetAddr;
 	if (dlg.DoModal() != IDOK) {
 		return;
 	}
 
-	// アドレスセット
+ 	 // Establecer direccion
 	SetAddr(dlg.m_dwValue);
 }
 
-//---------------------------------------------------------------------------
-//
-//	MPUレジスタ
-//
-//---------------------------------------------------------------------------
+  //---------------------------------------------------------------------------
+  //
+  //	Registros MPU
+  //
+  //---------------------------------------------------------------------------
 void CDisasmWnd::OnReg(UINT nID)
 {
 	DWORD dwAddr;
@@ -1702,11 +1702,11 @@ void CDisasmWnd::OnReg(UINT nID)
 	SetAddr(dwAddr);
 }
 
-//---------------------------------------------------------------------------
-//
-//	スタック
-//
-//---------------------------------------------------------------------------
+  //---------------------------------------------------------------------------
+  //
+  //	Stack
+  //
+  //---------------------------------------------------------------------------
 void CDisasmWnd::OnStack(UINT nID)
 {
 	DWORD dwAddr;
@@ -1717,11 +1717,11 @@ void CDisasmWnd::OnStack(UINT nID)
 	SetAddr(dwAddr);
 }
 
-//---------------------------------------------------------------------------
-//
-//	ブレークポイント
-//
-//---------------------------------------------------------------------------
+  //---------------------------------------------------------------------------
+  //
+  //	Breakpoint
+  //
+  //---------------------------------------------------------------------------
 void CDisasmWnd::OnBreak(UINT nID)
 {
 	DWORD dwAddr;
@@ -1732,11 +1732,11 @@ void CDisasmWnd::OnBreak(UINT nID)
 	SetAddr(dwAddr);
 }
 
-//---------------------------------------------------------------------------
-//
-//	アドレスヒストリ
-//
-//---------------------------------------------------------------------------
+  //---------------------------------------------------------------------------
+  //
+  //	Historial de direcciones
+  //
+  //---------------------------------------------------------------------------
 void CDisasmWnd::OnHistory(UINT nID)
 {
 	DWORD dwAddr;
@@ -1747,11 +1747,11 @@ void CDisasmWnd::OnHistory(UINT nID)
 	SetAddr(dwAddr);
 }
 
-//---------------------------------------------------------------------------
-//
-//	CPU例外ベクタ
-//
-//---------------------------------------------------------------------------
+  //---------------------------------------------------------------------------
+  //
+  //	Vectores de excepcion de CPU
+  //
+  //---------------------------------------------------------------------------
 void CDisasmWnd::OnCPUExcept(UINT nID)
 {
 	nID -= IDM_DIS_RESET;
@@ -1759,11 +1759,11 @@ void CDisasmWnd::OnCPUExcept(UINT nID)
 	OnVector(nID + 1);
 }
 
-//---------------------------------------------------------------------------
-//
-//	trapベクタ
-//
-//---------------------------------------------------------------------------
+  //---------------------------------------------------------------------------
+  //
+  //	vectores trap
+  //
+  //---------------------------------------------------------------------------
 void CDisasmWnd::OnTrap(UINT nID)
 {
 	nID -= IDM_DIS_TRAP0;
@@ -1771,11 +1771,11 @@ void CDisasmWnd::OnTrap(UINT nID)
 	OnVector(nID + 0x20);
 }
 
-//---------------------------------------------------------------------------
-//
-//	MFPベクタ
-//
-//---------------------------------------------------------------------------
+  //---------------------------------------------------------------------------
+  //
+  //	Vectores MFP
+  //
+  //---------------------------------------------------------------------------
 void CDisasmWnd::OnMFP(UINT nID)
 {
 	nID -= IDM_DIS_MFP0;
@@ -1783,11 +1783,11 @@ void CDisasmWnd::OnMFP(UINT nID)
 	OnVector(nID + (m_pMFP->GetVR() & 0xf0));
 }
 
-//---------------------------------------------------------------------------
-//
-//	SCCベクタ
-//
-//---------------------------------------------------------------------------
+  //---------------------------------------------------------------------------
+  //
+  //	Vectores SCC
+  //
+  //---------------------------------------------------------------------------
 void CDisasmWnd::OnSCC(UINT nID)
 {
 	DWORD vector;
@@ -1795,7 +1795,7 @@ void CDisasmWnd::OnSCC(UINT nID)
 	nID -= IDM_DIS_SCC0;
 	ASSERT(nID <= 7);
 
-	// ベクタ番号を得る
+ 	 // Obtener numero de vector
 	::LockVM();
 	vector = m_pSCC->GetVector(nID);
 	::UnlockVM();
@@ -1803,11 +1803,11 @@ void CDisasmWnd::OnSCC(UINT nID)
 	OnVector(vector);
 }
 
-//---------------------------------------------------------------------------
-//
-//	DMACベクタ
-//
-//---------------------------------------------------------------------------
+  //---------------------------------------------------------------------------
+  //
+  //	Vectores DMAC
+  //
+  //---------------------------------------------------------------------------
 void CDisasmWnd::OnDMAC(UINT nID)
 {
 	DWORD vector;
@@ -1815,7 +1815,7 @@ void CDisasmWnd::OnDMAC(UINT nID)
 	nID -= IDM_DIS_DMAC0;
 	ASSERT(nID <= 7);
 
-	// ベクタ番号を得る
+ 	 // Obtener numero de vector
 	::LockVM();
 	vector = m_pDMAC->GetVector(nID);
 	::UnlockVM();
@@ -1823,11 +1823,11 @@ void CDisasmWnd::OnDMAC(UINT nID)
 	OnVector(vector);
 }
 
-//---------------------------------------------------------------------------
-//
-//	IOSCベクタ
-//
-//---------------------------------------------------------------------------
+  //---------------------------------------------------------------------------
+  //
+  //	Vectores IOSC
+  //
+  //---------------------------------------------------------------------------
 void CDisasmWnd::OnIOSC(UINT nID)
 {
 	DWORD vector;
@@ -1835,7 +1835,7 @@ void CDisasmWnd::OnIOSC(UINT nID)
 	nID -= IDM_DIS_IOSC0;
 	ASSERT(nID <= 3);
 
-	// ベクタ番号を得る
+ 	 // Obtener numero de vector
 	::LockVM();
 	vector = m_pIOSC->GetVector() + nID;
 	::UnlockVM();
@@ -1843,16 +1843,16 @@ void CDisasmWnd::OnIOSC(UINT nID)
 	OnVector(vector);
 }
 
-//---------------------------------------------------------------------------
-//
-//	ベクタ指定
-//
-//---------------------------------------------------------------------------
+  //---------------------------------------------------------------------------
+  //
+  //	Especificacion de vector
+  //
+  //---------------------------------------------------------------------------
 void FASTCALL CDisasmWnd::OnVector(UINT vector)
 {
 	DWORD addr;
 
-	// ベクタ読み出し
+ 	 // Lectura de vector
 	::LockVM();
 	vector <<= 2;
 	addr = (DWORD)m_pMemory->ReadOnly(vector + 1);
@@ -1862,15 +1862,15 @@ void FASTCALL CDisasmWnd::OnVector(UINT vector)
 	addr |= (DWORD)m_pMemory->ReadOnly(vector + 3);
 	::UnlockVM();
 
-	// アドレス指定
+ 	 // Especificacion de direccion
 	SetAddr(addr);
 }
 
-//---------------------------------------------------------------------------
-//
-//	アドレス指定
-//
-//---------------------------------------------------------------------------
+  //---------------------------------------------------------------------------
+  //
+  //	Especificacion de direccion
+  //
+  //---------------------------------------------------------------------------
 void FASTCALL CDisasmWnd::SetAddr(DWORD dwAddr)
 {
 	int offset;
@@ -1878,21 +1878,21 @@ void FASTCALL CDisasmWnd::SetAddr(DWORD dwAddr)
 
 	::LockVM();
 
-	// アドレス記憶
+ 	 // Memorizar direccion
 	dwAddr &= 0xffffff;
 	m_dwSetAddr = dwAddr;
 	m_dwAddr = dwAddr & 0xff0000;
 
-	// 下位のみ取り出し
+ 	 // Extraer solo la parte baja
 	offset = dwAddr & 0x00ffff;
 	offset >>= 1;
 
-	// スクロール
+ 	 // Desplazamiento
 	m_ScrlY = offset;
 	::UnlockVM();
 	SetScrollPos(SB_VERT, offset, TRUE);
 
-	// キャプション文字列を更新
+ 	 // Actualizar cadena de caption
 	string.Format(" [%d] ($%06X - $%06X)", (m_dwID & 0xff) - 'A' + 1, m_dwAddr, m_dwAddr + 0xffff);
 	string = m_strCaption + string;
 	if (m_Caption != string) {
@@ -1901,16 +1901,16 @@ void FASTCALL CDisasmWnd::SetAddr(DWORD dwAddr)
 	}
 }
 
-//---------------------------------------------------------------------------
-//
-//	PC指定
-//
-//---------------------------------------------------------------------------
+  //---------------------------------------------------------------------------
+  //
+  //	Especificacion de PC
+  //
+  //---------------------------------------------------------------------------
 void FASTCALL CDisasmWnd::SetPC(DWORD pc)
 {
 	ASSERT(pc <= 0xffffff);
 
-	// 同期フラグが立っていれば、アドレスセット
+ 	 // Si el flag de sincronizacion esta activo, establecer direccion
 	if (m_bSync) {
 		m_dwPC = pc;
 	}
@@ -1919,25 +1919,25 @@ void FASTCALL CDisasmWnd::SetPC(DWORD pc)
 	}
 }
 
-//---------------------------------------------------------------------------
-//
-//	メッセージスレッドからの更新
-//
-//---------------------------------------------------------------------------
+  //---------------------------------------------------------------------------
+  //
+  //	Actualizacion desde el hilo de mensajes
+  //
+  //---------------------------------------------------------------------------
 void FASTCALL CDisasmWnd::Update()
 {
-	// PC指定
+ 	 // Especificacion de PC
 	if (m_dwPC < 0x1000000) {
 		SetAddr(m_dwPC);
 		m_dwPC = 0xffffffff;
 	}
 }
 
-//---------------------------------------------------------------------------
-//
-//	セットアップ
-//
-//---------------------------------------------------------------------------
+  //---------------------------------------------------------------------------
+  //
+  //	Configuracion
+  //
+  //---------------------------------------------------------------------------
 void FASTCALL CDisasmWnd::Setup()
 {
 	DWORD dwAddr;
@@ -1946,32 +1946,32 @@ void FASTCALL CDisasmWnd::Setup()
 	int j;
 	int k;
 
-	// アドレス指定
+ 	 // Especificacion de direccion
 	dwAddr = (m_dwAddr & 0xff0000);
 	dwAddr |= (DWORD)(m_ScrlY * 2);
 	::debugpc = dwAddr;
 
-	// PC取得
+ 	 // Obtener PC
 	dwPC = m_pCPU->GetPC();
 
-	// ループ
+ 	 // Bucle
 	for (i=0; i<m_nHeight; i++) {
 		dwAddr = ::debugpc;
 
-		// アドレス格納
+ 		 // Almacenar direccion
 		if (m_pAddrBuf) {
 			m_pAddrBuf[i] = dwAddr;
 		}
 
-		// アドレスループチェック(FFFFFFFループを考慮)
+ 		 // Comprobar bucle de direccion (considerar bucle FFFFFFF)
 		if (dwAddr > 0xffffff) {
-			// ループした。アドレスはホールド
+ 			 // Hubo bucle. Mantener direccion
 			ASSERT(i > 0);
 			if (m_pAddrBuf) {
 				m_pAddrBuf[i] = m_pAddrBuf[i - 1];
 			}
 
-			// 消去
+ 			 // Eliminar
 			Reverse(FALSE);
 			for (j=0; j<m_nWidth; j++) {
 				SetChr(j, i, ' ');
@@ -1979,7 +1979,7 @@ void FASTCALL CDisasmWnd::Setup()
 			continue;
 		}
 
-		// 属性決定
+ 		 // Determinacion de atributos
 		k = m_pScheduler->IsBreak(dwAddr);
 		if (k >= 0) {
 			Reverse(TRUE);
@@ -1987,15 +1987,15 @@ void FASTCALL CDisasmWnd::Setup()
 		else {
 			Reverse(FALSE);
 		}
-		// 塗りつぶし
+ 		 // Relleno
 		for (j=0; j<m_nWidth; j++) {
 			SetChr(j, i, ' ');
 		}
 
-		// 逆アセンブル
+ 		 // Desensamblar
 		::cpudebug_disassemble(1);
 
-		// PCマーク、ブレークマーク
+ 		 // Marca de PC, marca de break
 		if (k >= 0) {
 			::debugbuf[0] = (char)(k + '1');
 		}
@@ -2009,12 +2009,12 @@ void FASTCALL CDisasmWnd::Setup()
 			::debugbuf[1] = ' ';
 		}
 
-		// 表示
+ 		 // Mostrar
 		if (m_ScrlX < (int)strlen(::debugbuf)) {
 			SetString(0, i, &debugbuf[m_ScrlX]);
 		}
 
-		// ブレークポイントで無効の場合に対応
+ 		 // Soportar caso en el que no es valido por breakpoint
 		k = m_pScheduler->IsBreak(dwAddr, TRUE);
 		if (k >= 0) {
 			Reverse(TRUE);
@@ -2023,11 +2023,11 @@ void FASTCALL CDisasmWnd::Setup()
 	}
 }
 
-//---------------------------------------------------------------------------
-//
-//	手前のアドレスを取得
-//
-//---------------------------------------------------------------------------
+  //---------------------------------------------------------------------------
+  //
+  //	Obtener direccion anterior
+  //
+  //---------------------------------------------------------------------------
 DWORD FASTCALL CDisasmWnd::GetPrevAddr(DWORD dwAddr)
 {
 	int i;
@@ -2035,39 +2035,39 @@ DWORD FASTCALL CDisasmWnd::GetPrevAddr(DWORD dwAddr)
 
 	ASSERT(dwAddr <= 0xffffff);
 
-	// アドレス初期化
+ 	 // Inicializacion de direccion
 	dwTest = dwAddr;
 
 	for (i=0; i<16; i++) {
-		// dwTestを減少、オーバーチェック
+ 		 // Disminuir dwTest, comprobar desbordamiento
 		dwTest -= 2;
 		if (dwTest >= 0x01000000) {
 			return dwAddr;
 		}
 
-		// そこから逆アセンブルして、アドレス増加をみる
+ 		 // Desensamblar desde ahi y ver el incremento de direccion
 		::debugpc = dwTest;
 		::cpudebug_disassemble(1);
 
-		// 一致していれば"UNRECOG"チェック
+ 		 // Si coincide, comprobar "UNRECOG"
 		if (::debugpc == dwAddr) {
 			if ((::debugbuf[35] == 'U') || (::debugbuf[36] == 'N') || (::debugbuf[37] == 'R')) {
 				continue;
 			}
-			// ok、リターン
+ 			 // ok, retorno
 			return dwTest;
 		}
 	}
 
-	// 不一致。dwAddrを返す
+ 	 // No coincide. Devolver dwAddr
 	return dwAddr;
 }
 
-//---------------------------------------------------------------------------
-//
-//	ブレークポイントメニュー セットアップ
-//
-//---------------------------------------------------------------------------
+  //---------------------------------------------------------------------------
+  //
+  //	Configuracion de menu de puntos de interrupcion (breakpoints)
+  //
+  //---------------------------------------------------------------------------
 void FASTCALL CDisasmWnd::SetupBreakMenu(CMenu *pMenu, Scheduler *pScheduler)
 {
 	int num;
@@ -2078,36 +2078,36 @@ void FASTCALL CDisasmWnd::SetupBreakMenu(CMenu *pMenu, Scheduler *pScheduler)
 	ASSERT(pMenu);
 	ASSERT(pScheduler);
 
-	// 個数クリア
+ 	 // Limpiar cantidad
 	num = 0;
 
-	// 設定
+ 	 // Configuracion
 	::LockVM();
 	for (i=0; i<Scheduler::BreakMax; i++) {
 		pScheduler->GetBreak(i, &buf);
 		if (buf.use) {
-			// 使用中なので、設定
+ 			 // Esta en uso, asi que configurar
 			string.Format("%1d : $%06X", num + 1, buf.addr);
 			pMenu->ModifyMenu(IDM_DIS_BREAKP0 + num, MF_BYCOMMAND | MF_STRING,
 				IDM_DIS_BREAKP0 + num, (LPCTSTR)string);
 
-			// +1
+ 			 // +1
 			num++;
 		}
 	}
 	::UnlockVM();
 
-	// それ以外のとこはクリア
+ 	 // Limpiar el resto
 	for (i=num; i<Scheduler::BreakMax; i++) {
 		pMenu->DeleteMenu(IDM_DIS_BREAKP0 + i, MF_BYCOMMAND);
 	}
 }
 
-//---------------------------------------------------------------------------
-//
-//	ブレークポイントメニュー取得
-//
-//---------------------------------------------------------------------------
+  //---------------------------------------------------------------------------
+  //
+  //	Obtener menu de puntos de interrupcion (breakpoints)
+  //
+  //---------------------------------------------------------------------------
 DWORD FASTCALL CDisasmWnd::GetBreak(UINT nID, Scheduler *pScheduler)
 {
 	int i;
@@ -2117,12 +2117,12 @@ DWORD FASTCALL CDisasmWnd::GetBreak(UINT nID, Scheduler *pScheduler)
 	ASSERT(pScheduler);
 	nID -= IDM_DIS_BREAKP0;
 
-	// 検索ループ
+ 	 // Bucle de busqueda
 	::LockVM();
 	for (i=0; i<Scheduler::BreakMax; i++) {
 		pScheduler->GetBreak(i, &buf);
 		if (buf.use) {
-			// 使用中なので、これか？
+ 			 // Esta en uso, ?es este?
 			if (nID == 0) {
 				::UnlockVM();
 				return buf.addr;
@@ -2135,52 +2135,52 @@ DWORD FASTCALL CDisasmWnd::GetBreak(UINT nID, Scheduler *pScheduler)
 	return 0;
 }
 
-//===========================================================================
-//
-//	メモリウィンドウ
-//
-//===========================================================================
+  //===========================================================================
+  //
+  //	Ventana de memoria
+  //
+  //===========================================================================
 
-//---------------------------------------------------------------------------
-//
-//	コンストラクタ
-//
-//---------------------------------------------------------------------------
+  //---------------------------------------------------------------------------
+  //
+  //	Constructor
+  //
+  //---------------------------------------------------------------------------
 CMemoryWnd::CMemoryWnd(int nWnd)
 {
-	// メモリウィンドウは8種類まで
+ 	 // Hasta 8 tipos de ventanas de memoria
 	ASSERT((nWnd >= 0) && (nWnd <= 7));
 
-	// ウィンドウパラメータ定義
+ 	 // Definicion de parametros de ventana
 	m_dwID = MAKEID('M', 'E', 'M', (nWnd + 'A'));
 	::GetMsg(IDS_SWND_MEMORY, m_strCaption);
 	m_nWidth = 73;
 	m_nHeight = 16;
 
-	// ウィンドウパラメータ定義(スクロール)
+ 	 // Definicion de parametros de ventana (scroll)
 	m_ScrlWidth = 73;
 	m_ScrlHeight = 0x8000;
 
-	// CPU取得
+ 	 // Obtener CPU
 	m_pCPU = (CPU*)::GetVM()->SearchDevice(MAKEID('C', 'P', 'U', ' '));
 	ASSERT(m_pCPU);
 
-	// メモリ取得
+ 	 // Obtener memoria
 	m_pMemory = (Memory*)::GetVM()->SearchDevice(MAKEID('M', 'E', 'M', ' '));
 	ASSERT(m_pMemory);
 
-	// その他
+ 	 // Otros
 	m_dwAddr = 0;
 	m_nUnit = 0;
 	m_strCaptionReq.Empty();
 	m_strCaptionSet.Empty();
 }
 
-//---------------------------------------------------------------------------
-//
-//	メッセージ マップ
-//
-//---------------------------------------------------------------------------
+  //---------------------------------------------------------------------------
+  //
+  //	Mapa de mensajes
+  //
+  //---------------------------------------------------------------------------
 BEGIN_MESSAGE_MAP(CMemoryWnd, CSubTextScrlWnd)
 	ON_WM_CREATE()
 	ON_WM_PAINT()
@@ -2196,42 +2196,42 @@ BEGIN_MESSAGE_MAP(CMemoryWnd, CSubTextScrlWnd)
 	ON_COMMAND_RANGE(IDM_STACK_0, IDM_STACK_F, OnStack)
 END_MESSAGE_MAP()
 
-//---------------------------------------------------------------------------
-//
-//	ウィンドウ作成
-//
-//---------------------------------------------------------------------------
+  //---------------------------------------------------------------------------
+  //
+  //	Creacion de ventana
+  //
+  //---------------------------------------------------------------------------
 int CMemoryWnd::OnCreate(LPCREATESTRUCT lpCreateStruct)
 {
-	// 基本クラス
+ 	 // Clase base
 	if (CSubTextScrlWnd::OnCreate(lpCreateStruct) != 0) {
 		return -1;
 	}
 
-	// アドレス初期化
+ 	 // Inicializacion de direccion
 	SetAddr(0);
 	return TRUE;
 }
 
-//---------------------------------------------------------------------------
-//
-//	描画
-//
-//---------------------------------------------------------------------------
+  //---------------------------------------------------------------------------
+  //
+  //	Dibujo
+  //
+  //---------------------------------------------------------------------------
 void CMemoryWnd::OnPaint()
 {
-	// 基本クラス
+ 	 // Clase base
 	CSubTextScrlWnd::OnPaint();
 
-	// キャプション設定
+ 	 // Configuracion de caption
 	SetWindowText(m_strCaption);
 }
 
-//---------------------------------------------------------------------------
-//
-//	左ボタンダブルクリック
-//
-//---------------------------------------------------------------------------
+  //---------------------------------------------------------------------------
+  //
+  //	Doble clic con boton izquierdo
+  //
+  //---------------------------------------------------------------------------
 void CMemoryWnd::OnLButtonDblClk(UINT /*nFlags*/, CPoint point)
 {
 	int x;
@@ -2240,40 +2240,40 @@ void CMemoryWnd::OnLButtonDblClk(UINT /*nFlags*/, CPoint point)
 	DWORD dwData;
 	CDataDlg dlg(this);
 
-	// x, y算出
+ 	 // Calcular x, y
 	x = point.x / m_tmWidth;
 	y = point.y / m_tmHeight;
 
-	// xチェック
+ 	 // Comprobar x
 	if (x < 8) {
 		return;
 	}
 	x -= 8;
 
-	// yのアドレスを得る
+ 	 // Obtener direccion de y
 	dwAddr = m_dwAddr | (m_ScrlY << 5);
 	dwAddr += (y << 4);
 	if ((dwAddr - m_dwAddr) >= 0x100000) {
 		return;
 	}
 
-	// xからアドレスを得る
+ 	 // Obtener direccion de x
 	switch (m_nUnit) {
-		// Byte
+ 		 // Byte
 		case 0:
 			x /= 3;
 			break;
-		// Word
+ 		 // Word
 		case 1:
 			x /= 5;
 			x <<= 1;
 			break;
-		// Long
+ 		 // Long
 		case 2:
 			x /= 9;
 			x <<= 2;
 			break;
-		// その他
+ 		 // Otros
 		default:
 			ASSERT(FALSE);
 			break;
@@ -2283,20 +2283,20 @@ void CMemoryWnd::OnLButtonDblClk(UINT /*nFlags*/, CPoint point)
 	}
 	dwAddr += x;
 
-	// データ読み込み
+ 	 // Lectura de datos
 	::LockVM();
 	switch (m_nUnit) {
-		// Byte
+ 		 // Byte
 		case 0:
 			dwData = m_pMemory->ReadOnly(dwAddr);
 			break;
-		// Word
+ 		 // Word
 		case 1:
 			dwData = m_pMemory->ReadOnly(dwAddr);
 			dwData <<= 8;
 			dwData |= m_pMemory->ReadOnly(dwAddr + 1);
 			break;
-		// Long
+ 		 // Long
 		case 2:
 			dwData = m_pMemory->ReadOnly(dwAddr);
 			dwData <<= 8;
@@ -2306,7 +2306,7 @@ void CMemoryWnd::OnLButtonDblClk(UINT /*nFlags*/, CPoint point)
 			dwData <<= 8;
 			dwData |= m_pMemory->ReadOnly(dwAddr + 3);
 			break;
-		// その他
+ 		 // Otros
 		default:
 			dwData = 0;
 			ASSERT(FALSE);
@@ -2314,7 +2314,7 @@ void CMemoryWnd::OnLButtonDblClk(UINT /*nFlags*/, CPoint point)
 	}
 	::UnlockVM();
 
-	// ダイアログ実行
+ 	 // Ejecutar dialogo
 	dlg.m_dwAddr = dwAddr;
 	dlg.m_dwValue = dwData;
 	dlg.m_nSize = m_nUnit;
@@ -2322,24 +2322,24 @@ void CMemoryWnd::OnLButtonDblClk(UINT /*nFlags*/, CPoint point)
 		return;
 	}
 
-	// 書き込み
+ 	 // Escritura
 	dwData = dlg.m_dwValue;
 	::LockVM();
 	switch (m_nUnit) {
-		// Byte
+ 		 // Byte
 		case 0:
 			m_pMemory->WriteByte(dwAddr, dwData);
 			break;
-		// Word
+ 		 // Word
 		case 1:
 			m_pMemory->WriteWord(dwAddr, dwData);
 			break;
-		// Long
+ 		 // Long
 		case 2:
 			m_pMemory->WriteWord(dwAddr, (WORD)(dwData >> 16));
 			m_pMemory->WriteWord(dwAddr + 2, (WORD)dwData);
 			break;
-		// その他
+ 		 // Otros
 		default:
 			ASSERT(FALSE);
 			break;
@@ -2347,18 +2347,18 @@ void CMemoryWnd::OnLButtonDblClk(UINT /*nFlags*/, CPoint point)
 	::UnlockVM();
 }
 
-//---------------------------------------------------------------------------
-//
-//	コンテキストメニュー
-//
-//---------------------------------------------------------------------------
+  //---------------------------------------------------------------------------
+  //
+  //	Menu de contexto
+  //
+  //---------------------------------------------------------------------------
 void CMemoryWnd::OnContextMenu(CWnd *pWnd, CPoint point)
 {
 	CRect rect;
 	CMenu menu;
 	CMenu *pMenu;
 
-	// クライアント領域内で押されたか判定する
+ 	 // Determinar si se presiono dentro del area del cliente
 	GetClientRect(&rect);
 	ClientToScreen(&rect);
 	if (!rect.PtInRect(point)) {
@@ -2366,7 +2366,7 @@ void CMemoryWnd::OnContextMenu(CWnd *pWnd, CPoint point)
 		return;
 	}
 
-	// メニュー実行
+ 	 // Ejecutar menu
 	if (::IsJapanese()) {
 		menu.LoadMenu(IDR_MEMORYMENU);
 	}
@@ -2379,81 +2379,81 @@ void CMemoryWnd::OnContextMenu(CWnd *pWnd, CPoint point)
 							point.x, point.y, this);
 }
 
-//---------------------------------------------------------------------------
-//
-//	コンテキストメニュー セットアップ
-//
-//---------------------------------------------------------------------------
+  //---------------------------------------------------------------------------
+  //
+  //	Configuracion de menu de contexto
+  //
+  //---------------------------------------------------------------------------
 void FASTCALL CMemoryWnd::SetupContext(CMenu *pMenu)
 {
 	ASSERT(pMenu);
 
-	// 新しいウィンドウ
+ 	 // Nueva ventana
 	if (!m_pDrawView->IsNewWindow(FALSE)) {
 		pMenu->EnableMenuItem(IDM_MEMORY_NEWWIN, MF_BYCOMMAND | MF_GRAYED);
 	}
 
-	// サイズチェック
+ 	 // Comprobar tamano
 	pMenu->CheckMenuRadioItem(IDM_MEMORY_BYTE, IDM_MEMORY_LONG,
 			IDM_MEMORY_BYTE + m_nUnit, MF_BYCOMMAND);
 
-	// アドレスチェック
+ 	 // Comprobar direccion
 	pMenu->CheckMenuRadioItem(IDM_MEMORY_0, IDM_MEMORY_F,
 			IDM_MEMORY_0 + (m_dwAddr >> 20), MF_BYCOMMAND);
 
-	// MPUレジスタ
+ 	 // Registros MPU
 	CCPURegWnd::SetupRegMenu(pMenu, m_pCPU, FALSE);
 
-	// アドレスヒストリ
+ 	 // Historial de direcciones
 	CAddrDlg::SetupHisMenu(pMenu);
 
-	// スタック
+ 	 // Stack
 	SetupStackMenu(pMenu, m_pMemory, m_pCPU);
 }
 
-//---------------------------------------------------------------------------
-//
-//	アドレス入力
-//
-//---------------------------------------------------------------------------
+  //---------------------------------------------------------------------------
+  //
+  //	Entrada de direccion
+  //
+  //---------------------------------------------------------------------------
 void CMemoryWnd::OnAddr()
 {
 	CAddrDlg dlg(this);
 
-	// ダイアログ実行
+ 	 // Ejecutar dialogo
 	dlg.m_dwValue = m_dwAddr | (m_ScrlY * 0x20);
 	if (dlg.DoModal() != IDOK) {
 		return;
 	}
 
-	// アドレスセット
+ 	 // Establecer direccion
 	SetAddr(dlg.m_dwValue);
 }
 
-//---------------------------------------------------------------------------
-//
-//	新しいウィンドウ
-//
-//---------------------------------------------------------------------------
+  //---------------------------------------------------------------------------
+  //
+  //	Nueva ventana
+  //
+  //---------------------------------------------------------------------------
 void CMemoryWnd::OnNewWin()
 {
 	CMemoryWnd *pWnd;
 
-	// 親ウィンドウに対し、新しいウィンドウの作成を要請
+ 	 // Solicitar a la ventana padre la creacion de una nueva ventana
 	pWnd = (CMemoryWnd*)m_pDrawView->NewWindow(FALSE);
 
-	// 作成できたら、自分と同じアドレス・サイズを指定
+ 	 // Si se crea, especificar mi misma direccion y tamano
 	if (pWnd) {
 		pWnd->SetAddr(m_dwAddr | (m_ScrlY * 0x20));
 		pWnd->SetUnit(m_nUnit);
 	}
 }
 
-//---------------------------------------------------------------------------
-//
-//	表示単位指定
-//
-//---------------------------------------------------------------------------
+  //---------------------------------------------------------------------------
+  //
+  //	Especificacion de unidad de visualizacion
+  //
+  //---------------------------------------------------------------------------
 void CMemoryWnd::OnUnit(UINT uID)
 {
 	int unit;
@@ -2464,27 +2464,27 @@ void CMemoryWnd::OnUnit(UINT uID)
 	SetUnit(unit);
 }
 
-//---------------------------------------------------------------------------
-//
-//	表示単位セット
-//
-//---------------------------------------------------------------------------
+  //---------------------------------------------------------------------------
+  //
+  //	Set de unidad de visualizacion
+  //
+  //---------------------------------------------------------------------------
 void FASTCALL CMemoryWnd::SetUnit(int nUnit)
 {
 	ASSERT(this);
 	ASSERT((nUnit >= 0) && (nUnit <= 2));
 
-	// ロック、変更
+ 	 // Bloqueo, cambio
 	::LockVM();
 	m_nUnit = nUnit;
 	::UnlockVM();
 }
 
-//---------------------------------------------------------------------------
-//
-//	アドレス範囲指定
-//
-//---------------------------------------------------------------------------
+  //---------------------------------------------------------------------------
+  //
+  //	Especificacion de rango de direcciones
+  //
+  //---------------------------------------------------------------------------
 void CMemoryWnd::OnRange(UINT uID)
 {
 	DWORD dwAddr;
@@ -2497,11 +2497,11 @@ void CMemoryWnd::OnRange(UINT uID)
 	SetAddr(dwAddr);
 }
 
-//---------------------------------------------------------------------------
-//
-//	レジスタ指定
-//
-//---------------------------------------------------------------------------
+  //---------------------------------------------------------------------------
+  //
+  //	Especificacion de registro
+  //
+  //---------------------------------------------------------------------------
 void CMemoryWnd::OnReg(UINT uID)
 {
 	DWORD dwAddr;
@@ -2512,11 +2512,11 @@ void CMemoryWnd::OnReg(UINT uID)
 	SetAddr(dwAddr);
 }
 
-//---------------------------------------------------------------------------
-//
-//	エリア指定
-//
-//---------------------------------------------------------------------------
+  //---------------------------------------------------------------------------
+  //
+  //	Especificacion de area
+  //
+  //---------------------------------------------------------------------------
 void CMemoryWnd::OnArea(UINT uID)
 {
 	CMenu menu;
@@ -2525,7 +2525,7 @@ void CMemoryWnd::OnArea(UINT uID)
 
 	ASSERT((uID >= IDM_AREA_MPU) && (uID <= IDM_AREA_IPLROM));
 
-	// メニューをロード
+ 	 // Cargar menu
 	if (::IsJapanese()) {
 		menu.LoadMenu(IDR_MEMORYMENU);
 	}
@@ -2533,21 +2533,21 @@ void CMemoryWnd::OnArea(UINT uID)
 		menu.LoadMenu(IDR_US_MEMORYMENU);
 	}
 
-	// 指定IDのメニュー文字列を取得
+ 	 // Obtener cadena de menu del ID especificado
 	menu.GetMenuString(uID, buf, 0x100, MF_BYCOMMAND);
 
-	// "$000000 : "の形式を仮定する
+ 	 // Asumir el formato "$000000 : "
 	buf[0] = _T('0');
 	buf[7] = _T('\0');
 	dwAddr = ::_tcstoul(buf, NULL, 16);
 	SetAddr(dwAddr);
 }
 
-//---------------------------------------------------------------------------
-//
-//	ヒストリ指定
-//
-//---------------------------------------------------------------------------
+  //---------------------------------------------------------------------------
+  //
+  //	Especificacion de historial
+  //
+  //---------------------------------------------------------------------------
 void CMemoryWnd::OnHistory(UINT uID)
 {
 	DWORD dwAddr;
@@ -2557,11 +2557,11 @@ void CMemoryWnd::OnHistory(UINT uID)
 	SetAddr(dwAddr);
 }
 
-//---------------------------------------------------------------------------
-//
-//	スタック指定
-//
-//---------------------------------------------------------------------------
+  //---------------------------------------------------------------------------
+  //
+  //	Especificacion de stack
+  //
+  //---------------------------------------------------------------------------
 void CMemoryWnd::OnStack(UINT uID)
 {
 	DWORD dwAddr;
@@ -2571,11 +2571,11 @@ void CMemoryWnd::OnStack(UINT uID)
 	SetAddr(dwAddr);
 }
 
-//---------------------------------------------------------------------------
-//
-//	アドレス指定
-//
-//---------------------------------------------------------------------------
+  //---------------------------------------------------------------------------
+  //
+  //	Especificacion de direccion
+  //
+  //---------------------------------------------------------------------------
 void FASTCALL CMemoryWnd::SetAddr(DWORD dwAddr)
 {
 	int offset;
@@ -2584,18 +2584,18 @@ void FASTCALL CMemoryWnd::SetAddr(DWORD dwAddr)
 	ASSERT(this);
 	ASSERT(dwAddr <= 0x1000000);
 
-	// 上位のみ取り出し
+ 	 // Extraer solo parte superior
 	m_dwAddr = dwAddr & 0xf00000;
 
-	// 下位のみ取り出し
+ 	 // Extraer solo parte inferior
 	offset = dwAddr & 0x0fffff;
 	offset /= 0x20;
 
-	// スクロール
+ 	 // Desplazamiento
 	m_ScrlY = offset;
 	SetScrollPos(SB_VERT, offset, TRUE);
 
-	// キャプション文字列作成
+ 	 // Crear cadena de caption
 	strCap.Format(_T(" [%d] ($%06X - $%06X)"), (m_dwID & 0xff) - 'A' + 1,
 									m_dwAddr, m_dwAddr + 0x0fffff);
 	m_CSection.Lock();
@@ -2603,32 +2603,32 @@ void FASTCALL CMemoryWnd::SetAddr(DWORD dwAddr)
 	m_CSection.Unlock();
 }
 
-//---------------------------------------------------------------------------
-//
-//	メッセージスレッドからの更新
-//
-//---------------------------------------------------------------------------
+  //---------------------------------------------------------------------------
+  //
+  //	Actualizacion desde el hilo de mensajes
+  //
+  //---------------------------------------------------------------------------
 void FASTCALL CMemoryWnd::Update()
 {
 	CString strCap;
 
-	// キャプション文字列を取得
+ 	 // Obtener cadena de caption
 	m_CSection.Lock();
 	strCap = m_strCaptionReq;
 	m_CSection.Unlock();
 
-	// 比較
+ 	 // Comparacion
 	if (m_strCaptionSet != strCap) {
 		m_strCaptionSet = strCap;
 		SetWindowText(m_strCaptionSet);
 	}
 }
 
-//---------------------------------------------------------------------------
-//
-//	セットアップ
-//
-//---------------------------------------------------------------------------
+  //---------------------------------------------------------------------------
+  //
+  //	Configuracion
+  //
+  //---------------------------------------------------------------------------
 void FASTCALL CMemoryWnd::Setup()
 {
 	int x;
@@ -2639,28 +2639,28 @@ void FASTCALL CMemoryWnd::Setup()
 	DWORD dwOffset;
 	TCHAR szAscii[2];
 
-	// クリア、アドレス初期化
+ 	 // Limpiar, inicializar direccion
 	Clear();
 	dwAddr = (m_dwAddr & 0xf00000);
 	dwOffset = (DWORD)(m_ScrlY << 5);
 	dwAddr |= dwOffset;
 
-	// 文字列初期化
+ 	 // Inicializar cadena
 	szAscii[1] = _T('\0');
 
-	// yループ
+ 	 // Bucle y
 	for (y=0; y<m_nHeight; y++) {
-		// オーバーチェック
+ 		 // Comprobar desbordamiento
 		if (dwOffset >= 0x100000) {
 			break;
 		}
 
-		// アドレス表示
+ 		 // Mostrar direccion
 		strText.Format(_T("%06X:"), dwAddr);
 
-		// xループ
+ 		 // Bucle x
 		switch (m_nUnit) {
-			// Byte
+ 			 // Byte
 			case 0:
 				for (x=0; x<16; x++) {
 					strHex.Format(_T(" %02X"), m_pMemory->ReadOnly(dwAddr));
@@ -2668,7 +2668,7 @@ void FASTCALL CMemoryWnd::Setup()
 					dwAddr++;
 				}
 				break;
-			// Word
+ 			 // Word
 			case 1:
 				for (x=0; x<8; x++) {
 					strHex.Format(_T(" %02X%02X"),  m_pMemory->ReadOnly(dwAddr),
@@ -2677,7 +2677,7 @@ void FASTCALL CMemoryWnd::Setup()
 					dwAddr += 2;
 				}
 				break;
-			// Long
+ 			 // Long
 			case 2:
 				for (x=0; x<4; x++) {
 					strHex.Format(" %02X%02X%02X%02X",  m_pMemory->ReadOnly(dwAddr),
@@ -2688,17 +2688,17 @@ void FASTCALL CMemoryWnd::Setup()
 					dwAddr += 4;
 				}
 				break;
-			// その他(ありえない)
+ 			 // Otros (imposible)
 			default:
 				ASSERT(FALSE);
 				break;
 		}
 
-		// 一度戻す
+ 		 // Volver una vez
 		dwAddr -= 0x10;
 		dwAddr &= 0xffffff;
 
-		// ASCIIキャラクタ追加
+ 		 // Anadir caracter ASCII
 		strText += _T("  ");
 		for (x=0; x<16; x++) {
 			szAscii[0] = (TCHAR)m_pMemory->ReadOnly(dwAddr + x);
@@ -2713,35 +2713,35 @@ void FASTCALL CMemoryWnd::Setup()
 		dwAddr += 0x10;
 		dwAddr &= 0xffffff;
 
-		// オフセットを進める
+ 		 // Avanzar offset
 		dwOffset += 0x10;
 
-		// 表示
+ 		 // Mostrar
 		if (m_ScrlX < strText.GetLength()) {
 			SetString(0, y, (LPCTSTR)(strText) + m_ScrlX * sizeof(TCHAR));
 		}
 	}
 }
 
-//---------------------------------------------------------------------------
-//
-//	スクロール準備(垂直)
-//
-//---------------------------------------------------------------------------
+  //---------------------------------------------------------------------------
+  //
+  //	Preparacion de desplazamiento (vertical)
+  //
+  //---------------------------------------------------------------------------
 void FASTCALL CMemoryWnd::SetupScrlV()
 {
 	SCROLLINFO si;
 	CRect rect;
 	int height;
 
-	// 垂直表示キャラクタ数を取得
+ 	 // Obtener numero de caracteres de visualizacion vertical
 	GetClientRect(&rect);
 	height = rect.bottom / m_tmHeight;
 
-	// 補正(スクロール単位につき2行のため)
+ 	 // Correccion (debido a 2 lineas por unidad de scroll)
 	height >>= 1;
 
-	// スクロール情報をセット
+ 	 // Establecer informacion de desplazamiento
 	memset(&si, 0, sizeof(si));
 	si.cbSize = sizeof(si);
 	si.fMask = SIF_ALL;
@@ -2749,7 +2749,7 @@ void FASTCALL CMemoryWnd::SetupScrlV()
 	si.nMax = m_ScrlHeight - 1;
 	si.nPage = height;
 
-	// 位置は、必要なら補正する
+ 	 // Corregir posicion si es necesario
 	si.nPos = m_ScrlY;
 	if (si.nPos + height > m_ScrlHeight) {
 		si.nPos = m_ScrlHeight - height;
@@ -2762,11 +2762,11 @@ void FASTCALL CMemoryWnd::SetupScrlV()
 	SetScrollInfo(SB_VERT, &si, TRUE);
 }
 
-//---------------------------------------------------------------------------
-//
-//	スタックメニューセットアップ
-//
-//---------------------------------------------------------------------------
+  //---------------------------------------------------------------------------
+  //
+  //	Configuracion de menu de stack
+  //
+  //---------------------------------------------------------------------------
 void CMemoryWnd::SetupStackMenu(CMenu *pMenu, Memory *pMemory, CPU *pCPU)
 {
 	int i;
@@ -2779,18 +2779,18 @@ void CMemoryWnd::SetupStackMenu(CMenu *pMenu, Memory *pMemory, CPU *pCPU)
 	ASSERT(pMemory);
 	ASSERT(pCPU);
 
-	// VMロック、レジスタ取得
+ 	 // Bloqueo de VM, obtener registros
 	::LockVM();
 	pCPU->GetCPU(&reg);
 
-	// 16レベル
+ 	 // 16 niveles
 	for (i=0; i<16; i++) {
-		// アドレス算出
+ 		 // Calcular direccion
 		dwAddr = reg.areg[7];
 		dwAddr += (i << 1);
 		dwAddr &= 0xfffffe;
 
-		// データ取得
+ 		 // Obtener datos
 		dwValue = pMemory->ReadOnly(dwAddr + 1);
 		dwAddr = (dwAddr + 2) & 0xfffffe;
 		dwValue <<= 8;
@@ -2798,21 +2798,21 @@ void CMemoryWnd::SetupStackMenu(CMenu *pMenu, Memory *pMemory, CPU *pCPU)
 		dwValue <<= 8;
 		dwValue |= pMemory->ReadOnly(dwAddr + 1);
 
-		// メニュー更新
+ 		 // Actualizar menu
 		strMenu.Format(_T("(A7+%1X) : $%06X"), (i << 1), dwValue);
 		pMenu->ModifyMenu(IDM_STACK_0 + i, MF_BYCOMMAND | MF_STRING,
 							IDM_STACK_0 + i, (LPCTSTR)strMenu);
 	}
 
-	// VMアンロック
+ 	 // Desbloqueo de VM
 	::UnlockVM();
 }
 
-//---------------------------------------------------------------------------
-//
-//	スタックアドレス取得
-//
-//---------------------------------------------------------------------------
+  //---------------------------------------------------------------------------
+  //
+  //	Obtener direccion de stack
+  //
+  //---------------------------------------------------------------------------
 DWORD CMemoryWnd::GetStackAddr(UINT nID, Memory *pMemory, CPU *pCPU)
 {
 	CPU::cpu_t reg;
@@ -2823,19 +2823,19 @@ DWORD CMemoryWnd::GetStackAddr(UINT nID, Memory *pMemory, CPU *pCPU)
 	ASSERT(pMemory);
 	ASSERT(pCPU);
 
-	// オフセット算出
+ 	 // Calcular offset
 	nID -= IDM_STACK_0;
 	ASSERT(nID <= 15);
 	nID <<= 1;
 
-	// CPUレジスタからアドレス、メモリ算出
+ 	 // Calcular direccion y memoria desde registros de CPU
 	::LockVM();
 	pCPU->GetCPU(&reg);
 	dwAddr = reg.areg[7];
 	dwAddr += nID;
 	dwAddr &= 0xfffffe;
 
-	// データ取得
+ 	 // Obtener datos
 	dwValue = pMemory->ReadOnly(dwAddr + 1);
 	dwAddr = (dwAddr + 2) & 0xfffffe;
 	dwValue <<= 8;
@@ -2847,35 +2847,35 @@ DWORD CMemoryWnd::GetStackAddr(UINT nID, Memory *pMemory, CPU *pCPU)
 	return dwValue;
 }
 
-//===========================================================================
-//
-//	ブレークポイントウィンドウ
-//
-//===========================================================================
+  //===========================================================================
+  //
+  //	Ventana de puntos de interrupcion (breakpoints)
+  //
+  //===========================================================================
 
-//---------------------------------------------------------------------------
-//
-//	コンストラクタ
-//
-//---------------------------------------------------------------------------
+  //---------------------------------------------------------------------------
+  //
+  //	Constructor
+  //
+  //---------------------------------------------------------------------------
 CBreakPWnd::CBreakPWnd()
 {
-	// ウィンドウパラメータ定義
+ 	 // Definicion de parametros de ventana
 	m_dwID = MAKEID('B', 'R', 'K', 'P');
 	::GetMsg(IDS_SWND_BREAKP, m_strCaption);
 	m_nWidth = 43;
 	m_nHeight = Scheduler::BreakMax + 1;
 
-	// スケジューラ取得
+ 	 // Obtener planificador
 	m_pScheduler = (Scheduler*)::GetVM()->SearchDevice(MAKEID('S', 'C', 'H', 'E'));
 	ASSERT(m_pScheduler);
 }
 
-//---------------------------------------------------------------------------
-//
-//	メッセージ マップ
-//
-//---------------------------------------------------------------------------
+  //---------------------------------------------------------------------------
+  //
+  //	Mapa de mensajes
+  //
+  //---------------------------------------------------------------------------
 BEGIN_MESSAGE_MAP(CBreakPWnd, CSubTextWnd)
 	ON_WM_LBUTTONDBLCLK()
 	ON_WM_CONTEXTMENU()
@@ -2887,48 +2887,48 @@ BEGIN_MESSAGE_MAP(CBreakPWnd, CSubTextWnd)
 	ON_COMMAND(IDM_BREAKP_ALL, OnAll)
 END_MESSAGE_MAP()
 
-//---------------------------------------------------------------------------
-//
-//	左ボタンダブルクリック
-//
-//---------------------------------------------------------------------------
+  //---------------------------------------------------------------------------
+  //
+  //	Doble clic con boton izquierdo
+  //
+  //---------------------------------------------------------------------------
 void CBreakPWnd::OnLButtonDblClk(UINT /*nFlags*/, CPoint point)
 {
 	int y;
 	Scheduler::breakpoint_t buf;
 
-	// y取得、補正(-1)、チェック
+ 	 // Obtener y, correccion (-1), comprobar
 	y = point.y / m_tmHeight;
 	y--;
 	if ((y < 0) || (y >= Scheduler::BreakMax)) {
 		return;
 	}
 
-	// ロック、ブレークポイント取得
+ 	 // Bloqueo, obtener breakpoint
 	::LockVM();
 	m_pScheduler->GetBreak(y, &buf);
 
-	// 使用中なら反転
+ 	 // Invertir si esta en uso
 	if (buf.use) {
 		m_pScheduler->EnableBreak(y, !(buf.enable));
 	}
 
-	// アンロック
+ 	 // Desbloqueo
 	::UnlockVM();
 }
 
-//---------------------------------------------------------------------------
-//
-//	コンテキストメニュー
-//
-//---------------------------------------------------------------------------
+  //---------------------------------------------------------------------------
+  //
+  //	Menu de contexto
+  //
+  //---------------------------------------------------------------------------
 void CBreakPWnd::OnContextMenu(CWnd *pWnd, CPoint point)
 {
 	CRect rect;
 	CMenu menu;
 	CMenu *pMenu;
 
-	// クライアント領域内で押されたか判定する
+ 	 // Determinar si se presiono dentro del area del cliente
 	GetClientRect(&rect);
 	ClientToScreen(&rect);
 	if (!rect.PtInRect(point)) {
@@ -2936,10 +2936,10 @@ void CBreakPWnd::OnContextMenu(CWnd *pWnd, CPoint point)
 		return;
 	}
 
-	// 位置記憶
+ 	 // Memorizar posicion
 	m_Point = point;
 
-	// メニュー実行
+ 	 // Ejecutar menu
 	if (::IsJapanese()) {
 		menu.LoadMenu(IDR_BREAKPMENU);
 	}
@@ -2952,11 +2952,11 @@ void CBreakPWnd::OnContextMenu(CWnd *pWnd, CPoint point)
 							point.x, point.y, this);
 }
 
-//---------------------------------------------------------------------------
-//
-//	コンテキストメニューセットアップ
-//
-//---------------------------------------------------------------------------
+  //---------------------------------------------------------------------------
+  //
+  //	Configuracion de menu de contexto
+  //
+  //---------------------------------------------------------------------------
 void FASTCALL CBreakPWnd::SetupContext(CMenu *pMenu)
 {
 	int y;
@@ -2967,17 +2967,17 @@ void FASTCALL CBreakPWnd::SetupContext(CMenu *pMenu)
 
 	ASSERT(pMenu);
 
-	// 初期化
+ 	 // Inicializacion
 	buf.enable = FALSE;
 	buf.use = FALSE;
 
-	// y取得
+ 	 // Obtener y
 	point = m_Point;
 	ScreenToClient(&point);
 	y = point.y / m_tmHeight;
 	y--;
 
-	// ブレークポイントの使用数取得と、カレントの取得
+ 	 // Obtener cantidad de breakpoints en uso y obtener el actual
 	nCount = 0;
 	::LockVM();
 	for (nBreak=0; nBreak<Scheduler::BreakMax; nBreak++) {
@@ -2992,7 +2992,7 @@ void FASTCALL CBreakPWnd::SetupContext(CMenu *pMenu)
 	}
 	::UnlockVM();
 
-	// 全て削除
+ 	 // Eliminar todos
 	if (nCount > 0) {
 		pMenu->EnableMenuItem(IDM_BREAKP_ALL, MF_BYCOMMAND | MF_ENABLED);
 	}
@@ -3000,10 +3000,10 @@ void FASTCALL CBreakPWnd::SetupContext(CMenu *pMenu)
 		pMenu->EnableMenuItem(IDM_BREAKP_ALL, MF_BYCOMMAND | MF_GRAYED);
 	}
 
-	// アドレスヒストリ
+ 	 // Historial de direcciones
 	CAddrDlg::SetupHisMenu(pMenu);
 
-	// カレントが未使用なら、変更系は無効
+ 	 // Si el actual no esta en uso, deshabilitar los relacionados con cambios
 	if (!buf.use) {
 		pMenu->EnableMenuItem(IDM_BREAKP_ENABLE, MF_BYCOMMAND | MF_GRAYED);
 		pMenu->EnableMenuItem(IDM_BREAKP_CLEAR, MF_BYCOMMAND | MF_GRAYED);
@@ -3011,7 +3011,7 @@ void FASTCALL CBreakPWnd::SetupContext(CMenu *pMenu)
 		return;
 	}
 
-	// 使用中なら、Enableチェック
+ 	 // Si esta en uso, comprobar Enable
 	if (buf.enable) {
 		pMenu->CheckMenuItem(IDM_BREAKP_ENABLE, MF_BYCOMMAND | MF_CHECKED);
 	}
@@ -3020,25 +3020,25 @@ void FASTCALL CBreakPWnd::SetupContext(CMenu *pMenu)
 	}
 }
 
-//---------------------------------------------------------------------------
-//
-//	有効・無効
-//
-//---------------------------------------------------------------------------
+  //---------------------------------------------------------------------------
+  //
+  //	Activar/Desactivar
+  //
+  //---------------------------------------------------------------------------
 void CBreakPWnd::OnEnable()
 {
 	int y;
 	CPoint point;
 	Scheduler::breakpoint_t buf;
 
-	// y取得
+ 	 // Obtener y
 	point = m_Point;
 	ScreenToClient(&point);
 	y = point.y / m_tmHeight;
 	y--;
 	ASSERT((y >= 0) && (y < Scheduler::BreakMax));
 
-	// ブレークポイント反転
+ 	 // Invertir breakpoint
 	::LockVM();
 	m_pScheduler->GetBreak(y, &buf);
 	ASSERT(buf.use);
@@ -3046,48 +3046,48 @@ void CBreakPWnd::OnEnable()
 	::UnlockVM();
 }
 
-//---------------------------------------------------------------------------
-//
-//	回数クリア
-//
-//---------------------------------------------------------------------------
+  //---------------------------------------------------------------------------
+  //
+  //	Limpiar conteo
+  //
+  //---------------------------------------------------------------------------
 void CBreakPWnd::OnClear()
 {
 	int y;
 	CPoint point;
 
-	// y取得
+ 	 // Obtener y
 	point = m_Point;
 	ScreenToClient(&point);
 	y = point.y / m_tmHeight;
 	y--;
 	ASSERT((y >= 0) && (y < Scheduler::BreakMax));
 
-	// 回数クリア
+ 	 // Limpiar conteo
 	::LockVM();
 	m_pScheduler->ClearBreak(y);
 	::UnlockVM();
 }
 
-//---------------------------------------------------------------------------
-//
-//	ブレークポイント削除
-//
-//---------------------------------------------------------------------------
+  //---------------------------------------------------------------------------
+  //
+  //	Eliminar punto de interrupcion (breakpoint)
+  //
+  //---------------------------------------------------------------------------
 void CBreakPWnd::OnDel()
 {
 	int y;
 	CPoint point;
 	Scheduler::breakpoint_t buf;
 
-	// y取得
+ 	 // Obtener y
 	point = m_Point;
 	ScreenToClient(&point);
 	y = point.y / m_tmHeight;
 	y--;
 	ASSERT((y >= 0) && (y < Scheduler::BreakMax));
 
-	// 回数クリア
+ 	 // Limpiar conteo
 	::LockVM();
 	m_pScheduler->GetBreak(y, &buf);
 	ASSERT(buf.use);
@@ -3095,11 +3095,11 @@ void CBreakPWnd::OnDel()
 	::UnlockVM();
 }
 
-//---------------------------------------------------------------------------
-//
-//	アドレス指定
-//
-//---------------------------------------------------------------------------
+  //---------------------------------------------------------------------------
+  //
+  //	Especificacion de direccion
+  //
+  //---------------------------------------------------------------------------
 void CBreakPWnd::OnAddr()
 {
 	int y;
@@ -3110,14 +3110,14 @@ void CBreakPWnd::OnAddr()
 	DWORD dwAddr;
 	CAddrDlg dlg(this);
 
-	// y取得
+ 	 // Obtener y
 	point = m_Point;
 	ScreenToClient(&point);
 	y = point.y / m_tmHeight;
 	y--;
 
 	::LockVM();
-	// 有効なブレークポイントを指していれば、そのアドレス
+ 	 // Si apunta a un breakpoint valido, esa direccion
 	dwAddr = 0xffffffff;
 	if ((y >= 0) && (y < Scheduler::BreakMax)) {
 		m_pScheduler->GetBreak(y, &buf);
@@ -3125,7 +3125,7 @@ void CBreakPWnd::OnAddr()
 			dwAddr = buf.addr & 0xffffff;
 		}
 	}
-	// そうでなければ、PC
+ 	 // Si no, el PC
 	if (dwAddr == 0xffffffff) {
 		pCPU = (CPU*)::GetVM()->SearchDevice(MAKEID('C', 'P', 'U', ' '));
 		ASSERT(pCPU);
@@ -3135,43 +3135,43 @@ void CBreakPWnd::OnAddr()
 	::UnlockVM();
 	ASSERT(dwAddr <= 0xffffff);
 
-	// 入力ダイアログ
+ 	 // Dialogo de entrada
 	dlg.m_dwValue = dwAddr;
 	if (dlg.DoModal() != IDOK) {
 		return;
 	}
 
-	// 共通ルーチンにまかせる
+ 	 // Dejar a cargo de la rutina comun
 	SetAddr(dlg.m_dwValue);
 }
 
-//---------------------------------------------------------------------------
-//
-//	アドレスヒストリ
-//
-//---------------------------------------------------------------------------
+  //---------------------------------------------------------------------------
+  //
+  //	Historial de direcciones
+  //
+  //---------------------------------------------------------------------------
 void CBreakPWnd::OnHistory(UINT nID)
 {
 	DWORD dwAddr;
 
 	ASSERT((nID >= IDM_HISTORY_0) && (nID <= IDM_HISTORY_9));
 
-	// 共通ルーチンにまかせる
+ 	 // Dejar a cargo de la rutina comun
 	dwAddr = CAddrDlg::GetAddr(nID);
 	SetAddr(dwAddr);
 }
 
-//---------------------------------------------------------------------------
-//
-//	全て削除
-//
-//---------------------------------------------------------------------------
+  //---------------------------------------------------------------------------
+  //
+  //	Eliminar todos
+  //
+  //---------------------------------------------------------------------------
 void CBreakPWnd::OnAll()
 {
 	Scheduler::breakpoint_t buf;
 	int i;
 
-	// 全てクリア
+ 	 // Limpiar todos
 	::LockVM();
 	for (i=0; i<Scheduler::BreakMax; i++) {
 		m_pScheduler->GetBreak(i, &buf);
@@ -3182,11 +3182,11 @@ void CBreakPWnd::OnAll()
 	::UnlockVM();
 }
 
-//---------------------------------------------------------------------------
-//
-//	アドレス設定
-//
-//---------------------------------------------------------------------------
+  //---------------------------------------------------------------------------
+  //
+  //	Establecer direccion
+  //
+  //---------------------------------------------------------------------------
 void FASTCALL CBreakPWnd::SetAddr(DWORD dwAddr)
 {
 	int y;
@@ -3195,7 +3195,7 @@ void FASTCALL CBreakPWnd::SetAddr(DWORD dwAddr)
 
 	ASSERT(dwAddr <= 0xffffff);
 
-	// 既に登録されているアドレスなら、無効
+ 	 // Si es una direccion ya registrada, invalido
 	::LockVM();
 	for (y=0; y<Scheduler::BreakMax; y++) {
 		m_pScheduler->GetBreak(y, &buf);
@@ -3208,13 +3208,13 @@ void FASTCALL CBreakPWnd::SetAddr(DWORD dwAddr)
 	}
 	::UnlockVM();
 
-	// y取得
+ 	 // Obtener y
 	point = m_Point;
 	ScreenToClient(&point);
 	y = point.y / m_tmHeight;
 	y--;
 
-	// 使用中のブレークポイントを指していれば、そこを差し替え
+ 	 // Si apunta a un breakpoint en uso, reemplazarlo
 	::LockVM();
 	if ((y >= 0) && (y < Scheduler::BreakMax)) {
 		m_pScheduler->GetBreak(y, &buf);
@@ -3225,16 +3225,16 @@ void FASTCALL CBreakPWnd::SetAddr(DWORD dwAddr)
 		}
 	}
 
-	// そうでなければ、新規設定
+ 	 // Si no, configurar como nuevo
 	m_pScheduler->SetBreak(dwAddr);
 	::UnlockVM();
 }
 
-//---------------------------------------------------------------------------
-//
-//	セットアップ
-//
-//---------------------------------------------------------------------------
+  //---------------------------------------------------------------------------
+  //
+  //	Configuracion
+  //
+  //---------------------------------------------------------------------------
 void FASTCALL CBreakPWnd::Setup()
 {
 	int i;
@@ -3242,29 +3242,29 @@ void FASTCALL CBreakPWnd::Setup()
 	CString strFmt;
 	Scheduler::breakpoint_t buf;
 
-	// クリア
+ 	 // Limpiar
 	Clear();
 
-	// ガイド表示
+ 	 // Mostrar guia
 	SetString(0, 0, _T("No."));
 	SetString(5, 0, _T("Address"));
 	SetString(14, 0, _T("Flag"));
 	SetString(28, 0, _T("Time"));
 	SetString(38, 0, _T("Count"));
 
-	// ループ
+ 	 // Bucle
 	for (i=0; i<Scheduler::BreakMax; i++) {
-		// 番号
+ 		 // Numero
 		strText.Format(_T("%2d "), i + 1);
 
-		// 取得、有効チェック
+ 		 // Obtener, comprobar validez
 		m_pScheduler->GetBreak(i, &buf);
 		if (buf.use) {
-			// アドレス
+ 			 // Direccion
 			strFmt.Format(_T("  $%06X "), buf.addr);
 			strText += strFmt;
 
-			// フラグ
+ 			 // Flag
 			if (buf.enable) {
 				strText += _T(" Enable");
 			}
@@ -3272,20 +3272,20 @@ void FASTCALL CBreakPWnd::Setup()
 				strText += _T("Disable");
 			}
 
-			// 時間
+ 			 // Tiempo
 			if (buf.count > 0) {
 				strFmt.Format(_T(" %7d.%05dms"), (buf.time / 2000), (buf.time % 2000) * 5);
 				strText += strFmt;
 
-				// カウント
+ 				 // Conteo
 				strFmt.Format(_T("   %4d"), buf.count);
 				strText += strFmt;
 			}
 		}
 
-		// 文字列セット
+ 		 // Set de cadena
 		SetString(0, i + 1, strText);
 	}
 }
 
-#endif	// _WIN32
+ #endif	 // _WIN32

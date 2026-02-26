@@ -1,9 +1,9 @@
 //---------------------------------------------------------------------------
 //
-//	X68000 EMULATOR "XM6"
+//	EMULADOR X68000 "XM6"
 //
 //	Copyright (C) 2001-2006 ‚o‚hD(ytanaka@ipc-tokai.or.jp)
-//	[ MFC ƒAƒvƒŠƒP[ƒVƒ‡ƒ“ ]
+//	[ Aplicacion MFC ]
 //
 //---------------------------------------------------------------------------
 
@@ -21,14 +21,14 @@
 
 //---------------------------------------------------------------------------
 //
-//	ƒAƒvƒŠƒP[ƒVƒ‡ƒ“ ƒCƒ“ƒXƒ^ƒ“ƒX
+//	Instancia de la aplicacion
 //
 //---------------------------------------------------------------------------
 CApp theApp;
 
 //---------------------------------------------------------------------------
 //
-//	ŠÖ”ƒ|ƒCƒ“ƒ^’è‹`
+//	Definicion de punteros a funciones
 //
 //---------------------------------------------------------------------------
 extern "C" {
@@ -37,28 +37,28 @@ typedef int (WINAPI *DRAWTEXTWIDE)(HDC, LPCWSTR, int, LPRECT, UINT);
 
 //---------------------------------------------------------------------------
 //
-//	ƒOƒ[ƒoƒ‹ ƒ[ƒN
+//	Estructuras globales
 //
 //---------------------------------------------------------------------------
 VM *pVM;								// Virtual Machine
 
 //---------------------------------------------------------------------------
 //
-//	ƒXƒ^ƒeƒBƒbƒN ƒ[ƒN
+//	Estructuras estaticas
 //
 //---------------------------------------------------------------------------
-static CCriticalSection csect;			// VMƒƒbƒN—pƒNƒŠƒeƒBƒJƒ‹ƒZƒNƒVƒ‡ƒ“
-static BOOL bJapanese;					// “ú–{ŒêE‰pŒê”»•Êƒtƒ‰ƒO
-static BOOL bWinNT;						// WindowsNTEWindows9x”»•Êƒtƒ‰ƒO
-static BOOL bSupport932;				// CP932(SHIFT-JIS)ƒTƒ|[ƒgƒtƒ‰ƒO
-static BOOL bMMX;						// MMX”»•Êƒtƒ‰ƒO
-static BOOL bCMOV;						// CMOV”»•Êƒtƒ‰ƒO
-static LPSTR lpszInfoMsg;				// î•ñƒƒbƒZ[ƒWƒoƒbƒtƒ@
+static CCriticalSection csect;			// Seccion critica para el bloqueo de la VM
+static BOOL bJapanese;					// Flag de discriminacion Japones/Ingles
+static BOOL bWinNT;						// Flag de discriminacion Windows NT/9x
+static BOOL bSupport932;				// Flag de soporte para CP932 (SHIFT-JIS)
+static BOOL bMMX;						// Flag de discriminacion MMX
+static BOOL bCMOV;						// Flag de discriminacion CMOV
+static LPSTR lpszInfoMsg;				// Buffer de mensaje de informacion
 static DRAWTEXTWIDE pDrawTextW;			// DrawTextW
 
 //---------------------------------------------------------------------------
 //
-//	“ú–{ŒêŠÂ‹«‚Ì”»’è
+//	Determinacion del entorno japones
 //
 //---------------------------------------------------------------------------
 BOOL FASTCALL IsJapanese(void)
@@ -68,7 +68,7 @@ BOOL FASTCALL IsJapanese(void)
 
 //---------------------------------------------------------------------------
 //
-//	WindowsNT‚Ì”»’è
+//	Determinacion de Windows NT
 //
 //---------------------------------------------------------------------------
 BOOL FASTCALL IsWinNT(void)
@@ -78,7 +78,7 @@ BOOL FASTCALL IsWinNT(void)
 
 //---------------------------------------------------------------------------
 //
-//	CP932ƒTƒ|[ƒg‚Ì”»’è
+//	Determinacion del soporte de CP932
 //
 //---------------------------------------------------------------------------
 BOOL FASTCALL Support932(void)
@@ -88,7 +88,7 @@ BOOL FASTCALL Support932(void)
 
 //---------------------------------------------------------------------------
 //
-//	MMX‚Ì”»’è
+//	Determinacion de MMX
 //
 //---------------------------------------------------------------------------
 BOOL FASTCALL IsMMX(void)
@@ -98,7 +98,7 @@ BOOL FASTCALL IsMMX(void)
 
 //---------------------------------------------------------------------------
 //
-//	CMOV‚Ì”»’è
+//	Determinacion de CMOV
 //
 //---------------------------------------------------------------------------
 BOOL FASTCALL IsCMOV(void)
@@ -108,37 +108,39 @@ BOOL FASTCALL IsCMOV(void)
 
 //---------------------------------------------------------------------------
 //
-//	ƒƒbƒZ[ƒWæ“¾
+//	Obtencion de mensajes
 //
 //---------------------------------------------------------------------------
 void FASTCALL GetMsg(UINT uID, CString& string)
 {
-	// uID=0‚Å”ò‚ñ‚Å‚­‚éê‡‚ª‚ ‚é
+	// uID puede llegar como 0 en algunos casos
 	if (uID == 0) {
 		string.Empty();
 		return;
 	}
 
-	// “ú–{Œê‚©
+	// ?Es japones?
 	if (IsJapanese()) {
 		if (!string.LoadString(uID)) {
 #if defined(_DEBUG)
-			TRACE(_T("GetMsg:•¶š—ñƒ[ƒh‚É¸”s ID:%d\n"), uID);
+			TRACE(_T("GetMsg: Error al cargar cadena ID:%d
+"), uID);
 #endif	// _DEBUG
 			string.Empty();
 		}
 		return;
 	}
 
-	// ‰pŒêB+5000‚Å‚·
+	// Ingles. Probar con +5000
 	if (string.LoadString(uID + 5000)) {
 		return;
 	}
 
-	// +0‚Å‚à‚¤ˆê“x
+	// Intentar de nuevo con +0
 	if (!string.LoadString(uID)) {
 #if defined(_DEBUG)
-		TRACE(_T("GetMsg:•¶š—ñƒ[ƒh‚É¸”s ID:%d\n"), uID);
+		TRACE(_T("GetMsg: Error al cargar cadena ID:%d
+"), uID);
 #endif	// _DEBUG
 		string.Empty();
 	}
@@ -146,7 +148,7 @@ void FASTCALL GetMsg(UINT uID, CString& string)
 
 //---------------------------------------------------------------------------
 //
-//	‰¼‘zƒ}ƒVƒ“‚ğæ“¾
+//	Obtener maquina virtual
 //
 //---------------------------------------------------------------------------
 VM* FASTCALL GetVM(void)
@@ -157,7 +159,7 @@ VM* FASTCALL GetVM(void)
 
 //---------------------------------------------------------------------------
 //
-//	‰¼‘zƒ}ƒVƒ“‚ğƒƒbƒN
+//	Bloquear maquina virtual
 //
 //---------------------------------------------------------------------------
 void FASTCALL LockVM(void)
@@ -167,7 +169,7 @@ void FASTCALL LockVM(void)
 
 //---------------------------------------------------------------------------
 //
-//	‰¼‘zƒ}ƒVƒ“‚ğƒAƒ“ƒƒbƒN
+//	Desbloquear maquina virtual
 //
 //---------------------------------------------------------------------------
 void FASTCALL UnlockVM(void)
@@ -177,8 +179,8 @@ void FASTCALL UnlockVM(void)
 
 //---------------------------------------------------------------------------
 //
-//	ƒtƒ@ƒCƒ‹ƒI[ƒvƒ“ƒ_ƒCƒAƒƒO
-//	¦lpszPath‚Í•K‚¸‰Šú‰»‚µ‚ÄŒÄ‚Ño‚·‚±‚Æ
+//	Dialogo de apertura de archivo
+//	* lpszPath siempre debe inicializarse antes de llamar
 //
 //---------------------------------------------------------------------------
 BOOL FASTCALL FileOpenDlg(CWnd *pParent, LPSTR lpszPath, UINT nFilterID)
@@ -197,7 +199,7 @@ BOOL FASTCALL FileOpenDlg(CWnd *pParent, LPSTR lpszPath, UINT nFilterID)
 	ASSERT(lpszPath);
 	ASSERT(nFilterID);
 
-	// \‘¢‘Ì‚ğİ’è
+	// Configurar estructura
 	memset(&ofn, 0, sizeof(OPENFILENAME));
 	ofn.lStructSize = sizeof(OPENFILENAME);
 	ofn.hwndOwner = pParent->m_hWnd;
@@ -207,7 +209,7 @@ BOOL FASTCALL FileOpenDlg(CWnd *pParent, LPSTR lpszPath, UINT nFilterID)
 	ofn.lpstrInitialDir = Filepath::GetDefaultDir();
 	ofn.Flags = OFN_EXPLORER | OFN_HIDEREADONLY | OFN_FILEMUSTEXIST;
 
-	// ƒtƒBƒ‹ƒ^‚ğİ’è
+	// Configurar filtro
 	GetMsg(nFilterID, strFilter);
 	_tcscpy(szFilter, (LPCTSTR)strFilter);
 	nLen = (int)_tcslen(szFilter);
@@ -217,12 +219,12 @@ BOOL FASTCALL FileOpenDlg(CWnd *pParent, LPSTR lpszPath, UINT nFilterID)
 		}
 	}
 
-	// ƒRƒ‚ƒ“ƒ_ƒCƒAƒƒOÀs
+	// Ejecutar dialogo comun
 	if (!GetOpenFileName(&ofn)) {
 		return FALSE;
 	}
 
-	// ³®‚Èƒtƒ@ƒCƒ‹–¼‚ğ“¾‚é(FindFirstFile‚Å“¾‚ç‚ê‚é‚Ì‚Íƒtƒ@ƒCƒ‹–¼+Šg’£q‚Ì‚İ)
+	// Obtener el nombre de archivo formal (FindFirstFile solo devuelve el nombre + extension)
 	hFind = FindFirstFile(lpszPath, &wfd);
 	FindClose(hFind);
 	_tsplitpath(lpszPath, szDrive, szDir, NULL, NULL);
@@ -230,7 +232,7 @@ BOOL FASTCALL FileOpenDlg(CWnd *pParent, LPSTR lpszPath, UINT nFilterID)
 	_tcscat(lpszPath, szDir);
 	_tcscat(lpszPath, wfd.cFileName);
 
-	// ƒfƒtƒHƒ‹ƒgƒfƒBƒŒƒNƒgƒŠ‚ğ•Û‘¶
+	// Guardar directorio predeterminado
 	Filepath::SetDefaultDir(lpszPath);
 
 	return TRUE;
@@ -238,8 +240,8 @@ BOOL FASTCALL FileOpenDlg(CWnd *pParent, LPSTR lpszPath, UINT nFilterID)
 
 //---------------------------------------------------------------------------
 //
-//	ƒtƒ@ƒCƒ‹ƒZ[ƒuƒ_ƒCƒAƒƒO
-//	¦lpszPath‚Í•K‚¸‰Šú‰»‚µ‚ÄŒÄ‚Ño‚·‚±‚ÆBlpszExt‚Íæ“ª3•¶š‚Ì‚İ—LŒø
+//	Dialogo de guardado de archivo
+//	* lpszPath siempre debe inicializarse antes de llamarBlpszExt‚Íæ“ª3•¶š‚Ì‚İ—LŒø
 //
 //---------------------------------------------------------------------------
 BOOL FASTCALL FileSaveDlg(CWnd *pParent, LPSTR lpszPath, LPCTSTR lpszExt, UINT nFilterID)
@@ -254,7 +256,7 @@ BOOL FASTCALL FileSaveDlg(CWnd *pParent, LPSTR lpszPath, LPCTSTR lpszExt, UINT n
 	ASSERT(lpszPath);
 	ASSERT(nFilterID);
 
-	// \‘¢‘Ì‚ğİ’è
+	// Configurar estructura
 	memset(&ofn, 0, sizeof(OPENFILENAME));
 	ofn.lStructSize = sizeof(OPENFILENAME);
 	ofn.hwndOwner = pParent->m_hWnd;
@@ -265,7 +267,7 @@ BOOL FASTCALL FileSaveDlg(CWnd *pParent, LPSTR lpszPath, LPCTSTR lpszExt, UINT n
 	ofn.Flags = OFN_EXPLORER | OFN_HIDEREADONLY | OFN_OVERWRITEPROMPT;
 	ofn.lpstrDefExt = lpszExt;
 
-	// ƒtƒBƒ‹ƒ^‚ğİ’è
+	// Configurar filtro
 	GetMsg(nFilterID, strFilter);
 	_tcscpy(szFilter, (LPCTSTR)strFilter);
 	nLen = (int)_tcslen(szFilter);
@@ -275,12 +277,12 @@ BOOL FASTCALL FileSaveDlg(CWnd *pParent, LPSTR lpszPath, LPCTSTR lpszExt, UINT n
 		}
 	}
 
-	// ƒRƒ‚ƒ“ƒ_ƒCƒAƒƒOÀs
+	// Ejecutar dialogo comun
 	if (!GetSaveFileName(&ofn)) {
 		return FALSE;
 	}
 
-	// ƒfƒtƒHƒ‹ƒgƒfƒBƒŒƒNƒgƒŠ‚ğ•Û‘¶
+	// Guardar directorio predeterminado
 	Filepath::SetDefaultDir(lpszPath);
 
 	return TRUE;
@@ -288,26 +290,26 @@ BOOL FASTCALL FileSaveDlg(CWnd *pParent, LPSTR lpszPath, LPCTSTR lpszExt, UINT n
 
 //---------------------------------------------------------------------------
 //
-//	î•ñƒƒbƒZ[ƒWİ’è
+//	Configuracion del mensaje de informacion
 //
 //---------------------------------------------------------------------------
 void FASTCALL SetInfoMsg(LPCTSTR lpszMsg, BOOL bRec)
 {
-	// ‹L‰¯ƒtƒ‰ƒO‚ğŒ©‚é
+	// Revisar flag de almacenamiento
 	if (bRec) {
-		// ƒoƒbƒtƒ@ƒAƒhƒŒƒX‚ğ‹L‰¯
+		// Almacenar direccion del buffer
 		lpszInfoMsg = (LPSTR)lpszMsg;
 		return;
 	}
 
-	// ƒoƒbƒtƒ@ƒAƒhƒŒƒX‚ª—^‚¦‚ç‚ê‚Ä‚¢‚È‚¯‚ê‚ÎA–³‹
+	// Si no se proporciona direccion de buffer, ignorar
 	if (!lpszInfoMsg) {
 		return;
 	}
 
-	// ƒoƒbƒtƒ@ƒTƒCƒYƒ`ƒFƒbƒN
+	// Verificacion del tama?o del buffer
 	if (_tcslen(lpszInfoMsg) < CInfo::InfoBufMax) {
-		// —^‚¦‚ç‚ê‚½•¶š—ñ‚ğƒRƒs[
+		// Copiar la cadena proporcionada
 		_tcscpy(lpszInfoMsg, lpszMsg);
 	}
 }
@@ -315,30 +317,30 @@ void FASTCALL SetInfoMsg(LPCTSTR lpszMsg, BOOL bRec)
 //---------------------------------------------------------------------------
 //
 //	DrawTextW
-//	¦”ñƒTƒ|[ƒgOS‚Å‚ÍA‰½‚à‚µ‚È‚¢
+//	* En sistemas operativos no compatibles, no hace nada
 //
 //---------------------------------------------------------------------------
 int FASTCALL DrawTextWide(HDC hDC, LPCWSTR lpString, int nCount, LPRECT lpRect, UINT uFormat)
 {
-	// ƒTƒ|[ƒg‚³‚ê‚Ä‚¢‚é‚©
+	// ?Es compatible?
 	if (!pDrawTextW) {
-		// ‰½‚à‚µ‚È‚¢
+		// No hacer nada
 		return 1;
 	}
 
-	// ƒƒCƒh•¶š‚ÅDraw
+	// Dibujar con caracteres anchos
 	return pDrawTextW(hDC, lpString, nCount, lpRect, uFormat);
 }
 
 //===========================================================================
 //
-//	ƒAƒvƒŠƒP[ƒVƒ‡ƒ“
+//	Aplicacion
 //
 //===========================================================================
 
 //---------------------------------------------------------------------------
 //
-//	ƒRƒ“ƒXƒgƒ‰ƒNƒ^
+//	Constructor
 //
 //---------------------------------------------------------------------------
 CApp::CApp() : CWinApp(_T("XM6"))
@@ -436,30 +438,30 @@ BOOL CApp::InitInstance()
 }
 //---------------------------------------------------------------------------
 //
-//	ƒCƒ“ƒXƒ^ƒ“ƒXI—¹
+//	Fin de la instancia
 //
 //---------------------------------------------------------------------------
 BOOL CApp::ExitInstance()
 {
-	// Mutexíœ
+	// Eliminar Mutex
 	if (m_hMutex) {
 		::CloseHandle(m_hMutex);
 		m_hMutex = NULL;
 	}
 
-	// USER32.DLL‰ğ•ú
+	// Liberar USER32.DLL
 	if (m_hUser32) {
 		::FreeLibrary(m_hUser32);
 		m_hUser32 = NULL;
 	}
 
-	// Šî–{ƒNƒ‰ƒX
+	// Clase base
 	return TRUE;
 }
 
 //---------------------------------------------------------------------------
 //
-//	Mutexƒ`ƒFƒbƒN
+//	Verificacion de Mutex
 //
 //---------------------------------------------------------------------------
 BOOL FASTCALL CApp::CheckMutex()
@@ -468,10 +470,10 @@ BOOL FASTCALL CApp::CheckMutex()
 
 	ASSERT(this);
 
-	// —L–³‚É‚©‚©‚í‚ç‚¸Aì¬
+	// Crear independientemente de si existe o no
 	hMutex = ::CreateMutex(NULL, TRUE, _T("XM6"));
 	if (hMutex) {
-		// Šù‚É‹N“®H
+		// ?Ya esta iniciado?
 		if (::GetLastError() == ERROR_ALREADY_EXISTS) {
 			return TRUE;
 		}
@@ -481,13 +483,13 @@ BOOL FASTCALL CApp::CheckMutex()
 		return TRUE;
 	}
 
-	// ‚È‚º‚©¸”s
+	// Fallo por alguna razon
 	return TRUE;
 }
 
 //---------------------------------------------------------------------------
 //
-//	ŠÂ‹«‚Ì”»’è
+//	Determinacion del entorno
 //
 //---------------------------------------------------------------------------
 BOOL FASTCALL CApp::CheckEnvironment()
@@ -498,19 +500,19 @@ BOOL FASTCALL CApp::CheckEnvironment()
 	ASSERT(this);
 
 	//
-	//	OS‚Ì”»’è
+	//	Determinacion del OS
 	//
 
-	// “ú–{ŒêŠÂ‹«‚Ì”»’è
+	// Determinacion del entorno japones
 	::bJapanese = FALSE;
 	if (PRIMARYLANGID(GetSystemDefaultLangID()) == LANG_JAPANESE) {
 		if (PRIMARYLANGID(GetUserDefaultLangID()) == LANG_JAPANESE) {
-			// ƒVƒXƒeƒ€ƒfƒtƒHƒ‹ƒgEƒ†[ƒUƒfƒtƒHƒ‹ƒg‚Ì‘o•û‚Å”»’è
+			// Determinado tanto por el sistema por defecto como por el usuario por defecto
 			::bJapanese = TRUE;
 		}
 	}
 
-	// WindowsNT‚Ì”»’è
+	// Determinacion de Windows NT
 	memset(&ovi, 0, sizeof(ovi));
 	ovi.dwOSVersionInfoSize = sizeof(ovi);
 	VERIFY(::GetVersionEx(&ovi));
@@ -521,19 +523,19 @@ BOOL FASTCALL CApp::CheckEnvironment()
 		::bWinNT = FALSE;
 	}
 
-	// ƒR[ƒhƒy[ƒW932ƒTƒ|[ƒg‚Ì”»’è(UNICODEƒTƒ|[ƒg‚ª‘O’ñ)
+	// Determinacion del soporte de la pagina de codigos 932 (requiere soporte UNICODE)
 	::bSupport932 = FALSE;
 	::pDrawTextW = NULL;
 	if (::bWinNT) {
-		// UNICODEƒTƒ|[ƒgOS
+		// OS con soporte UNICODE
 		if (::IsValidCodePage(932)) {
-			// USER32.DLL‚ğƒ[ƒh
+			// Cargar USER32.DLL
 			m_hUser32 = ::LoadLibrary(_T("USER32.DLL"));
 			if (m_hUser32) {
-				// DrawTextW‚ÌƒAƒhƒŒƒX‚ğ“¾‚é
+				// Obtener direccion de DrawTextW
 				pDrawTextW = (DRAWTEXTWIDE)::GetProcAddress(m_hUser32, _T("DrawTextW"));
 				if (pDrawTextW) {
-					// CP932‚Ö‚Ì•ÏŠ·‚Æ•¦‚ª‰Â”
+					// CP932‚Ö‚Ì•ÏŠ·‚Æ•¦‚ª‰Â?
 					::bSupport932 = TRUE;
 				}
 			}
@@ -541,43 +543,43 @@ BOOL FASTCALL CApp::CheckEnvironment()
 	}
 
 	//
-	//	ƒvƒƒZƒbƒT‚Ì”»’è
+	//	Determinacion del procesador
 	//
 
-	// CMOV‚Ì”»’è
+	// Determinacion de CMOV
 	::bCMOV = FALSE;
 	if (::IsCMOVSupport()) {
 		::bCMOV = TRUE;
 	}
 
-	// MMX‚Ì”»’è(Windows98ˆÈ~‚Ì‚İ)
+	// Determinacion de MMX(Windows98ˆÈ~‚Ì‚İ)
 	::bMMX = FALSE;
 	if (ovi.dwMajorVersion >= 4) {
-		// Windows95 or WindowsNT4 ˆÈ~
+		// Windows 95 o Windows NT 4 o posterior
 		if ((ovi.dwMajorVersion == 4) && (ovi.dwMinorVersion == 0)) {
-			// Windows95 or WindowsNT4
+			// Windows 95 o Windows NT 4
 			::bMMX = FALSE;
 		}
 		else {
-			// ƒvƒƒZƒbƒT‚É‚æ‚é
+			// Depende del procesador
 			::bMMX = ::IsMMXSupport();
 		}
 	}
 
-	// version2.05‚©‚çACMOV,MMX‚Æ‚à•K{
+	// Desde la version 2.05, tanto CMOV como MMX son obligatorios
 	if (!::bCMOV || !::bMMX) {
 		::GetMsg(IDS_PROCESSOR ,strError);
 		AfxMessageBox(strError, MB_ICONSTOP | MB_OK);
 		return FALSE;
 	}
 
-	// ‚·‚×‚ÄOK
+	// Todo OK
 	return TRUE;
 }
 
 //---------------------------------------------------------------------------
 //
-//	ƒRƒ}ƒ“ƒhƒ‰ƒCƒ“‘—M
+//	Envio de linea de comandos
 //
 //---------------------------------------------------------------------------
 void FASTCALL CApp::SendCmd()
@@ -587,13 +589,13 @@ void FASTCALL CApp::SendCmd()
 
 	ASSERT(this);
 
-	// ƒEƒBƒ“ƒhƒEŒŸõ
+	// Busqueda de ventana
 	hWnd = SearchXM6Wnd();
 	if (!hWnd) {
 		return;
 	}
 
-	// WM_COPYDATA‚Å‘—M
+	// Enviar via WM_COPYDATA
 	memset(&cds, 0, sizeof(cds));
 	cds.dwData = WM_COPYDATA;
 	cds.cbData = ((DWORD)_tcslen(m_lpCmdLine) + 1) * sizeof(TCHAR);
@@ -603,26 +605,26 @@ void FASTCALL CApp::SendCmd()
 
 //---------------------------------------------------------------------------
 //
-//	XM6ƒEƒBƒ“ƒhƒEŒŸõ
+//	XM6Busqueda de ventana
 //
 //---------------------------------------------------------------------------
 HWND FASTCALL CApp::SearchXM6Wnd()
 {
 	HWND hWnd;
 
-	// ƒEƒBƒ“ƒhƒE‚ÍNULL
+	// La ventana es NULL
 	hWnd = NULL;
 
-	// ŒŸõ
+	// Busqueda
 	::EnumWindows(EnumXM6Proc, (LPARAM)&hWnd);
 
-	// ƒR[ƒ‹ƒoƒbƒNŠÖ”‚ÅŒ‹‰Ê‚ğ“ü‚ê‚é
+	// Poner el resultado en la funcion de callback
 	return hWnd;
 }
 
 //---------------------------------------------------------------------------
 //
-//	XM6ƒEƒBƒ“ƒhƒEŒŸõƒR[ƒ‹ƒoƒbƒN
+//	XM6Busqueda de ventanaƒR[ƒ‹ƒoƒbƒN
 //
 //---------------------------------------------------------------------------
 BOOL CALLBACK CApp::EnumXM6Proc(HWND hWnd, LPARAM lParam)
@@ -630,22 +632,22 @@ BOOL CALLBACK CApp::EnumXM6Proc(HWND hWnd, LPARAM lParam)
 	HWND *phWnd;
 	LONG lUser;
 
-	// ƒpƒ‰ƒ[ƒ^ó‚¯æ‚è
+	// Recibir parametros
 	phWnd = (HWND*)lParam;
 	ASSERT(phWnd);
 	ASSERT(*phWnd == NULL);
 
-	// ŠY“–ƒEƒBƒ“ƒhƒE‚Ìƒ†[ƒUƒf[ƒ^‚ğ“¾‚é
+	// Obtener datos de usuario de la ventana correspondiente
 	lUser = ::GetWindowLong(hWnd, GWL_USERDATA);
 
-	// XM6ƒ`ƒFƒbƒN‚ğs‚¤
+	// Realizar verificacion de XM6
 	if (lUser == (LONG)MAKEID('X', 'M', '6', ' ')) {
-		// XM6ƒtƒŒ[ƒ€ƒEƒBƒ“ƒhƒE‚Æ”»’è‚µA‘Å‚¿Ø‚é
+		// Determinado como ventana de marco de XM6, terminar
 		*phWnd = hWnd;
 		return FALSE;
 	}
 
-	// ˆá‚Á‚Ä‚¢‚é‚Ì‚Å‘±‚¯‚é
+	// Es diferente, continuar
 	return TRUE;
 }
 

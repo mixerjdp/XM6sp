@@ -1,9 +1,9 @@
 //---------------------------------------------------------------------------
 //
-//	X68000 EMULATOR "XM6"
+//	EMULADOR X68000 "XM6"
 //
 //	Copyright (C) 2001-2006 ＰＩ．(ytanaka@ipc-tokai.or.jp)
-//	[ MFC コンフィグ ]
+//	[ MFC Configuracion ]
 //
 //---------------------------------------------------------------------------
 
@@ -17,260 +17,260 @@
 
 //===========================================================================
 //
-//	コンフィグ
+//	Configuracion
 //
 //===========================================================================
 class CConfig : public CComponent
 {
 public:
-	// 基本ファンクション
+	// Funciones basicas
 	CConfig(CFrmWnd *pWnd);
-										// コンストラクタ
+										// Constructor
 	BOOL FASTCALL Init();
 	BOOL FASTCALL CustomInit(BOOL ArchivoDefault);   // mi personalizacion
-										// 初期化
+										// Inicializacion
 	void FASTCALL Cleanup();
 	void FASTCALL Cleanup2();
-										// クリーンアップ
+										// Limpieza (Cleanup)
 
-	// 設定データ(全体)
+	// Datos de configuracion (global)
 	void FASTCALL GetConfig(Config *pConfigBuf) const;
-										// 設定データ取得
+										// Obtener datos de configuracion
 	void FASTCALL SetConfig(Config *pConfigBuf);
-										// 設定データ設定
+										// Establecer datos de configuracion
 
-	// 設定データ(個別)
+	// Datos de configuracion (individuales)
 	void FASTCALL SetStretch(BOOL bStretch);
-										// 画面拡大設定
+										// Configuracion de expansion de pantalla
 	void FASTCALL SetMIDIDevice(int nDevice, BOOL bIn);
-										// MIDIデバイス設定
+										// Configuracion de dispositivo MIDI
 
 	// MRU
 	void FASTCALL SetMRUFile(int nType, LPCTSTR pszFile);
-										// MRUファイル設定(最も新しい)
+										// Configuracion de archivo MRU (mas reciente)
 	void FASTCALL GetMRUFile(int nType, int nIndex, LPTSTR pszFile) const;
-										// MRUファイル取得
+										// Obtener archivo MRU
 	int FASTCALL GetMRUNum(int nType) const;
-										// MRUファイル個数取得
+										// Obtener numero de archivos MRU
 
-	// セーブ・ロード
+	// Guardar / Cargar
 	BOOL FASTCALL Save(Fileio *pFio, int nVer);
-										// セーブ
+										// Guardar
 	BOOL FASTCALL Load(Fileio *pFio, int nVer);
-										// ロード
+										// Cargar
 	BOOL FASTCALL IsApply();
-										// 適用するか
+										// ?Aplicar?
 
 private:
-	// 設定データ
+	// Datos de configuracion
 	typedef struct _INIKEY {
 		void *pBuf;						// ポインタ
-		LPCTSTR pszSection;				// セクション名
-		LPCTSTR pszKey;					// キー名
+		LPCTSTR pszSection;				// Nombre de seccion
+		LPCTSTR pszKey;					// Nombre de clave
 		int nType;						// 型
-		int nDef;						// デフォルト値
-		int nMin;						// 最小値(一部タイプのみ)
-		int nMax;						// 最大値(一部のみ)
+		int nDef;						// Valor por defecto
+		int nMin;						// Valor minimo (solo algunos tipos)
+		int nMax;						// Valor maximo (solo algunos)
 	} INIKEY, *PINIKEY;
 
-	// INIファイル
+	// Archivo INI
 	TCHAR m_IniFile[FILEPATH_MAX];
-										// INIファイル名
+										// Nombre del archivo INI
 
-	// 設定データ
+	// Datos de configuracion
 	void FASTCALL LoadConfig();
-										// 設定データロード
+										// Cargar datos de configuracion
 	void FASTCALL SaveConfig() const;
-										// 設定データセーブ
+										// Guardar datos de configuracion
 	static const INIKEY IniTable[];
-										// 設定データINIテーブル
+										// Tabla INI de datos de configuracion
 	static Config m_Config;
-										// 設定データ
+										// Datos de configuracion
 
 	// バージョン互換
 	void FASTCALL ResetSASI();
-										// SASI再設定
+										// Reconfiguracion SASI
 	void FASTCALL ResetCDROM();
-										// CD-ROM再設定
+										// Reconfiguracion CD-ROM
 	static BOOL m_bCDROM;
-										// CD-ROM有効
+										// CD-ROM activado
 
 	// MRU
 	enum {
-		MruTypes = 5					// MRUタイプ数
+		MruTypes = 5					// Numero de tipos MRU
 	};
 	void FASTCALL ClearMRU(int nType);
-										// MRUクリア
+										// Limpiar MRU
 	void FASTCALL LoadMRU(int nType);
-										// MRUロード
+										// Cargar MRU
 	void FASTCALL SaveMRU(int nType) const;
-										// MRUセーブ
+										// Guardar MRU
 	TCHAR m_MRUFile[MruTypes][9][FILEPATH_MAX];
-										// MRUファイル
+										// Archivos MRU
 	int m_MRUNum[MruTypes];
-										// MRU数
+										// Numero de MRU
 
 	// キー
 	void FASTCALL LoadKey() const;
-										// キーロード
+										// Cargar clave
 	void FASTCALL SaveKey() const;
-										// キーセーブ
+										// Guardar clave
 
 	// TrueKey
 	void FASTCALL LoadTKey() const;
-										// TrueKeyロード
+										// Cargar TrueKey
 	void FASTCALL SaveTKey() const;
-										// TrueKeyセーブ
+										// Guardar TrueKey
 
 	// バージョン互換
 	BOOL FASTCALL Load200(Fileio *pFio);
-										// version2.00 or version2.01
+										// version 2.00 o version 2.01
 	BOOL FASTCALL Load202(Fileio *pFio);
-										// version2.02 or version2.03
+										// version 2.02 o version 2.03
 
-	// ロード・セーブ
+	// Cargar・Guardar
 	BOOL m_bApply;
-										// ロード後ApplyCfgを要求
+										// Cargar後ApplyCfgを要求
 };
 
 //---------------------------------------------------------------------------
 //
-//	クラス先行定義
+//	Pre-definicion de clase
 //
 //---------------------------------------------------------------------------
 class CConfigSheet;
 
 //===========================================================================
 //
-//	コンフィグプロパティページ
+//	ConfiguracionPagina de propiedades
 //
 //===========================================================================
 class CConfigPage : public CPropertyPage
 {
 public:
 	CConfigPage();
-										// コンストラクタ
+										// Constructor
 	void FASTCALL Init(CConfigSheet *pSheet);
-										// 初期化
+										// Inicializacion
 	virtual BOOL OnInitDialog();
-										// ダイアログ初期化
+										// Inicializacion del dialogo
 	virtual BOOL OnSetActive();
-										// ページアクティブ
+										// Pagina activa
 	DWORD FASTCALL GetID() const		{ return m_dwID; }
-										// ID取得
+										// Obtener ID
 
 protected:
 	afx_msg BOOL OnSetCursor(CWnd *pWnd, UINT nHitTest, UINT nMsg);
-										// マウスカーソル設定
+										// Configuracion del cursor del raton
 	Config *m_pConfig;
-										// 設定データ
+										// Datos de configuracion
 	DWORD m_dwID;
-										// ページID
+										// ID de la pagina
 	int m_nTemplate;
-										// テンプレートID
+										// ID de plantilla
 	UINT m_uHelpID;
-										// ヘルプID
+										// ID de ayuda
 	UINT m_uMsgID;
-										// ヘルプメッセージID
+										// ID de mensaje de ayuda
 	CConfigSheet *m_pSheet;
-										// プロパティシート
+										// Hoja de propiedades
 
 	DECLARE_MESSAGE_MAP()
-										// メッセージ マップあり
+										// Con mapa de mensajes
 };
 
 //===========================================================================
 //
-//	基本ページ
+//	Pagina basica
 //
 //===========================================================================
 class CBasicPage : public CConfigPage
 {
 public:
 	CBasicPage();
-										// コンストラクタ
+										// Constructor
 	BOOL OnInitDialog();
-										// 初期化
+										// Inicializacion
 	void OnOK();
-										// 決定
+										// Aceptar
 
 protected:
 	afx_msg void OnMPUFull();
-										// MPUフルスピード
+										// Velocidad completa MPU
 
 	DECLARE_MESSAGE_MAP()
-										// メッセージ マップあり
+										// Con mapa de mensajes
 };
 
 //===========================================================================
 //
-//	サウンドページ
+//	Pagina de sonido
 //
 //===========================================================================
 class CSoundPage : public CConfigPage
 {
 public:
 	CSoundPage();
-										// コンストラクタ
+										// Constructor
 	BOOL OnInitDialog();
-										// 初期化
+										// Inicializacion
 	void OnOK();
-										// 決定
+										// Aceptar
 
 protected:
 	afx_msg void OnVScroll(UINT nSBCode, UINT nPos, CScrollBar* pBar);
-										// 縦スクロール
+										// Desplazamiento vertical
 	afx_msg void OnSelChange();
-										// コンボボックス変更
+										// Cambio en el cuadro combinado
 
 private:
 	void FASTCALL EnableControls(BOOL bEnable);
-										// コントロール状態変更
+										// Cambio de estado de los controles
 	BOOL m_bEnableCtrl;
-										// コントロール状態
+										// Estado de los controles
 	static const UINT ControlTable[];
-										// コントロールテーブル
+										// Tabla de controles
 
 	DECLARE_MESSAGE_MAP()
-										// メッセージ マップあり
+										// Con mapa de mensajes
 };
 
 //===========================================================================
 //
-//	音量ページ
+//	Pagina de volumen
 //
 //===========================================================================
 class CVolPage : public CConfigPage
 {
 public:
 	CVolPage();
-										// コンストラクタ
+										// Constructor
 	BOOL OnInitDialog();
-										// 初期化
+										// Inicializacion
 	void OnOK();
-										// 決定
+										// Aceptar
 	void OnCancel();
-										// キャンセル
+										// Cancelar
 
 protected:
 	afx_msg void OnHScroll(UINT nSBCode, UINT nPos, CScrollBar *pBar);
-										// 横スクロール
+										// Desplazamiento horizontal
 	afx_msg void OnFMCheck();
-										// FM音源チェック
+										// Sintetizador FMVerificacion
 	afx_msg void OnADPCMCheck();
-										// ADPCM音源チェック
+										// Sintetizador ADPCMVerificacion
 #if _MFC_VER >= 0x700
 	afx_msg void OnTimer(UINT_PTR nTimerID);
 #else
 	afx_msg void OnTimer(UINT nTimerID);
 #endif
-										// タイマ
+										// Temporizador
 
 private:
 	CSound *m_pSound;
-										// サウンド
+										// Sonido
 	OPMIF *m_pOPMIF;
-										// OPMインタフェース
+										// Interfaz OPM
 	ADPCM *m_pADPCM;
 										// ADPCM
 	CMIDI *m_pMIDI;
@@ -280,777 +280,777 @@ private:
 #else
 	UINT m_nTimerID;
 #endif
-										// タイマID
+										// ID del temporizador
 	int m_nMasterVol;
-										// マスター音量
+										// Volumen maestro
 	int m_nMasterOrg;
-										// マスター音量オリジナル
+										// Volumen maestro original
 	int m_nMIDIVol;
-										// MIDI音量
+										// Volumen MIDI
 	int m_nMIDIOrg;
-										// MIDI音量オリジナル
+										// Volumen MIDI original
 
 	DECLARE_MESSAGE_MAP()
-										// メッセージ マップあり
+										// Con mapa de mensajes
 };
 
 //===========================================================================
 //
-//	キーボードページ
+//	Pagina del teclado
 //
 //===========================================================================
 class CKbdPage : public CConfigPage
 {
 public:
 	CKbdPage();
-										// コンストラクタ
+										// Constructor
 	BOOL OnInitDialog();
-										// 初期化
+										// Inicializacion
 	void OnOK();
-										// 決定
+										// Aceptar
 	void OnCancel();
-										// キャンセル
+										// Cancelar
 
 protected:
 	afx_msg void OnEdit();
-										// 編集
+										// Editar
 	afx_msg void OnDefault();
-										// デフォルト
+										// Por defecto
 	afx_msg void OnClick(NMHDR *pNMHDR, LRESULT *pResult);
-										// カラムクリック
+										// Clic en columna
 	afx_msg void OnRClick(NMHDR *pNMHDR, LRESULT *pResult);
-										// カラム右クリック
+										// Clic derecho en columna
 	afx_msg void OnConnect();
-										// 接続
+										// Conexion
 
 private:
 	void FASTCALL UpdateReport();
-										// レポート更新
+										// レポートActualizacion
 	void FASTCALL EnableControls(BOOL bEnable);
-										// コントロール状態変更
+										// Cambio de estado de los controles
 	DWORD m_dwEdit[0x100];
-										// エディット
+										// Edicion
 	DWORD m_dwBackup[0x100];
-										// バックアップ
+										// Respaldo / Backup
 	CInput *m_pInput;
 										// CInput
 	BOOL m_bEnableCtrl;
-										// コントロール状態
+										// Estado de los controles
 	static const UINT ControlTable[];
-										// コントロールテーブル
+										// Tabla de controles
 
 	DECLARE_MESSAGE_MAP()
-										// メッセージ マップあり
+										// Con mapa de mensajes
 };
 
 //===========================================================================
 //
-//	キーボードマップ編集ダイアログ
+//	Dialogo de edicion de mapa de teclado
 //
 //===========================================================================
 class CKbdMapDlg : public CDialog
 {
 public:
 	CKbdMapDlg(CWnd *pParent, DWORD *pMap);
-										// コンストラクタ
+										// Constructor
 	BOOL OnInitDialog();
-										// 初期化
+										// Inicializacion
 	void OnOK();
 										// OK
 	void OnCancel();
-										// キャンセル
+										// Cancelar
 
 protected:
 	afx_msg void OnPaint();
-										// ダイアログ描画
+										// ダイアログDibujar
 	afx_msg LONG OnKickIdle(UINT uParam, LONG lParam);
-										// アイドル処理
+										// Proceso idle
 	afx_msg LONG OnApp(UINT uParam, LONG lParam);
-										// ユーザ(下位ウィンドウからの通知)
+										// ユーザ(Notificacion de ventanas subordinadas)
 
 private:
 	void FASTCALL OnDraw(CDC *pDC);
-										// 描画サブ
+										// Sub-rutina de dibujo
 	CRect m_rectStat;
-										// ステータス矩形
+										// Rectangulo de estado
 	CString m_strStat;
-										// ステータスメッセージ
+										// Mensaje de estado
 	CString m_strGuide;
-										// ガイドメッセージ
+										// Mensaje guia
 	CWnd *m_pDispWnd;
 										// CKeyDispWnd
 	CInput *m_pInput;
 										// CInput
 	DWORD *m_pEditMap;
-										// 編集中のマップ
+										// Editar中のマップ
 
 	DECLARE_MESSAGE_MAP()
-										// メッセージ マップあり
+										// Con mapa de mensajes
 };
 
 //===========================================================================
 //
-//	キー入力ダイアログ
+//	Dialogo de entrada de teclas
 //
 //===========================================================================
 class CKeyinDlg : public CDialog
 {
 public:
 	CKeyinDlg(CWnd *pParent);
-										// コンストラクタ
+										// Constructor
 	BOOL OnInitDialog();
-										// 初期化
+										// Inicializacion
 	void OnOK();
 										// OK
 	UINT m_nTarget;
-										// ターゲットキー
+										// Tecla objetivo
 	UINT m_nKey;
-										// 割り当てキー
+										// Asignacionキー
 
 protected:
 	afx_msg void OnPaint();
-										// 描画
+										// Dibujar
 	afx_msg UINT OnGetDlgCode();
-										// ダイアログコード取得
+										// ダイアログコードObtener
 	afx_msg LONG OnKickIdle(UINT uParam, LONG lParam);
-										// アイドル処理
+										// Proceso idle
 	afx_msg void OnRButtonDown(UINT nFlags, CPoint point);
-										// 右クリック
+										// Clic derecho
 
 private:
 	void FASTCALL OnDraw(CDC *pDC);
-										// 描画サブ
+										// Sub-rutina de dibujo
 	CInput *m_pInput;
 										// CInput
 	BOOL m_bKey[0x100];
-										// キー記憶用
+										// Para memorizar teclas
 	CRect m_GuideRect;
-										// ガイド矩形
+										// Rectangulo guia
 	CString m_GuideString;
-										// ガイド文字列
+										// Cadena guia
 	CRect m_AssignRect;
-										// キー割り当て矩形
+										// キーAsignacion矩形
 	CString m_AssignString;
-										// キー割り当て文字列
+										// キーAsignacion文字列
 	CRect m_KeyRect;
-										// キー矩形
+										// Rectangulo de tecla
 	CString m_KeyString;
-										// キー文字列
+										// Cadena de tecla
 
 	DECLARE_MESSAGE_MAP()
-										// メッセージ マップあり
+										// Con mapa de mensajes
 };
 
 //===========================================================================
 //
-//	マウスページ
+//	Pagina del raton
 //
 //===========================================================================
 class CMousePage : public CConfigPage
 {
 public:
 	CMousePage();
-										// コンストラクタ
+										// Constructor
 	BOOL OnInitDialog();
-										// 初期化
+										// Inicializacion
 	void OnOK();
-										// 決定
+										// Aceptar
 
 protected:
 	afx_msg void OnHScroll(UINT nSBCode, UINT nPos, CScrollBar *pBar);
-										// 横スクロール
+										// Desplazamiento horizontal
 	afx_msg void OnPort();
-										// ポート選択
+										// Seleccion de puerto
 
 private:
 	void FASTCALL EnableControls(BOOL bEnable);
-										// コントロール状態変更
+										// Cambio de estado de los controles
 	BOOL m_bEnableCtrl;
-										// コントロール状態
+										// Estado de los controles
 	static const UINT ControlTable[];
-										// コントロールテーブル
+										// Tabla de controles
 
 	DECLARE_MESSAGE_MAP()
-										// メッセージ マップあり
+										// Con mapa de mensajes
 };
 
 //===========================================================================
 //
-//	ジョイスティックページ
+//	Pagina del joystick
 //
 //===========================================================================
 class CJoyPage : public CConfigPage
 {
 public:
 	CJoyPage();
-										// コンストラクタ
+										// Constructor
 	BOOL OnInitDialog();
-										// 初期化
+										// Inicializacion
 	void OnOK();
-										// 決定
+										// Aceptar
 	void OnCancel();
-										// キャンセル
+										// Cancelar
 
 protected:
 	BOOL OnCommand(WPARAM wParam, LPARAM lParam);
-										// コマンド通知
+										// Notificacion de comando
 
 private:
 	void FASTCALL OnSelChg(CComboBox* pComboBox);
-										// コンボボックス変更
+										// Cambio en el cuadro combinado
 	void FASTCALL OnDetail(UINT nButton);
-										// 詳細
+										// Detalles
 	void FASTCALL OnSetting(UINT nButton);
-										// 設定
+										// Configuracion
 	CButton* GetCorButton(UINT nComboBox);
-										// 対応ボタン取得
+										// 対応BotonesObtener
 	CComboBox* GetCorCombo(UINT nButton);
-										// 対応コンボボックス取得
+										// 対応Cuadro combinadoObtener
 	CInput *m_pInput;
 										// CInput
 	static UINT ControlTable[];
-										// コントロールテーブル
+										// Tabla de controles
 };
 
 //===========================================================================
 //
-//	ジョイスティック詳細ダイアログ
+//	ジョイスティックDialogo de detalles
 //
 //===========================================================================
 class CJoyDetDlg : public CDialog
 {
 public:
 	CJoyDetDlg(CWnd *pParent);
-										// コンストラクタ
+										// Constructor
 	BOOL OnInitDialog();
-										// 初期化
+										// Inicializacion
 
 	CString m_strDesc;
-										// デバイス名称
+										// デバイスNombre
 	int m_nPort;
-										// ポート番号(0 or 1)
+										// Numero de puerto (0 o 1)
 	int m_nType;
-										// タイプ(0～12)
+										// Tipo (0-12)
 };
 
 //===========================================================================
 //
-//	ボタン設定ページ
+//	BotonesConfiguracionページ
 //
 //===========================================================================
 class CBtnSetPage : public CPropertyPage
 {
 public:
 	CBtnSetPage();
-										// コンストラクタ
+										// Constructor
 	void FASTCALL Init(CPropertySheet *pSheet);
-										// 作成
+										// Crear
 	BOOL OnInitDialog();
-										// 初期化
+										// Inicializacion
 	void OnOK();
-										// 決定
+										// Aceptar
 	void OnCancel();
-										// キャンセル
+										// Cancelar
 	int m_nJoy;
-										// ジョイスティック番号(0 or 1)
+										// Numero de joystick (0 o 1)
 	int m_nType[PPI::PortMax];
-										// ジョイスティックタイプ(0～12)
+										// ジョイスティックTipo (0-12)
 
 protected:
 	afx_msg void OnPaint();
-										// ダイアログ描画
+										// ダイアログDibujar
 #if _MFC_VER >= 0x700
 	afx_msg void OnTimer(UINT_PTR nTimerID);
 #else
 	afx_msg void OnTimer(UINT nTimerID);
 #endif
-										// タイマ
+										// Temporizador
 	afx_msg void OnHScroll(UINT nSBCode, UINT nPos, CScrollBar *pBar);
-										// 水平スクロール
+										// Desplazamiento horizontal
 	BOOL OnCommand(WPARAM wParam, LPARAM lParam);
-										// コマンド通知
+										// Notificacion de comando
 
 private:
 	enum CtrlType {
-		BtnLabel,						// ラベル(ボタンn)
-		BtnCombo,						// コンボボックス
-		BtnRapid,						// 連射スライダ
-		BtnValue						// 連射ラベル
+		BtnLabel,						// Etiqueta(Botonesn)
+		BtnCombo,						// Cuadro combinado
+		BtnRapid,						// Disparo rapidoスライダ
+		BtnValue						// Disparo rapidoEtiqueta
 	};
 	void FASTCALL OnDraw(CDC *pDC, BOOL *pButton, BOOL bForce);
-										// 描画メイン
+										// Dibujo principal
 	void FASTCALL OnSlider(int nButton);
-										// スライダ変更
+										// スライダModificacion
 	void FASTCALL OnSelChg(int nButton);
-										// コンボボックス変更
+										// Cambio en el cuadro combinado
 	void FASTCALL GetButtonDesc(const char *pszDesc, CString &strDesc);
-										// ボタン表示取得
+										// BotonesMostrarObtener
 	UINT FASTCALL GetControl(int nButton, CtrlType ctlType) const;
-										// コントロールID取得
+										// コントロールObtener ID
 	CPropertySheet *m_pSheet;
-										// 親シート
+										// Hoja padre
 	CInput *m_pInput;
 										// CInput
 	CRect m_rectLabel[12];
-										// ラベル位置
+										// Etiqueta位置
 	BOOL m_bButton[12];
-										// ボタン押下記憶
+										// Botones押下記憶
 #if _MFC_VER >= 0x700
 	UINT_PTR m_nTimerID;
 #else
 	UINT m_nTimerID;
 #endif
-										// タイマID
+										// ID del temporizador
 	static const UINT ControlTable[];
-										// コントロールテーブル
+										// Tabla de controles
 	static const int RapidTable[];
-										// 連射テーブル
+										// Disparo rapidoテーブル
 
 	DECLARE_MESSAGE_MAP()
-										// メッセージ マップあり
+										// Con mapa de mensajes
 };
 
 //===========================================================================
 //
-//	ジョイスティックプロパティシート
+//	ジョイスティックHoja de propiedades
 //
 //===========================================================================
 class CJoySheet : public CPropertySheet
 {
 public:
 	CJoySheet(CWnd *pParent);
-										// コンストラクタ
+										// Constructor
 	void FASTCALL SetParam(int nJoy, int nCombo, int nType[]);
-										// パラメータ設定
+										// パラメータConfiguracion
 	void FASTCALL InitSheet();
-										// シート初期化
+										// シートInicializacion
 	int FASTCALL GetAxes() const;
-										// 軸数取得
+										// Numero de ejesObtener
 	int FASTCALL GetButtons() const;
-										// ボタン数取得
+										// Botones数Obtener
 
 private:
 	CBtnSetPage m_BtnSet;
-										// ボタン設定ページ
+										// BotonesConfiguracionページ
 	CInput *m_pInput;
 										// CInput
 	int m_nJoy;
-										// ジョイスティック番号(0 or 1)
+										// Numero de joystick (0 o 1)
 	int m_nCombo;
-										// コンボボックス選択
+										// Cuadro combinado選択
 	int m_nType[PPI::PortMax];
-										// VM側タイプ選択
+										// Seleccion de tipo del lado VM
 	DIDEVCAPS m_DevCaps;
-										// デバイスCaps
+										// Caps del dispositivo
 };
 
 //===========================================================================
 //
-//	SASIページ
+//	Pagina SASI
 //
 //===========================================================================
 class CSASIPage : public CConfigPage
 {
 public:
 	CSASIPage();
-										// コンストラクタ
+										// Constructor
 	BOOL OnInitDialog();
-										// 初期化
+										// Inicializacion
 	void OnOK();
-										// 決定
+										// Aceptar
 	BOOL OnSetActive();
-										// ページアクティブ
+										// Pagina activa
 	int FASTCALL GetDrives(const Config *pConfig) const;
-										// SASIドライブ数取得
+										// SASINumero de unidadesObtener
 
 protected:
 	afx_msg void OnVScroll(UINT nSBCode, UINT nPos, CScrollBar* pBar);
-										// 縦スクロール
+										// Desplazamiento vertical
 	afx_msg void OnClick(NMHDR *pNMHDR, LRESULT *pResult);
-										// カラムクリック
+										// Clic en columna
 
 private:
 	void FASTCALL UpdateList();
-										// リストコントロール更新
+										// Actualizar control de lista
 	void FASTCALL CheckSASI(DWORD *pDisk);
-										// SASIファイルチェック
+										// SASIファイルVerificacion
 	void FASTCALL EnableControls(BOOL bEnable, BOOL bDrive = TRUE);
-										// コントロール状態変更
+										// Cambio de estado de los controles
 	SASI *m_pSASI;
 										// SASI
 	BOOL m_bInit;
-										// 初期化フラグ
+										// Flag de inicializacion
 	int m_nDrives;
-										// ドライブ数
+										// Numero de unidades
 	TCHAR m_szFile[16][FILEPATH_MAX];
-										// SASIハードディスクファイル名
+										// Nombre del archivo de disco duro SASI
 	CString m_strError;
-										// エラー文字列
+										// Cadena de error
 
 	DECLARE_MESSAGE_MAP()
-										// メッセージ マップあり
+										// Con mapa de mensajes
 };
 
 //===========================================================================
 //
-//	SxSIページ
+//	Pagina SxSI
 //
 //===========================================================================
 class CSxSIPage : public CConfigPage
 {
 public:
 	CSxSIPage();
-										// コンストラクタ
+										// Constructor
 	BOOL OnInitDialog();
-										// 初期化
+										// Inicializacion
 	BOOL OnSetActive();
-										// ページアクティブ
+										// Pagina activa
 	void OnOK();
-										// 決定
+										// Aceptar
 	int FASTCALL GetDrives(const Config *pConfig) const;
-										// SxSIドライブ数取得
+										// SxSINumero de unidadesObtener
 
 protected:
 	afx_msg void OnVScroll(UINT nSBCode, UINT nPos, CScrollBar* pBar);
-										// 縦スクロール
+										// Desplazamiento vertical
 	afx_msg void OnClick(NMHDR *pNMHDR, LRESULT *pResult);
-										// カラムクリック
+										// Clic en columna
 	afx_msg void OnCheck();
-										// チェックボックスクリック
+										// Verificacionボックスクリック
 
 private:
 	enum DevType {
-		DevSASI,						// SASI ハードディスクドライブ
-		DevSCSI,						// SCSI ハードディスクドライブ
-		DevMO,							// SCSI MOドライブ
-		DevInit,						// SCSI イニシエータ(ホスト)
-		DevNone							// デバイスなし
+		DevSASI,						// Disco duro SASIドライブ
+		DevSCSI,						// Disco duro SCSIドライブ
+		DevMO,							// Unidad MO SCSI
+		DevInit,						// SCSI Iniciador (Host)
+		DevNone							// Sin dispositivo
 	};
 	void FASTCALL UpdateList();
-										// リストコントロール更新
+										// Actualizar control de lista
 	void FASTCALL BuildMap();
-										// デバイスマップ作成
+										// Mapa de dispositivosCrear
 	int FASTCALL CheckSCSI(int nDrive);
-										// SCSIデバイスチェック
+										// Dispositivo SCSIVerificacion
 	void FASTCALL EnableControls(BOOL bEnable, BOOL bDrive = TRUE);
-										// コントロール状態変更
+										// Cambio de estado de los controles
 	BOOL m_bInit;
-										// 初期化フラグ
+										// Flag de inicializacion
 	int m_nSASIDrives;
-										// SASIドライブ数
+										// SASINumero de unidades
 	DevType m_DevMap[8];
-										// デバイスマップ
+										// Mapa de dispositivos
 	TCHAR m_szFile[6][FILEPATH_MAX];
-										// SCSIハードディスクファイル名
+										// Nombre del archivo de disco duro SCSI
 	CString m_strSASI;
-										// SASI HD文字列
+										// Cadena HD SASI
 	CString m_strMO;
-										// SCSI MO文字列
+										// Cadena MO SCSI
 	CString m_strInit;
-										// イニシエータ文字列
+										// Cadena del iniciador
 	CString m_strNone;
-										// n/aを示す文字列
+										// Cadena que indica n/a
 	CString m_strError;
-										// デバイスエラー文字列
+										// デバイスCadena de error
 	static const UINT ControlTable[];
-										// コントロールテーブル
+										// Tabla de controles
 
 	DECLARE_MESSAGE_MAP()
-										// メッセージ マップあり
+										// Con mapa de mensajes
 };
 
 //===========================================================================
 //
-//	SCSIページ
+//	Pagina SCSI
 //
 //===========================================================================
 class CSCSIPage : public CConfigPage
 {
 public:
 	CSCSIPage();
-										// コンストラクタ
+										// Constructor
 	BOOL OnInitDialog();
-										// 初期化
+										// Inicializacion
 	void OnOK();
-										// 決定
+										// Aceptar
 	int FASTCALL GetInterface(const Config *pConfig) const;
-										// インタフェース種別取得
+										// Tipo de interfazObtener
 
 protected:
 	afx_msg void OnVScroll(UINT nSBCode, UINT nPos, CScrollBar* pBar);
-										// 縦スクロール
+										// Desplazamiento vertical
 	afx_msg void OnClick(NMHDR *pNMHDR, LRESULT *pResult);
-										// カラムクリック
+										// Clic en columna
 	afx_msg void OnButton();
-										// ラジオボタン選択
+										// ラジオBotones選択
 	afx_msg void OnCheck();
-										// チェックボックスクリック
+										// Verificacionボックスクリック
 
 private:
 	enum DevType {
-		DevSCSI,						// SCSI ハードディスクドライブ
-		DevMO,							// SCSI MOドライブ
-		DevCD,							// SCSI CD-ROMドライブ
-		DevInit,						// SCSI イニシエータ(ホスト)
-		DevNone							// デバイスなし
+		DevSCSI,						// Disco duro SCSIドライブ
+		DevMO,							// Unidad MO SCSI
+		DevCD,							// CD-ROM SCSIドライブ
+		DevInit,						// SCSI Iniciador (Host)
+		DevNone							// Sin dispositivo
 	};
 	int FASTCALL GetIfCtrl() const;
-										// インタフェース種別取得(コントロールより)
+										// Tipo de interfazObtener(コントロールより)
 	BOOL FASTCALL CheckROM(int nType) const;
-										// ROMチェック
+										// ROMVerificacion
 	void FASTCALL UpdateList();
-										// リストコントロール更新
+										// Actualizar control de lista
 	void FASTCALL BuildMap();
-										// デバイスマップ作成
+										// Mapa de dispositivosCrear
 	int FASTCALL CheckSCSI(int nDrive);
-										// SCSIデバイスチェック
+										// Dispositivo SCSIVerificacion
 	void FASTCALL EnableControls(BOOL bEnable, BOOL bDrive = TRUE);
-										// コントロール状態変更
+										// Cambio de estado de los controles
 	SCSI *m_pSCSI;
-										// SCSIデバイス
+										// Dispositivo SCSI
 	BOOL m_bInit;
-										// 初期化フラグ
+										// Flag de inicializacion
 	int m_nDrives;
-										// ドライブ数
+										// Numero de unidades
 	BOOL m_bMOFirst;
-										// MO先頭フラグ
+										// Flag de primero MO
 	DevType m_DevMap[8];
-										// デバイスマップ
+										// Mapa de dispositivos
 	TCHAR m_szFile[5][FILEPATH_MAX];
-										// SCSIハードディスクファイル名
+										// Nombre del archivo de disco duro SCSI
 	CString m_strMO;
-										// SCSI MO文字列
+										// Cadena MO SCSI
 	CString m_strCD;
-										// SCSI CD文字列
+										// Cadena CD SCSI
 	CString m_strInit;
-										// イニシエータ文字列
+										// Cadena del iniciador
 	CString m_strNone;
-										// n/aを示す文字列
+										// Cadena que indica n/a
 	CString m_strError;
-										// デバイスエラー文字列
+										// デバイスCadena de error
 	static const UINT ControlTable[];
-										// コントロールテーブル
+										// Tabla de controles
 
 	DECLARE_MESSAGE_MAP()
-										// メッセージ マップあり
+										// Con mapa de mensajes
 };
 
 //===========================================================================
 //
-//	ポートページ
+//	Pagina de puertos
 //
 //===========================================================================
 class CPortPage : public CConfigPage
 {
 public:
 	CPortPage();
-										// コンストラクタ
+										// Constructor
 	BOOL OnInitDialog();
-										// 初期化
+										// Inicializacion
 	void OnOK();
-										// 決定
+										// Aceptar
 };
 
 //===========================================================================
 //
-//	MIDIページ
+//	Pagina MIDI
 //
 //===========================================================================
 class CMIDIPage : public CConfigPage
 {
 public:
 	CMIDIPage();
-										// コンストラクタ
+										// Constructor
 	BOOL OnInitDialog();
-										// 初期化
+										// Inicializacion
 	void OnOK();
-										// 決定
+										// Aceptar
 	void OnCancel();
-										// キャンセル
+										// Cancelar
 
 protected:
 	afx_msg void OnVScroll(UINT nSBCode, UINT nPos, CScrollBar *pBar);
-										// 縦スクロール
+										// Desplazamiento vertical
 	afx_msg void OnBIDClick();
-										// ボードIDクリック
+										// Clic en ID de placa
 
 private:
 	void FASTCALL EnableControls(BOOL bEnable);
-										// コントロール状態変更
+										// Cambio de estado de los controles
 	CMIDI *m_pMIDI;
-										// MIDIコンポーネント
+										// Componente MIDI
 	BOOL m_bEnableCtrl;
-										// コントロール状態
+										// Estado de los controles
 	int m_nInDelay;
-										// Inディレイ(ms)
+										// Retraso de entrada (ms)
 	int m_nOutDelay;
-										// Outディレイ(ms)
+										// Retraso de salida (ms)
 	static const UINT ControlTable[];
-										// コントロールテーブル
+										// Tabla de controles
 
 	DECLARE_MESSAGE_MAP()
-										// メッセージ マップあり
+										// Con mapa de mensajes
 };
 
 //===========================================================================
 //
-//	改造ページ
+//	Pagina de modificaciones
 //
 //===========================================================================
 class CAlterPage : public CConfigPage
 {
 public:
 	CAlterPage();
-										// コンストラクタ
+										// Constructor
 	BOOL OnInitDialog();
-										// 初期化
+										// Inicializacion
 	BOOL OnKillActive();
-										// ページ移動
+										// Moverse de pagina
 	BOOL FASTCALL HasParity(const Config *pConfig) const;
-										// SASIパリティ機能チェック
+										// SASIパリティ機能Verificacion
 
 protected:
 	void DoDataExchange(CDataExchange *pDX);
-										// データ交換
+										// Intercambio de datos
 
 private:
 	BOOL m_bInit;
-										// 初期化
+										// Inicializacion
 	BOOL m_bParity;
-										// パリティあり
+										// Con paridad
 };
 
 //===========================================================================
 //
-//	レジュームページ
+//	Pagina de reanudacion (Resume)
 //
 //===========================================================================
 class CResumePage : public CConfigPage
 {
 public:
 	CResumePage();
-										// コンストラクタ
+										// Constructor
 	BOOL OnInitDialog();
-										// 初期化
+										// Inicializacion
 
 protected:
 	void DoDataExchange(CDataExchange *pDX);
-										// データ交換
+										// Intercambio de datos
 };
 
 //===========================================================================
 //
-//	TrueKey入力ダイアログ
+//	TrueKeyDialogo de entrada
 //
 //===========================================================================
 class CTKeyDlg : public CDialog
 {
 public:
 	CTKeyDlg(CWnd *pParent);
-										// コンストラクタ
+										// Constructor
 	BOOL OnInitDialog();
-										// 初期化
+										// Inicializacion
 	void OnOK();
 										// OK
 	void OnCancel();
-										// キャンセル
+										// Cancelar
 	int m_nTarget;
-										// ターゲットキー
+										// Tecla objetivo
 	int m_nKey;
-										// 割り当てキー
+										// Asignacionキー
 
 protected:
 	afx_msg void OnPaint();
-										// 描画
+										// Dibujar
 	afx_msg UINT OnGetDlgCode();
-										// ダイアログコード取得
+										// ダイアログコードObtener
 #if _MFC_VER >= 0x700
 	afx_msg void OnTimer(UINT_PTR nTimerID);
-										// タイマ
+										// Temporizador
 #else
 	afx_msg void OnTimer(UINT nTimerID);
-										// タイマ
+										// Temporizador
 #endif
 	afx_msg void OnRButtonDown(UINT nFlags, CPoint point);
-										// 右クリック
+										// Clic derecho
 
 private:
 	void FASTCALL OnDraw(CDC *pDC);
-										// 描画メイン
+										// Dibujo principal
 #if _MFC_VER >= 0x700
 	UINT_PTR m_nTimerID;
-										// タイマID
+										// ID del temporizador
 #else
 	UINT m_nTimerID;
-										// タイマID
+										// ID del temporizador
 #endif
 	BYTE m_KeyState[0x100];
-										// VKキー状態
+										// Estado de teclas VK
 	CTKey *m_pTKey;
 										// TrueKey
 	CRect m_rectGuide;
-										// ガイド矩形
+										// Rectangulo guia
 	CString m_strGuide;
-										// ガイド文字列
+										// Cadena guia
 	CRect m_rectAssign;
-										// キー割り当て矩形
+										// キーAsignacion矩形
 	CString m_strAssign;
-										// キー割り当て文字列
+										// キーAsignacion文字列
 	CRect m_rectKey;
-										// キー矩形
+										// Rectangulo de tecla
 	CString m_strKey;
-										// キー文字列
+										// Cadena de tecla
 
 	DECLARE_MESSAGE_MAP()
-										// メッセージ マップあり
+										// Con mapa de mensajes
 };
 
 //===========================================================================
 //
-//	TrueKeyページ
+//	Pagina TrueKey
 //
 //===========================================================================
 class CTKeyPage : public CConfigPage
 {
 public:
 	CTKeyPage();
-										// コンストラクタ
+										// Constructor
 	BOOL OnInitDialog();
-										// 初期化
+										// Inicializacion
 	void OnOK();
-										// 決定
+										// Aceptar
 
 protected:
 	afx_msg void OnSelChange();
-										// コンボボックス変更
+										// Cambio en el cuadro combinado
 	afx_msg void OnClick(NMHDR *pNMHDR, LRESULT *pResult);
-										// カラムクリック
+										// Clic en columna
 	afx_msg void OnRClick(NMHDR *pNMHDR, LRESULT *pResult);
-										// カラム右クリック
+										// Clic derecho en columna
 
 private:
 	void FASTCALL EnableControls(BOOL bEnable);
-										// コントロール状態変更
+										// Cambio de estado de los controles
 	void FASTCALL UpdateReport();
-										// レポート更新
+										// レポートActualizacion
 	BOOL m_bEnableCtrl;
-										// コントロール有効フラグ
+										// Flag de activacion de controles
 	CInput *m_pInput;
 										// CInput
 	CTKey *m_pTKey;
 										// TrueKey
 	int m_nKey[0x73];
-										// 編集中の変換テーブル
+										// Editar中のConversionテーブル
 	static const UINT ControlTable[];
-										// コントロールテーブル
+										// Tabla de controles
 
 	DECLARE_MESSAGE_MAP()
-										// メッセージ マップあり
+										// Con mapa de mensajes
 };
 
 //===========================================================================
 //
-//	その他ページ
+//	Pagina de miscelanea
 //
 //===========================================================================
 class CMiscPage : public CConfigPage
@@ -1061,60 +1061,60 @@ public:
 	void OnBuscarFolder();
 	void OnOK();	
 	void DoDataExchange(CDataExchange *pDX);
-										// データ交換
+										// Intercambio de datos
 										
 DECLARE_MESSAGE_MAP()
 };
 
 //===========================================================================
 //
-//	コンフィグプロパティシート
+//	ConfiguracionHoja de propiedades
 //
 //===========================================================================
 class CConfigSheet : public CPropertySheet
 {
 public:
 	CConfigSheet(CWnd *pParent);
-										// コンストラクタ
+										// Constructor
 	Config *m_pConfig;
-										// 設定データ
+										// Datos de configuracion
 	CConfigPage* FASTCALL SearchPage(DWORD dwID) const;
-										// ページ検索
+										// ページBusqueda
 
 protected:
 	afx_msg int OnCreate(LPCREATESTRUCT lpCreateStruct);
-										// ウィンドウ作成
+										// ウィンドウCrear
 	afx_msg void OnDestroy();
-										// ウィンドウ削除
+										// ウィンドウEliminar
 #if _MFC_VER >= 0x700
 	afx_msg void OnTimer(UINT_PTR nTimerID);
 #else
 	afx_msg void OnTimer(UINT nTimerID);
 #endif
-										// タイマ
+										// Temporizador
 
 private:
 	CFrmWnd *m_pFrmWnd;
-										// フレームウィンドウ
+										// Ventana de marco (Frame window)
 #if _MFC_VER >= 0x700
 	UINT_PTR m_nTimerID;
 #else
 	UINT m_nTimerID;
 #endif
-										// タイマID
+										// ID del temporizador
 
 	CBasicPage m_Basic;
-										// 基本
+										// Basico
 	CSoundPage m_Sound;
-										// サウンド
+										// Sonido
 	CVolPage m_Vol;
-										// 音量
+										// Volumen
 	CKbdPage m_Kbd;
-										// キーボード
+										// Teclado
 	CMousePage m_Mouse;
-										// マウス
+										// Mouse
 	CJoyPage m_Joy;
-										// ジョイスティック
+										// Joystick
 	CSASIPage m_SASI;
 										// SASI
 	CSxSIPage m_SxSI;
@@ -1122,7 +1122,7 @@ private:
 	CSCSIPage m_SCSI;
 										// SCSI
 	CPortPage m_Port;
-										// ポート
+										// Puertos
 	CMIDIPage m_MIDI;
 										// MIDI
 	CAlterPage m_Alter;
@@ -1132,10 +1132,10 @@ private:
 	CTKeyPage m_TKey;
 										// TrueKey
 	CMiscPage m_Misc;
-										// その他
+										// Otros
 
 	DECLARE_MESSAGE_MAP()
-										// メッセージ マップあり
+										// Con mapa de mensajes
 };
 
 #endif	// mfc_cfg_h

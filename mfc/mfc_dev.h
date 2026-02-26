@@ -1,11 +1,11 @@
-//---------------------------------------------------------------------------
-//
-//	X68000 EMULATOR "XM6"
-//
-//	Copyright (C) 2001-2006 ＰＩ．(ytanaka@ipc-tokai.or.jp)
-//	[ MFC サブウィンドウ(デバイス) ]
-//
-//---------------------------------------------------------------------------
+  //---------------------------------------------------------------------------
+  //
+  //	EMULADOR X68000 "XM6"
+  //
+  //	Copyright (C) 2001-2006 PI.(ytanaka@ipc-tokai.or.jp)
+  //	[ Subventana MFC (Dispositivo) ]
+  //
+  //---------------------------------------------------------------------------
 
 #if defined(_WIN32)
 
@@ -21,382 +21,382 @@
 #include "scsi.h"
 #include "mfc_sub.h"
 
-//===========================================================================
-//
-//	MFPウィンドウ
-//
-//===========================================================================
+  //===========================================================================
+  //
+  //	Ventana MFP
+  //
+  //===========================================================================
 class CMFPWnd : public CSubTextWnd
 {
 public:
 	CMFPWnd();
-										// コンストラクタ
+ 										 // Constructor
 	void FASTCALL Setup();
-										// セットアップ
+ 										 // Configuracion
 
 private:
 	void FASTCALL SetupInt(int x, int y);
-										// セットアップ(割り込み)
+ 										 // Configuracion (Interrupcion)
 	void FASTCALL SetupGPIP(int x, int y);
-										// セットアップ(GPIP)
+ 										 // Configuracion (GPIP)
 	void FASTCALL SetupTimer(int x, int y);
-										// セットアップ(タイマ)
+ 										 // Configuracion (Temporizador)
 	static LPCTSTR DescInt[];
-										// 割り込みテーブル
+ 										 // Tabla de interrupciones
 	static LPCTSTR DescGPIP[];
-										// GPIPテーブル
+ 										 // Tabla GPIP
 	static LPCTSTR DescTimer[];
-										// タイマテーブル
+ 										 // Tabla de temporizador
 	MFP *m_pMFP;
-										// MFP
+ 										 // MFP
 	MFP::mfp_t m_mfp;
-										// MFP内部データ
+ 										 // Datos internos MFP
 };
 
-//===========================================================================
-//
-//	DMACウィンドウ
-//
-//===========================================================================
+  //===========================================================================
+  //
+  //	Ventana DMAC
+  //
+  //===========================================================================
 class CDMACWnd : public CSubTextWnd
 {
 public:
 	CDMACWnd();
-										// コンストラクタ
+ 										 // Constructor
 	void FASTCALL Setup();
-										// セットアップ
+ 										 // Configuracion
 
 private:
 	void FASTCALL SetupCh(int nCh, DMAC::dma_t *pDMA, LPCTSTR lpszTitle);
-										// セットアップ(チャネル)
+ 										 // Configuracion (Canal)
 	DMAC *m_pDMAC;
-										// DMAC
+ 										 // DMAC
 };
 
-//===========================================================================
-//
-//	CRTCウィンドウ
-//
-//===========================================================================
+  //===========================================================================
+  //
+  //	Ventana CRTC
+  //
+  //===========================================================================
 class CCRTCWnd : public CSubTextWnd
 {
 public:
 	CCRTCWnd();
-										// コンストラクタ
+ 										 // Constructor
 	void FASTCALL Setup();
-										// セットアップ
+ 										 // Configuracion
 
 private:
 	CRTC *m_pCRTC;
-										// CRTC
+ 										 // CRTC
 };
 
-//===========================================================================
-//
-//	VCウィンドウ
-//
-//===========================================================================
+  //===========================================================================
+  //
+  //	Ventana VC
+  //
+  //===========================================================================
 class CVCWnd : public CSubTextWnd
 {
 public:
 	CVCWnd();
-										// コンストラクタ
+ 										 // Constructor
 	void FASTCALL Setup();
-										// セットアップ
+ 										 // Configuracion
 
 private:
 	VC *m_pVC;
-										// VC
+ 										 // VC
 };
 
-//===========================================================================
-//
-//	RTCウィンドウ
-//
-//===========================================================================
+  //===========================================================================
+  //
+  //	Ventana RTC
+  //
+  //===========================================================================
 class CRTCWnd : public CSubTextWnd
 {
 public:
 	CRTCWnd();
-										// コンストラクタ
+ 										 // Constructor
 	void FASTCALL Setup();
-										// セットアップ
+ 										 // Configuracion
 
 private:
 	RTC* m_pRTC;
-										// FDC
+ 										 // FDC
 };
 
-//===========================================================================
-//
-//	OPMウィンドウ
-//
-//===========================================================================
+  //===========================================================================
+  //
+  //	Ventana OPM
+  //
+  //===========================================================================
 class COPMWnd : public CSubTextWnd
 {
 public:
 	COPMWnd();
-										// コンストラクタ
+ 										 // Constructor
 	void FASTCALL Setup();
-										// セットアップ
+ 										 // Configuracion
 
 private:
 	OPMIF *m_pOPM;
-										// OPM
+ 										 // OPM
 };
 
-//===========================================================================
-//
-//	キーボードウィンドウ
-//
-//===========================================================================
+  //===========================================================================
+  //
+  //	Ventana de teclado
+  //
+  //===========================================================================
 class CKeyboardWnd : public CSubTextWnd
 {
 public:
 	CKeyboardWnd();
-										// コンストラクタ
+ 										 // Constructor
 	void FASTCALL Setup();
-										// セットアップ
+ 										 // Configuracion
 
 private:
 	static LPCTSTR DescLED[];
-										// LEDテーブル
+ 										 // Tabla de LED
 	Keyboard *m_pKeyboard;
-										// キーボード
+ 										 // Teclado
 };
 
-//===========================================================================
-//
-//	FDDウィンドウ
-//
-//===========================================================================
+  //===========================================================================
+  //
+  //	Ventana FDD
+  //
+  //===========================================================================
 class CFDDWnd : public CSubTextWnd
 {
 public:
 	CFDDWnd();
-										// コンストラクタ
+ 										 // Constructor
 	void FASTCALL Setup();
-										// セットアップ
+ 										 // Configuracion
 
 private:
 	void FASTCALL SetupFDD(int nDrive, int x);
-										// セットアップサブ
+ 										 // Configuracion sub
 	BOOL FASTCALL SetupTrack();
-										// セットアップトラック
+ 										 // Configuracion de pista
 	static LPCTSTR DescTable[];
-										// 説明テーブル
+ 										 // Tabla de descripcion
 	FDD *m_pFDD;
-										// FDD
+ 										 // FDD
 	FDC *m_pFDC;
-										// FDC
+ 										 // FDC
 	DWORD m_dwDrive;
-										// アクセスドライブ
+ 										 // Unidad de acceso
 	DWORD m_dwHD;
-										// アクセスヘッド
+ 										 // Cabezal de acceso
 	DWORD m_CHRN[4];
-										// アクセスCHRN
+ 										 // CHRN de acceso
 };
 
-//===========================================================================
-//
-//	FDCウィンドウ
-//
-//===========================================================================
+  //===========================================================================
+  //
+  //	Ventana FDC
+  //
+  //===========================================================================
 class CFDCWnd : public CSubTextWnd
 {
 public:
 	CFDCWnd();
-										// コンストラクタ
+ 										 // Constructor
 	void FASTCALL Setup();
-										// セットアップ
+ 										 // Configuracion
 
 private:
 	void FASTCALL SetupGeneral(int x, int y);
-										// セットアップ(一般)
+ 										 // Configuracion (General)
 	void FASTCALL SetupParam(int x, int y);
-										// セットアップ(パラメータ)
+ 										 // Configuracion (Parametro)
 	void FASTCALL SetupSR(int x, int y);
-										// セットアップ(ステータスレジスタ)
+ 										 // Configuracion (Registro de estado)
 	static LPCTSTR SRDesc[8];
-										// 文字列(ステータスレジスタ)
+ 										 // Cadena (Registro de estado)
 	void FASTCALL SetupST0(int x, int y);
-										// セットアップ(ST0)
+ 										 // Configuracion (ST0)
 	static LPCTSTR ST0Desc[8];
-										// 文字列(ST0)
+ 										 // Cadena (ST0)
 	void FASTCALL SetupST1(int x, int y);
-										// セットアップ(ST1)
+ 										 // Configuracion (ST1)
 	static LPCTSTR ST1Desc[8];
-										// 文字列(ST1)
+ 										 // Cadena (ST1)
 	void FASTCALL SetupST2(int x, int y);
-										// セットアップ(ST2)
+ 										 // Configuracion (ST2)
 	static LPCTSTR ST2Desc[8];
-										// 文字列(ST2)
+ 										 // Cadena (ST2)
 	void FASTCALL SetupSub(int x, int y, LPCTSTR lpszTitle, LPCTSTR *lpszDesc,
-					DWORD data);		// セットアップ(サブ)
+ 					DWORD data);		 // Configuracion (Sub)
 	FDC *m_pFDC;
-										// FDC
+ 										 // FDC
 	const FDC::fdc_t *m_pWork;
-										// FDC内部データ
+ 										 // Datos internos FDC
 };
 
-//===========================================================================
-//
-//	SCCウィンドウ
-//
-//===========================================================================
+  //===========================================================================
+  //
+  //	Ventana SCC
+  //
+  //===========================================================================
 class CSCCWnd : public CSubTextWnd
 {
 public:
 	CSCCWnd();
-										// コンストラクタ
+ 										 // Constructor
 	void FASTCALL Setup();
-										// セットアップ
+ 										 // Configuracion
 
 private:
 	void FASTCALL SetupSCC(SCC::ch_t *pCh, int x, int y);
-										// セットアップ(チャネル)
+ 										 // Configuracion (Canal)
 	SCC *m_pSCC;
-										// SCC
+ 										 // SCC
 	static LPCTSTR DescTable[];
-										// 文字列テーブル
+ 										 // Tabla de cadenas
 };
 
-//===========================================================================
-//
-//	Cynthiaウィンドウ
-//
-//===========================================================================
+  //===========================================================================
+  //
+  //	Ventana Cynthia
+  //
+  //===========================================================================
 class CCynthiaWnd : public CSubTextWnd
 {
 public:
 	CCynthiaWnd();
-										// コンストラクタ
+ 										 // Constructor
 	void FASTCALL Setup();
-										// セットアップ
+ 										 // Configuracion
 
 private:
 	Sprite *m_pSprite;
-										// CYNTHIA
+ 										 // CYNTHIA
 };
 
-//===========================================================================
-//
-//	SASIウィンドウ
-//
-//===========================================================================
+  //===========================================================================
+  //
+  //	Ventana SASI
+  //
+  //===========================================================================
 class CSASIWnd : public CSubTextWnd
 {
 public:
 	CSASIWnd();
-										// コンストラクタ
+ 										 // Constructor
 	void FASTCALL Setup();
-										// セットアップ
+ 										 // Configuracion
 
 private:
 	void FASTCALL SetupCmd(int x, int y);
-										// セットアップ(コマンド)
+ 										 // Configuracion (Comando)
 	void FASTCALL SetupCtrl(int x, int y);
-										// セットアップ(コントローラ)
+ 										 // Configuracion (Controlador)
 	void FASTCALL SetupDrive(int x, int y);
-										// セットアップ(ドライブ)
+ 										 // Configuracion (Unidad)
 	void FASTCALL SetupCache(int x, int y);
-										// セットアップ(キャッシュ)
+ 										 // Configuracion (Cache)
 	SASI *m_pSASI;
-										// SASI
+ 										 // SASI
 	SASI::sasi_t m_sasi;
-										// SASI内部データ
+ 										 // Datos internos SASI
 };
 
-//===========================================================================
-//
-//	MIDIウィンドウ
-//
-//===========================================================================
+  //===========================================================================
+  //
+  //	Ventana MIDI
+  //
+  //===========================================================================
 class CMIDIWnd : public CSubTextWnd
 {
 public:
 	CMIDIWnd();
-										// コンストラクタ
+ 										 // Constructor
 	void FASTCALL Setup();
-										// セットアップ
+ 										 // Configuracion
 
 private:
 	void FASTCALL SetupCtrl(int x, int y);
-										// セットアップ(コントロール)
+ 										 // Configuracion (Control)
 	static LPCTSTR DescCtrl[];
-										// 文字列テーブル(コントロール)
+ 										 // Tabla de cadenas (Control)
 	void FASTCALL SetupInt(int x, int y);
-										// セットアップ(割り込み)
+ 										 // Configuracion (Interrupcion)
 	static LPCTSTR DescInt[];
-										// 文字列テーブル(割り込み)
+ 										 // Tabla de cadenas (Interrupcion)
 	void FASTCALL SetupTrans(int x, int y);
-										// セットアップ(送信)
+ 										 // Configuracion (Transmision)
 	static LPCTSTR DescTrans[];
-										// 文字列テーブル(送信)
+ 										 // Tabla de cadenas (Transmision)
 	void FASTCALL SetupRecv(int x, int y);
-										// セットアップ(受信)
+ 										 // Configuracion (Recepcion)
 	static LPCTSTR DescRecv[];
-										// 文字列テーブル(受信)
+ 										 // Tabla de cadenas (Recepcion)
 	void FASTCALL SetupRT(int x, int y);
-										// セットアップ(リアルタイム送信)
+ 										 // Configuracion (Transmision en tiempo real)
 	static LPCTSTR DescRT[];
-										// 文字列テーブル(リアルタイム送信)
+ 										 // Tabla de cadenas (Transmision en tiempo real)
 	void FASTCALL SetupRR(int x, int y);
-										// セットアップ(リアルタイム受信)
+ 										 // Configuracion (Recepcion en tiempo real)
 	static LPCTSTR DescRR[];
-										// 文字列テーブル(リアルタイム受信)
+ 										 // Tabla de cadenas (Recepcion en tiempo real)
 	void FASTCALL SetupCount(int x, int y);
-										// セットアップ(カウンタ)
+ 										 // Configuracion (Contador)
 	static LPCTSTR DescCount[];
-										// 文字列テーブル(カウンタ)
+ 										 // Tabla de cadenas (Contador)
 	void FASTCALL SetupHunter(int x, int y);
-										// セットアップ(アドレスハンタ)
+ 										 // Configuracion (Address Hunter)
 	static LPCTSTR DescHunter[];
-										// 文字列テーブル(アドレスハンタ)
+ 										 // Tabla de cadenas (Address Hunter)
 	void FASTCALL SetupFSK(int x, int y);
-										// セットアップ(FSK)
+ 										 // Configuracion (FSK)
 	static LPCTSTR DescFSK[];
-										// 文字列テーブル(FSK)
+ 										 // Tabla de cadenas (FSK)
 	void FASTCALL SetupGPIO(int x, int y);
-										// セットアップ(GPIO)
+ 										 // Configuracion (GPIO)
 	static LPCTSTR DescGPIO[];
-										// 文字列テーブル(GPIO)
+ 										 // Tabla de cadenas (GPIO)
 
 	MIDI *m_pMIDI;
-										// MIDI
+ 										 // MIDI
 	MIDI::midi_t m_midi;
-										// MIDI内部データ
+ 										 // Datos internos MIDI
 };
 
-//===========================================================================
-//
-//	SCSIウィンドウ
-//
-//===========================================================================
+  //===========================================================================
+  //
+  //	Ventana SCSI
+  //
+  //===========================================================================
 class CSCSIWnd : public CSubTextWnd
 {
 public:
 	CSCSIWnd();
-										// コンストラクタ
+ 										 // Constructor
 	void FASTCALL Setup();
-										// セットアップ
+ 										 // Configuracion
 
 private:
 	void FASTCALL SetupCmd(int x, int y);
-										// セットアップ(コマンド)
+ 										 // Configuracion (Comando)
 	void FASTCALL SetupCtrl(int x, int y);
-										// セットアップ(コントローラ)
+ 										 // Configuracion (Controlador)
 	void FASTCALL SetupDrive(int x, int y);
-										// セットアップ(ドライブ)
+ 										 // Configuracion (Unidad)
 	void FASTCALL SetupReg(int x, int y);
-										// セットアップ(レジスタ)
+ 										 // Configuracion (Registro)
 	void FASTCALL SetupCDB(int x, int y);
-										// セットアップ(CDB)
+ 										 // Configuracion (CDB)
 	SCSI *m_pSCSI;
-										// SCSI
+ 										 // SCSI
 	SCSI::scsi_t m_scsi;
-										// SCSI内部データ
+ 										 // Datos internos SCSI
 };
 
-#endif	// mfc_dev_h
-#endif	// _WIN32
+ #endif	 // mfc_dev_h
+ #endif	 // _WIN32

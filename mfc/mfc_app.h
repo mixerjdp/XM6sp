@@ -1,9 +1,9 @@
 //---------------------------------------------------------------------------
 //
-//	X68000 EMULATOR "XM6"
+//	EMULADOR X68000 "XM6"
 //
 //	Copyright (C) 2001-2006 ＰＩ．(ytanaka@ipc-tokai.or.jp)
-//	[ MFC アプリケーション ]
+//	[ Aplicacion MFC ]
 //
 //---------------------------------------------------------------------------
 
@@ -14,37 +14,37 @@
 
 //===========================================================================
 //
-//	アプリケーション
+//	Aplicacion
 //
 //===========================================================================
 class CApp : public CWinApp
 {
 public:
 	CApp();
-										// コンストラクタ
+										// Constructor
 	BOOL InitInstance();
-										// インスタンス初期化
+										// Inicializacion de instancia
 	BOOL ExitInstance();
-										// インスタンス終了
+										// Fin de la instancia
 
 private:
 	void ReplaceForwardSlashWithBackslash(LPTSTR str);
 	void RemoveDoubleQuotes(LPTSTR str);
 
 	BOOL FASTCALL CheckMutex();
-										// Mutexチェック
+										// Verificacion de Mutex
 	BOOL FASTCALL CheckEnvironment();
-										// 環境チェック
+										// Verificacion de entorno
 	void FASTCALL SendCmd();
-										// コマンド送信
+										// Envio de comando
 	HWND FASTCALL SearchXM6Wnd();
-										// XM6ウィンドウ検索
+										// XM6Busqueda de ventana
 	static BOOL CALLBACK EnumXM6Proc(HWND hWnd, LPARAM lParam);
-										// ウィンドウ列挙コールバック
+										// Callback de enumeracion de ventanas
 	HANDLE m_hMutex;
-										// Mutexハンドル
+										// Manejador (Handle) de Mutex
 	HMODULE m_hUser32;
-										// USER32.DLLハンドル
+										// Manejador (Handle) de USER32.DLL
 };
 
 #endif	// mfc_app_h

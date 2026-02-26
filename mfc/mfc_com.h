@@ -1,79 +1,79 @@
-//---------------------------------------------------------------------------
-//
-//	X68000 EMULATOR "XM6"
-//
-//	Copyright (C) 2001-2005 ＰＩ．(ytanaka@ipc-tokai.or.jp)
-//	[ MFC コンポーネント ]
-//
-//---------------------------------------------------------------------------
+  //---------------------------------------------------------------------------
+  //
+  //	EMULADOR X68000 "XM6"
+  //
+  //	Copyright (C) 2001-2005 PI.(ytanaka@ipc-tokai.or.jp)
+  //	[ Componente MFC ]
+  //
+  //---------------------------------------------------------------------------
 
 #if defined(_WIN32)
 
 #if !defined(mfc_com_h)
 #define mfc_com_h
 
-//===========================================================================
-//
-//	コンポーネント
-//
-//===========================================================================
+  //===========================================================================
+  //
+  //	Componente
+  //
+  //===========================================================================
 class CComponent : public CObject
 {
 public:
-	// 基本ファンクション
+ 	 // Funciones basicas
 	CComponent(CFrmWnd *pFrmWnd);
-										// コンストラクタ
+ 										 // Constructor
 	virtual ~CComponent();
-										// デストラクタ
+ 										 // Destructor
 	virtual BOOL FASTCALL Init();
-										// 初期化
+ 										 // Inicializacion
 	virtual void FASTCALL Cleanup();
-										// クリーンアップ
+ 										 // Limpieza
 	virtual void FASTCALL Enable(BOOL bEnable)	{ m_bEnable = bEnable; }
-										// 動作制御
+ 										 // Control de operacion
 	BOOL FASTCALL IsEnable() const		{ return m_bEnable; }
-										// 動作状態を取得
+ 										 // Obtener estado de operacion
 	virtual BOOL FASTCALL Save(Fileio *pFio, int nVer);
-										// セーブ
+ 										 // Guardar
 	virtual BOOL FASTCALL Load(Fileio *pFio, int nVer);
-										// ロード
+ 										 // Cargar
 	virtual void FASTCALL ApplyCfg(const Config *pConfig);
-										// 設定適用
+ 										 // Aplicar configuracion
 #if !defined(NDEBUG)
 		void AssertValid() const;
-										// 診断
-#endif	// NDEBUG
+ 										 // Diagnostico
+ #endif	 // NDEBUG
 
-	// プロパティ
+ 	 // Propiedades
 	DWORD FASTCALL GetID() const		{ return m_dwID; }
-										// ID取得
+ 										 // Obtener ID
 	void FASTCALL GetDesc(CString& strDesc) const;
-										// 名称取得
+ 										 // Obtener nombre
 
-	// コンポーネント管理
+ 	 // Gestion de componentes
 	CComponent* FASTCALL SearchComponent(DWORD dwID);
-										// コンポーネント検索
+ 										 // Buscar componente
 	void FASTCALL AddComponent(CComponent *pNewComponent);
-										// コンポーネント追加
+ 										 // Anadir componente
 	CComponent* FASTCALL GetPrevComponent() const	{ return m_pPrev; }
-										// 前のコンポーネントを取得
+ 										 // Obtener el componente anterior
 	CComponent* FASTCALL GetNextComponent() const	{ return m_pNext; }
-										// 次のコンポーネントを取得
+ 										 // Obtener el componente siguiente
 
 protected:
 	CFrmWnd *m_pFrmWnd;
-										// フレームウィンドウ
+ 										 // Ventana de marco
 	DWORD m_dwID;
-										// コンポーネントID
+ 										 // ID de componente
 	BOOL m_bEnable;
-										// 有効フラグ
+ 										 // Flag de activado
 	CString m_strDesc;
-										// 名称
+ 										 // Nombre
 	CComponent *m_pPrev;
-										// 前のコンポーネント
+ 										 // Componente anterior
 	CComponent *m_pNext;
-										// 次のコンポーネント
+ 										 // Componente siguiente
 };
 
-#endif	// mfc_com_h
-#endif	// _WIN32
+ #endif	 // mfc_com_h
+ #endif	 // _WIN32

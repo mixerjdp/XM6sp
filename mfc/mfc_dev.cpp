@@ -1,11 +1,11 @@
-//---------------------------------------------------------------------------
-//
-//	X68000 EMULATOR "XM6"
-//
-//	Copyright (C) 2001-2006 ＰＩ．(ytanaka@ipc-tokai.or.jp)
-//	[ MFC サブウィンドウ(デバイス) ]
-//
-//---------------------------------------------------------------------------
+  //---------------------------------------------------------------------------
+  //
+  //	EMULADOR X68000 "XM6"
+  //
+  //	Copyright (C) 2001-2006 PI.(ytanaka@ipc-tokai.or.jp)
+  //	[ Subventana MFC (Dispositivo) ]
+  //
+  //---------------------------------------------------------------------------
 
 #if defined(_WIN32)
 
@@ -33,57 +33,57 @@
 #include "mfc_res.h"
 #include "mfc_dev.h"
 
-//===========================================================================
-//
-//	MFPウィンドウ
-//
-//===========================================================================
+  //===========================================================================
+  //
+  //	Ventana MFP
+  //
+  //===========================================================================
 
-//---------------------------------------------------------------------------
-//
-//	コンストラクタ
-//
-//---------------------------------------------------------------------------
+  //---------------------------------------------------------------------------
+  //
+  //	Constructor
+  //
+  //---------------------------------------------------------------------------
 CMFPWnd::CMFPWnd()
 {
-	// ウィンドウパラメータ定義
+ 	 // Definicion de parametros de ventana
 	m_dwID = MAKEID('M', 'F', 'P', ' ');
 	::GetMsg(IDS_SWND_MFP, m_strCaption);
 	m_nWidth = 55;
 	m_nHeight = 34;
 
-	// MFP取得
+ 	 // Obtener MFP
 	m_pMFP = (MFP*)::GetVM()->SearchDevice(MAKEID('M', 'F', 'P', ' '));
 	ASSERT(m_pMFP);
 }
 
-//---------------------------------------------------------------------------
-//
-//	セットアップ
-//
-//---------------------------------------------------------------------------
+  //---------------------------------------------------------------------------
+  //
+  //	Configuracion
+  //
+  //---------------------------------------------------------------------------
 void FASTCALL CMFPWnd::Setup()
 {
 	ASSERT(this);
 
-	// クリア
+ 	 // Limpiar
 	Clear();
 
-	// データ取得
+ 	 // Obtener datos
 	ASSERT(m_pMFP);
 	m_pMFP->GetMFP(&m_mfp);
 
-	// セットアップ
+ 	 // Configuracion
 	SetupInt(0, 0);
 	SetupGPIP(0, 19);
 	SetupTimer(0, 29);
 }
 
-//---------------------------------------------------------------------------
-//
-//	セットアップ(割り込み)
-//
-//---------------------------------------------------------------------------
+  //---------------------------------------------------------------------------
+  //
+  //	Configuracion (Interrupcion)
+  //
+  //---------------------------------------------------------------------------
 void FASTCALL CMFPWnd::SetupInt(int x, int y)
 {
 	ASSERT(this);
@@ -92,7 +92,7 @@ void FASTCALL CMFPWnd::SetupInt(int x, int y)
 
 	int i;
 
-	// ガイド
+ 	 // Guia
 	SetString(x, y, _T("(High)"));
 	SetString(x + 24, y, _T("IER"));
 	SetString(x + 33, y, _T("IPR"));
@@ -100,9 +100,9 @@ void FASTCALL CMFPWnd::SetupInt(int x, int y)
 	SetString(x + 50, y, _T("IMR"));
 	y++;
 
-	// ループ
+ 	 // Bucle
 	for (i=0; i<0x10; i++) {
-		// 名称文字列
+ 		 // Cadena de nombre
 		if (m_mfp.iidx == i) {
 			Reverse(TRUE);
 			SetString(x, y, DescInt[i]);
@@ -112,43 +112,43 @@ void FASTCALL CMFPWnd::SetupInt(int x, int y)
 			SetString(x, y, DescInt[i]);
 		}
 
-		// リクエスト
+ 		 // Solicitud
 		if (m_mfp.ireq[i]) {
 			SetString(x + 15, y, _T("Request"));
 		}
 
-		// IER
+ 		 // IER
 		if (m_mfp.ier[i]) {
 			SetString(x + 23, y, _T("Enable"));
 		}
 
-		// IPR
+ 		 // IPR
 		if (m_mfp.ipr[i]) {
 			SetString(x + 31, y, _T("Pending"));
 		}
 
-		// ISR
+ 		 // ISR
 		if (m_mfp.isr[i]) {
 			SetString(x + 39, y, _T("InService"));
 		}
 
-		// IMR
+ 		 // IMR
 		if (!m_mfp.imr[i]) {
 			SetString(x + 50, y, _T("Mask"));
 		}
 
-		// 次へ
+ 		 // Siguiente
 		y++;
 	}
 
 	SetString(x, y, _T("(Low)"));
 }
 
-//---------------------------------------------------------------------------
-//
-//	割り込みテーブル
-//
-//---------------------------------------------------------------------------
+  //---------------------------------------------------------------------------
+  //
+  //	Tabla de interrupciones
+  //
+  //---------------------------------------------------------------------------
 LPCTSTR CMFPWnd::DescInt[] = {
 	_T("CRTC H-SYNC"),
 	_T("CRTC Raster"),
@@ -168,11 +168,11 @@ LPCTSTR CMFPWnd::DescInt[] = {
 	_T("RTC ALARM")
 };
 
-//---------------------------------------------------------------------------
-//
-//	セットアップ(GPIP)
-//
-//---------------------------------------------------------------------------
+  //---------------------------------------------------------------------------
+  //
+  //	Configuracion (GPIP)
+  //
+  //---------------------------------------------------------------------------
 void FASTCALL CMFPWnd::SetupGPIP(int x, int y)
 {
 	int i;
@@ -186,13 +186,13 @@ void FASTCALL CMFPWnd::SetupGPIP(int x, int y)
 	ASSERT(x >= 0);
 	ASSERT(y >= 0);
 
-	// データ取得
+ 	 // Obtener datos
 	dwGPDR = m_mfp.gpdr;
 	dwAER = m_mfp.aer;
 	dwDDR = m_mfp.ddr;
 	dwBER = m_mfp.ber;
 
-	// ガイド
+ 	 // Guia
 	SetString(x, y, _T("No."));
 	SetString(x + 6, y, _T("Description"));
 	SetString(x + 23, y, _T("GPIP"));
@@ -201,16 +201,16 @@ void FASTCALL CMFPWnd::SetupGPIP(int x, int y)
 	SetString(x + 51, y, _T("BER"));
 	y++;
 
-	// ループ
+ 	 // Bucle
 	for (i=0; i<8; i++) {
-		// ナンバ表示
+ 		 // Mostrar numero
 		strText.Format(_T("GPIP%1d"), 7 - i);
 		SetString(x, y, strText);
 
-		// ディスクリプション
+ 		 // Descripcion
 		SetString(x + 6, y, DescGPIP[i]);
 
-		// GPIP
+ 		 // GPIP
 		if (dwGPDR & 0x80) {
 			SetString(x + 24, y, _T("1"));
 		}
@@ -218,7 +218,7 @@ void FASTCALL CMFPWnd::SetupGPIP(int x, int y)
 			SetString(x + 24, y, _T("0"));
 		}
 
-		// AER
+ 		 // AER
 		if (dwAER & 0x80) {
 			SetString(x + 32, y, _T("0->1"));
 		}
@@ -226,7 +226,7 @@ void FASTCALL CMFPWnd::SetupGPIP(int x, int y)
 			SetString(x + 32, y, _T("1->0"));
 		}
 
-		// DDR
+ 		 // DDR
 		if (dwDDR & 0x80) {
 			SetString(x + 41, y, _T("Output"));
 		}
@@ -234,7 +234,7 @@ void FASTCALL CMFPWnd::SetupGPIP(int x, int y)
 			SetString(x + 41, y, _T("Input"));
 		}
 
-		// BER
+ 		 // BER
 		if (dwBER & 0x80) {
 			SetString(x + 52, y, _T("1"));
 		}
@@ -250,11 +250,11 @@ void FASTCALL CMFPWnd::SetupGPIP(int x, int y)
 	}
 }
 
-//---------------------------------------------------------------------------
-//
-//	GPIPテーブル
-//
-//---------------------------------------------------------------------------
+  //---------------------------------------------------------------------------
+  //
+  //	Tabla GPIP
+  //
+  //---------------------------------------------------------------------------
 LPCTSTR CMFPWnd::DescGPIP[] = {
 	_T("CRTC H-SYNC"),
 	_T("CRTC Raster"),
@@ -266,11 +266,11 @@ LPCTSTR CMFPWnd::DescGPIP[] = {
 	_T("RTC ALARM")
 };
 
-//---------------------------------------------------------------------------
-//
-//	セットアップ(タイマ)
-//
-//---------------------------------------------------------------------------
+  //---------------------------------------------------------------------------
+  //
+  //	Configuracion (Temporizador)
+  //
+  //---------------------------------------------------------------------------
 void FASTCALL CMFPWnd::SetupTimer(int x, int y)
 {
 	int i;
@@ -288,18 +288,18 @@ void FASTCALL CMFPWnd::SetupTimer(int x, int y)
 	y++;
 
 	for (i=0; i<4; i++) {
-		// タイマー名称
+ 		 // Nombre de temporizador
 		strText.Format(_T("Timer-%c"), _T('A') + i);
 		SetString(0, y, strText);
 
-		// モード
+ 		 // Modo
 		SetString(9, y, DescTimer[ m_mfp.tcr[i] & 0x0f ]);
 
-		// カウント
+ 		 // Conteo
 		strText.Format(_T("%3d"), m_mfp.tir[i]);
 		SetString(33, y, strText);
 
-		// リロード
+ 		 // Recarga
 		strText.Format(_T("%3d"), m_mfp.tdr[i]);
 		SetString(46, y, strText);
 
@@ -307,11 +307,11 @@ void FASTCALL CMFPWnd::SetupTimer(int x, int y)
 	}
 }
 
-//---------------------------------------------------------------------------
-//
-//	タイマテーブル
-//
-//---------------------------------------------------------------------------
+  //---------------------------------------------------------------------------
+  //
+  //	Tabla de temporizador
+  //
+  //---------------------------------------------------------------------------
 LPCTSTR CMFPWnd::DescTimer[] = {
 	_T("Stop"),
 	_T("Delay (1us)"),
@@ -331,35 +331,35 @@ LPCTSTR CMFPWnd::DescTimer[] = {
 	_T("Pulse-Width (50us)")
 };
 
-//===========================================================================
-//
-//	DMACウィンドウ
-//
-//===========================================================================
+  //===========================================================================
+  //
+  //	Ventana DMAC
+  //
+  //===========================================================================
 
-//---------------------------------------------------------------------------
-//
-//	コンストラクタ
-//
-//---------------------------------------------------------------------------
+  //---------------------------------------------------------------------------
+  //
+  //	Constructor
+  //
+  //---------------------------------------------------------------------------
 CDMACWnd::CDMACWnd()
 {
-	// ウィンドウパラメータ定義
+ 	 // Definicion de parametros de ventana
 	m_dwID = MAKEID('D', 'M', 'A', 'C');
 	::GetMsg(IDS_SWND_DMAC, m_strCaption);
 	m_nWidth = 90;
 	m_nHeight = 34;
 
-	// DMAC取得
+ 	 // Obtener DMAC
 	m_pDMAC = (DMAC*)::GetVM()->SearchDevice(MAKEID('D', 'M', 'A', 'C'));
 	ASSERT(m_pDMAC);
 }
 
-//---------------------------------------------------------------------------
-//
-//	セットアップ
-//
-//---------------------------------------------------------------------------
+  //---------------------------------------------------------------------------
+  //
+  //	Configuracion
+  //
+  //---------------------------------------------------------------------------
 void FASTCALL CDMACWnd::Setup()
 {
 	int i;
@@ -400,10 +400,10 @@ void FASTCALL CDMACWnd::Setup()
 		NULL
 	};
 
-	// クリア
+ 	 // Limpiar
 	Clear();
 
-	// ガイド表示
+ 	 // Mostrar guia
 	for (i=0; ; i++) {
 		if (!lpszGuide[i]) {
 			break;
@@ -413,28 +413,28 @@ void FASTCALL CDMACWnd::Setup()
 
 	ASSERT(m_pDMAC);
 
-	// チャネル0 (FDC)
+ 	 // Canal 0 (FDC)
 	m_pDMAC->GetDMA(0, &dma);
 	SetupCh(0, &dma, _T("#0 (FDC)"));
 
-	// チャネル1 (HDC)
+ 	 // Canal 1 (HDC)
 	m_pDMAC->GetDMA(1, &dma);
 	SetupCh(1, &dma, _T("#1 (HDC)"));
 
-	// チャネル2 (USER)
+ 	 // Canal 2 (USUARIO)
 	m_pDMAC->GetDMA(2, &dma);
 	SetupCh(2, &dma, _T("#2 (USER)"));
 
-	// チャネル3 (ADPCM)
+ 	 // Canal 3 (ADPCM)
 	m_pDMAC->GetDMA(3, &dma);
 	SetupCh(3, &dma, _T("#3 (ADPCM)"));
 }
 
-//---------------------------------------------------------------------------
-//
-//	セットアップ(チャネル)
-//
-//---------------------------------------------------------------------------
+  //---------------------------------------------------------------------------
+  //
+  //	Configuracion (Canal)
+  //
+  //---------------------------------------------------------------------------
 void FASTCALL CDMACWnd::SetupCh(int nCh, DMAC::dma_t *pDMA, LPCTSTR lpszTitle)
 {
 	int x;
@@ -445,15 +445,15 @@ void FASTCALL CDMACWnd::SetupCh(int nCh, DMAC::dma_t *pDMA, LPCTSTR lpszTitle)
 	ASSERT(pDMA);
 	ASSERT(lpszTitle);
 
-	// x,y算出
+ 	 // Calcular x,y
 	x = (nCh * 18) + 20;
 	y = 0;
 
-	// タイトル表示
+ 	 // Mostrar titulo
 	SetString(x, y, lpszTitle);
 	y += 2;
 
-	// XRM
+ 	 // XRM
 	switch (pDMA->xrm) {
 		case 0:
 			string = _T("Burst");
@@ -474,7 +474,7 @@ void FASTCALL CDMACWnd::SetupCh(int nCh, DMAC::dma_t *pDMA, LPCTSTR lpszTitle)
 	SetString(x, y, string);
 	y++;
 
-	// デバイスタイプ
+ 	 // Tipo de dispositivo
 	switch (pDMA->dtyp) {
 		case 0:
 			string = _T("68000");
@@ -495,7 +495,7 @@ void FASTCALL CDMACWnd::SetupCh(int nCh, DMAC::dma_t *pDMA, LPCTSTR lpszTitle)
 	SetString(x, y, string);
 	y++;
 
-	// ポートサイズ
+ 	 // Tamano de puerto
 	if (pDMA->dps) {
 		string = _T("16bit");
 	}
@@ -505,7 +505,7 @@ void FASTCALL CDMACWnd::SetupCh(int nCh, DMAC::dma_t *pDMA, LPCTSTR lpszTitle)
 	SetString(x, y, string);
 	y++;
 
-	// PCL
+ 	 // PCL
 	switch (pDMA->pcl) {
 		case 0:
 			string = _T("Status");
@@ -526,7 +526,7 @@ void FASTCALL CDMACWnd::SetupCh(int nCh, DMAC::dma_t *pDMA, LPCTSTR lpszTitle)
 	SetString(x, y, string);
 	y++;
 
-	// ディレクション
+ 	 // Direccion
 	if (pDMA->dir) {
 		string = _T("Device->Memory");
 	}
@@ -536,7 +536,7 @@ void FASTCALL CDMACWnd::SetupCh(int nCh, DMAC::dma_t *pDMA, LPCTSTR lpszTitle)
 	SetString(x, y, string);
 	y++;
 
-	// DONE入力
+ 	 // Entrada DONE
 	if (pDMA->btd) {
 		string = _T("Next Block");
 	}
@@ -546,7 +546,7 @@ void FASTCALL CDMACWnd::SetupCh(int nCh, DMAC::dma_t *pDMA, LPCTSTR lpszTitle)
 	SetString(x, y, string);
 	y++;
 
-	// オペランドサイズ
+ 	 // Tamano de operando
 	switch (pDMA->size) {
 		case 0:
 			string = _T("Pack (8bit)");
@@ -567,7 +567,7 @@ void FASTCALL CDMACWnd::SetupCh(int nCh, DMAC::dma_t *pDMA, LPCTSTR lpszTitle)
 	SetString(x, y, string);
 	y++;
 
-	// チェインモード
+ 	 // Modo encadenado
 	switch (pDMA->chain) {
 		case 0:
 			string = _T("No Chain");
@@ -588,7 +588,7 @@ void FASTCALL CDMACWnd::SetupCh(int nCh, DMAC::dma_t *pDMA, LPCTSTR lpszTitle)
 	SetString(x, y, string);
 	y++;
 
-	// リクエストジェネレーション
+ 	 // Generacion de solicitud
 	switch (pDMA->reqg) {
 		case 0:
 			string = _T("Auto Req.(Limit)");
@@ -609,7 +609,7 @@ void FASTCALL CDMACWnd::SetupCh(int nCh, DMAC::dma_t *pDMA, LPCTSTR lpszTitle)
 	SetString(x, y, string);
 	y++;
 
-	// チャネルアクティブ
+ 	 // Canal activo
 	if (pDMA->act) {
 		string = _T("Active");
 	}
@@ -619,7 +619,7 @@ void FASTCALL CDMACWnd::SetupCh(int nCh, DMAC::dma_t *pDMA, LPCTSTR lpszTitle)
 	SetString(x, y, string);
 	y++;
 
-	// コンティニュー
+ 	 // Continuar
 	if (pDMA->cnt) {
 		string = _T("Continue");
 	}
@@ -629,7 +629,7 @@ void FASTCALL CDMACWnd::SetupCh(int nCh, DMAC::dma_t *pDMA, LPCTSTR lpszTitle)
 	SetString(x, y, string);
 	y++;
 
-	// ホールト
+ 	 // Halt
 	if (pDMA->hlt) {
 		string = _T("Halt");
 	}
@@ -639,7 +639,7 @@ void FASTCALL CDMACWnd::SetupCh(int nCh, DMAC::dma_t *pDMA, LPCTSTR lpszTitle)
 	SetString(x, y, string);
 	y++;
 
-	// チャネルトランスファコンプリート
+ 	 // Transferencia de canal completada
 	if (pDMA->coc) {
 		string = _T("Complete");
 	}
@@ -649,7 +649,7 @@ void FASTCALL CDMACWnd::SetupCh(int nCh, DMAC::dma_t *pDMA, LPCTSTR lpszTitle)
 	SetString(x, y, string);
 	y++;
 
-	// ブロックトランスファコンプリート
+ 	 // Transferencia de bloque completada
 	if (pDMA->boc) {
 		string = _T("Complete");
 	}
@@ -659,7 +659,7 @@ void FASTCALL CDMACWnd::SetupCh(int nCh, DMAC::dma_t *pDMA, LPCTSTR lpszTitle)
 	SetString(x, y, string);
 	y++;
 
-	// 割り込み
+ 	 // Interrupcion
 	if (pDMA->intr) {
 		string = _T("Enable");
 	}
@@ -669,17 +669,17 @@ void FASTCALL CDMACWnd::SetupCh(int nCh, DMAC::dma_t *pDMA, LPCTSTR lpszTitle)
 	SetString(x, y, string);
 	y++;
 
-	// ノーマル割り込み
+ 	 // Interrupcion normal
 	string.Format(_T("Vector $%02X"), pDMA->niv);
 	SetString(x, y, string);
 	y++;
 
-	// エラー割り込み
+ 	 // Interrupcion de error
 	string.Format(_T("Vector $%02X"), pDMA->eiv);
 	SetString(x, y, string);
 	y++;
 
-	// エラービット
+ 	 // Bit de error
 	if (pDMA->err) {
 		string = _T("Error");
 	}
@@ -689,27 +689,27 @@ void FASTCALL CDMACWnd::SetupCh(int nCh, DMAC::dma_t *pDMA, LPCTSTR lpszTitle)
 	SetString(x, y, string);
 	y++;
 
-	// エラーコード
+ 	 // Codigo de error
 	string.Format(_T("$%02X"), pDMA->ecode);
 	SetString(x, y, string);
 	y++;
 
-	// データ転送タイプ
+ 	 // Tipo de transferencia de datos
 	string.Format(_T("%d"), pDMA->type);
 	SetString(x, y, string);
 	y++;
 
-	// メモリトランスファカウンタ
+ 	 // Contador de transferencia de memoria
 	string.Format(_T("$%04X"), pDMA->mtc);
 	SetString(x, y, string);
 	y++;
 
-	// メモリアドレス
+ 	 // Direccion de memoria
 	string.Format(_T("$%06X"), pDMA->mar);
 	SetString(x, y, string);
 	y++;
 
-	// メモリアドレスレジスタカウント
+ 	 // Conteo de registro de direccion de memoria
 	switch (pDMA->mac) {
 		case 0:
 			string = _T("HOLD");
@@ -730,12 +730,12 @@ void FASTCALL CDMACWnd::SetupCh(int nCh, DMAC::dma_t *pDMA, LPCTSTR lpszTitle)
 	SetString(x, y, string);
 	y++;
 
-	// デバイスアドレス
+ 	 // Direccion de dispositivo
 	string.Format(_T("$%06X"), pDMA->dar);
 	SetString(x, y, string);
 	y++;
 
-	// デバイスアドレスレジスタカウント
+ 	 // Conteo de registro de direccion de dispositivo
 	switch (pDMA->dac) {
 		case 0:
 			string = _T("HOLD");
@@ -756,22 +756,22 @@ void FASTCALL CDMACWnd::SetupCh(int nCh, DMAC::dma_t *pDMA, LPCTSTR lpszTitle)
 	SetString(x, y, string);
 	y++;
 
-	// ベーストランスファカウンタ
+ 	 // Contador de transferencia base
 	string.Format(_T("$%04X"), pDMA->btc);
 	SetString(x, y, string);
 	y++;
 
-	// ベースアドレス
+ 	 // Direccion base
 	string.Format(_T("$%06X"), pDMA->bar);
 	SetString(x, y, string);
 	y++;
 
-	// バースト時間
+ 	 // Tiempo de rafaga (Burst)
 	string.Format(_T("%d Clock"), 1 << (pDMA->bt + 4));
 	SetString(x, y, string);
 	y++;
 
-	// バス比率
+ 	 // Ratio de bus
 	switch (pDMA->br) {
 		case 0:
 			string = _T("50%");
@@ -789,50 +789,50 @@ void FASTCALL CDMACWnd::SetupCh(int nCh, DMAC::dma_t *pDMA, LPCTSTR lpszTitle)
 	SetString(x, y, string);
 	y++;
 
-	// プライオリティ
+ 	 // Prioridad
 	string.Format(_T("$%02X"), pDMA->cp);
 	SetString(x, y, string);
 	y++;
 
-	// スタートカウント
+ 	 // Conteo de inicio
 	string.Format(_T("%d"), pDMA->startcnt);
 	SetString(x, y, string);
 	y++;
 
-	// エラーカウント
+ 	 // Conteo de errores
 	string.Format(_T("%d"), pDMA->errorcnt);
 	SetString(x, y, string);
 }
 
-//===========================================================================
-//
-//	CRTCウィンドウ
-//
-//===========================================================================
+  //===========================================================================
+  //
+  //	Ventana CRTC
+  //
+  //===========================================================================
 
-//---------------------------------------------------------------------------
-//
-//	コンストラクタ
-//
-//---------------------------------------------------------------------------
+  //---------------------------------------------------------------------------
+  //
+  //	Constructor
+  //
+  //---------------------------------------------------------------------------
 CCRTCWnd::CCRTCWnd()
 {
-	// ウィンドウパラメータ定義
+ 	 // Definicion de parametros de ventana
 	m_dwID = MAKEID('C', 'R', 'T', 'C');
 	::GetMsg(IDS_SWND_CRTC, m_strCaption);
 	m_nWidth = 54;
 	m_nHeight = 17;
 
-	// CRTC取得
+ 	 // Obtener CRTC
 	m_pCRTC = (CRTC*)::GetVM()->SearchDevice(MAKEID('C', 'R', 'T', 'C'));
 	ASSERT(m_pCRTC);
 }
 
-//---------------------------------------------------------------------------
-//
-//	セットアップ
-//
-//---------------------------------------------------------------------------
+  //---------------------------------------------------------------------------
+  //
+  //	Configuracion
+  //
+  //---------------------------------------------------------------------------
 void FASTCALL CCRTCWnd::Setup()
 {
 	CString string;
@@ -842,21 +842,21 @@ void FASTCALL CCRTCWnd::Setup()
 
 	ASSERT(this);
 
-	// クリア
+ 	 // Limpiar
 	Clear();
 	y = 0;
 
-	// 内部データ及び同期周波数を取得
+ 	 // Obtener datos internos y frecuencia de sincronizacion
 	ASSERT(m_pCRTC);
 	m_pCRTC->GetCRTC(&crtc);
 	m_pCRTC->GetHVHz(&h, &v);
 
-	// 垂直倍率x2の場合は、半分に減らす
+ 	 // En caso de aumento vertical x2, reducir a la mitad
 	if (crtc.v_mul == 2 && !crtc.lowres) {
 		crtc.v_dots >>= 1;
 	}
 
-	// 水平側
+ 	 // Lado horizontal
 	SetString(0, y, "Horizontal");
 	string.Format("%2d.%02d kHz", h / 100, h % 100);
 	SetString(16, y, string);
@@ -870,7 +870,7 @@ void FASTCALL CCRTCWnd::Setup()
 	SetString(0 + 24, y, string);
 	y++;
 
-	// 水平(時定数)
+ 	 // Horizontal (Constante de tiempo)
 	SetString(0, y, "Sync");
 	string.Format("%10d ns", crtc.h_sync);
 	SetString(0 + 12, y, string);
@@ -888,7 +888,7 @@ void FASTCALL CCRTCWnd::Setup()
 	SetString(0 + 12, y, string);
 	y++;
 
-	// ラスタ
+ 	 // Raster
 	SetString(0, y, "Raster (All)");
 	string.Format("%4d", crtc.raster_count);
 	SetString(0 + 21, y, string);
@@ -902,7 +902,7 @@ void FASTCALL CCRTCWnd::Setup()
 	SetString(0 + 21, y, string);
 	y++;
 
-	// テキストメモリ、グラフィック実画面
+ 	 // Memoria de texto, pantalla real grafica
 	SetString(0, y, "Text VRAM");
 	if (crtc.tmem) {
 		SetString(0 + 19, y, "Buffer");
@@ -920,7 +920,7 @@ void FASTCALL CCRTCWnd::Setup()
 	}
 	y++;
 
-	// スクロール
+ 	 // Desplazamiento (Scroll)
 	SetString(0, y, "Text Scroll X");
 	string.Format("%4d", crtc.text_scrlx);
 	SetString(0 + 21, y, string);
@@ -941,7 +941,7 @@ void FASTCALL CCRTCWnd::Setup()
 	string.Format("%4d", crtc.grp_scrlx[3]);
 	SetString(0 + 21, y, string);
 
-	// 垂直側
+ 	 // Lado vertical
 	x = 29;
 	y = 0;
 	SetString(x, y, "Vertical");
@@ -957,7 +957,7 @@ void FASTCALL CCRTCWnd::Setup()
 	SetString(x + 24, y, string);
 	y++;
 
-	// 水平(時定数)
+ 	 // Horizontal (Constante de tiempo)
 	SetString(x, y, "Sync");
 	string.Format("%10d ns", crtc.v_sync * crtc.h_sync);
 	SetString(x + 12, y, string);
@@ -975,7 +975,7 @@ void FASTCALL CCRTCWnd::Setup()
 	SetString(x + 12, y, string);
 	y++;
 
-	// フラグ
+ 	 // Flags
 	SetString(x, y, "Sync  Flag");
 	if (crtc.v_disp) {
 		SetString(x + 22, y, "Off");
@@ -997,7 +997,7 @@ void FASTCALL CCRTCWnd::Setup()
 	SetString(x + 15, y, string);
 	y++;
 
-	// グラフィックメモリ、グラフィック色
+ 	 // Memoria grafica, color grafico
 	SetString(x, y, "Graphic VRAM");
 	if (crtc.gmem) {
 		SetString(x + 19, y, "Buffer");
@@ -1025,7 +1025,7 @@ void FASTCALL CCRTCWnd::Setup()
 	}
 	y++;
 
-	// スクロール
+ 	 // Desplazamiento (Scroll)
 	SetString(x, y, "Text Scroll Y");
 	string.Format("%4d", crtc.text_scrly);
 	SetString(x + 21, y, string);
@@ -1047,35 +1047,35 @@ void FASTCALL CCRTCWnd::Setup()
 	SetString(x + 21, y, string);
 }
 
-//===========================================================================
-//
-//	VCウィンドウ
-//
-//===========================================================================
+  //===========================================================================
+  //
+  //	Ventana VC
+  //
+  //===========================================================================
 
-//---------------------------------------------------------------------------
-//
-//	コンストラクタ
-//
-//---------------------------------------------------------------------------
+  //---------------------------------------------------------------------------
+  //
+  //	Constructor
+  //
+  //---------------------------------------------------------------------------
 CVCWnd::CVCWnd()
 {
-	// ウィンドウパラメータ定義
+ 	 // Definicion de parametros de ventana
 	m_dwID = MAKEID('V', 'C', ' ', ' ');
 	::GetMsg(IDS_SWND_VC, m_strCaption);
 	m_nWidth = 54;
 	m_nHeight = 12;
 
-	// VC取得
+ 	 // Obtener VC
 	m_pVC = (VC*)::GetVM()->SearchDevice(MAKEID('V', 'C', ' ', ' '));
 	ASSERT(m_pVC);
 }
 
-//---------------------------------------------------------------------------
-//
-//	セットアップ
-//
-//---------------------------------------------------------------------------
+  //---------------------------------------------------------------------------
+  //
+  //	Configuracion
+  //
+  //---------------------------------------------------------------------------
 void FASTCALL CVCWnd::Setup()
 {
 	VC::vc_t vc;
@@ -1084,17 +1084,17 @@ void FASTCALL CVCWnd::Setup()
 	int y;
 	int i;
 
-	// クリア
+ 	 // Limpiar
 	Clear();
 
-	// ビデオコントローラからデータ取得
+ 	 // Obtener datos del controlador de video
 	m_pVC->GetVC(&vc);
 
-	// 左半分
+ 	 // Mitad izquierda
 	x = 0;
 	y = 0;
 
-	// サイズ
+ 	 // Tamano
 	SetString(x, y, "Graphic Size");
 	if (vc.siz) {
 		SetString(x + 16, y, "1024x1024");
@@ -1104,7 +1104,7 @@ void FASTCALL CVCWnd::Setup()
 	}
 	y++;
 
-	// Ys
+ 	 // Ys
 	SetString(x, y, "Ys");
 	if (vc.ys) {
 		SetString(x + 23, y, "On");
@@ -1114,7 +1114,7 @@ void FASTCALL CVCWnd::Setup()
 	}
 	y++;
 
-	// AH
+ 	 // AH
 	SetString(x, y, "AH");
 	if (vc.ah) {
 		SetString(x + 23, y, "On");
@@ -1124,7 +1124,7 @@ void FASTCALL CVCWnd::Setup()
 	}
 	y++;
 
-	// VHT
+ 	 // VHT
 	SetString(x, y, "VHT");
 	if (vc.vht) {
 		SetString(x + 23, y, "On");
@@ -1134,7 +1134,7 @@ void FASTCALL CVCWnd::Setup()
 	}
 	y++;
 
-	// EXON
+ 	 // EXON
 	SetString(x, y, "EXON");
 	if (vc.exon) {
 		SetString(x + 23, y, "On");
@@ -1144,7 +1144,7 @@ void FASTCALL CVCWnd::Setup()
 	}
 	y++;
 
-	// SON
+ 	 // SON
 	SetString(x, y, "BG/Sprite");
 	if (vc.son) {
 		SetString(x + 18, y, "Display");
@@ -1154,7 +1154,7 @@ void FASTCALL CVCWnd::Setup()
 	}
 	y++;
 
-	// TON
+ 	 // TON
 	SetString(x, y, "Text");
 	if (vc.ton) {
 		SetString(x + 18, y, "Display");
@@ -1164,7 +1164,7 @@ void FASTCALL CVCWnd::Setup()
 	}
 	y++;
 
-	// GON
+ 	 // GON
 	SetString(x, y, "Graphic(1024)");
 	if (vc.gon) {
 		SetString(x + 18, y, "Display");
@@ -1174,7 +1174,7 @@ void FASTCALL CVCWnd::Setup()
 	}
 	y++;
 
-	// GS
+ 	 // GS
 	for (i=0; i<4; i++) {
 		string.Format("Graphic(512-Pri%1d)", i);
 		SetString(x, y, string);
@@ -1187,11 +1187,11 @@ void FASTCALL CVCWnd::Setup()
 		y++;
 	}
 
-	// 右半分
+ 	 // Mitad derecha
 	x = 29;
 	y = 0;
 
-	// 色
+ 	 // Color
 	SetString(x, y, "Graphic Color");
 	switch (vc.col) {
 		case 0:
@@ -1212,7 +1212,7 @@ void FASTCALL CVCWnd::Setup()
 	}
 	y++;
 
-	// H/P
+ 	 // H/P
 	SetString(x, y, "H/P");
 	if (vc.hp) {
 		SetString(x + 23, y, "On");
@@ -1222,7 +1222,7 @@ void FASTCALL CVCWnd::Setup()
 	}
 	y++;
 
-	// B/P
+ 	 // B/P
 	SetString(x, y, "B/P");
 	if (vc.bp) {
 		SetString(x + 23, y, "On");
@@ -1232,7 +1232,7 @@ void FASTCALL CVCWnd::Setup()
 	}
 	y++;
 
-	// G/G
+ 	 // G/G
 	SetString(x, y, "G/G");
 	if (vc.gg) {
 		SetString(x + 23, y, "On");
@@ -1242,7 +1242,7 @@ void FASTCALL CVCWnd::Setup()
 	}
 	y++;
 
-	// G/T
+ 	 // G/T
 	SetString(x, y, "G/T");
 	if (vc.gt) {
 		SetString(x + 23, y, "On");
@@ -1252,25 +1252,25 @@ void FASTCALL CVCWnd::Setup()
 	}
 	y++;
 
-	// SP
+ 	 // SP
 	SetString(x, y, "BG/Sprite");
 	string.Format("Pri%1d", vc.sp);
 	SetString(x + 21, y, string);
 	y++;
 
-	// TX
+ 	 // TX
 	SetString(x, y, "Text");
 	string.Format("Pri%1d", vc.tx);
 	SetString(x + 21, y, string);
 	y++;
 
-	// GR
+ 	 // GR
 	SetString(x, y, "Graphic(All)");
 	string.Format("Pri%1d", vc.gr);
 	SetString(x + 21, y, string);
 	y++;
 
-	// GP
+ 	 // GP
 	for (i=0; i<4; i++) {
 		string.Format("Graphic(512-Pri%1d)", i);
 		SetString(x, y, string);
@@ -1280,35 +1280,35 @@ void FASTCALL CVCWnd::Setup()
 	}
 }
 
-//===========================================================================
-//
-//	RTCウィンドウ
-//
-//===========================================================================
+  //===========================================================================
+  //
+  //	Ventana RTC
+  //
+  //===========================================================================
 
-//---------------------------------------------------------------------------
-//
-//	コンストラクタ
-//
-//---------------------------------------------------------------------------
+  //---------------------------------------------------------------------------
+  //
+  //	Constructor
+  //
+  //---------------------------------------------------------------------------
 CRTCWnd::CRTCWnd()
 {
-	// ウィンドウパラメータ定義
+ 	 // Definicion de parametros de ventana
 	m_dwID = MAKEID('R', 'T', 'C', ' ');
 	::GetMsg(IDS_SWND_RTC, m_strCaption);
 	m_nWidth = 25;
 	m_nHeight = 17;
 
-	// RTC取得
+ 	 // Obtener RTC
 	m_pRTC = (RTC*)::GetVM()->SearchDevice(MAKEID('R', 'T', 'C', ' '));
 	ASSERT(m_pRTC);
 }
 
-//---------------------------------------------------------------------------
-//
-//	セットアップ
-//
-//---------------------------------------------------------------------------
+  //---------------------------------------------------------------------------
+  //
+  //	Configuracion
+  //
+  //---------------------------------------------------------------------------
 void FASTCALL CRTCWnd::Setup()
 {
 	RTC::rtc_t rtc;
@@ -1326,34 +1326,34 @@ void FASTCALL CRTCWnd::Setup()
 		"Always L"
 	};
 
-	// クリア
+ 	 // Limpiar
 	Clear();
 	x = 17;
 	y = 0;
 
-	// データ取得
+ 	 // Obtener datos
 	ASSERT(m_pRTC);
 	m_pRTC->GetRTC(&rtc);
 
-	// 時間
+ 	 // Tiempo
 	SetString(0, y, "Time");
 	string.Format("%02d:%02d:%02d", rtc.hour, rtc.min, rtc.sec);
 	SetString(x, y, string);
 	y++;
 
-	// 日付
+ 	 // Fecha
 	SetString(0, y, "Date");
 	string.Format("%02d/%02d/%02d", rtc.year, rtc.month, rtc.day);
 	SetString(x, y, string);
 	y++;
 
-	// 曜日
+ 	 // Dia de la semana
 	SetString(0, y, "Day of Week");
 	string.Format("%d", rtc.week);
 	SetString(x + 7, y, string);
 	y++;
 
-	// タイマーイネーブル
+ 	 // Habilitar temporizador
 	SetString(0, y, "Timer Enable");
 	if (rtc.timer_en) {
 		SetString(x + 2, y, "Enable");
@@ -1363,7 +1363,7 @@ void FASTCALL CRTCWnd::Setup()
 	}
 	y++;
 
-	// アラームイネーブル
+ 	 // Habilitar alarma
 	SetString(0, y, "Alarm Enable");
 	if (rtc.alarm_en) {
 		SetString(x + 2, y, "Enable");
@@ -1373,7 +1373,7 @@ void FASTCALL CRTCWnd::Setup()
 	}
 	y++;
 
-	// 1Hzイネーブル
+ 	 // Habilitar 1Hz
 	SetString(0, y, "1Hz   Enable");
 	if (rtc.alarm_1hz) {
 		SetString(x + 2, y, "Enable");
@@ -1383,7 +1383,7 @@ void FASTCALL CRTCWnd::Setup()
 	}
 	y++;
 
-	// 16Hzイネーブル
+ 	 // Habilitar 16Hz
 	SetString(0, y, "16Hz  Enable");
 	if (rtc.alarm_16hz) {
 		SetString(x + 2, y, "Enable");
@@ -1393,25 +1393,25 @@ void FASTCALL CRTCWnd::Setup()
 	}
 	y++;
 
-	// CLKOUTセレクト
+ 	 // Seleccion CLKOUT
 	SetString(0, y, "CLKOUT");
 	ASSERT(rtc.clkout <= 7);
 	SetString(x, y, ClkoutTable[rtc.clkout]);
 	y++;
 
-	// アラーム時間
+ 	 // Tiempo de alarma
 	SetString(0, y, "Alarm Time");
 	string.Format("%02d:%02d", rtc.alarm_hour, rtc.alarm_min);
 	SetString(x + 3, y, string);
 	y++;
 
-	// アラーム時間
+ 	 // Tiempo de alarma
 	SetString(0, y, "Alarm Day");
 	string.Format("%02d(%1d)", rtc.alarm_day, rtc.alarm_week);
 	SetString(x + 3, y, string);
 	y++;
 
-	// アラーム
+ 	 // Alarma
 	SetString(0, y, "Alarm Cmp");
 	if (rtc.alarm) {
 		SetString(x + 7, y, "Z");
@@ -1421,7 +1421,7 @@ void FASTCALL CRTCWnd::Setup()
 	}
 	y++;
 
-	// アラームOUT
+ 	 // Salida (OUT) de alarma
 	SetString(0, y, "ALARM OUT");
 	if (rtc.alarmout) {
 		SetString(x + 7, y, "H");
@@ -1431,7 +1431,7 @@ void FASTCALL CRTCWnd::Setup()
 	}
 	y++;
 
-	// 12h,24hフラグ
+ 	 // Flag 12h,24h
 	SetString(0, y, "12h/24h");
 	if (rtc.fullhour) {
 		SetString(x + 5, y, "24h");
@@ -1441,13 +1441,13 @@ void FASTCALL CRTCWnd::Setup()
 	}
 	y++;
 
-	// 閏年カウンタ
+ 	 // Contador de ano bisiesto
 	SetString(0, y, "Leap Count");
 	string.Format("%1d", rtc.leap);
 	SetString(x + 7, y, string);
 	y++;
 
-	// 1Hz信号
+ 	 // Senal 1Hz
 	SetString(0, y, "1Hz  Signal");
 	if (rtc.signal_1hz) {
 		SetString(x + 7, y, "H");
@@ -1457,7 +1457,7 @@ void FASTCALL CRTCWnd::Setup()
 	}
 	y++;
 
-	// 16Hz信号
+ 	 // Senal 16Hz
 	SetString(0, y, "16Hz Signal");
 	if (rtc.signal_16hz) {
 		SetString(x + 7, y, "H");
@@ -1467,7 +1467,7 @@ void FASTCALL CRTCWnd::Setup()
 	}
 	y++;
 
-	// タイマーLED
+ 	 // LED de temporizador
 	SetString(0, y, "Timer LED");
 	if (m_pRTC->GetTimerLED()) {
 		SetString(x + 6, y, "On");
@@ -1477,35 +1477,35 @@ void FASTCALL CRTCWnd::Setup()
 	}
 }
 
-//===========================================================================
-//
-//	OPMウィンドウ
-//
-//===========================================================================
+  //===========================================================================
+  //
+  //	Ventana OPM
+  //
+  //===========================================================================
 
-//---------------------------------------------------------------------------
-//
-//	コンストラクタ
-//
-//---------------------------------------------------------------------------
+  //---------------------------------------------------------------------------
+  //
+  //	Constructor
+  //
+  //---------------------------------------------------------------------------
 COPMWnd::COPMWnd()
 {
-	// ウィンドウパラメータ定義
+ 	 // Definicion de parametros de ventana
 	m_dwID = MAKEID('O', 'P', 'M', ' ');
 	::GetMsg(IDS_SWND_OPM, m_strCaption);
 	m_nWidth = 20;
 	m_nHeight = 33;
 
-	// OPM取得
+ 	 // Obtener OPM
 	m_pOPM = (OPMIF*)::GetVM()->SearchDevice(MAKEID('O', 'P', 'M', ' '));
 	ASSERT(m_pOPM);
 }
 
-//---------------------------------------------------------------------------
-//
-//	セットアップ
-//
-//---------------------------------------------------------------------------
+  //---------------------------------------------------------------------------
+  //
+  //	Configuracion
+  //
+  //---------------------------------------------------------------------------
 void FASTCALL COPMWnd::Setup()
 {
 	int y;
@@ -1515,65 +1515,65 @@ void FASTCALL COPMWnd::Setup()
 	DWORD *p;
 	CString string;
 
-	// クリア
+ 	 // Limpiar
 	Clear();
 
-	// データ取得
+ 	 // Obtener datos
 	ASSERT(m_pOPM);
 	m_pOPM->GetOPM(&opm);
 
-	// ヘッダ
+ 	 // Cabecera
 	y = 0;
 	SetString(0, y, "REG:+0+1+2+3+4+5+6+7");
 	y++;
 
-	// レジスタループ
+ 	 // Bucle de registro
 	p = opm.reg;
 	for (i=0; i<32; i++) {
-		// アドレスセット
+ 		 // Establecer direccion
 		string.Format("+%02X:", i << 3);
 		SetString(0, y, string);
 
-		// ループ
+ 		 // Bucle
 		for (j=0; j<8; j++) {
 			string.Format("%02X", *p++);
 			SetString(j * 2 + 4, y, string);
 		}
 
-		// 次の行へ
+ 		 // A la siguiente linea
 		y++;
 	}
 }
 
-//===========================================================================
-//
-//	キーボードウィンドウ
-//
-//===========================================================================
+  //===========================================================================
+  //
+  //	Ventana de teclado
+  //
+  //===========================================================================
 
-//---------------------------------------------------------------------------
-//
-//	コンストラクタ
-//
-//---------------------------------------------------------------------------
+  //---------------------------------------------------------------------------
+  //
+  //	Constructor
+  //
+  //---------------------------------------------------------------------------
 CKeyboardWnd::CKeyboardWnd()
 {
-	// ウィンドウパラメータ定義
+ 	 // Definicion de parametros de ventana
 	m_dwID = MAKEID('K', 'E', 'Y', 'B');
 	::GetMsg(IDS_SWND_KEYBOARD, m_strCaption);
 	m_nWidth = 37;
 	m_nHeight = 16;
 
-	// キーボード取得
+ 	 // Obtener teclado
 	m_pKeyboard = (Keyboard*)::GetVM()->SearchDevice(MAKEID('K', 'E', 'Y', 'B'));
 	ASSERT(m_pKeyboard);
 }
 
-//---------------------------------------------------------------------------
-//
-//	セットアップ
-//
-//---------------------------------------------------------------------------
+  //---------------------------------------------------------------------------
+  //
+  //	Configuracion
+  //
+  //---------------------------------------------------------------------------
 void FASTCALL CKeyboardWnd::Setup()
 {
 	Keyboard::keyboard_t keyboard;
@@ -1584,27 +1584,27 @@ void FASTCALL CKeyboardWnd::Setup()
 	DWORD dwLED;
 	int nKey;
 
-	// クリア
+ 	 // Limpiar
 	Clear();
 	y = 0;
 
-	// データ取得
+ 	 // Obtener datos
 	ASSERT(m_pKeyboard);
 	m_pKeyboard->GetKeyboard(&keyboard);
 
-	// リピートコード
+ 	 // Codigo de repeticion
 	SetString(0, y, _T("Repeat Code"));
 	strText.Format(_T("%02X"), keyboard.rep_code);
 	SetString(19, y, strText);
 	y++;
 
-	// リピートカウンタ
+ 	 // Contador de repeticion
 	SetString(0, y, _T("Repeat Count"));
 	strText.Format(_T("%6u"), keyboard.rep_count);
 	SetString(15, y, strText);
 	y++;
 
-	// リピートタイム
+ 	 // Tiempo de repeticion
 	SetString(0, y, _T("Repeat Time1"));
 	strText.Format(_T("%5dms"), keyboard.rep_start / 2000);
 	SetString(14, y, strText);
@@ -1614,7 +1614,7 @@ void FASTCALL CKeyboardWnd::Setup()
 	SetString(14, y, strText);
 	y++;
 
-	// 送信イネーブル
+ 	 // Habilitar transmision
 	SetString(0, y, _T("Send Enable"));
 	if (keyboard.send_en) {
 		SetString(15, y, _T("Enable"));
@@ -1624,7 +1624,7 @@ void FASTCALL CKeyboardWnd::Setup()
 	}
 	y++;
 
-	// 送信ウェイト
+ 	 // Espera de transmision
 	SetString(0, y, _T("Send Wait"));
 	if (keyboard.send_wait) {
 		SetString(17, y, _T("Wait"));
@@ -1634,13 +1634,13 @@ void FASTCALL CKeyboardWnd::Setup()
 	}
 	y++;
 
-	// MSCTRL
+ 	 // MSCTRL
 	SetString(0, y, _T("MSCTRL"));
 	strText.Format(_T("%01X"), keyboard.msctrl);
 	SetString(20, y, strText);
 	y++;
 
-	// OPT2コントロール
+ 	 // Control OPT2
 	SetString(0, y, _T("OPT2 Ctrl"));
 	if (keyboard.opt2_ctrl) {
 		SetString(15, y, _T("Enable"));
@@ -1650,22 +1650,22 @@ void FASTCALL CKeyboardWnd::Setup()
 	}
 	y++;
 
-	// 明るさ
+ 	 // Brillo
 	SetString(0, y, _T("LED Bright"));
 	strText.Format(_T("%01X"), keyboard.bright);
 	SetString(20, y, strText);
 	y++;
 
-	// LED
+ 	 // LED
 	dwLED = keyboard.led;
 	for (nLED=0;; nLED++) {
-		// 名称
+ 		 // Nombre
 		if (!DescLED[nLED]) {
 			break;
 		}
 		SetString(0, y, DescLED[nLED]);
 
-		// ON,OFF
+ 		 // ON,OFF
 		SetString(9, y, _T("LED"));
 		if (dwLED & 1) {
 			SetString(19, y, _T("On"));
@@ -1677,43 +1677,43 @@ void FASTCALL CKeyboardWnd::Setup()
 		y++;
 	}
 
-	// 再初期化
+ 	 // Reinicializacion
 	x = 25;
 	y = 0;
 
-	// キーマップ
+ 	 // Mapa de teclas
 	SetString(x, y, _T("KEY:01234567"));
 	for (nKey=0; nKey<120; nKey++) {
-		// 8キーにつき1つ
+ 		 // Uno por cada 8 teclas
 		if ((nKey & 7) == 0) {
-			// 改行&LF
+ 			 // Salto de linea y LF
 			x = 25;
 			y++;
 
-			// ラインごとのガイド
+ 			 // Guia por linea
 			strText.Format(_T("+%02X:"), nKey);
 			SetString(x, y, strText);
 			x += 4;
 		}
 
-		// キーチェック
+ 		 // Comprobacion de tecla
 		if (keyboard.status[nKey]) {
-			// Make状態
+ 			 // Estado Make
 			SetString(x, y, _T("X"));
 		}
 		else {
-			// Break状態
+ 			 // Estado Break
 			SetString(x, y, _T("."));
 		}
 		x++;
 	}
 }
 
-//---------------------------------------------------------------------------
-//
-//	キーLEDテーブル
-//
-//---------------------------------------------------------------------------
+  //---------------------------------------------------------------------------
+  //
+  //	Tabla de LED de teclas
+  //
+  //---------------------------------------------------------------------------
 LPCTSTR CKeyboardWnd::DescLED[] = {
 	_T("KANA"),
 	_T("RO-MAJI"),
@@ -1725,37 +1725,37 @@ LPCTSTR CKeyboardWnd::DescLED[] = {
 	NULL
 };
 
-//===========================================================================
-//
-//	FDDウィンドウ
-//
-//===========================================================================
+  //===========================================================================
+  //
+  //	Ventana FDD
+  //
+  //===========================================================================
 
-//---------------------------------------------------------------------------
-//
-//	コンストラクタ
-//
-//---------------------------------------------------------------------------
+  //---------------------------------------------------------------------------
+  //
+  //	Constructor
+  //
+  //---------------------------------------------------------------------------
 CFDDWnd::CFDDWnd()
 {
 	int i;
 	const FDC::fdc_t *pFDC;
 
-	// ウィンドウパラメータ定義
+ 	 // Definicion de parametros de ventana
 	m_dwID = MAKEID('F', 'D', 'D', ' ');
 	::GetMsg(IDS_SWND_FDD, m_strCaption);
 	m_nWidth = 63;
 	m_nHeight = 30;
 
-	// FDD取得
+ 	 // Obtener FDD
 	m_pFDD = (FDD*)::GetVM()->SearchDevice(MAKEID('F', 'D', 'D', ' '));
 	ASSERT(m_pFDD);
 
-	// FDC取得
+ 	 // Obtener FDC
 	m_pFDC = (FDC*)::GetVM()->SearchDevice(MAKEID('F', 'D', 'C', ' '));
 	ASSERT(m_pFDC);
 
-	// アクセスドライブ・ヘッド・CHRNを初期化
+ 	 // Inicializar unidad de acceso, cabezal y CHRN
 	pFDC = m_pFDC->GetWork();
 	m_dwDrive = pFDC->dsr;
 	m_dwHD = pFDC->hd;
@@ -1767,22 +1767,22 @@ CFDDWnd::CFDDWnd()
 	}
 }
 
-//---------------------------------------------------------------------------
-//
-//	セットアップ
-//
-//---------------------------------------------------------------------------
+  //---------------------------------------------------------------------------
+  //
+  //	Configuracion
+  //
+  //---------------------------------------------------------------------------
 void FASTCALL CFDDWnd::Setup()
 {
 	int i;
 	int y;
 	const FDC::fdc_t *pFDC;
 
-	// クリア
+ 	 // Limpiar
 	Clear();
 	y = 2;
 
-	// 説明を表示
+ 	 // Mostrar descripcion
 	for (i=0;; i++) {
 		if (!DescTable[i]) {
 			break;
@@ -1791,12 +1791,12 @@ void FASTCALL CFDDWnd::Setup()
 		y++;
 	}
 
-	// 順番に処理
+ 	 // Procesar en orden
 	for (i=0; i<=3; i++) {
 		SetupFDD(i, (i * 12) + 18);
 	}
 
-	// FDCワークを取得、コマンドをチェック
+ 	 // Obtener trabajo FDC, comprobar comando
 	pFDC = m_pFDC->GetWork();
 	switch (pFDC->cmd) {
 		case FDC::read_id:
@@ -1808,7 +1808,7 @@ void FASTCALL CFDDWnd::Setup()
 		case FDC::scan_eq:
 		case FDC::scan_lo_eq:
 		case FDC::scan_hi_eq:
-			// ドライブとCHRNを取得
+ 			 // Obtener unidad y CHRN
 			m_dwDrive = pFDC->dsr;
 			if (m_dwDrive > 1) {
 				m_dwDrive = 0;
@@ -1823,16 +1823,16 @@ void FASTCALL CFDDWnd::Setup()
 			break;
 	}
 
-	// セットアップ(トラック)
+ 	 // Configuracion (Pista)
 	SetupTrack();
 	return;
 }
 
-//---------------------------------------------------------------------------
-//
-//	説明テーブル
-//
-//---------------------------------------------------------------------------
+  //---------------------------------------------------------------------------
+  //
+  //	Tabla de descripcion
+  //
+  //---------------------------------------------------------------------------
 LPCTSTR CFDDWnd::DescTable[] = {
 	_T("Image Type"),
 	_T("Multi Image"),
@@ -1865,11 +1865,11 @@ LPCTSTR CFDDWnd::DescTable[] = {
 	NULL
 };
 
-//---------------------------------------------------------------------------
-//
-//	セットアップサブ
-//
-//---------------------------------------------------------------------------
+  //---------------------------------------------------------------------------
+  //
+  //	Configuracion sub
+  //
+  //---------------------------------------------------------------------------
 void FASTCALL CFDDWnd::SetupFDD(int nDrive, int x)
 {
 	CString strText;
@@ -1881,17 +1881,17 @@ void FASTCALL CFDDWnd::SetupFDD(int nDrive, int x)
 	ASSERT((nDrive >= 0) && (nDrive <= 3));
 	ASSERT(x >= 0);
 
-	// ドライブ名
+ 	 // Nombre de unidad
 	strText.Format(_T("FDD#%1d"), nDrive);
 	SetString(x, 0, strText);
 
-	// ドライブ情報取得
+ 	 // Obtener informacion de unidad
 	ASSERT(m_pFDD);
 	m_pFDD->GetFDD(&fdd);
 	m_pFDD->GetDrive(nDrive, &drv);
 	y = 2;
 
-	// イメージタイプ
+ 	 // Tipo de imagen
 	dwID = drv.fdi->GetID();
 	strText.Format(_T("%c%c%c%c"),
 				(dwID >> 24) & 0xff,
@@ -1901,7 +1901,7 @@ void FASTCALL CFDDWnd::SetupFDD(int nDrive, int x)
 	SetString(x, y, strText);
 	y++;
 
-	// マルチイメージ
+ 	 // Multi-imagen
 	if (drv.fdi->IsMulti()) {
 		SetString(x, y, _T("Multi"));
 	}
@@ -1910,7 +1910,7 @@ void FASTCALL CFDDWnd::SetupFDD(int nDrive, int x)
 	}
 	y++;
 
-	// リードオンリー
+ 	 // Solo lectura
 	if (drv.fdi->IsReadOnly()) {
 		SetString(x, y, _T("RO"));
 	}
@@ -1919,7 +1919,7 @@ void FASTCALL CFDDWnd::SetupFDD(int nDrive, int x)
 	}
 	y++;
 
-	// ライトプロテクト
+ 	 // Proteccion contra escritura
 	if (drv.fdi->IsWriteP()) {
 		SetString(x, y, _T("Protect"));
 	}
@@ -1928,7 +1928,7 @@ void FASTCALL CFDDWnd::SetupFDD(int nDrive, int x)
 	}
 	y++;
 
-	// 選択ドライブ
+ 	 // Unidad seleccionada
 	if (fdd.selected == nDrive) {
 		SetString(x, y, _T("Selected"));
 	}
@@ -1937,7 +1937,7 @@ void FASTCALL CFDDWnd::SetupFDD(int nDrive, int x)
 	}
 	y++;
 
-	// 密度
+ 	 // Densidad
 	if (fdd.hd) {
 		SetString(x, y, _T("HD"));
 	}
@@ -1946,7 +1946,7 @@ void FASTCALL CFDDWnd::SetupFDD(int nDrive, int x)
 	}
 	y++;
 
-	// モータ
+ 	 // Motor
 	if (fdd.motor) {
 		SetString(x, y, _T("On"));
 	}
@@ -1955,7 +1955,7 @@ void FASTCALL CFDDWnd::SetupFDD(int nDrive, int x)
 	}
 	y++;
 
-	// セトリング
+ 	 // Asentamiento (Settling)
 	if (fdd.settle || fdd.motor) {
 		SetString(x, y, _T("Settle"));
 	}
@@ -1964,7 +1964,7 @@ void FASTCALL CFDDWnd::SetupFDD(int nDrive, int x)
 	}
 	y++;
 
-	// 強制レディ
+ 	 // Ready forzado
 	if (fdd.force) {
 		SetString(x, y, _T("Ready"));
 	}
@@ -1973,7 +1973,7 @@ void FASTCALL CFDDWnd::SetupFDD(int nDrive, int x)
 	}
 	y++;
 
-	// インサート
+ 	 // Insertar
 	if (drv.insert) {
 		SetString(x, y, _T("Insert"));
 	}
@@ -1982,7 +1982,7 @@ void FASTCALL CFDDWnd::SetupFDD(int nDrive, int x)
 	}
 	y++;
 
-	// 誤挿入
+ 	 // Insercion erronea
 	if (drv.invalid) {
 		SetString(x, y, _T("Invalid"));
 	}
@@ -1991,7 +1991,7 @@ void FASTCALL CFDDWnd::SetupFDD(int nDrive, int x)
 	}
 	y++;
 
-	// イジェクト有効
+ 	 // Eyectar habilitado
 	if (drv.eject) {
 		SetString(x, y, _T("Enable"));
 	}
@@ -2000,7 +2000,7 @@ void FASTCALL CFDDWnd::SetupFDD(int nDrive, int x)
 	}
 	y++;
 
-	// ブリンク
+ 	 // Parpadeo (Blink)
 	if (drv.blink) {
 		SetString(x, y, _T("Blink"));
 	}
@@ -2009,7 +2009,7 @@ void FASTCALL CFDDWnd::SetupFDD(int nDrive, int x)
 	}
 	y++;
 
-	// アクセス
+ 	 // Acceso
 	if (drv.access) {
 		SetString(x, y, _T("Access"));
 	}
@@ -2018,7 +2018,7 @@ void FASTCALL CFDDWnd::SetupFDD(int nDrive, int x)
 	}
 	y++;
 
-	// シーク
+ 	 // Seek
 	if (drv.seeking) {
 		SetString(x, y, _T("Seek"));
 	}
@@ -2027,16 +2027,16 @@ void FASTCALL CFDDWnd::SetupFDD(int nDrive, int x)
 	}
 	y++;
 
-	// シリンダ
+ 	 // Cilindro
 	strText.Format(_T("%d"), drv.cylinder);
 	SetString(x, y, strText);
 }
 
-//---------------------------------------------------------------------------
-//
-//	セットアップトラック
-//
-//---------------------------------------------------------------------------
+  //---------------------------------------------------------------------------
+  //
+  //	Configuracion de pista
+  //
+  //---------------------------------------------------------------------------
 BOOL FASTCALL CFDDWnd::SetupTrack()
 {
 	FDD::drv_t drv;
@@ -2054,14 +2054,14 @@ BOOL FASTCALL CFDDWnd::SetupTrack()
 
 	ASSERT(this);
 
-	// FDD取得
+ 	 // Obtener FDD
 	m_pFDD->GetDrive((int)m_dwDrive, &drv);
 
-	// x,y設定
+ 	 // Configuracion x,y
 	x = 18;
 	y = 19;
 
-	// 取得
+ 	 // Obtener
 	pFDI = m_pFDD->GetFDI((int)m_dwDrive);
 	ASSERT(pFDI);
 	pDisk = pFDI->GetDisk();
@@ -2079,7 +2079,7 @@ BOOL FASTCALL CFDDWnd::SetupTrack()
 		return FALSE;
 	}
 
-	// セクタ数を数える
+ 	 // Contar numero de sectores
 	nSecs = 0;
 	pSector = pTrack->GetFirst();
 	while (pSector) {
@@ -2087,7 +2087,7 @@ BOOL FASTCALL CFDDWnd::SetupTrack()
 		pSector = pSector->GetNext();
 	}
 
-	// 最初の表示
+ 	 // Primera visualizacion
 	if (nSecs == 0) {
 		if (pTrack->IsHD()) {
 			strText.Format(_T("Track %d, 2HD, unformat"), nTrack);
@@ -2107,13 +2107,13 @@ BOOL FASTCALL CFDDWnd::SetupTrack()
 	SetString(x, y, strText);
 	y++;
 
-	// セクタだけループ
+ 	 // Bucle solo para sectores
 	pSector = pTrack->GetFirst();
 	while (pSector) {
-		// 取得
+ 		 // Obtener
 		pSector->GetCHRN(chrn);
 
-		// 一致していればリバース(C,H,Rのみ見る)
+ 		 // Si coincide, invertir (solo ver C,H,R)
 		chrn[3] = m_CHRN[3];
 		if (memcmp(chrn, m_CHRN, sizeof(chrn)) == 0) {
 			Reverse(TRUE);
@@ -2122,14 +2122,14 @@ BOOL FASTCALL CFDDWnd::SetupTrack()
 			Reverse(FALSE);
 		}
 
-		// CHRN
+ 		 // CHRN
 		pSector->GetCHRN(chrn);
 		for (i=0; i<4; i++) {
 			strText.Format(_T("%02X"), chrn[i]);
 			SetString(x, y + i, strText);
 		}
 
-		// MFM
+ 		 // MFM
 		if (pSector->IsMFM()) {
 			SetString(x, y + 4, _T("MF"));
 		}
@@ -2137,23 +2137,23 @@ BOOL FASTCALL CFDDWnd::SetupTrack()
 			SetString(x, y + 4, _T("FM"));
 		}
 
-		// GAP3
+ 		 // GAP3
 		strText.Format(_T("%02X"), pSector->GetGAP3());
 		SetString(x, y + 5, strText);
 
-		// STAT
+ 		 // STAT
 		strText.Format(_T("%02X"), pSector->GetError() >> 8);
 		SetString(x, y + 6, strText);
 		strText.Format(_T("%02X"), pSector->GetError() & 0xff);
 		SetString(x, y + 7, strText);
 
-		// TIME
+ 		 // TIEMPO
 		strText.Format(_T("%02X"), (pSector->GetPos() >> 4) >> 8);
 		SetString(x, y + 8, strText);
 		strText.Format(_T("%02X"), (pSector->GetPos() >> 4) & 0xff);
 		SetString(x, y + 9, strText);
 
-		// 次を取得
+ 		 // Obtener siguiente
 		x += 3;
 		pSector = pSector->GetNext();
 	}
@@ -2162,47 +2162,47 @@ BOOL FASTCALL CFDDWnd::SetupTrack()
 }
 
 
-//===========================================================================
-//
-//	FDCウィンドウ
-//
-//===========================================================================
+  //===========================================================================
+  //
+  //	Ventana FDC
+  //
+  //===========================================================================
 
-//---------------------------------------------------------------------------
-//
-//	コンストラクタ
-//
-//---------------------------------------------------------------------------
+  //---------------------------------------------------------------------------
+  //
+  //	Constructor
+  //
+  //---------------------------------------------------------------------------
 CFDCWnd::CFDCWnd()
 {
-	// ウィンドウパラメータ定義
+ 	 // Definicion de parametros de ventana
 	m_dwID = MAKEID('F', 'D', 'C', ' ');
 	::GetMsg(IDS_SWND_FDC, m_strCaption);
 	m_nWidth = 71;
 	m_nHeight = 19;
 
-	// FDC取得
+ 	 // Obtener FDC
 	m_pFDC = (FDC*)::GetVM()->SearchDevice(MAKEID('F', 'D', 'C', ' '));
 	ASSERT(m_pFDC);
 }
 
-//---------------------------------------------------------------------------
-//
-//	セットアップ
-//
-//---------------------------------------------------------------------------
+  //---------------------------------------------------------------------------
+  //
+  //	Configuracion
+  //
+  //---------------------------------------------------------------------------
 void FASTCALL CFDCWnd::Setup()
 {
 	ASSERT(this);
 
-	// ワークアドレス取得
+ 	 // Obtener direccion de trabajo
 	ASSERT(m_pFDC);
 	m_pWork = m_pFDC->GetWork();
 
-	// クリア
+ 	 // Limpiar
 	Clear();
 
-	// 順にセット
+ 	 // Establecer en orden
 	SetupGeneral(0, 0);
 	SetupParam(24, 0);
 	SetupSR(48, 0);
@@ -2211,11 +2211,11 @@ void FASTCALL CFDCWnd::Setup()
 	SetupST2(48, 10);
 }
 
-//---------------------------------------------------------------------------
-//
-//	セットアップ(一般)
-//
-//---------------------------------------------------------------------------
+  //---------------------------------------------------------------------------
+  //
+  //	Configuracion (General)
+  //
+  //---------------------------------------------------------------------------
 void FASTCALL CFDCWnd::SetupGeneral(int x, int y)
 {
 	CString strText;
@@ -2224,7 +2224,7 @@ void FASTCALL CFDCWnd::SetupGeneral(int x, int y)
 	ASSERT(x >= 0);
 	ASSERT(y >= 0);
 
-	// コマンド
+ 	 // Comando
 	switch (m_pWork->cmd) {
 		case FDC::read_data:
 			strText = _T("READ DATA");
@@ -2294,7 +2294,7 @@ void FASTCALL CFDCWnd::SetupGeneral(int x, int y)
 	SetString(x, y, strText);
 	y++;
 
-	// フェーズ
+ 	 // Fase
 	switch (m_pWork->phase) {
 		case FDC::idle:
 			strText = _T("(Idle)");
@@ -2322,22 +2322,22 @@ void FASTCALL CFDCWnd::SetupGeneral(int x, int y)
 	SetString(x, y, strText);
 	y++;
 
-	// 一行あける
+ 	 // Dejar una linea en blanco
 	y++;
 
-	// ドライブセレクトレジスタ
+ 	 // Registro de seleccion de unidad
 	SetString(x, y, _T("Drive Select"));
 	strText.Format(_T("%1d"), m_pWork->dsr);
 	SetString(x + 19, y, strText);
 	y++;
 
-	// コントロールレジスタ
+ 	 // Registro de control
 	SetString(x, y, _T("Drive Control"));
 	strText.Format(_T("%02X"), m_pWork->dcr);
 	SetString(x + 18, y, strText);
 	y++;
 
-	// FIFO(入力)
+ 	 // FIFO(Entrada)
 	SetString(x, y, _T("FIFO(IN)  Count"));
 	strText.Format(_T("%2d"), m_pWork->in_cnt);
 	SetString(x + 18, y, strText);
@@ -2347,7 +2347,7 @@ void FASTCALL CFDCWnd::SetupGeneral(int x, int y)
 	SetString(x + 18, y, strText);
 	y++;
 
-	// FIFO(出力)
+ 	 // FIFO(Salida)
 	SetString(x, y, _T("FIFO(OUT) Count"));
 	strText.Format(_T("%2d"), m_pWork->out_cnt);
 	SetString(x + 18, y, strText);
@@ -2357,11 +2357,11 @@ void FASTCALL CFDCWnd::SetupGeneral(int x, int y)
 	SetString(x + 18, y, strText);
 }
 
-//---------------------------------------------------------------------------
-//
-//	セットアップ(パラメータ)
-//
-//---------------------------------------------------------------------------
+  //---------------------------------------------------------------------------
+  //
+  //	Configuracion (Parametro)
+  //
+  //---------------------------------------------------------------------------
 void FASTCALL CFDCWnd::SetupParam(int x, int y)
 {
 	CString strText;
@@ -2370,7 +2370,7 @@ void FASTCALL CFDCWnd::SetupParam(int x, int y)
 	ASSERT(x >= 0);
 	ASSERT(y >= 0);
 
-	// CHRN
+ 	 // CHRN
 	SetString(x, y, _T("C"));
 	strText.Format(_T("%02X"), m_pWork->chrn[0]);
 	SetString(x + 6, y, strText);
@@ -2388,7 +2388,7 @@ void FASTCALL CFDCWnd::SetupParam(int x, int y)
 	SetString(x + 6, y, strText);
 	y++;
 
-	// HD,US
+ 	 // HD,US
 	SetString(x, y, _T("HD"));
 	strText.Format(_T("%02X"), m_pWork->hd);
 	SetString(x + 6, y, strText);
@@ -2398,7 +2398,7 @@ void FASTCALL CFDCWnd::SetupParam(int x, int y)
 	SetString(x + 6, y, strText);
 	y++;
 
-	// MFM,MT,SK
+ 	 // MFM,MT,SK
 	SetString(x, y, _T("MFM"));
 	strText.Format(_T("%2d"), m_pWork->mfm);
 	SetString(x + 6, y, strText);
@@ -2411,11 +2411,11 @@ void FASTCALL CFDCWnd::SetupParam(int x, int y)
 	strText.Format(_T("%2d"), m_pWork->sk);
 	SetString(x + 6, y, strText);
 
-	// 次のカラムへ移動
+ 	 // Mover a la siguiente columna
 	x += 12;
 	y -= 8;
 
-	// EOT,GAP3
+ 	 // EOT,GAP3
 	SetString(x, y, _T("EOT"));
 	strText.Format(_T("%02X"), m_pWork->eot);
 	SetString(x + 8, y, strText);
@@ -2430,7 +2430,7 @@ void FASTCALL CFDCWnd::SetupParam(int x, int y)
 	SetString(x + 8, y, strText);
 	y++;
 
-	// Head
+ 	 // Head (Cabezal)
 	SetString(x, y, _T("HEAD"));
 	if (m_pWork->load) {
 		SetString(x + 6, y, _T("LOAD"));
@@ -2440,7 +2440,7 @@ void FASTCALL CFDCWnd::SetupParam(int x, int y)
 	}
 	y++;
 
-	// CYL
+ 	 // CYL (Cilindro)
 	SetString(x, y, _T("PCN0"));
 	strText.Format(_T("%02X"), m_pWork->cyl[0]);
 	SetString(x + 8, y, strText);
@@ -2450,7 +2450,7 @@ void FASTCALL CFDCWnd::SetupParam(int x, int y)
 	SetString(x + 8, y, strText);
 	y++;
 
-	// NDM
+ 	 // NDM
 	SetString(x, y, _T("NDM"));
 	if (m_pWork->ndm) {
 		SetString(x + 7, y, _T("CPU"));
@@ -2460,44 +2460,44 @@ void FASTCALL CFDCWnd::SetupParam(int x, int y)
 	}
 	y++;
 
-	// err
+ 	 // err (error)
 	SetString(x, y, _T("ERR"));
 	strText.Format(_T("%04X"), m_pWork->err);
 	SetString(x + 6, y, strText);
 	y++;
 
-	// offset
+ 	 // offset (desplazamiento)
 	SetString(x, y, _T("OFF"));
 	strText.Format(_T("%4X"), m_pWork->offset);
 	SetString(x + 6, y, strText);
 	y++;
 
-	// length
+ 	 // length (longitud)
 	SetString(x, y, _T("LEN"));
 	strText.Format(_T("%7X"), m_pWork->len);
 	SetString(x + 3, y, strText);
 }
 
-//---------------------------------------------------------------------------
-//
-//	セットアップ(ステータスレジスタ)
-//
-//---------------------------------------------------------------------------
+  //---------------------------------------------------------------------------
+  //
+  //	Configuracion (Registro de estado)
+  //
+  //---------------------------------------------------------------------------
 void FASTCALL CFDCWnd::SetupSR(int x, int y)
 {
 	ASSERT(this);
 	ASSERT(x >= 0);
 	ASSERT(y >= 0);
 
-	// サブ関数に任せる
+ 	 // Dejar en manos de la subfuncion
 	SetupSub(x, y, _T("[Status]"), SRDesc, m_pWork->sr);
 }
 
-//---------------------------------------------------------------------------
-//
-//	文字列(ステータスレジスタ)
-//
-//---------------------------------------------------------------------------
+  //---------------------------------------------------------------------------
+  //
+  //	Cadena (Registro de estado)
+  //
+  //---------------------------------------------------------------------------
 LPCTSTR CFDCWnd::SRDesc[8] = {
 	_T("Request for Master"),
 	_T("Data Input/Output"),
@@ -2509,26 +2509,26 @@ LPCTSTR CFDCWnd::SRDesc[8] = {
 	_T("FDD#0 Busy")
 };
 
-//---------------------------------------------------------------------------
-//
-//	セットアップ(ST0)
-//
-//---------------------------------------------------------------------------
+  //---------------------------------------------------------------------------
+  //
+  //	Configuracion (ST0)
+  //
+  //---------------------------------------------------------------------------
 void FASTCALL CFDCWnd::SetupST0(int x, int y)
 {
 	ASSERT(this);
 	ASSERT(x >= 0);
 	ASSERT(y >= 0);
 
-	// サブ関数に任せる
+ 	 // Dejar en manos de la subfuncion
 	SetupSub(x, y, _T("[ST0]"), ST0Desc, m_pWork->st[0]);
 }
 
-//---------------------------------------------------------------------------
-//
-//	文字列(ST0)
-//
-//---------------------------------------------------------------------------
+  //---------------------------------------------------------------------------
+  //
+  //	Cadena (ST0)
+  //
+  //---------------------------------------------------------------------------
 LPCTSTR CFDCWnd::ST0Desc[8] = {
 	_T("Interrupt Code 1"),
 	_T("Interrupt Code 0"),
@@ -2540,26 +2540,26 @@ LPCTSTR CFDCWnd::ST0Desc[8] = {
 	_T("Unit Select 0")
 };
 
-//---------------------------------------------------------------------------
-//
-//	セットアップ(ST1)
-//
-//---------------------------------------------------------------------------
+  //---------------------------------------------------------------------------
+  //
+  //	Configuracion (ST1)
+  //
+  //---------------------------------------------------------------------------
 void FASTCALL CFDCWnd::SetupST1(int x, int y)
 {
 	ASSERT(this);
 	ASSERT(x >= 0);
 	ASSERT(y >= 0);
 
-	// サブ関数に任せる
+ 	 // Dejar en manos de la subfuncion
 	SetupSub(x, y, _T("[ST1]"), ST1Desc, m_pWork->st[1]);
 }
 
-//---------------------------------------------------------------------------
-//
-//	文字列(ST1)
-//
-//---------------------------------------------------------------------------
+  //---------------------------------------------------------------------------
+  //
+  //	Cadena (ST1)
+  //
+  //---------------------------------------------------------------------------
 LPCTSTR CFDCWnd::ST1Desc[8] = {
 	_T("End of Cylinder"),
 	NULL,
@@ -2571,26 +2571,26 @@ LPCTSTR CFDCWnd::ST1Desc[8] = {
 	_T("Missing Address Mark")
 };
 
-//---------------------------------------------------------------------------
-//
-//	セットアップ(ST2)
-//
-//---------------------------------------------------------------------------
+  //---------------------------------------------------------------------------
+  //
+  //	Configuracion (ST2)
+  //
+  //---------------------------------------------------------------------------
 void FASTCALL CFDCWnd::SetupST2(int x, int y)
 {
 	ASSERT(this);
 	ASSERT(x >= 0);
 	ASSERT(y >= 0);
 
-	// サブ関数に任せる
+ 	 // Dejar en manos de la subfuncion
 	SetupSub(x, y, _T("[ST2]"), ST2Desc, m_pWork->st[2]);
 }
 
-//---------------------------------------------------------------------------
-//
-//	文字列(ST2)
-//
-//---------------------------------------------------------------------------
+  //---------------------------------------------------------------------------
+  //
+  //	Cadena (ST2)
+  //
+  //---------------------------------------------------------------------------
 LPCTSTR CFDCWnd::ST2Desc[8] = {
 	NULL,
 	_T("Control Mark"),
@@ -2602,11 +2602,11 @@ LPCTSTR CFDCWnd::ST2Desc[8] = {
 	_T("Missing Data Mark")
 };
 
-//---------------------------------------------------------------------------
-//
-//	セットアップ(サブ)
-//
-//---------------------------------------------------------------------------
+  //---------------------------------------------------------------------------
+  //
+  //	Configuracion (Sub)
+  //
+  //---------------------------------------------------------------------------
 void FASTCALL CFDCWnd::SetupSub(int x, int y, LPCTSTR lpszTitle, LPCTSTR *lpszDesc, DWORD data)
 {
 	int i;
@@ -2620,38 +2620,38 @@ void FASTCALL CFDCWnd::SetupSub(int x, int y, LPCTSTR lpszTitle, LPCTSTR *lpszDe
 	ASSERT(lpszTitle);
 	ASSERT(lpszDesc);
 
-	// タイトル表示
+ 	 // Mostrar titulo
 	SetString(x, y, lpszTitle);
 	y++;
 
-	// ループ
+ 	 // Bucle
 	for (i=0; i<8; i++) {
-		// b7-b0
+ 		 // b7-b0
 		strText.Format(_T("b%1d:"), 7 - i);
 		SetString(x, y, strText);
 
-		// 文字列作成
+ 		 // Creacion de cadena
 		if (lpszDesc[i]) {
-			// スペースで埋める
+ 			 // Rellenar con espacios
 			for (j=0; j<0x40; j++) {
 				strBuf[j] = _T(' ');
 			}
 
-			// 文字列長だけコピー
+ 			 // Copiar solo la longitud de la cadena
 			ASSERT(_tcslen(lpszDesc[i]) < 0x40);
 			memcpy(strBuf, lpszDesc[i], _tcslen(lpszDesc[i]) * sizeof(TCHAR));
 		}
 		else {
-			// -で埋める
+ 			 // Rellenar con -
 			for (j=0; j<0x40; j++) {
 				strBuf[j] = _T('-');
 			}
 		}
 
-		// 長さはここで決まる
+ 		 // La longitud se determina aqui
 		strBuf[20] = _T('\0');
 
-		// 該当するビットは反転にて表示
+ 		 // El bit correspondiente se muestra invertido
 		if (data & 0x80) {
 			Reverse(TRUE);
 			SetString(x + 3, y, (LPCTSTR)strBuf);
@@ -2661,55 +2661,55 @@ void FASTCALL CFDCWnd::SetupSub(int x, int y, LPCTSTR lpszTitle, LPCTSTR *lpszDe
 			SetString(x + 3, y, (LPCTSTR)strBuf);
 		}
 
-		// 次へ
+ 		 // Siguiente
 		data <<= 1;
 		y++;
 	}
 }
 
-//===========================================================================
-//
-//	SCCウィンドウ
-//
-//===========================================================================
+  //===========================================================================
+  //
+  //	Ventana SCC
+  //
+  //===========================================================================
 
-//---------------------------------------------------------------------------
-//
-//	コンストラクタ
-//
-//---------------------------------------------------------------------------
+  //---------------------------------------------------------------------------
+  //
+  //	Constructor
+  //
+  //---------------------------------------------------------------------------
 CSCCWnd::CSCCWnd()
 {
-	// ウィンドウパラメータ定義
+ 	 // Definicion de parametros de ventana
 	m_dwID = MAKEID('S', 'C', 'C', ' ');
 	::GetMsg(IDS_SWND_SCC, m_strCaption);
 	m_nWidth = 48;
 	m_nHeight = 35;
 
-	// SCC取得
+ 	 // Obtener SCC
 	m_pSCC = (SCC*)::GetVM()->SearchDevice(MAKEID('S', 'C', 'C', ' '));
 	ASSERT(m_pSCC);
 }
 
-//---------------------------------------------------------------------------
-//
-//	セットアップ
-//
-//---------------------------------------------------------------------------
+  //---------------------------------------------------------------------------
+  //
+  //	Configuracion
+  //
+  //---------------------------------------------------------------------------
 void FASTCALL CSCCWnd::Setup()
 {
 	int i;
 	CString strText;
 	SCC::scc_t scc;
 
-	// クリア
+ 	 // Limpiar
 	Clear();
 
-	// データ取得
+ 	 // Obtener datos
 	ASSERT(m_pSCC);
 	m_pSCC->GetSCC(&scc);
 
-	// 項目表示
+ 	 // Mostrar items
 	for (i=0;; i++) {
 		if (!DescTable[i]) {
 			break;
@@ -2717,18 +2717,18 @@ void FASTCALL CSCCWnd::Setup()
 		SetString(0, i, DescTable[i]);
 	}
 
-	// チャネル処理
+ 	 // Procesamiento de canal
 	SetString(19, 0, _T("A(RS-232C)"));
 	SetupSCC(&scc.ch[0], 19, 1);
 	SetString(35, 0, _T("B(MOUSE)"));
 	SetupSCC(&scc.ch[1], 35, 1);
 }
 
-//---------------------------------------------------------------------------
-//
-//	文字列テーブル
-//
-//---------------------------------------------------------------------------
+  //---------------------------------------------------------------------------
+  //
+  //	Tabla de cadenas
+  //
+  //---------------------------------------------------------------------------
 LPCTSTR CSCCWnd::DescTable[] = {
 	_T("Channel"),
 	_T("BaudRate"),
@@ -2768,11 +2768,11 @@ LPCTSTR CSCCWnd::DescTable[] = {
 	NULL
 };
 
-//---------------------------------------------------------------------------
-//
-//	セットアップ(チャネル)
-//
-//---------------------------------------------------------------------------
+  //---------------------------------------------------------------------------
+  //
+  //	Configuracion (Canal)
+  //
+  //---------------------------------------------------------------------------
 void FASTCALL CSCCWnd::SetupSCC(SCC::ch_t *pCh, int x, int y)
 {
 	CString strText;
@@ -2782,12 +2782,12 @@ void FASTCALL CSCCWnd::SetupSCC(SCC::ch_t *pCh, int x, int y)
 	ASSERT(x >= 0);
 	ASSERT(y >= 0);
 
-	// ボーレート
+ 	 // Baudios
 	strText.Format(_T("%u"), pCh->baudrate);
 	SetString(x, y, strText);
 	y++;
 
-	// ストップビット
+ 	 // Bits de parada
 	switch (pCh->stopbit) {
 		case 0:
 			SetString(x, y, _T("NOT Async"));
@@ -2807,7 +2807,7 @@ void FASTCALL CSCCWnd::SetupSCC(SCC::ch_t *pCh, int x, int y)
 	}
 	y++;
 
-	// パリティ
+ 	 // Paridad
 	switch (pCh->parity) {
 		case 0:
 			SetString(x, y, _T("No"));
@@ -2824,7 +2824,7 @@ void FASTCALL CSCCWnd::SetupSCC(SCC::ch_t *pCh, int x, int y)
 	}
 	y++;
 
-	// Txイネーブル
+ 	 // Tx habilitado
 	if (pCh->txen) {
 		SetString(x, y, _T("Enable"));
 	}
@@ -2833,12 +2833,12 @@ void FASTCALL CSCCWnd::SetupSCC(SCC::ch_t *pCh, int x, int y)
 	}
 	y++;
 
-	// Txビット
+ 	 // Tx bits
 	strText.Format(_T("%d"), pCh->txbit);
 	SetString(x, y, strText);
 	y++;
 
-	// Txブレーク
+ 	 // Tx Break
 	if (pCh->brk) {
 		SetString(x, y, _T("Break"));
 	}
@@ -2847,7 +2847,7 @@ void FASTCALL CSCCWnd::SetupSCC(SCC::ch_t *pCh, int x, int y)
 	}
 	y++;
 
-	// Tx Busy
+ 	 // Tx Busy
 	if (pCh->tdf) {
 		SetString(x, y, _T("Busy"));
 	}
@@ -2856,27 +2856,27 @@ void FASTCALL CSCCWnd::SetupSCC(SCC::ch_t *pCh, int x, int y)
 	}
 	y++;
 
-	// Tx Sent
+ 	 // Tx Enviado (Sent)
 	strText.Format(_T("%u"), pCh->txtotal);
 	SetString(x, y, strText);
 	y++;
 
-	// Txバッファ Num
+ 	 // Tx buffer Num
 	strText.Format(_T("0x%03X"), pCh->txnum);
 	SetString(x, y, strText);
 	y++;
 
-	// Txバッファ Read
+ 	 // Tx buffer Read
 	strText.Format(_T("0x%03X"), pCh->txread);
 	SetString(x, y, strText);
 	y++;
 
-	// Txバッファ Write
+ 	 // Tx buffer Write
 	strText.Format(_T("0x%03X"), pCh->txwrite);
 	SetString(x, y, strText);
 	y++;
 
-	// Rxイネーブル
+ 	 // Rx habilitado
 	if (pCh->rxen) {
 		SetString(x, y, _T("Enable"));
 	}
@@ -2885,12 +2885,12 @@ void FASTCALL CSCCWnd::SetupSCC(SCC::ch_t *pCh, int x, int y)
 	}
 	y++;
 
-	// Rxビット
+ 	 // Rx bits
 	strText.Format(_T("%d"), pCh->rxbit);
 	SetString(x, y, strText);
 	y++;
 
-	// Rxブレーク
+ 	 // Rx Break
 	if (pCh->ba) {
 		SetString(x, y, _T("Break"));
 	}
@@ -2899,32 +2899,32 @@ void FASTCALL CSCCWnd::SetupSCC(SCC::ch_t *pCh, int x, int y)
 	}
 	y++;
 
-	// Rx FIFO
+ 	 // Rx FIFO
 	strText.Format(_T("%u"), pCh->rxfifo);
 	SetString(x, y, strText);
 	y++;
 
-	// Rx Received
+ 	 // Rx Recibido (Received)
 	strText.Format(_T("%u"), pCh->rxtotal);
 	SetString(x, y, strText);
 	y++;
 
-	// Rxバッファ Num
+ 	 // Rx buffer Num
 	strText.Format(_T("0x%03X"), pCh->rxnum);
 	SetString(x, y, strText);
 	y++;
 
-	// Rxバッファ Read
+ 	 // Rx buffer Read
 	strText.Format(_T("0x%03X"), pCh->rxread);
 	SetString(x, y, strText);
 	y++;
 
-	// Rxバッファ Write
+ 	 // Rx buffer Write
 	strText.Format(_T("0x%03X"), pCh->rxwrite);
 	SetString(x, y, strText);
 	y++;
 
-	// フレーミングエラー
+ 	 // Error de encuadre (Framing error)
 	if (pCh->framing) {
 		SetString(x, y, _T("Error"));
 	}
@@ -2933,7 +2933,7 @@ void FASTCALL CSCCWnd::SetupSCC(SCC::ch_t *pCh, int x, int y)
 	}
 	y++;
 
-	// パリティエラー
+ 	 // Error de paridad
 	if (pCh->parerr) {
 		SetString(x, y, _T("Error"));
 	}
@@ -2942,7 +2942,7 @@ void FASTCALL CSCCWnd::SetupSCC(SCC::ch_t *pCh, int x, int y)
 	}
 	y++;
 
-	// オーバーランエラー
+ 	 // Error de desbordamiento (Overrun error)
 	if (pCh->overrun) {
 		SetString(x, y, _T("Error"));
 	}
@@ -2951,7 +2951,7 @@ void FASTCALL CSCCWnd::SetupSCC(SCC::ch_t *pCh, int x, int y)
 	}
 	y++;
 
-	// オートモード
+ 	 // Modo automatico
 	if (pCh->aen) {
 		SetString(x, y, _T("Auto"));
 	}
@@ -2960,7 +2960,7 @@ void FASTCALL CSCCWnd::SetupSCC(SCC::ch_t *pCh, int x, int y)
 	}
 	y++;
 
-	// CTS
+ 	 // CTS
 	if (pCh->cts) {
 		SetString(x, y, _T("L"));
 	}
@@ -2969,7 +2969,7 @@ void FASTCALL CSCCWnd::SetupSCC(SCC::ch_t *pCh, int x, int y)
 	}
 	y++;
 
-	// DCD
+ 	 // DCD
 	if (pCh->dcd) {
 		SetString(x, y, _T("L"));
 	}
@@ -2978,7 +2978,7 @@ void FASTCALL CSCCWnd::SetupSCC(SCC::ch_t *pCh, int x, int y)
 	}
 	y++;
 
-	// RTS
+ 	 // RTS
 	if (pCh->rts) {
 		SetString(x, y, _T("L"));
 	}
@@ -2987,7 +2987,7 @@ void FASTCALL CSCCWnd::SetupSCC(SCC::ch_t *pCh, int x, int y)
 	}
 	y++;
 
-	// DTR
+ 	 // DTR
 	if (!pCh->dtrreq) {
 		if (pCh->dtr) {
 			SetString(x, y, _T("L"));
@@ -3006,7 +3006,7 @@ void FASTCALL CSCCWnd::SetupSCC(SCC::ch_t *pCh, int x, int y)
 	}
 	y++;
 
-	// RxInt En
+ 	 // RxInt En (Habilitar)
 	if (pCh->rxim >= 1) {
 		SetString(x, y, _T("Enable"));
 	}
@@ -3015,7 +3015,7 @@ void FASTCALL CSCCWnd::SetupSCC(SCC::ch_t *pCh, int x, int y)
 	}
 	y++;
 
-	// TxInt En
+ 	 // TxInt En (Habilitar)
 	if (pCh->txie) {
 		SetString(x, y, _T("Enable"));
 	}
@@ -3024,7 +3024,7 @@ void FASTCALL CSCCWnd::SetupSCC(SCC::ch_t *pCh, int x, int y)
 	}
 	y++;
 
-	// ExtInt En
+ 	 // ExtInt En (Habilitar)
 	if (pCh->extie) {
 		SetString(x, y, _T("Enable"));
 	}
@@ -3033,7 +3033,7 @@ void FASTCALL CSCCWnd::SetupSCC(SCC::ch_t *pCh, int x, int y)
 	}
 	y++;
 
-	// RxInt Pending
+ 	 // RxInt Pendiente
 	if (pCh->rxip) {
 		SetString(x, y, _T("Pending"));
 	}
@@ -3042,7 +3042,7 @@ void FASTCALL CSCCWnd::SetupSCC(SCC::ch_t *pCh, int x, int y)
 	}
 	y++;
 
-	// RsInt Pending
+ 	 // RsInt Pendiente
 	if (pCh->rsip) {
 		SetString(x, y, _T("Pending"));
 	}
@@ -3051,7 +3051,7 @@ void FASTCALL CSCCWnd::SetupSCC(SCC::ch_t *pCh, int x, int y)
 	}
 	y++;
 
-	// TxInt Pending
+ 	 // TxInt Pendiente
 	if (pCh->txip) {
 		SetString(x, y, _T("Pending"));
 	}
@@ -3060,7 +3060,7 @@ void FASTCALL CSCCWnd::SetupSCC(SCC::ch_t *pCh, int x, int y)
 	}
 	y++;
 
-	// ExtInt Pending
+ 	 // ExtInt Pendiente
 	if (pCh->extip) {
 		SetString(x, y, _T("Pending"));
 	}
@@ -3069,35 +3069,35 @@ void FASTCALL CSCCWnd::SetupSCC(SCC::ch_t *pCh, int x, int y)
 	}
 }
 
-//===========================================================================
-//
-//	Cynthiaウィンドウ
-//
-//===========================================================================
+  //===========================================================================
+  //
+  //	Ventana Cynthia
+  //
+  //===========================================================================
 
-//---------------------------------------------------------------------------
-//
-//	コンストラクタ
-//
-//---------------------------------------------------------------------------
+  //---------------------------------------------------------------------------
+  //
+  //	Constructor
+  //
+  //---------------------------------------------------------------------------
 CCynthiaWnd::CCynthiaWnd()
 {
-	// ウィンドウパラメータ定義
+ 	 // Definicion de parametros de ventana
 	m_dwID = MAKEID('C', 'Y', 'N', 'T');
 	::GetMsg(IDS_SWND_CYNTHIA, m_strCaption);
 	m_nWidth = 46;
 	m_nHeight = 5;
 
-	// スプライトコントローラ取得
+ 	 // Obtener controlador de sprites
 	m_pSprite = (Sprite*)::GetVM()->SearchDevice(MAKEID('S', 'P', 'R', ' '));
 	ASSERT(m_pSprite);
 }
 
-//---------------------------------------------------------------------------
-//
-//	セットアップ
-//
-//---------------------------------------------------------------------------
+  //---------------------------------------------------------------------------
+  //
+  //	Configuracion
+  //
+  //---------------------------------------------------------------------------
 void FASTCALL CCynthiaWnd::Setup()
 {
 	int i;
@@ -3106,13 +3106,13 @@ void FASTCALL CCynthiaWnd::Setup()
 	CString string;
 	Sprite::sprite_t spr;
 
-	// クリア、データ取得
+ 	 // Limpiar, obtener datos
 	Clear();
 	y = 0;
 	x = 25;
 	m_pSprite->GetSprite(&spr);
 
-	// 表示
+ 	 // Mostrar
 	SetString(0, y, "Access");
 	if (spr.disp) {
 		SetString(16, y, "Video");
@@ -3121,7 +3121,7 @@ void FASTCALL CCynthiaWnd::Setup()
 		SetString(18, y, "CPU");
 	}
 
-	// BGサイズ
+ 	 // Tamano BG
 	SetString(x, y, "BG Size");
 	if (spr.bg_size) {
 		SetString(x + 16, y, "16x16");
@@ -3131,9 +3131,9 @@ void FASTCALL CCynthiaWnd::Setup()
 	}
 	y++;
 
-	// BG共通
+ 	 // BG comun
 	for (i=0; i<2; i++) {
-		// x決定
+ 		 // determinar x
 		if (i == 0) {
 			x = 0;
 		}
@@ -3141,7 +3141,7 @@ void FASTCALL CCynthiaWnd::Setup()
 			x = 25;
 		}
 
-		// 表示
+ 		 // Mostrar
 		string.Format("BG%d Area", i);
 		SetString(x, y + 0, string);
 		string.Format("%1d", spr.bg_area[i]);
@@ -3165,64 +3165,64 @@ void FASTCALL CCynthiaWnd::Setup()
 	}
 }
 
-//===========================================================================
-//
-//	SASIウィンドウ
-//
-//===========================================================================
+  //===========================================================================
+  //
+  //	Ventana SASI
+  //
+  //===========================================================================
 
-//---------------------------------------------------------------------------
-//
-//	コンストラクタ
-//
-//---------------------------------------------------------------------------
+  //---------------------------------------------------------------------------
+  //
+  //	Constructor
+  //
+  //---------------------------------------------------------------------------
 CSASIWnd::CSASIWnd()
 {
-	// ウィンドウパラメータ定義
+ 	 // Definicion de parametros de ventana
 	m_dwID = MAKEID('S', 'A', 'S', 'I');
 	::GetMsg(IDS_SWND_SASI, m_strCaption);
 	m_nWidth = 59;
 	m_nHeight = 16;
 
-	// SASI取得
+ 	 // Obtener SASI
 	m_pSASI = (SASI*)::GetVM()->SearchDevice(MAKEID('S', 'A', 'S', 'I'));
 	ASSERT(m_pSASI);
 }
 
-//---------------------------------------------------------------------------
-//
-//	セットアップ
-//
-//---------------------------------------------------------------------------
+  //---------------------------------------------------------------------------
+  //
+  //	Configuracion
+  //
+  //---------------------------------------------------------------------------
 void FASTCALL CSASIWnd::Setup()
 {
 	ASSERT(this);
 	ASSERT(m_pSASI);
 
-	// クリア
+ 	 // Limpiar
 	Clear();
 
-	// SASIデータ取得
+ 	 // Obtener datos SASI
 	m_pSASI->GetSASI(&m_sasi);
 
-	// コマンド
+ 	 // Comando
 	SetupCmd(0, 0);
 
-	// コントローラ
+ 	 // Controlador
 	SetupCtrl(0, 1);
 
-	// ドライブ
+ 	 // Unidad (Drive)
 	SetupDrive(0, 11);
 
-	// キャッシュ
+ 	 // Cache
 	SetupCache(23, 0);
 }
 
-//---------------------------------------------------------------------------
-//
-//	セットアップ(コマンド)
-//
-//---------------------------------------------------------------------------
+  //---------------------------------------------------------------------------
+  //
+  //	Configuracion (Comando)
+  //
+  //---------------------------------------------------------------------------
 void FASTCALL CSASIWnd::SetupCmd(int x, int y)
 {
 	CString strCmd;
@@ -3231,10 +3231,10 @@ void FASTCALL CSASIWnd::SetupCmd(int x, int y)
 	ASSERT(x >= 0);
 	ASSERT(y >= 0);
 
-	// 初期化
+ 	 // Inicializacion
 	strCmd = _T("(UNKNOWN)");
 
-	// コマンド別
+ 	 // Por comando
 	switch (m_sasi.cmd[0]) {
 		case 0x00:
 			strCmd = _T("TEST UNIT READY");
@@ -3302,7 +3302,7 @@ void FASTCALL CSASIWnd::SetupCmd(int x, int y)
 			break;
 	}
 
-	// アイドルフェーズのチェック
+ 	 // Comprobar fase inactiva (Idle)
 	if (!m_sasi.bsy) {
 		strCmd = _T("(IDLE)");
 	}
@@ -3310,11 +3310,11 @@ void FASTCALL CSASIWnd::SetupCmd(int x, int y)
 	SetString(x, y, strCmd);
 }
 
-//---------------------------------------------------------------------------
-//
-//	セットアップ(コントローラ)
-//
-//---------------------------------------------------------------------------
+  //---------------------------------------------------------------------------
+  //
+  //	Configuracion (Controlador)
+  //
+  //---------------------------------------------------------------------------
 void FASTCALL CSASIWnd::SetupCtrl(int x, int y)
 {
 	CString strPhase;
@@ -3324,7 +3324,7 @@ void FASTCALL CSASIWnd::SetupCtrl(int x, int y)
 	ASSERT(x >= 0);
 	ASSERT(y >= 0);
 
-	// フェーズ
+ 	 // Fase
 	switch (m_sasi.phase) {
 		case SASI::busfree:
 			strPhase = _T("Busfree");
@@ -3358,7 +3358,7 @@ void FASTCALL CSASIWnd::SetupCtrl(int x, int y)
 	SetString(x + 11, y, strPhase);
 	y++;
 
-	// セレクト
+ 	 // Selecci?n (Select)
 	SetString(x, y, _T("SEL"));
 	if (m_sasi.sel) {
 		SetString(x + 11, y, _T("Select"));
@@ -3368,7 +3368,7 @@ void FASTCALL CSASIWnd::SetupCtrl(int x, int y)
 	}
 	y++;
 
-	// メッセージ
+ 	 // Mensaje
 	SetString(x, y, _T("MSG"));
 	if (m_sasi.msg) {
 		SetString(x + 11, y, _T("Message"));
@@ -3378,7 +3378,7 @@ void FASTCALL CSASIWnd::SetupCtrl(int x, int y)
 	}
 	y++;
 
-	// コマンド/データ
+ 	 // Comando/Datos
 	SetString(x, y, _T("C/D"));
 	if (m_sasi.cd) {
 		SetString(x + 11, y, _T("Command"));
@@ -3388,7 +3388,7 @@ void FASTCALL CSASIWnd::SetupCtrl(int x, int y)
 	}
 	y++;
 
-	// Input/Output
+ 	 // Entrada/Salida (Input/Output)
 	SetString(x, y, _T("I/O"));
 	if (m_sasi.io) {
 		SetString(x + 11, y, _T("Input"));
@@ -3398,7 +3398,7 @@ void FASTCALL CSASIWnd::SetupCtrl(int x, int y)
 	}
 	y++;
 
-	// Busy
+ 	 // Busy (Ocupado)
 	SetString(x, y, _T("BSY"));
 	if (m_sasi.bsy) {
 		SetString(x + 11, y, _T("Busy"));
@@ -3408,7 +3408,7 @@ void FASTCALL CSASIWnd::SetupCtrl(int x, int y)
 	}
 	y++;
 
-	// REQ
+ 	 // REQ
 	SetString(x, y, _T("REQ"));
 	if (m_sasi.req) {
 		SetString(x + 11, y, _T("Request"));
@@ -3418,23 +3418,23 @@ void FASTCALL CSASIWnd::SetupCtrl(int x, int y)
 	}
 	y++;
 
-	// Message
+ 	 // Mensaje
 	SetString(x, y, _T("Message"));
 	strText.Format(_T("%02X"), m_sasi.message);
 	SetString(x + 11, y, strText);
 	y++;
 
-	// Status
+ 	 // Estado (Status)
 	SetString(x, y, _T("Status"));
 	strText.Format(_T("%02X"), m_sasi.status);
 	SetString(x + 11, y, strText);
 }
 
-//---------------------------------------------------------------------------
-//
-//	セットアップ(ドライブ)
-//
-//---------------------------------------------------------------------------
+  //---------------------------------------------------------------------------
+  //
+  //	Configuracion (Unidad)
+  //
+  //---------------------------------------------------------------------------
 void FASTCALL CSASIWnd::SetupDrive(int x, int y)
 {
 	CString strText;
@@ -3446,29 +3446,29 @@ void FASTCALL CSASIWnd::SetupDrive(int x, int y)
 	ASSERT(x >= 0);
 	ASSERT(y >= 0);
 
-	// 初期化
+ 	 // Inicializacion
 	pDisk = NULL;
 
-	// ID
+ 	 // ID
 	SetString(x, y, _T("ID"));
 	if (m_sasi.cmd[1] & 0x20) {
-		// LUNあり
+ 		 // Con LUN
 		strText.Format(_T("%d (LUN:1)"), m_sasi.ctrl);
 		pDisk = m_sasi.disk[(m_sasi.ctrl << 1) + 1];
 	}
 	else {
-		// LUNなし
+ 		 // Sin LUN
 		strText.Format(_T("%d"), m_sasi.ctrl);
 		pDisk = m_sasi.disk[m_sasi.ctrl << 1];
 	}
 	SetString(x + 11, y, strText);
 	y++;
 
-	// データ取得
+ 	 // Obtener datos
 	ASSERT(pDisk);
 	pDisk->GetDisk(&disk);
 
-	// 種別
+ 	 // Tipo
 	SetString(x, y, _T("Type"));
 	switch (disk.id) {
 		case MAKEID('S', 'A', 'H', 'D'):
@@ -3490,7 +3490,7 @@ void FASTCALL CSASIWnd::SetupDrive(int x, int y)
 	SetString(x + 11, y, strText);
 	y++;
 
-	// 容量
+ 	 // Capacidad
 	SetString(x, y, _T("Capacity"));
 	dwSize = disk.blocks;
 	if (!disk.ready) {
@@ -3507,7 +3507,7 @@ void FASTCALL CSASIWnd::SetupDrive(int x, int y)
 	SetString(x + 11, y, strText);
 	y++;
 
-	// アクセスタイプ
+ 	 // Tipo de acceso
 	SetString(x, y, _T("Access"));
 	if (disk.writep) {
 		SetString(x + 11, y, _T("RO"));
@@ -3517,7 +3517,7 @@ void FASTCALL CSASIWnd::SetupDrive(int x, int y)
 	}
 	y++;
 
-	// メディア属性
+ 	 // Atributos de medio
 	SetString(x, y, _T("Media"));
 	if (disk.removable) {
 		SetString(x + 11, y, _T("Removable"));
@@ -3527,11 +3527,11 @@ void FASTCALL CSASIWnd::SetupDrive(int x, int y)
 	}
 }
 
-//---------------------------------------------------------------------------
-//
-//	セットアップ(キャッシュ)
-//
-//---------------------------------------------------------------------------
+  //---------------------------------------------------------------------------
+  //
+  //	Configuracion (Cache)
+  //
+  //---------------------------------------------------------------------------
 void FASTCALL CSASIWnd::SetupCache(int x, int y)
 {
 	int nCache;
@@ -3546,25 +3546,25 @@ void FASTCALL CSASIWnd::SetupCache(int x, int y)
 	ASSERT(x >= 0);
 	ASSERT(y >= 0);
 
-	// 現在割り当てられているドライブがあるか
+ 	 // ?Hay alguna unidad asignada actualmente?
 	if (!m_sasi.current) {
 		return;
 	}
-	// レディか
+ 	 // ?Esta listo?
 	if (!m_sasi.current->IsReady()) {
 		return;
 	}
 
-	// 内部ワーク取得
+ 	 // Obtener trabajo interno
 	m_sasi.current->GetDisk(&disk);
 
-	// 最も最後に使われたインデックスを探す
+ 	 // Buscar el ultimo indice utilizado
 	dwMax = 0;
 	nLast = -1;
 	for (nCache=0; nCache<DiskCache::CacheMax; nCache++) {
-		// 使用中か
+ 		 // ?Esta en uso?
 		if (disk.dcache->GetCache(nCache, nTrack, dwSerial)) {
-			// シリアルがより大きいか
+ 			 // ?Es el serial mayor?
 			if (dwSerial > dwMax) {
 				nLast = nCache;
 				dwMax = dwSerial;
@@ -3572,62 +3572,62 @@ void FASTCALL CSASIWnd::SetupCache(int x, int y)
 		}
 	}
 
-	// ループ
+ 	 // Bucle
 	for (nCache=0; nCache<DiskCache::CacheMax; nCache++) {
-		// 使用中か
+ 		 // ?Esta en uso?
 		if (disk.dcache->GetCache(nCache, nTrack, dwSerial)) {
-			// 反転
+ 			 // Inversion
 			if (nCache == nLast) {
 				Reverse(TRUE);
 			}
 
-			// 文字列作成
+ 			 // Creacion de cadena
 			strText.Format(_T("Cache%1X: Track%08X Serial%08X"),
 								nCache, nTrack, dwSerial);
 
-			// セット
+ 			 // Establecer
 			SetString(x, y, strText);
 
-			// 反転
+ 			 // Inversion
 			if (nCache == nLast) {
 				Reverse(FALSE);
 			}
 		}
 
-		// 次へ
+ 		 // Siguiente
 		y++;
 	}
 }
 
-//===========================================================================
-//
-//	MIDIウィンドウ
-//
-//===========================================================================
+  //===========================================================================
+  //
+  //	Ventana MIDI
+  //
+  //===========================================================================
 
-//---------------------------------------------------------------------------
-//
-//	コンストラクタ
-//
-//---------------------------------------------------------------------------
+  //---------------------------------------------------------------------------
+  //
+  //	Constructor
+  //
+  //---------------------------------------------------------------------------
 CMIDIWnd::CMIDIWnd()
 {
-	// ウィンドウパラメータ定義
+ 	 // Definicion de parametros de ventana
 	m_dwID = MAKEID('M', 'I', 'D', 'I');
 	::GetMsg(IDS_SWND_MIDI, m_strCaption);
 	m_nWidth = 42;
 	m_nHeight = 24;
 
-	// MIDI取得
+ 	 // Obtener MIDI
 	m_pMIDI = (MIDI*)::GetVM()->SearchDevice(MAKEID('M', 'I', 'D', 'I'));
 	ASSERT(m_pMIDI);
 }
 
-//---------------------------------------------------------------------------
-//
-//	セットアップ
-//
-//---------------------------------------------------------------------------
+  //---------------------------------------------------------------------------
+  //
+  //	Configuracion
+  //
+  //---------------------------------------------------------------------------
 void FASTCALL CMIDIWnd::Setup()
 {
 	int x;
@@ -3637,76 +3637,76 @@ void FASTCALL CMIDIWnd::Setup()
 	ASSERT(this);
 	ASSERT(m_pMIDI);
 
-	// MIDI内部データ取得
+ 	 // Obtener datos internos MIDI
 	m_pMIDI->GetMIDI(&m_midi);
 
-	// クリア
+ 	 // Limpiar
 	Clear();
 
-	// コントロール
+ 	 // Control
 	x = 0;
 	y = 0;
 	SetString(x, y, _T("<Ctrl>"));
 	y++;
 	SetupCtrl(x, y);
 
-	// 割り込み
+ 	 // Interrupcion
 	x = 15;
 	y = 0;
 	SetString(x, y, _T("<Int>"));
 	y++;
 	SetupInt(x, y);
 
-	// 送信
+ 	 // Transmision
 	x = 0;
 	y = 7;
 	SetString(x, y, _T("<Trans>"));
 	y++;
 	SetupTrans(x, y);
 
-	// 受信
+ 	 // Recepcion
 	x = 15;
 	y = 7;
 	SetString(x, y, _T("<Recv>"));
 	y++;
 	SetupRecv(x, y);
 
-	// リアルタイム送信
+ 	 // Transmision en tiempo real
 	x = 0;
 	y = 18;
 	SetString(x, y, _T("<R-Trans>"));
 	y++;
 	SetupRT(x, y);
 
-	// リアルタイム受信
+ 	 // Recepcion en tiempo real
 	x = 15;
 	y = 18;
 	SetString(x, y, _T("<R-Recv>"));
 	y++;
 	SetupRR(x, y);
 
-	// カウンタ
+ 	 // Contador
 	x = 30;
 	y = 0;
 	SetString(x, y, _T("<Count>"));
 	y++;
 	SetupCount(x, y);
 
-	// アドレスハンタ
+ 	 // Address Hunter
 	x = 30;
 	y = 12;
 	SetString(x, y, _T("<A-Hunter>"));
 	y++;
 	SetupHunter(x, y);
 
-	// FSK
+ 	 // FSK
 	x = 30;
 	y = 16;
 	SetString(x, y, _T("<FSK>"));
 	y++;
 	SetupFSK(x, y);
 
-	// GPIO
+ 	 // GPIO
 	x = 30;
 	y = 20;
 	SetString(x, y, _T("<GPIO>"));
@@ -3714,11 +3714,11 @@ void FASTCALL CMIDIWnd::Setup()
 	SetupGPIO(x, y);
 }
 
-//---------------------------------------------------------------------------
-//
-//	文字列テーブル(コントロール)
-//
-//---------------------------------------------------------------------------
+  //---------------------------------------------------------------------------
+  //
+  //	Tabla de cadenas (Control)
+  //
+  //---------------------------------------------------------------------------
 LPCTSTR CMIDIWnd::DescCtrl[] = {
 	_T("Reset"),
 	_T("Access"),
@@ -3728,11 +3728,11 @@ LPCTSTR CMIDIWnd::DescCtrl[] = {
 	NULL
 };
 
-//---------------------------------------------------------------------------
-//
-//	セットアップ(コントロール)
-//
-//---------------------------------------------------------------------------
+  //---------------------------------------------------------------------------
+  //
+  //	Configuracion (Control)
+  //
+  //---------------------------------------------------------------------------
 void FASTCALL CMIDIWnd::SetupCtrl(int x, int y)
 {
 	int i;
@@ -3742,7 +3742,7 @@ void FASTCALL CMIDIWnd::SetupCtrl(int x, int y)
 	ASSERT((x >= 0) && (x < m_nWidth));
 	ASSERT((y >= 0) && (y < m_nHeight));
 
-	// 文字列テーブル
+ 	 // Tabla de cadenas
 	for (i=0;; i++) {
 		if (!DescCtrl[i]) {
 			break;
@@ -3750,10 +3750,10 @@ void FASTCALL CMIDIWnd::SetupCtrl(int x, int y)
 		SetString(x, y + i, DescCtrl[i]);
 	}
 
-	// オフセット
+ 	 // Offset (Desplazamiento)
 	x += 8;
 
-	// リセット
+ 	 // Reset
 	if (m_midi.reset) {
 		SetString(x, y, _T("Reset"));
 	}
@@ -3762,7 +3762,7 @@ void FASTCALL CMIDIWnd::SetupCtrl(int x, int y)
 	}
 	y++;
 
-	// アクセス
+ 	 // Acceso
 	if (m_midi.access) {
 		SetString(x, y, _T("Access"));
 	}
@@ -3771,26 +3771,26 @@ void FASTCALL CMIDIWnd::SetupCtrl(int x, int y)
 	}
 	y++;
 
-	// ボードID
+ 	 // ID de placa
 	strText.Format(_T("%d"), m_midi.bid);
 	SetString(x, y, strText);
 	y++;
 
-	// WDR
+ 	 // WDR
 	strText.Format(_T("%02X"), m_midi.wdr);
 	SetString(x, y, strText);
 	y++;
 
-	// RGR
+ 	 // RGR
 	strText.Format(_T("%02X"), m_midi.rgr);
 	SetString(x, y, strText);
 }
 
-//---------------------------------------------------------------------------
-//
-//	セットアップ(割り込み)
-//
-//---------------------------------------------------------------------------
+  //---------------------------------------------------------------------------
+  //
+  //	Configuracion (Interrupcion)
+  //
+  //---------------------------------------------------------------------------
 void FASTCALL CMIDIWnd::SetupInt(int x, int y)
 {
 	int i;
@@ -3800,7 +3800,7 @@ void FASTCALL CMIDIWnd::SetupInt(int x, int y)
 	ASSERT((x >= 0) && (x < m_nWidth));
 	ASSERT((y >= 0) && (y < m_nHeight));
 
-	// 文字列テーブル
+ 	 // Tabla de cadenas
 	for (i=0;; i++) {
 		if (!DescInt[i]) {
 			break;
@@ -3808,39 +3808,39 @@ void FASTCALL CMIDIWnd::SetupInt(int x, int y)
 		SetString(x, y + i, DescInt[i]);
 	}
 
-	// オフセット
+ 	 // Offset (Desplazamiento)
 	x += 8;
 
-	// レベル
+ 	 // Nivel
 	strText.Format(_T("%d"), m_midi.ilevel);
 	SetString(x, y, strText);
 	y++;
 
-	// IVR
+ 	 // IVR
 	strText.Format(_T("%02X"), m_midi.ivr);
 	SetString(x, y, strText);
 	y++;
 
-	// ISR
+ 	 // ISR
 	strText.Format(_T("%02X"), m_midi.isr);
 	SetString(x, y, strText);
 	y++;
 
-	// IMR
+ 	 // IMR
 	strText.Format(_T("%02X"), m_midi.imr);
 	SetString(x, y, strText);
 	y++;
 
-	// IER
+ 	 // IER
 	strText.Format(_T("%02X"), m_midi.ier);
 	SetString(x, y, strText);
 }
 
-//---------------------------------------------------------------------------
-//
-//	文字列テーブル(割り込み)
-//
-//---------------------------------------------------------------------------
+  //---------------------------------------------------------------------------
+  //
+  //	Tabla de cadenas (Interrupcion)
+  //
+  //---------------------------------------------------------------------------
 LPCTSTR CMIDIWnd::DescInt[] = {
 	_T("Level"),
 	_T("IVR"),
@@ -3850,11 +3850,11 @@ LPCTSTR CMIDIWnd::DescInt[] = {
 	NULL
 };
 
-//---------------------------------------------------------------------------
-//
-//	セットアップ(送信)
-//
-//---------------------------------------------------------------------------
+  //---------------------------------------------------------------------------
+  //
+  //	Configuracion (Transmision)
+  //
+  //---------------------------------------------------------------------------
 void FASTCALL CMIDIWnd::SetupTrans(int x, int y)
 {
 	int i;
@@ -3864,7 +3864,7 @@ void FASTCALL CMIDIWnd::SetupTrans(int x, int y)
 	ASSERT((x >= 0) && (x < m_nWidth));
 	ASSERT((y >= 0) && (y < m_nHeight));
 
-	// 文字列テーブル
+ 	 // Tabla de cadenas
 	for (i=0;; i++) {
 		if (!DescTrans[i]) {
 			break;
@@ -3872,59 +3872,59 @@ void FASTCALL CMIDIWnd::SetupTrans(int x, int y)
 		SetString(x, y + i, DescTrans[i]);
 	}
 
-	// オフセット
+ 	 // Offset (Desplazamiento)
 	x += 8;
 
-	// TRR
+ 	 // TRR
 	strText.Format(_T("%02X"), m_midi.trr);
 	SetString(x, y, strText);
 	y++;
 
-	// TMR
+ 	 // TMR
 	strText.Format(_T("%02X"), m_midi.tmr);
 	SetString(x, y, strText);
 	y++;
 
-	// TBS
+ 	 // TBS
 	strText.Format(_T("%02X"), m_midi.tbs);
 	SetString(x, y, strText);
 	y++;
 
-	// TCR
+ 	 // TCR
 	strText.Format(_T("%02X"), m_midi.tcr);
 	SetString(x, y, strText);
 	y++;
 
-	// TCN
+ 	 // TCN
 	strText.Format(_T("%03X"), m_midi.tcn);
 	SetString(x, y, strText);
 	y++;
 
-	// Num
+ 	 // Num
 	strText.Format(_T("%d"), m_midi.normnum);
 	SetString(x, y, strText);
 	y++;
 
-	// Read
+ 	 // Leer (Read)
 	strText.Format(_T("%d"), m_midi.normread);
 	SetString(x, y, strText);
 	y++;
 
-	// Write
+ 	 // Escribir (Write)
 	strText.Format(_T("%d"), m_midi.normwrite);
 	SetString(x, y, strText);
 	y++;
 
-	// Total
+ 	 // Total
 	strText.Format(_T("%-6d"), m_midi.normtotal);
 	SetString(x, y, strText);
 }
 
-//---------------------------------------------------------------------------
-//
-//	文字列テーブル(送信)
-//
-//---------------------------------------------------------------------------
+  //---------------------------------------------------------------------------
+  //
+  //	Tabla de cadenas (Transmision)
+  //
+  //---------------------------------------------------------------------------
 LPCTSTR CMIDIWnd::DescTrans[] = {
 	_T("TRR"),
 	_T("TMR"),
@@ -3938,11 +3938,11 @@ LPCTSTR CMIDIWnd::DescTrans[] = {
 	NULL
 };
 
-//---------------------------------------------------------------------------
-//
-//	セットアップ(受信)
-//
-//---------------------------------------------------------------------------
+  //---------------------------------------------------------------------------
+  //
+  //	Configuracion (Recepcion)
+  //
+  //---------------------------------------------------------------------------
 void FASTCALL CMIDIWnd::SetupRecv(int x, int y)
 {
 	int i;
@@ -3952,7 +3952,7 @@ void FASTCALL CMIDIWnd::SetupRecv(int x, int y)
 	ASSERT((x >= 0) && (x < m_nWidth));
 	ASSERT((y >= 0) && (y < m_nHeight));
 
-	// 文字列テーブル
+ 	 // Tabla de cadenas
 	for (i=0;; i++) {
 		if (!DescRecv[i]) {
 			break;
@@ -3960,59 +3960,59 @@ void FASTCALL CMIDIWnd::SetupRecv(int x, int y)
 		SetString(x, y + i, DescRecv[i]);
 	}
 
-	// オフセット
+ 	 // Offset (Desplazamiento)
 	x += 8;
 
-	// RRR
+ 	 // RRR
 	strText.Format(_T("%02X"), m_midi.rrr);
 	SetString(x, y, strText);
 	y++;
 
-	// RMR
+ 	 // RMR
 	strText.Format(_T("%02X"), m_midi.rmr);
 	SetString(x, y, strText);
 	y++;
 
-	// RSR
+ 	 // RSR
 	strText.Format(_T("%02X"), m_midi.rsr);
 	SetString(x, y, strText);
 	y++;
 
-	// RCR
+ 	 // RCR
 	strText.Format(_T("%02X"), m_midi.rcr);
 	SetString(x, y, strText);
 	y++;
 
-	// RCN
+ 	 // RCN
 	strText.Format(_T("%03X"), m_midi.rcn);
 	SetString(x, y, strText);
 	y++;
 
-	// Num
+ 	 // Num
 	strText.Format(_T("%d"), m_midi.stdnum);
 	SetString(x, y, strText);
 	y++;
 
-	// Read
+ 	 // Leer (Read)
 	strText.Format(_T("%d"), m_midi.stdread);
 	SetString(x, y, strText);
 	y++;
 
-	// Write
+ 	 // Escribir (Write)
 	strText.Format(_T("%d"), m_midi.stdwrite);
 	SetString(x, y, strText);
 	y++;
 
-	// Total
+ 	 // Total
 	strText.Format(_T("%-6d"), m_midi.stdtotal);
 	SetString(x, y, strText);
 }
 
-//---------------------------------------------------------------------------
-//
-//	文字列テーブル(受信)
-//
-//---------------------------------------------------------------------------
+  //---------------------------------------------------------------------------
+  //
+  //	Tabla de cadenas (Recepcion)
+  //
+  //---------------------------------------------------------------------------
 LPCTSTR CMIDIWnd::DescRecv[] = {
 	_T("RRR"),
 	_T("RMR"),
@@ -4026,11 +4026,11 @@ LPCTSTR CMIDIWnd::DescRecv[] = {
 	NULL
 };
 
-//---------------------------------------------------------------------------
-//
-//	セットアップ(リアルタイム送信)
-//
-//---------------------------------------------------------------------------
+  //---------------------------------------------------------------------------
+  //
+  //	Configuracion (Transmision en tiempo real)
+  //
+  //---------------------------------------------------------------------------
 void FASTCALL CMIDIWnd::SetupRT(int x, int y)
 {
 	int i;
@@ -4040,7 +4040,7 @@ void FASTCALL CMIDIWnd::SetupRT(int x, int y)
 	ASSERT((x >= 0) && (x < m_nWidth));
 	ASSERT((y >= 0) && (y < m_nHeight));
 
-	// 文字列テーブル
+ 	 // Tabla de cadenas
 	for (i=0;; i++) {
 		if (!DescRT[i]) {
 			break;
@@ -4048,39 +4048,39 @@ void FASTCALL CMIDIWnd::SetupRT(int x, int y)
 		SetString(x, y + i, DescRT[i]);
 	}
 
-	// オフセット
+ 	 // Offset (Desplazamiento)
 	x += 8;
 
-	// DMR
+ 	 // DMR
 	strText.Format(_T("%02X"), m_midi.dmr);
 	SetString(x, y, strText);
 	y++;
 
-	// Num
+ 	 // Num
 	strText.Format(_T("%d"), m_midi.rtnum);
 	SetString(x, y, strText);
 	y++;
 
-	// Read
+ 	 // Leer (Read)
 	strText.Format(_T("%d"), m_midi.rtread);
 	SetString(x, y, strText);
 	y++;
 
-	// Write
+ 	 // Escribir (Write)
 	strText.Format(_T("%d"), m_midi.rtwrite);
 	SetString(x, y, strText);
 	y++;
 
-	// Total
+ 	 // Total
 	strText.Format(_T("%-6d"), m_midi.rttotal);
 	SetString(x, y, strText);
 }
 
-//---------------------------------------------------------------------------
-//
-//	文字列テーブル(リアルタイム送信)
-//
-//---------------------------------------------------------------------------
+  //---------------------------------------------------------------------------
+  //
+  //	Tabla de cadenas (Transmision en tiempo real)
+  //
+  //---------------------------------------------------------------------------
 LPCTSTR CMIDIWnd::DescRT[] = {
 	_T("DMR"),
 	_T("Num"),
@@ -4090,11 +4090,11 @@ LPCTSTR CMIDIWnd::DescRT[] = {
 	NULL
 };
 
-//---------------------------------------------------------------------------
-//
-//	セットアップ(リアルタイム受信)
-//
-//---------------------------------------------------------------------------
+  //---------------------------------------------------------------------------
+  //
+  //	Configuracion (Recepcion en tiempo real)
+  //
+  //---------------------------------------------------------------------------
 void FASTCALL CMIDIWnd::SetupRR(int x, int y)
 {
 	int i;
@@ -4104,7 +4104,7 @@ void FASTCALL CMIDIWnd::SetupRR(int x, int y)
 	ASSERT((x >= 0) && (x < m_nWidth));
 	ASSERT((y >= 0) && (y < m_nHeight));
 
-	// 文字列テーブル
+ 	 // Tabla de cadenas
 	for (i=0;; i++) {
 		if (!DescRR[i]) {
 			break;
@@ -4112,39 +4112,39 @@ void FASTCALL CMIDIWnd::SetupRR(int x, int y)
 		SetString(x, y + i, DescRR[i]);
 	}
 
-	// オフセット
+ 	 // Offset (Desplazamiento)
 	x += 8;
 
-	// DCR
+ 	 // DCR
 	strText.Format(_T("%02X"), m_midi.dcr);
 	SetString(x, y, strText);
 	y++;
 
-	// Num
+ 	 // Num
 	strText.Format(_T("%d"), m_midi.rrnum);
 	SetString(x, y, strText);
 	y++;
 
-	// Read
+ 	 // Leer (Read)
 	strText.Format(_T("%d"), m_midi.rrread);
 	SetString(x, y, strText);
 	y++;
 
-	// Write
+ 	 // Escribir (Write)
 	strText.Format(_T("%d"), m_midi.rrwrite);
 	SetString(x, y, strText);
 	y++;
 
-	// Total
+ 	 // Total
 	strText.Format(_T("%-6d"), m_midi.rrtotal);
 	SetString(x, y, strText);
 }
 
-//---------------------------------------------------------------------------
-//
-//	文字列テーブル(リアルタイム受信)
-//
-//---------------------------------------------------------------------------
+  //---------------------------------------------------------------------------
+  //
+  //	Tabla de cadenas (Recepcion en tiempo real)
+  //
+  //---------------------------------------------------------------------------
 LPCTSTR CMIDIWnd::DescRR[] = {
 	_T("DCR"),
 	_T("Num"),
@@ -4154,11 +4154,11 @@ LPCTSTR CMIDIWnd::DescRR[] = {
 	NULL
 };
 
-//---------------------------------------------------------------------------
-//
-//	セットアップ(カウンタ)
-//
-//---------------------------------------------------------------------------
+  //---------------------------------------------------------------------------
+  //
+  //	Configuracion (Contador)
+  //
+  //---------------------------------------------------------------------------
 void FASTCALL CMIDIWnd::SetupCount(int x, int y)
 {
 	int i;
@@ -4168,7 +4168,7 @@ void FASTCALL CMIDIWnd::SetupCount(int x, int y)
 	ASSERT((x >= 0) && (x < m_nWidth));
 	ASSERT((y >= 0) && (y < m_nHeight));
 
-	// 文字列テーブル
+ 	 // Tabla de cadenas
 	for (i=0;; i++) {
 		if (!DescCount[i]) {
 			break;
@@ -4176,64 +4176,64 @@ void FASTCALL CMIDIWnd::SetupCount(int x, int y)
 		SetString(x, y + i, DescCount[i]);
 	}
 
-	// オフセット
+ 	 // Offset (Desplazamiento)
 	x += 8;
 
-	// CCR
+ 	 // CCR
 	strText.Format(_T("%02X"), m_midi.ccr);
 	SetString(x, y, strText);
 	y++;
 
-	// CDR
+ 	 // CDR
 	strText.Format(_T("%02X"), m_midi.cdr);
 	SetString(x, y, strText);
 	y++;
 
-	// CTR
+ 	 // CTR
 	strText.Format(_T("%02X"), m_midi.ctr);
 	SetString(x, y, strText);
 	y++;
 
-	// SRR
+ 	 // SRR
 	strText.Format(_T("%02X"), m_midi.srr);
 	SetString(x, y, strText);
 	y++;
 
-	// SCR
+ 	 // SCR
 	strText.Format(_T("%02X"), m_midi.scr);
 	SetString(x, y, strText);
 	y++;
 
-	// SCT
+ 	 // SCT
 	strText.Format(_T("%02X"), m_midi.sct);
 	SetString(x, y, strText);
 	y++;
 
-	// SPR
+ 	 // SPR
 	strText.Format(_T("%04X"), m_midi.spr);
 	SetString(x, y, strText);
 	y++;
 
-	// STR
+ 	 // STR
 	strText.Format(_T("%04X"), m_midi.str & 0xffff);
 	SetString(x, y, strText);
 	y++;
 
-	// GTR
+ 	 // GTR
 	strText.Format(_T("%04X"), m_midi.gtr);
 	SetString(x, y, strText);
 	y++;
 
-	// MTR
+ 	 // MTR
 	strText.Format(_T("%04X"), m_midi.mtr);
 	SetString(x, y, strText);
 }
 
-//---------------------------------------------------------------------------
-//
-//	文字列テーブル(カウンタ)
-//
-//---------------------------------------------------------------------------
+  //---------------------------------------------------------------------------
+  //
+  //	Tabla de cadenas (Contador)
+  //
+  //---------------------------------------------------------------------------
 LPCTSTR CMIDIWnd::DescCount[] = {
 	_T("CCR"),
 	_T("CDR"),
@@ -4248,11 +4248,11 @@ LPCTSTR CMIDIWnd::DescCount[] = {
 	NULL
 };
 
-//---------------------------------------------------------------------------
-//
-//	セットアップ(アドレスハンタ)
-//
-//---------------------------------------------------------------------------
+  //---------------------------------------------------------------------------
+  //
+  //	Configuracion (Address Hunter)
+  //
+  //---------------------------------------------------------------------------
 void FASTCALL CMIDIWnd::SetupHunter(int x, int y)
 {
 	int i;
@@ -4262,7 +4262,7 @@ void FASTCALL CMIDIWnd::SetupHunter(int x, int y)
 	ASSERT((x >= 0) && (x < m_nWidth));
 	ASSERT((y >= 0) && (y < m_nHeight));
 
-	// 文字列テーブル
+ 	 // Tabla de cadenas
 	for (i=0;; i++) {
 		if (!DescHunter[i]) {
 			break;
@@ -4270,35 +4270,35 @@ void FASTCALL CMIDIWnd::SetupHunter(int x, int y)
 		SetString(x, y + i, DescHunter[i]);
 	}
 
-	// オフセット
+ 	 // Offset (Desplazamiento)
 	x += 8;
 
-	// AMR
+ 	 // AMR
 	strText.Format(_T("%02X"), m_midi.amr);
 	SetString(x, y, strText);
 	y++;
 
-	// ADR
+ 	 // ADR
 	strText.Format(_T("%02X"), m_midi.adr);
 	SetString(x, y, strText);
 }
 
-//---------------------------------------------------------------------------
-//
-//	文字列テーブル(アドレスハンタ)
-//
-//---------------------------------------------------------------------------
+  //---------------------------------------------------------------------------
+  //
+  //	Tabla de cadenas (Address Hunter)
+  //
+  //---------------------------------------------------------------------------
 LPCTSTR CMIDIWnd::DescHunter[] = {
 	_T("AMR"),
 	_T("ADR"),
 	NULL
 };
 
-//---------------------------------------------------------------------------
-//
-//	セットアップ(FSK)
-//
-//---------------------------------------------------------------------------
+  //---------------------------------------------------------------------------
+  //
+  //	Configuracion (FSK)
+  //
+  //---------------------------------------------------------------------------
 void FASTCALL CMIDIWnd::SetupFSK(int x, int y)
 {
 	int i;
@@ -4308,7 +4308,7 @@ void FASTCALL CMIDIWnd::SetupFSK(int x, int y)
 	ASSERT((x >= 0) && (x < m_nWidth));
 	ASSERT((y >= 0) && (y < m_nHeight));
 
-	// 文字列テーブル
+ 	 // Tabla de cadenas
 	for (i=0;; i++) {
 		if (!DescFSK[i]) {
 			break;
@@ -4316,35 +4316,35 @@ void FASTCALL CMIDIWnd::SetupFSK(int x, int y)
 		SetString(x, y + i, DescFSK[i]);
 	}
 
-	// オフセット
+ 	 // Offset (Desplazamiento)
 	x += 8;
 
-	// FSR
+ 	 // FSR
 	strText.Format(_T("%02X"), m_midi.fsr);
 	SetString(x, y, strText);
 	y++;
 
-	// FCR
+ 	 // FCR
 	strText.Format(_T("%02X"), m_midi.fcr);
 	SetString(x, y, strText);
 }
 
-//---------------------------------------------------------------------------
-//
-//	文字列テーブル(FSK)
-//
-//---------------------------------------------------------------------------
+  //---------------------------------------------------------------------------
+  //
+  //	Tabla de cadenas (FSK)
+  //
+  //---------------------------------------------------------------------------
 LPCTSTR CMIDIWnd::DescFSK[] = {
 	_T("FSR"),
 	_T("FCR"),
 	NULL
 };
 
-//---------------------------------------------------------------------------
-//
-//	セットアップ(GPIO)
-//
-//---------------------------------------------------------------------------
+  //---------------------------------------------------------------------------
+  //
+  //	Configuracion (GPIO)
+  //
+  //---------------------------------------------------------------------------
 void FASTCALL CMIDIWnd::SetupGPIO(int x, int y)
 {
 	int i;
@@ -4354,7 +4354,7 @@ void FASTCALL CMIDIWnd::SetupGPIO(int x, int y)
 	ASSERT((x >= 0) && (x < m_nWidth));
 	ASSERT((y >= 0) && (y < m_nHeight));
 
-	// 文字列テーブル
+ 	 // Tabla de cadenas
 	for (i=0;; i++) {
 		if (!DescGPIO[i]) {
 			break;
@@ -4362,29 +4362,29 @@ void FASTCALL CMIDIWnd::SetupGPIO(int x, int y)
 		SetString(x, y + i, DescGPIO[i]);
 	}
 
-	// オフセット
+ 	 // Offset (Desplazamiento)
 	x += 8;
 
-	// EDR
+ 	 // EDR
 	strText.Format(_T("%02X"), m_midi.edr);
 	SetString(x, y, strText);
 	y++;
 
-	// EOR
+ 	 // EOR
 	strText.Format(_T("%02X"), m_midi.eor);
 	SetString(x, y, strText);
 	y++;
 
-	// EIR
+ 	 // EIR
 	strText.Format(_T("%02X"), m_midi.eir);
 	SetString(x, y, strText);
 }
 
-//---------------------------------------------------------------------------
-//
-//	文字列テーブル(GPIO)
-//
-//---------------------------------------------------------------------------
+  //---------------------------------------------------------------------------
+  //
+  //	Tabla de cadenas (GPIO)
+  //
+  //---------------------------------------------------------------------------
 LPCTSTR CMIDIWnd::DescGPIO[] = {
 	_T("EDR"),
 	_T("EOR"),
@@ -4392,67 +4392,67 @@ LPCTSTR CMIDIWnd::DescGPIO[] = {
 	NULL
 };
 
-//===========================================================================
-//
-//	SCSIウィンドウ
-//
-//===========================================================================
+  //===========================================================================
+  //
+  //	Ventana SCSI
+  //
+  //===========================================================================
 
-//---------------------------------------------------------------------------
-//
-//	コンストラクタ
-//
-//---------------------------------------------------------------------------
+  //---------------------------------------------------------------------------
+  //
+  //	Constructor
+  //
+  //---------------------------------------------------------------------------
 CSCSIWnd::CSCSIWnd()
 {
-	// ウィンドウパラメータ定義
+ 	 // Definicion de parametros de ventana
 	m_dwID = MAKEID('S', 'C', 'S', 'I');
 	::GetMsg(IDS_SWND_SCSI, m_strCaption);
 	m_nWidth = 39;
 	m_nHeight = 22;
 
-	// SCSI取得
+ 	 // Obtener SCSI
 	m_pSCSI = (SCSI*)::GetVM()->SearchDevice(MAKEID('S', 'C', 'S', 'I'));
 	ASSERT(m_pSCSI);
 }
 
-//---------------------------------------------------------------------------
-//
-//	セットアップ
-//
-//---------------------------------------------------------------------------
+  //---------------------------------------------------------------------------
+  //
+  //	Configuracion
+  //
+  //---------------------------------------------------------------------------
 void FASTCALL CSCSIWnd::Setup()
 {
 	ASSERT(this);
 	ASSERT(m_pSCSI);
 
-	// クリア
+ 	 // Limpiar
 	Clear();
 
-	// SCSIデータ取得
+ 	 // Obtener datos SCSI
 	m_pSCSI->GetSCSI(&m_scsi);
 
-	// コマンド
+ 	 // Comando
 	SetupCmd(0, 0);
 
-	// コントローラ
+ 	 // Controlador
 	SetupCtrl(0, 1);
 
-	// ドライブ
+ 	 // Unidad (Drive)
 	SetupDrive(0, 14);
 
-	// レジスタ
+ 	 // Registro
 	SetupReg(26, 0);
 
-	// CDB
+ 	 // CDB
 	SetupCDB(26, 12);
 }
 
-//---------------------------------------------------------------------------
-//
-//	セットアップ(コマンド)
-//
-//---------------------------------------------------------------------------
+  //---------------------------------------------------------------------------
+  //
+  //	Configuracion (Comando)
+  //
+  //---------------------------------------------------------------------------
 void FASTCALL CSCSIWnd::SetupCmd(int x, int y)
 {
 	CString strCmd;
@@ -4461,10 +4461,10 @@ void FASTCALL CSCSIWnd::SetupCmd(int x, int y)
 	ASSERT(x >= 0);
 	ASSERT(y >= 0);
 
-	// 初期化
+ 	 // Inicializacion
 	strCmd = _T("(UNKNOWN)");
 
-	// コマンド別
+ 	 // Por comando
 	switch (m_scsi.cmd[0]) {
 		case 0x00:
 			strCmd = _T("TEST UNIT READY");
@@ -4531,7 +4531,7 @@ void FASTCALL CSCSIWnd::SetupCmd(int x, int y)
 			break;
 	}
 
-	// アイドルフェーズのチェック
+ 	 // Comprobar fase inactiva (Idle)
 	if (m_scsi.phase == SCSI::busfree) {
 		strCmd = _T("(IDLE)");
 	}
@@ -4539,11 +4539,11 @@ void FASTCALL CSCSIWnd::SetupCmd(int x, int y)
 	SetString(x, y, strCmd);
 }
 
-//---------------------------------------------------------------------------
-//
-//	セットアップ(コントローラ)
-//
-//---------------------------------------------------------------------------
+  //---------------------------------------------------------------------------
+  //
+  //	Configuracion (Controlador)
+  //
+  //---------------------------------------------------------------------------
 void FASTCALL CSCSIWnd::SetupCtrl(int x, int y)
 {
 	CString strPhase;
@@ -4553,7 +4553,7 @@ void FASTCALL CSCSIWnd::SetupCtrl(int x, int y)
 	ASSERT(x >= 0);
 	ASSERT(y >= 0);
 
-	// フェーズ
+ 	 // Fase
 	switch (m_scsi.phase) {
 		case SCSI::busfree:
 			strPhase = _T("Busfree");
@@ -4596,7 +4596,7 @@ void FASTCALL CSCSIWnd::SetupCtrl(int x, int y)
 	SetString(x + 11, y, strPhase);
 	y++;
 
-	// セレクト
+ 	 // Selecci?n (Select)
 	SetString(x, y, _T("SEL"));
 	if (m_scsi.sel) {
 		SetString(x + 11, y, _T("Select"));
@@ -4606,7 +4606,7 @@ void FASTCALL CSCSIWnd::SetupCtrl(int x, int y)
 	}
 	y++;
 
-	// アテンション
+ 	 // Atencion (Attention)
 	SetString(x, y, _T("ATN"));
 	if (m_scsi.atn) {
 		SetString(x + 11, y, _T("Attention"));
@@ -4616,7 +4616,7 @@ void FASTCALL CSCSIWnd::SetupCtrl(int x, int y)
 	}
 	y++;
 
-	// メッセージ
+ 	 // Mensaje
 	SetString(x, y, _T("MSG"));
 	if (m_scsi.msg) {
 		SetString(x + 11, y, _T("Message"));
@@ -4626,7 +4626,7 @@ void FASTCALL CSCSIWnd::SetupCtrl(int x, int y)
 	}
 	y++;
 
-	// コマンド/データ
+ 	 // Comando/Datos
 	SetString(x, y, _T("C/D"));
 	if (m_scsi.cd) {
 		SetString(x + 11, y, _T("Command"));
@@ -4636,7 +4636,7 @@ void FASTCALL CSCSIWnd::SetupCtrl(int x, int y)
 	}
 	y++;
 
-	// Input/Output
+ 	 // Entrada/Salida (Input/Output)
 	SetString(x, y, _T("I/O"));
 	if (m_scsi.io) {
 		SetString(x + 11, y, _T("Input"));
@@ -4646,7 +4646,7 @@ void FASTCALL CSCSIWnd::SetupCtrl(int x, int y)
 	}
 	y++;
 
-	// Busy
+ 	 // Busy (Ocupado)
 	SetString(x, y, _T("BSY"));
 	if (m_scsi.bsy) {
 		SetString(x + 11, y, _T("Busy"));
@@ -4656,7 +4656,7 @@ void FASTCALL CSCSIWnd::SetupCtrl(int x, int y)
 	}
 	y++;
 
-	// REQ
+ 	 // REQ
 	SetString(x, y, _T("REQ"));
 	if (m_scsi.req) {
 		SetString(x + 11, y, _T("Request"));
@@ -4666,7 +4666,7 @@ void FASTCALL CSCSIWnd::SetupCtrl(int x, int y)
 	}
 	y++;
 
-	// ACK
+ 	 // ACK
 	SetString(x, y, _T("ACK"));
 	if (m_scsi.ack) {
 		SetString(x + 11, y, _T("ACK"));
@@ -4676,7 +4676,7 @@ void FASTCALL CSCSIWnd::SetupCtrl(int x, int y)
 	}
 	y++;
 
-	// リセット
+ 	 // Reseteo (Reset)
 	SetString(x, y, _T("RST"));
 	if (m_scsi.rst) {
 		SetString(x + 11, y, _T("Reset"));
@@ -4686,23 +4686,23 @@ void FASTCALL CSCSIWnd::SetupCtrl(int x, int y)
 	}
 	y++;
 
-	// Message
+ 	 // Mensaje
 	SetString(x, y, _T("Message"));
 	strText.Format(_T("%02X"), m_scsi.message);
 	SetString(x + 11, y, strText);
 	y++;
 
-	// Status
+ 	 // Estado (Status)
 	SetString(x, y, _T("Status"));
 	strText.Format(_T("%02X"), m_scsi.status);
 	SetString(x + 11, y, strText);
 }
 
-//---------------------------------------------------------------------------
-//
-//	セットアップ(ドライブ)
-//
-//---------------------------------------------------------------------------
+  //---------------------------------------------------------------------------
+  //
+  //	Configuracion (Unidad)
+  //
+  //---------------------------------------------------------------------------
 void FASTCALL CSCSIWnd::SetupDrive(int x, int y)
 {
 	CString strText;
@@ -4714,10 +4714,10 @@ void FASTCALL CSCSIWnd::SetupDrive(int x, int y)
 	ASSERT(x >= 0);
 	ASSERT(y >= 0);
 
-	// 初期化
+ 	 // Inicializacion
 	pDisk = NULL;
 
-	// ID
+ 	 // ID
 	SetString(x, y, _T("ID"));
 	if ((m_scsi.id >= 0) && (m_scsi.id <= 7)) {
 		strText.Format(_T("%d"), m_scsi.id);
@@ -4729,7 +4729,7 @@ void FASTCALL CSCSIWnd::SetupDrive(int x, int y)
 	SetString(x + 11, y, strText);
 	y++;
 
-	// データ取得
+ 	 // Obtener datos
 	if (pDisk) {
 		pDisk->GetDisk(&disk);
 	}
@@ -4737,7 +4737,7 @@ void FASTCALL CSCSIWnd::SetupDrive(int x, int y)
 		memset(&disk, 0, sizeof(disk));
 	}
 
-	// 種別
+ 	 // Tipo
 	SetString(x, y, _T("Type"));
 	strText = _T("(No Unit)");
 	if (pDisk) {
@@ -4756,7 +4756,7 @@ void FASTCALL CSCSIWnd::SetupDrive(int x, int y)
 	SetString(x + 11, y, strText);
 	y++;
 
-	// 容量
+ 	 // Capacidad
 	SetString(x, y, _T("Capacity"));
 	dwSize = 0;
 	if (pDisk) {
@@ -4772,7 +4772,7 @@ void FASTCALL CSCSIWnd::SetupDrive(int x, int y)
 	SetString(x + 11, y, strText);
 	y++;
 
-	// アクセスタイプ
+ 	 // Tipo de acceso
 	SetString(x, y, _T("Access"));
 	if (pDisk) {
 		if (disk.writep) {
@@ -4787,7 +4787,7 @@ void FASTCALL CSCSIWnd::SetupDrive(int x, int y)
 	}
 	y++;
 
-	// メディア属性
+ 	 // Atributos de medio
 	SetString(x, y, _T("Media"));
 	if (pDisk) {
 		if (disk.removable) {
@@ -4802,10 +4802,10 @@ void FASTCALL CSCSIWnd::SetupDrive(int x, int y)
 	}
 	y++;
 
-	// 初期化
+ 	 // Inicializacion
 	strText = _T("N/A");
 
-	// センスキー
+ 	 // Sense key (Clave de sentido)
 	SetString(x, y, _T("Sense"));
 	if (pDisk) {
 		strText.Format(_T("%02X"), (BYTE)(disk.code >> 16));
@@ -4813,7 +4813,7 @@ void FASTCALL CSCSIWnd::SetupDrive(int x, int y)
 	SetString(x + 11, y, strText);
 	y++;
 
-	// 拡張センスコード
+ 	 // Codigo de sentido extendido
 	SetString(x, y, _T("ASC"));
 	if (pDisk) {
 		strText.Format(_T("%02X"), (BYTE)(disk.code >> 8));
@@ -4821,7 +4821,7 @@ void FASTCALL CSCSIWnd::SetupDrive(int x, int y)
 	SetString(x + 11, y, strText);
 	y++;
 
-	// 拡張センスコード
+ 	 // Codigo de sentido extendido
 	SetString(x, y, _T("ASCQ"));
 	if (pDisk) {
 		strText.Format(_T("%02X"), (BYTE)disk.code);
@@ -4829,11 +4829,11 @@ void FASTCALL CSCSIWnd::SetupDrive(int x, int y)
 	SetString(x + 11, y, strText);
 }
 
-//---------------------------------------------------------------------------
-//
-//	セットアップ(レジスタ)
-//
-//---------------------------------------------------------------------------
+  //---------------------------------------------------------------------------
+  //
+  //	Configuracion (Registro)
+  //
+  //---------------------------------------------------------------------------
 void FASTCALL CSCSIWnd::SetupReg(int x, int y)
 {
 	CString strText;
@@ -4842,61 +4842,61 @@ void FASTCALL CSCSIWnd::SetupReg(int x, int y)
 	ASSERT(x >= 0);
 	ASSERT(y >= 0);
 
-	// BDID(ビット表示)
+ 	 // BDID (Visualizacion de bits)
 	SetString(x, y, _T("BDID"));
 	strText.Format(_T("%02X"), m_scsi.bdid);
 	SetString(x + 11, y, strText);
 	y++;
 
-	// SCTL
+ 	 // SCTL
 	SetString(x, y, _T("SCTL"));
 	strText.Format(_T("%02X"), m_scsi.sctl);
 	SetString(x + 11, y, strText);
 	y++;
 
-	// SCMD
+ 	 // SCMD
 	SetString(x, y, _T("SCMD"));
 	strText.Format(_T("%02X"), m_scsi.scmd);
 	SetString(x + 11, y, strText);
 	y++;
 
-	// INTS
+ 	 // INTS
 	SetString(x, y, _T("INTS"));
 	strText.Format(_T("%02X"), m_scsi.ints);
 	SetString(x + 11, y, strText);
 	y++;
 
-	// SDGC
+ 	 // SDGC
 	SetString(x, y, _T("SDGC"));
 	strText.Format(_T("%02X"), m_scsi.sdgc);
 	SetString(x + 11, y, strText);
 	y++;
 
-	// PCTL
+ 	 // PCTL
 	SetString(x, y, _T("PCTL"));
 	strText.Format(_T("%02X"), m_scsi.pctl);
 	SetString(x + 11, y, strText);
 	y++;
 
-	// MBC
+ 	 // MBC
 	SetString(x, y, _T("MBC"));
 	strText.Format(_T("%02X"), m_scsi.mbc);
 	SetString(x + 11, y, strText);
 	y++;
 
-	// TEMP
+ 	 // TEMP
 	SetString(x, y, _T("TEMP"));
 	strText.Format(_T("%02X"), m_scsi.temp);
 	SetString(x + 11, y, strText);
 	y++;
 
-	// TC
+ 	 // TC
 	SetString(x, y, _T("TC"));
 	strText.Format(_T("%06X"), m_scsi.tc);
 	SetString(x + 11 - 4, y, strText);
 	y++;
 
-	// Transfer
+ 	 // Transferencia (Transfer)
 	SetString(x, y, _T("XFER"));
 	if (m_scsi.trans) {
 		SetString(x + 9, y, _T("Auto"));
@@ -4906,17 +4906,17 @@ void FASTCALL CSCSIWnd::SetupReg(int x, int y)
 	}
 	y++;
 
-	// Length
+ 	 // Longitud (Length)
 	SetString(x, y, _T("LEN"));
 	strText.Format(_T("%04X"), m_scsi.length);
 	SetString(x + 9, y, strText);
 }
 
-//---------------------------------------------------------------------------
-//
-//	セットアップ(CDB)
-//
-//---------------------------------------------------------------------------
+  //---------------------------------------------------------------------------
+  //
+  //	Configuracion (CDB)
+  //
+  //---------------------------------------------------------------------------
 void FASTCALL CSCSIWnd::SetupCDB(int x, int y)
 {
 	int nCDB;
@@ -4926,24 +4926,24 @@ void FASTCALL CSCSIWnd::SetupCDB(int x, int y)
 	ASSERT(x >= 0);
 	ASSERT(y >= 0);
 
-	// CDBループ
+ 	 // Bucle CDB
 	for (nCDB=0; nCDB<10; nCDB++) {
-		// 6バイト以降は表示しない場合あり
+ 		 // A partir del 6? byte podria no mostrarse
 		if (nCDB == 6) {
 			if (m_scsi.cmd[0] < 0x20) {
 				break;
 			}
 		}
 
-		// 表示
+ 		 // Mostrar
 		strText.Format(_T("CDB[%d]"), nCDB);
 		SetString(x, y, strText);
 		strText.Format(_T("%02X"), m_scsi.cmd[nCDB]);
 		SetString(x + 11, y, strText);
 
-		// 次へ
+ 		 // Siguiente
 		y++;
 	}
 }
 
-#endif	// _WIN32
+ #endif	 // _WIN32

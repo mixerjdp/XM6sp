@@ -1,9 +1,9 @@
 //---------------------------------------------------------------------------
 //
-//	X68000 EMULATOR "XM6"
+//	EMULADOR X68000 "XM6"
 //
 //	Copyright (C) 2001-2006 ＰＩ．(ytanaka@ipc-tokai.or.jp)
-//	[ MFC アセンブラサブ ]
+//	[ Sub-ensamblador MFC ]
 //
 //---------------------------------------------------------------------------
 
@@ -18,39 +18,39 @@ extern "C" {
 
 //---------------------------------------------------------------------------
 //
-//	プロトタイプ宣言
+//	Declaracion de prototipos
 //
 //---------------------------------------------------------------------------
 BOOL IsMMXSupport(void);
-										// MMXサポートチェック
+										// Verificacion de soporte MMX
 BOOL IsCMOVSupport(void);
-										// CMOVサポートチェック
+										// Verificacion de soporte CMOV
 
 void SoundMMX(DWORD *pSrc, WORD *pDst, int nBytes);
-										// サウンドサンプルサイジング(MMX)
+										// Redimensionamiento de muestras de sonido (MMX)
 void SoundEMMS();
-										// サウンドサンプルサイジング(EMMS)
+										// Redimensionamiento de muestras de sonido (EMMS)
 
 void VideoText(const BYTE *pTVRAM, DWORD *pBits, int nLen, DWORD *pPalette);
-										// テキストVRAM
+										// VRAM de texto
 void VideoG1024A(const BYTE *src, DWORD *dst, DWORD *plt);
-										// グラフィックVRAM 1024×1024(ページ0,1)
+										// VRAM grafica 1024x1024 (Pagina 0,1)
 void VideoG1024B(const BYTE *src, DWORD *dst, DWORD *plt);
-										// グラフィックVRAM 1024×1024(ページ2,3)
+										// VRAM grafica 1024x1024 (Pagina 2,3)
 void VideoG16A(const BYTE *src, DWORD *dst, int len, DWORD *plt);
-										// グラフィックVRAM 16色(ページ0)
+										// VRAM grafica 16 colores (Pagina 0)
 void VideoG16B(const BYTE *src, DWORD *dst, int len, DWORD *plt);
-										// グラフィックVRAM 16色(ページ1)
+										// VRAM grafica 16 colores (Pagina 1)
 void VideoG16C(const BYTE *src, DWORD *dst, int len, DWORD *plt);
-										// グラフィックVRAM 16色(ページ2)
+										// VRAM grafica 16 colores (Pagina 2)
 void VideoG16D(const BYTE *src, DWORD *dst, int len, DWORD *plt);
-										// グラフィックVRAM 16色(ページ3)
+										// VRAM grafica 16 colores (Pagina 3)
 void VideoG256A(const BYTE *src, DWORD *dst, int len, DWORD *plt);
-										// グラフィックVRAM 256色(ページ0)
+										// VRAM grafica 256 colores (Pagina 0)
 void VideoG256B(const BYTE *src, DWORD *dst, int len, DWORD *plt);
-										// グラフィックVRAM 256色(ページ1)
+										// VRAM grafica 256 colores (Pagina 1)
 void VideoG64K(const BYTE *src, DWORD *dst, int len, DWORD *plt);
-										// グラフィックVRAM 65536色
+										// VRAM grafica 65536 colores
 void VideoPCG(BYTE *src, DWORD *dst, DWORD *plt);
 										// PCG
 void VideoBG16(BYTE *pcg, DWORD *dst, DWORD bg, int y, DWORD *plt);
