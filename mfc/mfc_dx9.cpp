@@ -123,7 +123,14 @@ void CDX9Renderer::Cleanup()
 BOOL CDX9Renderer::CreateTexture(int width, int height) 
 {
     if (!m_pDevice) return FALSE;
-    if (m_pTexture && m_TexWidth == width && m_TexHeight == height) return TRUE;
+    if (width < 1) width = 1;
+    if (height < 1) height = 1;
+
+    if (m_pTexture) {
+        if (m_TexWidth >= width && m_TexHeight >= height) return TRUE;
+        if (m_TexWidth > width) width = m_TexWidth;
+        if (m_TexHeight > height) height = m_TexHeight;
+    }
 
     ReleaseTexture();
 
@@ -161,7 +168,7 @@ BOOL CDX9Renderer::UpdateSurface(const DWORD* pSrcBuffer, int srcWidth, int srcH
     if (!CreateTexture(srcWidth, srcHeight)) return FALSE;
 
     D3DLOCKED_RECT lockedRect;
-    if (SUCCEEDED(m_pTexture->LockRect(0, &lockedRect, NULL, D3DLOCK_DISCARD))) {
+    if (SUCCEEDED(m_pTexture->LockRect(0, &lockedRect, NULL, D3DLOCK_DISCARD | D3DLOCK_NOSYSLOCK))) {
         DWORD* pDest = (DWORD*)lockedRect.pBits;
         int destPitch = lockedRect.Pitch / 4;
 

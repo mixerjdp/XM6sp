@@ -503,14 +503,14 @@ void FASTCALL CScheduler::Refresh()
 	}
 
 	// Pantalla (parcial)
+	pView->Draw(m_nSubWndDisp);
+
+	// Si es pantalla principal, completar frame como en el flujo legacy
 	if (m_nSubWndDisp < 0) {
-		pView->RequestPresent();
 		if (m_pRender) {
 			m_pRender->Complete();
 		}
 		m_dwDrawCount++;
-	} else {
-		pView->Draw(m_nSubWndDisp);
 	}
 
 	// Vista de la ciclica

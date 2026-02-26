@@ -47,9 +47,6 @@ CDrawView::CDrawView()
 	m_pFrmWnd = NULL;
 	m_bUseDX9 = TRUE;
 	m_lPresentPending = 0;
-	m_pStagingBuffer = NULL;
-	m_nStagingWidth = 0;
-	m_nStagingHeight = 0;
 	m_dwOSDUntil = 0;
 	m_szOSDText[0] = _T('\0');
 
@@ -224,12 +221,6 @@ void CDrawView::OnDestroy()
 	 // Borrar fuente de texto
 	m_TextFont.DeleteObject();
 	m_DX9Renderer.Cleanup();
-	if (m_pStagingBuffer) {
-		free(m_pStagingBuffer);
-		m_pStagingBuffer = NULL;
-		m_nStagingWidth = 0;
-		m_nStagingHeight = 0;
-	}
 
 	 // A la clase base
 	CView::OnDestroy();
@@ -803,12 +794,19 @@ void FASTCALL CDrawView::Refresh()
 void FASTCALL CDrawView::Draw(int nChildWnd)
 {
 	CSubWnd *pSubWnd;
+	CClientDC *pDC;
 
 	ASSERT(nChildWnd >= -1);
 
 	 // -1 es la vista Draw
 	if (nChildWnd < 0) {
-		RequestPresent();
+		if (m_bUseDX9) {
+			RequestPresent();
+		} else {
+			pDC = new CClientDC(this);
+			OnDraw(pDC);
+			delete pDC;
+		}
 		return;
 	}
 
@@ -936,6 +934,7 @@ LRESULT CDrawView::OnPresentFrame(WPARAM /*wParam*/, LPARAM /*lParam*/)
 				int srcWidth = 0;
 				int srcHeight = 0;
 				int srcPitch = 0;
+				BOOL bUpdated = FALSE;
 
 				::LockVM();
 				CRect rect;
@@ -946,35 +945,15 @@ LRESULT CDrawView::OnPresentFrame(WPARAM /*wParam*/, LPARAM /*lParam*/)
 				srcPitch = m_Info.nBMPWidth;
 
 				if ((srcWidth > 0) && (srcHeight > 0) && (srcPitch >= srcWidth)) {
-					size_t bufferSize = (size_t)srcWidth * (size_t)srcHeight * sizeof(DWORD);
-					if (!m_pStagingBuffer || (m_nStagingWidth != srcWidth) || (m_nStagingHeight != srcHeight)) {
-						if (m_pStagingBuffer) {
-							free(m_pStagingBuffer);
-							m_pStagingBuffer = NULL;
-						}
-						m_pStagingBuffer = (DWORD*)malloc(bufferSize);
-						if (m_pStagingBuffer) {
-							m_nStagingWidth = srcWidth;
-							m_nStagingHeight = srcHeight;
-						}
-					}
-
-					if (m_pStagingBuffer) {
-						for (int y = 0; y < srcHeight; y++) {
-							memcpy(m_pStagingBuffer + (y * srcWidth),
-								m_Info.pBits + (y * srcPitch),
-								srcWidth * sizeof(DWORD));
-						}
-					}
+					bUpdated = m_DX9Renderer.UpdateSurface(m_Info.pBits, srcWidth, srcHeight, srcPitch);
 				}
 
 				FinishFrame();
 				::UnlockVM();
 
-				if ((m_pStagingBuffer != NULL) && (m_nStagingWidth > 0) && (m_nStagingHeight > 0)) {
-					if (m_DX9Renderer.UpdateSurface(m_pStagingBuffer, m_nStagingWidth, m_nStagingHeight, m_nStagingWidth) &&
-						m_DX9Renderer.PresentFrame(m_nStagingWidth, m_nStagingHeight, TRUE, FALSE)) {
-						bPresented = TRUE;
+				if (bUpdated && m_DX9Renderer.PresentFrame(srcWidth, srcHeight, TRUE, FALSE)) {
+					bPresented = TRUE;
+					if (m_szOSDText[0] && (GetTickCount() <= m_dwOSDUntil)) {
 						CClientDC dc(this);
 						DrawOSD(&dc);
 					}

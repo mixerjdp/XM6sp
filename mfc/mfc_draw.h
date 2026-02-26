@@ -172,9 +172,6 @@ private:
 	CDX9Renderer m_DX9Renderer;
 	BOOL m_bUseDX9;
 	volatile LONG m_lPresentPending;
-	DWORD *m_pStagingBuffer;
-	int m_nStagingWidth;
-	int m_nStagingHeight;
 	DWORD m_dwOSDUntil;
 	TCHAR m_szOSDText[64];
 	CSubWnd *m_pSubWnd;

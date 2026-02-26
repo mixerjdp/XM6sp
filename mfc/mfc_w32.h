@@ -1,9 +1,9 @@
 //---------------------------------------------------------------------------
 //
-//	X68000 EMULATOR "XM6"
+//	EMULADOR X68000 "XM6"
 //
-//	Copyright (C) 2001-2005 ‚o‚hD(ytanaka@ipc-tokai.or.jp)
-//	[ MFC ƒTƒuƒEƒBƒ“ƒhƒE(Win32) ]
+//	Copyright (C) 2001-2005 ï¼°ï¼©ï¼(ytanaka@ipc-tokai.or.jp)
+//	[ Subventana MFC (Win32) ]
 //
 //---------------------------------------------------------------------------
 
@@ -18,290 +18,290 @@
 
 //===========================================================================
 //
-//	ƒRƒ“ƒ|[ƒlƒ“ƒgƒEƒBƒ“ƒhƒE
+//	Ventana de Componentes
 //
 //===========================================================================
 class CComponentWnd : public CSubTextWnd
 {
 public:
 	CComponentWnd();
-										// ƒRƒ“ƒXƒgƒ‰ƒNƒ^
+										// Constructor
 	void FASTCALL Setup();
-										// ƒZƒbƒgƒAƒbƒv
+										// ConfiguraciÃ³n
 
 private:
 	CComponent *m_pComponent;
-										// Å‰‚ÌƒRƒ“ƒ|[ƒlƒ“ƒg
+										// Primer componente
 };
 
 //===========================================================================
 //
-//	OSî•ñƒEƒBƒ“ƒhƒE
+//	Ventana de informaciÃ³n del SO
 //
 //===========================================================================
 class COSInfoWnd : public CSubTextWnd
 {
 public:
 	COSInfoWnd();
-										// ƒRƒ“ƒXƒgƒ‰ƒNƒ^
+										// Constructor
 	void FASTCALL Setup();
-										// ƒZƒbƒgƒAƒbƒv
+										// ConfiguraciÃ³n
 };
 
 //===========================================================================
 //
-//	ƒTƒEƒ“ƒhƒEƒBƒ“ƒhƒE
+//	Ventana de sonido
 //
 //===========================================================================
 class CSoundWnd : public CSubTextWnd
 {
 public:
 	CSoundWnd();
-										// ƒRƒ“ƒXƒgƒ‰ƒNƒ^
+										// Constructor
 	void FASTCALL Setup();
-										// ƒZƒbƒgƒAƒbƒv
+										// ConfiguraciÃ³n
 
 private:
 	Scheduler *m_pScheduler;
-										// ƒXƒPƒWƒ…[ƒ‰
+										// Planificador
 	OPMIF *m_pOPMIF;
 										// OPM
 	ADPCM *m_pADPCM;
 										// ADPCM
 	CSound *m_pSound;
-										// ƒTƒEƒ“ƒhƒRƒ“ƒ|[ƒlƒ“ƒg
+										// Componente de sonido
 };
 
 //===========================================================================
 //
-//	ƒCƒ“ƒvƒbƒgƒEƒBƒ“ƒhƒE
+//	Ventana de entrada
 //
 //===========================================================================
 class CInputWnd : public CSubTextWnd
 {
 public:
 	CInputWnd();
-										// ƒRƒ“ƒXƒgƒ‰ƒNƒ^
+										// Constructor
 	void FASTCALL Setup();
-										// ƒZƒbƒgƒAƒbƒv
+										// ConfiguraciÃ³n
 
 private:
 	void FASTCALL SetupInput(int x, int y);
-										// ƒZƒbƒgƒAƒbƒv(“ü—ÍŒn‘S‘Ì)
+										// ConfiguraciÃ³n (sistema de entrada completo)
 	void FASTCALL SetupMouse(int x, int y);
-										// ƒZƒbƒgƒAƒbƒv(ƒ}ƒEƒX)
+										// ConfiguraciÃ³n (ratÃ³n)
 	void FASTCALL SetupKey(int x, int y);
-										// ƒZƒbƒgƒAƒbƒv(ƒL[ƒ{[ƒh)
+										// ConfiguraciÃ³n (teclado)
 	void FASTCALL SetupJoy(int x, int y, int nJoy);
-										// ƒZƒbƒgƒAƒbƒv(ƒWƒ‡ƒCƒXƒeƒBƒbƒN)
+										// ConfiguraciÃ³n (joystick)
 	CInput *m_pInput;
-										// ƒCƒ“ƒvƒbƒgƒRƒ“ƒ|[ƒlƒ“ƒg
+										// Componente de entrada
 };
 
 //===========================================================================
 //
-//	ƒ|[ƒgƒEƒBƒ“ƒhƒE
+//	Ventana de puertos
 //
 //===========================================================================
 class CPortWnd : public CSubTextWnd
 {
 public:
 	CPortWnd();
-										// ƒRƒ“ƒXƒgƒ‰ƒNƒ^
+										// Constructor
 	void FASTCALL Setup();
-										// ƒZƒbƒgƒAƒbƒv
+										// ConfiguraciÃ³n
 
 private:
 	CPort *m_pPort;
-										// ƒ|[ƒgƒRƒ“ƒ|[ƒlƒ“ƒg
+										// Componente de puerto
 };
 
 //===========================================================================
 //
-//	ƒrƒbƒgƒ}ƒbƒvƒEƒBƒ“ƒhƒE
+//	Ventana de mapa de bits
 //
 //===========================================================================
 class CBitmapWnd : public CSubTextWnd
 {
 public:
 	CBitmapWnd();
-										// ƒRƒ“ƒXƒgƒ‰ƒNƒ^
+										// Constructor
 	void FASTCALL Setup();
-										// ƒZƒbƒgƒAƒbƒv
+										// ConfiguraciÃ³n
 
 private:
 	CDrawView *m_pView;
-										// •`‰æƒEƒBƒ“ƒhƒE
+										// Ventana de dibujo
 };
 
 //===========================================================================
 //
-//	MIDIƒhƒ‰ƒCƒoƒEƒBƒ“ƒhƒE
+//	Ventana del controlador MIDI
 //
 //===========================================================================
 class CMIDIDrvWnd : public CSubTextWnd
 {
 public:
 	CMIDIDrvWnd();
-										// ƒRƒ“ƒXƒgƒ‰ƒNƒ^
+										// Constructor
 	void FASTCALL Setup();
-										// ƒZƒbƒgƒAƒbƒv
+										// ConfiguraciÃ³n
 
 private:
 	void FASTCALL SetupInfo(int x, int y, CMIDI::LPMIDIINFO pInfo);
-										// ƒZƒbƒgƒAƒbƒv(ƒTƒu)
+										// ConfiguraciÃ³n (sub)
 	void FASTCALL SetupExCnt(int x, int y, DWORD dwStart, DWORD dwEnd);
-										// ƒZƒbƒgƒAƒbƒv(ƒGƒNƒXƒNƒ‹[ƒVƒuƒJƒEƒ“ƒ^)
+										// ConfiguraciÃ³n (contador exclusivo)
 	static LPCTSTR DescTable[];
-										// •¶š—ñƒe[ƒuƒ‹
+										// Tabla de cadenas
 	MIDI *m_pMIDI;
 										// MIDI
 	CMIDI *m_pMIDIDrv;
-										// MIDIƒhƒ‰ƒCƒo
+										// Controlador MIDI
 };
 
 //===========================================================================
 //
-//	ƒL[ƒ{[ƒhƒfƒBƒXƒvƒŒƒCƒEƒBƒ“ƒhƒE
+//	Ventana de visualizaciÃ³n de teclado
 //
 //===========================================================================
 class CKeyDispWnd : public CWnd
 {
 public:
 	CKeyDispWnd();
-										// ƒRƒ“ƒXƒgƒ‰ƒNƒ^
+										// Constructor
 	void PostNcDestroy();
-										// ƒEƒBƒ“ƒhƒEíœŠ®—¹
+										// EliminaciÃ³n de ventana completada
 	void FASTCALL SetShiftMode(UINT nMode);
-										// ƒVƒtƒgƒ‚[ƒhİ’è
+										// ConfiguraciÃ³n del modo shift
 	void FASTCALL Refresh(const BOOL *m_pKeyBuf);
-										// ƒL[XV
+										// ActualizaciÃ³n de teclas
 	void FASTCALL SetKey(const BOOL *m_pKeyBuf);
-										// ƒL[ˆêŠ‡İ’è
+										// ConfiguraciÃ³n de teclas por lotes
 
 protected:
 	afx_msg int OnCreate(LPCREATESTRUCT lpCreateStruct);
-										// ƒEƒBƒ“ƒhƒEì¬
+										// CreaciÃ³n de ventana
 	afx_msg void OnDestroy(void);
-										// ƒEƒBƒ“ƒhƒEíœ
+										// EliminaciÃ³n de ventana
 	afx_msg void OnSize(UINT nType, int cx, int cy);
-										// ƒEƒBƒ“ƒhƒEƒTƒCƒY•ÏX
+										// Cambio de tamaÃ±o de ventana
 	afx_msg BOOL OnEraseBkgnd(CDC *pDC);
-										// ”wŒi•`‰æ
+										// Dibujo de fondo
 	afx_msg void OnPaint();
-										// ƒEƒBƒ“ƒhƒEÄ•`‰æ
+										// Redibujado de ventana
 	afx_msg void OnLButtonDown(UINT nFlags, CPoint point);
-										// ¶ƒ{ƒ^ƒ“‰Ÿ‰º
+										// BotÃ³n izquierdo presionado
 	afx_msg void OnLButtonUp(UINT nFlags, CPoint point);
-										// ¶ƒ{ƒ^ƒ“—£‚µ‚½
+										// BotÃ³n izquierdo soltado
 	afx_msg void OnRButtonDown(UINT nFlags, CPoint point);
-										// ‰Eƒ{ƒ^ƒ“‰Ÿ‰º
+										// BotÃ³n derecho presionado
 	afx_msg void OnRButtonUp(UINT nFlags, CPoint point);
-										// ‰Eƒ{ƒ^ƒ“—£‚µ‚½
+										// BotÃ³n derecho soltado
 	afx_msg void OnMouseMove(UINT nFlags, CPoint point);
-										// ƒ}ƒEƒXˆÚ“®
+										// Movimiento del ratÃ³n
 	afx_msg UINT OnGetDlgCode();
-										// ƒ_ƒCƒAƒƒOƒR[ƒhæ“¾
+										// ObtenciÃ³n de cÃ³digo de diÃ¡logo
 
 private:
 	void FASTCALL SetupBitmap();
-										// ƒrƒbƒgƒ}ƒbƒv€”õ
+										// PreparaciÃ³n de mapa de bits
 	void FASTCALL OnDraw(CDC *pDC);
-										// ƒEƒBƒ“ƒhƒE•`‰æ
+										// Dibujo de ventana
 	LPCTSTR FASTCALL GetKeyString(int nKey);
-										// ƒL[•¶š—ñæ“¾
+										// ObtenciÃ³n de cadena de tecla
 	int FASTCALL PtInKey(CPoint& point);
-										// ‹éŒ`“àƒL[ƒR[ƒhæ“¾
+										// ObtenciÃ³n de cÃ³digo de tecla en rectÃ¡ngulo
 	void FASTCALL DrawKey(int nKey, BOOL bDown);
-										// ƒL[•\¦
+										// VisualizaciÃ³n de tecla
 	void FASTCALL DrawBox(int nColorOut, int nColorIn, RECT& rect);
-										// ƒL[ƒ{ƒbƒNƒX•`‰æ
+										// Dibujo de caja de tecla
 	void FASTCALL DrawCRBox(int nColorOut, int nColorIn, RECT& rect);
-										// CRƒL[ƒ{ƒbƒNƒX•`‰æ
+										// Dibujo de caja de tecla CR
 	void FASTCALL DrawChar(int x, int y, int nColor, DWORD dwChar);
-										// ƒLƒƒƒ‰ƒNƒ^•`‰æ
+										// Dibujo de carÃ¡cter
 	void FASTCALL DrawCRChar(int x, int y, int nColor);
-										// CRƒLƒƒƒ‰ƒNƒ^•`‰æ
+										// Dibujo de carÃ¡cter CR
 	int FASTCALL CalcCGAddr(DWORD dwChar);
-										// ‘SŠpCGROMƒAƒhƒŒƒXZo
+										// CÃ¡lculo de direcciÃ³n CGROM de ancho completo
 	UINT m_nMode;
-										// SHIFTƒ‚[ƒh
+										// Modo SHIFT
 	UINT m_nKey[0x80];
-										// ƒL[ó‘Ô(•\¦)
+										// Estado de tecla (visualizaciÃ³n)
 	BOOL m_bKey[0x80];
-										// ƒL[ó‘Ô(ÅI)
+										// Estado de tecla (final)
 	int m_nPoint;
-										// ƒ}ƒEƒXˆÚ“®ƒ|ƒCƒ“ƒg
+										// Punto de movimiento del ratÃ³n
 	const BYTE* m_pCG;
 										// CGROM
 	HBITMAP m_hBitmap;
-										// ƒrƒbƒgƒ}ƒbƒvƒnƒ“ƒhƒ‹
+										// Manejador de mapa de bits
 	BYTE *m_pBits;
-										// ƒrƒbƒgƒ}ƒbƒvƒrƒbƒg
+										// Bits de mapa de bits
 	UINT m_nBMPWidth;
-										// ƒrƒbƒgƒ}ƒbƒv•
+										// Ancho de mapa de bits
 	UINT m_nBMPHeight;
-										// ƒrƒbƒgƒ}ƒbƒv‚‚³
+										// Altura de mapa de bits
 	UINT m_nBMPMul;
-										// ƒrƒbƒgƒ}ƒbƒvæZ•
+										// Ancho de multiplicaciÃ³n de mapa de bits
 	static RGBQUAD PalTable[0x10];
-										// ƒpƒŒƒbƒgƒe[ƒuƒ‹
+										// Tabla de paleta
 	static const RECT RectTable[0x75];
-										// ‹éŒ`ƒe[ƒuƒ‹
+										// Tabla de rectÃ¡ngulos
 	static LPCTSTR NormalTable[];
-										// •¶š—ñƒe[ƒuƒ‹
+										// Tabla de cadenas
 	static LPCTSTR KanaTable[];
-										// •¶š—ñƒe[ƒuƒ‹
+										// Tabla de cadenas
 	static LPCTSTR KanaShiftTable[];
-										// •¶š—ñƒe[ƒuƒ‹
+										// Tabla de cadenas
 	static LPCTSTR MarkTable[];
-										// •¶š—ñƒe[ƒuƒ‹
+										// Tabla de cadenas
 	static LPCTSTR AnotherTable[];
-										// •¶š—ñƒe[ƒuƒ‹
+										// Tabla de cadenas
 
 	DECLARE_MESSAGE_MAP()
-										// ƒƒbƒZ[ƒW ƒ}ƒbƒv‚ ‚è
+										// Con mapa de mensajes
 };
 
 //===========================================================================
 //
-//	ƒ\ƒtƒgƒEƒFƒAƒL[ƒ{[ƒhƒEƒBƒ“ƒhƒE
+//	Ventana de teclado de software
 //
 //===========================================================================
 class CSoftKeyWnd : public CSubWnd
 {
 public:
 	CSoftKeyWnd();
-										// ƒRƒ“ƒXƒgƒ‰ƒNƒ^
+										// Constructor
 	void FASTCALL Refresh();
-										// ƒŠƒtƒŒƒbƒVƒ…
+										// Actualizar
 
 protected:
 	afx_msg int OnCreate(LPCREATESTRUCT lpCreateStruct);
-										// ƒEƒBƒ“ƒhƒEì¬
+										// CreaciÃ³n de ventana
 	afx_msg void OnDestroy();
-										// ƒEƒBƒ“ƒhƒEíœ
+										// EliminaciÃ³n de ventana
 	afx_msg void OnActivate(UINT nState, CWnd *pWnd, BOOL bMinimized);
-										// ƒAƒNƒeƒBƒx[ƒg
+										// Activar
 	afx_msg LONG OnApp(UINT uParam, LONG lParam);
-										// ƒ†[ƒU(‰ºˆÊƒEƒBƒ“ƒhƒE‚©‚ç‚Ì’Ê’m)
+										// Usuario (notificaciÃ³n de ventana inferior)
 
 private:
 	void FASTCALL Analyze(Keyboard::keyboard_t *pKbd);
-										// ƒL[ƒ{[ƒhƒf[ƒ^‰ğÍ
+										// AnÃ¡lisis de datos de teclado
 	Keyboard *m_pKeyboard;
-										// ƒL[ƒ{[ƒh
+										// Teclado
 	CInput *m_pInput;
-										// ƒCƒ“ƒvƒbƒg
+										// Entrada
 	CStatusBar m_StatusBar;
-										// ƒXƒe[ƒ^ƒXƒo[
+										// Barra de estado
 	CKeyDispWnd *m_pDispWnd;
-										// ƒL[ƒfƒBƒXƒvƒŒƒCƒEƒBƒ“ƒhƒE
+										// Ventana de visualizaciÃ³n de teclas
 	UINT m_nSoftKey;
-										// ƒ\ƒtƒg‰Ÿ‰º’†‚ÌƒL[
+										// Tecla de software presionada
 
 	DECLARE_MESSAGE_MAP()
-										// ƒƒbƒZ[ƒW ƒ}ƒbƒv‚ ‚è
+										// Con mapa de mensajes
 };
 
 #endif	// mfc_w32_h
