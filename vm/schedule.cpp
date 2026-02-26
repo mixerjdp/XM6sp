@@ -2,8 +2,8 @@
 //
 //	X68000 EMULATOR "XM6"
 //
-//	Copyright (C) 2001-2006 �o�h�D(ytanaka@ipc-tokai.or.jp)
-//	[ �X�P�W���[�� ]
+//	Copyright (C) 2001-2006 �ｼｰ�ｼｩ�ｼ�(ytanaka@ipc-tokai.or.jp)
+//	[ 繧ｹ繧ｱ繧ｸ繝･繝ｼ繝ｩ ]
 //
 //---------------------------------------------------------------------------
 
@@ -21,14 +21,14 @@
 
 //===========================================================================
 //
-//	�X�P�W���[��
+//	繧ｹ繧ｱ繧ｸ繝･繝ｼ繝ｩ
 //
 //===========================================================================
 //#define SCHEDULER_LOG
 
 //---------------------------------------------------------------------------
 //
-//	�C�x���g�����E�X�V���A�Z���u����
+//	繧､繝吶Φ繝域､懃ｴ｢繝ｻ譖ｴ譁ｰ繧偵い繧ｻ繝ｳ繝悶Λ蛹�
 //
 //---------------------------------------------------------------------------
 #if defined(_MSC_VER) && defined(_M_IX86)
@@ -37,18 +37,18 @@
 
 //---------------------------------------------------------------------------
 //
-//	�R���X�g���N�^
+//	繧ｳ繝ｳ繧ｹ繝医Λ繧ｯ繧ｿ
 //
 //---------------------------------------------------------------------------
 Scheduler::Scheduler(VM *p) : Device(p)
 {
 	int i;
 
-	// �f�o�C�XID��������
+	// 繝�繝舌う繧ｹID繧貞�晄悄蛹�
 	dev.id = MAKEID('S', 'C', 'H', 'E');
 	dev.desc = "Scheduler";
 
-	// �u���[�N�|�C���g��
+	// 繝悶Ξ繝ｼ繧ｯ繝昴う繝ｳ繝亥句挨
 	for (i=0; i<BreakMax; i++) {
 		breakp[i].use = FALSE;
 		breakp[i].addr = 0;
@@ -57,7 +57,7 @@ Scheduler::Scheduler(VM *p) : Device(p)
 		breakp[i].count = 0;
 	}
 
-	// ����
+	// 譎る俣
 	sch.total = 0;
 	sch.one = 0;
 	sch.sound = 0;
@@ -68,42 +68,42 @@ Scheduler::Scheduler(VM *p) : Device(p)
 	sch.cycle = 0;
 	sch.time = 0;
 
-	// �u���[�N�|�C���g
+	// 繝悶Ξ繝ｼ繧ｯ繝昴う繝ｳ繝�
 	sch.brk = FALSE;
 	sch.check = FALSE;
 
-	// �C�x���g
+	// 繧､繝吶Φ繝�
 	sch.first = NULL;
 	sch.exec = FALSE;
 
-	// �f�o�C�X
+	// 繝�繝舌う繧ｹ
 	cpu = NULL;
 	dmac = NULL;
 
-	// ���̑�
+	// 縺昴�ｮ莉�
 	dma_active = FALSE;
 }
 
 //---------------------------------------------------------------------------
 //
-//	������
+//	蛻晄悄蛹�
 //
 //---------------------------------------------------------------------------
 BOOL FASTCALL Scheduler::Init()
 {
 	ASSERT(this);
 
-	// ��{�N���X
+	// 蝓ｺ譛ｬ繧ｯ繝ｩ繧ｹ
 	if (!Device::Init()) {
 		return FALSE;
 	}
 
-	// CPU�擾
+	// CPU蜿門ｾ�
 	ASSERT(!cpu);
 	cpu = (CPU*)vm->SearchDevice(MAKEID('C', 'P', 'U', ' '));
 	ASSERT(cpu);
 
-	// DMAC�擾
+	// DMAC蜿門ｾ�
 	ASSERT(!dmac);
 	dmac = (DMAC*)vm->SearchDevice(MAKEID('D', 'M', 'A', 'C'));
 	ASSERT(dmac);
@@ -113,7 +113,7 @@ BOOL FASTCALL Scheduler::Init()
 
 //---------------------------------------------------------------------------
 //
-//	�N���[���A�b�v
+//	繧ｯ繝ｪ繝ｼ繝ｳ繧｢繝�繝�
 //
 //---------------------------------------------------------------------------
 void FASTCALL Scheduler::Cleanup()
@@ -121,13 +121,13 @@ void FASTCALL Scheduler::Cleanup()
 	ASSERT(this);
 	ASSERT_DIAG();
 
-	// ��{�N���X��
+	// 蝓ｺ譛ｬ繧ｯ繝ｩ繧ｹ縺ｸ
 	Device::Cleanup();
 }
 
 //---------------------------------------------------------------------------
 //
-//	���Z�b�g
+//	繝ｪ繧ｻ繝�繝�
 //
 //---------------------------------------------------------------------------
 void FASTCALL Scheduler::Reset()
@@ -135,30 +135,30 @@ void FASTCALL Scheduler::Reset()
 	ASSERT(this);
 	ASSERT_DIAG();
 
-	LOG0(Log::Normal, "���Z�b�g");
+	LOG0(Log::Normal, "繝ｪ繧ｻ繝�繝�");
 
-	// ���ԃ��Z�b�g(sound����)
+	// 譎る俣繝ｪ繧ｻ繝�繝�(sound髯､縺�)
 	sch.total = 0;
 	sch.one = 0;
 
-	// CPU�T�C�N�����Z�b�g
+	// CPU繧ｵ繧､繧ｯ繝ｫ繝ｪ繧ｻ繝�繝�
 	sch.cycle = 0;
 	sch.time = 0;
 
-	// �C�x���g���s���łȂ�
+	// 繧､繝吶Φ繝亥ｮ溯｡御ｸｭ縺ｧ縺ｪ縺�
 	sch.exec = FALSE;
 
-	// DMA���s�Ȃ�
+	// DMA螳溯｡後↑縺�
 	dma_active = FALSE;
 
-	// CPU���x�ݒ�͖���s��(INFO.RAM�΍􃋁[�`���̂���)
+	// CPU騾溷ｺｦ險ｭ螳壹�ｯ豈主屓陦後≧(INFO.RAM蟇ｾ遲悶Ν繝ｼ繝√Φ縺ｮ縺溘ａ)
 	ASSERT((sch.clock >= 0) && (sch.clock <= 5));
 	SetCPUSpeed(ClockTable[sch.clock]);
 }
 
 //---------------------------------------------------------------------------
 //
-//	�Z�[�u
+//	繧ｻ繝ｼ繝�
 //
 //---------------------------------------------------------------------------
 BOOL FASTCALL Scheduler::Save(Fileio *fio, int /*ver*/)
@@ -169,36 +169,36 @@ BOOL FASTCALL Scheduler::Save(Fileio *fio, int /*ver*/)
 	ASSERT(fio);
 	ASSERT_DIAG();
 
-	LOG0(Log::Normal, "�Z�[�u");
+	LOG0(Log::Normal, "繧ｻ繝ｼ繝�");
 
-	// �u���[�N�|�C���g�T�C�Y���Z�[�u
+	// 繝悶Ξ繝ｼ繧ｯ繝昴う繝ｳ繝医し繧､繧ｺ繧偵そ繝ｼ繝�
 	sz = sizeof(breakp);
 	if (!fio->Write(&sz, sizeof(sz))) {
 		return FALSE;
 	}
 
-	// �u���[�N�|�C���g���̂��Z�[�u
+	// 繝悶Ξ繝ｼ繧ｯ繝昴う繝ｳ繝亥ｮ滉ｽ薙ｒ繧ｻ繝ｼ繝�
 	if (!fio->Write(breakp, (int)sz)) {
 		return FALSE;
 	}
 
-	// �X�P�W���[���T�C�Y���Z�[�u
+	// 繧ｹ繧ｱ繧ｸ繝･繝ｼ繝ｩ繧ｵ繧､繧ｺ繧偵そ繝ｼ繝�
 	sz = sizeof(scheduler_t);
 	if (!fio->Write(&sz, sizeof(sz))) {
 		return FALSE;
 	}
 
-	// �X�P�W���[�����̂��Z�[�u
+	// 繧ｹ繧ｱ繧ｸ繝･繝ｼ繝ｩ螳滉ｽ薙ｒ繧ｻ繝ｼ繝�
 	if (!fio->Write(&sch, (int)sz)) {
 		return FALSE;
 	}
 
-	// �T�C�N���e�[�u�����Z�[�u
+	// 繧ｵ繧､繧ｯ繝ｫ繝�繝ｼ繝悶Ν繧偵そ繝ｼ繝�
 	if (!fio->Write(CycleTable, sizeof(CycleTable))) {
 		return FALSE;
 	}
 
-	// dma_active���Z�[�u(version 2.01)
+	// dma_active繧偵そ繝ｼ繝�(version 2.01)
 	if (!fio->Write(&dma_active, sizeof(dma_active))) {
 		return FALSE;
 	}
@@ -208,7 +208,7 @@ BOOL FASTCALL Scheduler::Save(Fileio *fio, int /*ver*/)
 
 //---------------------------------------------------------------------------
 //
-//	���[�h
+//	繝ｭ繝ｼ繝�
 //
 //---------------------------------------------------------------------------
 BOOL FASTCALL Scheduler::Load(Fileio *fio, int ver)
@@ -221,12 +221,12 @@ BOOL FASTCALL Scheduler::Load(Fileio *fio, int ver)
 	ASSERT(ver >= 0x200);
 	ASSERT_DIAG();
 
-	LOG0(Log::Normal, "���[�h");
+	LOG0(Log::Normal, "繝ｭ繝ｼ繝�");
 
-	// �C�x���g�|�C���^��ێ�
+	// 繧､繝吶Φ繝医�昴う繝ｳ繧ｿ繧剃ｿ晄戟
 	first = sch.first;
 
-	// �u���[�N�|�C���g�T�C�Y�����[�h�A�ƍ�
+	// 繝悶Ξ繝ｼ繧ｯ繝昴う繝ｳ繝医し繧､繧ｺ繧偵Ο繝ｼ繝峨∫�ｧ蜷�
 	if (!fio->Read(&sz, sizeof(sz))) {
 		return FALSE;
 	}
@@ -234,12 +234,12 @@ BOOL FASTCALL Scheduler::Load(Fileio *fio, int ver)
 		return FALSE;
 	}
 
-	// �u���[�N�|�C���g���̂����[�h
+	// 繝悶Ξ繝ｼ繧ｯ繝昴う繝ｳ繝亥ｮ滉ｽ薙ｒ繝ｭ繝ｼ繝�
 	if (!fio->Read(breakp, (int)sz)) {
 		return FALSE;
 	}
 
-	// �X�P�W���[���T�C�Y�����[�h�A�ƍ�
+	// 繧ｹ繧ｱ繧ｸ繝･繝ｼ繝ｩ繧ｵ繧､繧ｺ繧偵Ο繝ｼ繝峨∫�ｧ蜷�
 	if (!fio->Read(&sz, sizeof(sz))) {
 		return FALSE;
 	}
@@ -247,20 +247,20 @@ BOOL FASTCALL Scheduler::Load(Fileio *fio, int ver)
 		return FALSE;
 	}
 
-	// �X�P�W���[�����̂����[�h
+	// 繧ｹ繧ｱ繧ｸ繝･繝ｼ繝ｩ螳滉ｽ薙ｒ繝ｭ繝ｼ繝�
 	if (!fio->Read(&sch, (int)sz)) {
 		return FALSE;
 	}
 
-	// �T�C�N���e�[�u�������[�h
+	// 繧ｵ繧､繧ｯ繝ｫ繝�繝ｼ繝悶Ν繧偵Ο繝ｼ繝�
 	if (!fio->Read(CycleTable, sizeof(CycleTable))) {
 		return FALSE;
 	}
 
-	// �C�x���g�|�C���^�𕜋A
+	// 繧､繝吶Φ繝医�昴う繝ｳ繧ｿ繧貞ｾｩ蟶ｰ
 	sch.first = first;
 
-	// �o�[�W����2.01�ȏ�Ȃ�Adma_active�����[�h
+	// 繝舌�ｼ繧ｸ繝ｧ繝ｳ2.01莉･荳翫↑繧峨‥ma_active繧偵Ο繝ｼ繝�
 	if (ver >= 0x0201) {
 		if (!fio->Read(&dma_active, sizeof(dma_active))) {
 			return FALSE;
@@ -272,7 +272,7 @@ BOOL FASTCALL Scheduler::Load(Fileio *fio, int ver)
 
 //---------------------------------------------------------------------------
 //
-//	�ݒ�K�p
+//	險ｭ螳夐←逕ｨ
 //
 //---------------------------------------------------------------------------
 void FASTCALL Scheduler::ApplyCfg(const Config *config)
@@ -281,11 +281,11 @@ void FASTCALL Scheduler::ApplyCfg(const Config *config)
 	ASSERT(config);
 	ASSERT_DIAG();
 
-	LOG0(Log::Normal, "�ݒ�K�p");
+	LOG0(Log::Normal, "險ｭ螳夐←逕ｨ");
 
-	// �V�X�e���N���b�N�ݒ���r
+	// 繧ｷ繧ｹ繝�繝繧ｯ繝ｭ繝�繧ｯ險ｭ螳壹ｒ豈碑ｼ�
 	if (sch.clock != config->system_clock) {
-		// �ݒ肪�قȂ��Ă���̂ŁA�T�C�N���e�[�u���č\�z
+		// 險ｭ螳壹′逡ｰ縺ｪ縺｣縺ｦ縺�繧九�ｮ縺ｧ縲√し繧､繧ｯ繝ｫ繝�繝ｼ繝悶Ν蜀肴ｧ狗ｯ�
 		sch.clock = config->system_clock;
 		ASSERT((sch.clock >= 0) && (sch.clock <= 5));
 		SetCPUSpeed(ClockTable[sch.clock]);
@@ -295,7 +295,7 @@ void FASTCALL Scheduler::ApplyCfg(const Config *config)
 #if defined(_DEBUG)
 //---------------------------------------------------------------------------
 //
-//	�f�f
+//	險ｺ譁ｭ
 //
 //---------------------------------------------------------------------------
 void FASTCALL Scheduler::AssertDiag() const
@@ -311,7 +311,7 @@ void FASTCALL Scheduler::AssertDiag() const
 
 //---------------------------------------------------------------------------
 //
-//	�����f�[�^�擾
+//	蜀�驛ｨ繝�繝ｼ繧ｿ蜿門ｾ�
 //
 //---------------------------------------------------------------------------
 void FASTCALL Scheduler::GetScheduler(scheduler_t *buffer) const
@@ -320,13 +320,13 @@ void FASTCALL Scheduler::GetScheduler(scheduler_t *buffer) const
 	ASSERT(buffer);
 	ASSERT_DIAG();
 
-	// �����f�[�^���R�s�[
+	// 蜀�驛ｨ繝�繝ｼ繧ｿ繧偵さ繝斐�ｼ
 	*buffer = sch;
 }
 
 //---------------------------------------------------------------------------
 //
-//	���s
+//	螳溯｡�
 //
 //---------------------------------------------------------------------------
 DWORD FASTCALL Scheduler::Exec(DWORD hus)
@@ -339,53 +339,53 @@ DWORD FASTCALL Scheduler::Exec(DWORD hus)
 	ASSERT(hus > 0);
 	ASSERT_DIAG();
 
-	// �u���[�N�|�C���g�����̏ꍇ
+	// 繝悶Ξ繝ｼ繧ｯ繝昴う繝ｳ繝育┌縺励�ｮ蝣ｴ蜷�
 	if (!sch.check) {
-		// �ŒZ�̃C�x���g��T��
+		// 譛遏ｭ縺ｮ繧､繝吶Φ繝医ｒ謗｢縺�
 #if defined(SCHEDULER_ASM)
 		sch.one = GetMinEvent(hus);
 #else
 		sch.one = GetMinRemain(hus);
 #endif	// SCHEDULER_ASM
 
-		// sch.one + sch.time�Ɍ������T�C�N���������Ɏ��s���Ă��邩
+		// sch.one + sch.time縺ｫ隕句粋縺�繧ｵ繧､繧ｯ繝ｫ縺縺第里縺ｫ螳溯｡後＠縺ｦ縺�繧九°
 		ASSERT((sch.one + sch.time) < 0x1000);
 		cycle = CycleTable[sch.one + sch.time];
 		if (cycle > sch.cycle) {
 
-			// ������s�ł���T�C�N������T���āA���s
+			// 莉雁屓螳溯｡後〒縺阪ｋ繧ｵ繧､繧ｯ繝ｫ謨ｰ繧呈爾縺｣縺ｦ縲∝ｮ溯｡�
 			cycle -= sch.cycle;
 			if (!dma_active) {
-				// �ʏ�
+				// 騾壼ｸｸ
 				result = cpu->Exec(cycle);
 			}
 			else {
-				// DMAC�I�[�g���N�G�X�g�L��
+				// DMAC繧ｪ繝ｼ繝医Μ繧ｯ繧ｨ繧ｹ繝域怏蜉ｹ
 				dcycle = dmac->AutoDMA(cycle);
 				if (dcycle != 0) {
-					// ������ƌ덷���o��H
+					// 縺｡繧�縺｣縺ｨ隱､蟾ｮ縺悟�ｺ繧具ｼ�
 					result = cpu->Exec(dcycle);
 				}
 				else {
-					// ���ׂ�DMA�ŏ���
+					// 縺吶∋縺ｦDMA縺ｧ豸郁ｲｻ
 					result = cycle;
 				}
 			}
 
-			// ����I����
+			// 豁｣蟶ｸ邨ゆｺ�縺�
 			if (result < 0x80000000) {
-				// sch.time, sch.cycle���X�V
+				// sch.time, sch.cycle繧呈峩譁ｰ
 				sch.cycle += result;
 				sch.time += sch.one;
 
-				// ���Ԃ�i�߂�
+				// 譎る俣繧帝ｲ繧√ｋ
 				ExecEvent(sch.one);
 
 				if (sch.time < 200) {
 					return sch.one;
 				}
 
-				// ����Sync
+				// 譎る俣Sync
 				while (sch.time >= 200) {
 					if ((DWORD)sch.cycle < sch.speed) {
 						break;
@@ -394,27 +394,27 @@ DWORD FASTCALL Scheduler::Exec(DWORD hus)
 					sch.cycle -= sch.speed;
 				}
 
-				// �u���[�N�`�F�b�N
+				// 繝悶Ξ繝ｼ繧ｯ繝√ぉ繝�繧ｯ
 				if (!sch.brk) {
 					return sch.one;
 				}
 
 #if defined(SCHEDULER_LOG)
-				LOG0(Log::Normal, "�u���[�N");
+				LOG0(Log::Normal, "繝悶Ξ繝ｼ繧ｯ");
 #endif	// SCHEDULER_LOG
 				sch.brk = FALSE;
 				return (DWORD)(sch.one | 0x80000000);
 			}
 			else {
-				// ���s�G���[
+				// 螳溯｡後お繝ｩ繝ｼ
 				result &= 0x7fffffff;
 
 				if ((int)result > cycle) {
-					// sch.time�Asch.cycle���X�V
+					// sch.time縲《ch.cycle繧呈峩譁ｰ
 					sch.time += sch.one;
 					sch.cycle += result;
 
-					// �C�x���g���s
+					// 繧､繝吶Φ繝亥ｮ溯｡�
 					ExecEvent(sch.one);
 
 					while (sch.time >= 200) {
@@ -424,18 +424,18 @@ DWORD FASTCALL Scheduler::Exec(DWORD hus)
 						sch.time -= 200;
 						sch.cycle -= sch.speed;
 					}
-					// ���s�G���[�A�C�x���g����
+					// 螳溯｡後お繝ｩ繝ｼ縲√う繝吶Φ繝亥ｮ御ｺ�
 					return 0x80000000;
 				}
-				// �S�����s����O��cpu�G���[���N����
+				// 蜈ｨ驛ｨ螳溯｡後☆繧句燕縺ｫcpu繧ｨ繝ｩ繝ｼ縺瑚ｵｷ縺阪◆
 				sch.cycle += result;
-				// ���s�G���[�A�C�x���g������
+				// 螳溯｡後お繝ｩ繝ｼ縲√う繝吶Φ繝域悴螳御ｺ�
 				return 0x80000000;
 			}
 		}
 		else {
 
-			// ����͎��s�ł��Ȃ��B���Ԃ�i�߂�̂�
+			// 莉雁屓縺ｯ螳溯｡後〒縺阪↑縺�縲よ凾髢薙ｒ騾ｲ繧√ｋ縺ｮ縺ｿ
 			sch.time += sch.one;
 			ExecEvent(sch.one);
 
@@ -443,7 +443,7 @@ DWORD FASTCALL Scheduler::Exec(DWORD hus)
 				return sch.one;
 			}
 
-			// sch.time���X�V
+			// sch.time繧呈峩譁ｰ
 			while (sch.time >= 200) {
 				if ((DWORD)sch.cycle < sch.speed) {
 					break;
@@ -452,26 +452,26 @@ DWORD FASTCALL Scheduler::Exec(DWORD hus)
 				sch.cycle -= sch.speed;
 			}
 
-			// ���s���߂Ȃ��A�C�x���g����
+			// 螳溯｡悟多莉､縺ｪ縺励√う繝吶Φ繝亥ｮ御ｺ�
 			return sch.one;
 		}
 
 	}
 
-	// ���[�v
+	// 繝ｫ繝ｼ繝�
 	for (;;) {
 		result = Trace(hus);
 
 		switch (result) {
-			// ���s���߂Ȃ��A�C�x���g����
+			// 螳溯｡悟多莉､縺ｪ縺励√う繝吶Φ繝亥ｮ御ｺ�
 			case 0:
 				return sch.one;
 
-			// ���s�A�C�x���g����
+			// 螳溯｡悟庄縲√う繝吶Φ繝亥ｮ御ｺ�
 			case 1:
 				if (sch.brk) {
 #if defined(SCHEDULER_LOG)
-					LOG0(Log::Normal, "�u���[�N");
+					LOG0(Log::Normal, "繝悶Ξ繝ｼ繧ｯ");
 #endif	// SCHEDULER_LOG
 					sch.brk = FALSE;
 					return 0x80000000;
@@ -482,11 +482,11 @@ DWORD FASTCALL Scheduler::Exec(DWORD hus)
 				}
 				return sch.one;
 
-			// ���s����A�C�x���g������
+			// 螳溯｡後≠繧翫√う繝吶Φ繝域悴螳御ｺ�
 			case 2:
 				if (sch.brk) {
 #if defined(SCHEDULER_LOG)
-					LOG0(Log::Normal, "�u���[�N");
+					LOG0(Log::Normal, "繝悶Ξ繝ｼ繧ｯ");
 #endif	// SCHEDULER_LOG
 					sch.brk = FALSE;
 					return 0x80000000;
@@ -497,17 +497,17 @@ DWORD FASTCALL Scheduler::Exec(DWORD hus)
 				}
 				break;
 
-			// ���s�G���[
+			// 螳溯｡後お繝ｩ繝ｼ
 			case 3:
 				if (sch.brk) {
 #if defined(SCHEDULER_LOG)
-					LOG0(Log::Normal, "�u���[�N");
+					LOG0(Log::Normal, "繝悶Ξ繝ｼ繧ｯ");
 #endif	// SCHEDULER_LOG
 					sch.brk = FALSE;
 				}
 				return 0x80000000;
 
-			// ����ȊO
+			// 縺昴ｌ莉･螟�
 			default:
 				ASSERT(FALSE);
 				return sch.one;
@@ -517,7 +517,7 @@ DWORD FASTCALL Scheduler::Exec(DWORD hus)
 
 //---------------------------------------------------------------------------
 //
-//	�g���[�X
+//	繝医Ξ繝ｼ繧ｹ
 //
 //---------------------------------------------------------------------------
 DWORD FASTCALL Scheduler::Trace(DWORD hus)
@@ -529,40 +529,40 @@ DWORD FASTCALL Scheduler::Trace(DWORD hus)
 	ASSERT(hus > 0);
 	ASSERT_DIAG();
 
-	// �ŒZ�̃C�x���g��T��
+	// 譛遏ｭ縺ｮ繧､繝吶Φ繝医ｒ謗｢縺�
 #if defined(SCHEDULER_ASM)
 	sch.one = GetMinEvent(hus);
 #else
 	sch.one = GetMinRemain(hus);
 #endif	// SCHEDULER_ASM
 
-	// sch.one + sch.time�Ɍ������T�C�N���������Ɏ��s���Ă��邩
+	// sch.one + sch.time縺ｫ隕句粋縺�繧ｵ繧､繧ｯ繝ｫ縺縺第里縺ｫ螳溯｡後＠縺ｦ縺�繧九°
 	ASSERT((sch.one + sch.time) < 0x1000);
 	cycle = CycleTable[sch.one + sch.time];
 	if (cycle <= sch.cycle) {
-		// ����͎��s�ł��Ȃ��B���Ԃ����i�߂�
+		// 莉雁屓縺ｯ螳溯｡後〒縺阪↑縺�縲よ凾髢薙□縺鷹ｲ繧√ｋ
 		sch.time += sch.one;
 		ExecEvent(sch.one);
 
-		// sch.time���X�V
+		// sch.time繧呈峩譁ｰ
 		while (sch.time >= 200) {
 			sch.time -= 200;
 			sch.cycle -= sch.speed;
 		}
-		// ���s���߂Ȃ��A�C�x���g����
+		// 螳溯｡悟多莉､縺ｪ縺励√う繝吶Φ繝亥ｮ御ｺ�
 		return 0;
 	}
 
-	// ������s�ł���T�C�N������T��
+	// 莉雁屓螳溯｡後〒縺阪ｋ繧ｵ繧､繧ｯ繝ｫ謨ｰ繧呈爾繧�
 	cycle -= sch.cycle;
 
-	// 1�T�C�N�������^���Ď��s���Ă݂�
+	// 1繧ｵ繧､繧ｯ繝ｫ縺縺台ｸ弱∴縺ｦ螳溯｡後＠縺ｦ縺ｿ繧�
 	if (!dma_active) {
-		// �ʏ�
+		// 騾壼ｸｸ
 		result = cpu->Exec(1);
 	}
 	else {
-		// DMAC�I�[�g���N�G�X�g�L��
+		// DMAC繧ｪ繝ｼ繝医Μ繧ｯ繧ｨ繧ｹ繝域怏蜉ｹ
 		result = dmac->AutoDMA(1);
 		if (result != 0) {
 			result = cpu->Exec(result);
@@ -572,38 +572,38 @@ DWORD FASTCALL Scheduler::Trace(DWORD hus)
 		}
 	}
 	if (result >= 0x80000000) {
-		// ���s�G���[
+		// 螳溯｡後お繝ｩ繝ｼ
 		return 3;
 	}
 
-	// result >= cycle�Ȃ�A�C�x���g���s�ł���
+	// result >= cycle縺ｪ繧峨√う繝吶Φ繝亥ｮ溯｡後〒縺阪ｋ
 	if ((int)result >= cycle) {
-		// sch.time, sch.cycle���X�V
+		// sch.time, sch.cycle繧呈峩譁ｰ
 		sch.cycle += result;
 		sch.time += sch.one;
 
-		// ���Ԃ�i�߂�
+		// 譎る俣繧帝ｲ繧√ｋ
 		ExecEvent(sch.one);
 
 		while (sch.time >= 200) {
 			sch.time -= 200;
 			sch.cycle -= sch.speed;
 		}
-		// ���s�A�C�x���g����
+		// 螳溯｡悟庄縲√う繝吶Φ繝亥ｮ御ｺ�
 		return 1;
 	}
 
-	// �܂�����Ă��Ȃ��̂ŁA�C�x���g�܂ł͊Ԃ�����
-	// sch.cycle���X�V
+	// 縺ｾ縺雜ｳ繧翫※縺�縺ｪ縺�縺ｮ縺ｧ縲√う繝吶Φ繝医∪縺ｧ縺ｯ髢薙′縺ゅｋ
+	// sch.cycle繧呈峩譁ｰ
 	sch.cycle += result;
 
-	// ���s����A�C�x���g������
+	// 螳溯｡後≠繧翫√う繝吶Φ繝域悴螳御ｺ�
 	return 2;
 }
 
 //---------------------------------------------------------------------------
 //
-//	CPU���x��ݒ�
+//	CPU騾溷ｺｦ繧定ｨｭ螳�
 //
 //---------------------------------------------------------------------------
 void FASTCALL Scheduler::SetCPUSpeed(DWORD speed)
@@ -615,12 +615,12 @@ void FASTCALL Scheduler::SetCPUSpeed(DWORD speed)
 	ASSERT(speed > 0);
 	ASSERT_DIAG();
 
-	LOG2(Log::Detail, "CPU���x�ݒ� %d.%02dMHz", speed / 100, (speed % 100));
+	LOG2(Log::Detail, "CPU騾溷ｺｦ險ｭ螳� %d.%02dMHz", speed / 100, (speed % 100));
 
-	// CPU���x���L��
+	// CPU騾溷ｺｦ繧定ｨ俶�ｶ
 	sch.speed = speed;
 
-	// 0�`2048us�܂ŁA0.5us�P�ʂł̑Ή�����T�C�N�������v�Z
+	// 0縲�2048us縺ｾ縺ｧ縲�0.5us蜊倅ｽ阪〒縺ｮ蟇ｾ蠢懊☆繧九し繧､繧ｯ繝ｫ謨ｰ繧定ｨ育ｮ�
 	for (i=0; i<0x1000; i++) {
 		cycle = (DWORD)i;
 		cycle *= speed;
@@ -631,7 +631,7 @@ void FASTCALL Scheduler::SetCPUSpeed(DWORD speed)
 
 //---------------------------------------------------------------------------
 //
-//	�o�ߎ��Ԃ��擾
+//	邨碁℃譎る俣繧貞叙蠕�
 //
 //---------------------------------------------------------------------------
 DWORD FASTCALL Scheduler::GetPassedTime() const
@@ -641,29 +641,29 @@ DWORD FASTCALL Scheduler::GetPassedTime() const
 	ASSERT(this);
 	ASSERT_DIAG();
 
-	// �C�x���g���s���Ȃ�0
+	// 繧､繝吶Φ繝亥ｮ溯｡御ｸｭ縺ｪ繧�0
 	if (sch.exec) {
 		return 0;
 	}
 
-	// ���s�T�C�N�����Acpu_cylcle���玞�Ԃ��Z�o
+	// 螳溯｡後し繧､繧ｯ繝ｫ謨ｰ縲…pu_cylcle縺九ｉ譎る俣繧堤ｮ怜�ｺ
 	hus = cpu->GetCycle() + sch.cycle;
 	hus *= 200;
 	hus /= sch.speed;
 	hus -= sch.time;
 
-	// one�����傫����΁A����
+	// one繧医ｊ繧ょ､ｧ縺阪￠繧後�ｰ縲∝宛髯�
 	if (sch.one < hus) {
 		hus = sch.one;
 	}
 
-	// hus�P�ʂŕԂ�
+	// hus蜊倅ｽ阪〒霑斐☆
 	return hus;
 }
 
 //---------------------------------------------------------------------------
 //
-//	�u���[�N�|�C���g�ݒ�
+//	繝悶Ξ繝ｼ繧ｯ繝昴う繝ｳ繝郁ｨｭ螳�
 //
 //---------------------------------------------------------------------------
 void FASTCALL Scheduler::SetBreak(DWORD addr, BOOL enable)
@@ -676,16 +676,16 @@ void FASTCALL Scheduler::SetBreak(DWORD addr, BOOL enable)
 	ASSERT_DIAG();
 
 #if defined(SCHEDULER_LOG)
-	LOG2(Log::Normal, "�u���[�N�|�C���g�ݒ� $%06X enable=%d", addr, enable);
+	LOG2(Log::Normal, "繝悶Ξ繝ｼ繧ｯ繝昴う繝ｳ繝郁ｨｭ螳� $%06X enable=%d", addr, enable);
 #endif	// SCHEDULER_LOG
 
 	flag = FALSE;
 
-	// ��v�`�F�b�N
+	// 荳閾ｴ繝√ぉ繝�繧ｯ
 	for (i=0; i<BreakMax; i++) {
 		if (breakp[i].use) {
 			if (breakp[i].addr == addr) {
-				// �t���O�ύX�̂�
+				// 繝輔Λ繧ｰ螟画峩縺ｮ縺ｿ
 				breakp[i].enable = enable;
 				flag = TRUE;
 				break;
@@ -694,10 +694,10 @@ void FASTCALL Scheduler::SetBreak(DWORD addr, BOOL enable)
 	}
 
 	if (!flag) {
-		// �󂫃T�[�`
+		// 遨ｺ縺阪し繝ｼ繝�
 		for (i=0; i<BreakMax; i++) {
 			if (!breakp[i].use) {
-				// �Z�b�g
+				// 繧ｻ繝�繝�
 				breakp[i].use = TRUE;
 				breakp[i].addr = addr;
 				breakp[i].enable = enable;
@@ -708,12 +708,12 @@ void FASTCALL Scheduler::SetBreak(DWORD addr, BOOL enable)
 		}
 	}
 
-	// �L���t���O��ݒ�
+	// 譛牙柑繝輔Λ繧ｰ繧定ｨｭ螳�
 	flag = FALSE;
 	for (i=0; i<BreakMax; i++) {
 		if (breakp[i].use) {
 			if (breakp[i].enable) {
-				// �L���ȃu���[�N�|�C���g������
+				// 譛牙柑縺ｪ繝悶Ξ繝ｼ繧ｯ繝昴う繝ｳ繝医′蟄伜惠
 				flag = TRUE;
 				break;
 			}
@@ -724,7 +724,7 @@ void FASTCALL Scheduler::SetBreak(DWORD addr, BOOL enable)
 
 //---------------------------------------------------------------------------
 //
-//	�u���[�N�|�C���g�폜
+//	繝悶Ξ繝ｼ繧ｯ繝昴う繝ｳ繝亥炎髯､
 //
 //---------------------------------------------------------------------------
 void FASTCALL Scheduler::DelBreak(DWORD addr)
@@ -737,26 +737,26 @@ void FASTCALL Scheduler::DelBreak(DWORD addr)
 	ASSERT_DIAG();
 
 #if defined(SCHEDULER_LOG)
-	LOG1(Log::Normal, "�u���[�N�|�C���g�폜 $%06X", addr);
+	LOG1(Log::Normal, "繝悶Ξ繝ｼ繧ｯ繝昴う繝ｳ繝亥炎髯､ $%06X", addr);
 #endif	// SCHEDULER_LOG
 
-	// ��v�`�F�b�N
+	// 荳閾ｴ繝√ぉ繝�繧ｯ
 	for (i=0; i<BreakMax; i++) {
 		if (breakp[i].use) {
 			if (breakp[i].addr == addr) {
-				// �폜
+				// 蜑企勁
 				breakp[i].use = FALSE;
 				break;
 			}
 		}
 	}
 
-	// �L���t���O��ݒ�
+	// 譛牙柑繝輔Λ繧ｰ繧定ｨｭ螳�
 	flag = FALSE;
 	for (i=0; i<BreakMax; i++) {
 		if (breakp[i].use) {
 			if (breakp[i].enable) {
-				// �L���ȃu���[�N�|�C���g������
+				// 譛牙柑縺ｪ繝悶Ξ繝ｼ繧ｯ繝昴う繝ｳ繝医′蟄伜惠
 				flag = TRUE;
 				break;
 			}
@@ -767,7 +767,7 @@ void FASTCALL Scheduler::DelBreak(DWORD addr)
 
 //---------------------------------------------------------------------------
 //
-//	�u���[�N�|�C���g�擾
+//	繝悶Ξ繝ｼ繧ｯ繝昴う繝ｳ繝亥叙蠕�
 //
 //---------------------------------------------------------------------------
 void FASTCALL Scheduler::GetBreak(int index, breakpoint_t *buf) const
@@ -777,13 +777,13 @@ void FASTCALL Scheduler::GetBreak(int index, breakpoint_t *buf) const
 	ASSERT(buf);
 	ASSERT_DIAG();
 
-	// �R�s�[
+	// 繧ｳ繝斐�ｼ
 	*buf = breakp[index];
 }
 
 //---------------------------------------------------------------------------
 //
-//	�u���[�N�|�C���g�L���E����
+//	繝悶Ξ繝ｼ繧ｯ繝昴う繝ｳ繝域怏蜉ｹ繝ｻ辟｡蜉ｹ
 //
 //---------------------------------------------------------------------------
 void FASTCALL Scheduler::EnableBreak(int index, BOOL enable)
@@ -798,7 +798,7 @@ void FASTCALL Scheduler::EnableBreak(int index, BOOL enable)
 
 //---------------------------------------------------------------------------
 //
-//	�u���[�N�񐔃N���A
+//	繝悶Ξ繝ｼ繧ｯ蝗樊焚繧ｯ繝ｪ繧｢
 //
 //---------------------------------------------------------------------------
 void FASTCALL Scheduler::ClearBreak(int index)
@@ -814,7 +814,7 @@ void FASTCALL Scheduler::ClearBreak(int index)
 
 //---------------------------------------------------------------------------
 //
-//	�u���[�N�A�h���X�ύX
+//	繝悶Ξ繝ｼ繧ｯ繧｢繝峨Ξ繧ｹ螟画峩
 //
 //---------------------------------------------------------------------------
 void FASTCALL Scheduler::AddrBreak(int index, DWORD addr)
@@ -830,7 +830,7 @@ void FASTCALL Scheduler::AddrBreak(int index, DWORD addr)
 
 //---------------------------------------------------------------------------
 //
-//	�u���[�N�A�h���X�`�F�b�N
+//	繝悶Ξ繝ｼ繧ｯ繧｢繝峨Ξ繧ｹ繝√ぉ繝�繧ｯ
 //
 //---------------------------------------------------------------------------
 int FASTCALL Scheduler::IsBreak(DWORD addr, BOOL any) const
@@ -841,16 +841,16 @@ int FASTCALL Scheduler::IsBreak(DWORD addr, BOOL any) const
 	ASSERT(addr <= 0xffffff);
 	ASSERT_DIAG();
 
-	// �ŏ��Ƀt���O������
+	// 譛蛻昴↓繝輔Λ繧ｰ繧定ｦ九ｋ
 	if (!sch.check) {
 		return -1;
 	}
 
-	// ��v�`�F�b�N
+	// 荳閾ｴ繝√ぉ繝�繧ｯ
 	for (i=0; i<BreakMax; i++) {
 		if (breakp[i].use) {
 			if (breakp[i].addr == addr) {
-				// �L���E�������C�ɂ��Ȃ����A�L��
+				// 譛牙柑繝ｻ辟｡蜉ｹ繧呈ｰ励↓縺励↑縺�縺九∵怏蜉ｹ
 				if (any || breakp[i].enable) {
 					return i;
 				}
@@ -858,13 +858,13 @@ int FASTCALL Scheduler::IsBreak(DWORD addr, BOOL any) const
 		}
 	}
 
-	// �u���[�N�|�C���g�͂��邪�A��v����
+	// 繝悶Ξ繝ｼ繧ｯ繝昴う繝ｳ繝医�ｯ縺ゅｋ縺後∽ｸ閾ｴ辟｡縺�
 	return -1;
 }
 
 //---------------------------------------------------------------------------
 //
-//	�u���[�N�A�h���X�K�p
+//	繝悶Ξ繝ｼ繧ｯ繧｢繝峨Ξ繧ｹ驕ｩ逕ｨ
 //
 //---------------------------------------------------------------------------
 void FASTCALL Scheduler::OnBreak(DWORD addr)
@@ -876,7 +876,7 @@ void FASTCALL Scheduler::OnBreak(DWORD addr)
 	ASSERT(sch.check);
 	ASSERT_DIAG();
 
-	// ��v�`�F�b�N
+	// 荳閾ｴ繝√ぉ繝�繧ｯ
 	for (i=0; i<BreakMax; i++) {
 		if (breakp[i].use) {
 			if (breakp[i].addr == addr) {
@@ -886,14 +886,14 @@ void FASTCALL Scheduler::OnBreak(DWORD addr)
 	}
 	ASSERT(i < BreakMax);
 
-	// ���ԃZ�b�g�A�J�E���g�A�b�v
+	// 譎る俣繧ｻ繝�繝医√き繧ｦ繝ｳ繝医い繝�繝�
 	breakp[i].time = GetTotalTime();
 	breakp[i].count++;
 }
 
 //---------------------------------------------------------------------------
 //
-//	�C�x���g�ǉ�
+//	繧､繝吶Φ繝郁ｿｽ蜉
 //
 //---------------------------------------------------------------------------
 void FASTCALL Scheduler::AddEvent(Event *event)
@@ -905,46 +905,46 @@ void FASTCALL Scheduler::AddEvent(Event *event)
 	ASSERT_DIAG();
 
 #if defined(SCHEDULER_LOG)
-	LOG4(Log::Normal, "�C�x���g�ǉ� Device=%c%c%c%c",
+	LOG4(Log::Normal, "繧､繝吶Φ繝郁ｿｽ蜉 Device=%c%c%c%c",
 					(char)(event->GetDevice()->GetID() >> 24),
 					(char)(event->GetDevice()->GetID() >> 16),
 					(char)(event->GetDevice()->GetID() >> 8),
 					(char)(event->GetDevice()->GetID()));
-	LOG1(Log::Normal, "�C�x���g�ǉ� %s", event->GetDesc());
+	LOG1(Log::Normal, "繧､繝吶Φ繝郁ｿｽ蜉 %s", event->GetDesc());
 #endif	// SCHEDULER_LOG
 
-	// �ŏ��̃C�x���g��
+	// 譛蛻昴�ｮ繧､繝吶Φ繝医°
 	if (!sch.first) {
-		// �ŏ��̃C�x���g
+		// 譛蛻昴�ｮ繧､繝吶Φ繝�
 		sch.first = event;
 		event->SetNextEvent(NULL);
 
 #if defined(SCHEDULER_ASM)
-		// �ʒm
+		// 騾夂衍
 		NotifyEvent(sch.first);
 #endif	// SCHEDULER_ASM
 		return;
 	}
 
-	// �Ō�̃C�x���g��T��
+	// 譛蠕後�ｮ繧､繝吶Φ繝医ｒ謗｢縺�
 	p = sch.first;
 	while (p->GetNextEvent()) {
 		p = p->GetNextEvent();
 	}
 
-	// p���Ō�̃C�x���g�Ȃ̂ŁA����ɒǉ�
+	// p縺梧怙蠕後�ｮ繧､繝吶Φ繝医↑縺ｮ縺ｧ縲√％繧後↓霑ｽ蜉
 	p->SetNextEvent(event);
 	event->SetNextEvent(NULL);
 
 #if defined(SCHEDULER_ASM)
-	// �ʒm
+	// 騾夂衍
 	NotifyEvent(sch.first);
 #endif	// SCHEDULER_ASM
 }
 
 //---------------------------------------------------------------------------
 //
-//	�C�x���g�폜
+//	繧､繝吶Φ繝亥炎髯､
 //
 //---------------------------------------------------------------------------
 void FASTCALL Scheduler::DelEvent(Event *event)
@@ -957,55 +957,55 @@ void FASTCALL Scheduler::DelEvent(Event *event)
 	ASSERT_DIAG();
 
 #if defined(SCHEDULER_LOG)
-	LOG4(Log::Normal, "�C�x���g�폜 Device=%c%c%c%c",
+	LOG4(Log::Normal, "繧､繝吶Φ繝亥炎髯､ Device=%c%c%c%c",
 					(char)(event->GetDevice()->GetID() >> 24),
 					(char)(event->GetDevice()->GetID() >> 16),
 					(char)(event->GetDevice()->GetID() >> 8),
 					(char)(event->GetDevice()->GetID()));
-	LOG1(Log::Normal, "�C�x���g�폜 %s", event->GetDesc());
+	LOG1(Log::Normal, "繧､繝吶Φ繝亥炎髯､ %s", event->GetDesc());
 #endif	// SCHEDULER_LOG
 
-	// �ŏ��̃C�x���g��
+	// 譛蛻昴�ｮ繧､繝吶Φ繝医°
 	if (sch.first == event) {
-		// �ŏ��̃C�x���g�Bnext���ŏ��̃C�x���g�Ɋ��蓖�Ă�
+		// 譛蛻昴�ｮ繧､繝吶Φ繝医Ｏext繧呈怙蛻昴�ｮ繧､繝吶Φ繝医↓蜑ｲ繧雁ｽ薙※繧�
 		sch.first = event->GetNextEvent();
 		event->SetNextEvent(NULL);
 
 #if defined(SCHEDULER_ASM)
-		// �ʒm
+		// 騾夂衍
 		NotifyEvent(sch.first);
 #endif	// SCHEDULER_ASM
 		return;
 	}
 
-	// ���̃C�x���g����v����܂Ō���
+	// 縺薙�ｮ繧､繝吶Φ繝医′荳閾ｴ縺吶ｋ縺ｾ縺ｧ讀懃ｴ｢
 	p = sch.first;
 	prev = p;
 	while (p) {
-		// ��v�`�F�b�N
+		// 荳閾ｴ繝√ぉ繝�繧ｯ
 		if (p == event) {
 			prev->SetNextEvent(event->GetNextEvent());
 			event->SetNextEvent(NULL);
 
 #if defined(SCHEDULER_ASM)
-			// �ʒm
+			// 騾夂衍
 			NotifyEvent(sch.first);
 #endif	// SCHEDULER_ASM
 			return;
 		}
 
-		// ����
+		// 谺｡縺ｸ
 		prev = p;
 		p = p->GetNextEvent();
 	}
 
-	// ���ׂẴC�x���g����v���Ȃ�(���蓾�Ȃ�)
+	// 縺吶∋縺ｦ縺ｮ繧､繝吶Φ繝医′荳閾ｴ縺励↑縺�(縺ゅｊ蠕励↑縺�)
 	ASSERT(FALSE);
 }
 
 //---------------------------------------------------------------------------
 //
-//	�C�x���g���L�`�F�b�N
+//	繧､繝吶Φ繝域園譛峨メ繧ｧ繝�繧ｯ
 //
 //---------------------------------------------------------------------------
 BOOL FASTCALL Scheduler::HasEvent(Event *event) const
@@ -1016,27 +1016,27 @@ BOOL FASTCALL Scheduler::HasEvent(Event *event) const
 	ASSERT(event);
 	ASSERT_DIAG();
 
-	// ������
+	// 蛻晄悄蛹�
 	p = sch.first;
 
-	// �S�ẴC�x���g���܂��
+	// 蜈ｨ縺ｦ縺ｮ繧､繝吶Φ繝医ｒ縺ｾ繧上ｋ
 	while (p) {
-		// ��v�`�F�b�N
+		// 荳閾ｴ繝√ぉ繝�繧ｯ
 		if (p == event) {
 			return TRUE;
 		}
 
-		// ����
+		// 谺｡縺ｸ
 		p = p->GetNextEvent();
 	}
 
-	// ���̃C�x���g�̓`�F�C���Ɋ܂܂�Ă��Ȃ�
+	// 縺薙�ｮ繧､繝吶Φ繝医�ｯ繝√ぉ繧､繝ｳ縺ｫ蜷ｫ縺ｾ繧後※縺�縺ｪ縺�
 	return FALSE;
 }
 
 //---------------------------------------------------------------------------
 //
-//	�C�x���g�̌����擾
+//	繧､繝吶Φ繝医�ｮ蛟区焚繧貞叙蠕�
 //
 //---------------------------------------------------------------------------
 int FASTCALL Scheduler::GetEventNum() const
@@ -1047,26 +1047,26 @@ int FASTCALL Scheduler::GetEventNum() const
 	ASSERT(this);
 	ASSERT_DIAG();
 
-	// ������
+	// 蛻晄悄蛹�
 	num = 0;
 	p = sch.first;
 
-	// �S�ẴC�x���g���܂��
+	// 蜈ｨ縺ｦ縺ｮ繧､繝吶Φ繝医ｒ縺ｾ繧上ｋ
 	while (p) {
 		num++;
 
-		// ����
+		// 谺｡縺ｸ
 		p = p->GetNextEvent();
 	}
 
-	// �C�x���g�̌���Ԃ�
+	// 繧､繝吶Φ繝医�ｮ蛟区焚繧定ｿ斐☆
 	return num;
 }
 
 //---------------------------------------------------------------------------
 //
-//	�ŒZ�̃C�x���g��T��
-//	���ʓr�A�Z���u���ł�p��
+//	譛遏ｭ縺ｮ繧､繝吶Φ繝医ｒ謗｢縺�
+//	窶ｻ蛻･騾斐い繧ｻ繝ｳ繝悶Λ迚医ｒ逕ｨ諢�
 //
 //---------------------------------------------------------------------------
 DWORD FASTCALL Scheduler::GetMinRemain(DWORD hus)
@@ -1079,31 +1079,31 @@ DWORD FASTCALL Scheduler::GetMinRemain(DWORD hus)
 	ASSERT(hus > 0);
 	ASSERT_DIAG();
 
-	// �C�x���g�|�C���^������
+	// 繧､繝吶Φ繝医�昴う繝ｳ繧ｿ蛻晄悄蛹�
 	p = sch.first;
 
-	// ������
+	// 蛻晄悄蛹�
 	minimum = hus;
 
-	// ���[�v
+	// 繝ｫ繝ｼ繝�
 	while (p) {
-		// �c�莞�Ԏ擾
+		// 谿九ｊ譎る俣蜿門ｾ�
 		remain = p->GetRemain();
 
-		// �L����
+		// 譛牙柑縺�
 		if (remain == 0) {
-			// ����
+			// 谺｡縺ｸ
 			p = p->GetNextEvent();
 			continue;
 		}
 
-		// �ŏ��`�F�b�N
+		// 譛蟆上メ繧ｧ繝�繧ｯ
 		if (remain >= minimum) {
 			p = p->GetNextEvent();
 			continue;
 		}
 
-		// �ŏ�
+		// 譛蟆�
 		minimum = remain;
 		p = p->GetNextEvent();
 	}
@@ -1113,8 +1113,8 @@ DWORD FASTCALL Scheduler::GetMinRemain(DWORD hus)
 
 //---------------------------------------------------------------------------
 //
-//	�C�x���g���s
-//	���ʓr�A�Z���u���ł�p��
+//	繧､繝吶Φ繝亥ｮ溯｡�
+//	窶ｻ蛻･騾斐い繧ｻ繝ｳ繝悶Λ迚医ｒ逕ｨ諢�
 //
 //---------------------------------------------------------------------------
 void FASTCALL Scheduler::ExecEvent(DWORD hus)
@@ -1127,10 +1127,10 @@ void FASTCALL Scheduler::ExecEvent(DWORD hus)
 	ASSERT(hus >= 0);
 	ASSERT_DIAG();
 
-	// �C�x���g���s�J�n
+	// 繧､繝吶Φ繝亥ｮ溯｡碁幕蟋�
 	sch.exec = TRUE;
 
-	// �g�[�^�����ԑ����A�T�E���h���ԑ���
+	// 繝医�ｼ繧ｿ繝ｫ譎る俣蠅怜刈縲√し繧ｦ繝ｳ繝画凾髢灘｢怜刈
 	sch.total += hus;
 	sch.sound += hus;
 
@@ -1139,23 +1139,23 @@ void FASTCALL Scheduler::ExecEvent(DWORD hus)
 	sch.exec = FALSE;
 #else
 
-	// �C�x���g�|�C���^������
+	// 繧､繝吶Φ繝医�昴う繝ｳ繧ｿ蛻晄悄蛹�
 	p = sch.first;
 
-	// �C�x���g������āA���s
+	// 繧､繝吶Φ繝医ｒ蝗槭▲縺ｦ縲∝ｮ溯｡�
 	while (p) {
 		p->Exec(hus);
 		p = p->GetNextEvent();
 	}
 
-	// �C�x���g���s�I��
+	// 繧､繝吶Φ繝亥ｮ溯｡檎ｵゆｺ�
 	sch.exec = FALSE;
 #endif
 }
 
 //---------------------------------------------------------------------------
 //
-//	�N���b�N�e�[�u��
+//	繧ｯ繝ｭ繝�繧ｯ繝�繝ｼ繝悶Ν
 //
 //---------------------------------------------------------------------------
 const DWORD Scheduler::ClockTable[] = {
@@ -1169,7 +1169,7 @@ const DWORD Scheduler::ClockTable[] = {
 
 //---------------------------------------------------------------------------
 //
-//	�T�C�N���e�[�u��
+//	繧ｵ繧､繧ｯ繝ｫ繝�繝ｼ繝悶Ν
 //
 //---------------------------------------------------------------------------
 int Scheduler::CycleTable[0x1000];

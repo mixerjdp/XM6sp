@@ -416,7 +416,7 @@ void FASTCALL CScheduler::Run()
 		/* ACA SE MODIFICAN LOS FPS*/
 
 		// Impulsar la VM
-		if (!pVM->Exec(1081 * 2)) {
+		if (!pVM->Exec(2000)) {
 			// Puntos de interrupcion
 			SyncDisasm();
 			dwExecCount++;

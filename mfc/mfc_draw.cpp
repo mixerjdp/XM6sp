@@ -47,7 +47,13 @@ CDrawView::CDrawView()
 	m_pFrmWnd = NULL;
 	m_bUseDX9 = TRUE;
 	m_lPresentPending = 0;
+	m_pStagingBuffer = NULL;
+	m_nStagingWidth = 0;
+	m_nStagingHeight = 0;
 	m_dwOSDUntil = 0;
+	m_dwPerfOSDLastTick = 0;
+	m_nPerfFPS = 0;
+	m_szPerfLine[0] = _T('\0');
 	m_szOSDText[0] = _T('\0');
 
  	 // Componentes
@@ -221,6 +227,12 @@ void CDrawView::OnDestroy()
 	 // Borrar fuente de texto
 	m_TextFont.DeleteObject();
 	m_DX9Renderer.Cleanup();
+	if (m_pStagingBuffer) {
+		free(m_pStagingBuffer);
+		m_pStagingBuffer = NULL;
+		m_nStagingWidth = 0;
+		m_nStagingHeight = 0;
+	}
 
 	 // A la clase base
 	CView::OnDestroy();
@@ -905,6 +917,7 @@ void FASTCALL CDrawView::ShowRenderStatusOSD(BOOL bVSync)
 	status.Format(_T("%s | VSync: %s"),
 		m_bUseDX9 ? _T("DirectX 9") : _T("GDI Mode"),
 		bVSync ? _T("ON") : _T("OFF"));
+	m_dwPerfOSDLastTick = 0;
 	ShowOSD((LPCTSTR)status);
 	RequestPresent();
 }
@@ -934,6 +947,7 @@ LRESULT CDrawView::OnPresentFrame(WPARAM /*wParam*/, LPARAM /*lParam*/)
 				int srcWidth = 0;
 				int srcHeight = 0;
 				int srcPitch = 0;
+				BOOL bCopied = FALSE;
 				BOOL bUpdated = FALSE;
 
 				::LockVM();
@@ -945,17 +959,44 @@ LRESULT CDrawView::OnPresentFrame(WPARAM /*wParam*/, LPARAM /*lParam*/)
 				srcPitch = m_Info.nBMPWidth;
 
 				if ((srcWidth > 0) && (srcHeight > 0) && (srcPitch >= srcWidth)) {
-					bUpdated = m_DX9Renderer.UpdateSurface(m_Info.pBits, srcWidth, srcHeight, srcPitch);
+					if (!m_pStagingBuffer || (m_nStagingWidth < srcWidth) || (m_nStagingHeight < srcHeight)) {
+						int newWidth = (m_nStagingWidth > srcWidth) ? m_nStagingWidth : srcWidth;
+						int newHeight = (m_nStagingHeight > srcHeight) ? m_nStagingHeight : srcHeight;
+						size_t newSize = (size_t)newWidth * (size_t)newHeight * sizeof(DWORD);
+						DWORD *pNew = (DWORD*)malloc(newSize);
+						if (pNew) {
+							if (m_pStagingBuffer) {
+								free(m_pStagingBuffer);
+							}
+							m_pStagingBuffer = pNew;
+							m_nStagingWidth = newWidth;
+							m_nStagingHeight = newHeight;
+						}
+					}
+
+					if (m_pStagingBuffer) {
+						for (int y = 0; y < srcHeight; y++) {
+							memcpy(m_pStagingBuffer + (y * srcWidth),
+								m_Info.pBits + (y * srcPitch),
+								srcWidth * sizeof(DWORD));
+						}
+						bCopied = TRUE;
+					}
 				}
 
 				FinishFrame();
 				::UnlockVM();
 
-				if (bUpdated && m_DX9Renderer.PresentFrame(srcWidth, srcHeight, TRUE, FALSE)) {
-					bPresented = TRUE;
-					if (m_szOSDText[0] && (GetTickCount() <= m_dwOSDUntil)) {
-						CClientDC dc(this);
-						DrawOSD(&dc);
+				if (bCopied) {
+					bUpdated = m_DX9Renderer.UpdateSurface(m_pStagingBuffer, srcWidth, srcHeight, srcWidth);
+				}
+
+				if (bUpdated) {
+					DrawOSD(NULL);
+					m_DX9Renderer.SetOverlayText(m_szPerfLine,
+						(m_szOSDText[0] && (GetTickCount() <= m_dwOSDUntil)) ? m_szOSDText : NULL);
+					if (m_DX9Renderer.PresentFrame(srcWidth, srcHeight, TRUE, FALSE)) {
+						bPresented = TRUE;
 					}
 				}
 			}
@@ -1008,18 +1049,52 @@ void FASTCALL CDrawView::FinishFrame()
   //---------------------------------------------------------------------------
 void FASTCALL CDrawView::DrawOSD(CDC *pDC)
 {
-	if (!pDC || !m_szOSDText[0]) {
-		return;
+	if (!m_pScheduler && m_pFrmWnd) {
+		m_pScheduler = m_pFrmWnd->GetScheduler();
 	}
-	if (GetTickCount() > m_dwOSDUntil) {
+
+	DWORD now = GetTickCount();
+	if ((m_dwPerfOSDLastTick == 0) || ((now - m_dwPerfOSDLastTick) >= 200)) {
+		m_dwPerfOSDLastTick = now;
+		m_nPerfFPS = (m_pScheduler) ? m_pScheduler->GetFrameRate() : 0;
+		if (m_nPerfFPS < 0) {
+			m_nPerfFPS = 0;
+		}
+
+		BOOL bVSync = (m_pFrmWnd) ? m_pFrmWnd->m_bVSyncEnabled : FALSE;
+		_stprintf(m_szPerfLine, _T("%s | VSync:%s | FPS:%d.%d"),
+			m_bUseDX9 ? _T("DirectX 9") : _T("GDI"),
+			bVSync ? _T("ON") : _T("OFF"),
+			m_nPerfFPS / 10,
+			m_nPerfFPS % 10);
+	}
+
+	if (!pDC) {
 		return;
 	}
 
-	CRect rect(8, 8, 220, 28);
+	BOOL bShowMsg = (m_szOSDText[0] && (now <= m_dwOSDUntil));
+	CRect rect(8, 8, 320, bShowMsg ? 46 : 28);
+
 	pDC->FillSolidRect(&rect, RGB(0, 0, 0));
 	int oldBk = pDC->SetBkMode(TRANSPARENT);
 	COLORREF oldColor = pDC->SetTextColor(RGB(255, 255, 255));
-	pDC->DrawText(m_szOSDText, -1, &rect, DT_LEFT | DT_VCENTER | DT_SINGLELINE);
+
+	CRect lineRect = rect;
+	lineRect.left += 4;
+	lineRect.top += 2;
+	lineRect.bottom = lineRect.top + 16;
+	pDC->DrawText(m_szPerfLine, -1, &lineRect, DT_LEFT | DT_VCENTER | DT_SINGLELINE);
+
+	if (bShowMsg) {
+		CRect msgRect = rect;
+		msgRect.left += 4;
+		msgRect.top = lineRect.bottom + 2;
+		msgRect.bottom = msgRect.top + 16;
+		pDC->SetTextColor(RGB(255, 220, 96));
+		pDC->DrawText(m_szOSDText, -1, &msgRect, DT_LEFT | DT_VCENTER | DT_SINGLELINE);
+	}
+
 	pDC->SetTextColor(oldColor);
 	pDC->SetBkMode(oldBk);
 }

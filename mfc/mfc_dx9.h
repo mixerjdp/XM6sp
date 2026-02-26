@@ -20,6 +20,9 @@ public:
     // Muestra la imagen en pantalla
     BOOL PresentFrame(int srcWidth, int srcHeight, BOOL fillWindow, BOOL keepAspect);
 
+    // OSD (overlay) renderizado por hardware
+    void SetOverlayText(LPCTSTR line1, LPCTSTR line2);
+
     // Resetear el dispositivo en caso de pérdida o cambio de tamaño
     BOOL ResetDevice(int width, int height, BOOL bWindowed, BOOL bVSync);
     
@@ -28,8 +31,18 @@ public:
     BOOL IsDeviceLost() const { return m_bDeviceLost; }
 
 private:
+    struct Vertex {
+        float x, y, z, rhw;
+        float u, v;
+    };
+
     BOOL CreateTexture(int width, int height);
+    BOOL CreateVertexBuffer();
+    void SetupDeviceStates();
+    BOOL UpdateOverlayTexture();
     void ReleaseTexture();
+    void ReleaseVertexBuffer();
+    void ReleaseOverlayTexture();
 
     HMODULE m_hD3D9;
     IDirect3D9* m_pD3D;
@@ -37,6 +50,8 @@ private:
     IDirect3DDevice9* m_pDevice;
     IDirect3DDevice9Ex* m_pDeviceEx;
     IDirect3DTexture9* m_pTexture;
+    IDirect3DTexture9* m_pOverlayTexture;
+    IDirect3DVertexBuffer9* m_pVertexBuffer;
 
     HWND m_hWnd;
     D3DPRESENT_PARAMETERS m_d3dpp;
@@ -48,6 +63,12 @@ private:
 
     int m_TexWidth;
     int m_TexHeight;
+    int m_OverlayWidth;
+    int m_OverlayHeight;
+    BOOL m_bOverlayEnabled;
+    BOOL m_bOverlayDirty;
+    TCHAR m_szOverlayLine1[96];
+    TCHAR m_szOverlayLine2[64];
 };
 
 #endif // MFC_DX9_H

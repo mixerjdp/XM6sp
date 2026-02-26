@@ -9,10 +9,13 @@ typedef HRESULT(WINAPI* LPFNDIRECT3DCREATE9EX)(UINT, IDirect3D9Ex**);
 
 CDX9Renderer::CDX9Renderer()
     : m_hD3D9(NULL), m_pD3D(NULL), m_pD3DEx(NULL), m_pDevice(NULL), m_pDeviceEx(NULL), 
-      m_pTexture(NULL), m_hWnd(NULL), m_bInitialized(FALSE), m_bDeviceLost(FALSE),
-      m_bIsEx(FALSE), m_dwOwnerThreadId(0), m_TexWidth(0), m_TexHeight(0) 
+      m_pTexture(NULL), m_pOverlayTexture(NULL), m_pVertexBuffer(NULL), m_hWnd(NULL), m_bInitialized(FALSE), m_bDeviceLost(FALSE),
+      m_bIsEx(FALSE), m_dwOwnerThreadId(0), m_TexWidth(0), m_TexHeight(0), m_OverlayWidth(384), m_OverlayHeight(48),
+      m_bOverlayEnabled(FALSE), m_bOverlayDirty(FALSE)
 {
     ZeroMemory(&m_d3dpp, sizeof(m_d3dpp));
+	m_szOverlayLine1[0] = _T('\0');
+	m_szOverlayLine2[0] = _T('\0');
 }
 
 CDX9Renderer::~CDX9Renderer() 
@@ -97,6 +100,8 @@ BOOL CDX9Renderer::Init(HWND hWnd, int width, int height, BOOL bWindowed, BOOL b
         return FALSE;
     }
 
+    SetupDeviceStates();
+
     m_bInitialized = TRUE;
     return TRUE;
 }
@@ -107,7 +112,9 @@ void CDX9Renderer::Cleanup()
         ASSERT(GetCurrentThreadId() == m_dwOwnerThreadId);
     }
 
-    ReleaseTexture();
+	ReleaseTexture();
+	ReleaseOverlayTexture();
+	ReleaseVertexBuffer();
 
     if (m_pDeviceEx) { m_pDeviceEx->Release(); m_pDeviceEx = NULL; }
     if (m_pDevice) { m_pDevice->Release(); m_pDevice = NULL; }
@@ -116,8 +123,10 @@ void CDX9Renderer::Cleanup()
 
     if (m_hD3D9) { FreeLibrary(m_hD3D9); m_hD3D9 = NULL; }
 
-    m_bInitialized = FALSE;
-    m_bDeviceLost = FALSE;
+	m_bInitialized = FALSE;
+	m_bDeviceLost = FALSE;
+	m_bOverlayEnabled = FALSE;
+	m_bOverlayDirty = FALSE;
 }
 
 BOOL CDX9Renderer::CreateTexture(int width, int height) 
@@ -133,6 +142,7 @@ BOOL CDX9Renderer::CreateTexture(int width, int height)
     }
 
     ReleaseTexture();
+    ReleaseVertexBuffer();
 
     HRESULT hr = m_pDevice->CreateTexture(
         width, height, 1,
@@ -150,6 +160,41 @@ BOOL CDX9Renderer::CreateTexture(int width, int height)
     return TRUE;
 }
 
+BOOL CDX9Renderer::CreateVertexBuffer()
+{
+    if (!m_pDevice) return FALSE;
+    if (m_pVertexBuffer) return TRUE;
+
+    HRESULT hr = m_pDevice->CreateVertexBuffer(
+        4 * sizeof(Vertex),
+        D3DUSAGE_DYNAMIC | D3DUSAGE_WRITEONLY,
+        D3DFVF_XYZRHW | D3DFVF_TEX1,
+        D3DPOOL_DEFAULT,
+        &m_pVertexBuffer,
+        NULL
+    );
+    return SUCCEEDED(hr);
+}
+
+void CDX9Renderer::SetupDeviceStates()
+{
+    if (!m_pDevice) return;
+
+    m_pDevice->SetRenderState(D3DRS_LIGHTING, FALSE);
+    m_pDevice->SetRenderState(D3DRS_ZENABLE, FALSE);
+    m_pDevice->SetRenderState(D3DRS_CULLMODE, D3DCULL_NONE);
+    m_pDevice->SetRenderState(D3DRS_ALPHABLENDENABLE, FALSE);
+
+    m_pDevice->SetTextureStageState(0, D3DTSS_COLOROP, D3DTOP_SELECTARG1);
+    m_pDevice->SetTextureStageState(0, D3DTSS_COLORARG1, D3DTA_TEXTURE);
+    m_pDevice->SetTextureStageState(0, D3DTSS_ALPHAOP, D3DTOP_DISABLE);
+
+    m_pDevice->SetSamplerState(0, D3DSAMP_MAGFILTER, D3DTEXF_POINT);
+    m_pDevice->SetSamplerState(0, D3DSAMP_MINFILTER, D3DTEXF_POINT);
+    m_pDevice->SetSamplerState(0, D3DSAMP_ADDRESSU, D3DTADDRESS_CLAMP);
+    m_pDevice->SetSamplerState(0, D3DSAMP_ADDRESSV, D3DTADDRESS_CLAMP);
+}
+
 void CDX9Renderer::ReleaseTexture() 
 {
     if (m_pTexture) {
@@ -158,6 +203,152 @@ void CDX9Renderer::ReleaseTexture()
     }
     m_TexWidth = 0;
     m_TexHeight = 0;
+}
+
+void CDX9Renderer::ReleaseVertexBuffer()
+{
+    if (m_pVertexBuffer) {
+        m_pVertexBuffer->Release();
+        m_pVertexBuffer = NULL;
+    }
+}
+
+void CDX9Renderer::ReleaseOverlayTexture()
+{
+	if (m_pOverlayTexture) {
+		m_pOverlayTexture->Release();
+		m_pOverlayTexture = NULL;
+	}
+}
+
+void CDX9Renderer::SetOverlayText(LPCTSTR line1, LPCTSTR line2)
+{
+	TCHAR szLine1[96];
+	TCHAR szLine2[64];
+
+	if (line1 && line1[0]) {
+		_tcsncpy(szLine1, line1, (sizeof(szLine1) / sizeof(szLine1[0])) - 1);
+		szLine1[(sizeof(szLine1) / sizeof(szLine1[0])) - 1] = _T('\0');
+	}
+	else {
+		szLine1[0] = _T('\0');
+	}
+
+	if (line2 && line2[0]) {
+		_tcsncpy(szLine2, line2, (sizeof(szLine2) / sizeof(szLine2[0])) - 1);
+		szLine2[(sizeof(szLine2) / sizeof(szLine2[0])) - 1] = _T('\0');
+	}
+	else {
+		szLine2[0] = _T('\0');
+	}
+
+	if ((_tcscmp(m_szOverlayLine1, szLine1) == 0) && (_tcscmp(m_szOverlayLine2, szLine2) == 0)) {
+		return;
+	}
+
+	_tcscpy(m_szOverlayLine1, szLine1);
+	_tcscpy(m_szOverlayLine2, szLine2);
+	m_bOverlayEnabled = (m_szOverlayLine1[0] != _T('\0'));
+	m_bOverlayDirty = TRUE;
+}
+
+BOOL CDX9Renderer::UpdateOverlayTexture()
+{
+	if (!m_pDevice || !m_bOverlayEnabled) {
+		return FALSE;
+	}
+
+	if (!m_pOverlayTexture) {
+		HRESULT hr = m_pDevice->CreateTexture(
+			m_OverlayWidth, m_OverlayHeight, 1,
+			D3DUSAGE_DYNAMIC,
+			D3DFMT_A8R8G8B8,
+			D3DPOOL_DEFAULT,
+			&m_pOverlayTexture,
+			NULL
+		);
+		if (FAILED(hr)) {
+			return FALSE;
+		}
+	}
+
+	BITMAPINFO bmi;
+	ZeroMemory(&bmi, sizeof(bmi));
+	bmi.bmiHeader.biSize = sizeof(BITMAPINFOHEADER);
+	bmi.bmiHeader.biWidth = m_OverlayWidth;
+	bmi.bmiHeader.biHeight = -m_OverlayHeight;
+	bmi.bmiHeader.biPlanes = 1;
+	bmi.bmiHeader.biBitCount = 32;
+	bmi.bmiHeader.biCompression = BI_RGB;
+
+	HDC hdc = CreateCompatibleDC(NULL);
+	if (!hdc) {
+		return FALSE;
+	}
+
+	DWORD *pBits = NULL;
+	HBITMAP hbm = CreateDIBSection(hdc, &bmi, DIB_RGB_COLORS, (void**)&pBits, NULL, 0);
+	if (!hbm || !pBits) {
+		if (hbm) {
+			DeleteObject(hbm);
+		}
+		DeleteDC(hdc);
+		return FALSE;
+	}
+
+	HBITMAP hOld = (HBITMAP)SelectObject(hdc, hbm);
+	HFONT hFont = (HFONT)GetStockObject(DEFAULT_GUI_FONT);
+	HFONT hOldFont = (HFONT)SelectObject(hdc, hFont);
+	SetBkMode(hdc, TRANSPARENT);
+
+	// Fondo transparente inicialmente
+	memset(pBits, 0, m_OverlayWidth * m_OverlayHeight * sizeof(DWORD));
+
+	RECT rc = { 0, 0, m_OverlayWidth, m_OverlayHeight };
+	RECT rc1 = { 6, 3, m_OverlayWidth - 6, 20 };
+	RECT rc2 = { 6, 23, m_OverlayWidth - 6, 40 };
+
+	SetTextColor(hdc, RGB(255, 255, 255));
+	DrawText(hdc, m_szOverlayLine1, -1, &rc1, DT_LEFT | DT_VCENTER | DT_SINGLELINE | DT_NOPREFIX);
+	if (m_szOverlayLine2[0]) {
+		SetTextColor(hdc, RGB(255, 220, 96));
+		DrawText(hdc, m_szOverlayLine2, -1, &rc2, DT_LEFT | DT_VCENTER | DT_SINGLELINE | DT_NOPREFIX);
+	}
+
+	// Aplicar alpha: fondo semitransparente + texto opaco
+	for (int y = rc.top; y < rc.bottom; y++) {
+		DWORD *pLine = pBits + (y * m_OverlayWidth);
+		for (int x = rc.left; x < rc.right; x++) {
+			DWORD c = pLine[x] & 0x00FFFFFF;
+			if (c) {
+				pLine[x] = 0xFF000000 | c;
+			}
+			else {
+				pLine[x] = 0xA0000000;
+			}
+		}
+	}
+
+	D3DLOCKED_RECT lr;
+	BOOL bOk = FALSE;
+	if (SUCCEEDED(m_pOverlayTexture->LockRect(0, &lr, NULL, D3DLOCK_DISCARD | D3DLOCK_NOSYSLOCK))) {
+		for (int y = 0; y < m_OverlayHeight; y++) {
+			memcpy((BYTE*)lr.pBits + (y * lr.Pitch), pBits + (y * m_OverlayWidth), m_OverlayWidth * sizeof(DWORD));
+		}
+		m_pOverlayTexture->UnlockRect(0);
+		bOk = TRUE;
+	}
+
+	SelectObject(hdc, hOldFont);
+	SelectObject(hdc, hOld);
+	DeleteObject(hbm);
+	DeleteDC(hdc);
+
+	if (bOk) {
+		m_bOverlayDirty = FALSE;
+	}
+
+	return bOk;
 }
 
 BOOL CDX9Renderer::UpdateSurface(const DWORD* pSrcBuffer, int srcWidth, int srcHeight, int srcPitchPixels) 
@@ -187,6 +378,7 @@ BOOL CDX9Renderer::ResetDevice(int width, int height, BOOL bWindowed, BOOL bVSyn
     if (!m_bInitialized || !m_pDevice) return FALSE;
 
     ReleaseTexture();
+    ReleaseOverlayTexture();
 
     if (width < 1) width = 1;
     if (height < 1) height = 1;
@@ -204,6 +396,7 @@ BOOL CDX9Renderer::ResetDevice(int width, int height, BOOL bWindowed, BOOL bVSyn
     }
 
     if (SUCCEEDED(hr)) {
+        SetupDeviceStates();
         m_bDeviceLost = FALSE;
         return TRUE;
     }
@@ -232,16 +425,11 @@ BOOL CDX9Renderer::PresentFrame(int srcWidth, int srcHeight, BOOL fillWindow, BO
     }
 
     if (m_pTexture) {
-        m_pDevice->BeginScene();
-        
-        m_pDevice->SetSamplerState(0, D3DSAMP_MAGFILTER, D3DTEXF_POINT);
-        m_pDevice->SetSamplerState(0, D3DSAMP_MINFILTER, D3DTEXF_POINT);
+        if (!CreateVertexBuffer()) {
+            return FALSE;
+        }
 
-        struct Vertex { 
-            float x, y, z, rhw; 
-            float u, v; 
-        };
-        #define D3DFVF_CUSTOMVERTEX (D3DFVF_XYZRHW | D3DFVF_TEX1)
+        m_pDevice->BeginScene();
 
         float bw = (float)m_d3dpp.BackBufferWidth;
         float bh = (float)m_d3dpp.BackBufferHeight;
@@ -273,16 +461,107 @@ BOOL CDX9Renderer::PresentFrame(int srcWidth, int srcHeight, BOOL fillWindow, BO
             destH = (float)srcHeight;
         }
 
-        Vertex vertices[] = {
-            { destX + offset,         destY + offset,         0.0f, 1.0f, 0.0f, 0.0f },
-            { destX + destW + offset, destY + offset,         0.0f, 1.0f, uMax, 0.0f },
-            { destX + offset,         destY + destH + offset, 0.0f, 1.0f, 0.0f, vMax },
-            { destX + destW + offset, destY + destH + offset, 0.0f, 1.0f, uMax, vMax }
-        };
+        Vertex *pVertices = NULL;
+        if (FAILED(m_pVertexBuffer->Lock(0, 0, (void**)&pVertices, D3DLOCK_DISCARD | D3DLOCK_NOSYSLOCK))) {
+            m_pDevice->EndScene();
+            return FALSE;
+        }
 
-        m_pDevice->SetFVF(D3DFVF_CUSTOMVERTEX);
+        pVertices[0].x = destX + offset;
+        pVertices[0].y = destY + offset;
+        pVertices[0].z = 0.0f;
+        pVertices[0].rhw = 1.0f;
+        pVertices[0].u = 0.0f;
+        pVertices[0].v = 0.0f;
+
+        pVertices[1].x = destX + destW + offset;
+        pVertices[1].y = destY + offset;
+        pVertices[1].z = 0.0f;
+        pVertices[1].rhw = 1.0f;
+        pVertices[1].u = uMax;
+        pVertices[1].v = 0.0f;
+
+        pVertices[2].x = destX + offset;
+        pVertices[2].y = destY + destH + offset;
+        pVertices[2].z = 0.0f;
+        pVertices[2].rhw = 1.0f;
+        pVertices[2].u = 0.0f;
+        pVertices[2].v = vMax;
+
+        pVertices[3].x = destX + destW + offset;
+        pVertices[3].y = destY + destH + offset;
+        pVertices[3].z = 0.0f;
+        pVertices[3].rhw = 1.0f;
+        pVertices[3].u = uMax;
+        pVertices[3].v = vMax;
+
+        m_pVertexBuffer->Unlock();
+
+        m_pDevice->SetFVF(D3DFVF_XYZRHW | D3DFVF_TEX1);
+        m_pDevice->SetStreamSource(0, m_pVertexBuffer, 0, sizeof(Vertex));
         m_pDevice->SetTexture(0, m_pTexture);
-        m_pDevice->DrawPrimitiveUP(D3DPT_TRIANGLESTRIP, 2, vertices, sizeof(Vertex));
+        m_pDevice->DrawPrimitive(D3DPT_TRIANGLESTRIP, 0, 2);
+
+		// OSD por hardware (DX9)
+		if (m_bOverlayEnabled) {
+			if (m_bOverlayDirty && !UpdateOverlayTexture()) {
+				m_bOverlayEnabled = FALSE;
+			}
+
+			if (m_pOverlayTexture && m_bOverlayEnabled) {
+				Vertex *pOverlay = NULL;
+				if (SUCCEEDED(m_pVertexBuffer->Lock(0, 0, (void**)&pOverlay, D3DLOCK_DISCARD | D3DLOCK_NOSYSLOCK))) {
+					float ox = 8.0f + offset;
+					float oy = 8.0f + offset;
+					float ow = (float)m_OverlayWidth;
+					float oh = (float)m_OverlayHeight;
+
+					pOverlay[0].x = ox;
+					pOverlay[0].y = oy;
+					pOverlay[0].z = 0.0f;
+					pOverlay[0].rhw = 1.0f;
+					pOverlay[0].u = 0.0f;
+					pOverlay[0].v = 0.0f;
+
+					pOverlay[1].x = ox + ow;
+					pOverlay[1].y = oy;
+					pOverlay[1].z = 0.0f;
+					pOverlay[1].rhw = 1.0f;
+					pOverlay[1].u = 1.0f;
+					pOverlay[1].v = 0.0f;
+
+					pOverlay[2].x = ox;
+					pOverlay[2].y = oy + oh;
+					pOverlay[2].z = 0.0f;
+					pOverlay[2].rhw = 1.0f;
+					pOverlay[2].u = 0.0f;
+					pOverlay[2].v = 1.0f;
+
+					pOverlay[3].x = ox + ow;
+					pOverlay[3].y = oy + oh;
+					pOverlay[3].z = 0.0f;
+					pOverlay[3].rhw = 1.0f;
+					pOverlay[3].u = 1.0f;
+					pOverlay[3].v = 1.0f;
+
+					m_pVertexBuffer->Unlock();
+
+					m_pDevice->SetRenderState(D3DRS_ALPHABLENDENABLE, TRUE);
+					m_pDevice->SetRenderState(D3DRS_SRCBLEND, D3DBLEND_SRCALPHA);
+					m_pDevice->SetRenderState(D3DRS_DESTBLEND, D3DBLEND_INVSRCALPHA);
+					m_pDevice->SetTextureStageState(0, D3DTSS_ALPHAOP, D3DTOP_SELECTARG1);
+					m_pDevice->SetTextureStageState(0, D3DTSS_ALPHAARG1, D3DTA_TEXTURE);
+
+					m_pDevice->SetFVF(D3DFVF_XYZRHW | D3DFVF_TEX1);
+					m_pDevice->SetStreamSource(0, m_pVertexBuffer, 0, sizeof(Vertex));
+					m_pDevice->SetTexture(0, m_pOverlayTexture);
+					m_pDevice->DrawPrimitive(D3DPT_TRIANGLESTRIP, 0, 2);
+
+					m_pDevice->SetRenderState(D3DRS_ALPHABLENDENABLE, FALSE);
+					m_pDevice->SetTextureStageState(0, D3DTSS_ALPHAOP, D3DTOP_DISABLE);
+				}
+			}
+		}
 
         m_pDevice->EndScene();
     }
