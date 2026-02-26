@@ -113,34 +113,32 @@ BOOL FASTCALL IsCMOV(void)
 //---------------------------------------------------------------------------
 void FASTCALL GetMsg(UINT uID, CString& string)
 {
-	// uID puede llegar como 0 en algunos casos
+
 	if (uID == 0) {
 		string.Empty();
 		return;
 	}
 
-	// ?Es japones?
+
 	if (IsJapanese()) {
 		if (!string.LoadString(uID)) {
 #if defined(_DEBUG)
-			TRACE(_T("GetMsg: Error al cargar cadena ID:%d
-"), uID);
+			TRACE(_T("GetMsg: ID:%d\n"), uID);
 #endif	// _DEBUG
 			string.Empty();
 		}
 		return;
 	}
 
-	// Ingles. Probar con +5000
+
 	if (string.LoadString(uID + 5000)) {
 		return;
 	}
 
-	// Intentar de nuevo con +0
+
 	if (!string.LoadString(uID)) {
 #if defined(_DEBUG)
-		TRACE(_T("GetMsg: Error al cargar cadena ID:%d
-"), uID);
+		TRACE(_T("GetMsg: ID:%d\n"), uID);
 #endif	// _DEBUG
 		string.Empty();
 	}

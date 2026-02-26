@@ -26,6 +26,8 @@
 #include "mfc_inp.h"
 #include "mfc_draw.h"
 
+#define WM_XM6_PRESENT (WM_APP + 0x120)
+
   //===========================================================================
   //
   //	Vista de dibujo
@@ -43,6 +45,13 @@ CDrawView::CDrawView()
 	m_bEnable = FALSE;
 	m_pSubWnd = NULL;
 	m_pFrmWnd = NULL;
+	m_bUseDX9 = TRUE;
+	m_lPresentPending = 0;
+	m_pStagingBuffer = NULL;
+	m_nStagingWidth = 0;
+	m_nStagingHeight = 0;
+	m_dwOSDUntil = 0;
+	m_szOSDText[0] = _T('\0');
 
  	 // Componentes
 	m_pScheduler = NULL;
@@ -91,6 +100,7 @@ BEGIN_MESSAGE_MAP(CDrawView, CView)
 	ON_WM_PAINT()
 	ON_WM_ERASEBKGND()
 	ON_MESSAGE(WM_DISPLAYCHANGE, OnDisplayChange)
+	ON_MESSAGE(WM_XM6_PRESENT, OnPresentFrame)
 	ON_WM_DROPFILES()
 #if _MFC_VER >= 0x600
 	ON_WM_MOUSEWHEEL()
@@ -119,6 +129,17 @@ BOOL FASTCALL CDrawView::Init(CWnd *pParent)
 				CRect(0, 0, 0, 0), pParent, AFX_IDW_PANE_FIRST, NULL)) {
 		return FALSE;
 	}
+
+	CRect rect;
+	GetClientRect(&rect);
+	if (rect.Width() <= 0) {
+		rect.right = 640;
+	}
+	if (rect.Height() <= 0) {
+		rect.bottom = 480;
+	}
+	m_DX9Renderer.Init(m_hWnd, rect.Width(), rect.Height(), TRUE,
+		(m_pFrmWnd) ? m_pFrmWnd->m_bVSyncEnabled : TRUE);
 
 	return TRUE;
 }
@@ -200,10 +221,17 @@ void CDrawView::OnDestroy()
 		m_Info.pBits = NULL;
 	}
 
- 	 // Borrar fuente de texto
+	 // Borrar fuente de texto
 	m_TextFont.DeleteObject();
+	m_DX9Renderer.Cleanup();
+	if (m_pStagingBuffer) {
+		free(m_pStagingBuffer);
+		m_pStagingBuffer = NULL;
+		m_nStagingWidth = 0;
+		m_nStagingHeight = 0;
+	}
 
- 	 // A la clase base
+	 // A la clase base
 	CView::OnDestroy();
 }
 
@@ -214,10 +242,14 @@ void CDrawView::OnDestroy()
   //---------------------------------------------------------------------------
 void CDrawView::OnSize(UINT nType, int cx, int cy)
 {
- 	 // Actualizacion del mapa de bits
+	 // Actualizacion del mapa de bits
 	SetupBitmap();
+	if (m_DX9Renderer.IsInitialized()) {
+		m_DX9Renderer.ResetDevice(cx, cy, TRUE,
+			(m_pFrmWnd) ? m_pFrmWnd->m_bVSyncEnabled : TRUE);
+	}
 
- 	 // Clase base
+	 // Clase base
 	CView::OnSize(nType, cx, cy);
 }
 
@@ -406,12 +438,17 @@ BOOL CDrawView::OnMouseWheel(UINT /*nFlags*/, short zDelta, CPoint /*pt*/)
   //---------------------------------------------------------------------------
 void CDrawView::OnKeyDown(UINT nChar, UINT nRepCnt, UINT nFlags)
 {
- 	 // Determinar que teclas excluir
+	 // Determinar que teclas excluir
 	if (!KeyUpDown(nChar, nFlags, TRUE)) {
 		return;
 	}
 
- 	 // Flujo a clase base
+	if (nChar == VK_F8) {
+		ToggleRenderer();
+		return;
+	}
+
+	 // Flujo a clase base
 	CView::OnKeyDown(nChar, nRepCnt, nFlags);
 }
 
@@ -766,15 +803,12 @@ void FASTCALL CDrawView::Refresh()
 void FASTCALL CDrawView::Draw(int nChildWnd)
 {
 	CSubWnd *pSubWnd;
-	CClientDC *pDC;
 
 	ASSERT(nChildWnd >= -1);
 
- 	 // -1 es la vista Draw
+	 // -1 es la vista Draw
 	if (nChildWnd < 0) {
-		pDC = new CClientDC(this);
-		OnDraw(pDC);
-		delete pDC;
+		RequestPresent();
 		return;
 	}
 
@@ -807,6 +841,225 @@ void FASTCALL CDrawView::Update()
 		pWnd->Update();
 		pWnd = pWnd->m_pNextWnd;
 	}
+}
+
+  //---------------------------------------------------------------------------
+  //
+  //	Solicitar presentacion de frame al hilo de UI
+  //
+  //---------------------------------------------------------------------------
+void FASTCALL CDrawView::RequestPresent()
+{
+	if (!m_hWnd) {
+		return;
+	}
+	if (::InterlockedExchange(&m_lPresentPending, 1) == 0) {
+		PostMessage(WM_XM6_PRESENT, 0, 0);
+	}
+}
+
+  //---------------------------------------------------------------------------
+  //
+  //	Actualizar VSync en renderer DX
+  //
+  //---------------------------------------------------------------------------
+void FASTCALL CDrawView::SetVSync(BOOL bEnable)
+{
+	if (!m_DX9Renderer.IsInitialized()) {
+		return;
+	}
+	CRect rect;
+	GetClientRect(&rect);
+	m_DX9Renderer.ResetDevice((rect.Width() > 0) ? rect.Width() : 1,
+		(rect.Height() > 0) ? rect.Height() : 1,
+		TRUE,
+		bEnable);
+}
+
+  //---------------------------------------------------------------------------
+  //
+  //	Alternar entre DX9 y GDI
+  //
+  //---------------------------------------------------------------------------
+void FASTCALL CDrawView::ToggleRenderer()
+{
+	m_bUseDX9 = !m_bUseDX9;
+	if (m_bUseDX9 && !m_DX9Renderer.IsInitialized()) {
+		CRect rect;
+		GetClientRect(&rect);
+		m_DX9Renderer.Init(m_hWnd,
+			(rect.Width() > 0) ? rect.Width() : 640,
+			(rect.Height() > 0) ? rect.Height() : 480,
+			TRUE,
+			(m_pFrmWnd) ? m_pFrmWnd->m_bVSyncEnabled : TRUE);
+	}
+	ShowRenderStatusOSD((m_pFrmWnd) ? m_pFrmWnd->m_bVSyncEnabled : TRUE);
+}
+
+  //---------------------------------------------------------------------------
+  //
+  //	Mostrar OSD de estado de renderer/VSync
+  //
+  //---------------------------------------------------------------------------
+void FASTCALL CDrawView::ShowRenderStatusOSD(BOOL bVSync)
+{
+	CString status;
+	status.Format(_T("%s | VSync: %s"),
+		m_bUseDX9 ? _T("DirectX 9") : _T("GDI Mode"),
+		bVSync ? _T("ON") : _T("OFF"));
+	ShowOSD((LPCTSTR)status);
+	RequestPresent();
+}
+
+  //---------------------------------------------------------------------------
+  //
+  //	Presentacion asincrona de frame (hilo UI)
+  //
+  //---------------------------------------------------------------------------
+LRESULT CDrawView::OnPresentFrame(WPARAM /*wParam*/, LPARAM /*lParam*/)
+{
+	BOOL bPresented = FALSE;
+
+	if (m_bEnable && m_Info.hBitmap && m_Info.pWork && m_Info.pBits) {
+		if (m_bUseDX9) {
+			if (!m_DX9Renderer.IsInitialized()) {
+				CRect rect;
+				GetClientRect(&rect);
+				m_DX9Renderer.Init(m_hWnd,
+					(rect.Width() > 0) ? rect.Width() : 640,
+					(rect.Height() > 0) ? rect.Height() : 480,
+					TRUE,
+					(m_pFrmWnd) ? m_pFrmWnd->m_bVSyncEnabled : TRUE);
+			}
+
+			if (m_DX9Renderer.IsInitialized()) {
+				int srcWidth = 0;
+				int srcHeight = 0;
+				int srcPitch = 0;
+
+				::LockVM();
+				CRect rect;
+				GetClientRect(&rect);
+				ReCalc(rect);
+				srcWidth = m_Info.nWidth;
+				srcHeight = m_Info.nHeight;
+				srcPitch = m_Info.nBMPWidth;
+
+				if ((srcWidth > 0) && (srcHeight > 0) && (srcPitch >= srcWidth)) {
+					size_t bufferSize = (size_t)srcWidth * (size_t)srcHeight * sizeof(DWORD);
+					if (!m_pStagingBuffer || (m_nStagingWidth != srcWidth) || (m_nStagingHeight != srcHeight)) {
+						if (m_pStagingBuffer) {
+							free(m_pStagingBuffer);
+							m_pStagingBuffer = NULL;
+						}
+						m_pStagingBuffer = (DWORD*)malloc(bufferSize);
+						if (m_pStagingBuffer) {
+							m_nStagingWidth = srcWidth;
+							m_nStagingHeight = srcHeight;
+						}
+					}
+
+					if (m_pStagingBuffer) {
+						for (int y = 0; y < srcHeight; y++) {
+							memcpy(m_pStagingBuffer + (y * srcWidth),
+								m_Info.pBits + (y * srcPitch),
+								srcWidth * sizeof(DWORD));
+						}
+					}
+				}
+
+				FinishFrame();
+				::UnlockVM();
+
+				if ((m_pStagingBuffer != NULL) && (m_nStagingWidth > 0) && (m_nStagingHeight > 0)) {
+					if (m_DX9Renderer.UpdateSurface(m_pStagingBuffer, m_nStagingWidth, m_nStagingHeight, m_nStagingWidth) &&
+						m_DX9Renderer.PresentFrame(m_nStagingWidth, m_nStagingHeight, TRUE, FALSE)) {
+						bPresented = TRUE;
+						CClientDC dc(this);
+						DrawOSD(&dc);
+					}
+				}
+			}
+
+			if (!bPresented) {
+				m_bUseDX9 = FALSE;
+				ShowOSD(_T("GDI fallback"));
+			}
+		}
+
+		if (!bPresented) {
+			CClientDC dc(this);
+			::LockVM();
+			OnDraw(&dc);
+			::UnlockVM();
+		}
+
+	}
+
+	::InterlockedExchange(&m_lPresentPending, 0);
+	return 0;
+}
+
+  //---------------------------------------------------------------------------
+  //
+  //	Marcar frame consumido
+  //
+  //---------------------------------------------------------------------------
+void FASTCALL CDrawView::FinishFrame()
+{
+	if (!m_Info.pWork) {
+		return;
+	}
+
+	for (int i = 0; i < (m_Info.nHeight * 64); i++) {
+		m_Info.pWork->drawflag[i] = FALSE;
+	}
+	m_Info.dwDrawCount++;
+	m_Info.nBltLeft = 0;
+	m_Info.nBltTop = 0;
+	m_Info.nBltRight = m_Info.nWidth - 1;
+	m_Info.nBltBottom = m_Info.nHeight - 1;
+	m_Info.bBltAll = FALSE;
+}
+
+  //---------------------------------------------------------------------------
+  //
+  //	OSD simple
+  //
+  //---------------------------------------------------------------------------
+void FASTCALL CDrawView::DrawOSD(CDC *pDC)
+{
+	if (!pDC || !m_szOSDText[0]) {
+		return;
+	}
+	if (GetTickCount() > m_dwOSDUntil) {
+		return;
+	}
+
+	CRect rect(8, 8, 220, 28);
+	pDC->FillSolidRect(&rect, RGB(0, 0, 0));
+	int oldBk = pDC->SetBkMode(TRANSPARENT);
+	COLORREF oldColor = pDC->SetTextColor(RGB(255, 255, 255));
+	pDC->DrawText(m_szOSDText, -1, &rect, DT_LEFT | DT_VCENTER | DT_SINGLELINE);
+	pDC->SetTextColor(oldColor);
+	pDC->SetBkMode(oldBk);
+}
+
+  //---------------------------------------------------------------------------
+  //
+  //	Mostrar OSD
+  //
+  //---------------------------------------------------------------------------
+void FASTCALL CDrawView::ShowOSD(LPCTSTR lpszText)
+{
+	if (!lpszText) {
+		m_szOSDText[0] = _T('\0');
+		m_dwOSDUntil = 0;
+		return;
+	}
+	_tcsncpy(m_szOSDText, lpszText, (sizeof(m_szOSDText) / sizeof(m_szOSDText[0])) - 1);
+	m_szOSDText[(sizeof(m_szOSDText) / sizeof(m_szOSDText[0])) - 1] = _T('\0');
+	m_dwOSDUntil = GetTickCount() + 2500;
 }
 
   //---------------------------------------------------------------------------
@@ -863,6 +1116,7 @@ void CDrawView::OnDraw(CDC *pDC)
 	GetClientRect(&rect);
 	if (!m_Info.hBitmap || !m_bEnable || !m_Info.pWork) {
 		pDC->FillSolidRect(&rect, RGB(0, 0, 0));
+		DrawOSD(pDC);
 		return;
 	}
 
@@ -926,7 +1180,7 @@ void CDrawView::OnDraw(CDC *pDC)
 	vmul = 4;
 	
 
-	/* Mi  Codigo de prueba para calcular stretch vertical máximo posible con respecto al anfitrion */
+	/* Mi  Codigo de prueba para calcular stretch vertical mï¿½ximo posible con respecto al anfitrion */
 		if (m_Info.bBltStretch) 
 		{
 			vmul = 1;							
@@ -1010,6 +1264,7 @@ void CDrawView::OnDraw(CDC *pDC)
 		m_Info.nBltTop = 0;
 		m_Info.nBltRight = m_Info.nWidth - 1;
 		m_Info.nBltBottom = m_Info.nHeight - 1;
+		DrawOSD(pDC);
 		return;
 	}
 
@@ -1065,8 +1320,9 @@ void CDrawView::OnDraw(CDC *pDC)
 	SelectObject(hMemDC, hDefBitmap);
 	DeleteDC(hMemDC);
 
- 	 // La bandera es bajada por CalcRect
+	// La bandera es bajada por CalcRect
 	m_Info.dwDrawCount++;
+	DrawOSD(pDC);
 }
 
   //---------------------------------------------------------------------------

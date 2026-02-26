@@ -1,0 +1,251 @@
+3500: //---------------------------------------------------------------------------
+3501: //
+3502: //	Evento de pantalla completa
+3503: //
+3504: //---------------------------------------------------------------------------
+3505: void CFrmWnd::OnFullScreen()
+3506: {
+3507: 	HDC hDC;
+3508: 	DEVMODE devmode;
+3509: 	BOOL bEnable;
+3510: 	BOOL bSound;
+3511: 	BOOL bMouse;
+3512: 	BOOL bChanged;
+3513: 	CRect rectWnd;
+3514: 
+3515: 	// �ύX��Fallo��Inicializacion
+3516: 	bChanged = FALSE;
+3517: 
+3518: 	// �}�E�XOFF�A�X�P�W���[��Parar�A�T�E���hOFF
+3519: 	bEnable = GetScheduler()->IsEnable();
+3520: 	bMouse = GetInput()->GetMouseMode();
+3521: 	if (bMouse) {
+3522: 		GetInput()->SetMouseMode(FALSE);
+3523: 	}
+3524: 	GetScheduler()->Enable(FALSE);
+3525: 	::LockVM();
+3526: 	::UnlockVM();
+3527: 	::LockVM();
+3528: 	bSound = GetSound()->IsEnable();
+3529: 	GetSound()->Enable(FALSE);
+3530: 	::UnlockVM();
+3531: 
+3532: 	if (m_bFullScreen) {
+3533: 		// Al modo normal
+3534: 
+3535: 		// �E�B���h�E�v�f
+3536: 		ModifyStyle(0, WS_CAPTION | WS_SYSMENU | WS_BORDER, 0);
+3537: 		ModifyStyleEx(0, WS_EX_WINDOWEDGE, 0);
+3538: 		GetView()->ModifyStyleEx(0, WS_EX_CLIENTEDGE, 0);
+3539: 
+3540: 		// ��ʃ��[�h�؂�ւ�(1)
+3541: 		m_DevMode.dmFields = DM_BITSPERPEL | DM_PELSWIDTH | DM_PELSHEIGHT | DM_DISPLAYFREQUENCY;
+3542: 		if (::ChangeDisplaySettings(&m_DevMode, 0) == DISP_CHANGE_SUCCESSFUL) {
+3543: 			bChanged = TRUE;
+3544: 		}
+3545: 
+3546: 		// Fallo������AFREQ�w����O���āA�ēx���݂�
+3547: 		if (!bChanged) {
+3548: 			// ��ʃ��[�h�؂�ւ�(2)
+3549: 			m_DevMode.dmFields = DM_BITSPERPEL | DM_PELSWIDTH | DM_PELSHEIGHT;
+3550: 			if (::ChangeDisplaySettings(&m_DevMode, 0) == DISP_CHANGE_SUCCESSFUL) {
+3551: 				bChanged = TRUE;
+3552: 			}
+3553: 		}
+3554: 
+3555: 		// Exito�����ꍇ
+3556: 		if (bChanged) {
+3557: 			// Si se puso en pantalla completa estando maximizado, restaurarlo
+3558: 			if (IsZoomed()) {
+3559: 				ShowWindow(SW_RESTORE);
+3560: 			}
+3561: 
+3562: 			// Titulo de ventana�AMenu�ABarra de estado
+3563: 			m_bFullScreen = FALSE;
+3564: 			ShowCaption();
+3565: 			ShowMenu();
+3566: 			ShowStatus();
+3567: 
+3568: 			// �ĊJ����
+3569: 			HideTaskBar(FALSE, TRUE);
+3570: 
+3571: 			InitPos(FALSE);
+3572: 			RecalcLayout();
+3573: 			GetScheduler()->Enable(bEnable);
+3574: 			GetSound()->Enable(bSound);
+3575: 			GetInput()->SetMouseMode(bMouse);
+3576: 			ResetCaption();
+3577: 			ResetStatus();
+3578: 
+3579: 			// �����}�E�X���[�h
+3580: 			if (m_bAutoMouse && bMouse) {
+3581: 				OnMouseMode();
+3582: 			}
+3583: 			return;
+3584: 		}
+3585: 
+3586: 		// Se intento cambiar al modo normal, pero no se pudo
+3587: 		ModifyStyle(WS_CAPTION | WS_SYSMENU | WS_BORDER, 0, 0);
+3588: 		ModifyStyleEx(WS_EX_WINDOWEDGE, 0, 0);
+3589: 		GetView()->ModifyStyleEx(WS_EX_CLIENTEDGE, 0, 0);
+3590: 
+3591: 		// �ĊJ����
+3592: 		GetScheduler()->Enable(bEnable);
+3593: 		GetSound()->Enable(bSound);
+3594: 		GetInput()->SetMouseMode(bMouse);
+3595: 		ResetCaption();
+3596: 		ResetStatus();
+3597: 		return;
+3598: 	}
+3599: 
+3600: 	// Al pasar a pantalla completa, guardar la posicion actual de la ventana
+3601: 	GetWindowRect(&rectWnd);
+3602: 	m_nWndLeft = rectWnd.left;
+3603: 	m_nWndTop = rectWnd.top;
+3604: 
+3605: 	
+3606: 
+3607: 
+3608: 	// �E�B���h�E�v�f
+3609: 	ModifyStyle(WS_CAPTION | WS_SYSMENU | WS_BORDER, 0, 0);
+3610: 	ModifyStyleEx(WS_EX_WINDOWEDGE, 0, 0);
+3611: 	GetView()->ModifyStyleEx(WS_EX_CLIENTEDGE, 0, 0);
+3612: 
+3613: 	// ���݂̉�ʃ��[�h��Obtener
+3614: 	hDC = ::GetDC(NULL);
+3615: 	ASSERT(hDC);
+3616: 	memset(&m_DevMode, 0, sizeof(m_DevMode));
+3617: 	m_DevMode.dmSize = sizeof(DEVMODE);
+3618: 	m_DevMode.dmPelsWidth = ::GetDeviceCaps(hDC, HORZRES);
+3619: 	m_DevMode.dmPelsHeight = ::GetDeviceCaps(hDC, VERTRES);
+3620: 	m_DevMode.dmBitsPerPel = ::GetDeviceCaps(hDC, BITSPIXEL);
+3621: 	m_DevMode.dmDisplayFrequency = ::GetDeviceCaps(hDC, VREFRESH);
+3622: 	::ReleaseDC(NULL, hDC);
+3623: 
+3624: 	// ��ʃ��[�h�؂�ւ�
+3625: 	memset(&devmode, 0, sizeof(devmode));
+3626: 	devmode.dmSize = sizeof(DEVMODE);
+3627: 
+3628: 	/* ACA SE MODIFICA LA RESOLUCION DE PANTALLA COMPLETA*/
+3629: /*	int rcx, rcy;
+3630: 	GetDesktopResolution(rcx, rcy);*/
+3631: 
+3632: 	//::SetProcessDPIAware();
+3633: 	int	rcx = ::GetSystemMetrics(SM_CXSCREEN);
+3634:     int rcy = ::GetSystemMetrics(SM_CYSCREEN);
+3635: 
+3636: 
+3637: 	/*char cadena[20],cadena2[20];	  
+3638:     sprintf(cadena, "%d", rcx);
+3639: 	sprintf(cadena2, "%d", rcy);
+3640: 	 int msgboxID = MessageBox(
+3641:        cadena,"Width",
+3642:         2 );
+3643: 	 int msgboxID2 = MessageBox(
+3644:        cadena2,"Height",
+3645:         2 );*/
+3646: 		 
+3647: 
+3648: 	devmode.dmBitsPerPel = 32;
+3649: 	devmode.dmPelsWidth = rcx;
+3650: 	devmode.dmPelsHeight = rcy;
+3651: 	devmode.dmFields = DM_BITSPERPEL | DM_PELSWIDTH | DM_PELSHEIGHT;
+3652: 	if (::ChangeDisplaySettings(&devmode, CDS_FULLSCREEN) == DISP_CHANGE_SUCCESSFUL) {
+3653: 		// Titulo de ventana�AMenu�ABarra de estado
+3654: 		m_bFullScreen = TRUE;
+3655: 		ShowCaption();
+3656: 		ShowMenu();
+3657: 
+3658: 
+3659: 		/* No mostrar barra de estado en fullScreen */
+3660: 		//ShowStatus();
+3661: 
+3662: 		// �ĊJ����
+3663: 		HideTaskBar(TRUE, TRUE);
+3664: 
+3665: 		InitPos(FALSE);
+3666: 		RecalcStatusView();
+3667: 		GetScheduler()->Enable(bEnable);
+3668: 		GetSound()->Enable(bSound);
+3669: 		GetInput()->SetMouseMode(bMouse);
+3670: 		ResetCaption();
+3671: 		ResetStatus();
+3672: 
+3673: 		// �����}�E�X���[�h
+3674: 		if (m_bAutoMouse && bEnable && !bMouse) {
+3675: 			OnMouseMode();
+3676: 		}
+3677: 		//RestoreFrameWnd(FALSE);
+3678: 
+3679: 
+3680: /*
+3681: 		// Mensajes de top y bottom
+3682: 	char cadena[20],cadena2[20];	  
+3683:     sprintf(cadena, "%d", rectWnd.top);
+3684: 	sprintf(cadena2, "%d", rectWnd.bottom);
+3685: 	 int msgboxID = MessageBox(
+3686:        cadena,"Height",
+3687:         2 );
+3688: 	 int msgboxID2 = MessageBox(
+3689:        cadena2,"Width",
+3690:         2 );
+3691: 		*/
+3692: 
+3693: 		return;
+3694: 	}
+3695: 
+3696: 	// Se intento cambiar a pantalla completa, pero no se pudo
+3697: 	ModifyStyle(0, WS_CAPTION | WS_SYSMENU | WS_BORDER, 0);
+3698: 	ModifyStyleEx(0, WS_EX_WINDOWEDGE, 0);
+3699: 	
+3700: 	GetView()->ModifyStyleEx(0, WS_EX_CLIENTEDGE, 0);
+3701: 	//GetView()->SetupBitmap();
+3702: 	// �ĊJ����
+3703: 	GetScheduler()->Enable(bEnable);
+3704: 	GetSound()->Enable(bSound);
+3705: 	GetInput()->SetMouseMode(bMouse);
+3706: 	ResetCaption();
+3707: 	ResetStatus();	
+3708: 
+3709: 
+3710: }
+3711: 
+3712: 
+3713: //---------------------------------------------------------------------------
+3714: //
+3715: //	UI de pantalla completa
+3716: //
+3717: //---------------------------------------------------------------------------
+3718: void CFrmWnd::OnFullScreenUI(CCmdUI *pCmdUI)
+3719: {
+3720: 	pCmdUI->SetCheck(m_bFullScreen);
+3721: }
+3722: 
+3723: //---------------------------------------------------------------------------
+3724: //
+3725: //	Ejecutar
+3726: //
+3727: //---------------------------------------------------------------------------
+3728: void CFrmWnd::OnExec()
+3729: {
+3730: 	// ���b�N
+3731: 	::LockVM();
+3732: 
+3733: 	// �X�P�W���[����Activado��
+3734: 	GetScheduler()->Reset();
+3735: 	GetScheduler()->Enable(TRUE);
+3736: 	ResetCaption();
+3737: 
+3738: 	// �A�����b�N
+3739: 	::UnlockVM();
+3740: }
+3741: 
+3742: //---------------------------------------------------------------------------
+3743: //
+3744: //	UI de ejecucion
+3745: //
+3746: //---------------------------------------------------------------------------
+3747: void CFrmWnd::OnExecUI(CCmdUI *pCmdUI)
+3748: {
+3749: 	// �X�P�W���[����Parar���Ȃ�Activado
+3750: 	if ((!GetScheduler()->IsEnable()) && ::GetVM()->IsPower()) {

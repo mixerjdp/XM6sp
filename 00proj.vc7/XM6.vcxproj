@@ -194,6 +194,7 @@
     <ClCompile Include="..\mfc\mfc_cpu.cpp" />
     <ClCompile Include="..\mfc\mfc_dev.cpp" />
     <ClCompile Include="..\mfc\mfc_draw.cpp" />
+    <ClCompile Include="..\mfc\mfc_dx9.cpp" />
     <ClCompile Include="..\mfc\mfc_frm.cpp" />
     <ClCompile Include="..\mfc\mfc_host.cpp" />
     <ClCompile Include="..\mfc\mfc_info.cpp" />
@@ -315,6 +316,7 @@ nasmw -f win32 -o $(IntDir)%(Filename).obj %(FullPath)
     <ClInclude Include="mfc_cpu.h" />
     <ClInclude Include="mfc_dev.h" />
     <ClInclude Include="mfc_draw.h" />
+    <ClInclude Include="mfc_dx9.h" />
     <ClInclude Include="mfc_frm.h" />
     <ClInclude Include="mfc_inp.h" />
     <ClInclude Include="mfc_midi.h" />

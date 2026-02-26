@@ -2,8 +2,8 @@
 //
 //	X68000 EMULATOR "XM6"
 //
-//	Copyright (C) 2001-2006 ‚o‚hD(ytanaka@ipc-tokai.or.jp)
-//	[ MFC ƒXƒPƒWƒ…[ƒ‰ ]
+//	Copyright (C) 2001-2006 â€šoâ€šhÂD(ytanaka@ipc-tokai.or.jp)
+//	[ MFC Æ’XÆ’PÆ’WÆ’â€¦Â[Æ’â€° ]
 //
 //---------------------------------------------------------------------------
 
@@ -14,107 +14,109 @@
 
 //===========================================================================
 //
-//	ƒXƒPƒWƒ…[ƒ‰
+//	Æ’XÆ’PÆ’WÆ’â€¦Â[Æ’â€°
 //
 //===========================================================================
 class CScheduler : public CComponent
 {
 public:
-	// Šî–{ƒtƒ@ƒ“ƒNƒVƒ‡ƒ“
+	// Å Ã®â€“{Æ’tÆ’@Æ’â€œÆ’NÆ’VÆ’â€¡Æ’â€œ
 	CScheduler(CFrmWnd *pFrmWnd);
-										// ƒRƒ“ƒXƒgƒ‰ƒNƒ^
+										// Æ’RÆ’â€œÆ’XÆ’gÆ’â€°Æ’NÆ’^
 	BOOL FASTCALL Init();
-										// ‰Šú‰»
+										// Ââ€°Å Ãºâ€°Â»
 	void FASTCALL Cleanup();
-										// ƒNƒŠ[ƒ“ƒAƒbƒv
+										// Æ’NÆ’Å Â[Æ’â€œÆ’AÆ’bÆ’v
 	void FASTCALL ApplyCfg(const Config *pConfig);
-										// İ’è“K—p
+										// ÂÃâ€™Ã¨â€œKâ€”p
 #if defined(_DEBUG)
 	void AssertValid() const;
-										// f’f
+										// Âfâ€™f
 #endif	// _DEBUG
 
-	// Às§Œä
+	// Å½Ã€ÂsÂÂ§Å’Ã¤
 	void FASTCALL Reset();
-										// ŠÔ‚ğƒŠƒZƒbƒg
+										// Å½Å¾Å Ã”â€šÃ°Æ’Å Æ’ZÆ’bÆ’g
 	void FASTCALL Run();
-										// Às
+										// Å½Ã€Âs
 	void FASTCALL Stop();
-										// ƒXƒPƒWƒ…[ƒ‰’â~
+										// Æ’XÆ’PÆ’WÆ’â€¦Â[Æ’â€°â€™Ã¢Å½~
 
-	// ƒZ[ƒuEƒ[ƒh
+	// Æ’ZÂ[Æ’uÂEÆ’ÂÂ[Æ’h
 	BOOL FASTCALL Save(Fileio *pFio, int nVer);
-										// ƒZ[ƒu
+										// Æ’ZÂ[Æ’u
 	BOOL FASTCALL Load(Fileio *pFio, int nVer);
-										// ƒ[ƒh
+										// Æ’ÂÂ[Æ’h
 	BOOL FASTCALL HasSavedEnable() const { return m_bSavedValid; }
-										// ƒZ[ƒu‚ÉEnableó‘Ô‚ğ•Û‘¶‚µ‚Ä‚¢‚é‚©
+										// Æ’ZÂ[Æ’uÅ½Å¾â€šÃ‰EnableÂÃ³â€˜Ã”â€šÃ°â€¢Ã›â€˜Â¶â€šÂµâ€šÃ„â€šÂ¢â€šÃ©â€šÂ©
 	BOOL FASTCALL GetSavedEnable() const { return m_bSavedEnable; }
-										// ƒZ[ƒu‚ÉEnableó‘Ô‚¾‚Á‚½‚©
+										// Æ’ZÂ[Æ’uÅ½Å¾â€šÃ‰EnableÂÃ³â€˜Ã”â€šÂ¾â€šÃâ€šÂ½â€šÂ©
 	void FASTCALL SetSavedEnable(BOOL bEnable) { m_bSavedEnable = bEnable; }
-										// ƒZ[ƒu‚Ìó‘Ô‚ğİ’è
+										// Æ’ZÂ[Æ’uÅ½Å¾â€šÃŒÂÃ³â€˜Ã”â€šÃ°ÂÃâ€™Ã¨
 
-	// ‚»‚Ì‘¼
+	// â€šÂ»â€šÃŒâ€˜Â¼
 	void FASTCALL Menu(BOOL bMenu)		{ m_bMenu = bMenu; }
-										// ƒƒjƒ…[’Ê’m
+										// Æ’ÂÆ’jÆ’â€¦Â[â€™ÃŠâ€™m
 	void FASTCALL Activate(BOOL bAct)	{ m_bActivate = bAct; }
-										// ƒAƒNƒeƒBƒu’Ê’m
+										// Æ’AÆ’NÆ’eÆ’BÆ’uâ€™ÃŠâ€™m
 	void FASTCALL SyncDisasm();
-										// ‹tƒAƒZƒ“ƒuƒ‹“¯Šú
+										// â€¹tÆ’AÆ’ZÆ’â€œÆ’uÆ’â€¹â€œÂ¯Å Ãº
 	int FASTCALL GetFrameRate();
-										// ƒtƒŒ[ƒ€ƒŒ[ƒgæ“¾
+										// Æ’tÆ’Å’ [Æ’â‚¬Æ’Å’ [Æ’gÅ½Ã¦â€œÂ¾
+	void FASTCALL OnMainFramePresented();
+										// Confirmacion asincrona de frame consumido por UI
 
 private:
 	static UINT ThreadFunc(LPVOID pParam);
-										// ƒXƒŒƒbƒhŠÖ”
+										// Æ’XÆ’Å’Æ’bÆ’hÅ Ã–Ââ€
 	DWORD FASTCALL GetTime()			{ return timeGetTime(); }
-										// ŠÔæ“¾
+										// Å½Å¾Å Ã”Å½Ã¦â€œÂ¾
 	void FASTCALL Lock()				{ ::LockVM(); }
-										// VMƒƒbƒN
+										// VMÆ’ÂÆ’bÆ’N
 	void FASTCALL Unlock()				{ ::UnlockVM(); }
-										// VMƒAƒ“ƒƒbƒN
+										// VMÆ’AÆ’â€œÆ’ÂÆ’bÆ’N
 	void FASTCALL Refresh();
-										// ƒŠƒtƒŒƒbƒVƒ…
+										// Æ’Å Æ’tÆ’Å’Æ’bÆ’VÆ’â€¦
 	CPU *m_pCPU;
 										// CPU
 	Render *m_pRender;
-										// ƒŒƒ“ƒ_ƒ‰
+										// Æ’Å’Æ’â€œÆ’_Æ’â€°
 	CWinThread *m_pThread;
-										// ƒXƒŒƒbƒhƒ|ƒCƒ“ƒ^
+										// Æ’XÆ’Å’Æ’bÆ’hÆ’|Æ’CÆ’â€œÆ’^
 	CSound *m_pSound;
-										// ƒTƒEƒ“ƒh
+										// Æ’TÆ’EÆ’â€œÆ’h
 	CInput *m_pInput;
-										// ƒCƒ“ƒvƒbƒg
+										// Æ’CÆ’â€œÆ’vÆ’bÆ’g
 	BOOL m_bExitReq;
-										// ƒXƒŒƒbƒhI—¹—v‹
+										// Æ’XÆ’Å’Æ’bÆ’hÂIâ€”Â¹â€”vâ€¹Â
 	DWORD m_dwExecTime;
-										// ƒ^ƒCƒ}[ƒJƒEƒ“ƒg(Às)
+										// Æ’^Æ’CÆ’}Â[Æ’JÆ’EÆ’â€œÆ’g(Å½Ã€Âs)
 	int m_nSubWndNum;
-										// ƒTƒuƒEƒBƒ“ƒhƒE‚ÌŒÂ”
+										// Æ’TÆ’uÆ’EÆ’BÆ’â€œÆ’hÆ’Eâ€šÃŒÅ’Ã‚Ââ€
 	int m_nSubWndDisp;
-										// ƒTƒuƒEƒBƒ“ƒhƒE‚Ì•\¦(-1:ƒƒCƒ“‰æ–Ê)
+										// Æ’TÆ’uÆ’EÆ’BÆ’â€œÆ’hÆ’Eâ€šÃŒâ€¢\Å½Â¦(-1:Æ’ÂÆ’CÆ’â€œâ€°Ã¦â€“ÃŠ)
 	BOOL m_bMPUFull;
-										// MPU‚‘¬ƒtƒ‰ƒO
+										// MPUÂâ€šâ€˜Â¬Æ’tÆ’â€°Æ’O
 	BOOL m_bVMFull;
-										// VM‚‘¬ƒtƒ‰ƒO
+										// VMÂâ€šâ€˜Â¬Æ’tÆ’â€°Æ’O
 	DWORD m_dwDrawCount;
-										// ƒƒCƒ“ƒEƒBƒ“ƒhƒE•\¦‰ñ”
+										// Æ’ÂÆ’CÆ’â€œÆ’EÆ’BÆ’â€œÆ’hÆ’Eâ€¢\Å½Â¦â€°Ã±Ââ€
 	DWORD m_dwDrawPrev;
-										// ƒƒCƒ“ƒEƒBƒ“ƒhƒE•\¦‰ñ”(‘O)
+										// Æ’ÂÆ’CÆ’â€œÆ’EÆ’BÆ’â€œÆ’hÆ’Eâ€¢\Å½Â¦â€°Ã±Ââ€(â€˜O)
 	DWORD m_dwDrawTime;
-										// ƒƒCƒ“ƒEƒBƒ“ƒhƒE•\¦ŠÔ
+										// Æ’ÂÆ’CÆ’â€œÆ’EÆ’BÆ’â€œÆ’hÆ’Eâ€¢\Å½Â¦Å½Å¾Å Ã”
 	DWORD m_dwDrawBackup;
-										// ƒƒCƒ“ƒEƒBƒ“ƒhƒE•\¦‰ñ”(‘O)
+										// Æ’ÂÆ’CÆ’â€œÆ’EÆ’BÆ’â€œÆ’hÆ’Eâ€¢\Å½Â¦â€°Ã±Ââ€(â€˜O)
 	BOOL m_bMenu;
-										// ƒƒjƒ…[ƒtƒ‰ƒO
+										// Æ’ÂÆ’jÆ’â€¦Â[Æ’tÆ’â€°Æ’O
 	BOOL m_bActivate;
-										// ƒAƒNƒeƒBƒuƒtƒ‰ƒO
+										// Æ’AÆ’NÆ’eÆ’BÆ’uÆ’tÆ’â€°Æ’O
 	BOOL m_bBackup;
-										// Enableƒtƒ‰ƒOƒoƒbƒNƒAƒbƒv
+										// EnableÆ’tÆ’â€°Æ’OÆ’oÆ’bÆ’NÆ’AÆ’bÆ’v
 	BOOL m_bSavedValid;
-										// ƒZ[ƒu‚ÉEnableó‘Ô‚ğ•Û‘¶‚µ‚Ä‚¢‚é‚©
+										// Æ’ZÂ[Æ’uÅ½Å¾â€šÃ‰EnableÂÃ³â€˜Ã”â€šÃ°â€¢Ã›â€˜Â¶â€šÂµâ€šÃ„â€šÂ¢â€šÃ©â€šÂ©
 	BOOL m_bSavedEnable;
-										// ƒZ[ƒu‚ÉEnable‚¾‚Á‚½‚©
+										// Æ’ZÂ[Æ’uÅ½Å¾â€šÃ‰Enableâ€šÂ¾â€šÃâ€šÂ½â€šÂ©
 };
 
 #endif	// mfc_sch_h

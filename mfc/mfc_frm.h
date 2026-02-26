@@ -2,8 +2,8 @@
 //
 //	X68000 EMULATOR "XM6"
 //
-//	Copyright (C) 2001-2006 �o�h�D(ytanaka@ipc-tokai.or.jp)
-//	[ MFC �t���[���E�B���h�E ]
+//	Copyright (C) 2001-2006 ‚o‚hD(ytanaka@ipc-tokai.or.jp)
+//	[ MFC ƒtƒŒ[ƒ€ƒEƒBƒ“ƒhƒE ]
 //
 //---------------------------------------------------------------------------
 
@@ -14,64 +14,74 @@
 
 //---------------------------------------------------------------------------
 //
-//	�E�B���h�E���b�Z�[�W
+//	ƒEƒBƒ“ƒhƒEƒƒbƒZ[ƒW
 //
 //---------------------------------------------------------------------------
-#define WM_KICK			WM_APP				// �G�~�����[�^�X�^�[�g
-#define WM_SHELLNOTIFY	(WM_USER + 5)		// �t�@�C���V�X�e����ԕω�
+#define WM_KICK			WM_APP				// ƒGƒ~ƒ…ƒŒ[ƒ^ƒXƒ^[ƒg
+#define WM_SHELLNOTIFY	(WM_USER + 5)		// ƒtƒ@ƒCƒ‹ƒVƒXƒeƒ€ó‘Ô•Ï‰»
 
 //===========================================================================
 //
-//	�t���[���E�B���h�E
+//	ƒtƒŒ[ƒ€ƒEƒBƒ“ƒhƒE
 //
 //===========================================================================
 class CFrmWnd : public CFrameWnd
 {
 public:
-	// ������
+	// ‰Šú‰»
 	CFrmWnd();
-										// �R���X�g���N�^
+										// ƒRƒ“ƒXƒgƒ‰ƒNƒ^
 	BOOL Init();
-										// ������
+										// ‰Šú‰»
 
-	// �擾
+	// Žæ“¾
 	CDrawView* FASTCALL GetView() const;
-										// �`��r���[�擾
+										// •`‰æƒrƒ…[Žæ“¾
 	CComponent* FASTCALL GetFirstComponent() const;
-										// �ŏ��̃R���|�[�l���g���擾
+										// Å‰‚ÌƒRƒ“ƒ|[ƒlƒ“ƒg‚ðŽæ“¾
 	CScheduler* FASTCALL GetScheduler() const;
-										// �X�P�W���[���擾
+										// ƒXƒPƒWƒ…[ƒ‰Žæ“¾
 	CSound* FASTCALL GetSound() const;
-										// �T�E���h�擾
+										// ƒTƒEƒ“ƒhŽæ“¾
 	CInput* FASTCALL GetInput() const;
-										// �C���v�b�g�擾
+										// ƒCƒ“ƒvƒbƒgŽæ“¾
 	CPort* FASTCALL GetPort() const;
-										// �|�[�g�擾
+										// ƒ|[ƒgŽæ“¾
 	CMIDI* FASTCALL GetMIDI() const;
-										// MIDI�擾
+										// MIDIŽæ“¾
 	CTKey* FASTCALL GetTKey() const;
-										// TrueKey�擾
+										// TrueKeyŽæ“¾
 	CHost* FASTCALL GetHost() const;
-										// Host�擾
+										// HostŽæ“¾
 	CInfo* FASTCALL GetInfo() const;
-										// Info�擾
+										// InfoŽæ“¾
 	CConfig* FASTCALL GetConfig() const;
-										// �R���t�B�O�擾
+										// ƒRƒ“ƒtƒBƒOŽæ“¾
 
-	// �X�e�[�^�X�r���[�T�|�[�g
+	// ƒXƒe[ƒ^ƒXƒrƒ…[ƒTƒ|[ƒg
 	void FASTCALL RecalcStatusView();
-										// �X�e�[�^�X�r���[�Ĕz�u
+										// ƒXƒe[ƒ^ƒXƒrƒ…[Ä”z’u
 
-	// �T�u�E�B���h�E�T�|�[�g
+	// ƒTƒuƒEƒBƒ“ƒhƒEƒTƒ|[ƒg
 	LPCTSTR FASTCALL GetWndClassName() const;
-										// �E�B���h�E�N���X���擾
+										// ƒEƒBƒ“ƒhƒEƒNƒ‰ƒX–¼Žæ“¾
 	BOOL FASTCALL IsPopupSWnd() const;
-										// �|�b�v�A�b�v�T�u�E�B���h�E��
+										// ƒ|ƒbƒvƒAƒbƒvƒTƒuƒEƒBƒ“ƒhƒE‚©
 
-	// �h���b�O���h���b�v�T�|�[�g
+	// ƒhƒ‰ƒbƒO•ƒhƒƒbƒvƒTƒ|[ƒg
 	BOOL FASTCALL InitCmdSub(int nDrive, LPCTSTR lpszPath);
-									// �R�}���h���C������ �T�u
+									// ƒRƒ}ƒ“ƒhƒ‰ƒCƒ“ˆ— ƒTƒu
 	BOOL m_bFullScreen;
+	BOOL m_bBorderless;
+	BOOL m_bVSyncEnabled;
+	WINDOWPLACEMENT m_wpPrev;
+	DWORD m_dwPrevStyle;
+	DWORD m_dwPrevExStyle;
+
+	void EnterBorderlessFullscreen();
+	void ExitBorderlessFullscreen();
+	void OnToggleRenderer();
+	void OnToggleVSync();
 
 	// Nombre de Archivo XM6   *-*
 	CString NombreArchivoXM6;
@@ -85,86 +95,86 @@ public:
 
 
 protected:
-	// �I�[�o�[���C�h
+	// ƒI[ƒo[ƒ‰ƒCƒh
 	BOOL PreCreateWindow(CREATESTRUCT& cs);
-										// �E�B���h�E�쐬����
+										// ƒEƒBƒ“ƒhƒEì¬€”õ
 	void GetMessageString(UINT nID, CString& rMessage) const;
-										// ���b�Z�[�W�������
+										// ƒƒbƒZ[ƒW•¶Žš—ñ’ñ‹Ÿ
 
-	// WM���b�Z�[�W
+	// WMƒƒbƒZ[ƒW
 	afx_msg int OnCreate(LPCREATESTRUCT lpCreateStruct);
-										// �E�B���h�E�쐬
+										// ƒEƒBƒ“ƒhƒEì¬
 	afx_msg void OnClose();
-										// �E�B���h�E�N���[�Y
+										// ƒEƒBƒ“ƒhƒEƒNƒ[ƒY
 	afx_msg void OnDestroy();
-										// �E�B���h�E�폜
+										// ƒEƒBƒ“ƒhƒEíœ
 	afx_msg void OnMove(int x, int y);
-										// �E�B���h�E�ړ�
+										// ƒEƒBƒ“ƒhƒEˆÚ“®
 	afx_msg LRESULT OnDisplayChange(UINT uParam, LONG lParam);
-										// �f�B�X�v���C�ύX
+										// ƒfƒBƒXƒvƒŒƒC•ÏX
 	afx_msg BOOL OnEraseBkgnd(CDC *pDC);
-										// �E�B���h�E�w�i�`��
+										// ƒEƒBƒ“ƒhƒE”wŒi•`‰æ
 	afx_msg void OnPaint();
-										// �E�B���h�E�`��
+										// ƒEƒBƒ“ƒhƒE•`‰æ
 	afx_msg void OnActivate(UINT nState, CWnd *pWnd, BOOL bMinimized);
-										// �A�N�e�B�x�[�g
+										// ƒAƒNƒeƒBƒx[ƒg
 #if _MFC_VER >= 0x700
 	afx_msg void OnActivateApp(BOOL bActive, DWORD dwThreadID);
 #else
 	afx_msg void OnActivateApp(BOOL bActive, HTASK hTask);
 #endif
-										// �^�X�N�؂�ւ�
+										// ƒ^ƒXƒNØ‚è‘Ö‚¦
 	afx_msg void OnEnterMenuLoop(BOOL bTrackPopup);
-										// ���j���[���[�v�J�n
+										// ƒƒjƒ…[ƒ‹[ƒvŠJŽn
 	afx_msg void OnExitMenuLoop(BOOL bTrackPopup);
-										// ���j���[���[�v�I��
+										// ƒƒjƒ…[ƒ‹[ƒvI—¹
 	afx_msg void OnParentNotify(UINT message, LPARAM lParam);
-										// �e�E�B���h�E�ʒm
+										// eƒEƒBƒ“ƒhƒE’Ê’m
 	afx_msg LONG OnKick(UINT uParam, LONG lParam);
-										// �L�b�N
+										// ƒLƒbƒN
 	afx_msg void OnDrawItem(int nIDCtl, LPDRAWITEMSTRUCT lpDIS);
-										// �I�[�i�[�h���[
+										// ƒI[ƒi[ƒhƒ[
 	afx_msg void OnContextMenu(CWnd *pWnd, CPoint pos);
-										// �R���e�L�X�g���j���[
+										// ƒRƒ“ƒeƒLƒXƒgƒƒjƒ…[
 	afx_msg LONG OnPowerBroadCast(UINT uParam, LONG lParam);
-										// �d���ύX�ʒm
+										// “dŒ¹•ÏX’Ê’m
 	afx_msg void OnSysCommand(UINT nID, LPARAM lParam);
-										// �V�X�e���R�}���h
+										// ƒVƒXƒeƒ€ƒRƒ}ƒ“ƒh
 #if _MFC_VER >= 0x700
 	afx_msg BOOL OnCopyData(CWnd* pWnd, COPYDATASTRUCT* pCopyDataStruct);
 #else
 	afx_msg LONG OnCopyData(UINT uParam, LONG lParam);
-										// �f�[�^�]��
+										// ƒf[ƒ^“]‘—
 #endif
 	afx_msg void OnEndSession(BOOL bEnding);
-										// �Z�b�V�����I��
+										// ƒZƒbƒVƒ‡ƒ“I—¹
 	afx_msg LONG OnShellNotify(UINT uParam, LONG lParam);
-										// �t�@�C���V�X�e����ԕω�
+										// ƒtƒ@ƒCƒ‹ƒVƒXƒeƒ€ó‘Ô•Ï‰»
 
-	// �R�}���h����
+	// ƒRƒ}ƒ“ƒhˆ—
 	afx_msg void OnOpen();
 
 	afx_msg void OnFastOpen();
-										// �J��
+										// ŠJ‚­
 	afx_msg void OnOpenUI(CCmdUI *pCmdUI);
-										// �J�� UI
+										// ŠJ‚­ UI
 	afx_msg void OnSave();
-										// �㏑���ۑ�
+										// ã‘‚«•Û‘¶
 	afx_msg void OnSaveUI(CCmdUI *pCmdUI);
-										// �㏑���ۑ� UI
+										// ã‘‚«•Û‘¶ UI
 	afx_msg void OnSaveAs();
-										// ���O��t���ĕۑ�
+										// –¼‘O‚ð•t‚¯‚Ä•Û‘¶
 	afx_msg void OnSaveAsUI(CCmdUI *pCmdUI);
-										// ���O��t���ĕۑ� UI
+										// –¼‘O‚ð•t‚¯‚Ä•Û‘¶ UI
 	afx_msg void OnMRU(UINT uID);
 										// MRU
 	afx_msg void OnMRUUI(CCmdUI *pCmdUI);
 										// MRU UI
 	afx_msg void OnReset();
 	afx_msg void OnResetNuevo();
-										// ���Z�b�g
+										// ƒŠƒZƒbƒg
 	afx_msg void OnResetUI(CCmdUI *pCmdUI);
-										// ���Z�b�g UI
+										// ƒŠƒZƒbƒg UI
 
 	afx_msg void OnScc(); // Configuracion personalizada
 	
@@ -179,103 +189,103 @@ protected:
 	afx_msg void OnSgcrUI(CCmdUI* pCmdUI);
 
 	afx_msg void OnInterrupt();
-										// �C���^���v�g
+										// ƒCƒ“ƒ^ƒ‰ƒvƒg
 	afx_msg void OnInterruptUI(CCmdUI *pCmdUI);
-										// �C���^���v�g UI
+										// ƒCƒ“ƒ^ƒ‰ƒvƒg UI
 	afx_msg void OnPower();
-										// �d���X�C�b�`
+										// “dŒ¹ƒXƒCƒbƒ`
 	afx_msg void OnPowerUI(CCmdUI *pCmdUI);
-										// �d���X�C�b�` UI
+										// “dŒ¹ƒXƒCƒbƒ` UI
 	afx_msg void OnExit();
-										// �I��
+										// I—¹
 
 	afx_msg void OnFD(UINT uID);
-										// �t���b�s�[�f�B�X�N�R�}���h
+										// ƒtƒƒbƒs[ƒfƒBƒXƒNƒRƒ}ƒ“ƒh
 	afx_msg void OnFDOpenUI(CCmdUI *pCmdUI);
-										// �t���b�s�[�I�[�v�� UI
+										// ƒtƒƒbƒs[ƒI[ƒvƒ“ UI
 	afx_msg void OnFDEjectUI(CCmdUI *pCmdUI);
-										// �t���b�s�[�C�W�F�N�g UI
+										// ƒtƒƒbƒs[ƒCƒWƒFƒNƒg UI
 	afx_msg void OnFDWritePUI(CCmdUI *pCmdUI);
-										// �t���b�s�[�������ݕی� UI
+										// ƒtƒƒbƒs[‘‚«ž‚Ý•ÛŒì UI
 	afx_msg void OnFDForceUI(CCmdUI *pCmdUI);
-										// �t���b�s�[�����C�W�F�N�g UI
+										// ƒtƒƒbƒs[‹­§ƒCƒWƒFƒNƒg UI
 	afx_msg void OnFDInvalidUI(CCmdUI *pCmdUI);
-										// �t���b�s�[��}�� UI
+										// ƒtƒƒbƒs[Œë‘}“ü UI
 	afx_msg void OnFDMediaUI(CCmdUI *pCmdUI);
-										// �t���b�s�[���f�B�A UI
+										// ƒtƒƒbƒs[ƒƒfƒBƒA UI
 	afx_msg void OnFDMRUUI(CCmdUI *pCmdUI);
-										// �t���b�s�[MRU UI
+										// ƒtƒƒbƒs[MRU UI
 
 	afx_msg void OnMOOpen();
-										// MO�I�[�v��
+										// MOƒI[ƒvƒ“
 	afx_msg void OnMOOpenUI(CCmdUI *pCmdUI);
-										// MO�I�[�v�� UI
+										// MOƒI[ƒvƒ“ UI
 	afx_msg void OnMOEject();
-										// MO�C�W�F�N�g
+										// MOƒCƒWƒFƒNƒg
 	afx_msg void OnMOEjectUI(CCmdUI *pCmdUI);
-										// MO�C�W�F�N�g UI
+										// MOƒCƒWƒFƒNƒg UI
 	afx_msg void OnMOWriteP();
-										// MO�������ݕی�
+										// MO‘‚«ž‚Ý•ÛŒì
 	afx_msg void OnMOWritePUI(CCmdUI *pCmdUI);
-										// MO�������ݕی� UI
+										// MO‘‚«ž‚Ý•ÛŒì UI
 	afx_msg void OnMOForce();
-										// MO�����C�W�F�N�g
+										// MO‹­§ƒCƒWƒFƒNƒg
 	afx_msg void OnMOForceUI(CCmdUI *pCmdUI);
-										// MO�����C�W�F�N�g UI
+										// MO‹­§ƒCƒWƒFƒNƒg UI
 	afx_msg void OnMOMRU(UINT uID);
 										// MOMRU
 	afx_msg void OnMOMRUUI(CCmdUI *pCmdUI);
 										// MOMRU UI
 
 	afx_msg void OnCDOpen();
-										// CD�I�[�v��
+										// CDƒI[ƒvƒ“
 	afx_msg void OnCDOpenUI(CCmdUI *pCmdUI);
-										// CD�I�[�v�� UI
+										// CDƒI[ƒvƒ“ UI
 	afx_msg void OnCDEject();
-										// CD�C�W�F�N�g
+										// CDƒCƒWƒFƒNƒg
 	afx_msg void OnCDEjectUI(CCmdUI *pCmdUI);
-										// CD�C�W�F�N�g UI
+										// CDƒCƒWƒFƒNƒg UI
 	afx_msg void OnCDForce();
-										// CD�����C�W�F�N�g
+										// CD‹­§ƒCƒWƒFƒNƒg
 	afx_msg void OnCDForceUI(CCmdUI *pCmdUI);
-										// CD�����C�W�F�N�g UI
+										// CD‹­§ƒCƒWƒFƒNƒg UI
 	afx_msg void OnCDMRU(UINT nID);
 										// CDMRU
 	afx_msg void OnCDMRUUI(CCmdUI *pCmdUI);
 										// CDMRU UI
 
 	afx_msg void OnLog();
-										// ���O
+										// ƒƒO
 	afx_msg void OnLogUI(CCmdUI *pCmdUI);
-										// ���O UI
+										// ƒƒO UI
 	afx_msg void OnScheduler();
-										// �X�P�W���[��
+										// ƒXƒPƒWƒ…[ƒ‰
 	afx_msg void OnSchedulerUI(CCmdUI *pCmdUI);
-										// �X�P�W���[�� UI
+										// ƒXƒPƒWƒ…[ƒ‰ UI
 	afx_msg void OnDevice();
-										// �f�o�C�X
+										// ƒfƒoƒCƒX
 	afx_msg void OnDeviceUI(CCmdUI *pCmdUI);
-										// �f�o�C�X UI
+										// ƒfƒoƒCƒX UI
 	afx_msg void OnCPUReg();
-										// CPU���W�X�^
+										// CPUƒŒƒWƒXƒ^
 	afx_msg void OnCPURegUI(CCmdUI *pCmdUI);
-										// CPU���W�X�^ UI
+										// CPUƒŒƒWƒXƒ^ UI
 	afx_msg void OnInt();
-										// ���荞��
+										// Š„‚èž‚Ý
 	afx_msg void OnIntUI(CCmdUI *pCmdUI);
-										// ���荞�� UI
+										// Š„‚èž‚Ý UI
 	afx_msg void OnDisasm();
-										// �t�A�Z���u��
+										// ‹tƒAƒZƒ“ƒuƒ‹
 	afx_msg void OnDisasmUI(CCmdUI *pCmdUI);
-										// �t�A�Z���u�� UI
+										// ‹tƒAƒZƒ“ƒuƒ‹ UI
 	afx_msg void OnMemory();
-										// ������
+										// ƒƒ‚ƒŠ
 	afx_msg void OnMemoryUI(CCmdUI *pCmdUI);
-										// ������ UI
+										// ƒƒ‚ƒŠ UI
 	afx_msg void OnBreakP();
-										// �u���[�N�|�C���g
+										// ƒuƒŒ[ƒNƒ|ƒCƒ“ƒg
 	afx_msg void OnBreakPUI(CCmdUI *pCmdUI);
-										// �u���[�N�|�C���g UI
+										// ƒuƒŒ[ƒNƒ|ƒCƒ“ƒg UI
 	afx_msg void OnMFP();
 										// MFP
 	afx_msg void OnMFPUI(CCmdUI *pCmdUI);
@@ -301,9 +311,9 @@ protected:
 	afx_msg void OnOPMUI(CCmdUI *pCmdUI);
 										// OPM UI
 	afx_msg void OnKeyboard();
-										// �L�[�{�[�h
+										// ƒL[ƒ{[ƒh
 	afx_msg void OnKeyboardUI(CCmdUI *pCmdUI);
-										// �L�[�{�[�h UI
+										// ƒL[ƒ{[ƒh UI
 	afx_msg void OnFDD();
 										// FDD
 	afx_msg void OnFDDUI(CCmdUI *pCmdUI);
@@ -333,252 +343,252 @@ protected:
 	afx_msg void OnSCSIUI(CCmdUI *pCmdUI);
 										// SCSI UI
 	afx_msg void OnTVRAM();
-										// �e�L�X�g���
+										// ƒeƒLƒXƒg‰æ–Ê
 	afx_msg void OnTVRAMUI(CCmdUI *pCmdUI);
-										// �e�L�X�g��� UI
+										// ƒeƒLƒXƒg‰æ–Ê UI
 	afx_msg void OnG1024();
-										// �O���t�B�b�N���1024�~1024
+										// ƒOƒ‰ƒtƒBƒbƒN‰æ–Ê1024~1024
 	afx_msg void OnG1024UI(CCmdUI *pCmdUI);
-										// �O���t�B�b�N���1024�~1024 UI
+										// ƒOƒ‰ƒtƒBƒbƒN‰æ–Ê1024~1024 UI
 	afx_msg void OnG16(UINT uID);
-										// �O���t�B�b�N���16�F
+										// ƒOƒ‰ƒtƒBƒbƒN‰æ–Ê16F
 	afx_msg void OnG16UI(CCmdUI *pCmdUI);
-										// �O���t�B�b�N���16�F UI
+										// ƒOƒ‰ƒtƒBƒbƒN‰æ–Ê16F UI
 	afx_msg void OnG256(UINT uID);
-										// �O���t�B�b�N���256�F
+										// ƒOƒ‰ƒtƒBƒbƒN‰æ–Ê256F
 	afx_msg void OnG256UI(CCmdUI *pCmdUI);
-										// �O���t�B�b�N���256�F UI
+										// ƒOƒ‰ƒtƒBƒbƒN‰æ–Ê256F UI
 	afx_msg void OnG64K();
-										// �O���t�B�b�N���65536�F
+										// ƒOƒ‰ƒtƒBƒbƒN‰æ–Ê65536F
 	afx_msg void OnG64KUI(CCmdUI *pCmdUI);
-										// �O���t�B�b�N���65536�F UI
+										// ƒOƒ‰ƒtƒBƒbƒN‰æ–Ê65536F UI
 	afx_msg void OnPCG();
 										// PCG
 	afx_msg void OnPCGUI(CCmdUI *pCmdUI);
 										// PCG UI
 	afx_msg void OnBG(UINT uID);
-										// BG���
+										// BG‰æ–Ê
 	afx_msg void OnBGUI(CCmdUI *pCmdUI);
-										// BG��� UI
+										// BG‰æ–Ê UI
 	afx_msg void OnPalet();
-										// �p���b�g
+										// ƒpƒŒƒbƒg
 	afx_msg void OnPaletUI(CCmdUI *pCmdUI);
-										// �p���b�g UI
+										// ƒpƒŒƒbƒg UI
 	afx_msg void OnTextBuf();
-										// �e�L�X�g�o�b�t�@
+										// ƒeƒLƒXƒgƒoƒbƒtƒ@
 	afx_msg void OnTextBufUI(CCmdUI *pCmdUI);
-										// �e�L�X�g�o�b�t�@ UI
+										// ƒeƒLƒXƒgƒoƒbƒtƒ@ UI
 	afx_msg void OnGrpBuf(UINT uID);
-										// �O���t�B�b�N�o�b�t�@
+										// ƒOƒ‰ƒtƒBƒbƒNƒoƒbƒtƒ@
 	afx_msg void OnGrpBufUI(CCmdUI *pCmdUI);
-										// �O���t�B�b�N�o�b�t�@ UI
+										// ƒOƒ‰ƒtƒBƒbƒNƒoƒbƒtƒ@ UI
 	afx_msg void OnPCGBuf();
-										// PCG�o�b�t�@
+										// PCGƒoƒbƒtƒ@
 	afx_msg void OnPCGBufUI(CCmdUI *pCmdUI);
-										// PCG�o�b�t�@ UI
+										// PCGƒoƒbƒtƒ@ UI
 	afx_msg void OnBGSpBuf();
-										// BG/�X�v���C�g�o�b�t�@
+										// BG/ƒXƒvƒ‰ƒCƒgƒoƒbƒtƒ@
 	afx_msg void OnBGSpBufUI(CCmdUI *pCmdUI);
-										// BG/�X�v���C�g�o�b�t�@ UI
+										// BG/ƒXƒvƒ‰ƒCƒgƒoƒbƒtƒ@ UI
 	afx_msg void OnPaletBuf();
-										// �p���b�g�o�b�t�@
+										// ƒpƒŒƒbƒgƒoƒbƒtƒ@
 	afx_msg void OnPaletBufUI(CCmdUI *pCmdUI);
-										// �p���b�g�o�b�t�@ UI
+										// ƒpƒŒƒbƒgƒoƒbƒtƒ@ UI
 	afx_msg void OnMixBuf();
-										// �����o�b�t�@
+										// ‡¬ƒoƒbƒtƒ@
 	afx_msg void OnMixBufUI(CCmdUI *pCmdUI);
-										// �����o�b�t�@ UI
+										// ‡¬ƒoƒbƒtƒ@ UI
 	afx_msg void OnComponent();
-										// �R���|�[�l���g
+										// ƒRƒ“ƒ|[ƒlƒ“ƒg
 	afx_msg void OnComponentUI(CCmdUI *pCmdUI);
-										// �R���|�[�l���g UI
+										// ƒRƒ“ƒ|[ƒlƒ“ƒg UI
 	afx_msg void OnOSInfo();
-										// OS���
+										// OSî•ñ
 	afx_msg void OnOSInfoUI(CCmdUI *pCmdUI);
-										// OS��� UI
+										// OSî•ñ UI
 	afx_msg void OnSound();
-										// �T�E���h
+										// ƒTƒEƒ“ƒh
 	afx_msg void OnSoundUI(CCmdUI *pCmdUI);
-										// �T�E���h UI
+										// ƒTƒEƒ“ƒh UI
 	afx_msg void OnInput();
-										// �C���v�b�g
+										// ƒCƒ“ƒvƒbƒg
 	afx_msg void OnInputUI(CCmdUI *pCmdUI);
-										// �C���v�b�g UI
+										// ƒCƒ“ƒvƒbƒg UI
 	afx_msg void OnPort();
-										// �|�[�g
+										// ƒ|[ƒg
 	afx_msg void OnPortUI(CCmdUI *pCmdUI);
-										// �|�[�g UI
+										// ƒ|[ƒg UI
 	afx_msg void OnBitmap();
-										// �r�b�g�}�b�v
+										// ƒrƒbƒgƒ}ƒbƒv
 	afx_msg void OnBitmapUI(CCmdUI *pCmdUI);
-										// �r�b�g�}�b�v UI
+										// ƒrƒbƒgƒ}ƒbƒv UI
 	afx_msg void OnMIDIDrv();
-										// MIDI�h���C�o
+										// MIDIƒhƒ‰ƒCƒo
 	afx_msg void OnMIDIDrvUI(CCmdUI *pCmdUI);
-										// MIDI�h���C�o UI
+										// MIDIƒhƒ‰ƒCƒo UI
 	afx_msg void OnCaption();
-										// �L���v�V����
+										// ƒLƒƒƒvƒVƒ‡ƒ“
 	afx_msg void OnCaptionUI(CCmdUI *pCmdUI);
-										// �L���v�V���� UI
+										// ƒLƒƒƒvƒVƒ‡ƒ“ UI
 	afx_msg void OnMenu();
-										// ���j���[�o�[
+										// ƒƒjƒ…[ƒo[
 	afx_msg void OnMenuUI(CCmdUI *pCmdUI);
-										// ���j���[�o�[ UI
+										// ƒƒjƒ…[ƒo[ UI
 	afx_msg void OnStatus();
-										// �X�e�[�^�X�o�[
+										// ƒXƒe[ƒ^ƒXƒo[
 	afx_msg void OnStatusUI(CCmdUI *pCmdUI);
-										// �X�e�[�^�X�o�[ UI
+										// ƒXƒe[ƒ^ƒXƒo[ UI
 	afx_msg void OnRefresh();
-										// ���t���b�V��
+										// ƒŠƒtƒŒƒbƒVƒ…
 	afx_msg void OnStretch();
-										// �g��
+										// Šg‘å
 	afx_msg void OnStretchUI(CCmdUI *pCmdUI);
-										// �g�� UI
+										// Šg‘å UI
 	afx_msg void OnFullScreen();
-										// �t���X�N���[��
+										// ƒtƒ‹ƒXƒNƒŠ[ƒ“
 	afx_msg void OnFullScreenUI(CCmdUI *pCmdUI);
-										// �t���X�N���[��UI
+										// ƒtƒ‹ƒXƒNƒŠ[ƒ“UI
 
 	afx_msg void OnExec();
-										// ���s
+										// ŽÀs
 	afx_msg void OnExecUI(CCmdUI *pCmdUI);
-										// ���s UI
+										// ŽÀs UI
 	afx_msg void OnBreak();
-										// ��~
+										// ’âŽ~
 	afx_msg void OnBreakUI(CCmdUI *pCmdUI);
-										// ��~ UI
+										// ’âŽ~ UI
 	afx_msg void OnTrace();
-										// �g���[�X
+										// ƒgƒŒ[ƒX
 	afx_msg void OnTraceUI(CCmdUI *pCmdUI);
-										// �g���[�X UI
+										// ƒgƒŒ[ƒX UI
 
 	afx_msg void OnMouseMode();
-										// �}�E�X���[�h
+										// ƒ}ƒEƒXƒ‚[ƒh
 	afx_msg void OnSoftKey();
-										// �\�t�g�E�F�A�L�[�{�[�h
+										// ƒ\ƒtƒgƒEƒFƒAƒL[ƒ{[ƒh
 	afx_msg void OnSoftKeyUI(CCmdUI *pCmdUI);
-										// �\�t�g�E�F�A�L�[�{�[�h UI
+										// ƒ\ƒtƒgƒEƒFƒAƒL[ƒ{[ƒh UI
 	afx_msg void OnTimeAdj();
-										// �������킹
+										// Žž‡‚í‚¹
 	afx_msg void OnTrap();
 										// trap#0
 	afx_msg void OnTrapUI(CCmdUI *pCmdUI);
 										// trap#0 UI
 	afx_msg void OnSaveWav();
-										// WAV�L���v�`��
+										// WAVƒLƒƒƒvƒ`ƒƒ
 	afx_msg void OnSaveWavUI(CCmdUI *pCmdUI);
-										// WAV�L���v�`�� UI
+										// WAVƒLƒƒƒvƒ`ƒƒ UI
 	afx_msg void OnNewFD();
-										// �V�����t���b�s�[�f�B�X�N
+										// V‚µ‚¢ƒtƒƒbƒs[ƒfƒBƒXƒN
 	afx_msg void OnNewDisk(UINT uID);
-										// �V������e�ʃf�B�X�N
+										// V‚µ‚¢‘å—e—ÊƒfƒBƒXƒN
 	afx_msg void OnOptions();
-										// �I�v�V����
+										// ƒIƒvƒVƒ‡ƒ“
 
 	afx_msg void OnCascade();
-										// �d�˂ĕ\��
+										// d‚Ë‚Ä•\Ž¦
 	afx_msg void OnCascadeUI(CCmdUI *pCmdUI);
-										// �d�˂ĕ\�� UI
+										// d‚Ë‚Ä•\Ž¦ UI
 	afx_msg void OnTile();
-										// ���ׂĕ\��
+										// •À‚×‚Ä•\Ž¦
 	afx_msg void OnTileUI(CCmdUI *pCmdUI);
-										// ���ׂĕ\�� UI
+										// •À‚×‚Ä•\Ž¦ UI
 	afx_msg void OnIconic();
-										// �S�ăA�C�R����
+										// ‘S‚ÄƒAƒCƒRƒ“‰»
 	afx_msg void OnIconicUI(CCmdUI *pCmdUI);
-										// �S�ăA�C�R���� UI
+										// ‘S‚ÄƒAƒCƒRƒ“‰» UI
 	afx_msg void OnArrangeIcon();
-										// �A�C�R���̐���
+										// ƒAƒCƒRƒ“‚Ì®—ñ
 	afx_msg void OnArrangeIconUI(CCmdUI *pCmdUI);
-										// �A�C�R���̐��� UI
+										// ƒAƒCƒRƒ“‚Ì®—ñ UI
 	afx_msg void OnHide();
-										// �S�ĉB��
+										// ‘S‚Ä‰B‚·
 	afx_msg void OnHideUI(CCmdUI *pCmdUI);
-										// �S�ĉB�� UI
+										// ‘S‚Ä‰B‚· UI
 	afx_msg void OnRestore();
-										// �S�ĕ���
+										// ‘S‚Ä•œŒ³
 	afx_msg void OnRestoreUI(CCmdUI *pCmdUI);
-										// �S�ĕ��� UI
+										// ‘S‚Ä•œŒ³ UI
 	afx_msg void OnWindow(UINT uID);
-										// �E�B���h�E�I��
+										// ƒEƒBƒ“ƒhƒE‘I‘ð
 	afx_msg void OnAbout();
-										// �o�[�W�������
+										// ƒo[ƒWƒ‡ƒ“î•ñ
 
 private:
-	// ������
+	// ‰Šú‰»
 	BOOL FASTCALL InitChild();
-										// �`���C���h�E�B���h�E������
+										// ƒ`ƒƒƒCƒ‹ƒhƒEƒBƒ“ƒhƒE‰Šú‰»
 	void FASTCALL InitPos(BOOL bStart = TRUE);
-										// �ʒu�E��`������
+										// ˆÊ’uE‹éŒ`‰Šú‰»
 	void FASTCALL InitShell();
-										// �V�F���A�g������
+										// ƒVƒFƒ‹˜AŒg‰Šú‰»
 	BOOL FASTCALL InitVM();
-										// VM������
+										// VM‰Šú‰»
 	BOOL FASTCALL InitComponent();
-										// �R���|�[�l���g������
+										// ƒRƒ“ƒ|[ƒlƒ“ƒg‰Šú‰»
 	void FASTCALL InitVer();
-										// �o�[�W����������
+										// ƒo[ƒWƒ‡ƒ“‰Šú‰»
 	void FASTCALL InitCmd(LPCTSTR lpszCmd);
-										// �R�}���h���C������
+										// ƒRƒ}ƒ“ƒhƒ‰ƒCƒ“ˆ—
 
 	void FASTCALL ReadFile(LPCTSTR pszFileName, CString& str);
 	CString FASTCALL CFrmWnd::ProcesarM3u(CString str);
 	
 	void FASTCALL ApplyCfg();
-										// �ݒ�K�p
+										// Ý’è“K—p
 	void FASTCALL SizeStatus();
-										// �X�e�[�^�X�o�[�T�C�Y�ύX
+										// ƒXƒe[ƒ^ƒXƒo[ƒTƒCƒY•ÏX
 	void FASTCALL HideTaskBar(BOOL bHide, BOOL bFore);
-										// �^�X�N�o�[�B��
+										// ƒ^ƒXƒNƒo[‰B‚·
 	BOOL RestoreFrameWnd(BOOL bFullScreen);
-										// �E�B���h�E����
+										// ƒEƒBƒ“ƒhƒE•œŒ³
 	void RestoreDiskState();
-										// �f�B�X�N�E�X�e�[�g����
+										// ƒfƒBƒXƒNEƒXƒe[ƒg•œŒ³
 	int m_nStatus;
-										// �X�e�[�^�X�R�[�h
+										// ƒXƒe[ƒ^ƒXƒR[ƒh
 	static const DWORD SigTable[];
-										// SRAM�V�O�l�`���e�[�u��
+										// SRAMƒVƒOƒlƒ`ƒƒƒe[ƒuƒ‹
 
 	
-										// �f�B�X�N�E�X�e�[�g�ۑ�
+										// ƒfƒBƒXƒNEƒXƒe[ƒg•Û‘¶
 	void FASTCALL CleanSub();
-										// �N���[���A�b�v
+										// ƒNƒŠ[ƒ“ƒAƒbƒv
 	BOOL m_bExit;
-										// �I���t���O
+										// I—¹ƒtƒ‰ƒO
 	BOOL m_bSaved;
-										// �t���[���E�f�B�X�N�E�X�e�[�g�ۑ��t���O
+										// ƒtƒŒ[ƒ€EƒfƒBƒXƒNEƒXƒe[ƒg•Û‘¶ƒtƒ‰ƒO
 
-	// �Z�[�u�E���[�h
+	// ƒZ[ƒuEƒ[ƒh
 	BOOL FASTCALL SaveComponent(const Filepath& path, DWORD dwPos);
-										// �Z�[�u
+										// ƒZ[ƒu
 	BOOL FASTCALL LoadComponent(const Filepath& path, DWORD dwPos);
-										// ���[�h
+										// ƒ[ƒh
 
-	// �R�}���h�n���h���T�u
+	// ƒRƒ}ƒ“ƒhƒnƒ“ƒhƒ‰ƒTƒu
 	BOOL FASTCALL OnOpenSub(const Filepath& path);
-										// �I�[�v���T�u
+										// ƒI[ƒvƒ“ƒTƒu
 	BOOL FASTCALL OnOpenPrep(const Filepath& path, BOOL bWarning = TRUE);
-										// �I�[�v���`�F�b�N
+										// ƒI[ƒvƒ“ƒ`ƒFƒbƒN
 	void FASTCALL OnSaveSub(const Filepath& path);
-										// �ۑ��T�u
+										// •Û‘¶ƒTƒu
 	void FASTCALL OnFDOpen(int nDrive);
-										// �t���b�s�[�I�[�v��
+										// ƒtƒƒbƒs[ƒI[ƒvƒ“
 	void FASTCALL OnFDEject(int nDrive);
-										// �t���b�s�[�C�W�F�N�g
+										// ƒtƒƒbƒs[ƒCƒWƒFƒNƒg
 	void FASTCALL OnFDWriteP(int nDrive);
-										// �t���b�s�[�������ݕی�
+										// ƒtƒƒbƒs[‘‚«ž‚Ý•ÛŒì
 	void FASTCALL OnFDForce(int nDrive);
-										// �t���b�s�[�����C�W�F�N�g
+										// ƒtƒƒbƒs[‹­§ƒCƒWƒFƒNƒg
 	void FASTCALL OnFDInvalid(int nDrive);
-										// �t���b�s�[��}��
+										// ƒtƒƒbƒs[Œë‘}“ü
 	void FASTCALL OnFDMedia(int nDrive, int nMedia);
-										// �t���b�s�[���f�B�A
+										// ƒtƒƒbƒs[ƒƒfƒBƒA
 	void FASTCALL OnFDMRU(int nDrive, int nMRU);
-										// �t���b�s�[MRU
+										// ƒtƒƒbƒs[MRU
 	int m_nFDDStatus[2];
-										// �t���b�s�[�X�e�[�^�X
+										// ƒtƒƒbƒs[ƒXƒe[ƒ^ƒX
 
-	// �f�o�C�X�E�r���[�E�R���|�[�l���g
+	// ƒfƒoƒCƒXEƒrƒ…[EƒRƒ“ƒ|[ƒlƒ“ƒg
 	FDD *m_pFDD;
 										// FDD
 	SASI *m_pSASI;
@@ -592,17 +602,17 @@ private:
 	Mouse *m_pMouse;
 										// Mouse
 	CDrawView *m_pDrawView;
-										// �`��r���[
+										// •`‰æƒrƒ…[
 	CComponent *m_pFirstComponent;
-										// �ŏ��̃R���|�[�l���g
+										// Å‰‚ÌƒRƒ“ƒ|[ƒlƒ“ƒg
 	CScheduler *m_pSch;
-										// �X�P�W���[��
+										// ƒXƒPƒWƒ…[ƒ‰
 	CSound *m_pSound;
-										// �T�E���h
+										// ƒTƒEƒ“ƒh
 	CInput *m_pInput;
-										// �C���v�b�g
+										// ƒCƒ“ƒvƒbƒg
 	CPort *m_pPort;
-										// �|�[�g
+										// ƒ|[ƒg
 	CMIDI *m_pMIDI;
 										// MIDI
 	CTKey *m_pTKey;
@@ -612,88 +622,88 @@ private:
 	CInfo *m_pInfo;
 										// Info
 	CConfig *m_pConfig;
-										// �R���t�B�O
+										// ƒRƒ“ƒtƒBƒO
 
-	// �t���X�N���[��
+	// ƒtƒ‹ƒXƒNƒŠ[ƒ“
 	
-										// �t���X�N���[���t���O
+										// ƒtƒ‹ƒXƒNƒŠ[ƒ“ƒtƒ‰ƒO
 	DEVMODE m_DevMode;
-										// �X�N���[���p�����[�^�L��
+										// ƒXƒNƒŠ[ƒ“ƒpƒ‰ƒ[ƒ^‹L‰¯
 	HWND m_hTaskBar;
-										// �^�X�N�o�[
+										// ƒ^ƒXƒNƒo[
 	int m_nWndLeft;
-										// �E�B���h�E���[�h��x
+										// ƒEƒBƒ“ƒhƒEƒ‚[ƒhŽžx
 	int m_nWndTop;
-										// �E�B���h�E���[�h��y
+										// ƒEƒBƒ“ƒhƒEƒ‚[ƒhŽžy
 
-	// �T�u�E�B���h�E
+	// ƒTƒuƒEƒBƒ“ƒhƒE
 	CString m_strWndClsName;
-										// �E�B���h�E�N���X��
+										// ƒEƒBƒ“ƒhƒEƒNƒ‰ƒX–¼
 
-	// �X�e�[�^�X�r���[
+	// ƒXƒe[ƒ^ƒXƒrƒ…[
 	void FASTCALL CreateStatusView();
-										// �X�e�[�^�X�r���[�쐬
+										// ƒXƒe[ƒ^ƒXƒrƒ…[ì¬
 	void FASTCALL DestroyStatusView();
-										// �X�e�[�^�X�r���[�폜
+										// ƒXƒe[ƒ^ƒXƒrƒ…[íœ
 	CStatusView *m_pStatusView;
-										// �X�e�[�^�X�r���[
+										// ƒXƒe[ƒ^ƒXƒrƒ…[
 
-	// �X�e�[�^�X�o�[
+	// ƒXƒe[ƒ^ƒXƒo[
 	void FASTCALL ShowStatus();
-										// �X�e�[�^�X�o�[�\��
+										// ƒXƒe[ƒ^ƒXƒo[•\Ž¦
 	void FASTCALL ResetStatus();
-										// �X�e�[�^�X�o�[���Z�b�g
+										// ƒXƒe[ƒ^ƒXƒo[ƒŠƒZƒbƒg
 	CStatusBar m_StatusBar;
-										// �X�e�[�^�X�o�[
+										// ƒXƒe[ƒ^ƒXƒo[
 	BOOL m_bStatusBar;
-										// �X�e�[�^�X�o�[�\���t���O
+										// ƒXƒe[ƒ^ƒXƒo[•\Ž¦ƒtƒ‰ƒO
 
-	// ���j���[
+	// ƒƒjƒ…[
 	void FASTCALL ShowMenu();
-										// ���j���[�o�[�\��
+										// ƒƒjƒ…[ƒo[•\Ž¦
 	CMenu m_Menu;
-										// ���C�����j���[
+										// ƒƒCƒ“ƒƒjƒ…[
 	BOOL m_bMenuBar;
-										// ���j���[�o�[�\���t���O
+										// ƒƒjƒ…[ƒo[•\Ž¦ƒtƒ‰ƒO
 	CMenu m_PopupMenu;
-										// �|�b�v�A�b�v���j���[
+										// ƒ|ƒbƒvƒAƒbƒvƒƒjƒ…[
 	BOOL m_bPopupMenu;
-										// �|�b�v�A�b�v���j���[���s��
+										// ƒ|ƒbƒvƒAƒbƒvƒƒjƒ…[ŽÀs’†
 
-	// �L���v�V����
+	// ƒLƒƒƒvƒVƒ‡ƒ“
 	void FASTCALL ShowCaption();
-										// �L���v�V�����\��
+										// ƒLƒƒƒvƒVƒ‡ƒ“•\Ž¦
 	void FASTCALL ResetCaption();
-										// �L���v�V�������Z�b�g
+										// ƒLƒƒƒvƒVƒ‡ƒ“ƒŠƒZƒbƒg
 	BOOL m_bCaption;
-										// �L���v�V�����\���t���O
+										// ƒLƒƒƒvƒVƒ‡ƒ“•\Ž¦ƒtƒ‰ƒO
 
-	// ���
+	// î•ñ
 	void FASTCALL SetInfo(CString& strInfo);
-										// ��񕶎���Z�b�g
+										// î•ñ•¶Žš—ñƒZƒbƒg
 
-	// �V�F���A�g
+	// ƒVƒFƒ‹˜AŒg
 	ULONG m_uNotifyId;
-										// �V�F���ʒmID
+										// ƒVƒFƒ‹’Ê’mID
 	SHChangeNotifyEntry m_fsne[1];
-										// �V�F���ʒm�G���g��
+										// ƒVƒFƒ‹’Ê’mƒGƒ“ƒgƒŠ
 
-	// �X�e�[�g�t�@�C��
+	// ƒXƒe[ƒgƒtƒ@ƒCƒ‹
 	void FASTCALL UpdateExec();
-										// �X�V(���s)
+										// XV(ŽÀs)
 	DWORD m_dwExec;
-										// �Z�[�u����s�J�E���^
+										// ƒZ[ƒuŒãŽÀsƒJƒEƒ“ƒ^
 
-	// �R���t�B�M�����[�V����
+	// ƒRƒ“ƒtƒBƒMƒ…ƒŒ[ƒVƒ‡ƒ“
 	BOOL m_bMouseMid;
-										// �}�E�X���{�^���L��
+										// ƒ}ƒEƒX’†ƒ{ƒ^ƒ“—LŒø
 	BOOL m_bPopup;
-										// �|�b�v�A�b�v���[�h
+										// ƒ|ƒbƒvƒAƒbƒvƒ‚[ƒh
 	BOOL m_bAutoMouse;
-										// �����}�E�X���[�h
+										// Ž©“®ƒ}ƒEƒXƒ‚[ƒh
 
 	DECLARE_MESSAGE_MAP()
-										// ���b�Z�[�W �}�b�v����
+										// ƒƒbƒZ[ƒW ƒ}ƒbƒv‚ ‚è
 };
 
 #endif	// mfc_frm_h

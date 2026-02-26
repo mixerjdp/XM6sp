@@ -2,8 +2,8 @@
 //
 //	X68000 EMULATOR "XM6"
 //
-//	Copyright (C) 2001-2006 ‚o‚hD(ytanaka@ipc-tokai.or.jp)
-//	[ MFC ƒXƒPƒWƒ…[ƒ‰ ]
+//	Copyright (C) 2001-2006 â€šoâ€šhÂD(ytanaka@ipc-tokai.or.jp)
+//	[ MFC Æ’XÆ’PÆ’WÆ’â€¦Â[Æ’â€° ]
 //
 //---------------------------------------------------------------------------
 
@@ -26,22 +26,22 @@
 
 //===========================================================================
 //
-//	ƒXƒPƒWƒ…[ƒ‰
+//	Æ’XÆ’PÆ’WÆ’â€¦Â[Æ’â€°
 //
 //===========================================================================
 
 //---------------------------------------------------------------------------
 //
-//	ƒRƒ“ƒXƒgƒ‰ƒNƒ^
+//	Æ’RÆ’â€œÆ’XÆ’gÆ’â€°Æ’NÆ’^
 //
 //---------------------------------------------------------------------------
 CScheduler::CScheduler(CFrmWnd *pFrmWnd) : CComponent(pFrmWnd)
 {
-	// ƒRƒ“ƒ|[ƒlƒ“ƒgƒpƒ‰ƒ[ƒ^
+	// Æ’RÆ’â€œÆ’|Â[Æ’lÆ’â€œÆ’gÆ’pÆ’â€°Æ’ÂÂ[Æ’^
 	m_dwID = MAKEID('S', 'C', 'H', 'E');
 	m_strDesc = _T("Scheduler");
 
-	// ƒ[ƒN‰Šú‰»
+	// Æ’ÂÂ[Æ’NÂâ€°Å Ãºâ€°Â»
 	m_pCPU = NULL;
 	m_pRender = NULL;
 	m_pThread = NULL;
@@ -64,42 +64,42 @@ CScheduler::CScheduler(CFrmWnd *pFrmWnd) : CComponent(pFrmWnd)
 
 //---------------------------------------------------------------------------
 //
-//	‰Šú‰»
+//	Ââ€°Å Ãºâ€°Â»
 //
 //---------------------------------------------------------------------------
 BOOL FASTCALL CScheduler::Init()
 {
 	ASSERT(this);
 
-	// Šî–{ƒNƒ‰ƒX
+	// Å Ã®â€“{Æ’NÆ’â€°Æ’X
 	if (!CComponent::Init()) {
 		return FALSE;
 	}
 
-	// CPUŽæ“¾
+	// CPUÅ½Ã¦â€œÂ¾
 	ASSERT(!m_pCPU);
 	m_pCPU = (CPU*)::GetVM()->SearchDevice(MAKEID('C', 'P', 'U', ' '));
 	ASSERT(m_pCPU);
 
-	// ƒŒƒ“ƒ_ƒ‰Žæ“¾
+	// Æ’Å’Æ’â€œÆ’_Æ’â€°Å½Ã¦â€œÂ¾
 	ASSERT(!m_pRender);
 	m_pRender = (Render*)::GetVM()->SearchDevice(MAKEID('R', 'E', 'N', 'D'));
 	ASSERT(m_pRender);
 
-	// ƒTƒEƒ“ƒhƒRƒ“ƒ|[ƒlƒ“ƒg‚ðŒŸõ
+	// Æ’TÆ’EÆ’â€œÆ’hÆ’RÆ’â€œÆ’|Â[Æ’lÆ’â€œÆ’gâ€šÃ°Å’Å¸ÂÃµ
 	ASSERT(!m_pSound);
 	m_pSound = (CSound*)SearchComponent(MAKEID('S', 'N', 'D', ' '));
 	ASSERT(m_pSound);
 
-	// ƒCƒ“ƒvƒbƒgƒRƒ“ƒ|[ƒlƒ“ƒg‚ðŒŸõ
+	// Æ’CÆ’â€œÆ’vÆ’bÆ’gÆ’RÆ’â€œÆ’|Â[Æ’lÆ’â€œÆ’gâ€šÃ°Å’Å¸ÂÃµ
 	ASSERT(!m_pInput);
 	m_pInput = (CInput*)SearchComponent(MAKEID('I', 'N', 'P', ' '));
 	ASSERT(m_pInput);
 
-	// ƒ}ƒ‹ƒ`ƒƒfƒBƒAƒ^ƒCƒ}[‚ÌŽžŠÔŠÔŠu‚ð1ms‚ÉÝ’è
+	// Æ’}Æ’â€¹Æ’`Æ’ÂÆ’fÆ’BÆ’AÆ’^Æ’CÆ’}Â[â€šÃŒÅ½Å¾Å Ã”Å Ã”Å uâ€šÃ°1msâ€šÃ‰ÂÃâ€™Ã¨
 	::timeBeginPeriod(1);
 
-	// ƒXƒŒƒbƒh‚ð—§‚Ä‚é
+	// Æ’XÆ’Å’Æ’bÆ’hâ€šÃ°â€”Â§â€šÃ„â€šÃ©
 	m_pThread = AfxBeginThread(ThreadFunc, this);
 	if (!m_pThread) {
 		::timeEndPeriod(1);
@@ -111,7 +111,7 @@ BOOL FASTCALL CScheduler::Init()
 
 //---------------------------------------------------------------------------
 //
-//	ƒNƒŠ[ƒ“ƒAƒbƒv
+//	Æ’NÆ’Å Â[Æ’â€œÆ’AÆ’bÆ’v
 //
 //---------------------------------------------------------------------------
 void FASTCALL CScheduler::Cleanup()
@@ -119,19 +119,19 @@ void FASTCALL CScheduler::Cleanup()
 	ASSERT(this);
 	ASSERT_VALID(this);
 
-	// ’âŽ~
+	// â€™Ã¢Å½~
 	Stop();
 
-	// ƒ}ƒ‹ƒ`ƒƒfƒBƒAƒ^ƒCƒ}[‚ÌŽžŠÔŠÔŠu‚ð–ß‚·
+	// Æ’}Æ’â€¹Æ’`Æ’ÂÆ’fÆ’BÆ’AÆ’^Æ’CÆ’}Â[â€šÃŒÅ½Å¾Å Ã”Å Ã”Å uâ€šÃ°â€“ÃŸâ€šÂ·
 	::timeEndPeriod(1);
 
-	// Šî–{ƒNƒ‰ƒX
+	// Å Ã®â€“{Æ’NÆ’â€°Æ’X
 	CComponent::Cleanup();
 }
 
 //---------------------------------------------------------------------------
 //
-//	Ý’è“K—p
+//	ÂÃâ€™Ã¨â€œKâ€”p
 //
 //---------------------------------------------------------------------------
 void FASTCALL CScheduler::ApplyCfg(const Config *pConfig)
@@ -142,13 +142,13 @@ void FASTCALL CScheduler::ApplyCfg(const Config *pConfig)
 	ASSERT_VALID(this);
 	ASSERT(pConfig);
 
-	// ‹ŒVMƒtƒ‹‚ð•Û‘¶
+	// â€¹Å’VMÆ’tÆ’â€¹â€šÃ°â€¢Ã›â€˜Â¶
 	bFlag = m_bVMFull;
 
 	m_bMPUFull = pConfig->mpu_fullspeed;
 	m_bVMFull = pConfig->vm_fullspeed;
 
-	// ˆá‚Á‚½‚çƒŠƒZƒbƒg
+	// Ë†Ã¡â€šÃâ€šÂ½â€šÃ§Æ’Å Æ’ZÆ’bÆ’g
 	if (bFlag != m_bVMFull) {
 		Reset();
 	}
@@ -157,7 +157,7 @@ void FASTCALL CScheduler::ApplyCfg(const Config *pConfig)
 #if defined(_DEBUG)
 //---------------------------------------------------------------------------
 //
-//	f’f
+//	Âfâ€™f
 //
 //---------------------------------------------------------------------------
 void CScheduler::AssertValid() const
@@ -177,7 +177,7 @@ void CScheduler::AssertValid() const
 
 //---------------------------------------------------------------------------
 //
-//	ƒŠƒZƒbƒg
+//	Æ’Å Æ’ZÆ’bÆ’g
 //
 //---------------------------------------------------------------------------
 void FASTCALL CScheduler::Reset()
@@ -185,7 +185,7 @@ void FASTCALL CScheduler::Reset()
 	ASSERT(this);
 	ASSERT_VALID(this);
 
-	// ƒŠƒZƒbƒg
+	// Æ’Å Æ’ZÆ’bÆ’g
 	m_dwExecTime = GetTime();
 	m_dwDrawTime = m_dwExecTime;
 	m_dwDrawBackup = 0;
@@ -195,7 +195,7 @@ void FASTCALL CScheduler::Reset()
 
 //---------------------------------------------------------------------------
 //
-//	’âŽ~
+//	â€™Ã¢Å½~
 //
 //---------------------------------------------------------------------------
 void FASTCALL CScheduler::Stop()
@@ -203,22 +203,22 @@ void FASTCALL CScheduler::Stop()
 	ASSERT(this);
 	ASSERT_VALID(this);
 
-	// ƒXƒŒƒbƒh‚ªã‚ª‚Á‚Ä‚¢‚éê‡‚Ì‚ÝI—¹ˆ—
+	// Æ’XÆ’Å’Æ’bÆ’hâ€šÂªÂÃ£â€šÂªâ€šÃâ€šÃ„â€šÂ¢â€šÃ©ÂÃªÂâ€¡â€šÃŒâ€šÃÂIâ€”Â¹ÂË†â€”Â
 	if (m_pThread) {
-		// I—¹ƒŠƒNƒGƒXƒg‚ð—§‚Ä‚é
+		// ÂIâ€”Â¹Æ’Å Æ’NÆ’GÆ’XÆ’gâ€šÃ°â€”Â§â€šÃ„â€šÃ©
 		m_bExitReq = TRUE;
 
-		// ’âŽ~‚Ü‚Å‘Ò‚Â
+		// â€™Ã¢Å½~â€šÃœâ€šÃ…â€˜Ã’â€šÃ‚
 		::WaitForSingleObject(m_pThread->m_hThread, INFINITE);
 
-		// ƒXƒŒƒbƒh‚ÍI—¹‚µ‚½
+		// Æ’XÆ’Å’Æ’bÆ’hâ€šÃÂIâ€”Â¹â€šÂµâ€šÂ½
 		m_pThread = NULL;
 	}
 }
 
 //---------------------------------------------------------------------------
 //
-//	ƒZ[ƒu
+//	Æ’ZÂ[Æ’u
 //
 //---------------------------------------------------------------------------
 BOOL FASTCALL CScheduler::Save(Fileio *pFio, int /*nVer*/)
@@ -226,7 +226,7 @@ BOOL FASTCALL CScheduler::Save(Fileio *pFio, int /*nVer*/)
 	ASSERT(this);
 	ASSERT_VALID(this);
 
-	// ƒZ[ƒuŽž‚ÌEnableó‘Ô‚ð•Û‘¶(version2.04)
+	// Æ’ZÂ[Æ’uÅ½Å¾â€šÃŒEnableÂÃ³â€˜Ã”â€šÃ°â€¢Ã›â€˜Â¶(version2.04)
 	if (!pFio->Write(&m_bSavedEnable, sizeof(m_bSavedEnable))) {
 		return FALSE;
 	}
@@ -236,7 +236,7 @@ BOOL FASTCALL CScheduler::Save(Fileio *pFio, int /*nVer*/)
 
 //---------------------------------------------------------------------------
 //
-//	ƒ[ƒh
+//	Æ’ÂÂ[Æ’h
 //
 //---------------------------------------------------------------------------
 BOOL FASTCALL CScheduler::Load(Fileio *pFio, int nVer)
@@ -245,10 +245,10 @@ BOOL FASTCALL CScheduler::Load(Fileio *pFio, int nVer)
 	ASSERT(nVer >= 0x0200);
 	ASSERT_VALID(this);
 
-	// ƒZ[ƒuŽž‚ÌEnableó‘Ô•Û‘¶‚Í‚³‚ê‚Ä‚¢‚È‚¢‚à‚Ì‚Æ‰¼’è
+	// Æ’ZÂ[Æ’uÅ½Å¾â€šÃŒEnableÂÃ³â€˜Ã”â€¢Ã›â€˜Â¶â€šÃâ€šÂ³â€šÃªâ€šÃ„â€šÂ¢â€šÃˆâ€šÂ¢â€šÃ â€šÃŒâ€šÃ†â€°Â¼â€™Ã¨
 	m_bSavedValid = FALSE;
 
-	// version2.04ˆÈ~‚Å‚ ‚ê‚ÎAƒ[ƒh
+	// version2.04Ë†ÃˆÂ~â€šÃ…â€šÂ â€šÃªâ€šÃŽÂAÆ’ÂÂ[Æ’h
 	if (nVer >= 0x0204) {
 		if (!pFio->Read(&m_bSavedEnable, sizeof(m_bSavedEnable))) {
 			return FALSE;
@@ -261,24 +261,24 @@ BOOL FASTCALL CScheduler::Load(Fileio *pFio, int nVer)
 
 //---------------------------------------------------------------------------
 //
-//	ƒXƒŒƒbƒhŠÖ”
+//	Æ’XÆ’Å’Æ’bÆ’hÅ Ã–Ââ€
 //
 //---------------------------------------------------------------------------
 UINT CScheduler::ThreadFunc(LPVOID pParam)
 {
 	CScheduler *pSch;
 
-	// ƒpƒ‰ƒ[ƒ^‚ðŽó‚¯Žæ‚é
+	// Æ’pÆ’â€°Æ’ÂÂ[Æ’^â€šÃ°Å½Ã³â€šÂ¯Å½Ã¦â€šÃ©
 	pSch = (CScheduler*)pParam;
 	ASSERT(pSch);
 #if defined(_DEBUG)
 	pSch->AssertValid();
 #endif	// _DEBUG
 
-	// ŽÀs
+	// Å½Ã€Âs
 	pSch->Run();
 
-	// I—¹ƒR[ƒh‚ðŽ‚Á‚ÄƒXƒŒƒbƒh‚ðI—¹
+	// ÂIâ€”Â¹Æ’RÂ[Æ’hâ€šÃ°Å½Ââ€šÃâ€šÃ„Æ’XÆ’Å’Æ’bÆ’hâ€šÃ°ÂIâ€”Â¹
 	return 0;
 }
 
@@ -371,7 +371,7 @@ void FASTCALL CScheduler::Run()
 			{
 				// Hay mucho tiempo
 				if (m_bVMFull) {
-					// Modo VM rápido
+					// Modo VM rÃ¡pido
 					m_dwExecTime = GetTime();
 				}
 				else {
@@ -382,7 +382,7 @@ void FASTCALL CScheduler::Run()
 						continue;
 					}
 				
-					// Modo MPU en rápido
+					// Modo MPU en rÃ¡pido
 					dwCycle = pScheduler->GetCPUCycle();
 					while (m_dwExecTime > GetTime()) {
 						m_pCPU->Exec(pScheduler->GetCPUSpeed());
@@ -391,7 +391,7 @@ void FASTCALL CScheduler::Run()
 					Unlock();
 					continue;
 
-			       //m_dwExecTime = GetTime(); // Prueba, agilizar ejecución
+			       //m_dwExecTime = GetTime(); // Prueba, agilizar ejecuciÃ³n
 				   
 
 				}
@@ -404,7 +404,7 @@ void FASTCALL CScheduler::Run()
 		}
 		else {
 			if ((dwTime - m_dwExecTime) <= 1) {
-				// ‡“–
+				// Ââ€¡â€œâ€“
 				pRender->EnableAct(TRUE);
 			}
 			else {
@@ -503,12 +503,14 @@ void FASTCALL CScheduler::Refresh()
 	}
 
 	// Pantalla (parcial)
-	pView->Draw(m_nSubWndDisp);
-
-	// Si se muestra la pantalla principal, cuenta atras.
 	if (m_nSubWndDisp < 0) {
-		m_pRender->Complete();
+		pView->RequestPresent();
+		if (m_pRender) {
+			m_pRender->Complete();
+		}
 		m_dwDrawCount++;
+	} else {
+		pView->Draw(m_nSubWndDisp);
 	}
 
 	// Vista de la ciclica
@@ -614,6 +616,17 @@ int FASTCALL CScheduler::GetFrameRate()
 	m_dwDrawBackup = 0;
 	m_dwDrawCount -= m_dwDrawPrev;
 	return (dwCount / dwDiff);
+}
+
+//---------------------------------------------------------------------------
+//
+//	Confirmacion asincrona de frame consumido por UI
+//
+//---------------------------------------------------------------------------
+void FASTCALL CScheduler::OnMainFramePresented()
+{
+	// Mantenido por compatibilidad. El contador y Complete
+	// ahora se actualizan en Refresh() para preservar el ritmo original.
 }
 
 #endif	// _WIN32

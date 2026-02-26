@@ -306,6 +306,10 @@
 					RelativePath=".\mfc_draw.cpp">
 				</File>
 				<File
+					RelativePath=".\mfc_dx9.cpp"
+					>
+				</File>
+				<File
 					RelativePath=".\mfc_frm.cpp">
 				</File>
 				<File
@@ -548,6 +552,10 @@
 				</File>
 				<File
 					RelativePath=".\mfc_draw.h">
+				</File>
+				<File
+					RelativePath=".\mfc_dx9.h"
+					>
 				</File>
 				<File
 					RelativePath=".\mfc_frm.h">

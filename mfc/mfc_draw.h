@@ -12,6 +12,8 @@
 #if !defined(mfc_draw_h)
 #define mfc_draw_h
 
+#include "mfc_dx9.h"
+
   //===========================================================================
   //
   //	Vista de dibujo
@@ -69,7 +71,15 @@ public:
 	void FASTCALL Draw(int index);
  										 // Dibujo (solo ventana especifica)
 	void FASTCALL Update();
- 										 // Actualizacion desde hilo de mensajes
+  										 // Actualizacion desde hilo de mensajes
+	void FASTCALL RequestPresent();
+										 // Solicitar frame al hilo UI
+	void FASTCALL SetVSync(BOOL bEnable);
+										 // Actualizar VSync en renderer DX
+	void FASTCALL ToggleRenderer();
+										 // Alternar entre DX9 y GDI
+	void FASTCALL ShowRenderStatusOSD(BOOL bVSync);
+										 // Mostrar renderer activo y estado VSync
 	void FASTCALL ApplyCfg(const Config *pConfig);
  										 // Aplicar configuracion
 	void FASTCALL GetDrawInfo(LPDRAWINFO pDrawInfo) const;
@@ -121,6 +131,8 @@ protected:
  										 // Dibujo de fondo
 	afx_msg LRESULT OnDisplayChange(WPARAM wParam, LPARAM lParam);
  										 // Cambio de pantalla
+	afx_msg LRESULT OnPresentFrame(WPARAM wParam, LPARAM lParam);
+										 // Presentacion asincrona de frame
 	afx_msg void OnDropFiles(HDROP hDropInfo);
  										 // Soltar archivo (File drop)
 	afx_msg BOOL OnMouseWheel(UINT nFlags, short zDelta, CPoint pt);
@@ -143,7 +155,10 @@ protected:
 
 private:
 	void FASTCALL SetupBitmap();
- 										 // Preparacion de mapa de bits
+	void FASTCALL FinishFrame();
+	void FASTCALL DrawOSD(CDC *pDC);
+	void FASTCALL ShowOSD(LPCTSTR lpszText);
+  										 // Preparacion de mapa de bits
 	inline void FASTCALL ReCalc(CRect& rect);
  										 // Recalculo
 	inline void FASTCALL DrawRect(CDC *pDC);
@@ -153,7 +168,15 @@ private:
 	int FASTCALL MakeBits();
  										 // Creacion de bits
 	BOOL FASTCALL KeyUpDown(UINT nChar, UINT nFlags, BOOL bDown);
- 										 // Identificacion de teclas
+  										 // Identificacion de teclas
+	CDX9Renderer m_DX9Renderer;
+	BOOL m_bUseDX9;
+	volatile LONG m_lPresentPending;
+	DWORD *m_pStagingBuffer;
+	int m_nStagingWidth;
+	int m_nStagingHeight;
+	DWORD m_dwOSDUntil;
+	TCHAR m_szOSDText[64];
 	CSubWnd *m_pSubWnd;
  										 // Primera subventana
 	CFrmWnd *m_pFrmWnd;

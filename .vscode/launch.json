@@ -1,0 +1,25 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "Debug XM6",
+            "type": "lldb",
+            "request": "launch",
+            "program": "${workspaceFolder}/00proj.vc7/Debug/XM6.exe",
+            "args": [],
+            "cwd": "${workspaceFolder}/00proj.vc7",
+            "console": "integratedTerminal",
+            "preLaunchTask": "Build XM6 (Debug)"
+        },
+        {
+            "name": "Release XM6 (Sin depuración)",
+            "type": "lldb",
+            "request": "launch",
+            "program": "${workspaceFolder}/00proj.vc7/Release/XM6.exe",
+            "args": [],
+            "cwd": "${workspaceFolder}/00proj.vc7",
+            "console": "integratedTerminal",
+            "preLaunchTask": "Build XM6 (Release)"
+        }
+    ]
+}

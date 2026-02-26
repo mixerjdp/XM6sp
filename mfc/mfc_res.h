@@ -2,8 +2,8 @@
 //
 //	X68000 EMULATOR "XM6"
 //
-//	Copyright (C) 2001-2006 ‚o‚hD(ytanaka@ipc-tokai.or.jp)
-//	[ MFC ¯•Êq’è‹` ]
+//	Copyright (C) 2001-2006 ï¿½oï¿½hï¿½D(ytanaka@ipc-tokai.or.jp)
+//	[ MFC ï¿½ï¿½ï¿½Êqï¿½ï¿½` ]
 //
 //---------------------------------------------------------------------------
 
@@ -12,11 +12,11 @@
 #if !defined(mfc_res_h)
 #define mfc_res_h
 
-// “ÁêƒRƒ}ƒ“ƒh
+// ï¿½ï¿½ï¿½ï¿½Rï¿½}ï¿½ï¿½ï¿½h
 #define IDM_STDWIN						4096
 #define IDM_US_STDWIN					9096
 
-// ƒƒjƒ…[AƒAƒNƒZƒ‰ƒŒ[ƒ^Aƒ^ƒCƒ}[AƒAƒCƒRƒ“Aƒ_ƒCƒAƒƒO
+// ï¿½ï¿½ï¿½jï¿½ï¿½ï¿½[ï¿½Aï¿½Aï¿½Nï¿½Zï¿½ï¿½ï¿½ï¿½ï¿½[ï¿½^ï¿½Aï¿½^ï¿½Cï¿½}ï¿½[ï¿½Aï¿½Aï¿½Cï¿½Rï¿½ï¿½ï¿½Aï¿½_ï¿½Cï¿½Aï¿½ï¿½ï¿½O
 #define IDI_APPICON						99
 #define IDI_XICON						100
 #define IDR_ACCELERATOR					101
@@ -57,7 +57,7 @@
 #define IDD_SCSIPAGE					136
 #define IDD_RESUMEPAGE					137
 
-// ƒƒjƒ…[AƒAƒNƒZƒ‰ƒŒ[ƒ^Aƒ^ƒCƒ}[AƒAƒCƒRƒ“Aƒ_ƒCƒAƒƒO(US)
+// ï¿½ï¿½ï¿½jï¿½ï¿½ï¿½[ï¿½Aï¿½Aï¿½Nï¿½Zï¿½ï¿½ï¿½ï¿½ï¿½[ï¿½^ï¿½Aï¿½^ï¿½Cï¿½}ï¿½[ï¿½Aï¿½Aï¿½Cï¿½Rï¿½ï¿½ï¿½Aï¿½_ï¿½Cï¿½Aï¿½ï¿½ï¿½O(US)
 #define IDR_US_DISMENU					152
 #define IDR_US_MEMORYMENU				153
 #define IDD_US_ABOUTDLG					154
@@ -91,7 +91,7 @@
 #define IDD_US_SCSIPAGE					186
 #define IDD_US_RESUMEPAGE				187
 
-// ƒo[ƒWƒ‡ƒ“î•ñƒ_ƒCƒAƒƒO
+// ï¿½oï¿½[ï¿½Wï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½_ï¿½Cï¿½Aï¿½ï¿½ï¿½O
 #define IDC_ABOUT_ICON					1000
 #define IDC_ABOUT_XM6					1001
 #define IDC_ABOUT_VER					1002
@@ -100,11 +100,11 @@
 #define IDC_ABOUT_CORLETT				1005
 #define IDC_ABOUT_CISC					1006
 
-// ƒAƒhƒŒƒX“ü—Íƒ_ƒCƒAƒƒO
+// ï¿½Aï¿½hï¿½ï¿½ï¿½Xï¿½ï¿½ï¿½Íƒ_ï¿½Cï¿½Aï¿½ï¿½ï¿½O
 #define IDC_ADDR_ADDRL					1010
 #define IDC_ADDR_ADDRE					1011
 
-// Šî–{İ’èƒy[ƒW
+// ï¿½ï¿½{ï¿½İ’ï¿½yï¿½[ï¿½W
 #define IDC_BASIC_HELP					1100
 #define IDC_BASIC_CLOCKG				1101
 #define IDC_BASIC_MEMORYG				1102
@@ -128,7 +128,7 @@
 #define IDS_BASIC_MEMORY4				1120
 #define IDS_BASIC_MEMORY5				1121
 
-// Šî–{İ’èƒy[ƒW(US)
+// ï¿½ï¿½{ï¿½İ’ï¿½yï¿½[ï¿½W(US)
 #define IDC_US_BASIC_CLOCKG				6101
 #define IDC_US_BASIC_MEMORYG			6102
 #define IDC_US_BASIC_MEMSWB				6103
@@ -151,7 +151,7 @@
 #define IDS_US_BASIC_MEMORY4			6120
 #define IDS_US_BASIC_MEMORY5			6121
 
-// ƒTƒEƒ“ƒhƒy[ƒW
+// ï¿½Tï¿½Eï¿½ï¿½ï¿½hï¿½yï¿½[ï¿½W
 #define IDC_SOUND_DEVICEG				1200
 #define IDC_SOUND_DEVICEC				1201
 #define IDC_SOUND_RATEG					1202
@@ -173,7 +173,7 @@
 #define IDC_SOUND_INTERP				1218
 #define IDC_SOUND_HELP					1219
 
-// ƒTƒEƒ“ƒhƒy[ƒW(US)
+// ï¿½Tï¿½Eï¿½ï¿½ï¿½hï¿½yï¿½[ï¿½W(US)
 #define IDC_US_SOUND_DEVICEG			6200
 #define IDC_US_SOUND_DEVICEC			6201
 #define IDC_US_SOUND_RATEG				6202
@@ -195,7 +195,7 @@
 #define IDC_US_SOUND_INTERP				6218
 #define IDC_US_SOUND_HELP				6219
 
-// ‰¹—Êƒy[ƒW
+// ï¿½ï¿½ï¿½Êƒyï¿½[ï¿½W
 #define IDC_VOL_OUTG					1300
 #define IDC_VOL_VOLL					1301
 #define IDC_VOL_VOLS					1302
@@ -217,7 +217,7 @@
 #define IDC_VOL_ADPCMN					1318
 #define IDC_VOL_HELP					1319
 
-// ‰¹—Êƒy[ƒW(US)
+// ï¿½ï¿½ï¿½Êƒyï¿½[ï¿½W(US)
 #define IDC_US_VOL_OUTG					6300
 #define IDC_US_VOL_VOLL					6301
 #define IDC_US_VOL_VOLS					6302
@@ -239,7 +239,7 @@
 #define IDC_US_VOL_ADPCMN				6318
 #define IDC_US_VOL_HELP					6319
 
-// ‚»‚Ì‘¼ƒy[ƒW
+// ï¿½ï¿½ï¿½Ì‘ï¿½ï¿½yï¿½[ï¿½W
 #define IDC_MISC_HELP					1400
 #define IDC_MISC_OPTG					1401
 #define IDC_MISC_FDSPEED				1402
@@ -250,7 +250,7 @@
 #define IDC_BUSCAR                      1407
 #define IDC_EDIT1                       1408
 
-// ‚»‚Ì‘¼ƒy[ƒW(US)
+// ï¿½ï¿½ï¿½Ì‘ï¿½ï¿½yï¿½[ï¿½W(US)
 #define IDC_US_MISC_HELP				6400
 #define IDC_US_MISC_OPTG				6401
 #define IDC_US_MISC_FDSPEED				6402
@@ -259,7 +259,7 @@
 #define IDC_US_MISC_AUTOMOUSE			6405
 #define IDC_US_MISC_POWEROFF			6406
 
-// ƒL[ƒ{[ƒhƒy[ƒW
+// ï¿½Lï¿½[ï¿½{ï¿½[ï¿½hï¿½yï¿½[ï¿½W
 #define IDC_KBD_HELP					1500
 #define IDC_KBD_MAPG					1501
 #define IDC_KBD_MAPL					1502
@@ -267,7 +267,7 @@
 #define IDC_KBD_DEFB					1504
 #define IDC_KBD_NOCONB					1505
 
-// ƒL[ƒ{[ƒhƒy[ƒW(US)
+// ï¿½Lï¿½[ï¿½{ï¿½[ï¿½hï¿½yï¿½[ï¿½W(US)
 #define IDC_US_KBD_HELP					6500
 #define IDC_US_KBD_MAPG					6501
 #define IDC_US_KBD_MAPL					6502
@@ -275,7 +275,7 @@
 #define IDC_US_KBD_DEFB					6504
 #define IDC_US_KBD_NOCONB				6505
 
-// ƒ}ƒEƒXƒy[ƒW
+// ï¿½}ï¿½Eï¿½Xï¿½yï¿½[ï¿½W
 #define IDC_MOUSE_HELP					1600
 #define IDC_MOUSE_SPEEDG				1601
 #define IDC_MOUSE_SLIDER				1602
@@ -289,7 +289,7 @@
 #define IDC_MOUSE_MIDB					1610
 #define IDC_MOUSE_TBG					1611
 
-// ƒ}ƒEƒXƒy[ƒW(US)
+// ï¿½}ï¿½Eï¿½Xï¿½yï¿½[ï¿½W(US)
 #define IDC_US_MOUSE_HELP				6600
 #define IDC_US_MOUSE_SPEEDG				6601
 #define IDC_US_MOUSE_SLIDER				6602
@@ -303,14 +303,14 @@
 #define IDC_US_MOUSE_MIDB				6610
 #define IDC_US_MOUSE_TBG				6611
 
-// ƒL[ƒ}ƒbƒvƒ_ƒCƒAƒƒOAƒL[“ü—Íƒ_ƒCƒAƒƒO
+// ï¿½Lï¿½[ï¿½}ï¿½bï¿½vï¿½_ï¿½Cï¿½Aï¿½ï¿½ï¿½Oï¿½Aï¿½Lï¿½[ï¿½ï¿½ï¿½Íƒ_ï¿½Cï¿½Aï¿½ï¿½ï¿½O
 #define IDC_KBDMAP_DISP					1700
 #define IDC_KBDMAP_STAT					1701
 #define IDC_KEYIN_LABEL					1702
 #define IDC_KEYIN_STATIC				1703
 #define IDC_KEYIN_KEY					1704
 
-// ƒ|[ƒgƒy[ƒW
+// ï¿½|ï¿½[ï¿½gï¿½yï¿½[ï¿½W
 #define IDC_PORT_HELP					1800
 #define IDC_PORT_COMG					1801
 #define IDC_PORT_COML					1802
@@ -324,7 +324,7 @@
 #define IDC_PORT_SENDL					1810
 #define IDC_PORT_SENDE					1811
 
-// ƒ|[ƒgƒy[ƒW(US)
+// ï¿½|ï¿½[ï¿½gï¿½yï¿½[ï¿½W(US)
 #define IDC_US_PORT_HELP				6800
 #define IDC_US_PORT_COMG				6801
 #define IDC_US_PORT_COML				6802
@@ -338,7 +338,7 @@
 #define IDC_US_PORT_SENDL				6810
 #define IDC_US_PORT_SENDE				6811
 
-// ‰ü‘¢ƒy[ƒW
+// ï¿½ï¿½ï¿½ï¿½ï¿½yï¿½[ï¿½W
 #define IDC_ALTER_HELP					1900
 #define IDC_ALTER_ALTERG				1901
 #define IDC_ALTER_SRAM					1902
@@ -348,7 +348,7 @@
 #define IDC_ALTER_SASIG					1906
 #define IDC_ALTER_PARITY				1907
 
-// ‰ü‘¢ƒy[ƒW(US)
+// ï¿½ï¿½ï¿½ï¿½ï¿½yï¿½[ï¿½W(US)
 #define IDC_US_ALTER_HELP				6900
 #define IDC_US_ALTER_ALTERG				6901
 #define IDC_US_ALTER_SRAM				6902
@@ -358,7 +358,7 @@
 #define IDC_US_ALTER_SASIG				6906
 #define IDC_US_ALTER_PARITY				6907
 
-// SASIƒy[ƒW
+// SASIï¿½yï¿½[ï¿½W
 #define IDC_SASI_GROUP					2000
 #define IDC_SASI_DRIVEL					2001
 #define IDC_SASI_DRIVEE					2002
@@ -367,7 +367,7 @@
 #define IDC_SASI_LIST					2005
 #define IDC_SASI_HELP					2006
 
-// SASIƒy[ƒW(US)
+// SASIï¿½yï¿½[ï¿½W(US)
 #define IDC_US_SASI_GROUP				7000
 #define IDC_US_SASI_DRIVEL				7001
 #define IDC_US_SASI_DRIVEE				7002
@@ -376,7 +376,7 @@
 #define IDC_US_SASI_LIST				7005
 #define IDC_US_SASI_HELP				7006
 
-// SxSIƒy[ƒW
+// SxSIï¿½yï¿½[ï¿½W
 #define IDC_SXSI_GROUP					2100
 #define IDC_SXSI_DRIVEL					2101
 #define IDC_SXSI_DRIVEE					2102
@@ -385,7 +385,7 @@
 #define IDC_SXSI_LIST					2105
 #define IDC_SXSI_HELP					2106
 
-// SxSIƒy[ƒW(US)
+// SxSIï¿½yï¿½[ï¿½W(US)
 #define IDC_US_SXSI_GROUP				7100
 #define IDC_US_SXSI_DRIVEL				7101
 #define IDC_US_SXSI_DRIVEE				7102
@@ -394,7 +394,7 @@
 #define IDC_US_SXSI_LIST				7105
 #define IDC_US_SXSI_HELP				7106
 
-// MIDIƒy[ƒW
+// MIDIï¿½yï¿½[ï¿½W
 #define IDC_MIDI_BIDG					2200
 #define IDC_MIDI_BID0					2201
 #define IDC_MIDI_BID1					2202
@@ -422,7 +422,7 @@
 #define IDC_MIDI_DLYOG					2224
 #define IDC_MIDI_HELP					2225
 
-// MIDIƒy[ƒW(US)
+// MIDIï¿½yï¿½[ï¿½W(US)
 #define IDC_US_MIDI_BIDG				7200
 #define IDC_US_MIDI_BID0				7201
 #define IDC_US_MIDI_BID1				7202
@@ -450,7 +450,7 @@
 #define IDC_US_MIDI_DLYOG				7224
 #define IDC_US_MIDI_HELP				7225
 
-// TrueKeyƒy[ƒW
+// TrueKeyï¿½yï¿½[ï¿½W
 #define IDC_TKEY_PORTG					2300
 #define IDC_TKEY_COML					2301
 #define IDC_TKEY_COMC					2302
@@ -462,7 +462,7 @@
 #define IDC_TKEY_LIST					2308
 #define IDC_TKEY_HELP					2309
 
-// TrueKeyƒy[ƒW(US)
+// TrueKeyï¿½yï¿½[ï¿½W(US)
 #define IDC_US_TKEY_PORTG				7300
 #define IDC_US_TKEY_COML				7301
 #define IDC_US_TKEY_COMC				7302
@@ -474,7 +474,7 @@
 #define IDC_US_TKEY_LIST				7308
 #define IDC_US_TKEY_HELP				7309
 
-// ƒWƒ‡ƒCƒXƒeƒBƒbƒNƒy[ƒW
+// ï¿½Wï¿½ï¿½ï¿½Cï¿½Xï¿½eï¿½Bï¿½bï¿½Nï¿½yï¿½[ï¿½W
 #define IDC_JOY_PORTG					2400
 #define IDC_JOY_PORTL1					2401
 #define IDC_JOY_PORTC1					2402
@@ -494,7 +494,7 @@
 #define IDC_JOY_DEVAC					2416
 #define IDC_JOY_HELP					2417
 
-// ƒWƒ‡ƒCƒXƒeƒBƒbƒNƒy[ƒW(US)
+// ï¿½Wï¿½ï¿½ï¿½Cï¿½Xï¿½eï¿½Bï¿½bï¿½Nï¿½yï¿½[ï¿½W(US)
 #define IDC_US_JOY_PORTG				7400
 #define IDC_US_JOY_PORTL1				7401
 #define IDC_US_JOY_PORTC1				7402
@@ -514,7 +514,7 @@
 #define IDC_US_JOY_DEVAC				7416
 #define IDC_US_JOY_HELP					7417
 
-// ƒWƒ‡ƒCƒXƒeƒBƒbƒNÚ×ƒ_ƒCƒAƒƒO
+// ï¿½Wï¿½ï¿½ï¿½Cï¿½Xï¿½eï¿½Bï¿½bï¿½Nï¿½Ú×ƒ_ï¿½Cï¿½Aï¿½ï¿½ï¿½O
 #define IDC_JOYDET_NAMEL				2420
 #define IDC_JOYDET_AXISL				2421
 #define IDC_JOYDET_AXISS				2422
@@ -525,7 +525,7 @@
 #define IDC_JOYDET_DATASL				2427
 #define IDC_JOYDET_DATASS				2428
 
-// ƒWƒ‡ƒCƒXƒeƒBƒbƒNƒ{ƒ^ƒ“İ’èƒy[ƒW
+// ï¿½Wï¿½ï¿½ï¿½Cï¿½Xï¿½eï¿½Bï¿½bï¿½Nï¿½{ï¿½^ï¿½ï¿½ï¿½İ’ï¿½yï¿½[ï¿½W
 #define IDC_BTNSET_BTNG					2447
 #define IDC_BTNSET_BTNL					2448
 #define IDC_BTNSET_ASSIGNL				2449
@@ -579,7 +579,7 @@
 #define IDC_BTNSET_RAPIDC12				2497
 #define IDC_BTNSET_RAPIDL12				2498
 
-// ƒWƒ‡ƒCƒXƒeƒBƒbƒNƒ{ƒ^ƒ“İ’èƒy[ƒW(US)
+// ï¿½Wï¿½ï¿½ï¿½Cï¿½Xï¿½eï¿½Bï¿½bï¿½Nï¿½{ï¿½^ï¿½ï¿½ï¿½İ’ï¿½yï¿½[ï¿½W(US)
 #define IDC_US_BTNSET_BTNG				7447
 #define IDC_US_BTNSET_BTNL				7448
 #define IDC_US_BTNSET_ASSIGNL			7449
@@ -633,7 +633,7 @@
 #define IDC_US_BTNSET_RAPIDC12			7497
 #define IDC_US_BTNSET_RAPIDL12			7498
 
-// SCSIƒy[ƒW
+// SCSIï¿½yï¿½[ï¿½W
 #define IDC_SCSI_IFG					2500
 #define IDC_SCSI_NONEB					2501
 #define IDC_SCSI_INTB					2502
@@ -646,7 +646,7 @@
 #define IDC_SCSI_LIST					2509
 #define IDC_SCSI_HELP					2510
 
-// SCSIƒy[ƒW(US)
+// SCSIï¿½yï¿½[ï¿½W(US)
 #define IDC_US_SCSI_IFG					7500
 #define IDC_US_SCSI_NONEB				7501
 #define IDC_US_SCSI_INTB				7502
@@ -659,7 +659,7 @@
 #define IDC_US_SCSI_LIST				7509
 #define IDC_US_SCSI_HELP				7510
 
-// ƒŒƒWƒ…[ƒ€ƒy[ƒW
+// ï¿½ï¿½ï¿½Wï¿½ï¿½ï¿½[ï¿½ï¿½ï¿½yï¿½[ï¿½W
 #define IDC_RESUME_DISKG				2600
 #define IDC_RESUME_FDC					2601
 #define IDC_RESUME_MOC					2602
@@ -671,7 +671,7 @@
 #define IDC_RESUME_DIRC					2608
 #define IDC_RESUME_HELP					2609
 
-// ƒŒƒWƒ…[ƒ€ƒy[ƒW(US)
+// ï¿½ï¿½ï¿½Wï¿½ï¿½ï¿½[ï¿½ï¿½ï¿½yï¿½[ï¿½W(US)
 #define IDC_US_RESUME_DISKG				7600
 #define IDC_US_RESUME_FDC				7601
 #define IDC_US_RESUME_MOC				7602
@@ -683,7 +683,7 @@
 #define IDC_US_RESUME_DIRC				7608
 #define IDC_US_RESUME_HELP				7609
 
-// ƒtƒƒbƒs[ƒfƒBƒXƒNƒCƒ[ƒWƒ_ƒCƒAƒƒO
+// ï¿½tï¿½ï¿½ï¿½bï¿½sï¿½[ï¿½fï¿½Bï¿½Xï¿½Nï¿½Cï¿½ï¿½ï¿½[ï¿½Wï¿½_ï¿½Cï¿½Aï¿½ï¿½ï¿½O
 #define IDC_FDI_FILEL					3000
 #define IDC_FDI_FILEE					3001
 #define IDC_FDI_FILEB					3002
@@ -705,7 +705,7 @@
 #define IDC_FDI_DRIVE1					3018
 #define IDC_FDI_NOTMOUNT				3019
 
-// ‘å—e—ÊƒfƒBƒXƒNƒCƒ[ƒWƒ_ƒCƒAƒƒO
+// ï¿½ï¿½eï¿½Êƒfï¿½Bï¿½Xï¿½Nï¿½Cï¿½ï¿½ï¿½[ï¿½Wï¿½_ï¿½Cï¿½Aï¿½ï¿½ï¿½O
 #define IDC_DISK_FILEL					3100
 #define IDC_DISK_FILEE					3101
 #define IDC_DISK_FILEB					3102
@@ -725,17 +725,17 @@
 #define IDC_DISK_OPTG					3116
 #define IDC_DISK_MOUNTB					3117
 
-// ƒfƒBƒXƒNì¬isƒ_ƒCƒAƒƒO
+// ï¿½fï¿½Bï¿½Xï¿½Nï¿½ì¬ï¿½iï¿½sï¿½_ï¿½Cï¿½Aï¿½ï¿½ï¿½O
 #define IDC_DMAKE_PROGRESS				3200
 #define IDC_DMAKE_STATIC				3201
 
-// trap #0ƒ_ƒCƒAƒƒO
+// trap #0ï¿½_ï¿½Cï¿½Aï¿½ï¿½ï¿½O
 #define IDC_TRAP_D0L					3300
 #define IDC_TRAP_D0E					3301
 #define IDC_TRAP_D0S					3302
 #define IDC_TRAP_WARN					3304
 
-// ƒtƒ@ƒCƒ‹ƒƒjƒ…[
+// ï¿½tï¿½@ï¿½Cï¿½ï¿½ï¿½ï¿½ï¿½jï¿½ï¿½ï¿½[
 #define IDM_OPEN						40000
 #define IDM_SAVE						40001
 #define IDM_SAVEAS						40002
@@ -756,7 +756,7 @@
 #define IDM_SAVEGLOBALCONFIG			40017
 #define IDM_SAVEGLOBALCONFIGANDRESET	40018
 
-// ƒtƒƒbƒs[0ƒƒjƒ…[
+// ï¿½tï¿½ï¿½ï¿½bï¿½sï¿½[0ï¿½ï¿½ï¿½jï¿½ï¿½ï¿½[
 #define IDM_D0OPEN						40020
 #define IDM_D0EJECT 					40021
 #define IDM_D0WRITEP					40022
@@ -788,7 +788,7 @@
 #define IDM_D0_MRU7						40048
 #define IDM_D0_MRU8						40049
 
-// ƒtƒƒbƒs[1ƒƒjƒ…[
+// ï¿½tï¿½ï¿½ï¿½bï¿½sï¿½[1ï¿½ï¿½ï¿½jï¿½ï¿½ï¿½[
 #define IDM_D1OPEN						40050
 #define IDM_D1EJECT 					40051
 #define IDM_D1WRITEP					40052
@@ -820,7 +820,7 @@
 #define IDM_D1_MRU7						40078
 #define IDM_D1_MRU8						40079
 
-// MOƒƒjƒ…[
+// MOï¿½ï¿½ï¿½jï¿½ï¿½ï¿½[
 #define IDM_MOOPEN						40080
 #define IDM_MOEJECT						40081
 #define IDM_MOWRITEP					40082
@@ -835,7 +835,7 @@
 #define IDM_MO_MRU7						40091
 #define IDM_MO_MRU8						40092
 
-// CDƒƒjƒ…[
+// CDï¿½ï¿½ï¿½jï¿½ï¿½ï¿½[
 #define IDM_CDOPEN						40100
 #define IDM_CDEJECT						40101
 #define IDM_CDFORCE						40102
@@ -849,19 +849,19 @@
 #define IDM_CD_MRU7						40110
 #define IDM_CD_MRU8						40111
 
-// •\¦ƒƒjƒ…[(ƒVƒXƒeƒ€)
+// ï¿½\ï¿½ï¿½ï¿½ï¿½ï¿½jï¿½ï¿½ï¿½[(ï¿½Vï¿½Xï¿½eï¿½ï¿½)
 #define IDM_LOG							40120
 #define IDM_SCHEDULER					40121
 #define IDM_DEVICE						40122
 
-// •\¦ƒƒjƒ…[(ƒvƒƒZƒbƒT)
+// ï¿½\ï¿½ï¿½ï¿½ï¿½ï¿½jï¿½ï¿½ï¿½[(ï¿½vï¿½ï¿½ï¿½Zï¿½bï¿½T)
 #define IDM_CPUREG						40123
 #define IDM_INT							40124
 #define IDM_DISASM						40125
 #define IDM_MEMORY						40126
 #define IDM_BREAKP						40127
 
-// •\¦ƒƒjƒ…[(ƒfƒoƒCƒX)
+// ï¿½\ï¿½ï¿½ï¿½ï¿½ï¿½jï¿½ï¿½ï¿½[(ï¿½fï¿½oï¿½Cï¿½X)
 #define IDM_MFP							40128
 #define IDM_DMAC						40129
 #define IDM_CRTC						40130
@@ -877,7 +877,7 @@
 #define IDM_MIDI						40140
 #define IDM_SCSI						40141
 
-// •\¦ƒƒjƒ…[(ƒrƒfƒI)
+// ï¿½\ï¿½ï¿½ï¿½ï¿½ï¿½jï¿½ï¿½ï¿½[(ï¿½rï¿½fï¿½I)
 #define IDM_TVRAM						40142
 #define IDM_G1024						40143
 #define IDM_G16P0						40144
@@ -893,7 +893,7 @@
 #define IDM_SPRITE						40154
 #define IDM_PALET						40155
 
-// •\¦ƒƒjƒ…[(ƒŒƒ“ƒ_ƒ‰)
+// ï¿½\ï¿½ï¿½ï¿½ï¿½ï¿½jï¿½ï¿½ï¿½[(ï¿½ï¿½ï¿½ï¿½ï¿½_ï¿½ï¿½)
 #define IDM_REND_TEXT					40156
 #define IDM_REND_GP0					40157
 #define IDM_REND_GP1					40158
@@ -906,7 +906,7 @@
 #define IDM_REND_PALET					40165
 #define IDM_REND_MIX					40166
 
-// •\¦ƒƒjƒ…[(Win32)
+// ï¿½\ï¿½ï¿½ï¿½ï¿½ï¿½jï¿½ï¿½ï¿½[(Win32)
 #define IDM_COMPONENT					40167
 #define IDM_OSINFO						40168
 #define IDM_SOUND						40169
@@ -915,20 +915,22 @@
 #define IDM_BITMAP						40172
 #define IDM_MIDIDRV						40173
 
-// •\¦ƒƒjƒ…[
+// ï¿½\ï¿½ï¿½ï¿½ï¿½ï¿½jï¿½ï¿½ï¿½[
 #define IDM_CAPTION						40177
 #define IDM_MENU						40178
 #define IDM_STATUS						40179
 #define IDM_REFRESH						40180
 #define IDM_STRETCH						40181
 #define IDM_FULLSCREEN					40182
+#define IDM_TOGGLE_VSYNC         40183
+#define IDM_TOGGLE_RENDERER      40184
 
-// ƒfƒoƒbƒOƒƒjƒ…[
+// ï¿½fï¿½oï¿½bï¿½Oï¿½ï¿½ï¿½jï¿½ï¿½ï¿½[
 #define IDM_EXEC 						40185
 #define IDM_BREAK						40186
 #define IDM_TRACE						40187
 
-// ƒc[ƒ‹ƒƒjƒ…[
+// ï¿½cï¿½[ï¿½ï¿½ï¿½ï¿½ï¿½jï¿½ï¿½ï¿½[
 #define IDM_MOUSEMODE					40190
 #define IDM_SOFTKEY						40191
 #define IDM_TIMEADJ						40192
@@ -940,7 +942,7 @@
 #define IDM_NEWMO						40198
 #define IDM_OPTIONS						40199
 
-// ƒEƒBƒ“ƒhƒEƒƒjƒ…[(Å‘åƒEƒBƒ“ƒhƒE”72ŒÂ‚ğŠm•Û)
+// ï¿½Eï¿½Bï¿½ï¿½ï¿½hï¿½Eï¿½ï¿½ï¿½jï¿½ï¿½ï¿½[(ï¿½Å‘ï¿½Eï¿½Bï¿½ï¿½ï¿½hï¿½Eï¿½ï¿½72ï¿½Â‚ï¿½ï¿½mï¿½ï¿½)
 #define IDM_CASCADE						40220
 #define IDM_TILE						40221
 #define IDM_ICONIC						40222
@@ -950,10 +952,10 @@
 #define IDM_SWND_START					40226
 #define IDM_SWND_END					40298
 
-// ƒwƒ‹ƒvƒƒjƒ…[
+// ï¿½wï¿½ï¿½ï¿½vï¿½ï¿½ï¿½jï¿½ï¿½ï¿½[
 #define IDM_ABOUT						40299
 
-// ‹tƒAƒZƒ“ƒuƒ‹ƒƒjƒ…[
+// ï¿½tï¿½Aï¿½Zï¿½ï¿½ï¿½uï¿½ï¿½ï¿½ï¿½ï¿½jï¿½ï¿½ï¿½[
 #define IDM_DIS_NEWWIN					40300
 #define IDM_DIS_PC						40301
 #define IDM_DIS_ADDR					40302
@@ -1032,7 +1034,7 @@
 #define IDM_DIS_IOSC2					40381
 #define IDM_DIS_IOSC3					40382
 
-// ƒƒ‚ƒŠƒƒjƒ…[
+// ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½jï¿½ï¿½ï¿½[
 #define IDM_MEMORY_NEWWIN				40400
 #define IDM_MEMORY_ADDR					40401
 #define IDM_MEMORY_BYTE					40402
@@ -1055,7 +1057,7 @@
 #define IDM_MEMORY_E					40419
 #define IDM_MEMORY_F					40420
 
-// ƒGƒŠƒAƒƒjƒ…[
+// ï¿½Gï¿½ï¿½ï¿½Aï¿½ï¿½ï¿½jï¿½ï¿½ï¿½[
 #define IDM_AREA_MPU					40430
 #define IDM_AREA_IOCS					40431
 #define IDM_AREA_DOS					40432
@@ -1090,7 +1092,7 @@
 #define IDM_AREA_SCSIROM				40461
 #define IDM_AREA_IPLROM					40462
 
-// ƒqƒXƒgƒŠƒƒjƒ…[
+// ï¿½qï¿½Xï¿½gï¿½ï¿½ï¿½ï¿½ï¿½jï¿½ï¿½ï¿½[
 #define IDM_HISTORY_0					40470
 #define IDM_HISTORY_1					40471
 #define IDM_HISTORY_2					40472
@@ -1102,7 +1104,7 @@
 #define IDM_HISTORY_8					40478
 #define IDM_HISTORY_9					40479
 
-// ƒXƒ^ƒbƒNƒƒjƒ…[
+// ï¿½Xï¿½^ï¿½bï¿½Nï¿½ï¿½ï¿½jï¿½ï¿½ï¿½[
 #define IDM_STACK_0						40480
 #define IDM_STACK_1						40481
 #define IDM_STACK_2						40482
@@ -1120,7 +1122,7 @@
 #define IDM_STACK_E						40494
 #define IDM_STACK_F						40495
 
-// PCGƒƒjƒ…[
+// PCGï¿½ï¿½ï¿½jï¿½ï¿½ï¿½[
 #define IDM_PCG_0						40500
 #define IDM_PCG_1						40501
 #define IDM_PCG_2						40502
@@ -1138,7 +1140,7 @@
 #define IDM_PCG_E						40514
 #define IDM_PCG_F						40515
 
-// ƒŒƒWƒXƒ^ƒƒjƒ…[
+// ï¿½ï¿½ï¿½Wï¿½Xï¿½^ï¿½ï¿½ï¿½jï¿½ï¿½ï¿½[
 #define IDM_REG_D0						40600
 #define IDM_REG_D1						40601
 #define IDM_REG_D2						40602
@@ -1160,7 +1162,7 @@
 #define IDM_REG_PC						40618
 #define IDM_REG_SR						40619
 
-// ƒuƒŒ[ƒNƒ|ƒCƒ“ƒgƒƒjƒ…[
+// ï¿½uï¿½ï¿½ï¿½[ï¿½Nï¿½|ï¿½Cï¿½ï¿½ï¿½gï¿½ï¿½ï¿½jï¿½ï¿½ï¿½[
 #define IDM_BREAKP_ENABLE				40700
 #define IDM_BREAKP_CLEAR				40701
 #define IDM_BREAKP_DEL					40702
@@ -1168,7 +1170,7 @@
 #define IDM_BREAKP_ALL					40704
 #define ID_FILE_CARGAR40006				40705
 
-// •¶š—ñ(ƒTƒuƒEƒBƒ“ƒhƒE)
+// ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½(ï¿½Tï¿½uï¿½Eï¿½Bï¿½ï¿½ï¿½hï¿½E)
 #define IDS_SWND_LOG					41000
 #define IDS_SWND_LOG_NUMBER				41001
 #define IDS_SWND_LOG_TIME				41002
@@ -1240,7 +1242,7 @@
 
 #define IDS_SWND_SOFTKEY				41600
 
-// •¶š—ñ(‚»‚Ì‘¼)
+// ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½(ï¿½ï¿½ï¿½Ì‘ï¿½)
 #define IDS_CAPTION_RUN					42000
 #define IDS_CAPTION_STOP				42001
 #define IDS_INIT_VMERR					42002
@@ -1338,7 +1340,7 @@
 #define IDS_SAVECLOSE					42094
 #define IDS_PROCESSOR					42095
 
-// ƒƒjƒ…[•¶š—ñ(US)
+// ï¿½ï¿½ï¿½jï¿½ï¿½ï¿½[ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½(US)
 #define IDM_US_OPEN						45000
 #define IDM_US_SAVE						45001
 #define IDM_US_SAVEAS					45002
@@ -1415,7 +1417,7 @@
 #define IDM_US_RESTORE					45225
 #define IDM_US_ABOUT					45299
 
-// •¶š—ñ(ƒTƒuƒEƒBƒ“ƒhƒE, US)
+// ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½(ï¿½Tï¿½uï¿½Eï¿½Bï¿½ï¿½ï¿½hï¿½E, US)
 #define IDS_US_SWND_LOG					46000
 #define IDS_US_SWND_LOG_NUMBER			46001
 #define IDS_US_SWND_LOG_TIME			46002
@@ -1487,7 +1489,7 @@
 
 #define IDS_US_SWND_SOFTKEY				46600
 
-// •¶š—ñ(‚»‚Ì‘¼, US)
+// ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½(ï¿½ï¿½ï¿½Ì‘ï¿½, US)
 #define IDS_US_CAPTION_RUN				47000
 #define IDS_US_CAPTION_STOP				47001
 #define IDS_US_INIT_VMERR				47002

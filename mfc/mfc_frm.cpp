@@ -2,7 +2,7 @@
 //
 //	X68000 EMULATOR "XM6"
 //
-//	Copyright (C) 2001-2006 ‚o‚hD(ytanaka@ipc-tokai.or.jp)
+//	Copyright (C) 2001-2006 â€šoâ€šhÂD(ytanaka@ipc-tokai.or.jp)
 //	[ MFC Ventana del marco ]
 //
 //---------------------------------------------------------------------------
@@ -89,10 +89,15 @@ CFrmWnd::CFrmWnd()
 
 	// Pantalla completa
 	m_bFullScreen = FALSE;
+	m_bBorderless = FALSE;
+	m_dwPrevStyle = 0;
+	m_dwPrevExStyle = 0;
+	memset(&m_wpPrev, 0, sizeof(m_wpPrev));
 	m_hTaskBar = NULL;
 	memset(&m_DevMode, 0, sizeof(m_DevMode));
 	m_nWndLeft = 0;
 	m_nWndTop = 0;
+	m_bVSyncEnabled = TRUE;
 
 	// Subventana
 	m_strWndClsName.Empty();
@@ -306,6 +311,8 @@ BEGIN_MESSAGE_MAP(CFrmWnd, CFrameWnd)
 	ON_UPDATE_COMMAND_UI(IDM_STRETCH, OnStretchUI)
 	ON_COMMAND(IDM_FULLSCREEN, OnFullScreen)
 	ON_UPDATE_COMMAND_UI(IDM_FULLSCREEN, OnFullScreenUI)
+	ON_COMMAND(IDM_TOGGLE_RENDERER, OnToggleRenderer)
+	ON_COMMAND(IDM_TOGGLE_VSYNC, OnToggleVSync)
 
 	ON_COMMAND(IDM_EXEC, OnExec)
 	ON_UPDATE_COMMAND_UI(IDM_EXEC, OnExecUI)
@@ -409,7 +416,7 @@ int CFrmWnd::OnCreate(LPCREATESTRUCT lpCreateStruct)
 
 	// Menu (ventana)
 	if (::IsJapanese()) {
-		// “ú–{Œêƒƒjƒ…[
+		// â€œÃºâ€“{Å’ÃªÆ’ÂÆ’jÆ’â€¦Â[
 		m_Menu.LoadMenu(IDR_MENU);
 		m_PopupMenu.LoadMenu(IDR_MENUPOPUP);
 	}
@@ -609,7 +616,7 @@ void FASTCALL CFrmWnd::InitPos(BOOL bStart)
 	}
 
 
-	/* ACA SE ESTABLECE TAMAÑO DE VENTANA PRINCIPAL Y DE PANTALLA COMPLETA */
+	/* ACA SE ESTABLECE TAMAÃ‘O DE VENTANA PRINCIPAL Y DE PANTALLA COMPLETA */
 	// 824x560 (DDP2) se reconoce como el tamano maximo no entrelazado
 	rect.left = 0;
 	rect.top = 0;
@@ -700,7 +707,7 @@ void FASTCALL CFrmWnd::InitShell()
 	m_fsne[0].pidl = NULL;
 	m_fsne[0].fRecursive = FALSE;
 
-	// ƒVƒFƒ‹’Ê’mƒƒbƒZ[ƒW‚ğ“o˜^
+	// Æ’VÆ’FÆ’â€¹â€™ÃŠâ€™mÆ’ÂÆ’bÆ’ZÂ[Æ’Wâ€šÃ°â€œoËœ^
 	m_uNotifyId = ::SHChangeNotifyRegister(m_hWnd,
 							nSources,
 							SHCNE_MEDIAINSERTED | SHCNE_MEDIAREMOVED | SHCNE_DRIVEADD | SHCNE_DRIVEREMOVED,
@@ -825,7 +832,7 @@ void FASTCALL CFrmWnd::InitVer()
 					+ HIWORD(pFileInfo->dwProductVersionLS));
 	::GetVM()->SetVersion(dwMajor, dwMinor);
 
-	// I—¹
+	// ÂIâ€”Â¹
 	delete[] pVerInfo;
 }
 
@@ -890,14 +897,14 @@ void FASTCALL CFrmWnd::InitCmd(LPCTSTR lpszCmd)
 	RutaCompletaArchivoXM6 = lpszCmd;
 	NombreArchivoXM6 = fileName;
 
-	/* AQUÍ SE INICIALIZA CUALQUIER PARÁMETRO DE LA LÍNEA DE COMANDO */
+	/* AQUÃ SE INICIALIZA CUALQUIER PARÃMETRO DE LA LÃNEA DE COMANDO */
 
-	// Proceso de obtener la extensión del archivo
+	// Proceso de obtener la extensiÃ³n del archivo
 	CString str = RutaCompletaArchivoXM6;
 	CString extensionArchivo = "";
 
 	int curPos = 0;
-	CString resToken = str.Tokenize(_T("."), curPos); // Obtiene la extensión de la ruta completa del archivo
+	CString resToken = str.Tokenize(_T("."), curPos); // Obtiene la extensiÃ³n de la ruta completa del archivo
 	while (!resToken.IsEmpty())
 	{
 		extensionArchivo = resToken;
@@ -914,7 +921,7 @@ void FASTCALL CFrmWnd::InitCmd(LPCTSTR lpszCmd)
 	}
 
 	// lpszCmd es el comando completo con comillas incluidas
-	// Inicialización de punteros y banderas
+	// InicializaciÃ³n de punteros y banderas
 	BOOL bReset = FALSE;
 
 	// Crear un objeto CString a partir de lpszCmd
@@ -1062,7 +1069,7 @@ BOOL FASTCALL CFrmWnd::InitCmdSub(int nDrive, LPCTSTR lpszPath)
 		return TRUE;
 	}
 
-	// I—¹
+	// ÂIâ€”Â¹
 	return FALSE;
 }
 
@@ -1107,7 +1114,7 @@ BOOL FASTCALL CFrmWnd::SaveComponent(const Filepath& path, DWORD dwPos)
 	// Bucle de componentes
 	pComponent = m_pFirstComponent;
 	while (pComponent) {
-		// ID‚ğ•Û‘¶
+		// IDâ€šÃ°â€¢Ã›â€˜Â¶
 		dwID = pComponent->GetID();
 		if (!fio.Write(&dwID, sizeof(dwID))) {
 			fio.Close();
@@ -1120,7 +1127,7 @@ BOOL FASTCALL CFrmWnd::SaveComponent(const Filepath& path, DWORD dwPos)
 			return FALSE;
 		}
 
-		// Ÿ‚Ö
+		// Å½Å¸â€šÃ–
 		pComponent = pComponent->GetNextComponent();
 	}
 
@@ -1309,7 +1316,7 @@ LONG CFrmWnd::OnKick(UINT /*uParam*/, LONG /*lParam*/)
 
 	// Tratamiento de errores en primer lugar
 	switch (m_nStatus) {
-		// VMƒGƒ‰[
+		// VMÆ’GÆ’â€°Â[
 		case 1:
 			::GetMsg(IDS_INIT_VMERR, strMsg);
 			MessageBox(strMsg, NULL, MB_ICONSTOP | MB_OK);
@@ -1347,7 +1354,7 @@ LONG CFrmWnd::OnKick(UINT /*uParam*/, LONG /*lParam*/)
 	// Obtener la configuracion (para el ajuste de power_off)
 	GetConfig()->GetConfig(&config);
 	if (config.power_off) {
-		// “dŒ¹OFF‚Å‹N“®
+		// â€œdÅ’Â¹OFFâ€šÃ…â€¹Nâ€œÂ®
 		::GetVM()->SetPower(FALSE);
 		::GetVM()->PowerSW(FALSE);
 	}
@@ -1359,87 +1366,87 @@ LONG CFrmWnd::OnKick(UINT /*uParam*/, LONG /*lParam*/)
 	GetView()->Enable(TRUE);
 	pComponent = m_pFirstComponent;
 	while (pComponent) {
-		// ƒXƒPƒWƒ…[ƒ‰‚©
+		// Æ’XÆ’PÆ’WÆ’â€¦Â[Æ’â€°â€šÂ©
 		if (pComponent->GetID() == MAKEID('S', 'C', 'H', 'E')) {
 			if (config.power_off) {
-				// “dŒ¹OFF‚Å‹N“®
+				// â€œdÅ’Â¹OFFâ€šÃ…â€¹Nâ€œÂ®
 				pComponent->Enable(FALSE);
 				pComponent = pComponent->GetNextComponent();
 				continue;
 			}
 		}
 
-		// ƒCƒl[ƒuƒ‹
+		// Æ’CÆ’lÂ[Æ’uÆ’â€¹
 		pComponent->Enable(TRUE);
 		pComponent = pComponent->GetNextComponent();
 	}
 
-	// ƒŠƒZƒbƒg(ƒXƒe[ƒ^ƒXƒo[‚Ì‚½‚ß)
+	// Æ’Å Æ’ZÆ’bÆ’g(Æ’XÆ’eÂ[Æ’^Æ’XÆ’oÂ[â€šÃŒâ€šÂ½â€šÃŸ)
 	if (!config.power_off) {
 		OnReset();
 	}
 
-	// ƒRƒ}ƒ“ƒhƒ‰ƒCƒ“ˆ—
+	// Æ’RÆ’}Æ’â€œÆ’hÆ’â€°Æ’CÆ’â€œÂË†â€”Â
 	lpszCmd = AfxGetApp()->m_lpCmdLine;
 	lpszCommand = A2T(lpszCmd);
 	if (_tcslen(lpszCommand) > 0) {
 		InitCmd(lpszCommand);
 	}
 
-	// Å‘å‰»w’è‚Å‚ ‚ê‚ÎA–ß‚µ‚½Œã‚ÉAƒtƒ‹ƒXƒNƒŠ[ƒ“
+	// ÂÃ…â€˜Ã¥â€°Â»Å½wâ€™Ã¨â€šÃ…â€šÂ â€šÃªâ€šÃÂAâ€“ÃŸâ€šÂµâ€šÂ½Å’Ã£â€šÃ‰ÂAÆ’tÆ’â€¹Æ’XÆ’NÆ’Å Â[Æ’â€œ
 	bFullScreen = FALSE;
 	if (IsZoomed()) {
 		ShowWindow(SW_RESTORE);
 		bFullScreen = TRUE;
 	}
 
-	// ƒEƒCƒ“ƒhƒEˆÊ’u‚ğƒŒƒWƒ…[ƒ€
+	// Æ’EÆ’CÆ’â€œÆ’hÆ’EË†ÃŠâ€™uâ€šÃ°Æ’Å’Æ’WÆ’â€¦Â[Æ’â‚¬
 	bFullScreen = RestoreFrameWnd(bFullScreen);
 	if (bFullScreen) {
-		// Å‘å‰»w’è‚©A‘O‰ñÀs‚Éƒtƒ‹ƒXƒNƒŠ[ƒ“
+		// ÂÃ…â€˜Ã¥â€°Â»Å½wâ€™Ã¨â€šÂ©ÂAâ€˜Oâ€°Ã±Å½Ã€ÂsÅ½Å¾â€šÃ‰Æ’tÆ’â€¹Æ’XÆ’NÆ’Å Â[Æ’â€œ
 		PostMessage(WM_COMMAND, IDM_FULLSCREEN);
 	}
 
-	// ƒfƒBƒXƒNEƒXƒe[ƒg‚ğƒŒƒWƒ…[ƒ€
+	// Æ’fÆ’BÆ’XÆ’NÂEÆ’XÆ’eÂ[Æ’gâ€šÃ°Æ’Å’Æ’WÆ’â€¦Â[Æ’â‚¬
 	RestoreDiskState();
 
-	// –³ŒÀƒ‹[ƒv
+	// â€“Â³Å’Ã€Æ’â€¹Â[Æ’v
 	nIdle = 0;
 	while (!m_bExit) {
-		// ƒƒbƒZ[ƒWƒ`ƒFƒbƒN•ƒ|ƒ“ƒv
+		// Æ’ÂÆ’bÆ’ZÂ[Æ’WÆ’`Æ’FÆ’bÆ’NÂâ€¢Æ’|Æ’â€œÆ’v
 		if (::PeekMessage(&msg, NULL, 0, 0, PM_NOREMOVE)) {
 			if (!AfxGetApp()->PumpMessage()) {
 				::PostQuitMessage(0);
 				return 0;
 			}
-			// continue‚·‚é‚±‚Æ‚ÅAWM_DESTROY’¼Œã‚Ìm_bExitƒ`ƒFƒbƒN‚ğ•ÛØ
+			// continueâ€šÂ·â€šÃ©â€šÂ±â€šÃ†â€šÃ…ÂAWM_DESTROYâ€™Â¼Å’Ã£â€šÃŒm_bExitÆ’`Æ’FÆ’bÆ’Nâ€šÃ°â€¢Ã›ÂÃ˜
 			continue;
 		}
 
-		// ƒXƒŠ[ƒv
+		// Æ’XÆ’Å Â[Æ’v
 		if (!PeekMessage(&msg, NULL, 0, 0, PM_NOREMOVE)) {
 			Sleep(20);
 
-			// Info‚ğ–ˆ‰ñæ‚è’¼‚·
+			// Infoâ€šÃ°â€“Ë†â€°Ã±Å½Ã¦â€šÃ¨â€™Â¼â€šÂ·
 			pInfo = GetInfo();
 			if (!pInfo) {
 				continue;
 			}
 
-			// XVƒJƒEƒ“ƒ^Up
+			// ÂXÂVÆ’JÆ’EÆ’â€œÆ’^Up
 			nIdle++;
 
-			// ƒXƒe[ƒ^ƒXEÀs‚Í20ms
+			// Æ’XÆ’eÂ[Æ’^Æ’XÂEÅ½Ã€Âsâ€šÃ20ms
 			pInfo->UpdateStatus();
 			UpdateExec();
 
 			if ((nIdle & 1) == 0) {
-				// ƒrƒ…[‚Í40ms
+				// Æ’rÆ’â€¦Â[â€šÃ40ms
 				GetView()->Update();
 			}
 
 			if ((nIdle & 3) == 0) {
-				// ƒLƒƒƒvƒVƒ‡ƒ“Aî•ñ‚Í80ms
+				// Æ’LÆ’Æ’Æ’vÆ’VÆ’â€¡Æ’â€œÂAÂÃ®â€¢Ã±â€šÃ80ms
 				pInfo->UpdateCaption();
 				pInfo->UpdateInfo();
 			}
@@ -1519,7 +1526,7 @@ void CFrmWnd::OnClose()
 					::GetVM()->Clear();
 					break;
 
-				// ƒLƒƒƒ“ƒZƒ‹
+				// Æ’LÆ’Æ’Æ’â€œÆ’ZÆ’â€¹
 				case IDCANCEL:
 					// Fingire que no estaba cerrado.
 					return;
@@ -1549,8 +1556,8 @@ void CFrmWnd::OnClose()
 		}
 	}
 
-	OutputDebugString("\n\nSe ejecutó OnClose...\n\n");
-	// Šî–{ƒNƒ‰ƒX
+	OutputDebugString("\n\nSe ejecutÃ³ OnClose...\n\n");
+	// Å Ã®â€“{Æ’NÆ’â€°Æ’X
 	CFrameWnd::OnClose();
 }
 
@@ -1582,9 +1589,9 @@ void CFrmWnd::OnDestroy()
 	CleanSub();
 
 
-	OutputDebugString("\n\nSe ejecutó OnDestroy...\n\n");
+	OutputDebugString("\n\nSe ejecutÃ³ OnDestroy...\n\n");
 
-	// Šî–{ƒNƒ‰ƒX‚Ö
+	// Å Ã®â€“{Æ’NÆ’â€°Æ’Xâ€šÃ–
 	CFrameWnd::OnDestroy();
 }
 
@@ -1614,9 +1621,9 @@ void CFrmWnd::OnEndSession(BOOL bEnding)
 	}
 
 
-	OutputDebugString("\n\nSe ejecutó OnEndSession...\n\n");
+	OutputDebugString("\n\nSe ejecutÃ³ OnEndSession...\n\n");
 
-	// Šî–{ƒNƒ‰ƒX
+	// Å Ã®â€“{Æ’NÆ’â€°Æ’X
 	CFrameWnd::OnEndSession(bEnding);
 }
 
@@ -1631,10 +1638,10 @@ void FASTCALL CFrmWnd::CleanSub()
 	CComponent *pNext;
 	int i;
 
-	// I—¹ƒtƒ‰ƒO‚ğã‚°‚é
+	// ÂIâ€”Â¹Æ’tÆ’â€°Æ’Oâ€šÃ°ÂÃ£â€šÂ°â€šÃ©
 	m_bExit = TRUE;
 
-	// ƒRƒ“ƒ|[ƒlƒ“ƒg‚ğ~‚ß‚é
+	// Æ’RÆ’â€œÆ’|Â[Æ’lÆ’â€œÆ’gâ€šÃ°Å½~â€šÃŸâ€šÃ©
 	GetView()->Enable(FALSE);
 	pComponent = m_pFirstComponent;
 	while (pComponent) {
@@ -1642,25 +1649,25 @@ void FASTCALL CFrmWnd::CleanSub()
 		pComponent = pComponent->GetNextComponent();
 	}
 
-	// ƒ}ƒEƒX‰ğœ
+	// Æ’}Æ’EÆ’Xâ€°Ã°ÂÅ“
 	if (m_nStatus == 0) {
 		if (GetInput()->GetMouseMode()) {
 			OnMouseMode();
 		}
 	}
 
-	// ƒXƒPƒWƒ…[ƒ‰‚ªÀs‚ğ‚â‚ß‚é‚Ü‚Å‘Ò‚Â
+	// Æ’XÆ’PÆ’WÆ’â€¦Â[Æ’â€°â€šÂªÅ½Ã€Âsâ€šÃ°â€šÃ¢â€šÃŸâ€šÃ©â€šÃœâ€šÃ…â€˜Ã’â€šÃ‚
 	for (i=0; i<8; i++) {
 		::LockVM();
 		::UnlockVM();
 	}
 
-	// ƒXƒPƒWƒ…[ƒ‰‚ğ’â~(CScheduler)
+	// Æ’XÆ’PÆ’WÆ’â€¦Â[Æ’â€°â€šÃ°â€™Ã¢Å½~(CScheduler)
 	if (m_nStatus == 0) {
 		GetScheduler()->Stop();
 	}
 
-	// ƒRƒ“ƒ|[ƒlƒ“ƒg‚ğíœ
+	// Æ’RÆ’â€œÆ’|Â[Æ’lÆ’â€œÆ’gâ€šÃ°ÂÃ­ÂÅ“
 	pComponent = m_pFirstComponent;
 	while (pComponent) {
 		pComponent->Cleanup();
@@ -1673,7 +1680,7 @@ void FASTCALL CFrmWnd::CleanSub()
 		pComponent = pNext;
 	}
 
-	// ‰¼‘zƒ}ƒVƒ“‚ğíœ
+	// â€°Â¼â€˜zÆ’}Æ’VÆ’â€œâ€šÃ°ÂÃ­ÂÅ“
 	if (::pVM) {
 		::LockVM();
 		::GetVM()->Cleanup();
@@ -1682,7 +1689,7 @@ void FASTCALL CFrmWnd::CleanSub()
 		::UnlockVM();
 	}
 
-	// ƒVƒFƒ‹’Ê’m‚ğíœ
+	// Æ’VÆ’FÆ’â€¹â€™ÃŠâ€™mâ€šÃ°ÂÃ­ÂÅ“
 	if (m_uNotifyId) {
 		 VERIFY(::SHChangeNotifyDeregister(m_uNotifyId));
 		 m_uNotifyId = NULL;
@@ -1744,30 +1751,30 @@ void CFrmWnd::SaveDiskState()
 	ASSERT(this);
 	ASSERT_VALID(this);
 
-	// ƒƒbƒN
+	// Æ’ÂÆ’bÆ’N
 	::LockVM();
 
-	// İ’èæ“¾
+	// ÂÃâ€™Ã¨Å½Ã¦â€œÂ¾
 	GetConfig()->GetConfig(&config);
 
-	// ƒtƒƒbƒs[ƒfƒBƒXƒN
+	// Æ’tÆ’ÂÆ’bÆ’sÂ[Æ’fÆ’BÆ’XÆ’N
 	for (nDrive=0; nDrive<2; nDrive++) {
-		// ƒŒƒfƒB
+		// Æ’Å’Æ’fÆ’B
 		config.resume_fdi[nDrive] = m_pFDD->IsReady(nDrive, FALSE);
 
-		// ƒŒƒfƒB‚Å‚È‚¯‚ê‚ÎAŸ‚Ö
+		// Æ’Å’Æ’fÆ’Bâ€šÃ…â€šÃˆâ€šÂ¯â€šÃªâ€šÃÂAÅ½Å¸â€šÃ–
 		if (!config.resume_fdi[nDrive]) {
 			continue;
 		}
 
-		// ƒƒfƒBƒA
+		// Æ’ÂÆ’fÆ’BÆ’A
 		config.resume_fdm[nDrive]  = m_pFDD->GetMedia(nDrive);
 
-		// ƒ‰ƒCƒgƒvƒƒeƒNƒg
+		// Æ’â€°Æ’CÆ’gÆ’vÆ’ÂÆ’eÆ’NÆ’g
 		config.resume_fdw[nDrive] = m_pFDD->IsWriteP(nDrive);
 	}
 
-	// MOƒfƒBƒXƒN
+	// MOÆ’fÆ’BÆ’XÆ’N
 	config.resume_mos = m_pSASI->IsReady();
 	if (config.resume_mos) {
 		config.resume_mow = m_pSASI->IsWriteP();
@@ -1776,17 +1783,17 @@ void CFrmWnd::SaveDiskState()
 	// CD-ROM
 	config.resume_iso = m_pSCSI->IsReady(FALSE);
 
-	// ƒXƒe[ƒg
+	// Æ’XÆ’eÂ[Æ’g
 	::GetVM()->GetPath(path);
 	config.resume_xm6 = !path.IsClear();
 
-	// ƒfƒtƒHƒ‹ƒgƒfƒBƒŒƒNƒgƒŠ
+	// Æ’fÆ’tÆ’HÆ’â€¹Æ’gÆ’fÆ’BÆ’Å’Æ’NÆ’gÆ’Å 
 	_tcscpy(config.resume_path, Filepath::GetDefaultDir());
 
-	// İ’è•ÏX
+	// ÂÃâ€™Ã¨â€¢ÃÂX
 	GetConfig()->SetConfig(&config);
 
-	// ƒAƒ“ƒƒbƒN
+	// Æ’AÆ’â€œÆ’ÂÆ’bÆ’N
 	::UnlockVM();
 }
 
@@ -1920,58 +1927,58 @@ void CFrmWnd::RestoreDiskState()
 
 	ASSERT(this);
 
-	// İ’èæ“¾
+	// ÂÃâ€™Ã¨Å½Ã¦â€œÂ¾
 	GetConfig()->GetConfig(&config);
 
-	// ƒXƒe[ƒg‚ªw’è‚³‚ê‚Ä‚¢‚ê‚ÎA‚±‚ê‚ğæ‚És‚¤
+	// Æ’XÆ’eÂ[Æ’gâ€šÂªÅ½wâ€™Ã¨â€šÂ³â€šÃªâ€šÃ„â€šÂ¢â€šÃªâ€šÃÂAâ€šÂ±â€šÃªâ€šÃ°ÂÃ¦â€šÃ‰Âsâ€šÂ¤
 	if (config.resume_state) {
-		// ƒXƒe[ƒg‚ª‚ ‚Á‚½
+		// Æ’XÆ’eÂ[Æ’gâ€šÂªâ€šÂ â€šÃâ€šÂ½
 		if (config.resume_xm6) {
-			// ƒpƒXæ“¾
+			// Æ’pÆ’XÅ½Ã¦â€œÂ¾
 			GetConfig()->GetMRUFile(4, 0, szMRU);
 			path.SetPath(szMRU);
 
-			// ƒI[ƒvƒ“‘Oˆ—
+			// Æ’IÂ[Æ’vÆ’â€œâ€˜OÂË†â€”Â
 			if (OnOpenPrep(path)) {
-				// ƒI[ƒvƒ“ƒTƒu
+				// Æ’IÂ[Æ’vÆ’â€œÆ’TÆ’u
 				if (OnOpenSub(path)) {
-					// ¬Œ÷‚È‚Ì‚ÅAƒfƒtƒHƒ‹ƒgƒfƒBƒŒƒNƒgƒŠ‚¾‚¯ˆ—
+					// ÂÂ¬Å’Ã·â€šÃˆâ€šÃŒâ€šÃ…ÂAÆ’fÆ’tÆ’HÆ’â€¹Æ’gÆ’fÆ’BÆ’Å’Æ’NÆ’gÆ’Å â€šÂ¾â€šÂ¯ÂË†â€”Â
 					if (config.resume_dir) {
 						Filepath::SetDefaultDir(config.resume_path);
 					}
 
-					// ‚±‚êˆÈ~‚Íˆ—‚µ‚È‚¢(FD, MO, CD‚ÌƒAƒNƒZƒX’†‚ÉƒZ[ƒu‚µ‚½ê‡)
+					// â€šÂ±â€šÃªË†ÃˆÂ~â€šÃÂË†â€”Ââ€šÂµâ€šÃˆâ€šÂ¢(FD, MO, CDâ€šÃŒÆ’AÆ’NÆ’ZÆ’Xâ€™â€ â€šÃ‰Æ’ZÂ[Æ’uâ€šÂµâ€šÂ½ÂÃªÂâ€¡)
 					return;
 				}
 			}
 		}
 	}
 
-	// ƒtƒƒbƒs[ƒfƒBƒXƒN
+	// Æ’tÆ’ÂÆ’bÆ’sÂ[Æ’fÆ’BÆ’XÆ’N
 	if (config.resume_fd) {
 		for (nDrive=0; nDrive<2; nDrive++) {
-			// ƒfƒBƒXƒN‘}“ü‚³‚ê‚Ä‚¢‚½‚©
+			// Æ’fÆ’BÆ’XÆ’Nâ€˜}â€œÃ¼â€šÂ³â€šÃªâ€šÃ„â€šÂ¢â€šÂ½â€šÂ©
 			if (!config.resume_fdi[nDrive]) {
-				// ƒfƒBƒXƒN‘}“ü‚³‚ê‚Ä‚¢‚È‚¢BƒXƒLƒbƒv
+				// Æ’fÆ’BÆ’XÆ’Nâ€˜}â€œÃ¼â€šÂ³â€šÃªâ€šÃ„â€šÂ¢â€šÃˆâ€šÂ¢ÂBÆ’XÆ’LÆ’bÆ’v
 				continue;
 			}
 
-			// ƒfƒBƒXƒN‘}“ü
+			// Æ’fÆ’BÆ’XÆ’Nâ€˜}â€œÃ¼
 			GetConfig()->GetMRUFile(nDrive, 0, szMRU);
 			ASSERT(szMRU[0] != _T('\0'));
 			path.SetPath(szMRU);
 
-			// VMƒƒbƒN‚ğs‚¢AƒfƒBƒXƒNŠ„‚è“–‚Ä‚ğ‚İ‚é
+			// VMÆ’ÂÆ’bÆ’Nâ€šÃ°Âsâ€šÂ¢ÂAÆ’fÆ’BÆ’XÆ’NÅ â€â€šÃ¨â€œâ€“â€šÃ„â€šÃ°Å½Å½â€šÃâ€šÃ©
 			::LockVM();
 			bResult = m_pFDD->Open(nDrive, path, config.resume_fdm[nDrive]);
 			::UnlockVM();
 
-			// Š„‚è“–‚Ä‚Å‚«‚È‚¯‚ê‚ÎƒXƒLƒbƒv
+			// Å â€â€šÃ¨â€œâ€“â€šÃ„â€šÃ…â€šÂ«â€šÃˆâ€šÂ¯â€šÃªâ€šÃÆ’XÆ’LÆ’bÆ’v
 			if (!bResult) {
 				continue;
 			}
 
-			// ‘‚«‚İ‹Ö~
+			// Ââ€˜â€šÂ«ÂÅ¾â€šÃâ€¹Ã–Å½~
 			if (config.resume_fdw[nDrive]) {
 				::LockVM();
 				m_pFDD->WriteP(nDrive, TRUE);
@@ -1980,23 +1987,23 @@ void CFrmWnd::RestoreDiskState()
 		}
 	}
 
-	// MOƒfƒBƒXƒN
+	// MOÆ’fÆ’BÆ’XÆ’N
 	if (config.resume_mo) {
-		// ƒfƒBƒXƒN‘}“ü‚³‚ê‚Ä‚¢‚½‚©
+		// Æ’fÆ’BÆ’XÆ’Nâ€˜}â€œÃ¼â€šÂ³â€šÃªâ€šÃ„â€šÂ¢â€šÂ½â€šÂ©
 		if (config.resume_mos) {
-			// ƒfƒBƒXƒN‘}“ü
+			// Æ’fÆ’BÆ’XÆ’Nâ€˜}â€œÃ¼
 			GetConfig()->GetMRUFile(2, 0, szMRU);
 			ASSERT(szMRU[0] != _T('\0'));
 			path.SetPath(szMRU);
 
-			// VMƒƒbƒN‚ğs‚¢AƒfƒBƒXƒNŠ„‚è“–‚Ä‚ğ‚İ‚é
+			// VMÆ’ÂÆ’bÆ’Nâ€šÃ°Âsâ€šÂ¢ÂAÆ’fÆ’BÆ’XÆ’NÅ â€â€šÃ¨â€œâ€“â€šÃ„â€šÃ°Å½Å½â€šÃâ€šÃ©
 			::LockVM();
 			bResult = m_pSASI->Open(path);
 			::UnlockVM();
 
-			// Š„‚è“–‚Ä‚Å‚«‚ê‚Î
+			// Å â€â€šÃ¨â€œâ€“â€šÃ„â€šÃ…â€šÂ«â€šÃªâ€šÃ
 			if (bResult) {
-				// ‘‚«‚İ‹Ö~
+				// Ââ€˜â€šÂ«ÂÅ¾â€šÃâ€¹Ã–Å½~
 				if (config.resume_mow) {
 					::LockVM();
 					m_pSASI->WriteP(TRUE);
@@ -2008,21 +2015,21 @@ void CFrmWnd::RestoreDiskState()
 
 	// CD-ROM
 	if (config.resume_cd) {
-		// ƒfƒBƒXƒN‘}“ü‚³‚ê‚Ä‚¢‚½‚©
+		// Æ’fÆ’BÆ’XÆ’Nâ€˜}â€œÃ¼â€šÂ³â€šÃªâ€šÃ„â€šÂ¢â€šÂ½â€šÂ©
 		if (config.resume_iso) {
-			// ƒfƒBƒXƒN‘}“ü
+			// Æ’fÆ’BÆ’XÆ’Nâ€˜}â€œÃ¼
 			GetConfig()->GetMRUFile(3, 0, szMRU);
 			ASSERT(szMRU[0] != _T('\0'));
 			path.SetPath(szMRU);
 
-			// VMƒƒbƒN‚ğs‚¢AƒfƒBƒXƒNŠ„‚è“–‚Ä‚ğ‚İ‚é
+			// VMÆ’ÂÆ’bÆ’Nâ€šÃ°Âsâ€šÂ¢ÂAÆ’fÆ’BÆ’XÆ’NÅ â€â€šÃ¨â€œâ€“â€šÃ„â€šÃ°Å½Å½â€šÃâ€šÃ©
 			::LockVM();
 			m_pSCSI->Open(path, FALSE);
 			::UnlockVM();
 		}
 	}
 
-	// ƒfƒtƒHƒ‹ƒgƒfƒBƒŒƒNƒgƒŠ
+	// Æ’fÆ’tÆ’HÆ’â€¹Æ’gÆ’fÆ’BÆ’Å’Æ’NÆ’gÆ’Å 
 	if (config.resume_dir) {
 		Filepath::SetDefaultDir(config.resume_path);
 	}
@@ -2098,11 +2105,11 @@ void CFrmWnd::OnMove(int x, int y)
 {
 	CRect rect;
 
-	// ‰Šú‰»Ï‚İ‚È‚ç
+	// Ââ€°Å Ãºâ€°Â»ÂÃâ€šÃâ€šÃˆâ€šÃ§
 	if (m_nStatus == 0) {
-		// ƒ}ƒEƒXƒ‚[ƒhƒ`ƒFƒbƒN
+		// Æ’}Æ’EÆ’XÆ’â€šÂ[Æ’hÆ’`Æ’FÆ’bÆ’N
 		if (GetInput()->GetMouseMode()) {
-			// ƒNƒŠƒbƒv”ÍˆÍ‚ğ•ÏX
+			// Æ’NÆ’Å Æ’bÆ’vâ€ÃË†Ãâ€šÃ°â€¢ÃÂX
 			ClipCursor(NULL);
 			GetWindowRect(&rect);
 			SetCursorPos((rect.left + rect.right) / 2, (rect.top + rect.bottom) / 2);
@@ -2110,7 +2117,7 @@ void CFrmWnd::OnMove(int x, int y)
 		}
 	}
 
-	// Šî–{ƒNƒ‰ƒX
+	// Å Ã®â€“{Æ’NÆ’â€°Æ’X
 	CFrameWnd::OnMove(x, y);
 }
 
@@ -2124,32 +2131,32 @@ void CFrmWnd::OnActivate(UINT nState, CWnd *pWnd, BOOL bMinimized)
 	CInput *pInput;
 	CScheduler *pScheduler;
 
-	// ‰Šú‰»Ï‚İ‚È‚ç
+	// Ââ€°Å Ãºâ€°Â»ÂÃâ€šÃâ€šÃˆâ€šÃ§
 	if (m_nStatus == 0) {
-		// ƒCƒ“ƒvƒbƒgAƒXƒPƒWƒ…[ƒ‰‚Ö’Ê’m
+		// Æ’CÆ’â€œÆ’vÆ’bÆ’gÂAÆ’XÆ’PÆ’WÆ’â€¦Â[Æ’â€°â€šÃ–â€™ÃŠâ€™m
 		pInput = GetInput();
 		pScheduler = GetScheduler();
 		if (pInput && pScheduler) {
-			// WA_INACTIVE‚©Å¬‰»‚È‚çAƒfƒBƒZ[ƒuƒ‹
+			// WA_INACTIVEâ€šÂ©ÂÃ…ÂÂ¬â€°Â»â€šÃˆâ€šÃ§ÂAÆ’fÆ’BÆ’ZÂ[Æ’uÆ’â€¹
 			if ((nState == WA_INACTIVE) || bMinimized) {
-				// “ü—Íó‚¯•t‚¯‚È‚¢A’á‘¬Às
+				// â€œÃ¼â€”ÃÅ½Ã³â€šÂ¯â€¢tâ€šÂ¯â€šÃˆâ€šÂ¢ÂAâ€™Ã¡â€˜Â¬Å½Ã€Âs
 				pInput->Activate(FALSE);
 				pScheduler->Activate(FALSE);
 
-				// ƒ}ƒEƒXƒ‚[ƒhOFF(POPUPƒEƒBƒ“ƒhƒE‘Îô)
+				// Æ’}Æ’EÆ’XÆ’â€šÂ[Æ’hOFF(POPUPÆ’EÆ’BÆ’â€œÆ’hÆ’Eâ€˜ÃÂÃ´)
 				if (pInput->GetMouseMode()) {
 					OnMouseMode();
 				}
 			}
 			else {
-				// “ü—Íó‚¯•t‚¯‚éA’ÊíÀs
+				// â€œÃ¼â€”ÃÅ½Ã³â€šÂ¯â€¢tâ€šÂ¯â€šÃ©ÂAâ€™ÃŠÂÃ­Å½Ã€Âs
 				pInput->Activate(TRUE);
 				pScheduler->Activate(TRUE);
 			}
 		}
 	}
 
-	// Šî–{ƒNƒ‰ƒX‚Ö
+	// Å Ã®â€“{Æ’NÆ’â€°Æ’Xâ€šÃ–
 	CFrameWnd::OnActivate(nState, pWnd, bMinimized);
 }
 
@@ -2166,7 +2173,7 @@ void CFrmWnd::OnActivateApp(BOOL bActive, HTASK hTask)
 {
 	// Si ya has inicializado
 	if (m_nStatus == 0) {
-		// ƒtƒ‹ƒXƒNƒŠ[ƒ“ê—p
+		// Æ’tÆ’â€¹Æ’XÆ’NÆ’Å Â[Æ’â€œÂÃªâ€”p
 		if (m_bFullScreen) {
 			if (bActive) {
 				// Estoy a punto de ser activo
@@ -2209,12 +2216,12 @@ void CFrmWnd::OnEnterMenuLoop(BOOL bTrackPopup)
 		pInput->Menu(TRUE);
 	}
 
-	// ƒ}ƒEƒXƒ‚[ƒhFALSE(ƒ}ƒEƒX‚Åƒƒjƒ…[‚ª‘€ì‚Å‚«‚é‚æ‚¤‚É)
+	// Æ’}Æ’EÆ’XÆ’â€šÂ[Æ’hFALSE(Æ’}Æ’EÆ’Xâ€šÃ…Æ’ÂÆ’jÆ’â€¦Â[â€šÂªâ€˜â‚¬ÂÃ¬â€šÃ…â€šÂ«â€šÃ©â€šÃ¦â€šÂ¤â€šÃ‰)
 	if (pInput->GetMouseMode()) {
 		OnMouseMode();
 	}
 
-	// ƒXƒPƒWƒ…[ƒ‰‚Ö’Ê’m
+	// Æ’XÆ’PÆ’WÆ’â€¦Â[Æ’â€°â€šÃ–â€™ÃŠâ€™m
 	pScheduler = GetScheduler();
 	if (pScheduler) {
 		pScheduler->Menu(TRUE);
@@ -2222,7 +2229,7 @@ void CFrmWnd::OnEnterMenuLoop(BOOL bTrackPopup)
 
 	::UnlockVM();
 
-	// Šî–{ƒNƒ‰ƒX‚Ö
+	// Å Ã®â€“{Æ’NÆ’â€°Æ’Xâ€šÃ–
 	CFrameWnd::OnEnterMenuLoop(bTrackPopup);
 }
 
@@ -2238,13 +2245,13 @@ void CFrmWnd::OnExitMenuLoop(BOOL bTrackPopup)
 
 	::LockVM();
 
-	// ƒCƒ“ƒvƒbƒg‚Ö’Ê’m
+	// Æ’CÆ’â€œÆ’vÆ’bÆ’gâ€šÃ–â€™ÃŠâ€™m
 	pInput = GetInput();
 	if (pInput) {
 		pInput->Menu(FALSE);
 	}
 
-	// ƒXƒPƒWƒ…[ƒ‰‚Ö’Ê’m
+	// Æ’XÆ’PÆ’WÆ’â€¦Â[Æ’â€°â€šÃ–â€™ÃŠâ€™m
 	pScheduler = GetScheduler();
 	if (pScheduler) {
 		pScheduler->Menu(FALSE);
@@ -2252,10 +2259,10 @@ void CFrmWnd::OnExitMenuLoop(BOOL bTrackPopup)
 
 	::UnlockVM();
 
-	// ƒLƒƒƒvƒVƒ‡ƒ“ƒŠƒZƒbƒg
+	// Æ’LÆ’Æ’Æ’vÆ’VÆ’â€¡Æ’â€œÆ’Å Æ’ZÆ’bÆ’g
 	ResetCaption();
 
-	// Šî–{ƒNƒ‰ƒX‚Ö
+	// Å Ã®â€“{Æ’NÆ’â€°Æ’Xâ€šÃ–
 	CFrameWnd::OnExitMenuLoop(bTrackPopup);
 }
 
@@ -2268,14 +2275,14 @@ void CFrmWnd::OnParentNotify(UINT message, LPARAM lParam)
 {
 	CInput *pInput;
 
-	// CInput‚ğæ“¾A’Ê’m
+	// CInputâ€šÃ°Å½Ã¦â€œÂ¾ÂAâ€™ÃŠâ€™m
 	if ((message == WM_MBUTTONDOWN) && (m_nStatus == 0)) {
-		// ƒCƒ“ƒvƒbƒg‚ğæ“¾
+		// Æ’CÆ’â€œÆ’vÆ’bÆ’gâ€šÃ°Å½Ã¦â€œÂ¾
 		pInput = GetInput();
 		if (pInput) {
-			// ƒ}ƒEƒX–³Œø‚È‚ç—LŒø‚É‚·‚éB‹t‚Í‚µ‚È‚¢
+			// Æ’}Æ’EÆ’Xâ€“Â³Å’Ã¸â€šÃˆâ€šÃ§â€”LÅ’Ã¸â€šÃ‰â€šÂ·â€šÃ©ÂBâ€¹tâ€šÃâ€šÂµâ€šÃˆâ€šÂ¢
 			if (!pInput->GetMouseMode()) {
-				// İ’è‚Å"’†ƒ{ƒ^ƒ“‹Ö~"‚É‚³‚ê‚Ä‚¢‚È‚¢‚±‚Æ‚ªğŒ
+				// ÂÃâ€™Ã¨â€šÃ…"â€™â€ Æ’{Æ’^Æ’â€œâ€¹Ã–Å½~"â€šÃ‰â€šÂ³â€šÃªâ€šÃ„â€šÂ¢â€šÃˆâ€šÂ¢â€šÂ±â€šÃ†â€šÂªÂÃ°Å’Â
 				if (m_bMouseMid) {
 					OnMouseMode();
 				}
@@ -2283,7 +2290,7 @@ void CFrmWnd::OnParentNotify(UINT message, LPARAM lParam)
 		}
 	}
 
-	// Šî–{ƒNƒ‰ƒX‚Ö
+	// Å Ã®â€“{Æ’NÆ’â€°Æ’Xâ€šÃ–
 	CFrameWnd::OnParentNotify(message, lParam);
 }
 
@@ -2298,37 +2305,37 @@ void CFrmWnd::OnContextMenu(CWnd * /*pWnd*/, CPoint pos)
 	SHORT sF10;
 	SHORT sShift;
 
-	// ƒL[ƒ{[ƒh‚©‚ç‚Ì“ü—Í‚Ì‚Æ‚«
+	// Æ’LÂ[Æ’{Â[Æ’hâ€šÂ©â€šÃ§â€šÃŒâ€œÃ¼â€”Ãâ€šÃŒâ€šÃ†â€šÂ«
 	if ((pos.x == -1) && (pos.y == -1)) {
-		// ƒXƒPƒWƒ…[ƒ‰ƒ`ƒFƒbƒNA“ü—Íƒ`ƒFƒbƒN
+		// Æ’XÆ’PÆ’WÆ’â€¦Â[Æ’â€°Æ’`Æ’FÆ’bÆ’NÂAâ€œÃ¼â€”ÃÆ’`Æ’FÆ’bÆ’N
 		if (GetScheduler()->IsEnable()) {
 			if (GetInput()->IsActive() && !GetInput()->IsMenu()) {
-				// DIK_APPS‚ªƒ}ƒbƒv‚³‚ê‚Ä‚¢‚é‚©
+				// DIK_APPSâ€šÂªÆ’}Æ’bÆ’vâ€šÂ³â€šÃªâ€šÃ„â€šÂ¢â€šÃ©â€šÂ©
 				if (GetInput()->IsKeyMapped(DIK_APPS)) {
-					// SHIFT+F10‚ª‰Ÿ‚³‚ê‚Ä‚¢‚é‚©
+					// SHIFT+F10â€šÂªâ€°Å¸â€šÂ³â€šÃªâ€šÃ„â€šÂ¢â€šÃ©â€šÂ©
 					sF10 = ::GetAsyncKeyState(VK_F10);
 					sShift = ::GetAsyncKeyState(VK_SHIFT);
 					if (((sF10 & 0x8000) == 0) || ((sShift & 0x8000) == 0)) {
-						// VK_APPS‚ª‰Ÿ‚³‚ê‚½‚½‚ß‚Æ”»’è
+						// VK_APPSâ€šÂªâ€°Å¸â€šÂ³â€šÃªâ€šÂ½â€šÂ½â€šÃŸâ€šÃ†â€Â»â€™Ã¨
 						return;
 					}
 				}
 			}
 		}
 
-		// ƒ}ƒEƒXƒ‚[ƒh‚Å‚ ‚ê‚ÎA‰ğœ(ƒL[ƒ{[ƒh‚©‚ç‚Ìƒƒjƒ…[‹N“®)
+		// Æ’}Æ’EÆ’XÆ’â€šÂ[Æ’hâ€šÃ…â€šÂ â€šÃªâ€šÃÂAâ€°Ã°ÂÅ“(Æ’LÂ[Æ’{Â[Æ’hâ€šÂ©â€šÃ§â€šÃŒÆ’ÂÆ’jÆ’â€¦Â[â€¹Nâ€œÂ®)
 		if (GetInput()->GetMouseMode()) {
 			OnMouseMode();
 		}
 	}
 	else {
-		// ƒ}ƒEƒXƒ‚[ƒh‚Å‚ ‚ê‚ÎA–³‹(ƒ}ƒEƒX‚©‚ç‚Ìƒƒjƒ…[‹N“®)
+		// Æ’}Æ’EÆ’XÆ’â€šÂ[Æ’hâ€šÃ…â€šÂ â€šÃªâ€šÃÂAâ€“Â³Å½â€¹(Æ’}Æ’EÆ’Xâ€šÂ©â€šÃ§â€šÃŒÆ’ÂÆ’jÆ’â€¦Â[â€¹Nâ€œÂ®)
 		if (GetInput()->GetMouseMode()) {
 			return;
 		}
 	}
 
-	// ƒ|ƒbƒvƒAƒbƒvƒƒjƒ…[
+	// Æ’|Æ’bÆ’vÆ’AÆ’bÆ’vÆ’ÂÆ’jÆ’â€¦Â[
 	m_bPopupMenu = TRUE;
 	pMenu = m_PopupMenu.GetSubMenu(0);
 	pMenu->TrackPopupMenu(TPM_CENTERALIGN | TPM_LEFTBUTTON | TPM_RIGHTBUTTON,
@@ -2343,9 +2350,9 @@ void CFrmWnd::OnContextMenu(CWnd * /*pWnd*/, CPoint pos)
 //---------------------------------------------------------------------------
 LONG CFrmWnd::OnPowerBroadCast(UINT /*uParam*/, LONG /*lParam*/)
 {
-	// ‰Šú‰»Ï‚İ‚È‚ç
+	// Ââ€°Å Ãºâ€°Â»ÂÃâ€šÃâ€šÃˆâ€šÃ§
 	if (m_nStatus == 0) {
-		// VMƒƒbƒNAŠÔÄİ’è
+		// VMÆ’ÂÆ’bÆ’NÂAÅ½Å¾Å Ã”ÂÃ„ÂÃâ€™Ã¨
 		::LockVM();
 		timeEndPeriod(1);
 		timeBeginPeriod(1);
@@ -2362,13 +2369,13 @@ LONG CFrmWnd::OnPowerBroadCast(UINT /*uParam*/, LONG /*lParam*/)
 //---------------------------------------------------------------------------
 void CFrmWnd::OnSysCommand(UINT nID, LPARAM lParam)
 {
-	// •W€ƒEƒBƒ“ƒhƒEˆÊ’u‚ğƒTƒ|[ƒg
+	// â€¢WÂâ‚¬Æ’EÆ’BÆ’â€œÆ’hÆ’EË†ÃŠâ€™uâ€šÃ°Æ’TÆ’|Â[Æ’g
 	if ((nID & 0xfff0) == IDM_STDWIN) {
 		InitPos(TRUE);
 		return;
 	}
 
-	// Å‘å‰»‚Íƒtƒ‹ƒXƒNƒŠ[ƒ“
+	// ÂÃ…â€˜Ã¥â€°Â»â€šÃÆ’tÆ’â€¹Æ’XÆ’NÆ’Å Â[Æ’â€œ
 	if ((nID & 0xfff0) == SC_MAXIMIZE) {
 		if (!m_bFullScreen) {
 			PostMessage(WM_COMMAND, IDM_FULLSCREEN);
@@ -2376,7 +2383,7 @@ void CFrmWnd::OnSysCommand(UINT nID, LPARAM lParam)
 		return;
 	}
 
-	// Šî–{ƒNƒ‰ƒX
+	// Å Ã®â€“{Æ’NÆ’â€°Æ’X
 	CFrameWnd::OnSysCommand(nID, lParam);
 }
 
@@ -2393,10 +2400,10 @@ LONG CFrmWnd::OnCopyData(UINT /*uParam*/, LONG pCopyDataStruct)
 {
 	PCOPYDATASTRUCT pCDS;
 
-	// ƒpƒ‰ƒ[ƒ^ó‚¯æ‚è
+	// Æ’pÆ’â€°Æ’ÂÂ[Æ’^Å½Ã³â€šÂ¯Å½Ã¦â€šÃ¨
 	pCDS = (PCOPYDATASTRUCT)pCopyDataStruct;
 
-	// ƒRƒ}ƒ“ƒhƒ‰ƒCƒ“ˆ—‚Ö
+	// Æ’RÆ’}Æ’â€œÆ’hÆ’â€°Æ’CÆ’â€œÂË†â€”Ââ€šÃ–
 	InitCmd((LPSTR)pCDS->lpData);
 
 	return TRUE;
@@ -2417,9 +2424,9 @@ LRESULT CFrmWnd::OnShellNotify(UINT uParam, LONG lParam)
 	TCHAR szPath[_MAX_PATH];
 	CHost *pHost;
 
-	// Windows NT‚©
+	// Windows NTâ€šÂ©
 	if (::IsWinNT()) {
-		// Windows2000/XP‚Ìê‡ASHChangeNotification_Lock‚ÅƒƒbƒN‚·‚é
+		// Windows2000/XPâ€šÃŒÂÃªÂâ€¡ÂASHChangeNotification_Lockâ€šÃ…Æ’ÂÆ’bÆ’Nâ€šÂ·â€šÃ©
 		hMemoryMap = (HANDLE)uParam;
 		dwProcessId = (DWORD)lParam;
 		hLock = ::SHChangeNotification_Lock(hMemoryMap, dwProcessId, &pidls, &nEvent);
@@ -2428,18 +2435,18 @@ LRESULT CFrmWnd::OnShellNotify(UINT uParam, LONG lParam)
 		}
 	}
 	else {
-		// Windows9x‚Ìê‡Apidls‚ÆnEvent‚ÍuParam,lParam‚©‚ç’¼Ú“¾‚é
+		// Windows9xâ€šÃŒÂÃªÂâ€¡ÂApidlsâ€šÃ†nEventâ€šÃuParam,lParamâ€šÂ©â€šÃ§â€™Â¼ÂÃšâ€œÂ¾â€šÃ©
 		pidls = (LPITEMIDLIST*)uParam;
 		nEvent = lParam;
 		hLock = NULL;
 	}
 
-	// Às’†‚ÅACHost‚ª‚ ‚ê‚ÎA’Ê’m
+	// Å½Ã€Âsâ€™â€ â€šÃ…ÂACHostâ€šÂªâ€šÂ â€šÃªâ€šÃÂAâ€™ÃŠâ€™m
 	if (m_nStatus == 0) {
 		pHost = GetHost();
 
 #if 1
-		// Windrv‚ª‚Ü‚¾•sˆÀ’è‚Ì‚½‚ßAÀÛ‚ÉEnable‚É‚³‚ê‚Ä‚¢‚È‚¢ê‡‚Í‰½‚à‚µ‚È‚¢(version2.04)
+		// Windrvâ€šÂªâ€šÃœâ€šÂ¾â€¢sË†Ã€â€™Ã¨â€šÃŒâ€šÂ½â€šÃŸÂAÅ½Ã€ÂÃ›â€šÃ‰Enableâ€šÃ‰â€šÂ³â€šÃªâ€šÃ„â€šÂ¢â€šÃˆâ€šÂ¢ÂÃªÂâ€¡â€šÃâ€°Â½â€šÃ â€šÂµâ€šÃˆâ€šÂ¢(version2.04)
 		{
 			Config config;
 			GetConfig()->GetConfig(&config);
@@ -2450,15 +2457,15 @@ LRESULT CFrmWnd::OnShellNotify(UINT uParam, LONG lParam)
 #endif
 
 		if (pHost) {
-			// ƒpƒXæ“¾
+			// Æ’pÆ’XÅ½Ã¦â€œÂ¾
 			::SHGetPathFromIDList(pidls[0], szPath);
 
-			// ’Ê’m
+			// â€™ÃŠâ€™m
 			pHost->ShellNotify(nEvent, szPath);
 		}
 	}
 
-	// NT‚Ìê‡ASHCnangeNotifcation_Unlock‚ÅƒAƒ“ƒƒbƒN‚·‚é
+	// NTâ€šÃŒÂÃªÂâ€¡ÂASHCnangeNotifcation_Unlockâ€šÃ…Æ’AÆ’â€œÆ’ÂÆ’bÆ’Nâ€šÂ·â€šÃ©
 	if (::IsWinNT()) {
 		ASSERT(hLock);
 		::SHChangeNotification_Unlock(hLock);
@@ -2510,9 +2517,9 @@ void CFrmWnd::GetMessageString(UINT nID, CString& rMessage) const
 
 	// Haga primero las cadenas de menu (considere el entorno ingles + MRU)
 	if ((nID >= IDM_OPEN) && (nID <= IDM_ABOUT)) {
-		// ‰pŒêŠÂ‹«‚©
+		// â€°pÅ’ÃªÅ Ã‚â€¹Â«â€šÂ©
 		if (!::IsJapanese()) {
-			// +5000‚Å‚·
+			// +5000â€šÃ…Å½Å½â€šÂ·
 			if (rMessage.LoadString(nID + 5000)) {
 				bValid = TRUE;
 			}
@@ -2521,9 +2528,9 @@ void CFrmWnd::GetMessageString(UINT nID, CString& rMessage) const
 
 	// Excepcion de cadena de menu (IDM_STDWIN)
 	if (nID == IDM_STDWIN) {
-		// ‰pŒêŠÂ‹«‚©
+		// â€°pÅ’ÃªÅ Ã‚â€¹Â«â€šÂ©
 		if (!::IsJapanese()) {
-			// +5000‚Å‚·
+			// +5000â€šÃ…Å½Å½â€šÂ·
 			if (rMessage.LoadString(nID + 5000)) {
 				bValid = TRUE;
 			}
@@ -2580,7 +2587,7 @@ void CFrmWnd::GetMessageString(UINT nID, CString& rMessage) const
 		bValid = TRUE;
 	}
 
-	// ƒfƒBƒXƒN–¼0
+	// Æ’fÆ’BÆ’XÆ’Nâ€“Â¼0
 	if ((nID >= IDM_D0_MEDIA0) && (nID <= IDM_D0_MEDIAF)) {
 		nDisk = nID - IDM_D0_MEDIA0;
 		ASSERT((nDisk >= 0) && (nDisk <= 15));
@@ -2597,7 +2604,7 @@ void CFrmWnd::GetMessageString(UINT nID, CString& rMessage) const
 		bValid = TRUE;
 	}
 
-	// ƒfƒBƒXƒN–¼1
+	// Æ’fÆ’BÆ’XÆ’Nâ€“Â¼1
 	if ((nID >= IDM_D1_MEDIA0) && (nID <= IDM_D1_MEDIAF)) {
 		nDisk = nID - IDM_D1_MEDIA0;
 		ASSERT((nDisk >= 0) && (nDisk <= 15));
@@ -2614,18 +2621,18 @@ void CFrmWnd::GetMessageString(UINT nID, CString& rMessage) const
 		bValid = TRUE;
 	}
 
-	// ‚±‚±‚Ü‚Å‚ÅŠm’è‚µ‚Ä‚¢‚È‚¯‚ê‚ÎAŠî–{ƒNƒ‰ƒX
+	// â€šÂ±â€šÂ±â€šÃœâ€šÃ…â€šÃ…Å mâ€™Ã¨â€šÂµâ€šÃ„â€šÂ¢â€šÃˆâ€šÂ¯â€šÃªâ€šÃÂAÅ Ã®â€“{Æ’NÆ’â€°Æ’X
 	if (!bValid) {
 		CFrameWnd::GetMessageString(nID, rMessage);
 	}
 
-	// Œ‹‰Ê‚ğInfo‚Ö’ñ‹Ÿ(“à•”•Û—p)
+	// Å’â€¹â€°ÃŠâ€šÃ°Infoâ€šÃ–â€™Ã±â€¹Å¸(â€œÃ â€¢â€â€¢Ã›Å½Ââ€”p)
 	pInfo = GetInfo();
 	if (pInfo) {
 		pInfo->SetMessageString(rMessage);
 	}
 
-	// Œ‹‰Ê‚ğƒXƒe[ƒ^ƒXƒrƒ…[‚Ö’ñ‹Ÿ
+	// Å’â€¹â€°ÃŠâ€šÃ°Æ’XÆ’eÂ[Æ’^Æ’XÆ’rÆ’â€¦Â[â€šÃ–â€™Ã±â€¹Å¸
 	if (m_pStatusView) {
 		m_pStatusView->SetMenuString(rMessage);
 	}
@@ -2639,7 +2646,7 @@ void CFrmWnd::GetMessageString(UINT nID, CString& rMessage) const
 void FASTCALL CFrmWnd::HideTaskBar(BOOL bHide, BOOL bFore)
 {
 	if (bHide) {
-		// "í‚É‘O–Ê"
+		// "ÂÃ­â€šÃ‰â€˜Oâ€“ÃŠ"
 		m_hTaskBar = ::FindWindow(_T("Shell_TrayWnd"), NULL);
 		if (m_hTaskBar) {
 			::ShowWindow(m_hTaskBar, SW_HIDE);
@@ -2647,14 +2654,14 @@ void FASTCALL CFrmWnd::HideTaskBar(BOOL bHide, BOOL bFore)
 		ModifyStyleEx(0, WS_EX_TOPMOST, 0);
 	}
 	else {
-		// "’Êí"
+		// "â€™ÃŠÂÃ­"
 		ModifyStyleEx(WS_EX_TOPMOST, 0, 0);
 		if (m_hTaskBar) {
 			::ShowWindow(m_hTaskBar, SW_SHOWNA);
 		}
 	}
 
-	// ‘O–ÊƒIƒvƒVƒ‡ƒ“‚ª‚ ‚ê‚Î
+	// â€˜Oâ€“ÃŠÆ’IÆ’vÆ’VÆ’â€¡Æ’â€œâ€šÂªâ€šÂ â€šÃªâ€šÃ
 	if (bFore) {
 		SetForegroundWindow();
 	}
@@ -2669,57 +2676,57 @@ void FASTCALL CFrmWnd::ShowStatus()
 {
 	ASSERT(this);
 
-	// •K—v‚È‚çVM‚ğƒƒbƒN
+	// â€¢Kâ€”vâ€šÃˆâ€šÃ§VMâ€šÃ°Æ’ÂÆ’bÆ’N
 	if (m_nStatus == 0) {
 		::LockVM();
 	}
 
-	// ƒtƒ‹ƒXƒNƒŠ[ƒ“‚©
+	// Æ’tÆ’â€¹Æ’XÆ’NÆ’Å Â[Æ’â€œâ€šÂ©
 	if (m_bFullScreen) {
-		// ƒXƒe[ƒ^ƒXƒo[‚Íí‚É”ñ•\¦
+		// Æ’XÆ’eÂ[Æ’^Æ’XÆ’oÂ[â€šÃÂÃ­â€šÃ‰â€Ã±â€¢\Å½Â¦
 		ShowControlBar(&m_StatusBar, FALSE, FALSE);
 
-		// ƒXƒe[ƒ^ƒXƒo[•\¦‚©
+		// Æ’XÆ’eÂ[Æ’^Æ’XÆ’oÂ[â€¢\Å½Â¦â€šÂ©
 		if (m_bStatusBar) {
-			// ƒXƒe[ƒ^ƒXƒrƒ…[‚ª‘¶İ‚µ‚È‚¯‚ê‚Î
+			// Æ’XÆ’eÂ[Æ’^Æ’XÆ’rÆ’â€¦Â[â€šÂªâ€˜Â¶ÂÃâ€šÂµâ€šÃˆâ€šÂ¯â€šÃªâ€šÃ
 			if (!m_pStatusView) {
-				// ì¬‚µ‚Ä
+				// ÂÃ¬ÂÂ¬â€šÂµâ€šÃ„
 				CreateStatusView();
 
-				// Ä”z’u
+				// ÂÃ„â€zâ€™u
 				if (m_bStatusBar) {
 					RecalcStatusView();
 				}
 			}
 		}
 		else {
-			// ƒXƒe[ƒ^ƒXƒrƒ…[‚ª‘¶İ‚µ‚Ä‚¢‚ê‚Î
+			// Æ’XÆ’eÂ[Æ’^Æ’XÆ’rÆ’â€¦Â[â€šÂªâ€˜Â¶ÂÃâ€šÂµâ€šÃ„â€šÂ¢â€šÃªâ€šÃ
 			if (m_pStatusView) {
-				// íœ‚µ‚Ä
+				// ÂÃ­ÂÅ“â€šÂµâ€šÃ„
 				DestroyStatusView();
 
-				// Ä”z’u
+				// ÂÃ„â€zâ€™u
 				RecalcStatusView();
 			}
 		}
 
-		// •K—v‚ª‚ ‚ê‚ÎƒAƒ“ƒƒbƒN
+		// â€¢Kâ€”vâ€šÂªâ€šÂ â€šÃªâ€šÃÆ’AÆ’â€œÆ’ÂÆ’bÆ’N
 		if (m_nStatus == 0) {
 			::UnlockVM();
 		}
 		return;
 	}
 
-	// ƒXƒe[ƒ^ƒXƒrƒ…[‚Íƒtƒ‹ƒXƒNƒŠ[ƒ“ê—p‚È‚Ì‚ÅAíœ
+	// Æ’XÆ’eÂ[Æ’^Æ’XÆ’rÆ’â€¦Â[â€šÃÆ’tÆ’â€¹Æ’XÆ’NÆ’Å Â[Æ’â€œÂÃªâ€”pâ€šÃˆâ€šÃŒâ€šÃ…ÂAÂÃ­ÂÅ“
 	if (m_pStatusView) {
 		DestroyStatusView();
 		RecalcLayout();
 	}
 
-	// ƒEƒBƒ“ƒhƒE‚È‚Ì‚ÅAShowControlBar‚Å§Œä
+	// Æ’EÆ’BÆ’â€œÆ’hÆ’Eâ€šÃˆâ€šÃŒâ€šÃ…ÂAShowControlBarâ€šÃ…ÂÂ§Å’Ã¤
 	ShowControlBar(&m_StatusBar, m_bStatusBar, FALSE);
 
-	// •K—v‚ª‚ ‚ê‚ÎƒAƒ“ƒƒbƒN
+	// â€¢Kâ€”vâ€šÂªâ€šÂ â€šÃªâ€šÃÆ’AÆ’â€œÆ’ÂÆ’bÆ’N
 	if (m_nStatus == 0) {
 		::UnlockVM();
 	}
@@ -2737,18 +2744,18 @@ void FASTCALL CFrmWnd::CreateStatusView()
 	ASSERT(!m_pStatusView);
 
 	if (m_bStatusBar) {
-		// ƒXƒe[ƒ^ƒXƒrƒ…[ì¬(Ä”z’u‚Ís‚í‚È‚¢)
+		// Æ’XÆ’eÂ[Æ’^Æ’XÆ’rÆ’â€¦Â[ÂÃ¬ÂÂ¬(ÂÃ„â€zâ€™uâ€šÃÂsâ€šÃ­â€šÃˆâ€šÂ¢)
 		m_pStatusView = new CStatusView;
 		if (m_pStatusView->Init(this)) {
-			// ì¬¬Œ÷
+			// ÂÃ¬ÂÂ¬ÂÂ¬Å’Ã·
 			pInfo = GetInfo();
 			if (pInfo) {
-				// Info‚ª‘¶İ‚·‚é‚Ì‚ÅAƒXƒe[ƒ^ƒXƒrƒ…[ì¬‚ğ’Ê’m
+				// Infoâ€šÂªâ€˜Â¶ÂÃâ€šÂ·â€šÃ©â€šÃŒâ€šÃ…ÂAÆ’XÆ’eÂ[Æ’^Æ’XÆ’rÆ’â€¦Â[ÂÃ¬ÂÂ¬â€šÃ°â€™ÃŠâ€™m
 				pInfo->SetStatusView(m_pStatusView);
 			}
 		}
 		else {
-			// ì¬¸”s
+			// ÂÃ¬ÂÂ¬Å½Â¸â€s
 			m_bStatusBar = FALSE;
 		}
 	}
@@ -2763,31 +2770,31 @@ void FASTCALL CFrmWnd::DestroyStatusView()
 {
 	CInfo *pInfo;
 
-	// —LŒø‚ÈƒXƒe[ƒ^ƒXƒrƒ…[‚ª‘¶İ‚·‚éê‡‚Ì‚İ
+	// â€”LÅ’Ã¸â€šÃˆÆ’XÆ’eÂ[Æ’^Æ’XÆ’rÆ’â€¦Â[â€šÂªâ€˜Â¶ÂÃâ€šÂ·â€šÃ©ÂÃªÂâ€¡â€šÃŒâ€šÃ
 	if (m_pStatusView) {
-		// Infoæ“¾
+		// InfoÅ½Ã¦â€œÂ¾
 		pInfo = GetInfo();
 		if (pInfo) {
-			// Info‚ª‘¶İ‚·‚é‚Ì‚ÅAƒXƒe[ƒ^ƒXƒrƒ…[íœ‚ğ’Ê’m
+			// Infoâ€šÂªâ€˜Â¶ÂÃâ€šÂ·â€šÃ©â€šÃŒâ€šÃ…ÂAÆ’XÆ’eÂ[Æ’^Æ’XÆ’rÆ’â€¦Â[ÂÃ­ÂÅ“â€šÃ°â€™ÃŠâ€™m
 			pInfo->SetStatusView(NULL);
 		}
 
-		// ƒXƒe[ƒ^ƒXƒrƒ…[íœ(Ä”z’u‚Ís‚í‚È‚¢)
+		// Æ’XÆ’eÂ[Æ’^Æ’XÆ’rÆ’â€¦Â[ÂÃ­ÂÅ“(ÂÃ„â€zâ€™uâ€šÃÂsâ€šÃ­â€šÃˆâ€šÂ¢)
 		m_pStatusView->DestroyWindow();
 		m_pStatusView = NULL;
 	}
 }
 
 //---------------------------------------------------------------------------
-//¿Qué hace RecalcStatusView ?
-//Es responsable de recalcular y ajustar la posición / tamaño de dos componentes críticos en la ventana principal :
+//Â¿QuÃ© hace RecalcStatusView ?
+//Es responsable de recalcular y ajustar la posiciÃ³n / tamaÃ±o de dos componentes crÃ­ticos en la ventana principal :
 //Vista de Dibujo(m_pDrawView) : Donde se renderiza la pantalla emulada.
-//Vista de Estado(m_pStatusView) : Una barra de estado personalizada que reemplaza a la barra estándar de Windows en pantalla completa.
+//Vista de Estado(m_pStatusView) : Una barra de estado personalizada que reemplaza a la barra estÃ¡ndar de Windows en pantalla completa.
 //---------------------------------------------------------------------------
 void CFrmWnd::RecalcStatusView()
 {
 	CRect rectClient;
-	GetClientRect(&rectClient);  // Área cliente actual
+	GetClientRect(&rectClient);  // Ãrea cliente actual
 
 	const int clientWidth = rectClient.Width();
 	const int clientHeight = rectClient.Height();
@@ -2855,7 +2862,7 @@ void CFrmWnd::RecalcStatusView()
 		}
 	}
 
-	// Forzar actualización visual solo si hay cambios
+	// Forzar actualizaciÃ³n visual solo si hay cambios
 	if (!rectClient.IsRectEmpty())
 	{
 		m_pDrawView->InvalidateRect(nullptr, FALSE);
@@ -2874,7 +2881,7 @@ void FASTCALL CFrmWnd::ResetStatus()
 {
 	CInfo *pInfo;
 
-	// Info‚ª‚ ‚ê‚ÎƒŠƒZƒbƒg
+	// Infoâ€šÂªâ€šÂ â€šÃªâ€šÃÆ’Å Æ’ZÆ’bÆ’g
 	pInfo = GetInfo();
 	if (pInfo) {
 		pInfo->ResetStatus();
@@ -2893,13 +2900,13 @@ void CFrmWnd::OnDrawItem(int nID, LPDRAWITEMSTRUCT lpDIS)
 	CRect rectDraw;
 	CInfo *pInfo;
 
-	// ƒEƒBƒ“ƒhƒEƒnƒ“ƒhƒ‹‚Ìƒ`ƒFƒbƒN
+	// Æ’EÆ’BÆ’â€œÆ’hÆ’EÆ’nÆ’â€œÆ’hÆ’â€¹â€šÃŒÆ’`Æ’FÆ’bÆ’N
 	if (lpDIS->hwndItem != m_StatusBar.m_hWnd) {
 		CFrameWnd::OnDrawItem(nID, lpDIS);
 		return;
 	}
 
-	// í•ÊADCA‹éŒ`‚ğæ“¾
+	// Å½Ã­â€¢ÃŠÂADCÂAâ€¹Ã©Å’`â€šÃ°Å½Ã¦â€œÂ¾
 	nPane = lpDIS->itemID;
 	if (nPane == 0) {
 		return;
@@ -2908,16 +2915,16 @@ void CFrmWnd::OnDrawItem(int nID, LPDRAWITEMSTRUCT lpDIS)
 	hDC = lpDIS->hDC;
 	rectDraw = &lpDIS->rcItem;
 
-	// Info‚Ìƒ`ƒFƒbƒN
+	// Infoâ€šÃŒÆ’`Æ’FÆ’bÆ’N
 	pInfo = GetInfo();
 	if (!pInfo) {
-		// •‚Å“h‚è‚Â‚Ô‚·
+		// Ââ€¢â€šÃ…â€œhâ€šÃ¨â€šÃ‚â€šÃ”â€šÂ·
 		::SetBkColor(hDC, RGB(0, 0, 0));
 		::ExtTextOut(hDC, 0, 0, ETO_OPAQUE, &rectDraw, NULL, 0, NULL);
 		return;
 	}
 
-	// Info‚Éw¦
+	// Infoâ€šÃ‰Å½wÅ½Â¦
 	pInfo->DrawStatus(nPane, hDC, rectDraw);
 }
 
@@ -2932,19 +2939,19 @@ void FASTCALL CFrmWnd::ShowMenu()
 
 	ASSERT(this);
 
-	// •K—v‚Å‚ ‚ê‚ÎVM‚ğƒƒbƒN
+	// â€¢Kâ€”vâ€šÃ…â€šÂ â€šÃªâ€šÃVMâ€šÃ°Æ’ÂÆ’bÆ’N
 	if (m_nStatus == 0) {
 		::LockVM();
 	}
 
-	// Œ»İ‚Ìƒƒjƒ…[‚ğæ“¾
+	// Å’Â»ÂÃâ€šÃŒÆ’ÂÆ’jÆ’â€¦Â[â€šÃ°Å½Ã¦â€œÂ¾
 	hMenu = ::GetMenu(m_hWnd);
 
-	// ƒƒjƒ…[‚ª•s•K—v‚Èê‡
+	// Æ’ÂÆ’jÆ’â€¦Â[â€šÂªâ€¢sâ€¢Kâ€”vâ€šÃˆÂÃªÂâ€¡
 	if (m_bFullScreen || !m_bMenuBar) {
-		// ƒƒjƒ…[‚ª‘¶İ‚·‚é‚©
+		// Æ’ÂÆ’jÆ’â€¦Â[â€šÂªâ€˜Â¶ÂÃâ€šÂ·â€šÃ©â€šÂ©
 		if (hMenu != NULL) {
-			// ƒƒjƒ…[‚ğÁ‹
+			// Æ’ÂÆ’jÆ’â€¦Â[â€šÃ°ÂÃâ€¹Å½
 			SetMenu(NULL);
 		}
 		if (m_nStatus == 0) {
@@ -2953,11 +2960,11 @@ void FASTCALL CFrmWnd::ShowMenu()
 		return;
 	}
 
-	// ƒƒjƒ…[‚ª•K—v‚Èê‡
+	// Æ’ÂÆ’jÆ’â€¦Â[â€šÂªâ€¢Kâ€”vâ€šÃˆÂÃªÂâ€¡
 	if (hMenu != NULL) {
-		// ƒZƒbƒg‚µ‚½‚¢ƒƒjƒ…[‚Æ“¯‚¶‚©
+		// Æ’ZÆ’bÆ’gâ€šÂµâ€šÂ½â€šÂ¢Æ’ÂÆ’jÆ’â€¦Â[â€šÃ†â€œÂ¯â€šÂ¶â€šÂ©
 		if (m_Menu.GetSafeHmenu() == hMenu) {
-			// •ÏX‚Ì•K—v‚Í‚È‚¢
+			// â€¢ÃÂXâ€šÃŒâ€¢Kâ€”vâ€šÃâ€šÃˆâ€šÂ¢
 			if (m_nStatus == 0) {
 				::UnlockVM();
 			}
@@ -2965,10 +2972,10 @@ void FASTCALL CFrmWnd::ShowMenu()
 		}
 	}
 
-	// ƒƒjƒ…[‚ğƒZƒbƒg
+	// Æ’ÂÆ’jÆ’â€¦Â[â€šÃ°Æ’ZÆ’bÆ’g
 	SetMenu(&m_Menu);
 
-	// •K—v‚È‚çVM‚ğƒAƒ“ƒƒbƒN
+	// â€¢Kâ€”vâ€šÃˆâ€šÃ§VMâ€šÃ°Æ’AÆ’â€œÆ’ÂÆ’bÆ’N
 	if (m_nStatus == 0) {
 		::UnlockVM();
 	}
@@ -2984,10 +2991,10 @@ void CFrmWnd::ShowCaption()
 	const DWORD dwCaptionStyle = WS_CAPTION | WS_SYSMENU | WS_MINIMIZEBOX | WS_MAXIMIZEBOX;
 	const BOOL bShouldShowCaption = !m_bFullScreen && m_bCaption;
 
-	// 1. Verificar si ya está en el estado deseado
+	// 1. Verificar si ya estÃ¡ en el estado deseado
 	DWORD dwCurrentStyle = GetStyle();
 	if (bShouldShowCaption == ((dwCurrentStyle & dwCaptionStyle) == dwCaptionStyle)) {
-		return; // No hacer cambios si ya está en el estado correcto
+		return; // No hacer cambios si ya estÃ¡ en el estado correcto
 	}
 
 	// 2. Bloquear VM solo si es necesario
@@ -2999,13 +3006,13 @@ void CFrmWnd::ShowCaption()
 	// 3. Modificar estilos de manera eficiente
 	ModifyStyle(
 		bShouldShowCaption ? 0 : dwCaptionStyle,  // Estilos a remover
-		bShouldShowCaption ? dwCaptionStyle : 0,  // Estilos a añadir
+		bShouldShowCaption ? dwCaptionStyle : 0,  // Estilos a aÃ±adir
 		SWP_NOMOVE | SWP_NOZORDER | SWP_FRAMECHANGED
 	);
 
-	// 4. Actualización condicional de la interfaz
+	// 4. ActualizaciÃ³n condicional de la interfaz
 	if (bShouldShowCaption && m_bMenuBar) {
-		DrawMenuBar(); // Redibujar barra de menú si es visible
+		DrawMenuBar(); // Redibujar barra de menÃº si es visible
 	}
 
 	// 5. Desbloquear VM si fue bloqueada
@@ -3023,7 +3030,7 @@ void FASTCALL CFrmWnd::ResetCaption()
 {
 	CInfo *pInfo;
 
-	// Info‚ª‚ ‚ê‚ÎƒŠƒZƒbƒg
+	// Infoâ€šÂªâ€šÂ â€šÃªâ€šÃÆ’Å Æ’ZÆ’bÆ’g
 	pInfo = GetInfo();
 	if (pInfo) {
 		pInfo->ResetCaption();
@@ -3039,7 +3046,7 @@ void FASTCALL CFrmWnd::SetInfo(CString& strInfo)
 {
 	CInfo *pInfo;
 
-	// Info‚ª‚ ‚ê‚Îİ’è
+	// Infoâ€šÂªâ€šÂ â€šÃªâ€šÃÂÃâ€™Ã¨
 	pInfo = GetInfo();
 	if (pInfo) {
 		pInfo->SetInfo(strInfo);
@@ -3163,17 +3170,17 @@ CInfo* FASTCALL CFrmWnd::GetInfo() const
 {
 	ASSERT(this);
 
-	// Info‚ª‘¶İ‚µ‚È‚¯‚ê‚ÎNULL
+	// Infoâ€šÂªâ€˜Â¶ÂÃâ€šÂµâ€šÃˆâ€šÂ¯â€šÃªâ€šÃNULL
 	if (!m_pInfo) {
 		return NULL;
 	}
 
-	// ’â~’†‚È‚çNULL
+	// â€™Ã¢Å½~â€™â€ â€šÃˆâ€šÃ§NULL
 	if (!m_pInfo->IsEnable()) {
 		return NULL;
 	}
 
-	// “®ì’†BInfo‚ğ•Ô‚·
+	// â€œÂ®ÂÃ¬â€™â€ ÂBInfoâ€šÃ°â€¢Ã”â€šÂ·
 	return m_pInfo;
 }
 
@@ -3187,6 +3194,90 @@ CConfig* FASTCALL CFrmWnd::GetConfig() const
 	ASSERT(this);
 	ASSERT(m_pConfig);
 	return m_pConfig;
+}
+
+//---------------------------------------------------------------------------
+//
+//	Toggle Renderer (DX9/GDI)
+//
+//---------------------------------------------------------------------------
+void CFrmWnd::OnToggleRenderer()
+{
+	if (m_pDrawView) {
+		m_pDrawView->ToggleRenderer();
+	}
+}
+
+//---------------------------------------------------------------------------
+//
+//	Toggle VSync
+//
+//---------------------------------------------------------------------------
+void CFrmWnd::OnToggleVSync()
+{
+	m_bVSyncEnabled = !m_bVSyncEnabled;
+
+	if (m_pDrawView) {
+		m_pDrawView->SetVSync(m_bVSyncEnabled);
+		m_pDrawView->ShowRenderStatusOSD(m_bVSyncEnabled);
+	}
+
+	CString info;
+	info.Format(_T("VSync: %s"), m_bVSyncEnabled ? _T("ON") : _T("OFF"));
+	SetInfo(info);
+}
+
+//---------------------------------------------------------------------------
+//
+//	Entrar a modo Borderless Fullscreen
+//
+//---------------------------------------------------------------------------
+void CFrmWnd::EnterBorderlessFullscreen()
+{
+	if (m_bBorderless) return;
+
+	// Guardar estado actual
+	m_dwPrevStyle = GetWindowLong(m_hWnd, GWL_STYLE);
+	m_dwPrevExStyle = GetWindowLong(m_hWnd, GWL_EXSTYLE);
+	GetWindowPlacement(&m_wpPrev);
+
+	// Obtener el monitor actual
+	HMONITOR hMonitor = MonitorFromWindow(m_hWnd, MONITOR_DEFAULTTOPRIMARY);
+	MONITORINFO mi = { sizeof(mi) };
+	if (GetMonitorInfo(hMonitor, &mi)) {
+		// Quitar bordes y estilos
+		SetWindowLong(m_hWnd, GWL_STYLE, m_dwPrevStyle & ~(WS_CAPTION | WS_THICKFRAME));
+		SetWindowLong(m_hWnd, GWL_EXSTYLE, m_dwPrevExStyle & ~(WS_EX_DLGMODALFRAME | WS_EX_CLIENTEDGE | WS_EX_STATICEDGE));
+
+		// Expandir rect absoluto de la pantalla
+		SetWindowPos(&wndTop,
+			mi.rcMonitor.left, mi.rcMonitor.top,
+			mi.rcMonitor.right - mi.rcMonitor.left,
+			mi.rcMonitor.bottom - mi.rcMonitor.top,
+			SWP_NOOWNERZORDER | SWP_FRAMECHANGED);
+
+		m_bBorderless = TRUE;
+	}
+}
+
+//---------------------------------------------------------------------------
+//
+//	Salir de modo Borderless Fullscreen
+//
+//---------------------------------------------------------------------------
+void CFrmWnd::ExitBorderlessFullscreen()
+{
+	if (!m_bBorderless) return;
+
+	// Restaurar estilos y rects
+	SetWindowLong(m_hWnd, GWL_STYLE, m_dwPrevStyle);
+	SetWindowLong(m_hWnd, GWL_EXSTYLE, m_dwPrevExStyle);
+	
+	SetWindowPlacement(&m_wpPrev);
+	SetWindowPos(NULL, 0, 0, 0, 0,
+		SWP_NOMOVE | SWP_NOSIZE | SWP_NOZORDER | SWP_NOOWNERZORDER | SWP_FRAMECHANGED);
+
+	m_bBorderless = FALSE;
 }
 
 #endif	// _WIN32
