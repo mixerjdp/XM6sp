@@ -31,17 +31,28 @@
 #define RENDERCMD_RESET 2
 #define RENDERCMD_CLEANUP 3
 
-static void WaitRenderAck(HANDLE hEvent)
+static void WaitRenderAck(HANDLE hEvent, DWORD dwTimeout = 2000)
 {
 	DWORD dwStart = GetTickCount();
 	while (true) {
 		DWORD dwElapsed = GetTickCount() - dwStart;
-		if (dwElapsed >= 2000) break;
-		DWORD dwWait = MsgWaitForMultipleObjects(1, &hEvent, FALSE, 2000 - dwElapsed, QS_SENDMESSAGE);
+		DWORD dwTimeLeft = dwTimeout;
+		if (dwTimeout != INFINITE) {
+			if (dwElapsed >= dwTimeout) break;
+			dwTimeLeft = dwTimeout - dwElapsed;
+		}
+		DWORD dwWait = MsgWaitForMultipleObjects(1, &hEvent, FALSE, dwTimeLeft, QS_ALLINPUT);
 		if (dwWait == WAIT_OBJECT_0) break;
 		if (dwWait == WAIT_OBJECT_0 + 1) {
 			MSG msg;
-			PeekMessage(&msg, NULL, 0, 0, PM_NOREMOVE);
+			while (PeekMessage(&msg, NULL, 0, 0, PM_REMOVE)) {
+				if (msg.message == WM_QUIT) {
+					PostQuitMessage((int)msg.wParam);
+					return;
+				}
+				TranslateMessage(&msg);
+				DispatchMessage(&msg);
+			}
 		} else {
 			break;
 		}
@@ -267,7 +278,7 @@ void CDrawView::OnDestroy()
 		SetEvent(m_hRenderEvent);
 		WaitRenderAck(m_hRenderAckEvent);
 		SetEvent(m_hRenderExitEvent);
-		WaitForSingleObject(m_pRenderThread->m_hThread, INFINITE);
+		WaitRenderAck(m_pRenderThread->m_hThread, INFINITE);
 		delete m_pRenderThread;
 		m_pRenderThread = NULL;
 	}
