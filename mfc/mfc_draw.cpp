@@ -90,6 +90,7 @@ CDrawView::CDrawView()
 	m_pStagingBuffer = NULL;
 	m_nStagingWidth = 0;
 	m_nStagingHeight = 0;
+	m_bShowOSD = FALSE;
 	m_dwOSDUntil = 0;
 	m_dwPerfOSDLastTick = 0;
 	m_nPerfFPS = 0;
@@ -1095,7 +1096,8 @@ void FASTCALL CDrawView::RenderLoop()
 						}
 
 						if (bUpdated) {
-							m_DX9Renderer.SetOverlayText(m_szPerfLine,
+							DrawOSD(NULL);
+							m_DX9Renderer.SetOverlayText(m_bShowOSD ? m_szPerfLine : NULL,
 								(m_szOSDText[0] && (GetTickCount() <= m_dwOSDUntil)) ? m_szOSDText : NULL);
 							if (m_DX9Renderer.PresentFrame(srcWidth, srcHeight, TRUE, FALSE)) {
 								bPresented = TRUE;

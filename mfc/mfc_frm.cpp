@@ -312,6 +312,7 @@ BEGIN_MESSAGE_MAP(CFrmWnd, CFrameWnd)
 	ON_COMMAND(IDM_FULLSCREEN, OnFullScreen)
 	ON_UPDATE_COMMAND_UI(IDM_FULLSCREEN, OnFullScreenUI)
 	ON_COMMAND(IDM_TOGGLE_RENDERER, OnToggleRenderer)
+	ON_COMMAND(IDM_TOGGLE_OSD, OnToggleOSD)
 	ON_COMMAND(IDM_TOGGLE_VSYNC, OnToggleVSync)
 
 	ON_COMMAND(IDM_EXEC, OnExec)
@@ -3294,3 +3295,10 @@ void CFrmWnd::ExitBorderlessFullscreen()
 }
 
 #endif	// _WIN32
+
+void CFrmWnd::OnToggleOSD()
+{
+	if (m_pDrawView) {
+		m_pDrawView->m_bShowOSD = !m_pDrawView->m_bShowOSD;
+	}
+}

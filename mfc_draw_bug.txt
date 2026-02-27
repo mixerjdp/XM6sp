@@ -1,7 +1,0 @@
-1092: // fue por un repintado forzado del OS (WM_PAINT).
-1093: if (m_DX9Renderer.UpdateSurface(m_Info.pBits, m_Info.nWidth, m_Info.nHeight, m_Info.nBMPWidth)) {
-1094: // Repintar buffer viejo
-1095: m_DX9Renderer.PresentFrame(m_Info.nWidth, m_Info.nHeight, TRUE, m_Info.bBltStretch);
-1096: }
-1097: return;
-1098: }

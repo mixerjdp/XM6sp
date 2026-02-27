@@ -82,6 +82,7 @@ public:
 	void ExitBorderlessFullscreen();
 	void OnToggleRenderer();
 	void OnToggleVSync();
+	void OnToggleOSD();
 
 	// Nombre de Archivo XM6   *-*
 	CString NombreArchivoXM6;

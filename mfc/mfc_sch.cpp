@@ -653,9 +653,15 @@ int FASTCALL CScheduler::GetFrameRate()
 	// Mas que eso, asi que cambia a Prev
 	dwDiff /= 10;
 	dwCount = m_dwDrawCount * 1000;
-	m_dwDrawTime = m_dwDrawBackup;
+	m_dwDrawTime = (m_dwDrawBackup != 0) ? m_dwDrawBackup : dwTime;
 	m_dwDrawBackup = 0;
-	m_dwDrawCount -= m_dwDrawPrev;
+	if (m_dwDrawTime == dwTime) {
+		m_dwDrawCount = 0;
+		m_dwDrawPrev = 0;
+	} else {
+		m_dwDrawCount -= m_dwDrawPrev;
+		m_dwDrawPrev = 0;
+	}
 	return (dwCount / dwDiff);
 }
 

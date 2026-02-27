@@ -1,2 +1,0 @@
-889: if (m_DX9Renderer.UpdateSurface(m_pStagingBuffer, m_Info.nWidth, m_Info.nHeight, m_nStagingWidth)) {
-1093: if (m_DX9Renderer.UpdateSurface(m_Info.pBits, m_Info.nWidth, m_Info.nHeight, m_Info.nBMPWidth)) {

@@ -247,10 +247,12 @@
 #define IDC_MISC_POPUP					1404
 #define IDC_MISC_AUTOMOUSE				1405
 #define IDC_MISC_POWEROFF				1406
+#define IDR_MENU_POPUP                  40193
+#define IDM_TOGGLE_OSD                  40195
 #define IDC_BUSCAR                      1407
 #define IDC_EDIT1                       1408
 
-// ���̑��y�[�W(US)
+// ̑y[W(US)
 #define IDC_US_MISC_HELP				6400
 #define IDC_US_MISC_OPTG				6401
 #define IDC_US_MISC_FDSPEED				6402

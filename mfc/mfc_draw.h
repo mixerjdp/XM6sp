@@ -58,6 +58,8 @@ public:
  	 // Funciones basicas
 	CDrawView();
  										 // Constructor
+
+	BOOL m_bShowOSD;					 // Visibilidad del OSD
 	void FASTCALL Enable(BOOL bEnable);
  										 // Control de operacion
 	BOOL FASTCALL IsEnable() const;
@@ -190,6 +192,7 @@ private:
 	int m_nStagingWidth;
 	int m_nStagingHeight;
 	DWORD m_dwOSDUntil;
+
 	DWORD m_dwPerfOSDLastTick;
 	int m_nPerfFPS;
 	TCHAR m_szPerfLine[96];
