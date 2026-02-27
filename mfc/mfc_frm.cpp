@@ -1309,7 +1309,10 @@ LONG CFrmWnd::OnKick(UINT /*uParam*/, LONG /*lParam*/)
 	CString strMsg;
 	MSG msg;
 	Memory *pMemory;
-	int nIdle;
+	DWORD dwTick20;
+	DWORD dwTick40;
+	DWORD dwTick80;
+	DWORD dwNow;
 	LPSTR lpszCmd;
 	LPCTSTR lpszCommand;
 	BOOL bFullScreen;
@@ -1411,7 +1414,9 @@ LONG CFrmWnd::OnKick(UINT /*uParam*/, LONG /*lParam*/)
 	RestoreDiskState();
 
 	// –³ŒÀƒ‹[ƒv
-	nIdle = 0;
+	dwTick20 = ::GetTickCount();
+	dwTick40 = dwTick20;
+	dwTick80 = dwTick20;
 	while (!m_bExit) {
 		// ƒƒbƒZ[ƒWƒ`ƒFƒbƒN•ƒ|ƒ“ƒv
 		if (::PeekMessage(&msg, NULL, 0, 0, PM_NOREMOVE)) {
@@ -1425,7 +1430,10 @@ LONG CFrmWnd::OnKick(UINT /*uParam*/, LONG /*lParam*/)
 
 		// ƒXƒŠ[ƒv
 		if (!PeekMessage(&msg, NULL, 0, 0, PM_NOREMOVE)) {
-			Sleep(20);
+			Sleep(1);
+			if (::PeekMessage(&msg, NULL, 0, 0, PM_NOREMOVE)) {
+				continue;
+			}
 
 			// Info‚ð–ˆ‰ñŽæ‚è’¼‚·
 			pInfo = GetInfo();
@@ -1434,18 +1442,23 @@ LONG CFrmWnd::OnKick(UINT /*uParam*/, LONG /*lParam*/)
 			}
 
 			// XVƒJƒEƒ“ƒ^Up
-			nIdle++;
+			dwNow = ::GetTickCount();
 
 			// ƒXƒe[ƒ^ƒXEŽÀs‚Í20ms
-			pInfo->UpdateStatus();
-			UpdateExec();
+			if ((dwNow - dwTick20) >= 20) {
+				dwTick20 = dwNow;
+				pInfo->UpdateStatus();
+				UpdateExec();
+			}
 
-			if ((nIdle & 1) == 0) {
+			if ((dwNow - dwTick40) >= 40) {
+				dwTick40 = dwNow;
 				// ƒrƒ…[‚Í40ms
 				GetView()->Update();
 			}
 
-			if ((nIdle & 3) == 0) {
+			if ((dwNow - dwTick80) >= 80) {
+				dwTick80 = dwNow;
 				// ƒLƒƒƒvƒVƒ‡ƒ“Aî•ñ‚Í80ms
 				pInfo->UpdateCaption();
 				pInfo->UpdateInfo();

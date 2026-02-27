@@ -172,6 +172,20 @@ private:
 	CDX9Renderer m_DX9Renderer;
 	BOOL m_bUseDX9;
 	volatile LONG m_lPresentPending;
+	
+	// Variables para hilo de renderizado dedicado
+	HANDLE m_hRenderEvent;
+	HANDLE m_hRenderExitEvent;
+	HANDLE m_hRenderAckEvent;
+	CWinThread *m_pRenderThread;
+	volatile LONG m_lRenderCmd;
+	int m_nRenderWidth;
+	int m_nRenderHeight;
+	BOOL m_bRenderVSync;
+
+	static UINT RenderThreadFunc(LPVOID pParam);
+	void FASTCALL RenderLoop();
+
 	DWORD *m_pStagingBuffer;
 	int m_nStagingWidth;
 	int m_nStagingHeight;

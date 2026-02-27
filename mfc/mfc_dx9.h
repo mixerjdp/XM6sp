@@ -39,7 +39,9 @@ private:
     BOOL CreateTexture(int width, int height);
     BOOL CreateVertexBuffer();
     void SetupDeviceStates();
+    BOOL EnsureOverlayGDIResources();
     BOOL UpdateOverlayTexture();
+    void ReleaseOverlayGDIResources();
     void ReleaseTexture();
     void ReleaseVertexBuffer();
     void ReleaseOverlayTexture();
@@ -69,6 +71,11 @@ private:
     BOOL m_bOverlayDirty;
     TCHAR m_szOverlayLine1[96];
     TCHAR m_szOverlayLine2[64];
+    HDC m_hOverlayDC;
+    HBITMAP m_hOverlayBitmap;
+    HBITMAP m_hOverlayOldBitmap;
+    HFONT m_hOverlayOldFont;
+    DWORD* m_pOverlayBits;
 };
 
 #endif // MFC_DX9_H

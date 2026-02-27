@@ -11,7 +11,8 @@ CDX9Renderer::CDX9Renderer()
     : m_hD3D9(NULL), m_pD3D(NULL), m_pD3DEx(NULL), m_pDevice(NULL), m_pDeviceEx(NULL), 
       m_pTexture(NULL), m_pOverlayTexture(NULL), m_pVertexBuffer(NULL), m_hWnd(NULL), m_bInitialized(FALSE), m_bDeviceLost(FALSE),
       m_bIsEx(FALSE), m_dwOwnerThreadId(0), m_TexWidth(0), m_TexHeight(0), m_OverlayWidth(384), m_OverlayHeight(48),
-      m_bOverlayEnabled(FALSE), m_bOverlayDirty(FALSE)
+      m_bOverlayEnabled(FALSE), m_bOverlayDirty(FALSE), m_hOverlayDC(NULL), m_hOverlayBitmap(NULL),
+      m_hOverlayOldBitmap(NULL), m_hOverlayOldFont(NULL), m_pOverlayBits(NULL)
 {
     ZeroMemory(&m_d3dpp, sizeof(m_d3dpp));
 	m_szOverlayLine1[0] = _T('\0');
@@ -114,6 +115,7 @@ void CDX9Renderer::Cleanup()
 
 	ReleaseTexture();
 	ReleaseOverlayTexture();
+	ReleaseOverlayGDIResources();
 	ReleaseVertexBuffer();
 
     if (m_pDeviceEx) { m_pDeviceEx->Release(); m_pDeviceEx = NULL; }
@@ -219,6 +221,73 @@ void CDX9Renderer::ReleaseOverlayTexture()
 		m_pOverlayTexture->Release();
 		m_pOverlayTexture = NULL;
 	}
+
+	// Si el device se resetea, forzar regeneracion del overlay.
+	m_bOverlayDirty = TRUE;
+}
+
+BOOL CDX9Renderer::EnsureOverlayGDIResources()
+{
+	if (m_hOverlayDC && m_hOverlayBitmap && m_pOverlayBits) {
+		return TRUE;
+	}
+
+	ReleaseOverlayGDIResources();
+
+	BITMAPINFO bmi;
+	ZeroMemory(&bmi, sizeof(bmi));
+	bmi.bmiHeader.biSize = sizeof(BITMAPINFOHEADER);
+	bmi.bmiHeader.biWidth = m_OverlayWidth;
+	bmi.bmiHeader.biHeight = -m_OverlayHeight;
+	bmi.bmiHeader.biPlanes = 1;
+	bmi.bmiHeader.biBitCount = 32;
+	bmi.bmiHeader.biCompression = BI_RGB;
+
+	m_hOverlayDC = CreateCompatibleDC(NULL);
+	if (!m_hOverlayDC) {
+		return FALSE;
+	}
+
+	m_hOverlayBitmap = CreateDIBSection(m_hOverlayDC, &bmi, DIB_RGB_COLORS, (void**)&m_pOverlayBits, NULL, 0);
+	if (!m_hOverlayBitmap || !m_pOverlayBits) {
+		ReleaseOverlayGDIResources();
+		return FALSE;
+	}
+
+	m_hOverlayOldBitmap = (HBITMAP)SelectObject(m_hOverlayDC, m_hOverlayBitmap);
+	if (!m_hOverlayOldBitmap) {
+		ReleaseOverlayGDIResources();
+		return FALSE;
+	}
+
+	m_hOverlayOldFont = (HFONT)SelectObject(m_hOverlayDC, GetStockObject(DEFAULT_GUI_FONT));
+	SetBkMode(m_hOverlayDC, TRANSPARENT);
+
+	return TRUE;
+}
+
+void CDX9Renderer::ReleaseOverlayGDIResources()
+{
+	if (!m_hOverlayDC) {
+		m_pOverlayBits = NULL;
+		return;
+	}
+
+	if (m_hOverlayOldFont) {
+		SelectObject(m_hOverlayDC, m_hOverlayOldFont);
+		m_hOverlayOldFont = NULL;
+	}
+	if (m_hOverlayOldBitmap) {
+		SelectObject(m_hOverlayDC, m_hOverlayOldBitmap);
+		m_hOverlayOldBitmap = NULL;
+	}
+	if (m_hOverlayBitmap) {
+		DeleteObject(m_hOverlayBitmap);
+		m_hOverlayBitmap = NULL;
+	}
+	DeleteDC(m_hOverlayDC);
+	m_hOverlayDC = NULL;
+	m_pOverlayBits = NULL;
 }
 
 void CDX9Renderer::SetOverlayText(LPCTSTR line1, LPCTSTR line2)
@@ -272,52 +341,27 @@ BOOL CDX9Renderer::UpdateOverlayTexture()
 		}
 	}
 
-	BITMAPINFO bmi;
-	ZeroMemory(&bmi, sizeof(bmi));
-	bmi.bmiHeader.biSize = sizeof(BITMAPINFOHEADER);
-	bmi.bmiHeader.biWidth = m_OverlayWidth;
-	bmi.bmiHeader.biHeight = -m_OverlayHeight;
-	bmi.bmiHeader.biPlanes = 1;
-	bmi.bmiHeader.biBitCount = 32;
-	bmi.bmiHeader.biCompression = BI_RGB;
-
-	HDC hdc = CreateCompatibleDC(NULL);
-	if (!hdc) {
+	if (!EnsureOverlayGDIResources()) {
 		return FALSE;
 	}
-
-	DWORD *pBits = NULL;
-	HBITMAP hbm = CreateDIBSection(hdc, &bmi, DIB_RGB_COLORS, (void**)&pBits, NULL, 0);
-	if (!hbm || !pBits) {
-		if (hbm) {
-			DeleteObject(hbm);
-		}
-		DeleteDC(hdc);
-		return FALSE;
-	}
-
-	HBITMAP hOld = (HBITMAP)SelectObject(hdc, hbm);
-	HFONT hFont = (HFONT)GetStockObject(DEFAULT_GUI_FONT);
-	HFONT hOldFont = (HFONT)SelectObject(hdc, hFont);
-	SetBkMode(hdc, TRANSPARENT);
 
 	// Fondo transparente inicialmente
-	memset(pBits, 0, m_OverlayWidth * m_OverlayHeight * sizeof(DWORD));
+	memset(m_pOverlayBits, 0, m_OverlayWidth * m_OverlayHeight * sizeof(DWORD));
 
 	RECT rc = { 0, 0, m_OverlayWidth, m_OverlayHeight };
 	RECT rc1 = { 6, 3, m_OverlayWidth - 6, 20 };
 	RECT rc2 = { 6, 23, m_OverlayWidth - 6, 40 };
 
-	SetTextColor(hdc, RGB(255, 255, 255));
-	DrawText(hdc, m_szOverlayLine1, -1, &rc1, DT_LEFT | DT_VCENTER | DT_SINGLELINE | DT_NOPREFIX);
+	SetTextColor(m_hOverlayDC, RGB(255, 255, 255));
+	DrawText(m_hOverlayDC, m_szOverlayLine1, -1, &rc1, DT_LEFT | DT_VCENTER | DT_SINGLELINE | DT_NOPREFIX);
 	if (m_szOverlayLine2[0]) {
-		SetTextColor(hdc, RGB(255, 220, 96));
-		DrawText(hdc, m_szOverlayLine2, -1, &rc2, DT_LEFT | DT_VCENTER | DT_SINGLELINE | DT_NOPREFIX);
+		SetTextColor(m_hOverlayDC, RGB(255, 220, 96));
+		DrawText(m_hOverlayDC, m_szOverlayLine2, -1, &rc2, DT_LEFT | DT_VCENTER | DT_SINGLELINE | DT_NOPREFIX);
 	}
 
 	// Aplicar alpha: fondo semitransparente + texto opaco
 	for (int y = rc.top; y < rc.bottom; y++) {
-		DWORD *pLine = pBits + (y * m_OverlayWidth);
+		DWORD *pLine = m_pOverlayBits + (y * m_OverlayWidth);
 		for (int x = rc.left; x < rc.right; x++) {
 			DWORD c = pLine[x] & 0x00FFFFFF;
 			if (c) {
@@ -333,16 +377,11 @@ BOOL CDX9Renderer::UpdateOverlayTexture()
 	BOOL bOk = FALSE;
 	if (SUCCEEDED(m_pOverlayTexture->LockRect(0, &lr, NULL, D3DLOCK_DISCARD | D3DLOCK_NOSYSLOCK))) {
 		for (int y = 0; y < m_OverlayHeight; y++) {
-			memcpy((BYTE*)lr.pBits + (y * lr.Pitch), pBits + (y * m_OverlayWidth), m_OverlayWidth * sizeof(DWORD));
+			memcpy((BYTE*)lr.pBits + (y * lr.Pitch), m_pOverlayBits + (y * m_OverlayWidth), m_OverlayWidth * sizeof(DWORD));
 		}
 		m_pOverlayTexture->UnlockRect(0);
 		bOk = TRUE;
 	}
-
-	SelectObject(hdc, hOldFont);
-	SelectObject(hdc, hOld);
-	DeleteObject(hbm);
-	DeleteDC(hdc);
 
 	if (bOk) {
 		m_bOverlayDirty = FALSE;
