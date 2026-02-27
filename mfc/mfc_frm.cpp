@@ -1285,6 +1285,13 @@ void FASTCALL CFrmWnd::ApplyCfg()
 	m_bMouseMid = config.mouse_mid;
 	m_bAutoMouse = config.auto_mouse;
 
+	// Aplicar configuracion de VSync
+	m_bVSyncEnabled = config.render_vsync;
+	GetView()->SetVSync(m_bVSyncEnabled);
+
+	// Aplicar configuracion de renderizador (si es diferente)
+	GetView()->ApplyRendererConfig(config.render_mode);
+
 	// Para evitar Ruta SaveStates incorrecta *-*
 	if (RutaSaveStates.GetLength() == 0)
 		RutaSaveStates = config.ruta_savestate;

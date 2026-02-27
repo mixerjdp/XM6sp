@@ -2,8 +2,8 @@
 //
 //	X68000 EMULATOR "XM6"
 //
-//	Copyright (C) 2001-2006 ‚o‚hD(ytanaka@ipc-tokai.or.jp)
-//	[ ƒRƒ“ƒtƒBƒMƒ…ƒŒ[ƒVƒ‡ƒ“ ]
+//	Copyright (C) 2001-2006 ï¿½oï¿½hï¿½D(ytanaka@ipc-tokai.or.jp)
+//	[ ï¿½Rï¿½ï¿½ï¿½tï¿½Bï¿½Mï¿½ï¿½ï¿½ï¿½ï¿½[ï¿½Vï¿½ï¿½ï¿½ï¿½ ]
 //
 //---------------------------------------------------------------------------
 
@@ -14,162 +14,164 @@
 
 //===========================================================================
 //
-//	ƒRƒ“ƒtƒBƒMƒ…ƒŒ[ƒVƒ‡ƒ“(version2.00`version2.01)
+//	ï¿½Rï¿½ï¿½ï¿½tï¿½Bï¿½Mï¿½ï¿½ï¿½ï¿½ï¿½[ï¿½Vï¿½ï¿½ï¿½ï¿½(version2.00ï¿½`version2.01)
 //
 //===========================================================================
 class Config200 {
 public:
-	// ƒVƒXƒeƒ€
-	int system_clock;					// ƒVƒXƒeƒ€ƒNƒƒbƒN(0`5)
-	int ram_size;						// ƒƒCƒ“RAMƒTƒCƒY(0`5)
-	BOOL ram_sramsync;					// ƒƒ‚ƒŠƒXƒCƒbƒ`©“®XV
+	// ï¿½Vï¿½Xï¿½eï¿½ï¿½
+	int system_clock;					// ï¿½Vï¿½Xï¿½eï¿½ï¿½ï¿½Nï¿½ï¿½ï¿½bï¿½N(0ï¿½`5)
+	int ram_size;						// ï¿½ï¿½ï¿½Cï¿½ï¿½RAMï¿½Tï¿½Cï¿½Y(0ï¿½`5)
+	BOOL ram_sramsync;					// ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Xï¿½Cï¿½bï¿½`ï¿½ï¿½ï¿½ï¿½ï¿½Xï¿½V
 
-	// ƒXƒPƒWƒ…[ƒ‰
-	BOOL mpu_fullspeed;					// MPUƒtƒ‹ƒXƒs[ƒh
-	BOOL vm_fullspeed;					// VMƒtƒ‹ƒXƒs[ƒh
+	// ï¿½Xï¿½Pï¿½Wï¿½ï¿½ï¿½[ï¿½ï¿½
+	BOOL mpu_fullspeed;					// MPUï¿½tï¿½ï¿½ï¿½Xï¿½sï¿½[ï¿½h
+	BOOL vm_fullspeed;					// VMï¿½tï¿½ï¿½ï¿½Xï¿½sï¿½[ï¿½h
 
-	// ƒTƒEƒ“ƒh
-	int sound_device;					// ƒTƒEƒ“ƒhƒfƒoƒCƒX(0`15)
-	int sample_rate;					// ƒTƒ“ƒvƒŠƒ“ƒOƒŒ[ƒg(0`4)
-	int primary_buffer;					// ƒoƒbƒtƒ@ƒTƒCƒY(2`100)
-	int polling_buffer;					// ƒ|[ƒŠƒ“ƒOŠÔŠu(0`99)
-	BOOL adpcm_interp;					// ADPCMüŒ`•âŠÔ‚ ‚è
+	// ï¿½Tï¿½Eï¿½ï¿½ï¿½h
+	int sound_device;					// ï¿½Tï¿½Eï¿½ï¿½ï¿½hï¿½fï¿½oï¿½Cï¿½X(0ï¿½`15)
+	int sample_rate;					// ï¿½Tï¿½ï¿½ï¿½vï¿½ï¿½ï¿½ï¿½ï¿½Oï¿½ï¿½ï¿½[ï¿½g(0ï¿½`4)
+	int primary_buffer;					// ï¿½oï¿½bï¿½tï¿½@ï¿½Tï¿½Cï¿½Y(2ï¿½`100)
+	int polling_buffer;					// ï¿½|ï¿½[ï¿½ï¿½ï¿½ï¿½ï¿½Oï¿½ÔŠu(0ï¿½`99)
+	BOOL adpcm_interp;					// ADPCMï¿½ï¿½ï¿½`ï¿½ï¿½Ô‚ï¿½ï¿½ï¿½
 
-	// •`‰æ
-	BOOL aspect_stretch;				// ƒAƒXƒyƒNƒg”ä‚É‚ ‚í‚¹Šg‘å
+	// ï¿½`ï¿½ï¿½
+	BOOL aspect_stretch;				// ï¿½Aï¿½Xï¿½yï¿½Nï¿½gï¿½ï¿½É‚ï¿½ï¿½í‚¹ï¿½gï¿½ï¿½
+	BOOL render_vsync;					// VSync (TRUE=ON)
+	int render_mode;					// Renderizador (0=GDI, 1=DirectX 9)
 
-	// ‰¹—Ê
-	int master_volume;					// ƒ}ƒXƒ^‰¹—Ê(0`100)
-	BOOL fm_enable;						// FM—LŒø
-	int fm_volume;						// FM‰¹—Ê(0`100)
-	BOOL adpcm_enable;					// ADPCM—LŒø
-	int adpcm_volume;					// ADPCM‰¹—Ê(0`100)
+	// ï¿½ï¿½ï¿½ï¿½
+	int master_volume;					// ï¿½}ï¿½Xï¿½^ï¿½ï¿½ï¿½ï¿½(0ï¿½`100)
+	BOOL fm_enable;						// FMï¿½Lï¿½ï¿½
+	int fm_volume;						// FMï¿½ï¿½ï¿½ï¿½(0ï¿½`100)
+	BOOL adpcm_enable;					// ADPCMï¿½Lï¿½ï¿½
+	int adpcm_volume;					// ADPCMï¿½ï¿½ï¿½ï¿½(0ï¿½`100)
 
-	// ƒL[ƒ{[ƒh
-	BOOL kbd_connect;					// Ú‘±
+	// ï¿½Lï¿½[ï¿½{ï¿½[ï¿½h
+	BOOL kbd_connect;					// ï¿½Ú‘ï¿½
 
-	// ƒ}ƒEƒX
-	int mouse_speed;					// ƒXƒs[ƒh
-	int mouse_port;						// Ú‘±ƒ|[ƒg
-	BOOL mouse_swap;					// ƒ{ƒ^ƒ“ƒXƒƒbƒv
-	BOOL mouse_mid;						// ’†ƒ{ƒ^ƒ“ƒCƒl[ƒuƒ‹
-	BOOL mouse_trackb;					// ƒgƒ‰ƒbƒNƒ{[ƒ‹ƒ‚[ƒh
+	// ï¿½}ï¿½Eï¿½X
+	int mouse_speed;					// ï¿½Xï¿½sï¿½[ï¿½h
+	int mouse_port;						// ï¿½Ú‘ï¿½ï¿½|ï¿½[ï¿½g
+	BOOL mouse_swap;					// ï¿½{ï¿½^ï¿½ï¿½ï¿½Xï¿½ï¿½ï¿½bï¿½v
+	BOOL mouse_mid;						// ï¿½ï¿½ï¿½{ï¿½^ï¿½ï¿½ï¿½Cï¿½lï¿½[ï¿½uï¿½ï¿½
+	BOOL mouse_trackb;					// ï¿½gï¿½ï¿½ï¿½bï¿½Nï¿½{ï¿½[ï¿½ï¿½ï¿½ï¿½ï¿½[ï¿½h
 
-	// ƒWƒ‡ƒCƒXƒeƒBƒbƒN
-	int joy_type[2];					// ƒWƒ‡ƒCƒXƒeƒBƒbƒNƒ^ƒCƒv
-	int joy_dev[2];						// ƒWƒ‡ƒCƒXƒeƒBƒbƒNƒfƒoƒCƒX
-	int joy_button0[12];				// ƒWƒ‡ƒCƒXƒeƒBƒbƒNƒ{ƒ^ƒ“(ƒfƒoƒCƒXA)
-	int joy_button1[12];				// ƒWƒ‡ƒCƒXƒeƒBƒbƒNƒ{ƒ^ƒ“(ƒfƒoƒCƒXB)
+	// ï¿½Wï¿½ï¿½ï¿½Cï¿½Xï¿½eï¿½Bï¿½bï¿½N
+	int joy_type[2];					// ï¿½Wï¿½ï¿½ï¿½Cï¿½Xï¿½eï¿½Bï¿½bï¿½Nï¿½^ï¿½Cï¿½v
+	int joy_dev[2];						// ï¿½Wï¿½ï¿½ï¿½Cï¿½Xï¿½eï¿½Bï¿½bï¿½Nï¿½fï¿½oï¿½Cï¿½X
+	int joy_button0[12];				// ï¿½Wï¿½ï¿½ï¿½Cï¿½Xï¿½eï¿½Bï¿½bï¿½Nï¿½{ï¿½^ï¿½ï¿½(ï¿½fï¿½oï¿½Cï¿½XA)
+	int joy_button1[12];				// ï¿½Wï¿½ï¿½ï¿½Cï¿½Xï¿½eï¿½Bï¿½bï¿½Nï¿½{ï¿½^ï¿½ï¿½(ï¿½fï¿½oï¿½Cï¿½XB)
 
 	// SASI
-	int sasi_drives;					// SASIƒhƒ‰ƒCƒu”
-	BOOL sasi_sramsync;					// SASIƒƒ‚ƒŠƒXƒCƒbƒ`©“®XV
-	TCHAR sasi_file[16][FILEPATH_MAX];	// SASIƒCƒ[ƒWƒtƒ@ƒCƒ‹
+	int sasi_drives;					// SASIï¿½hï¿½ï¿½ï¿½Cï¿½uï¿½ï¿½
+	BOOL sasi_sramsync;					// SASIï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Xï¿½Cï¿½bï¿½`ï¿½ï¿½ï¿½ï¿½ï¿½Xï¿½V
+	TCHAR sasi_file[16][FILEPATH_MAX];	// SASIï¿½Cï¿½ï¿½ï¿½[ï¿½Wï¿½tï¿½@ï¿½Cï¿½ï¿½
 
 	// SxSI
-	int sxsi_drives;					// SxSIƒhƒ‰ƒCƒu”
-	BOOL sxsi_mofirst;					// MOƒhƒ‰ƒCƒu—DæŠ„‚è“–‚Ä
-	TCHAR sxsi_file[6][FILEPATH_MAX];	// SxSIƒCƒ[ƒWƒtƒ@ƒCƒ‹
+	int sxsi_drives;					// SxSIï¿½hï¿½ï¿½ï¿½Cï¿½uï¿½ï¿½
+	BOOL sxsi_mofirst;					// MOï¿½hï¿½ï¿½ï¿½Cï¿½uï¿½Dï¿½æŠ„ï¿½è“–ï¿½ï¿½
+	TCHAR sxsi_file[6][FILEPATH_MAX];	// SxSIï¿½Cï¿½ï¿½ï¿½[ï¿½Wï¿½tï¿½@ï¿½Cï¿½ï¿½
 
-	// ƒ|[ƒg
-	int port_com;						// COMxƒ|[ƒg
-	TCHAR port_recvlog[FILEPATH_MAX];	// ƒVƒŠƒAƒ‹óMƒƒO
-	BOOL port_384;						// ƒVƒŠƒAƒ‹38400bpsŒÅ’è
-	int port_lpt;						// LPTxƒ|[ƒg
-	TCHAR port_sendlog[FILEPATH_MAX];	// ƒpƒ‰ƒŒƒ‹‘—MƒƒO
+	// ï¿½|ï¿½[ï¿½g
+	int port_com;						// COMxï¿½|ï¿½[ï¿½g
+	TCHAR port_recvlog[FILEPATH_MAX];	// ï¿½Vï¿½ï¿½ï¿½Aï¿½ï¿½ï¿½ï¿½Mï¿½ï¿½ï¿½O
+	BOOL port_384;						// ï¿½Vï¿½ï¿½ï¿½Aï¿½ï¿½38400bpsï¿½Å’ï¿½
+	int port_lpt;						// LPTxï¿½|ï¿½[ï¿½g
+	TCHAR port_sendlog[FILEPATH_MAX];	// ï¿½pï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Mï¿½ï¿½ï¿½O
 
 	// MIDI
-	int midi_bid;						// MIDIƒ{[ƒhID
-	int midi_ilevel;					// MIDIŠ„‚è‚İƒŒƒxƒ‹
-	int midi_reset;						// MIDIƒŠƒZƒbƒgƒRƒ}ƒ“ƒh
-	int midiin_device;					// MIDI INƒfƒoƒCƒX
-	int midiin_delay;					// MIDI INƒfƒBƒŒƒC(ms)
-	int midiout_device;					// MIDI OUTƒfƒoƒCƒX
-	int midiout_delay;					// MIDI OUTƒfƒBƒŒƒC(ms)
+	int midi_bid;						// MIDIï¿½{ï¿½[ï¿½hID
+	int midi_ilevel;					// MIDIï¿½ï¿½ï¿½èï¿½İƒï¿½ï¿½xï¿½ï¿½
+	int midi_reset;						// MIDIï¿½ï¿½ï¿½Zï¿½bï¿½gï¿½Rï¿½}ï¿½ï¿½ï¿½h
+	int midiin_device;					// MIDI INï¿½fï¿½oï¿½Cï¿½X
+	int midiin_delay;					// MIDI INï¿½fï¿½Bï¿½ï¿½ï¿½C(ms)
+	int midiout_device;					// MIDI OUTï¿½fï¿½oï¿½Cï¿½X
+	int midiout_delay;					// MIDI OUTï¿½fï¿½Bï¿½ï¿½ï¿½C(ms)
 
-	// ‰ü‘¢
+	// ï¿½ï¿½ï¿½ï¿½
 	BOOL sram_64k;						// 64KB SRAM
-	BOOL scc_clkup;						// SCCƒNƒƒbƒNƒAƒbƒv
-	BOOL power_led;						// ÂF“dŒ¹LED
-	BOOL dual_fdd;						// 2DD/2HDŒ“—pFDD
-	BOOL sasi_parity;					// SASIƒoƒXƒpƒŠƒeƒB
+	BOOL scc_clkup;						// SCCï¿½Nï¿½ï¿½ï¿½bï¿½Nï¿½Aï¿½bï¿½v
+	BOOL power_led;						// ï¿½ÂFï¿½dï¿½ï¿½LED
+	BOOL dual_fdd;						// 2DD/2HDï¿½ï¿½ï¿½pFDD
+	BOOL sasi_parity;					// SASIï¿½oï¿½Xï¿½pï¿½ï¿½ï¿½eï¿½B
 
 	// TrueKey
-	int tkey_mode;						// TrueKeyƒ‚[ƒh(bit0:VM bit1:WinApp)
-	int tkey_com;						// ƒL[ƒ{[ƒhCOMƒ|[ƒg
-	BOOL tkey_rts;						// RTS”½“]ƒ‚[ƒh
+	int tkey_mode;						// TrueKeyï¿½ï¿½ï¿½[ï¿½h(bit0:VM bit1:WinApp)
+	int tkey_com;						// ï¿½Lï¿½[ï¿½{ï¿½[ï¿½hCOMï¿½|ï¿½[ï¿½g
+	BOOL tkey_rts;						// RTSï¿½ï¿½ï¿½]ï¿½ï¿½ï¿½[ï¿½h
 
-	// ‚»‚Ì‘¼
-	BOOL floppy_speed;					// ƒtƒƒbƒs[ƒfƒBƒXƒN‚‘¬
-	BOOL floppy_led;					// ƒtƒƒbƒs[ƒfƒBƒXƒNLEDƒ‚[ƒh
-	BOOL popup_swnd;					// ƒ|ƒbƒvƒAƒbƒvƒTƒuƒEƒBƒ“ƒhƒE
-	BOOL auto_mouse;					// ©“®ƒ}ƒEƒXƒ‚[ƒh§Œä
-	BOOL power_off;						// “dŒ¹OFF‚ÅŠJn
+	// ï¿½ï¿½ï¿½Ì‘ï¿½
+	BOOL floppy_speed;					// ï¿½tï¿½ï¿½ï¿½bï¿½sï¿½[ï¿½fï¿½Bï¿½Xï¿½Nï¿½ï¿½ï¿½ï¿½
+	BOOL floppy_led;					// ï¿½tï¿½ï¿½ï¿½bï¿½sï¿½[ï¿½fï¿½Bï¿½Xï¿½NLEDï¿½ï¿½ï¿½[ï¿½h
+	BOOL popup_swnd;					// ï¿½|ï¿½bï¿½vï¿½Aï¿½bï¿½vï¿½Tï¿½uï¿½Eï¿½Bï¿½ï¿½ï¿½hï¿½E
+	BOOL auto_mouse;					// ï¿½ï¿½ï¿½ï¿½ï¿½}ï¿½Eï¿½Xï¿½ï¿½ï¿½[ï¿½hï¿½ï¿½ï¿½ï¿½
+	BOOL power_off;						// ï¿½dï¿½ï¿½OFFï¿½ÅŠJï¿½n
 	TCHAR ruta_savestate[FILEPATH_MAX];
 };
 
 //===========================================================================
 //
-//	ƒRƒ“ƒtƒBƒMƒ…ƒŒ[ƒVƒ‡ƒ“(version2.02`version2.03)
+//	ï¿½Rï¿½ï¿½ï¿½tï¿½Bï¿½Mï¿½ï¿½ï¿½ï¿½ï¿½[ï¿½Vï¿½ï¿½ï¿½ï¿½(version2.02ï¿½`version2.03)
 //
 //===========================================================================
 class Config202 : public Config200 {
 public:
-	// ƒVƒXƒeƒ€
-	int mem_type;						// ƒƒ‚ƒŠƒ}ƒbƒví•Ê
+	// ï¿½Vï¿½Xï¿½eï¿½ï¿½
+	int mem_type;						// ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½}ï¿½bï¿½vï¿½ï¿½ï¿½
 
 	// SCSI
-	int scsi_ilevel;					// SCSIŠ„‚è‚İƒŒƒxƒ‹
-	int scsi_drives;					// SCSIƒhƒ‰ƒCƒu”
-	BOOL scsi_sramsync;					// SCSIƒƒ‚ƒŠƒXƒCƒbƒ`©“®XV
-	BOOL scsi_mofirst;					// MOƒhƒ‰ƒCƒu—DæŠ„‚è“–‚Ä
-	TCHAR scsi_file[5][FILEPATH_MAX];	// SCSIƒCƒ[ƒWƒtƒ@ƒCƒ‹
+	int scsi_ilevel;					// SCSIï¿½ï¿½ï¿½èï¿½İƒï¿½ï¿½xï¿½ï¿½
+	int scsi_drives;					// SCSIï¿½hï¿½ï¿½ï¿½Cï¿½uï¿½ï¿½
+	BOOL scsi_sramsync;					// SCSIï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Xï¿½Cï¿½bï¿½`ï¿½ï¿½ï¿½ï¿½ï¿½Xï¿½V
+	BOOL scsi_mofirst;					// MOï¿½hï¿½ï¿½ï¿½Cï¿½uï¿½Dï¿½æŠ„ï¿½è“–ï¿½ï¿½
+	TCHAR scsi_file[5][FILEPATH_MAX];	// SCSIï¿½Cï¿½ï¿½ï¿½[ï¿½Wï¿½tï¿½@ï¿½Cï¿½ï¿½
 };
 
 //===========================================================================
 //
-//	ƒRƒ“ƒtƒBƒMƒ…ƒŒ[ƒVƒ‡ƒ“
+//	ï¿½Rï¿½ï¿½ï¿½tï¿½Bï¿½Mï¿½ï¿½ï¿½ï¿½ï¿½[ï¿½Vï¿½ï¿½ï¿½ï¿½
 //
 //===========================================================================
 class Config : public Config202 {
 public:
-	// ƒŒƒWƒ…[ƒ€
-	BOOL resume_fd;						// FDƒŒƒWƒ…[ƒ€
-	BOOL resume_fdi[2];					// FD‘}“üƒtƒ‰ƒO
-	BOOL resume_fdw[2];					// FD‘‚«‚İ‹Ö~
-	int resume_fdm[2];					// FDƒƒfƒBƒANo.
-	BOOL resume_mo;						// MOƒŒƒWƒ…[ƒ€
-	BOOL resume_mos;					// MO‘}“üƒtƒ‰ƒO
-	BOOL resume_mow;					// MO‘‚«‚İ‹Ö~
-	BOOL resume_cd;						// CDƒŒƒWƒ…[ƒ€
-	BOOL resume_iso;					// CD‘}“üƒtƒ‰ƒO
-	BOOL resume_state;					// ƒXƒe[ƒgƒŒƒWƒ…[ƒ€
-	BOOL resume_xm6;					// ƒXƒe[ƒg—LŒøƒtƒ‰ƒO
-	BOOL resume_screen;					// ‰æ–Êƒ‚[ƒhƒŒƒWƒ…[ƒ€
-	BOOL resume_dir;					// ƒfƒtƒHƒ‹ƒgƒfƒBƒŒƒNƒgƒŠƒŒƒWƒ…[ƒ€
-	TCHAR resume_path[FILEPATH_MAX];	// ƒfƒtƒHƒ‹ƒgƒfƒBƒŒƒNƒgƒŠ
+	// ï¿½ï¿½ï¿½Wï¿½ï¿½ï¿½[ï¿½ï¿½
+	BOOL resume_fd;						// FDï¿½ï¿½ï¿½Wï¿½ï¿½ï¿½[ï¿½ï¿½
+	BOOL resume_fdi[2];					// FDï¿½}ï¿½ï¿½ï¿½tï¿½ï¿½ï¿½O
+	BOOL resume_fdw[2];					// FDï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½İ‹Ö~
+	int resume_fdm[2];					// FDï¿½ï¿½ï¿½fï¿½Bï¿½ANo.
+	BOOL resume_mo;						// MOï¿½ï¿½ï¿½Wï¿½ï¿½ï¿½[ï¿½ï¿½
+	BOOL resume_mos;					// MOï¿½}ï¿½ï¿½ï¿½tï¿½ï¿½ï¿½O
+	BOOL resume_mow;					// MOï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½İ‹Ö~
+	BOOL resume_cd;						// CDï¿½ï¿½ï¿½Wï¿½ï¿½ï¿½[ï¿½ï¿½
+	BOOL resume_iso;					// CDï¿½}ï¿½ï¿½ï¿½tï¿½ï¿½ï¿½O
+	BOOL resume_state;					// ï¿½Xï¿½eï¿½[ï¿½gï¿½ï¿½ï¿½Wï¿½ï¿½ï¿½[ï¿½ï¿½
+	BOOL resume_xm6;					// ï¿½Xï¿½eï¿½[ï¿½gï¿½Lï¿½ï¿½ï¿½tï¿½ï¿½ï¿½O
+	BOOL resume_screen;					// ï¿½ï¿½Êƒï¿½ï¿½[ï¿½hï¿½ï¿½ï¿½Wï¿½ï¿½ï¿½[ï¿½ï¿½
+	BOOL resume_dir;					// ï¿½fï¿½tï¿½Hï¿½ï¿½ï¿½gï¿½fï¿½Bï¿½ï¿½ï¿½Nï¿½gï¿½ï¿½ï¿½ï¿½ï¿½Wï¿½ï¿½ï¿½[ï¿½ï¿½
+	TCHAR resume_path[FILEPATH_MAX];	// ï¿½fï¿½tï¿½Hï¿½ï¿½ï¿½gï¿½fï¿½Bï¿½ï¿½ï¿½Nï¿½gï¿½ï¿½
 
-	// •`‰æ
-	BOOL caption_info;					// ƒLƒƒƒvƒVƒ‡ƒ“î•ñ•\¦
+	// ï¿½`ï¿½ï¿½
+	BOOL caption_info;					// ï¿½Lï¿½ï¿½ï¿½vï¿½Vï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½\ï¿½ï¿½
 
-	// ƒfƒBƒXƒvƒŒƒC
-	BOOL caption;						// ƒLƒƒƒvƒVƒ‡ƒ“
-	BOOL menu_bar;						// ƒƒjƒ…[ƒo[
-	BOOL status_bar;					// ƒXƒe[ƒ^ƒXƒo[
-	int window_left;					// ƒEƒBƒ“ƒhƒE‹éŒ`
-	int window_top;						// ƒEƒBƒ“ƒhƒE‹éŒ`
-	BOOL window_full;					// ƒtƒ‹ƒXƒNƒŠ[ƒ“
-	int window_mode;					// ƒƒCƒhƒXƒNƒŠ[ƒ“
+	// ï¿½fï¿½Bï¿½Xï¿½vï¿½ï¿½ï¿½C
+	BOOL caption;						// ï¿½Lï¿½ï¿½ï¿½vï¿½Vï¿½ï¿½ï¿½ï¿½
+	BOOL menu_bar;						// ï¿½ï¿½ï¿½jï¿½ï¿½ï¿½[ï¿½oï¿½[
+	BOOL status_bar;					// ï¿½Xï¿½eï¿½[ï¿½^ï¿½Xï¿½oï¿½[
+	int window_left;					// ï¿½Eï¿½Bï¿½ï¿½ï¿½hï¿½Eï¿½ï¿½`
+	int window_top;						// ï¿½Eï¿½Bï¿½ï¿½ï¿½hï¿½Eï¿½ï¿½`
+	BOOL window_full;					// ï¿½tï¿½ï¿½ï¿½Xï¿½Nï¿½ï¿½ï¿½[ï¿½ï¿½
+	int window_mode;					// ï¿½ï¿½ï¿½Cï¿½hï¿½Xï¿½Nï¿½ï¿½ï¿½[ï¿½ï¿½
 
-	// WINDRVƒ‚ƒWƒ…[ƒ‹
-	DWORD windrv_enable;				// WindrvƒTƒ|[ƒg 0:–³Œø 1:WindrvXM (2:WindrvŒİŠ·)
+	// WINDRVï¿½ï¿½ï¿½Wï¿½ï¿½ï¿½[ï¿½ï¿½
+	DWORD windrv_enable;				// Windrvï¿½Tï¿½|ï¿½[ï¿½g 0:ï¿½ï¿½ï¿½ï¿½ 1:WindrvXM (2:Windrvï¿½İŠï¿½)
 
-	// ƒzƒXƒg‘¤ƒtƒ@ƒCƒ‹ƒVƒXƒeƒ€
-	DWORD host_option;					// “®ìƒtƒ‰ƒO (class CHostFilename QÆ)
-	BOOL host_resume;					// ƒx[ƒXƒpƒXó‘Ô•œŒ³—LŒø FALSE‚¾‚Æ–ˆ‰ñƒXƒLƒƒƒ“‚·‚é
-	DWORD host_drives;					// —LŒø‚Èƒhƒ‰ƒCƒu”
-	DWORD host_flag[10];				// “®ìƒtƒ‰ƒO (class CWinFileDrv QÆ)
-	TCHAR host_path[10][_MAX_PATH];		// ƒx[ƒXƒpƒX
+	// ï¿½zï¿½Xï¿½gï¿½ï¿½ï¿½tï¿½@ï¿½Cï¿½ï¿½ï¿½Vï¿½Xï¿½eï¿½ï¿½
+	DWORD host_option;					// ï¿½ï¿½ï¿½ï¿½tï¿½ï¿½ï¿½O (class CHostFilename ï¿½Qï¿½ï¿½)
+	BOOL host_resume;					// ï¿½xï¿½[ï¿½Xï¿½pï¿½Xï¿½ï¿½Ô•ï¿½ï¿½ï¿½ï¿½Lï¿½ï¿½ FALSEï¿½ï¿½ï¿½Æ–ï¿½ï¿½ï¿½Xï¿½Lï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
+	DWORD host_drives;					// ï¿½Lï¿½ï¿½ï¿½Èƒhï¿½ï¿½ï¿½Cï¿½uï¿½ï¿½
+	DWORD host_flag[10];				// ï¿½ï¿½ï¿½ï¿½tï¿½ï¿½ï¿½O (class CWinFileDrv ï¿½Qï¿½ï¿½)
+	TCHAR host_path[10][_MAX_PATH];		// ï¿½xï¿½[ï¿½Xï¿½pï¿½X
 };
 
 #endif	// config_h

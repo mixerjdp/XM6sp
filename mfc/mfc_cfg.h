@@ -2,7 +2,7 @@
 //
 //	EMULADOR X68000 "XM6"
 //
-//	Copyright (C) 2001-2006 ‚o‚hD(ytanaka@ipc-tokai.or.jp)
+//	Copyright (C) 2001-2006 ï¿½oï¿½hï¿½D(ytanaka@ipc-tokai.or.jp)
 //	[ MFC Configuracion ]
 //
 //---------------------------------------------------------------------------
@@ -64,10 +64,10 @@ public:
 private:
 	// Datos de configuracion
 	typedef struct _INIKEY {
-		void *pBuf;						// ƒ|ƒCƒ“ƒ^
+		void *pBuf;						// ï¿½|ï¿½Cï¿½ï¿½ï¿½^
 		LPCTSTR pszSection;				// Nombre de seccion
 		LPCTSTR pszKey;					// Nombre de clave
-		int nType;						// Œ^
+		int nType;						// ï¿½^
 		int nDef;						// Valor por defecto
 		int nMin;						// Valor minimo (solo algunos tipos)
 		int nMax;						// Valor maximo (solo algunos)
@@ -87,7 +87,7 @@ private:
 	static Config m_Config;
 										// Datos de configuracion
 
-	// ƒo[ƒWƒ‡ƒ“ŒİŠ·
+	// ï¿½oï¿½[ï¿½Wï¿½ï¿½ï¿½ï¿½ï¿½İŠï¿½
 	void FASTCALL ResetSASI();
 										// Reconfiguracion SASI
 	void FASTCALL ResetCDROM();
@@ -110,7 +110,7 @@ private:
 	int m_MRUNum[MruTypes];
 										// Numero de MRU
 
-	// ƒL[
+	// ï¿½Lï¿½[
 	void FASTCALL LoadKey() const;
 										// Cargar clave
 	void FASTCALL SaveKey() const;
@@ -122,15 +122,15 @@ private:
 	void FASTCALL SaveTKey() const;
 										// Guardar TrueKey
 
-	// ƒo[ƒWƒ‡ƒ“ŒİŠ·
+	// ï¿½oï¿½[ï¿½Wï¿½ï¿½ï¿½ï¿½ï¿½İŠï¿½
 	BOOL FASTCALL Load200(Fileio *pFio);
 										// version 2.00 o version 2.01
 	BOOL FASTCALL Load202(Fileio *pFio);
 										// version 2.02 o version 2.03
 
-	// CargarEGuardar
+	// Cargarï¿½EGuardar
 	BOOL m_bApply;
-										// CargarŒãApplyCfg‚ğ—v‹
+										// Cargarï¿½ï¿½ApplyCfgï¿½ï¿½vï¿½ï¿½
 };
 
 //---------------------------------------------------------------------------
@@ -325,7 +325,7 @@ protected:
 
 private:
 	void FASTCALL UpdateReport();
-										// ƒŒƒ|[ƒgActualizacion
+										// ï¿½ï¿½ï¿½|ï¿½[ï¿½gActualizacion
 	void FASTCALL EnableControls(BOOL bEnable);
 										// Cambio de estado de los controles
 	DWORD m_dwEdit[0x100];
@@ -362,11 +362,11 @@ public:
 
 protected:
 	afx_msg void OnPaint();
-										// ƒ_ƒCƒAƒƒODibujar
+										// ï¿½_ï¿½Cï¿½Aï¿½ï¿½ï¿½ODibujar
 	afx_msg LONG OnKickIdle(UINT uParam, LONG lParam);
 										// Proceso idle
 	afx_msg LONG OnApp(UINT uParam, LONG lParam);
-										// ƒ†[ƒU(Notificacion de ventanas subordinadas)
+										// ï¿½ï¿½ï¿½[ï¿½U(Notificacion de ventanas subordinadas)
 
 private:
 	void FASTCALL OnDraw(CDC *pDC);
@@ -382,7 +382,7 @@ private:
 	CInput *m_pInput;
 										// CInput
 	DWORD *m_pEditMap;
-										// Editar’†‚Ìƒ}ƒbƒv
+										// Editarï¿½ï¿½ï¿½Ìƒ}ï¿½bï¿½v
 
 	DECLARE_MESSAGE_MAP()
 										// Con mapa de mensajes
@@ -405,13 +405,13 @@ public:
 	UINT m_nTarget;
 										// Tecla objetivo
 	UINT m_nKey;
-										// AsignacionƒL[
+										// Asignacionï¿½Lï¿½[
 
 protected:
 	afx_msg void OnPaint();
 										// Dibujar
 	afx_msg UINT OnGetDlgCode();
-										// ƒ_ƒCƒAƒƒOƒR[ƒhObtener
+										// ï¿½_ï¿½Cï¿½Aï¿½ï¿½ï¿½Oï¿½Rï¿½[ï¿½hObtener
 	afx_msg LONG OnKickIdle(UINT uParam, LONG lParam);
 										// Proceso idle
 	afx_msg void OnRButtonDown(UINT nFlags, CPoint point);
@@ -429,9 +429,9 @@ private:
 	CString m_GuideString;
 										// Cadena guia
 	CRect m_AssignRect;
-										// ƒL[Asignacion‹éŒ`
+										// ï¿½Lï¿½[Asignacionï¿½ï¿½`
 	CString m_AssignString;
-										// ƒL[Asignacion•¶š—ñ
+										// ï¿½Lï¿½[Asignacionï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 	CRect m_KeyRect;
 										// Rectangulo de tecla
 	CString m_KeyString;
@@ -503,9 +503,9 @@ private:
 	void FASTCALL OnSetting(UINT nButton);
 										// Configuracion
 	CButton* GetCorButton(UINT nComboBox);
-										// ‘Î‰BotonesObtener
+										// ï¿½Î‰ï¿½BotonesObtener
 	CComboBox* GetCorCombo(UINT nButton);
-										// ‘Î‰Cuadro combinadoObtener
+										// ï¿½Î‰ï¿½Cuadro combinadoObtener
 	CInput *m_pInput;
 										// CInput
 	static UINT ControlTable[];
@@ -514,7 +514,7 @@ private:
 
 //===========================================================================
 //
-//	ƒWƒ‡ƒCƒXƒeƒBƒbƒNDialogo de detalles
+//	ï¿½Wï¿½ï¿½ï¿½Cï¿½Xï¿½eï¿½Bï¿½bï¿½NDialogo de detalles
 //
 //===========================================================================
 class CJoyDetDlg : public CDialog
@@ -526,7 +526,7 @@ public:
 										// Inicializacion
 
 	CString m_strDesc;
-										// ƒfƒoƒCƒXNombre
+										// ï¿½fï¿½oï¿½Cï¿½XNombre
 	int m_nPort;
 										// Numero de puerto (0 o 1)
 	int m_nType;
@@ -535,7 +535,7 @@ public:
 
 //===========================================================================
 //
-//	BotonesConfiguracionƒy[ƒW
+//	BotonesConfiguracionï¿½yï¿½[ï¿½W
 //
 //===========================================================================
 class CBtnSetPage : public CPropertyPage
@@ -554,11 +554,11 @@ public:
 	int m_nJoy;
 										// Numero de joystick (0 o 1)
 	int m_nType[PPI::PortMax];
-										// ƒWƒ‡ƒCƒXƒeƒBƒbƒNTipo (0-12)
+										// ï¿½Wï¿½ï¿½ï¿½Cï¿½Xï¿½eï¿½Bï¿½bï¿½NTipo (0-12)
 
 protected:
 	afx_msg void OnPaint();
-										// ƒ_ƒCƒAƒƒODibujar
+										// ï¿½_ï¿½Cï¿½Aï¿½ï¿½ï¿½ODibujar
 #if _MFC_VER >= 0x700
 	afx_msg void OnTimer(UINT_PTR nTimerID);
 #else
@@ -574,27 +574,27 @@ private:
 	enum CtrlType {
 		BtnLabel,						// Etiqueta(Botonesn)
 		BtnCombo,						// Cuadro combinado
-		BtnRapid,						// Disparo rapidoƒXƒ‰ƒCƒ_
+		BtnRapid,						// Disparo rapidoï¿½Xï¿½ï¿½ï¿½Cï¿½_
 		BtnValue						// Disparo rapidoEtiqueta
 	};
 	void FASTCALL OnDraw(CDC *pDC, BOOL *pButton, BOOL bForce);
 										// Dibujo principal
 	void FASTCALL OnSlider(int nButton);
-										// ƒXƒ‰ƒCƒ_Modificacion
+										// ï¿½Xï¿½ï¿½ï¿½Cï¿½_Modificacion
 	void FASTCALL OnSelChg(int nButton);
 										// Cambio en el cuadro combinado
 	void FASTCALL GetButtonDesc(const char *pszDesc, CString &strDesc);
 										// BotonesMostrarObtener
 	UINT FASTCALL GetControl(int nButton, CtrlType ctlType) const;
-										// ƒRƒ“ƒgƒ[ƒ‹Obtener ID
+										// ï¿½Rï¿½ï¿½ï¿½gï¿½ï¿½ï¿½[ï¿½ï¿½Obtener ID
 	CPropertySheet *m_pSheet;
 										// Hoja padre
 	CInput *m_pInput;
 										// CInput
 	CRect m_rectLabel[12];
-										// EtiquetaˆÊ’u
+										// Etiquetaï¿½Ê’u
 	BOOL m_bButton[12];
-										// Botones‰Ÿ‰º‹L‰¯
+										// Botonesï¿½ï¿½ï¿½ï¿½ï¿½Lï¿½ï¿½
 #if _MFC_VER >= 0x700
 	UINT_PTR m_nTimerID;
 #else
@@ -604,7 +604,7 @@ private:
 	static const UINT ControlTable[];
 										// Tabla de controles
 	static const int RapidTable[];
-										// Disparo rapidoƒe[ƒuƒ‹
+										// Disparo rapidoï¿½eï¿½[ï¿½uï¿½ï¿½
 
 	DECLARE_MESSAGE_MAP()
 										// Con mapa de mensajes
@@ -612,7 +612,7 @@ private:
 
 //===========================================================================
 //
-//	ƒWƒ‡ƒCƒXƒeƒBƒbƒNHoja de propiedades
+//	ï¿½Wï¿½ï¿½ï¿½Cï¿½Xï¿½eï¿½Bï¿½bï¿½NHoja de propiedades
 //
 //===========================================================================
 class CJoySheet : public CPropertySheet
@@ -621,23 +621,23 @@ public:
 	CJoySheet(CWnd *pParent);
 										// Constructor
 	void FASTCALL SetParam(int nJoy, int nCombo, int nType[]);
-										// ƒpƒ‰ƒ[ƒ^Configuracion
+										// ï¿½pï¿½ï¿½ï¿½ï¿½ï¿½[ï¿½^Configuracion
 	void FASTCALL InitSheet();
-										// ƒV[ƒgInicializacion
+										// ï¿½Vï¿½[ï¿½gInicializacion
 	int FASTCALL GetAxes() const;
 										// Numero de ejesObtener
 	int FASTCALL GetButtons() const;
-										// Botones”Obtener
+										// Botonesï¿½ï¿½Obtener
 
 private:
 	CBtnSetPage m_BtnSet;
-										// BotonesConfiguracionƒy[ƒW
+										// BotonesConfiguracionï¿½yï¿½[ï¿½W
 	CInput *m_pInput;
 										// CInput
 	int m_nJoy;
 										// Numero de joystick (0 o 1)
 	int m_nCombo;
-										// Cuadro combinado‘I‘ğ
+										// Cuadro combinadoï¿½Iï¿½ï¿½
 	int m_nType[PPI::PortMax];
 										// Seleccion de tipo del lado VM
 	DIDEVCAPS m_DevCaps;
@@ -673,7 +673,7 @@ private:
 	void FASTCALL UpdateList();
 										// Actualizar control de lista
 	void FASTCALL CheckSASI(DWORD *pDisk);
-										// SASIƒtƒ@ƒCƒ‹Verificacion
+										// SASIï¿½tï¿½@ï¿½Cï¿½ï¿½Verificacion
 	void FASTCALL EnableControls(BOOL bEnable, BOOL bDrive = TRUE);
 										// Cambio de estado de los controles
 	SASI *m_pSASI;
@@ -716,12 +716,12 @@ protected:
 	afx_msg void OnClick(NMHDR *pNMHDR, LRESULT *pResult);
 										// Clic en columna
 	afx_msg void OnCheck();
-										// Verificacionƒ{ƒbƒNƒXƒNƒŠƒbƒN
+										// Verificacionï¿½{ï¿½bï¿½Nï¿½Xï¿½Nï¿½ï¿½ï¿½bï¿½N
 
 private:
 	enum DevType {
-		DevSASI,						// Disco duro SASIƒhƒ‰ƒCƒu
-		DevSCSI,						// Disco duro SCSIƒhƒ‰ƒCƒu
+		DevSASI,						// Disco duro SASIï¿½hï¿½ï¿½ï¿½Cï¿½u
+		DevSCSI,						// Disco duro SCSIï¿½hï¿½ï¿½ï¿½Cï¿½u
 		DevMO,							// Unidad MO SCSI
 		DevInit,						// SCSI Iniciador (Host)
 		DevNone							// Sin dispositivo
@@ -751,7 +751,7 @@ private:
 	CString m_strNone;
 										// Cadena que indica n/a
 	CString m_strError;
-										// ƒfƒoƒCƒXCadena de error
+										// ï¿½fï¿½oï¿½Cï¿½XCadena de error
 	static const UINT ControlTable[];
 										// Tabla de controles
 
@@ -782,20 +782,20 @@ protected:
 	afx_msg void OnClick(NMHDR *pNMHDR, LRESULT *pResult);
 										// Clic en columna
 	afx_msg void OnButton();
-										// ƒ‰ƒWƒIBotones‘I‘ğ
+										// ï¿½ï¿½ï¿½Wï¿½IBotonesï¿½Iï¿½ï¿½
 	afx_msg void OnCheck();
-										// Verificacionƒ{ƒbƒNƒXƒNƒŠƒbƒN
+										// Verificacionï¿½{ï¿½bï¿½Nï¿½Xï¿½Nï¿½ï¿½ï¿½bï¿½N
 
 private:
 	enum DevType {
-		DevSCSI,						// Disco duro SCSIƒhƒ‰ƒCƒu
+		DevSCSI,						// Disco duro SCSIï¿½hï¿½ï¿½ï¿½Cï¿½u
 		DevMO,							// Unidad MO SCSI
-		DevCD,							// CD-ROM SCSIƒhƒ‰ƒCƒu
+		DevCD,							// CD-ROM SCSIï¿½hï¿½ï¿½ï¿½Cï¿½u
 		DevInit,						// SCSI Iniciador (Host)
 		DevNone							// Sin dispositivo
 	};
 	int FASTCALL GetIfCtrl() const;
-										// Tipo de interfazObtener(ƒRƒ“ƒgƒ[ƒ‹‚æ‚è)
+										// Tipo de interfazObtener(ï¿½Rï¿½ï¿½ï¿½gï¿½ï¿½ï¿½[ï¿½ï¿½ï¿½ï¿½ï¿½)
 	BOOL FASTCALL CheckROM(int nType) const;
 										// ROMVerificacion
 	void FASTCALL UpdateList();
@@ -827,7 +827,7 @@ private:
 	CString m_strNone;
 										// Cadena que indica n/a
 	CString m_strError;
-										// ƒfƒoƒCƒXCadena de error
+										// ï¿½fï¿½oï¿½Cï¿½XCadena de error
 	static const UINT ControlTable[];
 										// Tabla de controles
 
@@ -907,7 +907,7 @@ public:
 	BOOL OnKillActive();
 										// Moverse de pagina
 	BOOL FASTCALL HasParity(const Config *pConfig) const;
-										// SASIƒpƒŠƒeƒB‹@”\Verificacion
+										// SASIï¿½pï¿½ï¿½ï¿½eï¿½Bï¿½@ï¿½\Verificacion
 
 protected:
 	void DoDataExchange(CDataExchange *pDX);
@@ -957,13 +957,13 @@ public:
 	int m_nTarget;
 										// Tecla objetivo
 	int m_nKey;
-										// AsignacionƒL[
+										// Asignacionï¿½Lï¿½[
 
 protected:
 	afx_msg void OnPaint();
 										// Dibujar
 	afx_msg UINT OnGetDlgCode();
-										// ƒ_ƒCƒAƒƒOƒR[ƒhObtener
+										// ï¿½_ï¿½Cï¿½Aï¿½ï¿½ï¿½Oï¿½Rï¿½[ï¿½hObtener
 #if _MFC_VER >= 0x700
 	afx_msg void OnTimer(UINT_PTR nTimerID);
 										// Temporizador
@@ -993,9 +993,9 @@ private:
 	CString m_strGuide;
 										// Cadena guia
 	CRect m_rectAssign;
-										// ƒL[Asignacion‹éŒ`
+										// ï¿½Lï¿½[Asignacionï¿½ï¿½`
 	CString m_strAssign;
-										// ƒL[Asignacion•¶š—ñ
+										// ï¿½Lï¿½[Asignacionï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 	CRect m_rectKey;
 										// Rectangulo de tecla
 	CString m_strKey;
@@ -1032,7 +1032,7 @@ private:
 	void FASTCALL EnableControls(BOOL bEnable);
 										// Cambio de estado de los controles
 	void FASTCALL UpdateReport();
-										// ƒŒƒ|[ƒgActualizacion
+										// ï¿½ï¿½ï¿½|ï¿½[ï¿½gActualizacion
 	BOOL m_bEnableCtrl;
 										// Flag de activacion de controles
 	CInput *m_pInput;
@@ -1040,7 +1040,7 @@ private:
 	CTKey *m_pTKey;
 										// TrueKey
 	int m_nKey[0x73];
-										// Editar’†‚ÌConversionƒe[ƒuƒ‹
+										// Editarï¿½ï¿½ï¿½ï¿½Conversionï¿½eï¿½[ï¿½uï¿½ï¿½
 	static const UINT ControlTable[];
 										// Tabla de controles
 
@@ -1062,6 +1062,8 @@ public:
 	void OnOK();	
 	void DoDataExchange(CDataExchange *pDX);
 										// Intercambio de datos
+
+	int m_nRendererDefault;
 										
 DECLARE_MESSAGE_MAP()
 };
@@ -1079,13 +1081,13 @@ public:
 	Config *m_pConfig;
 										// Datos de configuracion
 	CConfigPage* FASTCALL SearchPage(DWORD dwID) const;
-										// ƒy[ƒWBusqueda
+										// ï¿½yï¿½[ï¿½WBusqueda
 
 protected:
 	afx_msg int OnCreate(LPCREATESTRUCT lpCreateStruct);
-										// ƒEƒBƒ“ƒhƒECrear
+										// ï¿½Eï¿½Bï¿½ï¿½ï¿½hï¿½ECrear
 	afx_msg void OnDestroy();
-										// ƒEƒBƒ“ƒhƒEEliminar
+										// ï¿½Eï¿½Bï¿½ï¿½ï¿½hï¿½EEliminar
 #if _MFC_VER >= 0x700
 	afx_msg void OnTimer(UINT_PTR nTimerID);
 #else
@@ -1126,9 +1128,9 @@ private:
 	CMIDIPage m_MIDI;
 										// MIDI
 	CAlterPage m_Alter;
-										// ‰ü‘¢
+										// ï¿½ï¿½ï¿½ï¿½
 	CResumePage m_Resume;
-										// ƒŒƒWƒ…[ƒ€
+										// ï¿½ï¿½ï¿½Wï¿½ï¿½ï¿½[ï¿½ï¿½
 	CTKeyPage m_TKey;
 										// TrueKey
 	CMiscPage m_Misc;

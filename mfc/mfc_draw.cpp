@@ -966,6 +966,20 @@ void FASTCALL CDrawView::SetVSync(BOOL bEnable)
 
   //---------------------------------------------------------------------------
   //
+  //	Aplicar configuracion de renderizador
+  //
+  //---------------------------------------------------------------------------
+void FASTCALL CDrawView::ApplyRendererConfig(int nRenderMode)
+{
+	BOOL bWantDX9 = (nRenderMode == 1);
+
+	if (m_bUseDX9 != bWantDX9) {
+		ToggleRenderer();
+	}
+}
+
+  //---------------------------------------------------------------------------
+  //
   //	Alternar entre DX9 y GDI
   //
   //---------------------------------------------------------------------------

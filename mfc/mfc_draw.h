@@ -78,6 +78,8 @@ public:
 										 // Solicitar frame al hilo UI
 	void FASTCALL SetVSync(BOOL bEnable);
 										 // Actualizar VSync en renderer DX
+	void FASTCALL ApplyRendererConfig(int nRenderMode);
+										 // Aplicar configuracion de renderizador
 	void FASTCALL ToggleRenderer();
 										 // Alternar entre DX9 y GDI
 	void FASTCALL ShowRenderStatusOSD(BOOL bVSync);

@@ -247,6 +247,9 @@
 #define IDC_MISC_POPUP					1404
 #define IDC_MISC_AUTOMOUSE				1405
 #define IDC_MISC_POWEROFF				1406
+#define IDC_MISC_VSYNC					1409
+#define IDC_MISC_RENDERER				1410
+#define IDC_MISC_RENDERERL				1411
 #define IDR_MENU_POPUP                  40193
 #define IDM_TOGGLE_OSD                  40195
 #define IDC_BUSCAR                      1407
@@ -260,6 +263,9 @@
 #define IDC_US_MISC_POPUP				6404
 #define IDC_US_MISC_AUTOMOUSE			6405
 #define IDC_US_MISC_POWEROFF			6406
+#define IDC_US_MISC_VSYNC				6407
+#define IDC_US_MISC_RENDERER			6408
+#define IDC_US_MISC_RENDERERL			6409
 
 // �L�[�{�[�h�y�[�W
 #define IDC_KBD_HELP					1500

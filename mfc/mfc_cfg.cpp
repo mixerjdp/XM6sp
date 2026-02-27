@@ -2,7 +2,7 @@
 //
 //	EMULADOR X68000 "XM6"
 //
-//	Copyright (C) 2001-2006 ‚o‚hD(ytanaka@ipc-tokai.or.jp)
+//	Copyright (C) 2001-2006 ï¿½oï¿½hï¿½D(ytanaka@ipc-tokai.or.jp)
 //	[ MFC Configuracion ]
 //
 //---------------------------------------------------------------------------
@@ -121,7 +121,7 @@ BOOL FASTCALL CConfig::Init()
 		
 	_tcscpy(m_IniFile, path.GetPath());
 
-	// Datos de configuracion -> Aqui se carga la configuración *-*
+	// Datos de configuracion -> Aqui se carga la configuraciï¿½n *-*
 	LoadConfig();
 
 		  
@@ -210,7 +210,7 @@ BOOL FASTCALL CConfig::CustomInit(BOOL ArchivoDefault)
 	// Determinacion de la ruta del archivo INI
 	path.SetPath(_T("XM6.ini"));
 
-	// Obtener nombre archivo de juego actual y remover extensión
+	// Obtener nombre archivo de juego actual y remover extensiï¿½n
 	int nLen = m_pFrmWnd->NombreArchivoXM6.GetLength();
 	TCHAR lpszBuf[MAX_PATH];
 	_tcscpy(lpszBuf, m_pFrmWnd->NombreArchivoXM6.GetBuffer(nLen));
@@ -254,7 +254,7 @@ void FASTCALL CConfig::Cleanup()
 
 	ASSERT(this);
 
-	// İ’èƒf[ƒ^
+	// ï¿½İ’ï¿½fï¿½[ï¿½^
 	//SaveConfig();
 
 	// MRU
@@ -262,7 +262,7 @@ void FASTCALL CConfig::Cleanup()
 	//		SaveMRU(i);
 	//}
 
-	// ƒL[
+	// ï¿½Lï¿½[
 	//SaveKey();
 
 	// TrueKey
@@ -286,7 +286,7 @@ void FASTCALL CConfig::Cleanup2()
 	ASSERT(this);
 
 
-	// Guardar configuracion
+	// ï¿½Guardar configuracion
 	SaveConfig();
 
 	// Guardar MRU
@@ -308,14 +308,14 @@ void FASTCALL CConfig::Cleanup2()
 
 //---------------------------------------------------------------------------
 //
-//	İ’èƒf[ƒ^À‘Ì
+//	ï¿½İ’ï¿½fï¿½[ï¿½^ï¿½ï¿½ï¿½ï¿½
 //
 //---------------------------------------------------------------------------
 Config CConfig::m_Config;
 
 //---------------------------------------------------------------------------
 //
-//	İ’èƒf[ƒ^æ“¾
+//	ï¿½İ’ï¿½fï¿½[ï¿½^ï¿½æ“¾
 //
 //---------------------------------------------------------------------------
 void FASTCALL CConfig::GetConfig(Config *pConfigBuf) const
@@ -323,13 +323,13 @@ void FASTCALL CConfig::GetConfig(Config *pConfigBuf) const
 	ASSERT(this);
 	ASSERT(pConfigBuf);
 
-	// “à•”ƒ[ƒN‚ğCopiar
+	// ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½[ï¿½Nï¿½ï¿½Copiar
 	*pConfigBuf = m_Config;
 }
 
 //---------------------------------------------------------------------------
 //
-//	İ’èƒf[ƒ^İ’è
+//	ï¿½İ’ï¿½fï¿½[ï¿½^ï¿½İ’ï¿½
 //
 //---------------------------------------------------------------------------
 void FASTCALL CConfig::SetConfig(Config *pConfigBuf)
@@ -337,13 +337,13 @@ void FASTCALL CConfig::SetConfig(Config *pConfigBuf)
 	ASSERT(this);
 	ASSERT(pConfigBuf);
 
-	// “à•”ƒ[ƒN‚ÖCopiar
+	// ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½[ï¿½Nï¿½ï¿½Copiar
 	m_Config = *pConfigBuf;
 }
 
 //---------------------------------------------------------------------------
 //
-//	‰æ–ÊŠg‘åİ’è
+//	ï¿½ï¿½ÊŠgï¿½ï¿½İ’ï¿½
 //
 //---------------------------------------------------------------------------
 void FASTCALL CConfig::SetStretch(BOOL bStretch)
@@ -355,7 +355,7 @@ void FASTCALL CConfig::SetStretch(BOOL bStretch)
 
 //---------------------------------------------------------------------------
 //
-//	MIDIƒfƒoƒCƒXİ’è
+//	MIDIï¿½fï¿½oï¿½Cï¿½Xï¿½İ’ï¿½
 //
 //---------------------------------------------------------------------------
 void FASTCALL CConfig::SetMIDIDevice(int nDevice, BOOL bIn)
@@ -363,7 +363,7 @@ void FASTCALL CConfig::SetMIDIDevice(int nDevice, BOOL bIn)
 	ASSERT(this);
 	ASSERT(nDevice >= 0);
 
-	// In‚Ü‚½‚ÍOut
+	// Inï¿½Ü‚ï¿½ï¿½ï¿½Out
 	if (bIn) {
 		m_Config.midiin_device = nDevice;
 	}
@@ -374,8 +374,8 @@ void FASTCALL CConfig::SetMIDIDevice(int nDevice, BOOL bIn)
 
 //---------------------------------------------------------------------------
 //
-//	INIƒtƒ@ƒCƒ‹ƒe[ƒuƒ‹
-//	¦ƒ|ƒCƒ“ƒ^EƒZƒNƒVƒ‡ƒ“–¼EƒL[–¼EŒ^EƒfƒtƒHƒ‹ƒg’lEÅ¬’lEÅ‘å’l‚Ì‡
+//	INIï¿½tï¿½@ï¿½Cï¿½ï¿½ï¿½eï¿½[ï¿½uï¿½ï¿½
+//	ï¿½ï¿½ï¿½|ï¿½Cï¿½ï¿½ï¿½^ï¿½Eï¿½Zï¿½Nï¿½Vï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Eï¿½Lï¿½[ï¿½ï¿½ï¿½Eï¿½^ï¿½Eï¿½fï¿½tï¿½Hï¿½ï¿½ï¿½gï¿½lï¿½Eï¿½Åï¿½ï¿½lï¿½Eï¿½Å‘ï¿½lï¿½Ìï¿½
 //
 //---------------------------------------------------------------------------
 const CConfig::INIKEY CConfig::IniTable[] = {
@@ -393,6 +393,8 @@ const CConfig::INIKEY CConfig::IniTable[] = {
 	{ &CConfig::m_Config.adpcm_interp, NULL, _T("ADPCMInterP"), 1, TRUE, 0, 0 },
 
 	{ &CConfig::m_Config.aspect_stretch, _T("Display"), _T("Stretch"), 1, TRUE, 0, 0 },
+	{ &CConfig::m_Config.render_vsync, NULL, _T("VSync"), 1, TRUE, 0, 0 },
+	{ &CConfig::m_Config.render_mode, NULL, _T("Renderer"), 0, 1, 0, 1 },
 	{ &CConfig::m_Config.caption_info, NULL, _T("Info"), 1, TRUE, 0, 0 },
 
 	{ &CConfig::m_Config.master_volume, _T("Volume"), _T("Master"), 0, 100, 0, 100 },
@@ -563,7 +565,7 @@ const CConfig::INIKEY CConfig::IniTable[] = {
 
 //---------------------------------------------------------------------------
 //
-//	İ’èƒf[ƒ^ƒ[ƒh
+//	ï¿½İ’ï¿½fï¿½[ï¿½^ï¿½ï¿½ï¿½[ï¿½h
 //
 //---------------------------------------------------------------------------
 void FASTCALL CConfig::LoadConfig()
@@ -577,22 +579,22 @@ void FASTCALL CConfig::LoadConfig()
 
 	ASSERT(this);
 
-	// ƒe[ƒuƒ‹‚Ìæ“ª‚É‡‚í‚¹‚é
+	// ï¿½eï¿½[ï¿½uï¿½ï¿½ï¿½Ìæ“ªï¿½Éï¿½ï¿½í‚¹ï¿½ï¿½
 	pIni = (const PINIKEY)&IniTable[0];
 	pszSection = NULL;
 	szDef[0] = _T('\0');
 
-	// ƒe[ƒuƒ‹Bucle
+	// ï¿½eï¿½[ï¿½uï¿½ï¿½Bucle
 	while (pIni->pBuf) {
-		// ƒZƒNƒVƒ‡ƒ“İ’è
+		// ï¿½Zï¿½Nï¿½Vï¿½ï¿½ï¿½ï¿½ï¿½İ’ï¿½
 		if (pIni->pszSection) {
 			pszSection = pIni->pszSection;
 		}
 		ASSERT(pszSection);
 
-		// ƒ^ƒCƒvVerificacion
+		// ï¿½^ï¿½Cï¿½vVerificacion
 		switch (pIni->nType) {
-			// ®”Œ^(”ÍˆÍ‚ğ’´‚¦‚½‚çƒfƒtƒHƒ‹ƒg’l)
+			// ï¿½ï¿½ï¿½ï¿½ï¿½^(ï¿½ÍˆÍ‚ğ’´‚ï¿½ï¿½ï¿½ï¿½ï¿½fï¿½tï¿½Hï¿½ï¿½ï¿½gï¿½l)
 			case 0:
 				nValue = ::GetPrivateProfileInt(pszSection, pIni->pszKey, pIni->nDef, m_IniFile);
 				if ((nValue < pIni->nMin) || (pIni->nMax < nValue)) {
@@ -601,7 +603,7 @@ void FASTCALL CConfig::LoadConfig()
 				*((int*)pIni->pBuf) = nValue;
 				break;
 
-			// ˜_—Œ^(0,1‚Ì‚Ç‚¿‚ç‚Å‚à‚È‚¯‚ê‚ÎƒfƒtƒHƒ‹ƒg’l)
+			// ï¿½_ï¿½ï¿½ï¿½^(0,1ï¿½Ì‚Ç‚ï¿½ï¿½ï¿½Å‚ï¿½ï¿½È‚ï¿½ï¿½ï¿½Îƒfï¿½tï¿½Hï¿½ï¿½ï¿½gï¿½l)
 			case 1:
 				nValue = ::GetPrivateProfileInt(pszSection, pIni->pszKey, -1, m_IniFile);
 				switch (nValue) {
@@ -618,13 +620,13 @@ void FASTCALL CConfig::LoadConfig()
 				*((BOOL*)pIni->pBuf) = bFlag;
 				break;
 
-			// •¶š—ñŒ^(ƒoƒbƒtƒ@ƒTƒCƒY”ÍˆÍ“à‚Å‚Ìƒ^[ƒ~ƒl[ƒg‚ğ•ÛØ)
+			// ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½^(ï¿½oï¿½bï¿½tï¿½@ï¿½Tï¿½Cï¿½Yï¿½ÍˆÍ“ï¿½ï¿½Å‚Ìƒ^ï¿½[ï¿½~ï¿½lï¿½[ï¿½gï¿½ï¿½Ûï¿½)
 			case 2:
 				ASSERT(pIni->nDef <= (sizeof(szBuf)/sizeof(TCHAR)));
 				::GetPrivateProfileString(pszSection, pIni->pszKey, szDef, szBuf,
 										sizeof(szBuf)/sizeof(TCHAR), m_IniFile);
 
-				// ƒfƒtƒHƒ‹ƒg’l‚É‚Íƒoƒbƒtƒ@ƒTƒCƒY‚ğ‹L“ü‚·‚é‚±‚Æ
+				// ï¿½fï¿½tï¿½Hï¿½ï¿½ï¿½gï¿½lï¿½É‚Íƒoï¿½bï¿½tï¿½@ï¿½Tï¿½Cï¿½Yï¿½ï¿½ï¿½Lï¿½ï¿½ï¿½ï¿½ï¿½é‚±ï¿½ï¿½
 				ASSERT(pIni->nDef > 0);
 				szBuf[pIni->nDef - 1] = _T('\0');
 				_tcscpy((LPTSTR)pIni->pBuf, szBuf);
@@ -643,7 +645,7 @@ void FASTCALL CConfig::LoadConfig()
 
 //---------------------------------------------------------------------------
 //
-//	İ’èƒf[ƒ^ƒZ[ƒu
+//	ï¿½İ’ï¿½fï¿½[ï¿½^ï¿½Zï¿½[ï¿½u
 //
 //---------------------------------------------------------------------------
 void FASTCALL CConfig::SaveConfig() const
@@ -654,28 +656,28 @@ void FASTCALL CConfig::SaveConfig() const
 
 	ASSERT(this);
 
-	// ƒe[ƒuƒ‹‚Ìæ“ª‚É‡‚í‚¹‚é
+	// ï¿½eï¿½[ï¿½uï¿½ï¿½ï¿½Ìæ“ªï¿½Éï¿½ï¿½í‚¹ï¿½ï¿½
 	pIni = (const PINIKEY)&IniTable[0];
 	pszSection = NULL;
 
-	// ƒe[ƒuƒ‹Bucle
+	// ï¿½eï¿½[ï¿½uï¿½ï¿½Bucle
 	while (pIni->pBuf) {
-		// ƒZƒNƒVƒ‡ƒ“İ’è
+		// ï¿½Zï¿½Nï¿½Vï¿½ï¿½ï¿½ï¿½ï¿½İ’ï¿½
 		if (pIni->pszSection) {
 			pszSection = pIni->pszSection;
 		}
 		ASSERT(pszSection);
 
-		// ƒ^ƒCƒvVerificacion
+		// ï¿½^ï¿½Cï¿½vVerificacion
 		switch (pIni->nType) {
-			// ®”Œ^
+			// ï¿½ï¿½ï¿½ï¿½ï¿½^
 			case 0:
 				string.Format(_T("%d"), *((int*)pIni->pBuf));
 				::WritePrivateProfileString(pszSection, pIni->pszKey,
 											string, m_IniFile);
 				break;
 
-			// ˜_—Œ^
+			// ï¿½_ï¿½ï¿½ï¿½^
 			case 1:
 				if (*(BOOL*)pIni->pBuf) {
 					string = _T("1");
@@ -687,7 +689,7 @@ void FASTCALL CConfig::SaveConfig() const
 											string, m_IniFile);
 				break;
 
-			// •¶š—ñŒ^
+			// ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½^
 			case 2:
 				::WritePrivateProfileString(pszSection, pIni->pszKey,
 											(LPCTSTR)pIni->pBuf, m_IniFile);
@@ -706,9 +708,9 @@ void FASTCALL CConfig::SaveConfig() const
 
 //---------------------------------------------------------------------------
 //
-//	SASIƒŠƒZƒbƒg
-//	¦version1.44‚Ü‚Å‚Í©“®ƒtƒ@ƒCƒ‹Busqueda‚Ì‚½‚ßA‚±‚±‚ÅÄBusqueda‚Æİ’è‚ğs‚¢
-//	version1.45ˆÈ~‚Ö‚ÌˆÚs‚ğƒXƒ€[ƒY‚És‚¤
+//	SASIï¿½ï¿½ï¿½Zï¿½bï¿½g
+//	ï¿½ï¿½version1.44ï¿½Ü‚Å‚Íï¿½ï¿½ï¿½ï¿½tï¿½@ï¿½Cï¿½ï¿½Busquedaï¿½Ì‚ï¿½ï¿½ßAï¿½ï¿½ï¿½ï¿½ï¿½Åï¿½Busquedaï¿½Æİ’ï¿½ï¿½ï¿½sï¿½ï¿½
+//	version1.45ï¿½È~ï¿½Ö‚ÌˆÚsï¿½ï¿½ï¿½Xï¿½ï¿½ï¿½[ï¿½Yï¿½Ésï¿½ï¿½
 //
 //---------------------------------------------------------------------------
 void FASTCALL CConfig::ResetSASI()
@@ -720,7 +722,7 @@ void FASTCALL CConfig::ResetSASI()
 
 	ASSERT(this);
 
-	// Numero de unidades>=0‚Ìê‡‚Í•s—v(İ’èÏ‚İ)
+	// Numero de unidades>=0ï¿½Ìê‡ï¿½Í•sï¿½v(ï¿½İ’ï¿½Ï‚ï¿½)
 	if (m_Config.sasi_drives >= 0) {
 		return;
 	}
@@ -736,20 +738,20 @@ void FASTCALL CConfig::ResetSASI()
 		_tcscpy(m_Config.sasi_file[i], path.GetPath());
 	}
 
-	// Å‰‚©‚çVerificacion‚µ‚ÄA—LŒø‚ÈNumero de unidades‚ğŒˆ‚ß‚é
+	// ï¿½Åï¿½ï¿½ï¿½ï¿½ï¿½Verificacionï¿½ï¿½ï¿½ÄAï¿½Lï¿½ï¿½ï¿½ï¿½Numero de unidadesï¿½ï¿½ï¿½ï¿½ï¿½ß‚ï¿½
 	for (i=0; i<16; i++) {
 		path.SetPath(m_Config.sasi_file[i]);
 		if (!fio.Open(path, Fileio::ReadOnly)) {
 			return;
 		}
 
-		// ƒTƒCƒYVerificacion(version1.44‚Å‚Í40MBƒhƒ‰ƒCƒu‚Ì‚İƒTƒ|[ƒg)
+		// ï¿½Tï¿½Cï¿½YVerificacion(version1.44ï¿½Å‚ï¿½40MBï¿½hï¿½ï¿½ï¿½Cï¿½uï¿½Ì‚İƒTï¿½|ï¿½[ï¿½g)
 		if (fio.GetFileSize() != 0x2793000) {
 			fio.Close();
 			return;
 		}
 
-		// ƒJƒEƒ“ƒgƒAƒbƒv‚ÆƒNƒ[ƒY
+		// ï¿½Jï¿½Eï¿½ï¿½ï¿½gï¿½Aï¿½bï¿½vï¿½ÆƒNï¿½ï¿½ï¿½[ï¿½Y
 		m_Config.sasi_drives++;
 		fio.Close();
 	}
@@ -757,23 +759,23 @@ void FASTCALL CConfig::ResetSASI()
 
 //---------------------------------------------------------------------------
 //
-//	CD-ROMƒŠƒZƒbƒg
-//	¦version2.02‚Ü‚Å‚ÍCD-ROM–¢ƒTƒ|[ƒg‚Ì‚½‚ßASCSINumero de unidades‚ğ+1‚·‚é
+//	CD-ROMï¿½ï¿½ï¿½Zï¿½bï¿½g
+//	ï¿½ï¿½version2.02ï¿½Ü‚Å‚ï¿½CD-ROMï¿½ï¿½ï¿½Tï¿½|ï¿½[ï¿½gï¿½Ì‚ï¿½ï¿½ßASCSINumero de unidadesï¿½ï¿½+1ï¿½ï¿½ï¿½ï¿½
 //
 //---------------------------------------------------------------------------
 void FASTCALL CConfig::ResetCDROM()
 {
 	ASSERT(this);
 
-	// CD-ROMƒtƒ‰ƒO‚ªƒZƒbƒg‚³‚ê‚Ä‚¢‚éê‡‚Í•s—v(İ’èÏ‚İ)
+	// CD-ROMï¿½tï¿½ï¿½ï¿½Oï¿½ï¿½ï¿½Zï¿½bï¿½gï¿½ï¿½ï¿½ï¿½Ä‚ï¿½ï¿½ï¿½ê‡ï¿½Í•sï¿½v(ï¿½İ’ï¿½Ï‚ï¿½)
 	if (m_bCDROM) {
 		return;
 	}
 
-	// CD-ROMƒtƒ‰ƒO‚ğƒZƒbƒg
+	// CD-ROMï¿½tï¿½ï¿½ï¿½Oï¿½ï¿½ï¿½Zï¿½bï¿½g
 	m_bCDROM = TRUE;
 
-	// SCSINumero de unidades‚ª3ˆÈã6ˆÈ‰º‚Ìê‡‚ÉŒÀ‚èA+1
+	// SCSINumero de unidadesï¿½ï¿½3ï¿½Èï¿½6ï¿½È‰ï¿½ï¿½Ìê‡ï¿½ÉŒï¿½ï¿½ï¿½A+1
 	if ((m_Config.scsi_drives >= 3) && (m_Config.scsi_drives <= 6)) {
 		m_Config.scsi_drives++;
 	}
@@ -781,7 +783,7 @@ void FASTCALL CConfig::ResetCDROM()
 
 //---------------------------------------------------------------------------
 //
-//	CD-ROMƒtƒ‰ƒO
+//	CD-ROMï¿½tï¿½ï¿½ï¿½O
 //
 //---------------------------------------------------------------------------
 BOOL CConfig::m_bCDROM;
@@ -798,18 +800,18 @@ void FASTCALL CConfig::ClearMRU(int nType)
 	ASSERT(this);
 	ASSERT((nType >= 0) && (nType < MruTypes));
 
-	// À‘ÌLimpiar
+	// ï¿½ï¿½ï¿½ï¿½Limpiar
 	for (i=0; i<9; i++) {
 		memset(m_MRUFile[nType][i], 0, FILEPATH_MAX * sizeof(TCHAR));
 	}
 
-	// ŒÂ”Limpiar
+	// ï¿½Âï¿½Limpiar
 	m_MRUNum[nType] = 0;
 }
 
 //---------------------------------------------------------------------------
 //
-//	MRUƒ[ƒh
+//	MRUï¿½ï¿½ï¿½[ï¿½h
 //
 //---------------------------------------------------------------------------
 void FASTCALL CConfig::LoadMRU(int nType)
@@ -821,7 +823,7 @@ void FASTCALL CConfig::LoadMRU(int nType)
 	ASSERT(this);
 	ASSERT((nType >= 0) && (nType < MruTypes));
 
-	// ƒZƒNƒVƒ‡ƒ“Crear
+	// ï¿½Zï¿½Nï¿½Vï¿½ï¿½ï¿½ï¿½Crear
 	strSection.Format(_T("MRU%d"), nType);
 
 	// Bucle
@@ -838,7 +840,7 @@ void FASTCALL CConfig::LoadMRU(int nType)
 
 //---------------------------------------------------------------------------
 //
-//	MRUƒZ[ƒu
+//	MRUï¿½Zï¿½[ï¿½u
 //
 //---------------------------------------------------------------------------
 void FASTCALL CConfig::SaveMRU(int nType) const
@@ -850,7 +852,7 @@ void FASTCALL CConfig::SaveMRU(int nType) const
 	ASSERT(this);
 	ASSERT((nType >= 0) && (nType < MruTypes));
 
-	// ƒZƒNƒVƒ‡ƒ“Crear
+	// ï¿½Zï¿½Nï¿½Vï¿½ï¿½ï¿½ï¿½Crear
 	strSection.Format(_T("MRU%d"), nType);
 
 	// Bucle
@@ -863,7 +865,7 @@ void FASTCALL CConfig::SaveMRU(int nType) const
 
 //---------------------------------------------------------------------------
 //
-//	MRUƒZƒbƒg
+//	MRUï¿½Zï¿½bï¿½g
 //
 //---------------------------------------------------------------------------
 void FASTCALL CConfig::SetMRUFile(int nType, LPCTSTR lpszFile)
@@ -876,11 +878,11 @@ void FASTCALL CConfig::SetMRUFile(int nType, LPCTSTR lpszFile)
 	ASSERT((nType >= 0) && (nType < MruTypes));
 	ASSERT(lpszFile);
 
-	// Šù‚É“¯‚¶‚à‚Ì‚ª‚È‚¢‚©
+	// ï¿½ï¿½ï¿½É“ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ì‚ï¿½ï¿½È‚ï¿½ï¿½ï¿½
 	nNum = GetMRUNum(nType);
 	for (nMRU=0; nMRU<nNum; nMRU++) {
 		if (_tcscmp(m_MRUFile[nType][nMRU], lpszFile) == 0) {
-			// æ“ª‚É‚ ‚Á‚ÄA‚Ü‚½“¯‚¶‚à‚Ì‚ğAgregar‚µ‚æ‚¤‚Æ‚µ‚½
+			// ï¿½æ“ªï¿½É‚ï¿½ï¿½ï¿½ï¿½ÄAï¿½Ü‚ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ì‚ï¿½Agregarï¿½ï¿½ï¿½æ‚¤ï¿½Æ‚ï¿½ï¿½ï¿½
 			if (nMRU == 0) {
 				return;
 			}
@@ -891,23 +893,23 @@ void FASTCALL CConfig::SetMRUFile(int nType, LPCTSTR lpszFile)
 						FILEPATH_MAX * sizeof(TCHAR));
 			}
 
-			// æ“ª‚ÉƒZƒbƒg
+			// ï¿½æ“ªï¿½ÉƒZï¿½bï¿½g
 			_tcscpy(m_MRUFile[nType][0], lpszFile);
 			return;
 		}
 	}
 
-	// ˆÚ“®
+	// ï¿½Ú“ï¿½
 	for (nMRU=7; nMRU>=0; nMRU--) {
 		memcpy(m_MRUFile[nType][nMRU + 1], m_MRUFile[nType][nMRU],
 				FILEPATH_MAX * sizeof(TCHAR));
 	}
 
-	// æ“ª‚ÉƒZƒbƒg
+	// ï¿½æ“ªï¿½ÉƒZï¿½bï¿½g
 	ASSERT(_tcslen(lpszFile) < FILEPATH_MAX);
 	_tcscpy(m_MRUFile[nType][0], lpszFile);
 
-	// ŒÂ”Actualizacion
+	// ï¿½Âï¿½Actualizacion
 	if (m_MRUNum[nType] < 9) {
 		m_MRUNum[nType]++;
 	}
@@ -915,7 +917,7 @@ void FASTCALL CConfig::SetMRUFile(int nType, LPCTSTR lpszFile)
 
 //---------------------------------------------------------------------------
 //
-//	MRUæ“¾
+//	MRUï¿½æ“¾
 //
 //---------------------------------------------------------------------------
 void FASTCALL CConfig::GetMRUFile(int nType, int nIndex, LPTSTR lpszFile) const
@@ -925,7 +927,7 @@ void FASTCALL CConfig::GetMRUFile(int nType, int nIndex, LPTSTR lpszFile) const
 	ASSERT((nIndex >= 0) && (nIndex < 9));
 	ASSERT(lpszFile);
 
-	// ŒÂ”ˆÈã‚È‚ç\0
+	// ï¿½Âï¿½ï¿½Èï¿½È‚ï¿½\0
 	if (nIndex >= m_MRUNum[nType]) {
 		lpszFile[0] = _T('\0');
 		return;
@@ -938,7 +940,7 @@ void FASTCALL CConfig::GetMRUFile(int nType, int nIndex, LPTSTR lpszFile) const
 
 //---------------------------------------------------------------------------
 //
-//	MRUŒÂ”æ“¾
+//	MRUï¿½Âï¿½ï¿½æ“¾
 //
 //---------------------------------------------------------------------------
 int FASTCALL CConfig::GetMRUNum(int nType) const
@@ -951,7 +953,7 @@ int FASTCALL CConfig::GetMRUNum(int nType) const
 
 //---------------------------------------------------------------------------
 //
-//	ƒL[ƒ[ƒh
+//	ï¿½Lï¿½[ï¿½ï¿½ï¿½[ï¿½h
 //
 //---------------------------------------------------------------------------
 void FASTCALL CConfig::LoadKey() const
@@ -969,7 +971,7 @@ void FASTCALL CConfig::LoadKey() const
 	pInput = m_pFrmWnd->GetInput();
 	ASSERT(pInput);
 
-	// ƒtƒ‰ƒOOFF(—LŒøƒf[ƒ^‚È‚µ)ALimpiar
+	// ï¿½tï¿½ï¿½ï¿½OOFF(ï¿½Lï¿½ï¿½ï¿½fï¿½[ï¿½^ï¿½È‚ï¿½)ï¿½ALimpiar
 	bFlag = FALSE;
 	memset(dwMap, 0, sizeof(dwMap));
 
@@ -978,19 +980,19 @@ void FASTCALL CConfig::LoadKey() const
 		strName.Format(_T("Key%d"), i);
 		nValue = ::GetPrivateProfileInt(_T("Keyboard"), strName, 0, m_IniFile);
 
-		// ’l‚ª”ÍˆÍ“à‚Éû‚Ü‚Á‚Ä‚¢‚È‚¯‚ê‚ÎA‚±‚±‚Å‘Å‚¿Ø‚é(ƒfƒtƒHƒ‹ƒg’l‚ğg‚¤)
+		// ï¿½lï¿½ï¿½ï¿½ÍˆÍ“ï¿½ï¿½Éï¿½ï¿½Ü‚ï¿½ï¿½Ä‚ï¿½ï¿½È‚ï¿½ï¿½ï¿½ÎAï¿½ï¿½ï¿½ï¿½ï¿½Å‘Å‚ï¿½ï¿½Ø‚ï¿½(ï¿½fï¿½tï¿½Hï¿½ï¿½ï¿½gï¿½lï¿½ï¿½ï¿½gï¿½ï¿½)
 		if ((nValue < 0) || (nValue > 0x73)) {
 			return;
 		}
 
-		// ’l‚ª‚ ‚ê‚ÎƒZƒbƒg‚µ‚ÄAƒtƒ‰ƒO—§‚Ä‚é
+		// ï¿½lï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ÎƒZï¿½bï¿½gï¿½ï¿½ï¿½ÄAï¿½tï¿½ï¿½ï¿½Oï¿½ï¿½ï¿½Ä‚ï¿½
 		if (nValue != 0) {
 			dwMap[i] = nValue;
 			bFlag = TRUE;
 		}
 	}
 
-	// ƒtƒ‰ƒO‚ª—§‚Á‚Ä‚¢‚ê‚ÎAƒ}ƒbƒvƒf[ƒ^İ’è
+	// ï¿½tï¿½ï¿½ï¿½Oï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ä‚ï¿½ï¿½ï¿½ÎAï¿½}ï¿½bï¿½vï¿½fï¿½[ï¿½^ï¿½İ’ï¿½
 	if (bFlag) {
 		pInput->SetKeyMap(dwMap);
 	}
@@ -998,7 +1000,7 @@ void FASTCALL CConfig::LoadKey() const
 
 //---------------------------------------------------------------------------
 //
-//	ƒL[ƒZ[ƒu
+//	ï¿½Lï¿½[ï¿½Zï¿½[ï¿½u
 //
 //---------------------------------------------------------------------------
 void FASTCALL CConfig::SaveKey() const
@@ -1015,12 +1017,12 @@ void FASTCALL CConfig::SaveKey() const
 	pInput = m_pFrmWnd->GetInput();
 	ASSERT(pInput);
 
-	// ƒ}ƒbƒvƒf[ƒ^æ“¾
+	// ï¿½}ï¿½bï¿½vï¿½fï¿½[ï¿½^ï¿½æ“¾
 	pInput->GetKeyMap(dwMap);
 
 	// Bucle
 	for (i=0; i<0x100; i++) {
-		// ‚·‚×‚Ä(256í—Ş)‘‚­
+		// ï¿½ï¿½ï¿½×‚ï¿½(256ï¿½ï¿½ï¿½)ï¿½ï¿½ï¿½ï¿½
 		strName.Format(_T("Key%d"), i);
 		strKey.Format(_T("%d"), dwMap[i]);
 		::WritePrivateProfileString(_T("Keyboard"), strName,
@@ -1030,7 +1032,7 @@ void FASTCALL CConfig::SaveKey() const
 
 //---------------------------------------------------------------------------
 //
-//	TrueKeyƒ[ƒh
+//	TrueKeyï¿½ï¿½ï¿½[ï¿½h
 //
 //---------------------------------------------------------------------------
 void FASTCALL CConfig::LoadTKey() const
@@ -1049,7 +1051,7 @@ void FASTCALL CConfig::LoadTKey() const
 	pTKey = m_pFrmWnd->GetTKey();
 	ASSERT(pTKey);
 
-	// ƒtƒ‰ƒOOFF(—LŒøƒf[ƒ^‚È‚µ)ALimpiar
+	// ï¿½tï¿½ï¿½ï¿½OOFF(ï¿½Lï¿½ï¿½ï¿½fï¿½[ï¿½^ï¿½È‚ï¿½)ï¿½ALimpiar
 	bFlag = FALSE;
 	memset(nMap, 0, sizeof(nMap));
 
@@ -1058,19 +1060,19 @@ void FASTCALL CConfig::LoadTKey() const
 		strName.Format(_T("Key%d"), i);
 		nValue = ::GetPrivateProfileInt(_T("TrueKey"), strName, 0, m_IniFile);
 
-		// ’l‚ª”ÍˆÍ“à‚Éû‚Ü‚Á‚Ä‚¢‚È‚¯‚ê‚ÎA‚±‚±‚Å‘Å‚¿Ø‚é(ƒfƒtƒHƒ‹ƒg’l‚ğg‚¤)
+		// ï¿½lï¿½ï¿½ï¿½ÍˆÍ“ï¿½ï¿½Éï¿½ï¿½Ü‚ï¿½ï¿½Ä‚ï¿½ï¿½È‚ï¿½ï¿½ï¿½ÎAï¿½ï¿½ï¿½ï¿½ï¿½Å‘Å‚ï¿½ï¿½Ø‚ï¿½(ï¿½fï¿½tï¿½Hï¿½ï¿½ï¿½gï¿½lï¿½ï¿½ï¿½gï¿½ï¿½)
 		if ((nValue < 0) || (nValue > 0xfe)) {
 			return;
 		}
 
-		// ’l‚ª‚ ‚ê‚ÎƒZƒbƒg‚µ‚ÄAƒtƒ‰ƒO—§‚Ä‚é
+		// ï¿½lï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ÎƒZï¿½bï¿½gï¿½ï¿½ï¿½ÄAï¿½tï¿½ï¿½ï¿½Oï¿½ï¿½ï¿½Ä‚ï¿½
 		if (nValue != 0) {
 			nMap[i] = nValue;
 			bFlag = TRUE;
 		}
 	}
 
-	// ƒtƒ‰ƒO‚ª—§‚Á‚Ä‚¢‚ê‚ÎAƒ}ƒbƒvƒf[ƒ^İ’è
+	// ï¿½tï¿½ï¿½ï¿½Oï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ä‚ï¿½ï¿½ï¿½ÎAï¿½}ï¿½bï¿½vï¿½fï¿½[ï¿½^ï¿½İ’ï¿½
 	if (bFlag) {
 		pTKey->SetKeyMap(nMap);
 	}
@@ -1078,7 +1080,7 @@ void FASTCALL CConfig::LoadTKey() const
 
 //---------------------------------------------------------------------------
 //
-//	TrueKeyƒZ[ƒu
+//	TrueKeyï¿½Zï¿½[ï¿½u
 //
 //---------------------------------------------------------------------------
 void FASTCALL CConfig::SaveTKey() const
@@ -1095,12 +1097,12 @@ void FASTCALL CConfig::SaveTKey() const
 	pTKey = m_pFrmWnd->GetTKey();
 	ASSERT(pTKey);
 
-	// ƒL[ƒ}ƒbƒvæ“¾
+	// ï¿½Lï¿½[ï¿½}ï¿½bï¿½vï¿½æ“¾
 	pTKey->GetKeyMap(nMap);
 
 	// Bucle
 	for (i=0; i<0x73; i++) {
-		// ‚·‚×‚Ä(0x73í—Ş)‘‚­
+		// ï¿½ï¿½ï¿½×‚ï¿½(0x73ï¿½ï¿½ï¿½)ï¿½ï¿½ï¿½ï¿½
 		strName.Format(_T("Key%d"), i);
 		strKey.Format(_T("%d"), nMap[i]);
 		::WritePrivateProfileString(_T("TrueKey"), strName,
@@ -1110,7 +1112,7 @@ void FASTCALL CConfig::SaveTKey() const
 
 //---------------------------------------------------------------------------
 //
-//	ƒZ[ƒu
+//	ï¿½Zï¿½[ï¿½u
 //
 //---------------------------------------------------------------------------
 BOOL FASTCALL CConfig::Save(Fileio *pFio, int /*nVer*/)
@@ -1120,13 +1122,13 @@ BOOL FASTCALL CConfig::Save(Fileio *pFio, int /*nVer*/)
 	ASSERT(this);
 	ASSERT(pFio);
 
-	// ƒTƒCƒY‚ğƒZ[ƒu
+	// ï¿½Tï¿½Cï¿½Yï¿½ï¿½ï¿½Zï¿½[ï¿½u
 	sz = sizeof(m_Config);
 	if (!pFio->Write(&sz, sizeof(sz))) {
 		return FALSE;
 	}
 
-	// –{‘Ì‚ğƒZ[ƒu
+	// ï¿½{ï¿½Ì‚ï¿½ï¿½Zï¿½[ï¿½u
 	if (!pFio->Write(&m_Config, (int)sz)) {
 		return FALSE;
 	}
@@ -1136,7 +1138,7 @@ BOOL FASTCALL CConfig::Save(Fileio *pFio, int /*nVer*/)
 
 //---------------------------------------------------------------------------
 //
-//	ƒ[ƒh
+//	ï¿½ï¿½ï¿½[ï¿½h
 //
 //---------------------------------------------------------------------------
 BOOL FASTCALL CConfig::Load(Fileio *pFio, int nVer)
@@ -1146,7 +1148,7 @@ BOOL FASTCALL CConfig::Load(Fileio *pFio, int nVer)
 	ASSERT(this);
 	ASSERT(pFio);
 
-	// ˆÈ‘O‚Ìƒo[ƒWƒ‡ƒ“‚Æ‚ÌŒİŠ·
+	// ï¿½È‘Oï¿½Ìƒoï¿½[ï¿½Wï¿½ï¿½ï¿½ï¿½ï¿½Æ‚ÌŒİŠï¿½
 	if (nVer <= 0x0201) {
 		return Load200(pFio);
 	}
@@ -1154,7 +1156,7 @@ BOOL FASTCALL CConfig::Load(Fileio *pFio, int nVer)
 		return Load202(pFio);
 	}
 
-	// ƒTƒCƒY‚ğƒ[ƒhAÆ‡
+	// ï¿½Tï¿½Cï¿½Yï¿½ï¿½ï¿½ï¿½ï¿½[ï¿½hï¿½Aï¿½Æï¿½
 	if (!pFio->Read(&sz, sizeof(sz))) {
 		return FALSE;
 	}
@@ -1162,12 +1164,12 @@ BOOL FASTCALL CConfig::Load(Fileio *pFio, int nVer)
 		return FALSE;
 	}
 
-	// –{‘Ì‚ğƒ[ƒh
+	// ï¿½{ï¿½Ì‚ï¿½ï¿½ï¿½ï¿½[ï¿½h
 	if (!pFio->Read(&m_Config, (int)sz)) {
 		return FALSE;
 	}
 
-	// ApplyCfg—v‹ƒtƒ‰ƒO‚ğã‚°‚é
+	// ApplyCfgï¿½vï¿½ï¿½ï¿½tï¿½ï¿½ï¿½Oï¿½ï¿½ï¿½ã‚°ï¿½ï¿½
 	m_bApply = TRUE;
 
 	return TRUE;
@@ -1175,7 +1177,7 @@ BOOL FASTCALL CConfig::Load(Fileio *pFio, int nVer)
 
 //---------------------------------------------------------------------------
 //
-//	ƒ[ƒh(version2.00)
+//	ï¿½ï¿½ï¿½[ï¿½h(version2.00)
 //
 //---------------------------------------------------------------------------
 BOOL FASTCALL CConfig::Load200(Fileio *pFio)
@@ -1187,10 +1189,10 @@ BOOL FASTCALL CConfig::Load200(Fileio *pFio)
 	ASSERT(this);
 	ASSERT(pFio);
 
-	// ƒLƒƒƒXƒg‚µ‚ÄAversion2.00•”•ª‚¾‚¯ƒ[ƒh‚Å‚«‚é‚æ‚¤‚É‚·‚é
+	// ï¿½Lï¿½ï¿½ï¿½Xï¿½gï¿½ï¿½ï¿½ÄAversion2.00ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½[ï¿½hï¿½Å‚ï¿½ï¿½ï¿½æ‚¤ï¿½É‚ï¿½ï¿½ï¿½
 	pConfig200 = (Config200*)&m_Config;
 
-	// ƒTƒCƒY‚ğƒ[ƒhAÆ‡
+	// ï¿½Tï¿½Cï¿½Yï¿½ï¿½ï¿½ï¿½ï¿½[ï¿½hï¿½Aï¿½Æï¿½
 	if (!pFio->Read(&sz, sizeof(sz))) {
 		return FALSE;
 	}
@@ -1198,12 +1200,12 @@ BOOL FASTCALL CConfig::Load200(Fileio *pFio)
 		return FALSE;
 	}
 
-	// –{‘Ì‚ğƒ[ƒh
+	// ï¿½{ï¿½Ì‚ï¿½ï¿½ï¿½ï¿½[ï¿½h
 	if (!pFio->Read(pConfig200, (int)sz)) {
 		return FALSE;
 	}
 
-	// V‹K€–Ú(Config202)‚ğInicializacion
+	// ï¿½Vï¿½Kï¿½ï¿½ï¿½ï¿½(Config202)ï¿½ï¿½Inicializacion
 	m_Config.mem_type = 1;
 	m_Config.scsi_ilevel = 1;
 	m_Config.scsi_drives = 0;
@@ -1213,7 +1215,7 @@ BOOL FASTCALL CConfig::Load200(Fileio *pFio)
 		m_Config.scsi_file[i][0] = _T('\0');
 	}
 
-	// V‹K€–Ú(Config204)‚ğInicializacion
+	// ï¿½Vï¿½Kï¿½ï¿½ï¿½ï¿½(Config204)ï¿½ï¿½Inicializacion
 	m_Config.windrv_enable = 0;
 	m_Config.resume_fd = FALSE;
 	m_Config.resume_mo = FALSE;
@@ -1222,7 +1224,7 @@ BOOL FASTCALL CConfig::Load200(Fileio *pFio)
 	m_Config.resume_screen = FALSE;
 	m_Config.resume_dir = FALSE;
 
-	// ApplyCfg—v‹ƒtƒ‰ƒO‚ğã‚°‚é
+	// ApplyCfgï¿½vï¿½ï¿½ï¿½tï¿½ï¿½ï¿½Oï¿½ï¿½ï¿½ã‚°ï¿½ï¿½
 	m_bApply = TRUE;
 
 	return TRUE;
@@ -1230,7 +1232,7 @@ BOOL FASTCALL CConfig::Load200(Fileio *pFio)
 
 //---------------------------------------------------------------------------
 //
-//	ƒ[ƒh(version2.02)
+//	ï¿½ï¿½ï¿½[ï¿½h(version2.02)
 //
 //---------------------------------------------------------------------------
 BOOL FASTCALL CConfig::Load202(Fileio *pFio)
@@ -1241,10 +1243,10 @@ BOOL FASTCALL CConfig::Load202(Fileio *pFio)
 	ASSERT(this);
 	ASSERT(pFio);
 
-	// ƒLƒƒƒXƒg‚µ‚ÄAversion2.02•”•ª‚¾‚¯ƒ[ƒh‚Å‚«‚é‚æ‚¤‚É‚·‚é
+	// ï¿½Lï¿½ï¿½ï¿½Xï¿½gï¿½ï¿½ï¿½ÄAversion2.02ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½[ï¿½hï¿½Å‚ï¿½ï¿½ï¿½æ‚¤ï¿½É‚ï¿½ï¿½ï¿½
 	pConfig202 = (Config202*)&m_Config;
 
-	// ƒTƒCƒY‚ğƒ[ƒhAÆ‡
+	// ï¿½Tï¿½Cï¿½Yï¿½ï¿½ï¿½ï¿½ï¿½[ï¿½hï¿½Aï¿½Æï¿½
 	if (!pFio->Read(&sz, sizeof(sz))) {
 		return FALSE;
 	}
@@ -1252,12 +1254,12 @@ BOOL FASTCALL CConfig::Load202(Fileio *pFio)
 		return FALSE;
 	}
 
-	// –{‘Ì‚ğƒ[ƒh
+	// ï¿½{ï¿½Ì‚ï¿½ï¿½ï¿½ï¿½[ï¿½h
 	if (!pFio->Read(pConfig202, (int)sz)) {
 		return FALSE;
 	}
 
-	// V‹K€–Ú(Config204)‚ğInicializacion
+	// ï¿½Vï¿½Kï¿½ï¿½ï¿½ï¿½(Config204)ï¿½ï¿½Inicializacion
 	m_Config.windrv_enable = 0;
 	m_Config.resume_fd = FALSE;
 	m_Config.resume_mo = FALSE;
@@ -1266,7 +1268,7 @@ BOOL FASTCALL CConfig::Load202(Fileio *pFio)
 	m_Config.resume_screen = FALSE;
 	m_Config.resume_dir = FALSE;
 
-	// ApplyCfg—v‹ƒtƒ‰ƒO‚ğã‚°‚é
+	// ApplyCfgï¿½vï¿½ï¿½ï¿½tï¿½ï¿½ï¿½Oï¿½ï¿½ï¿½ã‚°ï¿½ï¿½
 	m_bApply = TRUE;
 
 	return TRUE;
@@ -1274,26 +1276,26 @@ BOOL FASTCALL CConfig::Load202(Fileio *pFio)
 
 //---------------------------------------------------------------------------
 //
-//	Apply—v‹Verificacion
+//	Applyï¿½vï¿½ï¿½Verificacion
 //
 //---------------------------------------------------------------------------
 BOOL FASTCALL CConfig::IsApply()
 {
 	ASSERT(this);
 
-	// —v‹‚È‚çA‚±‚±‚Å‰º‚ë‚·
+	// ï¿½vï¿½ï¿½ï¿½È‚ï¿½Aï¿½ï¿½ï¿½ï¿½ï¿½Å‰ï¿½ï¿½ë‚·
 	if (m_bApply) {
 		m_bApply = FALSE;
 		return TRUE;
 	}
 
-	// —v‹‚µ‚Ä‚¢‚È‚¢
+	// ï¿½vï¿½ï¿½ï¿½ï¿½ï¿½Ä‚ï¿½ï¿½È‚ï¿½
 	return FALSE;
 }
 
 //===========================================================================
 //
-//	ConfiguracionƒvƒƒpƒeƒBƒy[ƒW
+//	Configuracionï¿½vï¿½ï¿½ï¿½pï¿½eï¿½Bï¿½yï¿½[ï¿½W
 //
 //===========================================================================
 
@@ -1304,7 +1306,7 @@ BOOL FASTCALL CConfig::IsApply()
 //---------------------------------------------------------------------------
 CConfigPage::CConfigPage()
 {
-	// ƒƒ“ƒo•Ï”Limpiar
+	// ï¿½ï¿½ï¿½ï¿½ï¿½oï¿½Ïï¿½Limpiar
 	m_dwID = 0;
 	m_nTemplate = 0;
 	m_uHelpID = 0;
@@ -1347,7 +1349,7 @@ void FASTCALL CConfigPage::Init(CConfigSheet *pSheet)
 	// Construccion
 	CommonConstruct(MAKEINTRESOURCE(nID), 0);
 
-	// eƒV[ƒg‚ÉAgregar
+	// ï¿½eï¿½Vï¿½[ï¿½gï¿½ï¿½Agregar
 	pSheet->AddPage(this);
 }
 
@@ -1362,7 +1364,7 @@ BOOL CConfigPage::OnInitDialog()
 
 	ASSERT(this);
 
-	// eƒEƒBƒ“ƒhƒE‚©‚çİ’èƒf[ƒ^‚ğó‚¯æ‚é
+	// ï¿½eï¿½Eï¿½Bï¿½ï¿½ï¿½hï¿½Eï¿½ï¿½ï¿½ï¿½İ’ï¿½fï¿½[ï¿½^ï¿½ï¿½ï¿½ó‚¯ï¿½ï¿½
 	pSheet = (CConfigSheet*)GetParent();
 	ASSERT(pSheet);
 	m_pConfig = pSheet->m_pConfig;
@@ -1401,7 +1403,7 @@ BOOL CConfigPage::OnSetActive()
 
 //---------------------------------------------------------------------------
 //
-//	ƒ}ƒEƒXCursorİ’è
+//	ï¿½}ï¿½Eï¿½XCursorï¿½İ’ï¿½
 //
 //---------------------------------------------------------------------------
 BOOL CConfigPage::OnSetCursor(CWnd *pWnd, UINT nHitTest, UINT nMsg)
@@ -1414,40 +1416,40 @@ BOOL CConfigPage::OnSetCursor(CWnd *pWnd, UINT nHitTest, UINT nMsg)
 	CString strText;
 	CStatic *pStatic;
 
-	// Ayuda‚ªw’è‚³‚ê‚Ä‚¢‚é‚±‚Æ
+	// Ayudaï¿½ï¿½ï¿½wï¿½è‚³ï¿½ï¿½Ä‚ï¿½ï¿½é‚±ï¿½ï¿½
 	ASSERT(this);
 	ASSERT(m_uHelpID > 0);
 
-	// ƒ}ƒEƒXˆÊ’uæ“¾
+	// ï¿½}ï¿½Eï¿½Xï¿½Ê’uï¿½æ“¾
 	GetCursorPos(&pt);
 
-	// qƒEƒBƒ“ƒhƒE‚ğ‚Ü‚í‚Á‚ÄA‹éŒ`“à‚ÉˆÊ’u‚·‚é‚©’²‚×‚é
+	// ï¿½qï¿½Eï¿½Bï¿½ï¿½ï¿½hï¿½Eï¿½ï¿½ï¿½Ü‚ï¿½ï¿½ï¿½ÄAï¿½ï¿½`ï¿½ï¿½ï¿½ÉˆÊ’uï¿½ï¿½ï¿½é‚©ï¿½ï¿½ï¿½×‚ï¿½
 	nID = 0;
 	rectParent.top = 0;
 	pChildWnd = GetTopWindow();
 
 	// Bucle
 	while (pChildWnd) {
-		// AyudaID©g‚È‚çƒXƒLƒbƒv
+		// AyudaIDï¿½ï¿½ï¿½gï¿½È‚ï¿½Xï¿½Lï¿½bï¿½v
 		if (pChildWnd->GetDlgCtrlID() == (int)m_uHelpID) {
 			pChildWnd = pChildWnd->GetNextWindow();
 			continue;
 		}
 
-		// ‹éŒ`‚ğæ“¾
+		// ï¿½ï¿½`ï¿½ï¿½ï¿½æ“¾
 		pChildWnd->GetWindowRect(&rectChild);
 
-		// “à•”‚É‚¢‚é‚©
+		// ï¿½ï¿½ï¿½ï¿½ï¿½É‚ï¿½ï¿½é‚©
 		if (rectChild.PtInRect(pt)) {
-			// Šù‚Éæ“¾‚µ‚½‹éŒ`‚ª‚ ‚ê‚ÎA‚»‚ê‚æ‚è“à‘¤‚©
+			// ï¿½ï¿½ï¿½Éæ“¾ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½`ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ÎAï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 			if (rectParent.top == 0) {
-				// Å‰‚ÌŒó•â
+				// ï¿½Åï¿½ï¿½ÌŒï¿½ï¿½
 				rectParent = rectChild;
 				nID = pChildWnd->GetDlgCtrlID();
 			}
 			else {
 				if (rectChild.Width() < rectParent.Width()) {
-					// ‚æ‚è“à‘¤‚ÌŒó•â
+					// ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ÌŒï¿½ï¿½
 					rectParent = rectChild;
 					nID = pChildWnd->GetDlgCtrlID();
 				}
@@ -1458,14 +1460,14 @@ BOOL CConfigPage::OnSetCursor(CWnd *pWnd, UINT nHitTest, UINT nMsg)
 		pChildWnd = pChildWnd->GetNextWindow();
 	}
 
-	// nID‚ğ”äŠr
+	// nIDï¿½ï¿½ï¿½r
 	if (m_uMsgID == nID) {
 		// Clase base
 		return CPropertyPage::OnSetCursor(pWnd, nHitTest, nMsg);
 	}
 	m_uMsgID = nID;
 
-	// •¶š—ñ‚ğƒ[ƒhAİ’è
+	// ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½[ï¿½hï¿½Aï¿½İ’ï¿½
 	::GetMsg(m_uMsgID, strText);
 	pStatic = (CStatic*)GetDlgItem(m_uHelpID);
 	ASSERT(pStatic);
@@ -1477,7 +1479,7 @@ BOOL CConfigPage::OnSetCursor(CWnd *pWnd, UINT nHitTest, UINT nMsg)
 
 //===========================================================================
 //
-//	Šî–{ƒy[ƒW
+//	ï¿½ï¿½{ï¿½yï¿½[ï¿½W
 //
 //===========================================================================
 
@@ -1518,7 +1520,7 @@ BOOL CBasicPage::OnInitDialog()
 	// Clase base
 	CConfigPage::OnInitDialog();
 
-	// SistemaƒNBloquear
+	// Sistemaï¿½NBloquear
 	pComboBox = (CComboBox*)GetDlgItem(IDC_BASIC_CLOCKC);
 	ASSERT(pComboBox);
 	for (i=0; i<6; i++) {
@@ -1527,17 +1529,17 @@ BOOL CBasicPage::OnInitDialog()
 	}
 	pComboBox->SetCurSel(m_pConfig->system_clock);
 
-	// MPUƒtƒ‹ƒXƒs[ƒh
+	// MPUï¿½tï¿½ï¿½ï¿½Xï¿½sï¿½[ï¿½h
 	pButton = (CButton*)GetDlgItem(IDC_BASIC_CPUFULLB);
 	ASSERT(pButton);
 	pButton->SetCheck(m_pConfig->mpu_fullspeed);
 
-	// VMƒtƒ‹ƒXƒs[ƒh
+	// VMï¿½tï¿½ï¿½ï¿½Xï¿½sï¿½[ï¿½h
 	pButton = (CButton*)GetDlgItem(IDC_BASIC_ALLFULLB);
 	ASSERT(pButton);
 	pButton->SetCheck(m_pConfig->vm_fullspeed);
 
-	// ƒƒCƒ“ƒƒ‚ƒŠ
+	// ï¿½ï¿½ï¿½Cï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 	pComboBox = (CComboBox*)GetDlgItem(IDC_BASIC_MEMORYC);
 	ASSERT(pComboBox);
 	for (i=0; i<6; i++) {
@@ -1546,7 +1548,7 @@ BOOL CBasicPage::OnInitDialog()
 	}
 	pComboBox->SetCurSel(m_pConfig->ram_size);
 
-	// SRAM“¯Šú
+	// SRAMï¿½ï¿½ï¿½ï¿½
 	pButton = (CButton*)GetDlgItem(IDC_BASIC_MEMSWB);
 	ASSERT(pButton);
 	pButton->SetCheck(m_pConfig->ram_sramsync);
@@ -1564,27 +1566,27 @@ void CBasicPage::OnOK()
 	CButton *pButton;
 	CComboBox *pComboBox;
 
-	// SistemaƒNBloquear
+	// Sistemaï¿½NBloquear
 	pComboBox = (CComboBox*)GetDlgItem(IDC_BASIC_CLOCKC);
 	ASSERT(pComboBox);
 	m_pConfig->system_clock = pComboBox->GetCurSel();
 
-	// MPUƒtƒ‹ƒXƒs[ƒh
+	// MPUï¿½tï¿½ï¿½ï¿½Xï¿½sï¿½[ï¿½h
 	pButton = (CButton*)GetDlgItem(IDC_BASIC_CPUFULLB);
 	ASSERT(pButton);
 	m_pConfig->mpu_fullspeed = pButton->GetCheck();
 
-	// VMƒtƒ‹ƒXƒs[ƒh
+	// VMï¿½tï¿½ï¿½ï¿½Xï¿½sï¿½[ï¿½h
 	pButton = (CButton*)GetDlgItem(IDC_BASIC_ALLFULLB);
 	ASSERT(pButton);
 	m_pConfig->vm_fullspeed = pButton->GetCheck();
 
-	// ƒƒCƒ“ƒƒ‚ƒŠ
+	// ï¿½ï¿½ï¿½Cï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 	pComboBox = (CComboBox*)GetDlgItem(IDC_BASIC_MEMORYC);
 	ASSERT(pComboBox);
 	m_pConfig->ram_size = pComboBox->GetCurSel();
 
-	// SRAM“¯Šú
+	// SRAMï¿½ï¿½ï¿½ï¿½
 	pButton = (CButton*)GetDlgItem(IDC_BASIC_MEMSWB);
 	ASSERT(pButton);
 	m_pConfig->ram_sramsync = pButton->GetCheck();
@@ -1595,7 +1597,7 @@ void CBasicPage::OnOK()
 
 //---------------------------------------------------------------------------
 //
-//	MPUƒtƒ‹ƒXƒs[ƒh
+//	MPUï¿½tï¿½ï¿½ï¿½Xï¿½sï¿½[ï¿½h
 //
 //---------------------------------------------------------------------------
 void CBasicPage::OnMPUFull()
@@ -1608,12 +1610,12 @@ void CBasicPage::OnMPUFull()
 	pButton = (CButton*)GetDlgItem(IDC_BASIC_CPUFULLB);
 	ASSERT(pButton);
 
-	// ƒIƒt‚È‚çNo hacer nada
+	// ï¿½Iï¿½tï¿½È‚ï¿½No hacer nada
 	if (pButton->GetCheck() == 0) {
 		return;
 	}
 
-	// SxSI–³Œø‚È‚çNo hacer nada
+	// SxSIï¿½ï¿½ï¿½ï¿½ï¿½È‚ï¿½No hacer nada
 	pSxSIPage = (CSxSIPage*)m_pSheet->SearchPage(MAKEID('S', 'X', 'S', 'I'));
 	ASSERT(pSxSIPage);
 	if (pSxSIPage->GetDrives(m_pConfig) == 0) {
@@ -1703,7 +1705,7 @@ BOOL CSoundPage::OnInitDialog()
 		}
 	}
 
-	// ƒTƒ“ƒvƒŠƒ“ƒOƒŒ[ƒgInicializacion
+	// ï¿½Tï¿½ï¿½ï¿½vï¿½ï¿½ï¿½ï¿½ï¿½Oï¿½ï¿½ï¿½[ï¿½gInicializacion
 	for (i=0; i<5; i++) {
 		pButton = (CButton*)GetDlgItem(IDC_SOUND_RATE0 + i);
 		ASSERT(pButton);
@@ -1715,7 +1717,7 @@ BOOL CSoundPage::OnInitDialog()
 		pButton->SetCheck(1);
 	}
 
-	// ƒoƒbƒtƒ@ƒTƒCƒYInicializacion
+	// ï¿½oï¿½bï¿½tï¿½@ï¿½Tï¿½Cï¿½YInicializacion
 	pEdit = (CEdit*)GetDlgItem(IDC_SOUND_BUF1E);
 	ASSERT(pEdit);
 	strEdit.Format(_T("%d"), m_pConfig->primary_buffer * 10);
@@ -1725,7 +1727,7 @@ BOOL CSoundPage::OnInitDialog()
 	pSpin->SetRange(2, 100);
 	pSpin->SetPos(m_pConfig->primary_buffer);
 
-	// ƒ|[ƒŠƒ“ƒOŠÔŠuInicializacion
+	// ï¿½|ï¿½[ï¿½ï¿½ï¿½ï¿½ï¿½Oï¿½ÔŠuInicializacion
 	pEdit = (CEdit*)GetDlgItem(IDC_SOUND_BUF2E);
 	ASSERT(pEdit);
 	strEdit.Format(_T("%d"), m_pConfig->polling_buffer);
@@ -1735,7 +1737,7 @@ BOOL CSoundPage::OnInitDialog()
 	pSpin->SetRange(1, 100);
 	pSpin->SetPos(m_pConfig->polling_buffer);
 
-	// ADPCMüŒ`•âŠÔInicializacion
+	// ADPCMï¿½ï¿½ï¿½`ï¿½ï¿½ï¿½Inicializacion
 	pButton = (CButton*)GetDlgItem(IDC_SOUND_INTERP);
 	ASSERT(pButton);
 	pButton->SetCheck(m_pConfig->adpcm_interp);
@@ -2051,13 +2053,13 @@ BOOL CVolPage::OnInitDialog()
 	pSlider->SetRange(0, 0xffff);
 	nPos = m_pMIDI->GetOutVolume();
 	if (nPos >= 0) {
-		// MIDIo—ÍƒfƒoƒCƒX‚ÍƒAƒNƒeƒBƒu‚©‚ÂSe puede ajustar el volumen
+		// MIDIï¿½oï¿½Íƒfï¿½oï¿½Cï¿½Xï¿½ÍƒAï¿½Nï¿½eï¿½Bï¿½uï¿½ï¿½ï¿½ï¿½Se puede ajustar el volumen
 		pSlider->SetPos(nPos);
 		pSlider->EnableWindow(TRUE);
 		strLabel.Format(_T(" %d"), ((nPos + 1) * 100) >> 16);
 	}
 	else {
-		// MIDIo—ÍƒfƒoƒCƒX‚ÍƒAƒNƒeƒBƒu‚Å‚È‚¢A–”‚ÍNo se puede ajustar el volumen
+		// MIDIï¿½oï¿½Íƒfï¿½oï¿½Cï¿½Xï¿½ÍƒAï¿½Nï¿½eï¿½Bï¿½uï¿½Å‚È‚ï¿½ï¿½Aï¿½ï¿½ï¿½ï¿½No se puede ajustar el volumen
 		pSlider->SetPos(0);
 		pSlider->EnableWindow(FALSE);
 		strLabel.Empty();
@@ -2300,7 +2302,7 @@ void CVolPage::OnOK()
 	CSliderCtrl *pSlider;
 	CButton *pButton;
 
-	// Temporizador’â~
+	// Temporizadorï¿½ï¿½~
 	if (m_nTimerID) {
 		KillTimer(m_nTimerID);
 		m_nTimerID = NULL;
@@ -2342,7 +2344,7 @@ void CVolPage::OnOK()
 //---------------------------------------------------------------------------
 void CVolPage::OnCancel()
 {
-	// Temporizador’â~
+	// Temporizadorï¿½ï¿½~
 	if (m_nTimerID) {
 		KillTimer(m_nTimerID);
 		m_nTimerID = NULL;
@@ -2479,7 +2481,7 @@ BOOL CKbdPage::OnInitDialog()
 		}
 	}
 
-	// ƒŒƒ|[ƒgActualizacion
+	// ï¿½ï¿½ï¿½|ï¿½[ï¿½gActualizacion
 	UpdateReport();
 
 	// Conexion
@@ -2487,7 +2489,7 @@ BOOL CKbdPage::OnInitDialog()
 	ASSERT(pButton);
 	pButton->SetCheck(!m_pConfig->kbd_connect);
 
-	// ƒRƒ“ƒgƒ[ƒ‹Actualizacion
+	// ï¿½Rï¿½ï¿½ï¿½gï¿½ï¿½ï¿½[ï¿½ï¿½Actualizacion
 	m_bEnableCtrl = TRUE;
 	if (!m_pConfig->kbd_connect) {
 		EnableControls(FALSE);
@@ -2533,7 +2535,7 @@ void CKbdPage::OnCancel()
 
 //---------------------------------------------------------------------------
 //
-//	ƒŒƒ|[ƒgActualizacion
+//	ï¿½ï¿½ï¿½|ï¿½[ï¿½gActualizacion
 //
 //---------------------------------------------------------------------------
 void FASTCALL CKbdPage::UpdateReport()
@@ -2558,7 +2560,7 @@ void FASTCALL CKbdPage::UpdateReport()
 		// Obtener el nombre de la tecla desde CKeyDispWnd
 		lpszName = m_pInput->GetKeyName(nX68);
 		if (lpszName) {
-			// —LŒø‚ÈƒL[‚ª‚ ‚éBInicializacion
+			// ï¿½Lï¿½ï¿½ï¿½ÈƒLï¿½[ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½BInicializacion
 			strNext.Empty();
 
 			// Establecer si hay una asignacion
@@ -2597,7 +2599,7 @@ void CKbdPage::OnEdit()
 	// Ejecutar dialogo
 	dlg.DoModal();
 
-	// Mostrar‚ğActualizacion
+	// Mostrarï¿½ï¿½Actualizacion
 	UpdateReport();
 }
 
@@ -2614,7 +2616,7 @@ void CKbdPage::OnDefault()
 	m_pInput->SetDefaultKeyMap(m_dwEdit);
 	m_pInput->SetKeyMap(m_dwEdit);
 
-	// Mostrar‚ğActualizacion
+	// Mostrarï¿½ï¿½Actualizacion
 	UpdateReport();
 }
 
@@ -2633,7 +2635,7 @@ void CKbdPage::OnClick(NMHDR * /*pNMHDR*/, LRESULT * /*pResult*/)
 	int i;
 	CKeyinDlg dlg(this);
 
-	// ƒŠƒXƒgObtener control
+	// ï¿½ï¿½ï¿½Xï¿½gObtener control
 	pListCtrl = (CListCtrl*)GetDlgItem(IDC_KBD_MAPL);
 	ASSERT(pListCtrl);
 
@@ -2682,7 +2684,7 @@ void CKbdPage::OnClick(NMHDR * /*pNMHDR*/, LRESULT * /*pResult*/)
 	}
 	m_dwEdit[dlg.m_nKey] = (DWORD)nKey;
 
-	// SHIFTƒL[—áŠOProcesamiento
+	// SHIFTï¿½Lï¿½[ï¿½ï¿½OProcesamiento
 	if (nPrev == DIK_LSHIFT) {
 		m_dwEdit[DIK_RSHIFT] = 0;
 	}
@@ -2690,7 +2692,7 @@ void CKbdPage::OnClick(NMHDR * /*pNMHDR*/, LRESULT * /*pResult*/)
 		m_dwEdit[DIK_RSHIFT] = (DWORD)nKey;
 	}
 
-	// Mostrar‚ğActualizacion
+	// Mostrarï¿½ï¿½Actualizacion
 	UpdateReport();
 }
 
@@ -2710,7 +2712,7 @@ void CKbdPage::OnRClick(NMHDR * /*pNMHDR*/, LRESULT * /*pResult*/)
 	CString strText;
 	CString strMsg;
 
-	// ƒŠƒXƒgObtener control
+	// ï¿½ï¿½ï¿½Xï¿½gObtener control
 	pListCtrl = (CListCtrl*)GetDlgItem(IDC_KBD_MAPL);
 	ASSERT(pListCtrl);
 
@@ -2744,7 +2746,7 @@ void CKbdPage::OnRClick(NMHDR * /*pNMHDR*/, LRESULT * /*pResult*/)
 		return;
 	}
 
-	// ƒƒbƒZ[ƒWƒ{ƒbƒNƒX‚ÅAEliminar‚Ì—L–³‚ğVerificacion
+	// ï¿½ï¿½ï¿½bï¿½Zï¿½[ï¿½Wï¿½{ï¿½bï¿½Nï¿½Xï¿½ÅAEliminarï¿½Ì—Lï¿½ï¿½ï¿½ï¿½Verificacion
 	::GetMsg(IDS_KBD_DELMSG, strText);
 	strMsg.Format(strText, nKey, m_pInput->GetKeyID(nWin));
 	::GetMsg(IDS_KBD_DELTITLE, strText);
@@ -2752,21 +2754,21 @@ void CKbdPage::OnRClick(NMHDR * /*pNMHDR*/, LRESULT * /*pResult*/)
 		return;
 	}
 
-	// ŠY“–‚·‚éWindowsƒL[‚ğEliminar
+	// ï¿½Yï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Windowsï¿½Lï¿½[ï¿½ï¿½Eliminar
 	m_dwEdit[nWin] = 0;
 
-	// SHIFTƒL[—áŠOProcesamiento
+	// SHIFTï¿½Lï¿½[ï¿½ï¿½OProcesamiento
 	if (nWin == DIK_LSHIFT) {
 		m_dwEdit[DIK_RSHIFT] = 0;
 	}
 
-	// Mostrar‚ğActualizacion
+	// Mostrarï¿½ï¿½Actualizacion
 	UpdateReport();
 }
 
 //---------------------------------------------------------------------------
 //
-//	–¢Conexion
+//	ï¿½ï¿½Conexion
 //
 //---------------------------------------------------------------------------
 void CKbdPage::OnConnect()
@@ -2832,7 +2834,7 @@ const UINT CKbdPage::ControlTable[] = {
 
 //===========================================================================
 //
-//	Tecladoƒ}ƒbƒvEditarƒ_ƒCƒAƒƒO
+//	Tecladoï¿½}ï¿½bï¿½vEditarï¿½_ï¿½Cï¿½Aï¿½ï¿½ï¿½O
 //
 //===========================================================================
 
@@ -2845,11 +2847,11 @@ CKbdMapDlg::CKbdMapDlg(CWnd *pParent, DWORD *pMap) : CDialog(IDD_KBDMAPDLG, pPar
 {
 	CFrmWnd *pFrmWnd;
 
-	// Editarƒf[ƒ^‚ğ‹L‰¯
+	// Editarï¿½fï¿½[ï¿½^ï¿½ï¿½ï¿½Lï¿½ï¿½
 	ASSERT(pMap);
 	m_pEditMap = pMap;
 
-	// InglesŠÂ‹«‚Ö‚Ì‘Î‰
+	// Inglesï¿½Â‹ï¿½ï¿½Ö‚Ì‘Î‰ï¿½
 	if (!::IsJapanese()) {
 		m_lpszTemplateName = MAKEINTRESOURCE(IDD_US_KBDMAPDLG);
 		m_nIDHelp = IDD_US_KBDMAPDLG;
@@ -2881,7 +2883,7 @@ END_MESSAGE_MAP()
 
 //---------------------------------------------------------------------------
 //
-//	ƒ_ƒCƒAƒƒOInicializacion
+//	ï¿½_ï¿½Cï¿½Aï¿½ï¿½ï¿½OInicializacion
 //
 //---------------------------------------------------------------------------
 BOOL CKbdMapDlg::OnInitDialog()
@@ -2913,7 +2915,7 @@ BOOL CKbdMapDlg::OnInitDialog()
 	GetWindowRect(&rectWnd);
 	SetWindowPos(&wndTop, 0, 0, rectWnd.Width() + cx, rectWnd.Height() + cy, SWP_NOMOVE);
 
-	// ƒXƒe[ƒ^ƒXƒo[‚ğæ‚ÉˆÚ“®AEliminar
+	// ï¿½Xï¿½eï¿½[ï¿½^ï¿½Xï¿½oï¿½[ï¿½ï¿½ï¿½ÉˆÚ“ï¿½ï¿½AEliminar
 	pStatic->GetWindowRect(&rectClient);
 	ScreenToClient(&rectClient);
 	pStatic->SetWindowPos(&wndTop, 0, 140,
@@ -2963,7 +2965,7 @@ BOOL CKbdMapDlg::OnInitDialog()
 //---------------------------------------------------------------------------
 void CKbdMapDlg::OnOK()
 {
-	// [CR]‚É‚æ‚éFin‚ğ—}§
+	// [CR]ï¿½É‚ï¿½ï¿½Finï¿½ï¿½}ï¿½ï¿½
 }
 
 //---------------------------------------------------------------------------
@@ -3041,7 +3043,7 @@ LONG CKbdMapDlg::OnKickIdle(UINT /*uParam*/, LONG /*lParam*/)
 	// Limpiar flags de teclas temporalmente
 	memset(bFlg, 0, sizeof(bFlg));
 
-	// Œ»İ‚Ìƒ}ƒbƒv‚É]‚Á‚ÄAConversion•\‚ğì‚é
+	// ï¿½ï¿½ï¿½İ‚Ìƒ}ï¿½bï¿½vï¿½É]ï¿½ï¿½ï¿½ÄAConversionï¿½\ï¿½ï¿½ï¿½ï¿½ï¿½
 	for (nWin=0; nWin<0x100; nWin++) {
 		// ?Esta la tecla presionada?
 		if (bBuf[nWin]) {
@@ -3054,7 +3056,7 @@ LONG CKbdMapDlg::OnKickIdle(UINT /*uParam*/, LONG /*lParam*/)
 		}
 	}
 
-	// SHIFTƒL[—áŠOProcesamiento(L,R‚ğ‚ ‚í‚¹‚é)
+	// SHIFTï¿½Lï¿½[ï¿½ï¿½OProcesamiento(L,Rï¿½ï¿½ï¿½ï¿½ï¿½í‚¹ï¿½ï¿½)
 	bFlg[0x74] = bFlg[0x70];
 
 	// Refrescar (dibujar)
@@ -3085,7 +3087,7 @@ LONG CKbdMapDlg::OnApp(UINT uParam, LONG lParam)
 	switch (lParam) {
 		// Boton izquierdo presionado
 		case WM_LBUTTONDOWN:
-			// ƒ^[ƒQƒbƒg‚ÆAsignacionƒL[‚ğInicializacion
+			// ï¿½^ï¿½[ï¿½Qï¿½bï¿½gï¿½ï¿½Asignacionï¿½Lï¿½[ï¿½ï¿½Inicializacion
 			dlg.m_nTarget = uParam;
 			dlg.m_nKey = 0;
 
@@ -3110,7 +3112,7 @@ LONG CKbdMapDlg::OnApp(UINT uParam, LONG lParam)
 				m_pEditMap[nPrev] = 0;
 			}
 
-			// SHIFTƒL[—áŠOProcesamiento
+			// SHIFTï¿½Lï¿½[ï¿½ï¿½OProcesamiento
 			if (nPrev == DIK_LSHIFT) {
 				m_pEditMap[DIK_RSHIFT] = 0;
 			}
@@ -3138,7 +3140,7 @@ LONG CKbdMapDlg::OnApp(UINT uParam, LONG lParam)
 				break;
 			}
 
-			// ƒƒbƒZ[ƒWƒ{ƒbƒNƒX‚ÅAEliminar‚Ì—L–³‚ğVerificacion
+			// ï¿½ï¿½ï¿½bï¿½Zï¿½[ï¿½Wï¿½{ï¿½bï¿½Nï¿½Xï¿½ÅAEliminarï¿½Ì—Lï¿½ï¿½ï¿½ï¿½Verificacion
 			::GetMsg(IDS_KBD_DELMSG, strName);
 			strText.Format(strName, uParam, m_pInput->GetKeyID(nWin));
 			::GetMsg(IDS_KBD_DELTITLE, strName);
@@ -3146,10 +3148,10 @@ LONG CKbdMapDlg::OnApp(UINT uParam, LONG lParam)
 				break;
 			}
 
-			// ŠY“–‚·‚éWindowsƒL[‚ğEliminar
+			// ï¿½Yï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Windowsï¿½Lï¿½[ï¿½ï¿½Eliminar
 			m_pEditMap[nWin] = 0;
 
-			// SHIFTƒL[—áŠOProcesamiento
+			// SHIFTï¿½Lï¿½[ï¿½ï¿½OProcesamiento
 			if (nWin == DIK_LSHIFT) {
 				m_pEditMap[DIK_RSHIFT] = 0;
 			}
@@ -3170,7 +3172,7 @@ LONG CKbdMapDlg::OnApp(UINT uParam, LONG lParam)
 				strText.Format(_T("Key%02X  "), uParam);
 				strText += m_pInput->GetKeyName(uParam);
 
-				// ŠY“–‚·‚éWindowsƒL[‚ª‚ ‚ê‚ÎAgregar
+				// ï¿½Yï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Windowsï¿½Lï¿½[ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Agregar
 				for (nWin=0; nWin<0x100; nWin++) {
 					if (m_pEditMap[nWin] == uParam) {
 						// Habia una tecla de Windows
@@ -3190,7 +3192,7 @@ LONG CKbdMapDlg::OnApp(UINT uParam, LONG lParam)
 			delete pDC;
 			break;
 
-		// Otros(‚ ‚è‚¦‚È‚¢)
+		// Otros(ï¿½ï¿½ï¿½è‚¦ï¿½È‚ï¿½)
 		default:
 			ASSERT(FALSE);
 			break;
@@ -3214,7 +3216,7 @@ CKeyinDlg::CKeyinDlg(CWnd *pParent) : CDialog(IDD_KEYINDLG, pParent)
 {
 	CFrmWnd *pFrmWnd;
 
-	// InglesŠÂ‹«‚Ö‚Ì‘Î‰
+	// Inglesï¿½Â‹ï¿½ï¿½Ö‚Ì‘Î‰ï¿½
 	if (!::IsJapanese()) {
 		m_lpszTemplateName = MAKEINTRESOURCE(IDD_US_KEYINDLG);
 		m_nIDHelp = IDD_US_KEYINDLG;
@@ -3244,7 +3246,7 @@ END_MESSAGE_MAP()
 
 //---------------------------------------------------------------------------
 //
-//	ƒ_ƒCƒAƒƒOInicializacion
+//	ï¿½_ï¿½Cï¿½Aï¿½ï¿½ï¿½OInicializacion
 //
 //---------------------------------------------------------------------------
 BOOL CKeyinDlg::OnInitDialog()
@@ -3262,7 +3264,7 @@ BOOL CKeyinDlg::OnInitDialog()
 	ASSERT(m_pInput);
 	m_pInput->GetKeyBuf(m_bKey);
 
-	// ƒKƒCƒh‹éŒ`‚ÌProcesamiento
+	// ï¿½Kï¿½Cï¿½hï¿½ï¿½`ï¿½ï¿½Procesamiento
 	pStatic = (CStatic*)GetDlgItem(IDC_KEYIN_LABEL);
 	ASSERT(pStatic);
 	pStatic->GetWindowText(string);
@@ -3271,7 +3273,7 @@ BOOL CKeyinDlg::OnInitDialog()
 	ScreenToClient(&m_GuideRect);
 	pStatic->DestroyWindow();
 
-	// Asignacion‹éŒ`‚ÌProcesamiento
+	// Asignacionï¿½ï¿½`ï¿½ï¿½Procesamiento
 	pStatic = (CStatic*)GetDlgItem(IDC_KEYIN_STATIC);
 	ASSERT(pStatic);
 	pStatic->GetWindowText(m_AssignString);
@@ -3279,7 +3281,7 @@ BOOL CKeyinDlg::OnInitDialog()
 	ScreenToClient(&m_AssignRect);
 	pStatic->DestroyWindow();
 
-	// ƒL[‹éŒ`‚ÌProcesamiento
+	// ï¿½Lï¿½[ï¿½ï¿½`ï¿½ï¿½Procesamiento
 	pStatic = (CStatic*)GetDlgItem(IDC_KEYIN_KEY);
 	ASSERT(pStatic);
 	pStatic->GetWindowText(m_KeyString);
@@ -3300,12 +3302,12 @@ BOOL CKeyinDlg::OnInitDialog()
 //---------------------------------------------------------------------------
 void CKeyinDlg::OnOK()
 {
-	// [CR]‚É‚æ‚éFin‚ğ—}§
+	// [CR]ï¿½É‚ï¿½ï¿½Finï¿½ï¿½}ï¿½ï¿½
 }
 
 //---------------------------------------------------------------------------
 //
-//	ƒ_ƒCƒAƒƒOObtener codigo
+//	ï¿½_ï¿½Cï¿½Aï¿½ï¿½ï¿½OObtener codigo
 //
 //---------------------------------------------------------------------------
 UINT CKeyinDlg::OnGetDlgCode()
@@ -3345,11 +3347,11 @@ void CKeyinDlg::OnPaint()
 	// BitBlt
 	VERIFY(dc.BitBlt(0, 0, rect.Width(), rect.Height(), &mDC, 0, 0, SRCCOPY));
 
-	// ƒrƒbƒgƒ}ƒbƒvFin
+	// ï¿½rï¿½bï¿½gï¿½}ï¿½bï¿½vFin
 	VERIFY(mDC.SelectObject(pBitmap));
 	VERIFY(Bitmap.DeleteObject());
 
-	// ƒƒ‚ƒŠDCFin
+	// ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½DCFin
 	VERIFY(mDC.DeleteDC());
 }
 
@@ -3381,7 +3383,7 @@ void FASTCALL CKeyinDlg::OnDraw(CDC *pDC)
 	pDC->DrawText(m_KeyString, m_KeyRect,
 					DT_LEFT | DT_NOPREFIX | DT_SINGLELINE | DT_VCENTER);
 
-	// Restaurar fuente(Objetos‚ÍEliminar‚µ‚È‚­‚Ä‚æ‚¢)
+	// Restaurar fuente(Objetosï¿½ï¿½Eliminarï¿½ï¿½ï¿½È‚ï¿½ï¿½Ä‚æ‚¢)
 	pDC->SelectObject(pFont);
 }
 
@@ -3402,7 +3404,7 @@ LONG CKeyinDlg::OnKickIdle(UINT /*uParam*/, LONG /*lParam*/)
 	// Recibir teclas via DirectInput
 	m_pInput->GetKeyBuf(bKey);
 
-	// ƒL[Busqueda
+	// ï¿½Lï¿½[Busqueda
 	for (i=0; i<0x100; i++) {
 		// Si hay una tecla nueva respecto a la anterior, configurarla
 		if (!m_bKey[i] && bKey[i]) {
@@ -3413,7 +3415,7 @@ LONG CKeyinDlg::OnKickIdle(UINT /*uParam*/, LONG /*lParam*/)
 		m_bKey[i] = bKey[i];
 	}
 
-	// SHIFTƒL[—áŠOProcesamiento
+	// SHIFTï¿½Lï¿½[ï¿½ï¿½OProcesamiento
 	if (m_nKey == DIK_RSHIFT) {
 		m_nKey = DIK_LSHIFT;
 	}
@@ -3423,7 +3425,7 @@ LONG CKeyinDlg::OnKickIdle(UINT /*uParam*/, LONG /*lParam*/)
 		return 0;
 	}
 
-	// ƒL[Nombre‚ğMostrar
+	// ï¿½Lï¿½[Nombreï¿½ï¿½Mostrar
 	m_KeyString = m_pInput->GetKeyID(m_nKey);
 	Invalidate(FALSE);
 
@@ -3437,7 +3439,7 @@ LONG CKeyinDlg::OnKickIdle(UINT /*uParam*/, LONG /*lParam*/)
 //---------------------------------------------------------------------------
 void CKeyinDlg::OnRButtonDown(UINT /*nFlags*/, CPoint /*point*/)
 {
-	// ƒ_ƒCƒAƒƒOFin
+	// ï¿½_ï¿½Cï¿½Aï¿½ï¿½ï¿½OFin
 	EndDialog(IDOK);
 }
 
@@ -3494,15 +3496,15 @@ BOOL CMousePage::OnInitDialog()
 	pSlider->SetRange(0, 512);
 	pSlider->SetPos(m_pConfig->mouse_speed);
 
-	// VelocidadƒeƒLƒXƒg
+	// Velocidadï¿½eï¿½Lï¿½Xï¿½g
 	strText.Format(_T("%d%%"), (m_pConfig->mouse_speed * 100) >> 8);
 	pStatic = (CStatic*)GetDlgItem(IDC_MOUSE_PARS);
 	pStatic->SetWindowText(strText);
 
-	// Conexionæƒ|[ƒg
+	// Conexionï¿½ï¿½|ï¿½[ï¿½g
 	nID = IDC_MOUSE_NPORT;
 	switch (m_pConfig->mouse_port) {
-		// Conexion‚µ‚È‚¢
+		// Conexionï¿½ï¿½ï¿½È‚ï¿½
 		case 0:
 			break;
 		// SCC
@@ -3513,7 +3515,7 @@ BOOL CMousePage::OnInitDialog()
 		case 2:
 			nID = IDC_MOUSE_KPORT;
 			break;
-		// Otros(‚ ‚è‚¦‚È‚¢)
+		// Otros(ï¿½ï¿½ï¿½è‚¦ï¿½È‚ï¿½)
 		default:
 			ASSERT(FALSE);
 			break;
@@ -3557,7 +3559,7 @@ void CMousePage::OnOK()
 	ASSERT(pSlider);
 	m_pConfig->mouse_speed = pSlider->GetPos();
 
-	// Conexionƒ|[ƒg
+	// Conexionï¿½|ï¿½[ï¿½g
 	pButton = (CButton*)GetDlgItem(IDC_MOUSE_NPORT);
 	ASSERT(pButton);
 	if (pButton->GetCheck()) {
@@ -3600,7 +3602,7 @@ void CMousePage::OnHScroll(UINT /*nSBCode*/, UINT /*nPos*/, CScrollBar *pBar)
 	CStatic *pStatic;
 	CString strText;
 
-	// ConversionAVerificacion
+	// Conversionï¿½AVerificacion
 	pSlider = (CSliderCtrl*)pBar;
 	if (pSlider->GetDlgCtrlID() != IDC_MOUSE_SLIDER) {
 		return;
@@ -3625,7 +3627,7 @@ void CMousePage::OnPort()
 	pButton = (CButton*)GetDlgItem(IDC_MOUSE_NPORT);
 	ASSERT(pButton);
 
-	// Conexion‚µ‚È‚¢ or ‘¼‚Ìƒ|[ƒg‚Å”»•Ê
+	// Conexionï¿½ï¿½ï¿½È‚ï¿½ or ï¿½ï¿½ï¿½Ìƒ|ï¿½[ï¿½gï¿½Å”ï¿½ï¿½ï¿½
 	if (pButton->GetCheck()) {
 		EnableControls(FALSE);
 	}
@@ -3734,7 +3736,7 @@ BOOL CJoyPage::OnInitDialog()
 
 	// Cuadro combinado de puertos
 	for (i=0; i<2; i++) {
-		// Cuadro combinadoæ“¾
+		// Cuadro combinadoï¿½æ“¾
 		if (i == 0) {
 			pComboBox = (CComboBox*)GetDlgItem(IDC_JOY_PORTC1);
 		}
@@ -3776,13 +3778,13 @@ BOOL CJoyPage::OnInitDialog()
 		// Cursor
 		pComboBox->SetCurSel(m_pConfig->joy_type[i]);
 
-		// ‘Î‰Botones‚ÌInicializacion
+		// ï¿½Î‰ï¿½Botonesï¿½ï¿½Inicializacion
 		OnSelChg(pComboBox);
 	}
 
 	// Cuadro combinado de dispositivos
 	for (i=0; i<2; i++) {
-		// Cuadro combinadoæ“¾
+		// Cuadro combinadoï¿½æ“¾
 		if (i == 0) {
 			pComboBox = (CComboBox*)GetDlgItem(IDC_JOY_DEVCA);
 		}
@@ -3797,7 +3799,7 @@ BOOL CJoyPage::OnInitDialog()
 		// Configuracion "No Assign"
 		pComboBox->AddString(strNoA);
 
-		// ƒfƒoƒCƒXBucle
+		// ï¿½fï¿½oï¿½Cï¿½XBucle
 		for (nDevice=0; ; nDevice++) {
 			if (!m_pInput->GetJoyCaps(nDevice, strDesc, &ddc)) {
 				// No hay mas dispositivos
@@ -3808,7 +3810,7 @@ BOOL CJoyPage::OnInitDialog()
 			pComboBox->AddString(strDesc);
 		}
 
-		// İ’è€–Ú‚ÉCursor
+		// ï¿½İ’è€ï¿½Ú‚ï¿½Cursor
 		if (m_pConfig->joy_dev[i] < pComboBox->GetCount()) {
 			pComboBox->SetCurSel(m_pConfig->joy_dev[i]);
 		}
@@ -3817,11 +3819,11 @@ BOOL CJoyPage::OnInitDialog()
 			pComboBox->SetCurSel(0);
 		}
 
-		// ‘Î‰Botones‚ÌInicializacion
+		// ï¿½Î‰ï¿½Botonesï¿½ï¿½Inicializacion
 		OnSelChg(pComboBox);
 	}
 
-	// TecladoƒfƒoƒCƒX
+	// Tecladoï¿½fï¿½oï¿½Cï¿½X
 	pComboBox = (CComboBox*)GetDlgItem(IDC_JOY_DEVCC);
 	ASSERT(pComboBox);
 	pComboBox->ResetContent();
@@ -3848,7 +3850,7 @@ void CJoyPage::OnOK()
 
 	// Cuadro combinado de puertos
 	for (i=0; i<2; i++) {
-		// Cuadro combinadoæ“¾
+		// Cuadro combinadoï¿½æ“¾
 		if (i == 0) {
 			pComboBox = (CComboBox*)GetDlgItem(IDC_JOY_PORTC1);
 		}
@@ -3863,7 +3865,7 @@ void CJoyPage::OnOK()
 
 	// Cuadro combinado de dispositivos
 	for (i=0; i<2; i++) {
-		// Cuadro combinadoæ“¾
+		// Cuadro combinadoï¿½æ“¾
 		if (i == 0) {
 			pComboBox = (CComboBox*)GetDlgItem(IDC_JOY_DEVCA);
 		}
@@ -3883,7 +3885,7 @@ void CJoyPage::OnOK()
 
 		// Botones
 		for (nButton=0; nButton<CInput::JoyButtons; nButton++) {
-			// Asignacion‚ÆDisparo rapido‚ğ‡¬
+			// Asignacionï¿½ï¿½Disparo rapidoï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 			if (i == 0) {
 				// Puerto 1
 				m_pConfig->joy_button0[nButton] = 
@@ -3908,7 +3910,7 @@ void CJoyPage::OnOK()
 //---------------------------------------------------------------------------
 void CJoyPage::OnCancel()
 {
-	// CInput‚É‘Î‚µ‚Ä“Æ©‚ÉApplyCfg(İ’è‚ğEditar‘O‚É–ß‚·)
+	// CInputï¿½É‘Î‚ï¿½ï¿½Ä“Æï¿½ï¿½ï¿½ApplyCfg(ï¿½İ’ï¿½ï¿½Editarï¿½Oï¿½É–ß‚ï¿½)
 	m_pInput->ApplyCfg(m_pConfig);
 
 	// Clase base
@@ -3927,7 +3929,7 @@ BOOL CJoyPage::OnCommand(WPARAM wParam, LPARAM lParam)
 
 	ASSERT(this);
 
-	// ‘—MŒ³Obtener ID
+	// ï¿½ï¿½ï¿½Mï¿½ï¿½Obtener ID
 	nID = (UINT)LOWORD(wParam);
 
 	// CBN_SELCHANGE
@@ -3969,26 +3971,26 @@ void FASTCALL CJoyPage::OnSelChg(CComboBox *pComboBox)
 	ASSERT(this);
 	ASSERT(pComboBox);
 
-	// ‘Î‰Botones‚ğæ“¾
+	// ï¿½Î‰ï¿½Botonesï¿½ï¿½ï¿½æ“¾
 	pButton = GetCorButton(pComboBox->GetDlgCtrlID());
 	if (!pButton) {
 		return;
 	}
 
-	// Cuadro combinado‚Ì‘I‘ğó‹µ‚É‚æ‚Á‚ÄŒˆ‚ß‚é
+	// Cuadro combinadoï¿½Ì‘Iï¿½ï¿½ï¿½ó‹µ‚É‚ï¿½ï¿½ï¿½ÄŒï¿½ï¿½ß‚ï¿½
 	if (pComboBox->GetCurSel() == 0) {
-		// (Asignacion‚È‚µ)¨Botones–³Œø
+		// (Asignacionï¿½È‚ï¿½)ï¿½ï¿½Botonesï¿½ï¿½ï¿½ï¿½
 		pButton->EnableWindow(FALSE);
 	}
 	else {
-		// Botones—LŒø
+		// Botonesï¿½Lï¿½ï¿½
 		pButton->EnableWindow(TRUE);
 	}
 }
 
 //---------------------------------------------------------------------------
 //
-//	ƒ|[ƒgÚ×
+//	ï¿½|ï¿½[ï¿½gï¿½Úï¿½
 //
 //---------------------------------------------------------------------------
 void FASTCALL CJoyPage::OnDetail(UINT nButton)
@@ -4002,7 +4004,7 @@ void FASTCALL CJoyPage::OnDetail(UINT nButton)
 	ASSERT(this);
 	ASSERT(nButton != 0);
 
-	// ƒ|[ƒgæ“¾
+	// ï¿½|ï¿½[ï¿½gï¿½æ“¾
 	nPort = 0;
 	if (nButton == IDC_JOY_PORTD2) {
 		nPort++;
@@ -4014,16 +4016,16 @@ void FASTCALL CJoyPage::OnDetail(UINT nButton)
 		return;
 	}
 
-	// ‘I‘ğ”Ô†‚ğ“¾‚é
+	// ï¿½Iï¿½ï¿½Ôï¿½ï¿½ğ“¾‚ï¿½
 	nType = pComboBox->GetCurSel();
 	if (nType == 0) {
 		return;
 	}
 
-	// ‘I‘ğ”Ô†‚©‚çAObtener nombre
+	// ï¿½Iï¿½ï¿½Ôï¿½ï¿½ï¿½ï¿½ï¿½AObtener nombre
 	pComboBox->GetLBText(nType, strDesc);
 
-	// ƒpƒ‰ƒ[ƒ^‚ğ“n‚µAEjecutar dialogo
+	// ï¿½pï¿½ï¿½ï¿½ï¿½ï¿½[ï¿½^ï¿½ï¿½nï¿½ï¿½ï¿½AEjecutar dialogo
 	dlg.m_strDesc = strDesc;
 	dlg.m_nPort = nPort;
 	dlg.m_nType = nType;
@@ -4032,7 +4034,7 @@ void FASTCALL CJoyPage::OnDetail(UINT nButton)
 
 //---------------------------------------------------------------------------
 //
-//	ƒfƒoƒCƒXİ’è
+//	ï¿½fï¿½oï¿½Cï¿½Xï¿½İ’ï¿½
 //
 //---------------------------------------------------------------------------
 void FASTCALL CJoyPage::OnSetting(UINT nButton)
@@ -4053,34 +4055,34 @@ void FASTCALL CJoyPage::OnSetting(UINT nButton)
 		return;
 	}
 
-	// ƒfƒoƒCƒXƒCƒ“ƒfƒbƒNƒXæ“¾
+	// ï¿½fï¿½oï¿½Cï¿½Xï¿½Cï¿½ï¿½ï¿½fï¿½bï¿½Nï¿½Xï¿½æ“¾
 	nJoy = -1;
 	switch (pComboBox->GetDlgCtrlID()) {
-		// ƒfƒoƒCƒXA
+		// ï¿½fï¿½oï¿½Cï¿½XA
 		case IDC_JOY_DEVCA:
 			nJoy = 0;
 			break;
 
-		// ƒfƒoƒCƒXB
+		// ï¿½fï¿½oï¿½Cï¿½XB
 		case IDC_JOY_DEVCB:
 			nJoy = 1;
 			break;
 
-		// Otros(ƒQ[ƒ€ƒRƒ“ƒgƒ[ƒ‰‚Å‚Í‚È‚¢ƒfƒoƒCƒX)
+		// Otros(ï¿½Qï¿½[ï¿½ï¿½ï¿½Rï¿½ï¿½ï¿½gï¿½ï¿½ï¿½[ï¿½ï¿½ï¿½Å‚Í‚È‚ï¿½ï¿½fï¿½oï¿½Cï¿½X)
 		default:
 			return;
 	}
 	ASSERT((nJoy == 0) || (nJoy == 1));
 	ASSERT(nJoy < CInput::JoyDevices);
 
-	// Cuadro combinado‚Ì‘I‘ğ”Ô†‚ğ“¾‚é
+	// Cuadro combinadoï¿½Ì‘Iï¿½ï¿½Ôï¿½ï¿½ğ“¾‚ï¿½
 	nCombo = pComboBox->GetCurSel();
 	if (nCombo == 0) {
-		// Asignacion–³‚µ
+		// Asignacionï¿½ï¿½ï¿½ï¿½
 		return;
 	}
 
-	// Cuadro combinado‚Ì‘I‘ğ”Ô†‚ğ“¾‚éB0(Asignacion–³‚µ)‚ğ‹–—e
+	// Cuadro combinadoï¿½Ì‘Iï¿½ï¿½Ôï¿½ï¿½ğ“¾‚ï¿½B0(Asignacionï¿½ï¿½ï¿½ï¿½)ï¿½ï¿½ï¿½ï¿½ï¿½e
 	pComboBox = (CComboBox*)GetDlgItem(IDC_JOY_PORTC1);
 	ASSERT(pComboBox);
 	nType[0] = pComboBox->GetCurSel();
@@ -4088,13 +4090,13 @@ void FASTCALL CJoyPage::OnSetting(UINT nButton)
 	ASSERT(pComboBox);
 	nType[1] = pComboBox->GetCurSel();
 
-	// Œ»İ‚ÌƒWƒ‡ƒCƒXƒeƒBƒbƒNİ’è‚ğ•Û‘¶
+	// ï¿½ï¿½ï¿½İ‚ÌƒWï¿½ï¿½ï¿½Cï¿½Xï¿½eï¿½Bï¿½bï¿½Nï¿½İ’ï¿½ï¿½Û‘ï¿½
 	m_pInput->GetJoyCfg(nJoy, &cfg);
 
-	// ƒpƒ‰ƒ[ƒ^İ’è
+	// ï¿½pï¿½ï¿½ï¿½ï¿½ï¿½[ï¿½^ï¿½İ’ï¿½
 	sheet.SetParam(nJoy, nCombo, nType);
 
-	// Ejecutar dialogo(ƒWƒ‡ƒCƒXƒeƒBƒbƒNØ‚è‘Ö‚¦‚ğ‹²‚İACancelar‚È‚çİ’è–ß‚·)
+	// Ejecutar dialogo(ï¿½Wï¿½ï¿½ï¿½Cï¿½Xï¿½eï¿½Bï¿½bï¿½Nï¿½Ø‚ï¿½Ö‚ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½İACancelarï¿½È‚ï¿½İ’ï¿½ß‚ï¿½)
 	m_pInput->EnableJoy(FALSE);
 	if (sheet.DoModal() != IDOK) {
 		m_pInput->SetJoyCfg(nJoy, &cfg);
@@ -4104,7 +4106,7 @@ void FASTCALL CJoyPage::OnSetting(UINT nButton)
 
 //---------------------------------------------------------------------------
 //
-//	‘Î‰‚·‚éBotones‚ğæ“¾
+//	ï¿½Î‰ï¿½ï¿½ï¿½ï¿½ï¿½Botonesï¿½ï¿½ï¿½æ“¾
 //
 //---------------------------------------------------------------------------
 CButton* CJoyPage::GetCorButton(UINT nComboBox)
@@ -4117,16 +4119,16 @@ CButton* CJoyPage::GetCorButton(UINT nComboBox)
 
 	pButton = NULL;
 
-	// Tabla de controles‚ğBusqueda
+	// Tabla de controlesï¿½ï¿½Busqueda
 	for (i=0; ; i+=2) {
-		// I’[Verificacion
+		// ï¿½Iï¿½[Verificacion
 		if (ControlTable[i] == NULL) {
 			return NULL;
 		}
 
 		// Si coincide, OK
 		if (ControlTable[i] == nComboBox) {
-			// ‘Î‰‚·‚éBotones‚ğ“¾‚é
+			// ï¿½Î‰ï¿½ï¿½ï¿½ï¿½ï¿½Botonesï¿½ğ“¾‚ï¿½
 			pButton = (CButton*)GetDlgItem(ControlTable[i + 1]);
 			break;
 		}
@@ -4151,9 +4153,9 @@ CComboBox* CJoyPage::GetCorCombo(UINT nButton)
 
 	pComboBox = NULL;
 
-	// Tabla de controles‚ğBusqueda
+	// Tabla de controlesï¿½ï¿½Busqueda
 	for (i=1; ; i+=2) {
-		// I’[Verificacion
+		// ï¿½Iï¿½[Verificacion
 		if (ControlTable[i] == NULL) {
 			return NULL;
 		}
@@ -4173,7 +4175,7 @@ CComboBox* CJoyPage::GetCorCombo(UINT nButton)
 //---------------------------------------------------------------------------
 //
 //	Tabla de controles
-//	¦Cuadro combinado‚ÆBotones‚Æ‚Ì‘ŠŒİ‘Î‰‚ğ‚Æ‚é‚½‚ß
+//	ï¿½ï¿½Cuadro combinadoï¿½ï¿½Botonesï¿½Æ‚Ì‘ï¿½ï¿½İ‘Î‰ï¿½ï¿½ï¿½ï¿½Æ‚é‚½ï¿½ï¿½
 //
 //---------------------------------------------------------------------------
 UINT CJoyPage::ControlTable[] = {
@@ -4198,7 +4200,7 @@ UINT CJoyPage::ControlTable[] = {
 //---------------------------------------------------------------------------
 CJoyDetDlg::CJoyDetDlg(CWnd *pParent) : CDialog(IDD_JOYDETDLG, pParent)
 {
-	// InglesŠÂ‹«‚Ö‚Ì‘Î‰
+	// Inglesï¿½Â‹ï¿½ï¿½Ö‚Ì‘Î‰ï¿½
 	if (!::IsJapanese()) {
 		m_lpszTemplateName = MAKEINTRESOURCE(IDD_US_JOYDETDLG);
 		m_nIDHelp = IDD_US_JOYDETDLG;
@@ -4211,7 +4213,7 @@ CJoyDetDlg::CJoyDetDlg(CWnd *pParent) : CDialog(IDD_JOYDETDLG, pParent)
 
 //---------------------------------------------------------------------------
 //
-//	ƒ_ƒCƒAƒƒOInicializacion
+//	ï¿½_ï¿½Cï¿½Aï¿½ï¿½ï¿½OInicializacion
 //
 //---------------------------------------------------------------------------
 BOOL CJoyDetDlg::OnInitDialog()
@@ -4252,7 +4254,7 @@ BOOL CJoyDetDlg::OnInitDialog()
 	strText.Format(strBase, pDevice->GetAxes());
 	pStatic->SetWindowText(strText);
 
-	// Botones”
+	// Botonesï¿½ï¿½
 	pStatic = (CStatic*)GetDlgItem(IDC_JOYDET_BUTTONS);
 	ASSERT(pStatic);
 	pStatic->GetWindowText(strBase);
@@ -4273,7 +4275,7 @@ BOOL CJoyDetDlg::OnInitDialog()
 	strText.Format(strBase, pDevice->GetDatas());
 	pStatic->SetWindowText(strText);
 
-	// ƒWƒ‡ƒCƒXƒeƒBƒbƒNEliminar
+	// ï¿½Wï¿½ï¿½ï¿½Cï¿½Xï¿½eï¿½Bï¿½bï¿½NEliminar
 	delete pDevice;
 
 	return TRUE;
@@ -4281,7 +4283,7 @@ BOOL CJoyDetDlg::OnInitDialog()
 
 //===========================================================================
 //
-//	Botonesİ’èƒy[ƒW
+//	Botonesï¿½İ’ï¿½yï¿½[ï¿½W
 //
 //===========================================================================
 
@@ -4306,10 +4308,10 @@ CBtnSetPage::CBtnSetPage()
 	m_pInput = pFrmWnd->GetInput();
 	ASSERT(m_pInput);
 
-	// ƒWƒ‡ƒCƒXƒeƒBƒbƒN”Ô†‚ğLimpiar
+	// ï¿½Wï¿½ï¿½ï¿½Cï¿½Xï¿½eï¿½Bï¿½bï¿½Nï¿½Ôï¿½ï¿½ï¿½Limpiar
 	m_nJoy = -1;
 
-	// ƒ^ƒCƒv”Ô†‚ğLimpiar
+	// ï¿½^ï¿½Cï¿½vï¿½Ôï¿½ï¿½ï¿½Limpiar
 	for (i=0; i<PPI::PortMax; i++) {
 		m_nType[i] = -1;
 	}
@@ -4350,7 +4352,7 @@ void FASTCALL CBtnSetPage::Init(CPropertySheet *pSheet)
 	// Construccion
 	CommonConstruct(MAKEINTRESOURCE(nID), 0);
 
-	// eƒV[ƒg‚ÉAgregar
+	// ï¿½eï¿½Vï¿½[ï¿½gï¿½ï¿½Agregar
 	pSheet->AddPage(this);
 }
 
@@ -4383,7 +4385,7 @@ BOOL CBtnSetPage::OnInitDialog()
 	// Clase base
 	CPropertyPage::OnInitDialog();
 
-	// eƒNƒ‰ƒX‚ÌInicializacion(CPropertySheet‚ÍOnInitDialog‚ğ‚½‚È‚¢)
+	// ï¿½eï¿½Nï¿½ï¿½ï¿½Xï¿½ï¿½Inicializacion(CPropertySheetï¿½ï¿½OnInitDialogï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½È‚ï¿½)
 	pJoySheet = (CJoySheet*)m_pSheet;
 	pJoySheet->InitSheet();
 	ASSERT((m_nJoy >= 0) && (m_nJoy < CInput::JoyDevices));
@@ -4395,7 +4397,7 @@ BOOL CBtnSetPage::OnInitDialog()
 	pPPI = (PPI*)::GetVM()->SearchDevice(MAKEID('P', 'P', 'I', ' '));
 	ASSERT(pPPI);
 
-	// Botones”æ“¾
+	// Botonesï¿½ï¿½ï¿½æ“¾
 	nButtons = pJoySheet->GetButtons();
 
 	// Obtener texto base
@@ -4407,7 +4409,7 @@ BOOL CBtnSetPage::OnInitDialog()
 		pStatic = (CStatic*)GetDlgItem(GetControl(nButton, BtnLabel));
 		ASSERT(pStatic);
 		if (nButton < nButtons) {
-			// —LŒø(ƒEƒBƒ“ƒhƒEEliminar)
+			// ï¿½Lï¿½ï¿½(ï¿½Eï¿½Bï¿½ï¿½ï¿½hï¿½EEliminar)
 			pStatic->GetWindowRect(&m_rectLabel[nButton]);
 			ScreenToClient(&m_rectLabel[nButton]);
 			pStatic->DestroyWindow();
@@ -4423,20 +4425,20 @@ BOOL CBtnSetPage::OnInitDialog()
 		pComboBox = (CComboBox*)GetDlgItem(GetControl(nButton, BtnCombo));
 		ASSERT(pComboBox);
 		if (nButton < nButtons) {
-			// —LŒø(Œó•â‚ğAgregar)
+			// ï¿½Lï¿½ï¿½(ï¿½ï¿½ï¿½ï¿½Agregar)
 			pComboBox->ResetContent();
 
 			// Configurar "No Assign"
 			::GetMsg(IDS_JOYSET_NOASSIGN, strText);
 			pComboBox->AddString(strText);
 
-			// ƒ|[ƒgABotones‚ğ‰ñ‚é
+			// ï¿½|ï¿½[ï¿½gï¿½ABotonesï¿½ï¿½ï¿½ï¿½ï¿½
 			for (nPort=0; nPort<PPI::PortMax; nPort++) {
 				// Obtener dispositivo de joystick temporal
 				pJoyDevice = pPPI->CreateJoy(0, m_nType[nPort]);
 
 				for (nCandidate=0; nCandidate<PPI::ButtonMax; nCandidate++) {
-					// ƒWƒ‡ƒCƒXƒeƒBƒbƒNƒfƒoƒCƒX‚©‚çBotonesObtener nombre
+					// ï¿½Wï¿½ï¿½ï¿½Cï¿½Xï¿½eï¿½Bï¿½bï¿½Nï¿½fï¿½oï¿½Cï¿½Xï¿½ï¿½ï¿½ï¿½BotonesObtener nombre
 					GetButtonDesc(pJoyDevice->GetButtonDesc(nCandidate), strDesc);
 
 					// Formato
@@ -4444,11 +4446,11 @@ BOOL CBtnSetPage::OnInitDialog()
 					pComboBox->AddString(strText);
 				}
 
-				// ‰¼ƒWƒ‡ƒCƒXƒeƒBƒbƒNƒfƒoƒCƒX‚ğEliminar
+				// ï¿½ï¿½ï¿½Wï¿½ï¿½ï¿½Cï¿½Xï¿½eï¿½Bï¿½bï¿½Nï¿½fï¿½oï¿½Cï¿½Xï¿½ï¿½Eliminar
 				delete pJoyDevice;
 			}
 
-			// Cursorİ’è
+			// Cursorï¿½İ’ï¿½
 			pComboBox->SetCurSel(0);
 			if ((LOWORD(cfg.dwButton[nButton]) != 0) && (LOWORD(cfg.dwButton[nButton]) <= PPI::ButtonMax)) {
 				if (cfg.dwButton[nButton] & 0x10000) {
@@ -4466,7 +4468,7 @@ BOOL CBtnSetPage::OnInitDialog()
 			pComboBox->EnableWindow(FALSE);
 		}
 
-		// Disparo rapidoƒXƒ‰ƒCƒ_
+		// Disparo rapidoï¿½Xï¿½ï¿½ï¿½Cï¿½_
 		pSlider = (CSliderCtrl*)GetDlgItem(GetControl(nButton, BtnRapid));
 		ASSERT(pSlider);
 		if (nButton < nButtons) {
@@ -4481,22 +4483,22 @@ BOOL CBtnSetPage::OnInitDialog()
 			pSlider->EnableWindow(FALSE);
 		}
 
-		// Disparo rapido’l
+		// Disparo rapidoï¿½l
 		pStatic = (CStatic*)GetDlgItem(GetControl(nButton, BtnValue));
 		ASSERT(pStatic);
 		if (nButton < nButtons) {
-			// —LŒø(‰Šú’lMostrar)
+			// ï¿½Lï¿½ï¿½(ï¿½ï¿½ï¿½ï¿½ï¿½lMostrar)
 			OnSlider(nButton);
 			OnSelChg(nButton);
 		}
 		else {
-			// –³Œø(Limpiar)
+			// ï¿½ï¿½ï¿½ï¿½(Limpiar)
 			strText.Empty();
 			pStatic->SetWindowText(strText);
 		}
 	}
 
-	// Botones‰Šú’l“Ç‚İæ‚è
+	// Botonesï¿½ï¿½ï¿½ï¿½ï¿½lï¿½Ç‚İï¿½ï¿½
 	for (nButton=0; nButton<CInput::JoyButtons; nButton++) {
 		m_bButton[nButton] = FALSE;
 		dwData = m_pInput->GetJoyButton(m_nJoy, nButton);
@@ -4520,7 +4522,7 @@ void CBtnSetPage::OnPaint()
 {
 	CPaintDC dc(this);
 
-	// DibujarƒƒCƒ“
+	// Dibujarï¿½ï¿½ï¿½Cï¿½ï¿½
 	OnDraw(&dc, NULL, TRUE);
 }
 
@@ -4535,14 +4537,14 @@ void CBtnSetPage::OnHScroll(UINT /*nSBCode*/, UINT /*nPos*/, CScrollBar *pBar)
 	UINT nID;
 	int nButton;
 
-	// ƒRƒ“ƒgƒ[ƒ‹ID‚ğæ“¾
+	// ï¿½Rï¿½ï¿½ï¿½gï¿½ï¿½ï¿½[ï¿½ï¿½IDï¿½ï¿½ï¿½æ“¾
 	pSlider = (CSliderCtrl*)pBar;
 	nID = pSlider->GetDlgCtrlID();
 
-	// BotonesƒCƒ“ƒfƒbƒNƒX‚ğBusqueda
+	// Botonesï¿½Cï¿½ï¿½ï¿½fï¿½bï¿½Nï¿½Xï¿½ï¿½Busqueda
 	for (nButton=0; nButton<CInput::JoyButtons; nButton++) {
 		if (GetControl(nButton, BtnRapid) == nID) {
-			// Rutina dedicada‚ğŒÄ‚Ô
+			// Rutina dedicadaï¿½ï¿½ï¿½Ä‚ï¿½
 			OnSlider(nButton);
 			break;
 		}
@@ -4561,12 +4563,12 @@ BOOL CBtnSetPage::OnCommand(WPARAM wParam, LPARAM lParam)
 
 	ASSERT(this);
 
-	// ‘—MŒ³Obtener ID
+	// ï¿½ï¿½ï¿½Mï¿½ï¿½Obtener ID
 	nID = (UINT)LOWORD(wParam);
 
 	// CBN_SELCHANGE
 	if (HIWORD(wParam) == CBN_SELCHANGE) {
-		// BotonesƒCƒ“ƒfƒbƒNƒX‚ğBusqueda
+		// Botonesï¿½Cï¿½ï¿½ï¿½fï¿½bï¿½Nï¿½Xï¿½ï¿½Busqueda
 		for (nButton=0; nButton<CInput::JoyButtons; nButton++) {
 			if (GetControl(nButton, BtnCombo) == nID) {
 				OnSelChg(nButton);
@@ -4581,7 +4583,7 @@ BOOL CBtnSetPage::OnCommand(WPARAM wParam, LPARAM lParam)
 
 //---------------------------------------------------------------------------
 //
-//	DibujarƒƒCƒ“
+//	Dibujarï¿½ï¿½ï¿½Cï¿½ï¿½
 //
 //---------------------------------------------------------------------------
 void FASTCALL CBtnSetPage::OnDraw(CDC *pDC, BOOL *pButton, BOOL bForce)
@@ -4606,24 +4608,24 @@ void FASTCALL CBtnSetPage::OnDraw(CDC *pDC, BOOL *pButton, BOOL bForce)
 
 	// BotonesBucle
 	for (nButton=0; nButton<CInput::JoyButtons; nButton++) {
-		// —LŒø(Mostrar‚·‚×‚«)Botones‚©”Û‚©
+		// ï¿½Lï¿½ï¿½(Mostrarï¿½ï¿½ï¿½×‚ï¿½)Botonesï¿½ï¿½ï¿½Û‚ï¿½
 		if ((m_rectLabel[nButton].left == 0) && (m_rectLabel[nButton].top == 0)) {
-			// Botones‚ª‚È‚¢‚Ì‚ÅA–³Œø‚É‚³‚ê‚½ƒXƒ^ƒeƒBƒbƒNƒeƒLƒXƒg
+			// Botonesï¿½ï¿½ï¿½È‚ï¿½ï¿½Ì‚ÅAï¿½ï¿½ï¿½ï¿½ï¿½É‚ï¿½ï¿½ê‚½ï¿½Xï¿½^ï¿½eï¿½Bï¿½bï¿½Nï¿½eï¿½Lï¿½Xï¿½g
 			continue;
 		}
 
-		// !bForce‚È‚çA”äŠr‚µ‚ÄAceptar
+		// !bForceï¿½È‚ï¿½Aï¿½ï¿½rï¿½ï¿½ï¿½ï¿½Aceptar
 		if (!bForce) {
 			ASSERT(pButton);
 			if (m_bButton[nButton] == pButton[nButton]) {
-				// ˆê’v‚µ‚Ä‚¢‚é‚Ì‚ÅDibujar‚µ‚È‚¢
+				// ï¿½ï¿½vï¿½ï¿½ï¿½Ä‚ï¿½ï¿½ï¿½Ì‚ï¿½Dibujarï¿½ï¿½ï¿½È‚ï¿½
 				continue;
 			}
 			// Difieren, guardar
 			m_bButton[nButton] = pButton[nButton];
 		}
 
-		// F‚ğAceptar
+		// ï¿½Fï¿½ï¿½Aceptar
 		if (m_bButton[nButton]) {
 			// Presionado (Rojo)
 			pDC->SetTextColor(RGB(255, 0, 0));
@@ -4639,7 +4641,7 @@ void FASTCALL CBtnSetPage::OnDraw(CDC *pDC, BOOL *pButton, BOOL bForce)
 						DT_LEFT | DT_NOPREFIX | DT_SINGLELINE | DT_VCENTER);
 	}
 
-	// Restaurar fuente(Objetos‚ÍEliminar‚µ‚È‚­‚Ä‚æ‚¢)
+	// Restaurar fuente(Objetosï¿½ï¿½Eliminarï¿½ï¿½ï¿½È‚ï¿½ï¿½Ä‚æ‚¢)
 	pDC->SelectObject(pFont);
 }
 
@@ -4658,10 +4660,10 @@ void CBtnSetPage::OnTimer(UINT /*nTimerID*/)
 
 	ASSERT(this);
 
-	// ƒtƒ‰ƒOInicializacion
+	// ï¿½tï¿½ï¿½ï¿½OInicializacion
 	bFlag = FALSE;
 
-	// Œ»İ‚ÌƒWƒ‡ƒCƒXƒeƒBƒbƒNBotonesî•ñ‚ğ“Ç‚İæ‚èA”äŠr
+	// ï¿½ï¿½ï¿½İ‚ÌƒWï¿½ï¿½ï¿½Cï¿½Xï¿½eï¿½Bï¿½bï¿½NBotonesï¿½ï¿½ï¿½ï¿½Ç‚İï¿½ï¿½Aï¿½ï¿½r
 	for (nButton=0; nButton<CInput::JoyButtons; nButton++) {
 		bButton[nButton] = FALSE;
 		dwData = m_pInput->GetJoyButton(m_nJoy, nButton);
@@ -4675,7 +4677,7 @@ void CBtnSetPage::OnTimer(UINT /*nTimerID*/)
 		}
 	}
 
-	// ƒtƒ‰ƒO‚ªã‚ª‚Á‚Ä‚¢‚ê‚ÎAÄDibujar
+	// ï¿½tï¿½ï¿½ï¿½Oï¿½ï¿½ï¿½ã‚ªï¿½ï¿½ï¿½Ä‚ï¿½ï¿½ï¿½ÎAï¿½ï¿½Dibujar
 	if (bFlag) {
 		pDC = new CClientDC(this);
 		OnDraw(pDC, bButton, FALSE);
@@ -4698,7 +4700,7 @@ void CBtnSetPage::OnOK()
 	CSliderCtrl *pSlider;
 	int nSelect;
 
-	// Temporizador’â~
+	// Temporizadorï¿½ï¿½~
 	if (m_nTimerID) {
 		KillTimer(m_nTimerID);
 		m_nTimerID = NULL;
@@ -4713,9 +4715,9 @@ void CBtnSetPage::OnOK()
 
 	// Leer controles y reflejar en la configuracion actual
 	for (nButton=0; nButton<CInput::JoyButtons; nButton++) {
-		// —LŒø‚ÈBotones‚©
+		// ï¿½Lï¿½ï¿½ï¿½ï¿½Botonesï¿½ï¿½
 		if (nButton >= nButtons) {
-			// –³Œø‚ÈBotones‚È‚Ì‚ÅAAsignacionEDisparo rapido‚Æ‚à‚É0
+			// ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Botonesï¿½È‚Ì‚ÅAAsignacionï¿½EDisparo rapidoï¿½Æ‚ï¿½ï¿½ï¿½0
 			cfg.dwButton[nButton] = 0;
 			cfg.dwRapid[nButton] = 0;
 			continue;
@@ -4726,9 +4728,9 @@ void CBtnSetPage::OnOK()
 		ASSERT(pComboBox);
 		nSelect = pComboBox->GetCurSel();
 
-		// (Asignacion‚È‚¢)Verificacion
+		// (Asignacionï¿½È‚ï¿½)Verificacion
 		if (nSelect == 0) {
-			// –³ŒøAsignacion‚È‚çAAsignacionEDisparo rapido‚Æ‚à‚É0
+			// ï¿½ï¿½ï¿½ï¿½Asignacionï¿½È‚ï¿½AAsignacionï¿½EDisparo rapidoï¿½Æ‚ï¿½ï¿½ï¿½0
 			cfg.dwButton[nButton] = 0;
 			cfg.dwRapid[nButton] = 0;
 			continue;
@@ -4765,7 +4767,7 @@ void CBtnSetPage::OnOK()
 //---------------------------------------------------------------------------
 void CBtnSetPage::OnCancel()
 {
-	// Temporizador’â~
+	// Temporizadorï¿½ï¿½~
 	if (m_nTimerID) {
 		KillTimer(m_nTimerID);
 		m_nTimerID = NULL;
@@ -4777,7 +4779,7 @@ void CBtnSetPage::OnCancel()
 
 //---------------------------------------------------------------------------
 //
-//	ƒXƒ‰ƒCƒ_Modificacion
+//	ï¿½Xï¿½ï¿½ï¿½Cï¿½_Modificacion
 //
 //---------------------------------------------------------------------------
 void FASTCALL CBtnSetPage::OnSlider(int nButton)
@@ -4790,18 +4792,18 @@ void FASTCALL CBtnSetPage::OnSlider(int nButton)
 	ASSERT(this);
 	ASSERT((nButton >= 0) && (nButton < CInput::JoyButtons));
 
-	// ƒ|ƒWƒVƒ‡ƒ“‚ğæ“¾
+	// ï¿½|ï¿½Wï¿½Vï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½æ“¾
 	pSlider = (CSliderCtrl*)GetDlgItem(GetControl(nButton, BtnRapid));
 	ASSERT(pSlider);
 	nPos = pSlider->GetPos();
 
-	// ‘Î‰‚·‚éEtiqueta‚ğæ“¾
+	// ï¿½Î‰ï¿½ï¿½ï¿½ï¿½ï¿½Etiquetaï¿½ï¿½ï¿½æ“¾
 	pStatic = (CStatic*)GetDlgItem(GetControl(nButton, BtnValue));
 	ASSERT(pStatic);
 
 	// Establecer valores desde la tabla
 	if ((nPos >= 0) && (nPos <= CInput::JoyRapids)) {
-		// ŒÅ’è¬”“_Procesamiento
+		// ï¿½Å’è¬ï¿½ï¿½ï¿½_Procesamiento
 		if (RapidTable[nPos] & 1) {
 			strText.Format(_T("%d.5"), RapidTable[nPos] >> 1);
 		}
@@ -4830,12 +4832,12 @@ void FASTCALL CBtnSetPage::OnSelChg(int nButton)
 	ASSERT(this);
 	ASSERT((nButton >= 0) && (nButton < CInput::JoyButtons));
 
-	// ƒ|ƒWƒVƒ‡ƒ“‚ğæ“¾
+	// ï¿½|ï¿½Wï¿½Vï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½æ“¾
 	pComboBox = (CComboBox*)GetDlgItem(GetControl(nButton, BtnCombo));
 	ASSERT(pComboBox);
 	nPos = pComboBox->GetCurSel();
 
-	// ‘Î‰‚·‚éƒXƒ‰ƒCƒ_AEtiqueta‚ğæ“¾
+	// ï¿½Î‰ï¿½ï¿½ï¿½ï¿½ï¿½Xï¿½ï¿½ï¿½Cï¿½_ï¿½AEtiquetaï¿½ï¿½ï¿½æ“¾
 	pSlider = (CSliderCtrl*)GetDlgItem(GetControl(nButton, BtnRapid));
 	ASSERT(pSlider);
 	pStatic = (CStatic*)GetDlgItem(GetControl(nButton, BtnValue));
@@ -4854,7 +4856,7 @@ void FASTCALL CBtnSetPage::OnSelChg(int nButton)
 
 //---------------------------------------------------------------------------
 //
-//	BotonesNombreæ“¾
+//	BotonesNombreï¿½æ“¾
 //
 //---------------------------------------------------------------------------
 void FASTCALL CBtnSetPage::GetButtonDesc(const char *pszDesc, CString& strDesc)
@@ -4866,12 +4868,12 @@ void FASTCALL CBtnSetPage::GetButtonDesc(const char *pszDesc, CString& strDesc)
 	// Inicializacion
 	strDesc.Empty();
 
-	// NULL‚È‚çƒŠƒ^[ƒ“
+	// NULLï¿½È‚çƒŠï¿½^ï¿½[ï¿½ï¿½
 	if (!pszDesc) {
 		return;
 	}
 
-	// TC‚ÉConversion
+	// TCï¿½ï¿½Conversion
 	lpszT = A2CT(pszDesc);
 
 	// Generar cadena entre parentesis
@@ -4922,8 +4924,8 @@ const UINT CBtnSetPage::ControlTable[] = {
 
 //---------------------------------------------------------------------------
 //
-//	Disparo rapidoƒe[ƒuƒ‹
-//	¦ŒÅ’è¬”“_Procesamiento‚Ì‚½‚ßA2”{‚µ‚Ä‚ ‚é
+//	Disparo rapidoï¿½eï¿½[ï¿½uï¿½ï¿½
+//	ï¿½ï¿½ï¿½Å’è¬ï¿½ï¿½ï¿½_Procesamientoï¿½Ì‚ï¿½ï¿½ßA2ï¿½{ï¿½ï¿½ï¿½Ä‚ï¿½ï¿½ï¿½
 //
 //---------------------------------------------------------------------------
 const int CBtnSetPage::RapidTable[CInput::JoyRapids + 1] = {
@@ -4956,12 +4958,12 @@ CJoySheet::CJoySheet(CWnd *pParent) : CPropertySheet(IDS_JOYSET, pParent)
 	CFrmWnd *pFrmWnd;
 	int i;
 
-	// InglesŠÂ‹«‚Ö‚Ì‘Î‰
+	// Inglesï¿½Â‹ï¿½ï¿½Ö‚Ì‘Î‰ï¿½
 	if (!::IsJapanese()) {
 		::GetMsg(IDS_JOYSET, m_strCaption);
 	}
 
-	// ApplyBotones‚ğEliminar
+	// ApplyBotonesï¿½ï¿½Eliminar
 	m_psh.dwFlags |= PSH_NOAPPLYNOW;
 
 	// Obtener CInput
@@ -4970,20 +4972,20 @@ CJoySheet::CJoySheet(CWnd *pParent) : CPropertySheet(IDS_JOYSET, pParent)
 	m_pInput = pFrmWnd->GetInput();
 	ASSERT(m_pInput);
 
-	// ƒpƒ‰ƒ[ƒ^Inicializacion
+	// ï¿½pï¿½ï¿½ï¿½ï¿½ï¿½[ï¿½^Inicializacion
 	m_nJoy = -1;
 	m_nCombo = -1;
 	for (i=0; i<PPI::PortMax; i++) {
 		m_nType[i] = -1;
 	}
 
-	// ƒy[ƒWInicializacion
+	// ï¿½yï¿½[ï¿½WInicializacion
 	m_BtnSet.Init(this);
 }
 
 //---------------------------------------------------------------------------
 //
-//	ƒpƒ‰ƒ[ƒ^İ’è
+//	ï¿½pï¿½ï¿½ï¿½ï¿½ï¿½[ï¿½^ï¿½İ’ï¿½
 //
 //---------------------------------------------------------------------------
 void FASTCALL CJoySheet::SetParam(int nJoy, int nCombo, int nType[])
@@ -4996,7 +4998,7 @@ void FASTCALL CJoySheet::SetParam(int nJoy, int nCombo, int nType[])
 	ASSERT(nCombo >= 1);
 	ASSERT(nType);
 
-	// ‹L‰¯(Cuadro combinado‚Í-1)
+	// ï¿½Lï¿½ï¿½(Cuadro combinadoï¿½ï¿½-1)
 	m_nJoy = nJoy;
 	m_nCombo = nCombo - 1;
 	for (i=0; i<PPI::PortMax; i++) {
@@ -5009,7 +5011,7 @@ void FASTCALL CJoySheet::SetParam(int nJoy, int nCombo, int nType[])
 
 //---------------------------------------------------------------------------
 //
-//	ƒV[ƒgInicializacion
+//	ï¿½Vï¿½[ï¿½gInicializacion
 //
 //---------------------------------------------------------------------------
 void FASTCALL CJoySheet::InitSheet()
@@ -5028,7 +5030,7 @@ void FASTCALL CJoySheet::InitSheet()
 	// Obtener Caps del dispositivo
 	m_pInput->GetJoyCaps(m_nCombo, strDesc, &m_DevCaps);
 
-	// ƒEƒBƒ“ƒhƒEƒeƒLƒXƒgEditar
+	// ï¿½Eï¿½Bï¿½ï¿½ï¿½hï¿½Eï¿½eï¿½Lï¿½Xï¿½gEditar
 	GetWindowText(strFmt);
 	strText.Format(strFmt, _T('A' + m_nJoy), strDesc);
 	SetWindowText(strText);
@@ -5042,7 +5044,7 @@ void FASTCALL CJoySheet::InitSheet()
 
 //---------------------------------------------------------------------------
 //
-//	Numero de ejesæ“¾
+//	Numero de ejesï¿½æ“¾
 //
 //---------------------------------------------------------------------------
 int FASTCALL CJoySheet::GetAxes() const
@@ -5054,7 +5056,7 @@ int FASTCALL CJoySheet::GetAxes() const
 
 //---------------------------------------------------------------------------
 //
-//	Botones”æ“¾
+//	Botonesï¿½ï¿½ï¿½æ“¾
 //
 //---------------------------------------------------------------------------
 int FASTCALL CJoySheet::GetButtons() const
@@ -5088,7 +5090,7 @@ CSASIPage::CSASIPage()
 	m_pSASI = (SASI*)::GetVM()->SearchDevice(MAKEID('S', 'A', 'S', 'I'));
 	ASSERT(m_pSASI);
 
-	// –¢Inicializacion
+	// ï¿½ï¿½Inicializacion
 	m_bInit = FALSE;
 	m_nDrives = -1;
 
@@ -5128,7 +5130,7 @@ BOOL CSASIPage::OnInitDialog()
 	// Clase base
 	CConfigPage::OnInitDialog();
 
-	// Inicializacionƒtƒ‰ƒOUpANumero de unidadesæ“¾
+	// Inicializacionï¿½tï¿½ï¿½ï¿½OUpï¿½ANumero de unidadesï¿½æ“¾
 	m_bInit = TRUE;
 	m_nDrives = m_pConfig->sasi_drives;
 	ASSERT((m_nDrives >= 0) && (m_nDrives <= SASI::SASIMax));
@@ -5143,7 +5145,7 @@ BOOL CSASIPage::OnInitDialog()
 	pSpin->SetRange(0, SASI::SASIMax);
 	pSpin->SetPos(m_nDrives);
 
-	// ƒƒ‚ƒŠƒXƒCƒbƒ`©“®Actualizacion
+	// ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Xï¿½Cï¿½bï¿½`ï¿½ï¿½ï¿½ï¿½Actualizacion
 	pButton = (CButton*)GetDlgItem(IDC_SASI_MEMSWB);
 	ASSERT(pButton);
 	if (m_pConfig->sasi_sramsync) {
@@ -5164,7 +5166,7 @@ BOOL CSASIPage::OnInitDialog()
 	delete pDC;
 	cx = tm.tmAveCharWidth;
 
-	// ƒŠƒXƒgConfiguracion de controles
+	// ï¿½ï¿½ï¿½Xï¿½gConfiguracion de controles
 	pListCtrl = (CListCtrl*)GetDlgItem(IDC_SASI_LIST);
 	ASSERT(pListCtrl);
 	pListCtrl->DeleteAllItems();
@@ -5182,7 +5184,7 @@ BOOL CSASIPage::OnInitDialog()
 	// Opcion de fila completa para el control de lista (COMCTL32.DLL v4.71+)
 	pListCtrl->SendMessage(LVM_SETEXTENDEDLISTVIEWSTYLE, 0, LVS_EX_FULLROWSELECT | LVS_EX_LABELTIP);
 
-	// ƒŠƒXƒgƒRƒ“ƒgƒ[ƒ‹Actualizacion
+	// ï¿½ï¿½ï¿½Xï¿½gï¿½Rï¿½ï¿½ï¿½gï¿½ï¿½ï¿½[ï¿½ï¿½Actualizacion
 	UpdateList();
 
 	return TRUE;
@@ -5219,7 +5221,7 @@ BOOL CSASIPage::OnSetActive()
 
 	// Controles activados/desactivados
 	if (bEnable) {
-		// —LŒø‚Ìê‡AƒXƒsƒ“Botones‚©‚çŒ»İ‚ÌNumero de unidades‚ğæ“¾
+		// ï¿½Lï¿½ï¿½ï¿½Ìê‡ï¿½Aï¿½Xï¿½sï¿½ï¿½Botonesï¿½ï¿½ï¿½çŒ»ï¿½İ‚ï¿½Numero de unidadesï¿½ï¿½ï¿½æ“¾
 		pSpin = (CSpinButtonCtrl*)GetDlgItem(IDC_SASI_DRIVES);
 		ASSERT(pSpin);
 		if (pSpin->GetPos() > 0 ) {
@@ -5263,7 +5265,7 @@ void CSASIPage::OnOK()
 		_tcscpy(m_pConfig->sasi_file[i], szPath);
 	}
 
-	// Verificacionƒ{ƒbƒNƒX(SASIESCSI‚Æ‚à‹¤’Êİ’è)
+	// Verificacionï¿½{ï¿½bï¿½Nï¿½X(SASIï¿½ESCSIï¿½Æ‚ï¿½ï¿½ï¿½ï¿½Êİ’ï¿½)
 	pButton = (CButton*)GetDlgItem(IDC_SASI_MEMSWB);
 	ASSERT(pButton);
 	if (pButton->GetCheck() == 1) {
@@ -5300,7 +5302,7 @@ void CSASIPage::OnVScroll(UINT /*nSBCode*/, UINT nPos, CScrollBar* /*pBar*/)
 		EnableControls(FALSE);
 	}
 
-	// ƒŠƒXƒgƒRƒ“ƒgƒ[ƒ‹Actualizacion
+	// ï¿½ï¿½ï¿½Xï¿½gï¿½Rï¿½ï¿½ï¿½gï¿½ï¿½ï¿½[ï¿½ï¿½Actualizacion
 	UpdateList();
 }
 
@@ -5317,7 +5319,7 @@ void CSASIPage::OnClick(NMHDR* /*pNMHDR*/, LRESULT* /*pResult*/)
 	int nCount;
 	TCHAR szPath[FILEPATH_MAX];
 
-	// ƒŠƒXƒgObtener control
+	// ï¿½ï¿½ï¿½Xï¿½gObtener control
 	pListCtrl = (CListCtrl*)GetDlgItem(IDC_SASI_LIST);
 	ASSERT(pListCtrl);
 
@@ -5342,16 +5344,16 @@ void CSASIPage::OnClick(NMHDR* /*pNMHDR*/, LRESULT* /*pResult*/)
 		return;
 	}
 
-	// ƒpƒX‚ğActualizacion
+	// ï¿½pï¿½Xï¿½ï¿½Actualizacion
 	_tcscpy(m_szFile[nID], szPath);
 
-	// ƒŠƒXƒgƒRƒ“ƒgƒ[ƒ‹Actualizacion
+	// ï¿½ï¿½ï¿½Xï¿½gï¿½Rï¿½ï¿½ï¿½gï¿½ï¿½ï¿½[ï¿½ï¿½Actualizacion
 	UpdateList();
 }
 
 //---------------------------------------------------------------------------
 //
-//	ƒŠƒXƒgƒRƒ“ƒgƒ[ƒ‹Actualizacion
+//	ï¿½ï¿½ï¿½Xï¿½gï¿½Rï¿½ï¿½ï¿½gï¿½ï¿½ï¿½[ï¿½ï¿½Actualizacion
 //
 //---------------------------------------------------------------------------
 void FASTCALL CSASIPage::UpdateList()
@@ -5375,19 +5377,19 @@ void FASTCALL CSASIPage::UpdateList()
 		nCount--;
 	}
 
-	// ƒŠƒXƒgƒRƒ“ƒgƒ[ƒ‹‚ª‘«‚è‚È‚¢•”•ª‚ÍAAgregar‚·‚é
+	// ï¿½ï¿½ï¿½Xï¿½gï¿½Rï¿½ï¿½ï¿½gï¿½ï¿½ï¿½[ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½È‚ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ÍAAgregarï¿½ï¿½ï¿½ï¿½
 	while (m_nDrives > nCount) {
 		strID.Format(_T("%d"), nCount + 1);
 		pListCtrl->InsertItem(nCount, strID);
 		nCount++;
 	}
 
-	// ƒŒƒfƒBVerificacion(m_nDrive‚¾‚¯‚Ü‚Æ‚ß‚Äs‚È‚¤)
+	// ï¿½ï¿½ï¿½fï¿½BVerificacion(m_nDriveï¿½ï¿½ï¿½ï¿½ï¿½Ü‚Æ‚ß‚Äsï¿½È‚ï¿½)
 	CheckSASI(dwDisk);
 
-	// ”äŠrBucle
+	// ï¿½ï¿½rBucle
 	for (i=0; i<nCount; i++) {
-		// ƒŒƒfƒBVerificacion‚ÌŒ‹‰Ê‚É‚æ‚èA•¶š—ñCrear
+		// ï¿½ï¿½ï¿½fï¿½BVerificacionï¿½ÌŒï¿½ï¿½Ê‚É‚ï¿½ï¿½Aï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Crear
 		if (dwDisk[i] == 0) {
 			// Desconocido
 			strDisk = m_strError;
@@ -5414,7 +5416,7 @@ void FASTCALL CSASIPage::UpdateList()
 
 //---------------------------------------------------------------------------
 //
-//	SASIƒhƒ‰ƒCƒuVerificacion
+//	SASIï¿½hï¿½ï¿½ï¿½Cï¿½uVerificacion
 //
 //---------------------------------------------------------------------------
 void FASTCALL CSASIPage::CheckSASI(DWORD *pDisk)
@@ -5429,7 +5431,7 @@ void FASTCALL CSASIPage::CheckSASI(DWORD *pDisk)
 	// Bloqueo de VM
 	::LockVM();
 
-	// ƒhƒ‰ƒCƒuBucle
+	// ï¿½hï¿½ï¿½ï¿½Cï¿½uBucle
 	for (i=0; i<m_nDrives; i++) {
 		// Tama?o 0
 		pDisk[i] = 0;
@@ -5443,7 +5445,7 @@ void FASTCALL CSASIPage::CheckSASI(DWORD *pDisk)
 		dwSize = fio.GetFileSize();
 		fio.Close();
 
-		// ƒTƒCƒYVerificacion
+		// ï¿½Tï¿½Cï¿½YVerificacion
 		switch (dwSize) {
 			case 0x9f5400:
 				pDisk[i] = 10;
@@ -5470,7 +5472,7 @@ void FASTCALL CSASIPage::CheckSASI(DWORD *pDisk)
 
 //---------------------------------------------------------------------------
 //
-//	SASINumero de unidadesæ“¾
+//	SASINumero de unidadesï¿½æ“¾
 //
 //---------------------------------------------------------------------------
 int FASTCALL CSASIPage::GetDrives(const Config *pConfig) const
@@ -5478,12 +5480,12 @@ int FASTCALL CSASIPage::GetDrives(const Config *pConfig) const
 	ASSERT(this);
 	ASSERT(pConfig);
 
-	// Inicializacion‚³‚ê‚Ä‚¢‚È‚¯‚ê‚ÎA—^‚¦‚ç‚ê‚½Config‚©‚ç
+	// Inicializacionï¿½ï¿½ï¿½ï¿½Ä‚ï¿½ï¿½È‚ï¿½ï¿½ï¿½ÎAï¿½^ï¿½ï¿½ï¿½ï¿½ê‚½Configï¿½ï¿½ï¿½ï¿½
 	if (!m_bInit) {
 		return pConfig->sasi_drives;
 	}
 
-	// InicializacionÏ‚İ‚È‚çAŒ»İ‚Ì’l‚ğ
+	// Inicializacionï¿½Ï‚İ‚È‚ï¿½Aï¿½ï¿½ï¿½İ‚Ì’lï¿½ï¿½
 	return m_nDrives;
 }
 
@@ -5536,7 +5538,7 @@ CSxSIPage::CSxSIPage()
 	m_nTemplate = IDD_SXSIPAGE;
 	m_uHelpID = IDC_SXSI_HELP;
 
-	// Inicializacion(Otrosƒf[ƒ^)
+	// Inicializacion(Otrosï¿½fï¿½[ï¿½^)
 	m_nSASIDrives = 0;
 	for (i=0; i<8; i++) {
 		m_DevMap[i] = DevNone;
@@ -5546,7 +5548,7 @@ CSxSIPage::CSxSIPage()
 		m_szFile[i][0] = _T('\0');
 	}
 
-	// –¢Inicializacion
+	// ï¿½ï¿½Inicializacion
 	m_bInit = FALSE;
 }
 
@@ -5563,7 +5565,7 @@ END_MESSAGE_MAP()
 
 //---------------------------------------------------------------------------
 //
-//	ƒy[ƒWInicializacion
+//	ï¿½yï¿½[ï¿½WInicializacion
 //
 //---------------------------------------------------------------------------
 BOOL CSxSIPage::OnInitDialog()
@@ -5584,15 +5586,15 @@ BOOL CSxSIPage::OnInitDialog()
 	// Clase base
 	CConfigPage::OnInitDialog();
 
-	// Inicializacionƒtƒ‰ƒOUp
+	// Inicializacionï¿½tï¿½ï¿½ï¿½OUp
 	m_bInit = TRUE;
 
-	// Pagina SASIæ“¾
+	// Pagina SASIï¿½æ“¾
 	ASSERT(m_pSheet);
 	pSASIPage = (CSASIPage*)m_pSheet->SearchPage(MAKEID('S', 'A', 'S', 'I'));
 	ASSERT(pSASIPage);
 
-	// SASI‚Ìİ’èNumero de unidades‚©‚çASCSI‚Éİ’è‚Å‚«‚éÅ‘åNumero de unidades‚ğ“¾‚é
+	// SASIï¿½Ìİ’ï¿½Numero de unidadesï¿½ï¿½ï¿½ï¿½ASCSIï¿½Éİ’ï¿½Å‚ï¿½ï¿½ï¿½Å‘ï¿½Numero de unidadesï¿½ğ“¾‚ï¿½
 	m_nSASIDrives = pSASIPage->GetDrives(m_pConfig);
 	nMax = m_nSASIDrives;
 	nMax = (nMax + 1) >> 1;
@@ -5604,7 +5606,7 @@ BOOL CSxSIPage::OnInitDialog()
 		nMax = 7 - nMax;
 	}
 
-	// SCSI‚ÌÅ‘åNumero de unidades‚ğ§ŒÀ
+	// SCSIï¿½ÌÅ‘ï¿½Numero de unidadesï¿½ğ§Œï¿½
 	pSpin = (CSpinButtonCtrl*)GetDlgItem(IDC_SXSI_DRIVES);
 	pSpin->SetBase(10);
 	nDrives = m_pConfig->sxsi_drives;
@@ -5614,7 +5616,7 @@ BOOL CSxSIPage::OnInitDialog()
 	pSpin->SetRange(0, (short)nMax);
 	pSpin->SetPos(nDrives);
 
-	// SCSI‚ÌNombre de archivo‚ğæ“¾
+	// SCSIï¿½ï¿½Nombre de archivoï¿½ï¿½ï¿½æ“¾
 	for (i=0; i<6; i++) {
 		_tcscpy(m_szFile[i], m_pConfig->sxsi_file[i]);
 	}
@@ -5634,7 +5636,7 @@ BOOL CSxSIPage::OnInitDialog()
 	delete pDC;
 	cx = tm.tmAveCharWidth;
 
-	// ƒŠƒXƒgConfiguracion de controles
+	// ï¿½ï¿½ï¿½Xï¿½gConfiguracion de controles
 	pListCtrl = (CListCtrl*)GetDlgItem(IDC_SXSI_LIST);
 	ASSERT(pListCtrl);
 	pListCtrl->DeleteAllItems();
@@ -5659,7 +5661,7 @@ BOOL CSxSIPage::OnInitDialog()
 	::GetMsg(IDS_SXSI_NONE, m_strNone);
 	::GetMsg(IDS_SXSI_DEVERROR, m_strError);
 
-	// ƒŠƒXƒgƒRƒ“ƒgƒ[ƒ‹Actualizacion
+	// ï¿½ï¿½ï¿½Xï¿½gï¿½Rï¿½ï¿½ï¿½gï¿½ï¿½ï¿½[ï¿½ï¿½Actualizacion
 	UpdateList();
 
 	return TRUE;
@@ -5705,7 +5707,7 @@ BOOL CSxSIPage::OnSetActive()
 		bEnable = FALSE;
 	}
 
-	// SASI‚ÌNumero de unidades‚ğæ“¾‚µASCSI‚ÌÅ‘åNumero de unidades‚ğ“¾‚é
+	// SASIï¿½ï¿½Numero de unidadesï¿½ï¿½ï¿½æ“¾ï¿½ï¿½ï¿½ASCSIï¿½ÌÅ‘ï¿½Numero de unidadesï¿½ğ“¾‚ï¿½
 	m_nSASIDrives = pSASIPage->GetDrives(m_pConfig);
 	nMax = m_nSASIDrives;
 	nMax = (nMax + 1) >> 1;
@@ -5717,7 +5719,7 @@ BOOL CSxSIPage::OnSetActive()
 		nMax = 7 - nMax;
 	}
 
-	// SCSI‚ÌÅ‘åNumero de unidades‚ğ§ŒÀ
+	// SCSIï¿½ÌÅ‘ï¿½Numero de unidadesï¿½ğ§Œï¿½
 	pSpin = (CSpinButtonCtrl*)GetDlgItem(IDC_SXSI_DRIVES);
 	ASSERT(pSpin);
 	nPos = LOWORD(pSpin->GetPos());
@@ -5727,7 +5729,7 @@ BOOL CSxSIPage::OnSetActive()
 	}
 	pSpin->SetRange(0, (short)nMax);
 
-	// ƒŠƒXƒgƒRƒ“ƒgƒ[ƒ‹Actualizacion
+	// ï¿½ï¿½ï¿½Xï¿½gï¿½Rï¿½ï¿½ï¿½gï¿½ï¿½ï¿½[ï¿½ï¿½Actualizacion
 	UpdateList();
 
 	// Controles activados/desactivados
@@ -5737,7 +5739,7 @@ BOOL CSxSIPage::OnSetActive()
 			EnableControls(TRUE, TRUE);
 		}
 		else {
-			// ƒŠƒXƒg—LŒøEƒhƒ‰ƒCƒu–³Œø
+			// ï¿½ï¿½ï¿½Xï¿½gï¿½Lï¿½ï¿½ï¿½Eï¿½hï¿½ï¿½ï¿½Cï¿½uï¿½ï¿½ï¿½ï¿½
 			EnableControls(FALSE, TRUE);
 		}
 	}
@@ -5756,7 +5758,7 @@ BOOL CSxSIPage::OnSetActive()
 //---------------------------------------------------------------------------
 void CSxSIPage::OnVScroll(UINT /*nSBCode*/, UINT nPos, CScrollBar* /*pBar*/)
 {
-	// ƒŠƒXƒgƒRƒ“ƒgƒ[ƒ‹Actualizacion(“à•”‚ÅBuildMap‚ğs‚¤)
+	// ï¿½ï¿½ï¿½Xï¿½gï¿½Rï¿½ï¿½ï¿½gï¿½ï¿½ï¿½[ï¿½ï¿½Actualizacion(ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½BuildMapï¿½ï¿½ï¿½sï¿½ï¿½)
 	UpdateList();
 
 	// Controles activados/desactivados
@@ -5782,7 +5784,7 @@ void CSxSIPage::OnClick(NMHDR* /*pNMHDR*/, LRESULT* /*pResult*/)
 	int nDrive;
 	TCHAR szPath[FILEPATH_MAX];
 
-	// ƒŠƒXƒgObtener control
+	// ï¿½ï¿½ï¿½Xï¿½gObtener control
 	pListCtrl = (CListCtrl*)GetDlgItem(IDC_SXSI_LIST);
 	ASSERT(pListCtrl);
 
@@ -5824,21 +5826,21 @@ void CSxSIPage::OnClick(NMHDR* /*pNMHDR*/, LRESULT* /*pResult*/)
 		return;
 	}
 
-	// ƒpƒX‚ğActualizacion
+	// ï¿½pï¿½Xï¿½ï¿½Actualizacion
 	_tcscpy(m_szFile[nDrive], szPath);
 
-	// ƒŠƒXƒgƒRƒ“ƒgƒ[ƒ‹Actualizacion
+	// ï¿½ï¿½ï¿½Xï¿½gï¿½Rï¿½ï¿½ï¿½gï¿½ï¿½ï¿½[ï¿½ï¿½Actualizacion
 	UpdateList();
 }
 
 //---------------------------------------------------------------------------
 //
-//	Verificacionƒ{ƒbƒNƒXModificacion
+//	Verificacionï¿½{ï¿½bï¿½Nï¿½XModificacion
 //
 //---------------------------------------------------------------------------
 void CSxSIPage::OnCheck()
 {
-	// ƒŠƒXƒgƒRƒ“ƒgƒ[ƒ‹Actualizacion(“à•”‚ÅBuildMap‚ğs‚¤)
+	// ï¿½ï¿½ï¿½Xï¿½gï¿½Rï¿½ï¿½ï¿½gï¿½ï¿½ï¿½[ï¿½ï¿½Actualizacion(ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½BuildMapï¿½ï¿½ï¿½sï¿½ï¿½)
 	UpdateList();
 }
 
@@ -5879,7 +5881,7 @@ void CSxSIPage::OnOK()
 
 //---------------------------------------------------------------------------
 //
-//	ƒŠƒXƒgƒRƒ“ƒgƒ[ƒ‹Actualizacion
+//	ï¿½ï¿½ï¿½Xï¿½gï¿½Rï¿½ï¿½ï¿½gï¿½ï¿½ï¿½[ï¿½ï¿½Actualizacion
 //
 //---------------------------------------------------------------------------
 void FASTCALL CSxSIPage::UpdateList()
@@ -5900,7 +5902,7 @@ void FASTCALL CSxSIPage::UpdateList()
 	// Construir mapa
 	BuildMap();
 
-	// ƒŠƒXƒgObtener controlAƒJƒEƒ“ƒgæ“¾
+	// ï¿½ï¿½ï¿½Xï¿½gObtener controlï¿½Aï¿½Jï¿½Eï¿½ï¿½ï¿½gï¿½æ“¾
 	pListCtrl = (CListCtrl*)GetDlgItem(IDC_SXSI_LIST);
 	ASSERT(pListCtrl);
 	nCount = pListCtrl->GetItemCount();
@@ -5924,7 +5926,7 @@ void FASTCALL CSxSIPage::UpdateList()
 		nCount++;
 	}
 
-	// ”äŠrBucle
+	// ï¿½ï¿½rBucle
 	nDrive = 0;
 	nDev = 0;
 	for (i=0; i<8; i++) {
@@ -5963,10 +5965,10 @@ void FASTCALL CSxSIPage::UpdateList()
 
 			// Sin dispositivo
 			case DevNone:
-				// Ÿ‚Éi‚Ş
+				// ï¿½ï¿½ï¿½Éiï¿½ï¿½
 				continue;
 
-			// Otros(‚ ‚è“¾‚È‚¢)
+			// Otros(ï¿½ï¿½ï¿½è“¾ï¿½È‚ï¿½)
 			default:
 				ASSERT(FALSE);
 				return;
@@ -5998,7 +6000,7 @@ void FASTCALL CSxSIPage::UpdateList()
 
 //---------------------------------------------------------------------------
 //
-//	ƒ}ƒbƒvCrear
+//	ï¿½}ï¿½bï¿½vCrear
 //
 //---------------------------------------------------------------------------
 void FASTCALL CSxSIPage::BuildMap()
@@ -6022,7 +6024,7 @@ void FASTCALL CSxSIPage::BuildMap()
 	nSCSI = 0;
 	nInit = 0;
 
-	// Flag de prioridad MO‚ğæ“¾
+	// Flag de prioridad MOï¿½ï¿½ï¿½æ“¾
 	pButton = (CButton*)GetDlgItem(IDC_SXSI_MOCHECK);
 	ASSERT(pButton);
 	bMOFirst = FALSE;
@@ -6030,7 +6032,7 @@ void FASTCALL CSxSIPage::BuildMap()
 		bMOFirst = TRUE;
 	}
 
-	// SASINumero de unidades‚©‚çASASI‚Ìè—LID”‚ğ“¾‚é
+	// SASINumero de unidadesï¿½ï¿½ï¿½ï¿½ASASIï¿½Ìï¿½LIDï¿½ï¿½ï¿½ğ“¾‚ï¿½
 	ASSERT((m_nSASIDrives >= 0) && (m_nSASIDrives <= 0x10));
 	nSASI = m_nSASIDrives;
 	nSASI = (nSASI + 1) >> 1;
@@ -6044,13 +6046,13 @@ void FASTCALL CSxSIPage::BuildMap()
 		nInit = 1;
 	}
 
-	// SxSINumero de unidades‚Ìİ’è‚ğŒ©‚ÄA’l‚ğ’²®
+	// SxSINumero de unidadesï¿½Ìİ’ï¿½ï¿½ï¿½ï¿½ï¿½ÄAï¿½lï¿½ğ’²ï¿½
 	pSpin = (CSpinButtonCtrl*)GetDlgItem(IDC_SXSI_DRIVES);
 	ASSERT(pSpin);
 	nMax = LOWORD(pSpin->GetPos());
 	ASSERT((nMax >= 0) && (nMax <= (nSCSI + nMO)));
 	if (nMax == 0) {
-		// SxSINumero de unidades‚Í0
+		// SxSINumero de unidadesï¿½ï¿½0
 		nMO = 0;
 		nSCSI = 0;
 	}
@@ -6073,7 +6075,7 @@ void FASTCALL CSxSIPage::BuildMap()
 	// Reiniciar ID
 	nID = 0;
 
-	// ƒI[ƒ‹Limpiar
+	// ï¿½Iï¿½[ï¿½ï¿½Limpiar
 	for (i=0; i<8; i++) {
 		m_DevMap[i] = DevNone;
 	}
@@ -6117,7 +6119,7 @@ void FASTCALL CSxSIPage::BuildMap()
 
 //---------------------------------------------------------------------------
 //
-//	SCSIƒn[ƒhƒfƒBƒXƒNCapacidadVerificacion
+//	SCSIï¿½nï¿½[ï¿½hï¿½fï¿½Bï¿½Xï¿½NCapacidadVerificacion
 //	* Devuelve 0 en caso de error de dispositivo
 //
 //---------------------------------------------------------------------------
@@ -6140,24 +6142,24 @@ int FASTCALL CSxSIPage::CheckSCSI(int nDrive)
 		return 0;
 	}
 
-	// Capacidadæ“¾
+	// Capacidadï¿½æ“¾
 	dwSize = fio.GetFileSize();
 
 	// Desbloquear
 	fio.Close();
 	::UnlockVM();
 
-	// ƒtƒ@ƒCƒ‹ƒTƒCƒY‚ğVerificacion(512ƒoƒCƒg’PˆÊ)
+	// ï¿½tï¿½@ï¿½Cï¿½ï¿½ï¿½Tï¿½Cï¿½Yï¿½ï¿½Verificacion(512ï¿½oï¿½Cï¿½gï¿½Pï¿½ï¿½)
 	if ((dwSize & 0x1ff) != 0) {
 		return 0;
 	}
 
-	// ƒtƒ@ƒCƒ‹ƒTƒCƒY‚ğVerificacion(10MBˆÈã)
+	// ï¿½tï¿½@ï¿½Cï¿½ï¿½ï¿½Tï¿½Cï¿½Yï¿½ï¿½Verificacion(10MBï¿½Èï¿½)
 	if (dwSize < 10 * 0x400 * 0x400) {
 		return 0;
 	}
 
-	// ƒtƒ@ƒCƒ‹ƒTƒCƒY‚ğVerificacion(1016MBˆÈ‰º)
+	// ï¿½tï¿½@ï¿½Cï¿½ï¿½ï¿½Tï¿½Cï¿½Yï¿½ï¿½Verificacion(1016MBï¿½È‰ï¿½)
 	if (dwSize > 1016 * 0x400 * 0x400) {
 		return 0;
 	}
@@ -6180,7 +6182,7 @@ void CSxSIPage::EnableControls(BOOL bEnable, BOOL bDrive)
 
 	ASSERT(this);
 
-	// ƒŠƒXƒgƒRƒ“ƒgƒ[ƒ‹EMOVerificacionˆÈŠO‚Ì‘SƒRƒ“ƒgƒ[ƒ‹‚ğİ’è
+	// ï¿½ï¿½ï¿½Xï¿½gï¿½Rï¿½ï¿½ï¿½gï¿½ï¿½ï¿½[ï¿½ï¿½ï¿½EMOVerificacionï¿½ÈŠOï¿½Ì‘Sï¿½Rï¿½ï¿½ï¿½gï¿½ï¿½ï¿½[ï¿½ï¿½ï¿½ï¿½İ’ï¿½
 	for (i=0; ; i++) {
 		// Obtener control
 		if (!ControlTable[i]) {
@@ -6189,16 +6191,16 @@ void CSxSIPage::EnableControls(BOOL bEnable, BOOL bDrive)
 		pWnd = GetDlgItem(ControlTable[i]);
 		ASSERT(pWnd);
 
-		// İ’è
+		// ï¿½İ’ï¿½
 		pWnd->EnableWindow(bDrive);
 	}
 
-	// ƒŠƒXƒgƒRƒ“ƒgƒ[ƒ‹‚ğİ’è
+	// ï¿½ï¿½ï¿½Xï¿½gï¿½Rï¿½ï¿½ï¿½gï¿½ï¿½ï¿½[ï¿½ï¿½ï¿½ï¿½İ’ï¿½
 	pListCtrl = (CListCtrl*)GetDlgItem(IDC_SXSI_LIST);
 	ASSERT(pListCtrl);
 	pListCtrl->EnableWindow(bEnable);
 
-	// MOVerificacion‚ğİ’è
+	// MOVerificacionï¿½ï¿½İ’ï¿½
 	pWnd = GetDlgItem(IDC_SXSI_MOCHECK);
 	ASSERT(pWnd);
 	pWnd->EnableWindow(bEnable);
@@ -6206,7 +6208,7 @@ void CSxSIPage::EnableControls(BOOL bEnable, BOOL bDrive)
 
 //---------------------------------------------------------------------------
 //
-//	Numero de unidadesæ“¾
+//	Numero de unidadesï¿½æ“¾
 //
 //---------------------------------------------------------------------------
 int FASTCALL CSxSIPage::GetDrives(const Config *pConfig) const
@@ -6241,7 +6243,7 @@ int FASTCALL CSxSIPage::GetDrives(const Config *pConfig) const
 		bEnable = FALSE;
 	}
 	if (pSASIPage->GetDrives(pConfig) >= 12) {
-		// SASINumero de unidades‚ª‘½‚·‚¬‚éBSxSI‚Íg—p‚Å‚«‚È‚¢
+		// SASINumero de unidadesï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½BSxSIï¿½Ígï¿½pï¿½Å‚ï¿½ï¿½È‚ï¿½
 		bEnable = FALSE;
 	}
 
@@ -6250,12 +6252,12 @@ int FASTCALL CSxSIPage::GetDrives(const Config *pConfig) const
 		return 0;
 	}
 
-	// –¢Inicializacion‚Ìê‡Aİ’è’l‚ğ•Ô‚·
+	// ï¿½ï¿½Inicializacionï¿½Ìê‡ï¿½Aï¿½İ’ï¿½lï¿½ï¿½Ô‚ï¿½
 	if (!m_bInit) {
 		return pConfig->sxsi_drives;
 	}
 
-	// Œ»İEditar’†‚Ì’l‚ğ•Ô‚·
+	// ï¿½ï¿½ï¿½ï¿½Editarï¿½ï¿½ï¿½Ì’lï¿½ï¿½Ô‚ï¿½
 	pSpin = (CSpinButtonCtrl*)GetDlgItem(IDC_SXSI_DRIVES);
 	ASSERT(pSpin);
 	nPos = LOWORD(pSpin->GetPos());
@@ -6299,7 +6301,7 @@ CSCSIPage::CSCSIPage()
 	m_pSCSI = (SCSI*)::GetVM()->SearchDevice(MAKEID('S', 'C', 'S', 'I'));
 	ASSERT(m_pSCSI);
 
-	// Inicializacion(Otrosƒf[ƒ^)
+	// Inicializacion(Otrosï¿½fï¿½[ï¿½^)
 	m_bInit = FALSE;
 	m_nDrives = 0;
 	m_bMOFirst = FALSE;
@@ -6333,7 +6335,7 @@ END_MESSAGE_MAP()
 
 //---------------------------------------------------------------------------
 //
-//	ƒy[ƒWInicializacion
+//	ï¿½yï¿½[ï¿½WInicializacion
 //
 //---------------------------------------------------------------------------
 BOOL CSCSIPage::OnInitDialog()
@@ -6353,10 +6355,10 @@ BOOL CSCSIPage::OnInitDialog()
 	// Clase base
 	CConfigPage::OnInitDialog();
 
-	// Inicializacionƒtƒ‰ƒOUp
+	// Inicializacionï¿½tï¿½ï¿½ï¿½OUp
 	m_bInit = TRUE;
 
-	// ROM‚Ì—L–³‚É‰‚¶‚ÄAƒCƒ“ƒ^ƒtƒF[ƒXƒ‰ƒWƒIBotones‚ğ‹Ö~
+	// ROMï¿½Ì—Lï¿½ï¿½ï¿½É‰ï¿½ï¿½ï¿½ï¿½ÄAï¿½Cï¿½ï¿½ï¿½^ï¿½tï¿½Fï¿½[ï¿½Xï¿½ï¿½ï¿½Wï¿½IBotonesï¿½ï¿½ï¿½Ö~
 	pButton = (CButton*)GetDlgItem(IDC_SCSI_EXTB);
 	ASSERT(pButton);
 	bEnable[0] = CheckROM(1);
@@ -6377,7 +6379,7 @@ BOOL CSCSIPage::OnInitDialog()
 
 		// Externo
 		case Memory::SCSIExt:
-			// ExternoROM‚ª‘¶İ‚·‚éê‡‚Ì‚İ
+			// ExternoROMï¿½ï¿½ï¿½ï¿½ï¿½İ‚ï¿½ï¿½ï¿½ê‡ï¿½Ì‚ï¿½
 			if (bEnable[0]) {
 				pButton = (CButton*)GetDlgItem(IDC_SCSI_EXTB);
 				bAvail = TRUE;
@@ -6386,7 +6388,7 @@ BOOL CSCSIPage::OnInitDialog()
 
 		// Otros(Interno)
 		default:
-			// InternoROM‚ª‘¶İ‚·‚éê‡‚Ì‚İ
+			// InternoROMï¿½ï¿½ï¿½ï¿½ï¿½İ‚ï¿½ï¿½ï¿½ê‡ï¿½Ì‚ï¿½
 			if (bEnable[1]) {
 				pButton = (CButton*)GetDlgItem(IDC_SCSI_INTB);
 				bAvail = TRUE;
@@ -6427,7 +6429,7 @@ BOOL CSCSIPage::OnInitDialog()
 	delete pDC;
 	cx = tm.tmAveCharWidth;
 
-	// ƒŠƒXƒgConfiguracion de controles
+	// ï¿½ï¿½ï¿½Xï¿½gConfiguracion de controles
 	pListCtrl = (CListCtrl*)GetDlgItem(IDC_SCSI_LIST);
 	ASSERT(pListCtrl);
 	pListCtrl->DeleteAllItems();
@@ -6452,7 +6454,7 @@ BOOL CSCSIPage::OnInitDialog()
 	::GetMsg(IDS_SCSI_NONE, m_strNone);
 	::GetMsg(IDS_SCSI_DEVERROR, m_strError);
 
-	// ƒŠƒXƒgƒRƒ“ƒgƒ[ƒ‹Actualizacion(“à•”‚ÅBuildMap‚ğs‚¤)
+	// ï¿½ï¿½ï¿½Xï¿½gï¿½Rï¿½ï¿½ï¿½gï¿½ï¿½ï¿½[ï¿½ï¿½Actualizacion(ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½BuildMapï¿½ï¿½ï¿½sï¿½ï¿½)
 	UpdateList();
 
 	// Controles activados/desactivados
@@ -6483,7 +6485,7 @@ void CSCSIPage::OnOK()
 {
 	int i;
 
-	// Tipo de interfaz‚©‚çƒƒ‚ƒŠí•Êİ’è
+	// Tipo de interfazï¿½ï¿½ï¿½çƒï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Êİ’ï¿½
 	switch (GetIfCtrl()) {
 		// No instalar
 		case 0:
@@ -6497,13 +6499,13 @@ void CSCSIPage::OnOK()
 
 		// Interno
 		case 2:
-			// ƒ^ƒCƒv‚ªˆá‚¤ê‡‚Ì‚İASCSIInt‚ÉModificacion
+			// ï¿½^ï¿½Cï¿½vï¿½ï¿½ï¿½á‚¤ï¿½ê‡ï¿½Ì‚İASCSIIntï¿½ï¿½Modificacion
 			if ((m_pConfig->mem_type == Memory::SASI) || (m_pConfig->mem_type == Memory::SCSIExt)) {
 				m_pConfig->mem_type = Memory::SCSIInt;
 			}
 			break;
 
-		// Otros(‚ ‚è‚¦‚È‚¢)
+		// Otros(ï¿½ï¿½ï¿½è‚¦ï¿½È‚ï¿½)
 		default:
 			ASSERT(FALSE);
 	}
@@ -6530,10 +6532,10 @@ void CSCSIPage::OnOK()
 //---------------------------------------------------------------------------
 void CSCSIPage::OnVScroll(UINT /*nSBCode*/, UINT nPos, CScrollBar* /*pBar*/)
 {
-	// Numero de unidadesæ“¾
+	// Numero de unidadesï¿½æ“¾
 	m_nDrives = nPos;
 
-	// ƒŠƒXƒgƒRƒ“ƒgƒ[ƒ‹Actualizacion(“à•”‚ÅBuildMap‚ğs‚¤)
+	// ï¿½ï¿½ï¿½Xï¿½gï¿½Rï¿½ï¿½ï¿½gï¿½ï¿½ï¿½[ï¿½ï¿½Actualizacion(ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½BuildMapï¿½ï¿½ï¿½sï¿½ï¿½)
 	UpdateList();
 
 	// Controles activados/desactivados
@@ -6559,7 +6561,7 @@ void CSCSIPage::OnClick(NMHDR* /*pNMHDR*/, LRESULT* /*pResult*/)
 	int nDrive;
 	TCHAR szPath[FILEPATH_MAX];
 
-	// ƒŠƒXƒgObtener control
+	// ï¿½ï¿½ï¿½Xï¿½gObtener control
 	pListCtrl = (CListCtrl*)GetDlgItem(IDC_SCSI_LIST);
 	ASSERT(pListCtrl);
 
@@ -6604,23 +6606,23 @@ void CSCSIPage::OnClick(NMHDR* /*pNMHDR*/, LRESULT* /*pResult*/)
 		return;
 	}
 
-	// ƒpƒX‚ğActualizacion
+	// ï¿½pï¿½Xï¿½ï¿½Actualizacion
 	_tcscpy(m_szFile[nDrive], szPath);
 
-	// ƒŠƒXƒgƒRƒ“ƒgƒ[ƒ‹Actualizacion
+	// ï¿½ï¿½ï¿½Xï¿½gï¿½Rï¿½ï¿½ï¿½gï¿½ï¿½ï¿½[ï¿½ï¿½Actualizacion
 	UpdateList();
 }
 
 //---------------------------------------------------------------------------
 //
-//	ƒ‰ƒWƒIBotonesModificacion
+//	ï¿½ï¿½ï¿½Wï¿½IBotonesModificacion
 //
 //---------------------------------------------------------------------------
 void CSCSIPage::OnButton()
 {
 	CButton *pButton;
 
-	// ƒCƒ“ƒ^ƒtƒF[ƒX–³Œø‚ÉVerificacion‚³‚ê‚Ä‚¢‚é‚©
+	// ï¿½Cï¿½ï¿½ï¿½^ï¿½tï¿½Fï¿½[ï¿½Xï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Verificacionï¿½ï¿½ï¿½ï¿½Ä‚ï¿½ï¿½é‚©
 	pButton = (CButton*)GetDlgItem(IDC_SCSI_NONEB);
 	ASSERT(pButton);
 	if (pButton->GetCheck() != 0) {
@@ -6641,7 +6643,7 @@ void CSCSIPage::OnButton()
 
 //---------------------------------------------------------------------------
 //
-//	Verificacionƒ{ƒbƒNƒXModificacion
+//	Verificacionï¿½{ï¿½bï¿½Nï¿½XModificacion
 //
 //---------------------------------------------------------------------------
 void CSCSIPage::OnCheck()
@@ -6658,13 +6660,13 @@ void CSCSIPage::OnCheck()
 		m_bMOFirst = FALSE;
 	}
 
-	// ƒŠƒXƒgƒRƒ“ƒgƒ[ƒ‹Actualizacion(“à•”‚ÅBuildMap‚ğs‚¤)
+	// ï¿½ï¿½ï¿½Xï¿½gï¿½Rï¿½ï¿½ï¿½gï¿½ï¿½ï¿½[ï¿½ï¿½Actualizacion(ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½BuildMapï¿½ï¿½ï¿½sï¿½ï¿½)
 	UpdateList();
 }
 
 //---------------------------------------------------------------------------
 //
-//	Tipo de interfazæ“¾
+//	Tipo de interfazï¿½æ“¾
 //
 //---------------------------------------------------------------------------
 int FASTCALL CSCSIPage::GetInterface(const Config *pConfig) const
@@ -6672,9 +6674,9 @@ int FASTCALL CSCSIPage::GetInterface(const Config *pConfig) const
 	ASSERT(this);
 	ASSERT(pConfig);
 
-	// Inicializacionƒtƒ‰ƒO
+	// Inicializacionï¿½tï¿½ï¿½ï¿½O
 	if (!m_bInit) {
-		// Inicializacion‚³‚ê‚Ä‚¢‚È‚¢‚Ì‚ÅAConfig‚©‚çæ“¾
+		// Inicializacionï¿½ï¿½ï¿½ï¿½Ä‚ï¿½ï¿½È‚ï¿½ï¿½Ì‚ÅAConfigï¿½ï¿½ï¿½ï¿½æ“¾
 		switch (pConfig->mem_type) {
 			// No instalar
 			case Memory::None:
@@ -6691,13 +6693,13 @@ int FASTCALL CSCSIPage::GetInterface(const Config *pConfig) const
 		}
 	}
 
-	// Inicializacion‚³‚ê‚Ä‚¢‚é‚Ì‚ÅAƒRƒ“ƒgƒ[ƒ‹‚©‚çæ“¾
+	// Inicializacionï¿½ï¿½ï¿½ï¿½Ä‚ï¿½ï¿½ï¿½Ì‚ÅAï¿½Rï¿½ï¿½ï¿½gï¿½ï¿½ï¿½[ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½æ“¾
 	return GetIfCtrl();
 }
 
 //---------------------------------------------------------------------------
 //
-//	Tipo de interfazæ“¾(ƒRƒ“ƒgƒ[ƒ‹‚æ‚è)
+//	Tipo de interfazï¿½æ“¾(ï¿½Rï¿½ï¿½ï¿½gï¿½ï¿½ï¿½[ï¿½ï¿½ï¿½ï¿½ï¿½)
 //
 //---------------------------------------------------------------------------
 int FASTCALL CSCSIPage::GetIfCtrl() const
@@ -6741,7 +6743,7 @@ BOOL FASTCALL CSCSIPage::CheckROM(int nType) const
 	ASSERT(this);
 	ASSERT((nType >= 0) && (nType <= 2));
 
-	// 0:Interno‚Ìê‡‚Í–³ğŒ‚ÉOK
+	// 0:Internoï¿½Ìê‡ï¿½Í–ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½OK
 	if (nType == 0) {
 		return TRUE;
 	}
@@ -6765,19 +6767,19 @@ BOOL FASTCALL CSCSIPage::CheckROM(int nType) const
 		return FALSE;
 	}
 
-	// ƒtƒ@ƒCƒ‹ƒTƒCƒYæ“¾
+	// ï¿½tï¿½@ï¿½Cï¿½ï¿½ï¿½Tï¿½Cï¿½Yï¿½æ“¾
 	dwSize = fio.GetFileSize();
 	fio.Close();
 	::UnlockVM();
 
 	if (nType == 1) {
-		// Externo‚ÍA0x2000ƒoƒCƒg‚Ü‚½‚Í0x1fe0ƒoƒCƒg(WinX68k‚‘¬”Å‚ÆŒİŠ·‚ğ‚Æ‚é)
+		// Externoï¿½ÍA0x2000ï¿½oï¿½Cï¿½gï¿½Ü‚ï¿½ï¿½ï¿½0x1fe0ï¿½oï¿½Cï¿½g(WinX68kï¿½ï¿½ï¿½ï¿½ï¿½Å‚ÆŒİŠï¿½ï¿½ï¿½ï¿½Æ‚ï¿½)
 		if ((dwSize == 0x2000) || (dwSize == 0x1fe0)) {
 			return TRUE;
 		}
 	}
 	else {
-		// Interno‚ÍA0x2000ƒoƒCƒg‚Ì‚İ
+		// Internoï¿½ÍA0x2000ï¿½oï¿½Cï¿½gï¿½Ì‚ï¿½
 		if (dwSize == 0x2000) {
 			return TRUE;
 		}
@@ -6788,7 +6790,7 @@ BOOL FASTCALL CSCSIPage::CheckROM(int nType) const
 
 //---------------------------------------------------------------------------
 //
-//	ƒŠƒXƒgƒRƒ“ƒgƒ[ƒ‹Actualizacion
+//	ï¿½ï¿½ï¿½Xï¿½gï¿½Rï¿½ï¿½ï¿½gï¿½ï¿½ï¿½[ï¿½ï¿½Actualizacion
 //
 //---------------------------------------------------------------------------
 void FASTCALL CSCSIPage::UpdateList()
@@ -6809,7 +6811,7 @@ void FASTCALL CSCSIPage::UpdateList()
 	// Construir mapa
 	BuildMap();
 
-	// ƒŠƒXƒgObtener controlAƒJƒEƒ“ƒgæ“¾
+	// ï¿½ï¿½ï¿½Xï¿½gObtener controlï¿½Aï¿½Jï¿½Eï¿½ï¿½ï¿½gï¿½æ“¾
 	pListCtrl = (CListCtrl*)GetDlgItem(IDC_SCSI_LIST);
 	ASSERT(pListCtrl);
 	nCount = pListCtrl->GetItemCount();
@@ -6833,7 +6835,7 @@ void FASTCALL CSCSIPage::UpdateList()
 		nCount++;
 	}
 
-	// ”äŠrBucle
+	// ï¿½ï¿½rBucle
 	nDrive = 0;
 	nDev = 0;
 	for (i=0; i<SCSI::DeviceMax; i++) {
@@ -6872,16 +6874,16 @@ void FASTCALL CSCSIPage::UpdateList()
 
 			// Sin dispositivo
 			case DevNone:
-				// Ÿ‚Éi‚Ş
+				// ï¿½ï¿½ï¿½Éiï¿½ï¿½
 				continue;
 
-			// Otros(‚ ‚è“¾‚È‚¢)
+			// Otros(ï¿½ï¿½ï¿½è“¾ï¿½È‚ï¿½)
 			default:
 				ASSERT(FALSE);
 				return;
 		}
 
-		// ƒAƒCƒeƒ€ƒf[ƒ^
+		// ï¿½Aï¿½Cï¿½eï¿½ï¿½ï¿½fï¿½[ï¿½^
 		if ((int)pListCtrl->GetItemData(nDev) != i) {
 			pListCtrl->SetItemData(nDev, (DWORD)i);
 		}
@@ -6912,7 +6914,7 @@ void FASTCALL CSCSIPage::UpdateList()
 
 //---------------------------------------------------------------------------
 //
-//	ƒ}ƒbƒvCrear
+//	ï¿½}ï¿½bï¿½vCrear
 //
 //---------------------------------------------------------------------------
 void FASTCALL CSCSIPage::BuildMap()
@@ -6931,15 +6933,15 @@ void FASTCALL CSCSIPage::BuildMap()
 	bMO = FALSE;
 	bCD = FALSE;
 
-	// ƒfƒBƒXƒN”‚ğAceptar
+	// ï¿½fï¿½Bï¿½Xï¿½Nï¿½ï¿½ï¿½ï¿½Aceptar
 	switch (m_nDrives) {
-		// 0‘ä
+		// 0ï¿½ï¿½
 		case 0:
 			break;
 
-		// 1‘ä
+		// 1ï¿½ï¿½
 		case 1:
-			// Prioridad MO‚©APrioridad HD‚©‚Å•ª‚¯‚é
+			// Prioridad MOï¿½ï¿½ï¿½APrioridad HDï¿½ï¿½ï¿½Å•ï¿½ï¿½ï¿½ï¿½ï¿½
 			if (m_bMOFirst) {
 				bMO = TRUE;
 			}
@@ -6948,14 +6950,14 @@ void FASTCALL CSCSIPage::BuildMap()
 			}
 			break;
 
-		// 2‘ä
+		// 2ï¿½ï¿½
 		case 2:
 			// Una unidad HD y una MO
 			nHD = 1;
 			bMO = TRUE;
 			break;
 
-		// 3‘ä
+		// 3ï¿½ï¿½
 		case 3:
 			// Una unidad HD, una MO y una CD
 			nHD = 1;
@@ -6972,7 +6974,7 @@ void FASTCALL CSCSIPage::BuildMap()
 			break;
 	}
 
-	// ƒI[ƒ‹Limpiar
+	// ï¿½Iï¿½[ï¿½ï¿½Limpiar
 	for (i=0; i<8; i++) {
 		m_DevMap[i] = DevNone;
 	}
@@ -7028,7 +7030,7 @@ void FASTCALL CSCSIPage::BuildMap()
 
 //---------------------------------------------------------------------------
 //
-//	SCSIƒn[ƒhƒfƒBƒXƒNCapacidadVerificacion
+//	SCSIï¿½nï¿½[ï¿½hï¿½fï¿½Bï¿½Xï¿½NCapacidadVerificacion
 //	* Devuelve 0 en caso de error de dispositivo
 //
 //---------------------------------------------------------------------------
@@ -7051,24 +7053,24 @@ int FASTCALL CSCSIPage::CheckSCSI(int nDrive)
 		return 0;
 	}
 
-	// Capacidadæ“¾
+	// Capacidadï¿½æ“¾
 	dwSize = fio.GetFileSize();
 
 	// Desbloquear
 	fio.Close();
 	::UnlockVM();
 
-	// ƒtƒ@ƒCƒ‹ƒTƒCƒY‚ğVerificacion(512ƒoƒCƒg’PˆÊ)
+	// ï¿½tï¿½@ï¿½Cï¿½ï¿½ï¿½Tï¿½Cï¿½Yï¿½ï¿½Verificacion(512ï¿½oï¿½Cï¿½gï¿½Pï¿½ï¿½)
 	if ((dwSize & 0x1ff) != 0) {
 		return 0;
 	}
 
-	// ƒtƒ@ƒCƒ‹ƒTƒCƒY‚ğVerificacion(10MBˆÈã)
+	// ï¿½tï¿½@ï¿½Cï¿½ï¿½ï¿½Tï¿½Cï¿½Yï¿½ï¿½Verificacion(10MBï¿½Èï¿½)
 	if (dwSize < 10 * 0x400 * 0x400) {
 		return 0;
 	}
 
-	// ƒtƒ@ƒCƒ‹ƒTƒCƒY‚ğVerificacion(4095MBˆÈ‰º)
+	// ï¿½tï¿½@ï¿½Cï¿½ï¿½ï¿½Tï¿½Cï¿½Yï¿½ï¿½Verificacion(4095MBï¿½È‰ï¿½)
 	if (dwSize > 0xfff00000) {
 		return 0;
 	}
@@ -7091,7 +7093,7 @@ void FASTCALL CSCSIPage::EnableControls(BOOL bEnable, BOOL bDrive)
 
 	ASSERT(this);
 
-	// ƒŠƒXƒgƒRƒ“ƒgƒ[ƒ‹EMOVerificacionˆÈŠO‚Ì‘SƒRƒ“ƒgƒ[ƒ‹‚ğİ’è
+	// ï¿½ï¿½ï¿½Xï¿½gï¿½Rï¿½ï¿½ï¿½gï¿½ï¿½ï¿½[ï¿½ï¿½ï¿½EMOVerificacionï¿½ÈŠOï¿½Ì‘Sï¿½Rï¿½ï¿½ï¿½gï¿½ï¿½ï¿½[ï¿½ï¿½ï¿½ï¿½İ’ï¿½
 	for (i=0; ; i++) {
 		// Obtener control
 		if (!ControlTable[i]) {
@@ -7100,16 +7102,16 @@ void FASTCALL CSCSIPage::EnableControls(BOOL bEnable, BOOL bDrive)
 		pWnd = GetDlgItem(ControlTable[i]);
 		ASSERT(pWnd);
 
-		// İ’è
+		// ï¿½İ’ï¿½
 		pWnd->EnableWindow(bDrive);
 	}
 
-	// ƒŠƒXƒgƒRƒ“ƒgƒ[ƒ‹‚ğİ’è
+	// ï¿½ï¿½ï¿½Xï¿½gï¿½Rï¿½ï¿½ï¿½gï¿½ï¿½ï¿½[ï¿½ï¿½ï¿½ï¿½İ’ï¿½
 	pListCtrl = (CListCtrl*)GetDlgItem(IDC_SCSI_LIST);
 	ASSERT(pListCtrl);
 	pListCtrl->EnableWindow(bEnable);
 
-	// MOVerificacion‚ğİ’è
+	// MOVerificacionï¿½ï¿½İ’ï¿½
 	pWnd = GetDlgItem(IDC_SCSI_MOCHECK);
 	ASSERT(pWnd);
 	pWnd->EnableWindow(bEnable);
@@ -7310,7 +7312,7 @@ BOOL CMIDIPage::OnInitDialog()
 		EnableControls(TRUE);
 	}
 
-	// ƒ{[ƒhID
+	// ï¿½{ï¿½[ï¿½hID
 	pButton = (CButton*)GetDlgItem(IDC_MIDI_BID0 + m_pConfig->midi_bid);
 	ASSERT(pButton);
 	pButton->SetCheck(1);
@@ -7337,7 +7339,7 @@ BOOL CMIDIPage::OnInitDialog()
 		pComboBox->AddString(strDesc);
 	}
 
-	// Cuadro combinado‚ÌCursor‚ğİ’è
+	// Cuadro combinadoï¿½ï¿½Cursorï¿½ï¿½İ’ï¿½
 	if (m_pConfig->midiin_device <= nNum) {
 		pComboBox->SetCurSel(m_pConfig->midiin_device);
 	}
@@ -7361,7 +7363,7 @@ BOOL CMIDIPage::OnInitDialog()
 		}
 	}
 
-	// Cuadro combinado‚ÌCursor‚ğİ’è
+	// Cuadro combinadoï¿½ï¿½Cursorï¿½ï¿½İ’ï¿½
 	if (m_pConfig->midiout_device < (nNum + 2)) {
 		pComboBox->SetCurSel(m_pConfig->midiout_device);
 	}
@@ -7398,7 +7400,7 @@ void CMIDIPage::OnOK()
 	CComboBox *pComboBox;
 	CSpinButtonCtrl *pSpin;
 
-	// ƒ{[ƒhID
+	// ï¿½{ï¿½[ï¿½hID
 	for (i=0; i<3; i++) {
 		pButton = (CButton*)GetDlgItem(IDC_MIDI_BID0 + i);
 		ASSERT(pButton);
@@ -7506,7 +7508,7 @@ void CMIDIPage::OnBIDClick()
 	pButton = (CButton*)GetDlgItem(IDC_MIDI_BID0);
 	ASSERT(pButton);
 
-	// Verificacion‚ª‚Â‚¢‚Ä‚¢‚é‚©‚Ç‚¤‚©‚Å’²‚×‚é
+	// Verificacionï¿½ï¿½ï¿½Â‚ï¿½ï¿½Ä‚ï¿½ï¿½é‚©ï¿½Ç‚ï¿½ï¿½ï¿½ï¿½Å’ï¿½ï¿½×‚ï¿½
 	if (pButton->GetCheck() == 1) {
 		EnableControls(FALSE);
 	}
@@ -7610,7 +7612,7 @@ BOOL CAlterPage::OnInitDialog()
 	// Clase base
 	CConfigPage::OnInitDialog();
 
-	// InicializacionÏ‚İAƒpƒŠƒeƒBƒtƒ‰ƒO‚ğæ“¾‚µ‚Ä‚¨‚­
+	// Inicializacionï¿½Ï‚İAï¿½pï¿½ï¿½ï¿½eï¿½Bï¿½tï¿½ï¿½ï¿½Oï¿½ï¿½ï¿½æ“¾ï¿½ï¿½ï¿½Ä‚ï¿½ï¿½ï¿½
 	m_bInit = TRUE;
 	m_bParity = m_pConfig->sasi_parity;
 
@@ -7628,7 +7630,7 @@ BOOL CAlterPage::OnKillActive()
 
 	ASSERT(this);
 
-	// Verificacionƒ{ƒbƒNƒX‚ğƒpƒŠƒeƒBƒtƒ‰ƒO‚É”½‰f‚³‚¹‚é
+	// Verificacionï¿½{ï¿½bï¿½Nï¿½Xï¿½ï¿½ï¿½pï¿½ï¿½ï¿½eï¿½Bï¿½tï¿½ï¿½ï¿½Oï¿½É”ï¿½ï¿½fï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 	pButton = (CButton*)GetDlgItem(IDC_ALTER_PARITY);
 	ASSERT(pButton);
 	if (pButton->GetCheck() == 1) {
@@ -7665,7 +7667,7 @@ void CAlterPage::DoDataExchange(CDataExchange *pDX)
 
 //---------------------------------------------------------------------------
 //
-//	SASIƒpƒŠƒeƒB‹@”\Verificacion
+//	SASIï¿½pï¿½ï¿½ï¿½eï¿½Bï¿½@ï¿½\Verificacion
 //
 //---------------------------------------------------------------------------
 BOOL FASTCALL CAlterPage::HasParity(const Config *pConfig) const
@@ -7673,12 +7675,12 @@ BOOL FASTCALL CAlterPage::HasParity(const Config *pConfig) const
 	ASSERT(this);
 	ASSERT(pConfig);
 
-	// Inicializacion‚³‚ê‚Ä‚¢‚È‚¯‚ê‚ÎA—^‚¦‚ê‚½Configƒf[ƒ^‚©‚ç
+	// Inicializacionï¿½ï¿½ï¿½ï¿½Ä‚ï¿½ï¿½È‚ï¿½ï¿½ï¿½ÎAï¿½^ï¿½ï¿½ï¿½ê‚½Configï¿½fï¿½[ï¿½^ï¿½ï¿½ï¿½ï¿½
 	if (!m_bInit) {
 		return pConfig->sasi_parity;
 	}
 
-	// InicializacionÏ‚İ‚È‚çAÅV‚ÌEditarŒ‹‰Ê‚ğ’m‚ç‚¹‚é
+	// Inicializacionï¿½Ï‚İ‚È‚ï¿½Aï¿½ÅVï¿½ï¿½Editarï¿½ï¿½ï¿½Ê‚ï¿½mï¿½ç‚¹ï¿½ï¿½
 	return m_bParity;
 }
 
@@ -7751,7 +7753,7 @@ CTKeyDlg::CTKeyDlg(CWnd *pParent) : CDialog(IDD_KEYINDLG, pParent)
 {
 	CFrmWnd *pFrmWnd;
 
-	// InglesŠÂ‹«‚Ö‚Ì‘Î‰
+	// Inglesï¿½Â‹ï¿½ï¿½Ö‚Ì‘Î‰ï¿½
 	if (!::IsJapanese()) {
 		m_lpszTemplateName = MAKEINTRESOURCE(IDD_US_KEYINDLG);
 		m_nIDHelp = IDD_US_KEYINDLG;
@@ -7778,7 +7780,7 @@ END_MESSAGE_MAP()
 
 //---------------------------------------------------------------------------
 //
-//	ƒ_ƒCƒAƒƒOInicializacion
+//	ï¿½_ï¿½Cï¿½Aï¿½ï¿½ï¿½OInicializacion
 //
 //---------------------------------------------------------------------------
 BOOL CTKeyDlg::OnInitDialog()
@@ -7793,7 +7795,7 @@ BOOL CTKeyDlg::OnInitDialog()
 	// Desactivar IME
 	::ImmAssociateContext(m_hWnd, (HIMC)NULL);
 
-	// ƒKƒCƒh‹éŒ`‚ÌProcesamiento
+	// ï¿½Kï¿½Cï¿½hï¿½ï¿½`ï¿½ï¿½Procesamiento
 	pStatic = (CStatic*)GetDlgItem(IDC_KEYIN_LABEL);
 	ASSERT(pStatic);
 	pStatic->GetWindowText(strText);
@@ -7802,7 +7804,7 @@ BOOL CTKeyDlg::OnInitDialog()
 	ScreenToClient(&m_rectGuide);
 	pStatic->DestroyWindow();
 
-	// Asignacion‹éŒ`‚ÌProcesamiento
+	// Asignacionï¿½ï¿½`ï¿½ï¿½Procesamiento
 	pStatic = (CStatic*)GetDlgItem(IDC_KEYIN_STATIC);
 	ASSERT(pStatic);
 	pStatic->GetWindowText(m_strAssign);
@@ -7810,7 +7812,7 @@ BOOL CTKeyDlg::OnInitDialog()
 	ScreenToClient(&m_rectAssign);
 	pStatic->DestroyWindow();
 
-	// ƒL[‹éŒ`‚ÌProcesamiento
+	// ï¿½Lï¿½[ï¿½ï¿½`ï¿½ï¿½Procesamiento
 	pStatic = (CStatic*)GetDlgItem(IDC_KEYIN_KEY);
 	ASSERT(pStatic);
 	pStatic->GetWindowText(m_strKey);
@@ -7824,10 +7826,10 @@ BOOL CTKeyDlg::OnInitDialog()
 	ScreenToClient(&m_rectKey);
 	pStatic->DestroyWindow();
 
-	// Tecladoó‘Ô‚ğæ“¾
+	// Tecladoï¿½ï¿½Ô‚ï¿½ï¿½æ“¾
 	::GetKeyboardState(m_KeyState);
 
-	// Temporizador‚ğ‚Í‚é
+	// Temporizadorï¿½ï¿½ï¿½Í‚ï¿½
 	m_nTimerID = SetTimer(IDD_KEYINDLG, 100, NULL);
 
 	return TRUE;
@@ -7840,7 +7842,7 @@ BOOL CTKeyDlg::OnInitDialog()
 //---------------------------------------------------------------------------
 void CTKeyDlg::OnOK()
 {
-	// [CR]‚É‚æ‚éFin‚ğ—}§
+	// [CR]ï¿½É‚ï¿½ï¿½Finï¿½ï¿½}ï¿½ï¿½
 }
 
 //---------------------------------------------------------------------------
@@ -7850,7 +7852,7 @@ void CTKeyDlg::OnOK()
 //---------------------------------------------------------------------------
 void CTKeyDlg::OnCancel()
 {
-	// Temporizador’â~
+	// Temporizadorï¿½ï¿½~
 	if (m_nTimerID) {
 		KillTimer(m_nTimerID);
 		m_nTimerID = NULL;
@@ -7891,17 +7893,17 @@ void CTKeyDlg::OnPaint()
 	// BitBlt
 	VERIFY(dc.BitBlt(0, 0, rect.Width(), rect.Height(), &mDC, 0, 0, SRCCOPY));
 
-	// ƒrƒbƒgƒ}ƒbƒvFin
+	// ï¿½rï¿½bï¿½gï¿½}ï¿½bï¿½vFin
 	VERIFY(mDC.SelectObject(pBitmap));
 	VERIFY(Bitmap.DeleteObject());
 
-	// ƒƒ‚ƒŠDCFin
+	// ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½DCFin
 	VERIFY(mDC.DeleteDC());
 }
 
 //---------------------------------------------------------------------------
 //
-//	DibujarƒƒCƒ“
+//	Dibujarï¿½ï¿½ï¿½Cï¿½ï¿½
 //
 //---------------------------------------------------------------------------
 void FASTCALL CTKeyDlg::OnDraw(CDC *pDC)
@@ -7932,13 +7934,13 @@ void FASTCALL CTKeyDlg::OnDraw(CDC *pDC)
 	pDC->DrawText(m_strKey, m_rectKey,
 					DT_LEFT | DT_NOPREFIX | DT_SINGLELINE | DT_VCENTER);
 
-	// Restaurar fuente(Objetos‚ÍEliminar‚µ‚È‚­‚Ä‚æ‚¢)
+	// Restaurar fuente(Objetosï¿½ï¿½Eliminarï¿½ï¿½ï¿½È‚ï¿½ï¿½Ä‚æ‚¢)
 	pDC->SelectObject(pDefFont);
 }
 
 //---------------------------------------------------------------------------
 //
-//	ƒ_ƒCƒAƒƒOObtener codigo
+//	ï¿½_ï¿½Cï¿½Aï¿½ï¿½ï¿½OObtener codigo
 //
 //---------------------------------------------------------------------------
 UINT CTKeyDlg::OnGetDlgCode()
@@ -7985,14 +7987,14 @@ void CTKeyDlg::OnTimer(UINT nID)
 		if ((m_KeyState[nKey] & 0x80) == 0) {
 			// Pulsado esta vez
 			if (state[nKey] & 0x80) {
-				// ƒ^[ƒQƒbƒgİ’è
+				// ï¿½^ï¿½[ï¿½Qï¿½bï¿½gï¿½İ’ï¿½
 				nTarget = nKey;
 				break;
 			}
 		}
 	}
 
-	// ƒXƒe[ƒgActualizacion
+	// ï¿½Xï¿½eï¿½[ï¿½gActualizacion
 	memcpy(m_KeyState, state, sizeof(state));
 
 	// Si el objetivo no ha cambiado, no hacer nada
@@ -8000,13 +8002,13 @@ void CTKeyDlg::OnTimer(UINT nID)
 		return;
 	}
 
-	// •¶š—ñæ“¾
+	// ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½æ“¾
 	lpszKey = m_pTKey->GetKeyID(nTarget);
 	if (lpszKey) {
 		// Hay cadena de tecla, nueva configuracion
 		m_nKey = nTarget;
 
-		// ƒRƒ“ƒgƒ[ƒ‹‚Éİ’èAÄDibujar
+		// ï¿½Rï¿½ï¿½ï¿½gï¿½ï¿½ï¿½[ï¿½ï¿½ï¿½Éİ’ï¿½Aï¿½ï¿½Dibujar
 		m_strKey = lpszKey;
 		Invalidate(FALSE);
 	}
@@ -8019,13 +8021,13 @@ void CTKeyDlg::OnTimer(UINT nID)
 //---------------------------------------------------------------------------
 void CTKeyDlg::OnRButtonDown(UINT /*nFlags*/, CPoint /*point*/)
 {
-	// Temporizador’â~
+	// Temporizadorï¿½ï¿½~
 	if (m_nTimerID) {
 		KillTimer(m_nTimerID);
 		m_nTimerID = NULL;
 	}
 
-	// ƒ_ƒCƒAƒƒOFin
+	// ï¿½_ï¿½Cï¿½Aï¿½ï¿½ï¿½OFin
 	EndDialog(IDOK);
 }
 
@@ -8168,7 +8170,7 @@ BOOL CTKeyPage::OnInitDialog()
 	// Obtener mapeo VK
 	m_pTKey->GetKeyMap(m_nKey);
 
-	// ƒŠƒXƒgƒRƒ“ƒgƒ[ƒ‹Actualizacion
+	// ï¿½ï¿½ï¿½Xï¿½gï¿½Rï¿½ï¿½ï¿½gï¿½ï¿½ï¿½[ï¿½ï¿½Actualizacion
 	UpdateReport();
 
 	// Configuracion de activacion de controles
@@ -8258,7 +8260,7 @@ void CTKeyPage::OnClick(NMHDR* /*pNMHDR*/, LRESULT* /*pResult*/)
 	int nKey;
 	CTKeyDlg dlg(this);
 
-	// ƒŠƒXƒgObtener control
+	// ï¿½ï¿½ï¿½Xï¿½gObtener control
 	pListCtrl = (CListCtrl*)GetDlgItem(IDC_TKEY_LIST);
 	ASSERT(pListCtrl);
 
@@ -8275,7 +8277,7 @@ void CTKeyPage::OnClick(NMHDR* /*pNMHDR*/, LRESULT* /*pResult*/)
 		return;
 	}
 
-	// Obtener los datos apuntados por ese indice(1`0x73)
+	// Obtener los datos apuntados por ese indice(1ï¿½`0x73)
 	nKey = (int)pListCtrl->GetItemData(nItem);
 	ASSERT((nKey >= 1) && (nKey <= 0x73));
 
@@ -8291,7 +8293,7 @@ void CTKeyPage::OnClick(NMHDR* /*pNMHDR*/, LRESULT* /*pResult*/)
 	// Configurar el mapa de teclas
 	m_nKey[nKey - 1] = dlg.m_nKey;
 
-	// Mostrar‚ğActualizacion
+	// Mostrarï¿½ï¿½Actualizacion
 	UpdateReport();
 }
 
@@ -8309,7 +8311,7 @@ void CTKeyPage::OnRClick(NMHDR* /*pNMHDR*/, LRESULT* /*pResult*/)
 	int nCount;
 	int nKey;
 
-	// ƒŠƒXƒgObtener control
+	// ï¿½ï¿½ï¿½Xï¿½gObtener control
 	pListCtrl = (CListCtrl*)GetDlgItem(IDC_TKEY_LIST);
 	ASSERT(pListCtrl);
 
@@ -8326,16 +8328,16 @@ void CTKeyPage::OnRClick(NMHDR* /*pNMHDR*/, LRESULT* /*pResult*/)
 		return;
 	}
 
-	// Obtener los datos apuntados por ese indice(1`0x73)
+	// Obtener los datos apuntados por ese indice(1ï¿½`0x73)
 	nKey = (int)pListCtrl->GetItemData(nItem);
 	ASSERT((nKey >= 1) && (nKey <= 0x73));
 
-	// ‚·‚Å‚ÉEliminar‚³‚ê‚Ä‚¢‚ê‚ÎNo hacer nada
+	// ï¿½ï¿½ï¿½Å‚ï¿½Eliminarï¿½ï¿½ï¿½ï¿½Ä‚ï¿½ï¿½ï¿½ï¿½No hacer nada
 	if (m_nKey[nKey - 1] == 0) {
 		return;
 	}
 
-	// ƒƒbƒZ[ƒWƒ{ƒbƒNƒX‚ÅAEliminar‚Ì—L–³‚ğVerificacion
+	// ï¿½ï¿½ï¿½bï¿½Zï¿½[ï¿½Wï¿½{ï¿½bï¿½Nï¿½Xï¿½ÅAEliminarï¿½Ì—Lï¿½ï¿½ï¿½ï¿½Verificacion
 	::GetMsg(IDS_KBD_DELMSG, strText);
 	strMsg.Format(strText, nKey, m_pTKey->GetKeyID(m_nKey[nKey - 1]));
 	::GetMsg(IDS_KBD_DELTITLE, strText);
@@ -8343,16 +8345,16 @@ void CTKeyPage::OnRClick(NMHDR* /*pNMHDR*/, LRESULT* /*pResult*/)
 		return;
 	}
 
-	// Á‹
+	// ï¿½ï¿½ï¿½ï¿½
 	m_nKey[nKey - 1] = 0;
 
-	// Mostrar‚ğActualizacion
+	// Mostrarï¿½ï¿½Actualizacion
 	UpdateReport();
 }
 
 //---------------------------------------------------------------------------
 //
-//	ƒŒƒ|[ƒgActualizacion
+//	ï¿½ï¿½ï¿½|ï¿½[ï¿½gActualizacion
 //
 //---------------------------------------------------------------------------
 void FASTCALL CTKeyPage::UpdateReport()
@@ -8377,10 +8379,10 @@ void FASTCALL CTKeyPage::UpdateReport()
 		// Obtener el nombre de la tecla desde CKeyDispWnd
 		lpszKey = m_pInput->GetKeyName(nKey);
 		if (lpszKey) {
-			// —LŒø‚ÈƒL[‚ª‚ ‚éBInicializacion
+			// ï¿½Lï¿½ï¿½ï¿½ÈƒLï¿½[ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½BInicializacion
 			strNext.Empty();
 
-			// VKAsignacion‚ª‚ ‚ê‚ÎAObtener nombre
+			// VKAsignacionï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ÎAObtener nombre
 			nVK = m_nKey[nKey - 1];
 			if (nVK != 0) {
 				lpszKey = m_pTKey->GetKeyID(nVK);
@@ -8413,7 +8415,7 @@ void FASTCALL CTKeyPage::EnableControls(BOOL bEnable)
 
 	ASSERT(this);
 
-	// WindowsVerificacionƒ{ƒbƒNƒXæ“¾
+	// WindowsVerificacionï¿½{ï¿½bï¿½Nï¿½Xï¿½æ“¾
 	pButton = (CButton*)GetDlgItem(IDC_TKEY_WINC);
 	ASSERT(pButton);
 	bCheck = FALSE;
@@ -8441,7 +8443,7 @@ void FASTCALL CTKeyPage::EnableControls(BOOL bEnable)
 		pWnd = GetDlgItem(ControlTable[i]);
 		ASSERT(pWnd);
 
-		// ControlTable[i]‚ªIDC_TKEY_MAPG, IDC_TKEY_LIST‚Í“Á—á
+		// ControlTable[i]ï¿½ï¿½IDC_TKEY_MAPG, IDC_TKEY_LISTï¿½Í“ï¿½ï¿½ï¿½
 		switch (ControlTable[i]) {
 			// En cuanto a los controles de mapeo de teclas de Windows
 			case IDC_TKEY_MAPG:
@@ -8455,7 +8457,7 @@ void FASTCALL CTKeyPage::EnableControls(BOOL bEnable)
 				}
 				break;
 
-			// Otros‚ÍbEnable‚É]‚¤
+			// Otrosï¿½ï¿½bEnableï¿½É]ï¿½ï¿½
 			default:
 				pWnd->EnableWindow(bEnable);
 		}
@@ -8479,7 +8481,7 @@ const UINT CTKeyPage::ControlTable[] = {
 
 //===========================================================================
 //
-//	Otrosƒy[ƒW
+//	Otrosï¿½yï¿½[ï¿½W
 //
 //===========================================================================
 
@@ -8506,7 +8508,10 @@ END_MESSAGE_MAP()
 /* AQU? SE INICIALIZA EN EL CAMPO DE TEXTO LA RUTA DE GUARDADOS R?PIDOS */
 BOOL CMiscPage::OnInitDialog()
 {
+	CComboBox *pCombo;
 	CEdit *pEdit;	
+	int nRendererID;
+	int nRendererLblID;
 	CConfigPage::OnInitDialog();
 	CFrmWnd *pFrmWnd;
 	pFrmWnd = (CFrmWnd*)AfxGetApp()->m_pMainWnd;
@@ -8515,9 +8520,26 @@ BOOL CMiscPage::OnInitDialog()
 	pEdit = (CEdit*)GetDlgItem(IDC_EDIT1);
 	pEdit->SetWindowTextA(pFrmWnd->RutaSaveStates);
 		
+	// Determinar IDs segun idioma
+	if (::IsJapanese()) {
+		nRendererID = IDC_MISC_RENDERER;
+		nRendererLblID = IDC_MISC_RENDERERL;
+	} else {
+		nRendererID = IDC_US_MISC_RENDERER;
+		nRendererLblID = IDC_US_MISC_RENDERERL;
+	}
+
+	// Inicializar combobox de renderizador
+	pCombo = (CComboBox*)GetDlgItem(nRendererID);
+	if (pCombo) {
+		pCombo->AddString(_T("GDI"));
+		pCombo->AddString(_T("DirectX 9"));
+		pCombo->SetCurSel(m_pConfig->render_mode);
+	}
+		
 	/*int msgboxID = MessageBox(
        m_pConfig->ruta_savestate,"saves",
-        2 );	*/
+         2 );	*/
 
 	return TRUE;
 }
@@ -8569,40 +8591,61 @@ void CMiscPage::OnBuscarFolder()
 /* AQU? SE GUARDA LA RUTA DE GUARDADO R?PIDO DE ESTADOS */
 void CMiscPage::OnOK()
 {
+	CComboBox *pCombo;
 	CEdit *pEdit;	
 	CString  folderDestino;
+	int nRendererID;
 	pEdit = (CEdit*)GetDlgItem(IDC_EDIT1);
 	pEdit->GetWindowTextA(folderDestino);
-	//int msgboxID = MessageBox(folderDestino,"saves", 2 );
 	_tcscpy(m_pConfig->ruta_savestate, folderDestino);
+
+	// Determinar ID segun idioma
+	if (::IsJapanese()) {
+		nRendererID = IDC_MISC_RENDERER;
+	} else {
+		nRendererID = IDC_US_MISC_RENDERER;
+	}
+
+	// Guardar valor del renderizador
+	pCombo = (CComboBox*)GetDlgItem(nRendererID);
+	if (pCombo) {
+		m_pConfig->render_mode = pCombo->GetCurSel();
+	}
+
 	CConfigPage::OnOK();
 }
 
 
 //---------------------------------------------------------------------------
 //
-//	Intercambio de datos
-//
-//---------------------------------------------------------------------------
+ //	Intercambio de datos
+ //
+ //---------------------------------------------------------------------------
 void CMiscPage::DoDataExchange(CDataExchange *pDX)
-{
-	ASSERT(this);
-	ASSERT(pDX);
+ {
+ 	int nVSyncID;
+ 
+ 	// Determinar ID de VSync segun idioma (los demas controles usan los mismos IDs en ambas versiones)
+ 	if (::IsJapanese()) {
+ 		nVSyncID = IDC_MISC_VSYNC;
+ 	} else {
+ 		nVSyncID = IDC_US_MISC_VSYNC;
+ 	}
+ 
+ 	CConfigPage::DoDataExchange(pDX);
 
-	// Clase base
-	CConfigPage::DoDataExchange(pDX);
-
-	// Intercambio de datos
-	DDX_Check(pDX, IDC_MISC_FDSPEED, m_pConfig->floppy_speed);
-	DDX_Check(pDX, IDC_MISC_FDLED, m_pConfig->floppy_led);
-	DDX_Check(pDX, IDC_MISC_POPUP, m_pConfig->popup_swnd);
-	DDX_Check(pDX, IDC_MISC_AUTOMOUSE, m_pConfig->auto_mouse);
-	DDX_Check(pDX, IDC_MISC_POWEROFF, m_pConfig->power_off);
-}
+ 	// Intercambio de datos
+ 	DDX_Check(pDX, IDC_MISC_FDSPEED, m_pConfig->floppy_speed);
+ 	DDX_Check(pDX, IDC_MISC_FDLED, m_pConfig->floppy_led);
+ 	DDX_Check(pDX, IDC_MISC_POPUP, m_pConfig->popup_swnd);
+ 	DDX_Check(pDX, IDC_MISC_AUTOMOUSE, m_pConfig->auto_mouse);
+ 	DDX_Check(pDX, IDC_MISC_POWEROFF, m_pConfig->power_off);
+ 	DDX_Check(pDX, nVSyncID, m_pConfig->render_vsync);
+ }
 
 //===========================================================================
 //
-//	ConfiguracionƒvƒƒpƒeƒBƒV[ƒg
+//	Configuracionï¿½vï¿½ï¿½ï¿½pï¿½eï¿½Bï¿½Vï¿½[ï¿½g
 //
 //===========================================================================
 
@@ -8616,21 +8659,21 @@ CConfigSheet::CConfigSheet(CWnd *pParent) : CPropertySheet(IDS_OPTIONS, pParent)
 	// En este punto los datos de configuracion son NULL
 	m_pConfig = NULL;
 
-	// InglesŠÂ‹«‚Ö‚Ì‘Î‰
+	// Inglesï¿½Â‹ï¿½ï¿½Ö‚Ì‘Î‰ï¿½
 	if (!::IsJapanese()) {
 		::GetMsg(IDS_OPTIONS, m_strCaption);
 	}
 
-	// ApplyBotones‚ğEliminar
+	// ApplyBotonesï¿½ï¿½Eliminar
 	m_psh.dwFlags |= PSH_NOAPPLYNOW;
 
 	// Memorizar ventana padre
 	m_pFrmWnd = (CFrmWnd*)pParent;
 
-	// Temporizador‚È‚µ
+	// Temporizadorï¿½È‚ï¿½
 	m_nTimerID = NULL;
 
-	// ƒy[ƒWInicializacion
+	// ï¿½yï¿½[ï¿½WInicializacion
 	m_Basic.Init(this);
 	m_Sound.Init(this);
 	m_Vol.Init(this);
@@ -8661,7 +8704,7 @@ END_MESSAGE_MAP()
 
 //---------------------------------------------------------------------------
 //
-//	ƒy[ƒWBusqueda
+//	ï¿½yï¿½[ï¿½WBusqueda
 //
 //---------------------------------------------------------------------------
 CConfigPage* FASTCALL CConfigSheet::SearchPage(DWORD dwID) const
@@ -8677,7 +8720,7 @@ CConfigPage* FASTCALL CConfigSheet::SearchPage(DWORD dwID) const
 	nCount = GetPageCount();
 	ASSERT(nCount >= 0);
 
-	// ƒy[ƒWBucle
+	// ï¿½yï¿½[ï¿½WBucle
 	for (nPage=0; nPage<nCount; nPage++) {
 		// Obtener pagina
 		pPage = (CConfigPage*)GetPage(nPage);
@@ -8695,7 +8738,7 @@ CConfigPage* FASTCALL CConfigSheet::SearchPage(DWORD dwID) const
 
 //---------------------------------------------------------------------------
 //
-//	ƒEƒBƒ“ƒhƒECrear
+//	ï¿½Eï¿½Bï¿½ï¿½ï¿½hï¿½ECrear
 //
 //---------------------------------------------------------------------------
 int CConfigSheet::OnCreate(LPCREATESTRUCT lpCreateStruct)
@@ -8705,7 +8748,7 @@ int CConfigSheet::OnCreate(LPCREATESTRUCT lpCreateStruct)
 		return -1;
 	}
 
-	// Temporizador‚ğƒCƒ“ƒXƒg[ƒ‹
+	// Temporizadorï¿½ï¿½ï¿½Cï¿½ï¿½ï¿½Xï¿½gï¿½[ï¿½ï¿½
 	m_nTimerID = SetTimer(IDM_OPTIONS, 100, NULL);
 
 	return 0;
@@ -8713,12 +8756,12 @@ int CConfigSheet::OnCreate(LPCREATESTRUCT lpCreateStruct)
 
 //---------------------------------------------------------------------------
 //
-//	ƒEƒBƒ“ƒhƒEEliminar
+//	ï¿½Eï¿½Bï¿½ï¿½ï¿½hï¿½EEliminar
 //
 //---------------------------------------------------------------------------
 void CConfigSheet::OnDestroy()
 {
-	// Temporizador’â~
+	// Temporizadorï¿½ï¿½~
 	if (m_nTimerID) {
 		KillTimer(m_nTimerID);
 		m_nTimerID = NULL;
@@ -8748,11 +8791,11 @@ void CConfigSheet::OnTimer(UINT nID)
 		return;
 	}
 
-	// Temporizador’â~
+	// Temporizadorï¿½ï¿½~
 	KillTimer(m_nTimerID);
 	m_nTimerID = NULL;
 
-	// Info‚ª‘¶İ‚·‚ê‚ÎAActualizacion
+	// Infoï¿½ï¿½ï¿½ï¿½ï¿½İ‚ï¿½ï¿½ï¿½ÎAActualizacion
 	pInfo = m_pFrmWnd->GetInfo();
 	if (pInfo) {
 		pInfo->UpdateStatus();
@@ -8760,7 +8803,7 @@ void CConfigSheet::OnTimer(UINT nID)
 		pInfo->UpdateInfo();
 	}
 
-	// TemporizadorÄŠJ(MostrarŠ®—¹‚©‚ç100ms‚ ‚¯‚é)
+	// Temporizadorï¿½ÄŠJ(Mostrarï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½100msï¿½ï¿½ï¿½ï¿½ï¿½ï¿½)
 	m_nTimerID = SetTimer(IDM_OPTIONS, 100, NULL);
 }
 
