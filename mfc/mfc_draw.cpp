@@ -166,12 +166,16 @@ END_MESSAGE_MAP()
   //	Inicializacion
   //
   //---------------------------------------------------------------------------
-BOOL FASTCALL CDrawView::Init(CWnd *pParent)
+BOOL FASTCALL CDrawView::Init(CWnd *pParent, BOOL bShaderEnabled)
 {
 	ASSERT(pParent);
 
  	 // Memoria de la ventana de marco (Frame Window)
 	m_pFrmWnd = (CFrmWnd*)pParent;
+
+	// Inicializar estado del shader
+	InterlockedExchange(&m_lShaderEnabled, bShaderEnabled ? 1 : 0);
+	InterlockedExchange(&m_lPendingShaderEnable, bShaderEnabled ? 1 : 0);
 
  	 // Crear como primera vista
 	if (!Create(NULL, NULL, WS_CHILD | WS_VISIBLE | WS_CLIPCHILDREN,
@@ -1062,9 +1066,12 @@ void FASTCALL CDrawView::SetShaderEnabled(BOOL bEnable)
 {
 	LONG newValue = bEnable ? 1 : 0;
 	InterlockedExchange(&m_lShaderEnabled, newValue);
+	
+	// Siempre guardar el valor pendiente para que se aplique cuando el render thread esté listo
+	InterlockedExchange(&m_lPendingShaderEnable, newValue);
+	
 	if (m_bUseDX9 && m_pRenderThread) {
 		// Notificar al render thread del cambio de estado
-		InterlockedExchange(&m_lPendingShaderEnable, newValue);
 		InterlockedExchange(&m_lRenderCmd, RENDERCMD_SHADER_APPLY_STATE);
 		SetEvent(m_hRenderEvent);
 	}
@@ -1131,32 +1138,34 @@ void FASTCALL CDrawView::RenderLoop()
 				}
 				SetEvent(m_hRenderAckEvent);
 				continue;
-			} else if (cmd == RENDERCMD_SHADER_APPLY_STATE) {
-				// Procesar cambio de estado del shader
-				LONG pendingEnable = InterlockedExchange(&m_lPendingShaderEnable, -1);
+			}
+			
+			// Procesamiento ROBÚSTO del estado del shader (fuera de comandos específicos)
+			// Esto asegura que INIT, RESET o comandos directos apliquen el shader apenas sea posible.
+			LONG pendingEnable = InterlockedExchange(&m_lPendingShaderEnable, -1);
+			if (pendingEnable != -1) {
 				if (pendingEnable == 1) {
-					// Intentar cargar shader desde archivo
-					// Ruta: relativo al directorio del ejecutable
-					// Ej: XM6.exe en Debug/, busca Debug/shaders/crt.hlsl
-					// IMPORTANTE: Copiar carpeta shaders/ al mismo nivel que XM6.exe
 					TCHAR szShaderPath[MAX_PATH];
 					GetModuleFileName(NULL, szShaderPath, MAX_PATH);
 					PathRemoveFileSpec(szShaderPath);
 					PathAppend(szShaderPath, _T("shaders\\crt.hlsl"));
 					
 					if (m_DX9Renderer.CreateCRTShader(szShaderPath)) {
-						// Éxito: activar shader
 						m_DX9Renderer.SetShaderEnabled(TRUE);
+						InterlockedExchange(&m_lShaderEnabled, 1);
+						ShowOSD(_T("CRT Shader: Enabled"));
+						m_dwPerfOSDLastTick = 0;
 					} else {
-						// Fallo: mostrar OSD de error y desactivar
 						InterlockedExchange(&m_lShaderEnabled, 0);
 						m_DX9Renderer.SetShaderEnabled(FALSE);
 						ShowOSD(_T("CRT Shader: Failed to load"));
 						m_dwPerfOSDLastTick = 0;
 					}
 				} else if (pendingEnable == 0) {
-					// Desactivar shader explícitamente
 					m_DX9Renderer.SetShaderEnabled(FALSE);
+					InterlockedExchange(&m_lShaderEnabled, 0);
+					ShowOSD(_T("CRT Shader: Disabled"));
+					m_dwPerfOSDLastTick = 0;
 				}
 			}
 			
@@ -1366,6 +1375,9 @@ void FASTCALL CDrawView::ApplyCfg(const Config *pConfig)
 
  	 // Estiramiento (Stretch)
 	Stretch(pConfig->aspect_stretch);
+
+ 	 // Shader (CRT)
+	SetShaderEnabled(pConfig->render_shader);
 
  	 // Instrucciones para subventanas
 	pWnd = m_pSubWnd;

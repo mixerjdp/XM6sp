@@ -519,9 +519,13 @@ BOOL FASTCALL CFrmWnd::InitChild()
 	int nWidth;
 	UINT uIndicator[6];
 
-	// Ver creacion
+	// Restaurar la configuración del Shader ANTES de inicializar la vista
+	Config config;
+	GetConfig()->GetConfig(&config);
+
+	// Ver creación pasando el estado inicial del shader
 	m_pDrawView = new CDrawView;
-	if (!m_pDrawView->Init(this)) {
+	if (!m_pDrawView->Init(this, config.render_shader)) {
 		return FALSE;
 	}
 
@@ -1755,6 +1759,11 @@ void CFrmWnd::SaveFrameWnd()
 
 	// Pantalla completa
 	config.window_full = m_bFullScreen;
+
+	// Estado del Shader
+	if (m_pDrawView) {
+		config.render_shader = m_pDrawView->IsShaderEnabled();
+	}
 
 	// Cambiar la configuracion
 	GetConfig()->SetConfig(&config);
@@ -3317,6 +3326,11 @@ void CFrmWnd::OnToggleShader()
 {
 	if (m_pDrawView && m_pDrawView->IsDX9Active()) {
 		m_pDrawView->ToggleShader();
+
+		Config config;
+		GetConfig()->GetConfig(&config);
+		config.render_shader = m_pDrawView->IsShaderEnabled();
+		GetConfig()->SetConfig(&config);
 	}
 }
 

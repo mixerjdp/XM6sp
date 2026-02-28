@@ -32,5 +32,3 @@ if %ERRORLEVEL% equ 0 (
     echo  [ERROR] Hubo errores durante la compilacion.
     echo ========================================================
 )
-
-pause

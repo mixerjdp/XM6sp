@@ -658,6 +658,18 @@ BOOL CDX9Renderer::CreateCRTShader(LPCTSTR szPath)
     ID3DBlob* pBytecode = NULL;
     ID3DBlob* pErrors = NULL;
 
+    // Verificar si el archivo existe
+    WIN32_FIND_DATA findData;
+    HANDLE hFind = FindFirstFile(szPath, &findData);
+    if (hFind == INVALID_HANDLE_VALUE) {
+        TCHAR szDebug[512];
+        _sntprintf_s(szDebug, _countof(szDebug), _TRUNCATE, 
+                     _T("CRT Shader: File not found at %s\n"), szPath);
+        OutputDebugString(szDebug);
+        return FALSE;
+    }
+    FindClose(hFind);
+
     // Convertir szPath a LPCWSTR (D3DCompileFromFile siempre requiere Unicode)
     wchar_t szPathW[MAX_PATH];
     #ifdef _UNICODE
@@ -685,7 +697,13 @@ BOOL CDX9Renderer::CreateCRTShader(LPCTSTR szPath)
             const char* szMsg = (const char*)pErrors->GetBufferPointer();
             OutputDebugStringA("CRT Shader compilation error:\n");
             OutputDebugStringA(szMsg);
+            OutputDebugStringA("\n");
             pErrors->Release();
+        } else {
+            TCHAR szDebug[256];
+            _sntprintf_s(szDebug, _countof(szDebug), _TRUNCATE,
+                         _T("CRT Shader compilation failed: HRESULT 0x%08X\n"), hr);
+            OutputDebugString(szDebug);
         }
         return FALSE;
     }
@@ -699,6 +717,10 @@ BOOL CDX9Renderer::CreateCRTShader(LPCTSTR szPath)
     pBytecode->Release();
 
     if (FAILED(hr)) {
+        TCHAR szDebug[256];
+        _sntprintf_s(szDebug, _countof(szDebug), _TRUNCATE,
+                     _T("CreatePixelShader failed: HRESULT 0x%08X\n"), hr);
+        OutputDebugString(szDebug);
         m_pCRTShader = NULL;
         m_szCRTShaderPath[0] = _T('\0');
         return FALSE;
@@ -706,6 +728,7 @@ BOOL CDX9Renderer::CreateCRTShader(LPCTSTR szPath)
 
     // Éxito: guardar ruta para recarga futura (ej. en ResetDevice)
     _tcsncpy_s(m_szCRTShaderPath, MAX_PATH, szPath, _TRUNCATE);
+    OutputDebugString(_T("CRT Shader loaded successfully\n"));
     return TRUE;
 #else
     // D3DCompiler no disponible; shader deshabilitado

@@ -65,7 +65,7 @@ public:
  										 // Control de operacion
 	BOOL FASTCALL IsEnable() const;
  										 // Obtencion de bandera de operacion
-	BOOL FASTCALL Init(CWnd *pParent);
+	BOOL FASTCALL Init(CWnd *pParent, BOOL bShaderEnabled);
  										 // Inicializacion
 	BOOL PreCreateWindow(CREATESTRUCT& cs);
  										 // Preparacion de creacion de ventana

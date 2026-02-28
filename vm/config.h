@@ -39,6 +39,7 @@ public:
 	BOOL aspect_stretch;				// �A�X�y�N�g��ɂ��킹�g��
 	BOOL render_vsync;					// VSync (TRUE=ON)
 	int render_mode;					// Renderizador (0=GDI, 1=DirectX 9)
+	BOOL render_shader;					// Mostrar Shader (CRT)
 
 	// ����
 	int master_volume;					// �}�X�^����(0�`100)
