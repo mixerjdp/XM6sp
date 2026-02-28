@@ -60,6 +60,7 @@ public:
  										 // Constructor
 
 	BOOL m_bShowOSD;					 // Visibilidad del OSD
+	volatile LONG m_lShaderEnabled;		 // Estado del shader (volatile + atomic-safe)
 	void FASTCALL Enable(BOOL bEnable);
  										 // Control de operacion
 	BOOL FASTCALL IsEnable() const;
@@ -82,6 +83,14 @@ public:
 										 // Aplicar configuracion de renderizador
 	void FASTCALL ToggleRenderer();
 										 // Alternar entre DX9 y GDI
+	void FASTCALL ToggleShader();
+										 // Alternar efecto shader CRT
+	void FASTCALL SetShaderEnabled(BOOL bEnable);
+										 // Activar/desactivar shader
+	BOOL FASTCALL IsShaderEnabled() const;
+										 // Obtener estado de shader
+	BOOL FASTCALL IsDX9Active() const;
+										 // Obtener si está activo modo DX9
 	void FASTCALL ShowRenderStatusOSD(BOOL bVSync);
 										 // Mostrar renderer activo y estado VSync
 	void FASTCALL ApplyCfg(const Config *pConfig);
@@ -183,6 +192,7 @@ private:
 	HANDLE m_hRenderAckEvent;
 	CWinThread *m_pRenderThread;
 	volatile LONG m_lRenderCmd;
+	volatile LONG m_lPendingShaderEnable;	// -1: no change, 0: disable, 1: enable
 	int m_nRenderWidth;
 	int m_nRenderHeight;
 	BOOL m_bRenderVSync;

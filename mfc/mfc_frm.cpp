@@ -314,6 +314,8 @@ BEGIN_MESSAGE_MAP(CFrmWnd, CFrameWnd)
 	ON_COMMAND(IDM_TOGGLE_RENDERER, OnToggleRenderer)
 	ON_COMMAND(IDM_TOGGLE_OSD, OnToggleOSD)
 	ON_COMMAND(IDM_TOGGLE_VSYNC, OnToggleVSync)
+	ON_COMMAND(IDM_TOGGLE_SHADER, OnToggleShader)
+	ON_UPDATE_COMMAND_UI(IDM_TOGGLE_SHADER, OnToggleShaderUI)
 
 	ON_COMMAND(IDM_EXEC, OnExec)
 	ON_UPDATE_COMMAND_UI(IDM_EXEC, OnExecUI)
@@ -3307,5 +3309,26 @@ void CFrmWnd::OnToggleOSD()
 {
 	if (m_pDrawView) {
 		m_pDrawView->m_bShowOSD = !m_pDrawView->m_bShowOSD;
+		m_pDrawView->Invalidate();
+	}
+}
+
+void CFrmWnd::OnToggleShader()
+{
+	if (m_pDrawView && m_pDrawView->IsDX9Active()) {
+		m_pDrawView->ToggleShader();
+	}
+}
+
+void CFrmWnd::OnToggleShaderUI(CCmdUI *pCmdUI)
+{
+	if (pCmdUI) {
+		if (m_pDrawView && m_pDrawView->IsDX9Active()) {
+			pCmdUI->SetCheck(m_pDrawView->IsShaderEnabled() ? 1 : 0);
+			pCmdUI->Enable(TRUE);
+		}
+		else {
+			pCmdUI->Enable(FALSE);
+		}
 	}
 }

@@ -14,7 +14,7 @@
 #undef APSTUDIO_READONLY_SYMBOLS
 
 /////////////////////////////////////////////////////////////////////////////
-// Espa�ol (Espa�a, alfabetizaci�n internacional) resources
+// Espa�ol (Espa�a, alfabetizaci�n internacional) resources
 
 #if !defined(AFX_RESOURCE_DLL) || defined(AFX_TARG_ESN)
 LANGUAGE LANG_SPANISH, SUBLANG_SPANISH_MODERN
@@ -509,6 +509,7 @@ BEGIN
         MENUITEM SEPARATOR
         MENUITEM "Stretch con &Aspect Ratio",   IDM_STRETCH
         MENUITEM "F&ull Screen\tAlt+Enter",     IDM_FULLSCREEN
+        MENUITEM "&CRT Shader\tF9",             IDM_TOGGLE_SHADER
     END
     POPUP "&Depurar"
     BEGIN
@@ -688,6 +689,7 @@ BEGIN
             MENUITEM SEPARATOR
             MENUITEM "Stretch with &Aspect Ratio",  IDM_STRETCH
             MENUITEM "F&ull Screen\tAlt+Enter",     IDM_FULLSCREEN
+            MENUITEM "&CRT Shader\tF9",             IDM_TOGGLE_SHADER
         END
         POPUP "&Depurar"
         BEGIN
@@ -2471,6 +2473,7 @@ BEGIN
     VK_F8,          IDM_TOGGLE_RENDERER,    VIRTKEY, NOINVERT
     VK_F11,         IDM_TOGGLE_OSD,         VIRTKEY, NOINVERT
     VK_F11,         IDM_TOGGLE_VSYNC,       VIRTKEY, SHIFT, NOINVERT
+    VK_F9,          IDM_TOGGLE_SHADER,      VIRTKEY, NOINVERT
     VK_F12,         IDM_BREAK,              VIRTKEY, ALT, NOINVERT
     VK_RETURN,      IDM_FULLSCREEN,         VIRTKEY, ALT, NOINVERT
     VK_F12,         IDM_MOUSEMODE,          VIRTKEY, NOINVERT
@@ -3400,11 +3403,11 @@ END
 
 STRINGTABLE
 BEGIN
-    IDM_US_EXIT             "Quit XM6"
-    IDM_US_D0OPEN           "Open a floppy disk image file"
-    IDM_US_D0EJECT          "Eject disk normally"
-    IDM_US_D0WRITEP         "Protect against writing"
-    IDM_US_D0FORCE          "Eject disk forcedly"
+    IDM_US_EXIT             "Salir de XM6"
+    IDM_US_D0OPEN           "Abrir archivo de imagen de disquete"
+    IDM_US_D0EJECT          "Expulsar disco normalmente"
+    IDM_US_D0WRITEP         "Proteger contra escritura"
+    IDM_US_D0FORCE          "Expulsar disco forzosamente"
 END
 
 STRINGTABLE
@@ -3423,124 +3426,112 @@ END
 
 STRINGTABLE
 BEGIN
-    IDM_US_MOOPEN           "Open a MO disk image file"
-    IDM_US_MOEJECT          "Eject disk normally"
-    IDM_US_MOWRITEP         "Protect against writing"
-    IDM_US_MOFORCE          "Eject disk forcedly"
+    IDM_US_MOOPEN           "Abrir archivo de imagen de disco MO"
+    IDM_US_MOEJECT          "Expulsar disco normalmente"
+    IDM_US_MOWRITEP         "Proteger contra escritura"
+    IDM_US_MOFORCE          "Expulsar disco forzosamente"
 END
 
 STRINGTABLE
 BEGIN
-    IDM_US_CDOPEN           "Open a CD disc image file"
-    IDM_US_CDEJECT          "Eject disc normally"
-    IDM_US_CDFORCE          "Eject disc forcedly"
+    IDM_US_CDOPEN           "Abrir archivo de imagen de CD"
+    IDM_US_CDEJECT          "Expulsar disco normalmente"
+    IDM_US_CDFORCE          "Expulsar disco forzosamente"
 END
 
 STRINGTABLE
 BEGIN
-    IDM_US_CPUREG           "View register window"
-    IDM_US_INT              "View interrupt window"
-    IDM_US_DISASM           "View disassemble window"
-    IDM_US_MEMORY           "View memory window"
-    IDM_US_BREAKP           "View breakpoint window"
-    IDM_US_MFP              "View multi-function peripheral window"
-    IDM_US_DMAC             "View direct memory access window"
-    IDM_US_CRTC             "View CRT control window"
-    IDM_US_VC               "View video control window"
-    IDM_US_RTC              "View real-time clock window"
-    IDM_US_OPM              "View FM-sound synthesizer window"
-    IDM_US_KEYBOARD         "View keyboard window"
-    IDM_US_FDD              "View floppy disk drive window"
+    IDM_US_CPUREG           "Ver ventana de registros"
+    IDM_US_INT              "Ver ventana de interrupciones"
+    IDM_US_DISASM           "Ver ventana de desensamblador"
+    IDM_US_MEMORY           "Ver ventana de memoria"
+    IDM_US_BREAKP           "Ver ventana de puntos de ruptura"
+    IDM_US_MFP              "Ver ventana de periférico multifunción"
+    IDM_US_DMAC             "Ver ventana de acceso directo a memoria"
+    IDM_US_CRTC             "Ver ventana de control CRT"
+    IDM_US_VC               "Ver ventana de control de video"
+    IDM_US_RTC              "Ver ventana de reloj en tiempo real"
+    IDM_US_OPM              "Ver ventana de sintetizador de sonido FM"
+    IDM_US_KEYBOARD         "Ver ventana de teclado"
+    IDM_US_FDD              "Ver ventana de unidad de disquete"
 END
 
 STRINGTABLE
 BEGIN
-    IDM_US_FDC              "View floppy disk controller window"
-    IDM_US_SCC              "View serial communication window"
-    IDM_US_CYNTHIA          "View BG/sprite window"
-    IDM_US_SASI             "View SASI disk window"
-    IDM_US_MIDI             "View MIDI controller window"
-    IDM_US_SCSI             "View SCSI protocol controller window"
+    IDM_US_FDC              "Ver ventana de controlador de disquete"
+    IDM_US_SCC              "Ver ventana de comunicación serial"
+    IDM_US_CYNTHIA          "Ver ventana de BG/sprite"
+    IDM_US_SASI             "Ver ventana de disco SASI"
+    IDM_US_MIDI             "Ver ventana de controlador MIDI"
+    IDM_US_SCSI             "Ver ventana de controlador de protocolo SCSI"
 END
 
 STRINGTABLE
 BEGIN
-    IDM_US_COMPONENT        "View component window"
+    IDM_US_COMPONENT        "Ver ventana de componentes"
+    IDM_US_OSINFO           "Ver ventana de OS"
+    IDM_US_SOUND            "Ver ventana de sonido"
+    IDM_US_INPUT            "Ver ventana de entrada"
+    IDM_US_PORT             "Ver ventana de puertos"
+    IDM_US_BITMAP           "Ver ventana de bitmap"
+    IDM_US_MIDIDRV          "Ver ventana de driver MIDI"
+    IDM_US_CAPTION          "Mostrar u ocultar el título de la ventana"
+    IDM_US_MENU             "Mostrar u ocultar la barra de menús"
+    IDM_US_STATUS           "Mostrar u ocultar la barra de estado"
+    IDM_US_REFRESH          "Redibujar todas las ventanas"
+    IDM_US_STRETCH          "Estirar a proporción 5:4 excepto modo 768x512"
+    IDM_US_FULLSCREEN       "Mostrar en pantalla completa"
 END
 
 STRINGTABLE
 BEGIN
-    IDM_US_OSINFO           "View OS window"
-    IDM_US_SOUND            "View sound window"
-    IDM_US_INPUT            "View input window"
-    IDM_US_PORT             "View port window"
-    IDM_US_BITMAP           "View bitmap window"
-    IDM_US_MIDIDRV          "View MIDI driver window"
-    IDM_US_CAPTION          "Show or hide the windows caption"
-    IDM_US_MENU             "Show or hide the menu bar"
-    IDM_US_STATUS           "Show or hide the status bar"
-    IDM_US_REFRESH          "Redraw all windows"
-    IDM_US_STRETCH          "stretch to 5:4-ratio except 768x512 mode"
-    IDM_US_FULLSCREEN       "Display on full screen"
+    IDM_US_MOUSEMODE        "Entrar/Salir del modo ratón"
+    IDM_US_SOFTKEY          "Ver ventana de teclado software"
+    IDM_US_TIMEADJ          "Ajustar el calendario del X68000"
+    IDM_US_TRAP0            "Ejecutar instrucción trap #0"
+    IDM_US_SAVEWAV          "Volcar el sonido a archivo WAV"
+    IDM_US_NEWFD            "Crear nuevo disquete"
+    IDM_US_NEWSASI          "Crear nuevo disco duro SASI"
+    IDM_US_NEWSCSI          "Crear nuevo disco duro SCSI"
+    IDM_US_NEWMO            "Crear nuevo disco MO SCSI"
+    IDM_US_OPTIONS          "Opciones de XM6"
 END
 
 STRINGTABLE
 BEGIN
-    IDM_US_MOUSEMODE        "Enter/Exit the mouse mode"
-    IDM_US_SOFTKEY          "View software keyboard window"
-    IDM_US_TIMEADJ          "Adjust X68000's calender"
-    IDM_US_TRAP0            "Execute trap #0 instruction"
-    IDM_US_SAVEWAV          "Dump the sound to WAV file"
-    IDM_US_NEWFD            "Make a new floppy disk"
-    IDM_US_NEWSASI          "Make a new SASI fixed disk"
-    IDM_US_NEWSCSI          "Make a new SCSI fixed disk"
-    IDM_US_NEWMO            "Make a new SCSI MO disk"
-    IDM_US_OPTIONS          "XM6 Options"
+    IDM_US_CASCADE          "Cascada de todas las ventanas"
+    IDM_US_TILE             "Mosaico de todas las ventanas"
+    IDM_US_ICONIC           "Minimizar todas las ventanas"
+    IDM_US_ARRANGEICON      "Organizar iconos de ventanas"
+    IDM_US_HIDE             "Ocultar todas las ventanas"
+    IDM_US_RESTORE          "Restaurar todas las ventanas"
+    IDM_US_ABOUT            "Acerca de XM6"
+    IDM_US_STDWIN           "Mover ventana de XM6 a posición estándar."
 END
 
 STRINGTABLE
 BEGIN
-    IDM_US_CASCADE          "Cascade all windows"
-    IDM_US_TILE             "Tile all windows"
-    IDM_US_ICONIC           "Iconic all windows"
-    IDM_US_ARRANGEICON      "Arrange all iconic windows"
-    IDM_US_HIDE             "Hide all windows"
-    IDM_US_RESTORE          "Restore all windows"
-END
-
-STRINGTABLE
-BEGIN
-    IDM_US_ABOUT            "About XM6"
-END
-
-STRINGTABLE
-BEGIN
-    IDM_US_STDWIN           "Move XM6 window to standard position."
-END
-
-STRINGTABLE
-BEGIN
-    IDS_US_SWND_LOG         "LOG"
+    IDS_US_SWND_LOG         "REGISTRO"
     IDS_US_SWND_LOG_NUMBER  "No."
-    IDS_US_SWND_LOG_TIME    "Time"
+    IDS_US_SWND_LOG_TIME    "Tiempo"
     IDS_US_SWND_LOG_PC      "PC"
-    IDS_US_SWND_LOG_LEVEL   "Level"
-    IDS_US_SWND_LOG_DEVICE  "Device"
-    IDS_US_SWND_LOG_MSG     "Message"
-    IDS_US_SWND_LOG_DETAIL  "Detail"
+    IDS_US_SWND_LOG_LEVEL   "Nivel"
+    IDS_US_SWND_LOG_DEVICE  "Dispositivo"
+    IDS_US_SWND_LOG_MSG     "Mensaje"
+    IDS_US_SWND_LOG_DETAIL  "Detalle"
     IDS_US_SWND_LOG_NORMAL  "Normal"
-    IDS_US_SWND_LOG_WARNING "Warning"
-    IDS_US_SWND_SCHEDULER   "SCHEDULER"
-    IDS_US_SWND_DEVICE      "DEVICE"
+    IDS_US_SWND_LOG_WARNING "Advertencia"
+    IDS_US_SWND_SCHEDULER   "PLANIFICADOR"
+    IDS_US_SWND_DEVICE      "DISPOSITIVO"
 END
 
 STRINGTABLE
 BEGIN
-    IDS_US_SWND_CPUREG      "MPU REGISTER"
-    IDS_US_SWND_INT         "INTERRUPT"
-    IDS_US_SWND_DISASM      "DISASSEMBLE"
-    IDS_US_SWND_MEMORY      "MEMORY"
-    IDS_US_SWND_BREAKP      "BREAK POINT"
+    IDS_US_SWND_CPUREG      "REGISTRO MPU"
+    IDS_US_SWND_INT         "INTERRUPCIÓN"
+    IDS_US_SWND_DISASM      "DESENSAMBLADOR"
+    IDS_US_SWND_MEMORY      "MEMORIA"
+    IDS_US_SWND_BREAKP      "PUNTO DE RUPTURA"
 END
 
 STRINGTABLE
@@ -3551,7 +3542,7 @@ BEGIN
     IDS_US_SWND_VC          "VC (CATHY and VIPS)"
     IDS_US_SWND_RTC         "RTC (RP5C15)"
     IDS_US_SWND_OPM         "OPM (YM2151)"
-    IDS_US_SWND_KEYBOARD    "KEYBOARD"
+    IDS_US_SWND_KEYBOARD    "TECLADO"
     IDS_US_SWND_FDD         "FDD (FD55GFR)"
 END
 
@@ -3567,292 +3558,268 @@ END
 
 STRINGTABLE
 BEGIN
-    IDS_US_SWND_TVRAM       "TEXT PLANE"
-    IDS_US_SWND_G1024       "GRAPHIC PLANE(16COLOR, 1024X1024)"
-    IDS_US_SWND_G16P0       "GRAPHIC PLANE(16COLOR, PAGE0)"
-    IDS_US_SWND_G16P1       "GRAPHIC PLANE(16COLOR, PAGE1)"
+    IDS_US_SWND_TVRAM       "PLANO DE TEXTO"
+    IDS_US_SWND_G1024       "PLANO GRÁFICO(16COLORES, 1024X1024)"
+    IDS_US_SWND_G16P0       "PLANO GRÁFICO(16COLORES, PÁGINA0)"
+    IDS_US_SWND_G16P1       "PLANO GRÁFICO(16COLORES, PÁGINA1)"
 END
 
 STRINGTABLE
 BEGIN
-    IDS_US_SWND_G16P2       "GRAPHIC PLANE(16COLOR, PAGE2)"
-    IDS_US_SWND_G16P3       "GRAPHIC PLANE(16COLOR, PAGE3)"
-    IDS_US_SWND_G256P0      "GRAPHIC PLANE(256COLOR, PAGE0)"
-    IDS_US_SWND_G256P1      "GRAPHIC PLANE(256COLOR, PAGE1)"
-    IDS_US_SWND_G64K        "GRAPHIC PLANE(65536COLOR)"
+    IDS_US_SWND_G16P2       "PLANO GRÁFICO(16COLORES, PÁGINA2)"
+    IDS_US_SWND_G16P3       "PLANO GRÁFICO(16COLORES, PÁGINA3)"
+    IDS_US_SWND_G256P0      "PLANO GRÁFICO(256COLORES, PÁGINA0)"
+    IDS_US_SWND_G256P1      "PLANO GRÁFICO(256COLORES, PÁGINA1)"
+    IDS_US_SWND_G64K        "PLANO GRÁFICO(65536COLORES)"
     IDS_US_SWND_PCG         "PCG"
-    IDS_US_SWND_BG0         "BG PLANE(PAGE0)"
-    IDS_US_SWND_BG1         "BG PLANE(PAGE1)"
-    IDS_US_SWND_SPRITE      "SPRITE PLANE"
-    IDS_US_SWND_PALET       "PALETTE"
+    IDS_US_SWND_BG0         "PLANO BG(PÁGINA0)"
+    IDS_US_SWND_BG1         "PLANO BG(PÁGINA1)"
+    IDS_US_SWND_SPRITE      "PLANO DE SPRITES"
+    IDS_US_SWND_PALET       "PALETA"
 END
 
 STRINGTABLE
 BEGIN
-    IDS_US_SWND_REND_TEXT   "TEXT BUFFER"
-    IDS_US_SWND_REND_GP0    "GRAPHIC BUFFER (0)"
-    IDS_US_SWND_REND_GP1    "GRAPHIC BUFFER (1)"
-    IDS_US_SWND_REND_GP2    "GRAPHIC BUFFER (2)"
-    IDS_US_SWND_REND_GP3    "GRAPHIC BUFFER (3)"
-    IDS_US_SWND_REND_PCG    "PCG BUFFER"
-    IDS_US_SWND_REND_BGSPRITE "BG/SPRITE BUFFER"
-    IDS_US_SWND_REND_PALET  "PALETTE BUFFER"
-    IDS_US_SWND_REND_MIX    "MIX BUFFER"
+    IDS_US_SWND_REND_TEXT   "BUFFER DE TEXTO"
+    IDS_US_SWND_REND_GP0    "BUFFER GRÁFICO (0)"
+    IDS_US_SWND_REND_GP1    "BUFFER GRÁFICO (1)"
+    IDS_US_SWND_REND_GP2    "BUFFER GRÁFICO (2)"
+    IDS_US_SWND_REND_GP3    "BUFFER GRÁFICO (3)"
+    IDS_US_SWND_REND_PCG    "BUFFER PCG"
+    IDS_US_SWND_REND_BGSPRITE "BUFFER BG/SPRITE"
+    IDS_US_SWND_REND_PALET  "BUFFER DE PALETA"
+    IDS_US_SWND_REND_MIX    "BUFFER MEZCLADO"
 END
 
 STRINGTABLE
 BEGIN
-    IDS_US_SWND_COMPONENT   "COMPONENT"
-    IDS_US_SWND_OSINFO      "OS INFO"
-    IDS_US_SWND_SOUND       "SOUND"
-    IDS_US_SWND_INPUT       "INPUT"
-    IDS_US_SWND_PORT        "PORT"
+    IDS_US_SWND_COMPONENT   "COMPONENTE"
+    IDS_US_SWND_OSINFO      "INFO DE OS"
+    IDS_US_SWND_SOUND       "SONIDO"
+    IDS_US_SWND_INPUT       "ENTRADA"
+    IDS_US_SWND_PORT        "PUERTO"
     IDS_US_SWND_BITMAP      "BITMAP"
-    IDS_US_SWND_MIDIDRV     "MIDI DRIVER"
+    IDS_US_SWND_MIDIDRV     "DRIVER MIDI"
+    IDS_US_SWND_SOFTKEY     "TECLADO SOFTWARE"
 END
 
 STRINGTABLE
 BEGIN
-    IDS_US_SWND_SOFTKEY     "SOFTWARE KEYBOARD"
+    IDC_US_BASIC_CLOCKG     "Configuración de velocidad"
+    IDC_US_BASIC_MEMORYG    "Configuración de memoria"
+    IDC_US_BASIC_MEMSWB     "Permitir a XM6 actualizar el conmutador de memoria según la cantidad de RAM principal. Configuración predeterminada es ON."
+    IDC_US_BASIC_MEMORYC    "Cantidad de RAM principal. Configuración predeterminada es 2MB."
+    IDC_US_BASIC_MEMORYL    "Cantidad de RAM principal. Configuración predeterminada es 2MB."
+    IDC_US_BASIC_CLOCKL     "Seleccionar reloj del sistema. Configuración predeterminada es 10MHz."
+    IDC_US_BASIC_CLOCKC     "Seleccionar reloj del sistema. Configuración predeterminada es 10MHz."
+    IDC_US_BASIC_CPUFULLB   "Sin operación de espera con MPU. Configuración predeterminada es OFF."
+    IDC_US_BASIC_ALLFULLB   "Sin operación de espera con la máquina virtual. Configuración predeterminada es OFF."
+    IDS_US_BASIC_CLOCK0     "10MHz  (Estándar)"
+    IDS_US_BASIC_CLOCK1     "12MHz  (X68000ACE oc)"
 END
 
 STRINGTABLE
 BEGIN
-    IDC_US_BASIC_CLOCKG     "Speed Setup"
-    IDC_US_BASIC_MEMORYG    "Memory Setup"
-    IDC_US_BASIC_MEMSWB     "Allow XM6 to update memory switch for amount of main RAM. Default setting is ON."
-    IDC_US_BASIC_MEMORYC    "Amount of main RAM. Default setting is 2MB."
-    IDC_US_BASIC_MEMORYL    "Amount of main RAM. Default setting is 2MB."
-    IDC_US_BASIC_CLOCKL     "Select system clock. Default setting is 10MHz."
-    IDC_US_BASIC_CLOCKC     "Select system clock. Default setting is 10MHz."
-    IDC_US_BASIC_CPUFULLB   "No wait operation with MPU. Default setting is OFF."
-    IDC_US_BASIC_ALLFULLB   "No wait operation with the virtual machine. Default settting is OFF."
-    IDS_US_BASIC_CLOCK0     "10MHz  (Standard)"
-    IDS_US_BASIC_CLOCK1     "12MHz  (X68000ACE w/oc)"
-END
-
-STRINGTABLE
-BEGIN
-    IDS_US_BASIC_CLOCK2     "15MHz  (X68000PRO w/oc)"
-    IDS_US_BASIC_CLOCK3     "16MHz  (X68000SUPER w/oc)"
-    IDS_US_BASIC_CLOCK4     "17.4MHz(X68000EXPERT w/oc)"
-    IDS_US_BASIC_CLOCK5     "22MHz  (Lucky!!)"
-    IDS_US_BASIC_MEMORY0    "2MB  (Standard)"
+    IDS_US_BASIC_CLOCK2     "15MHz  (X68000PRO oc)"
+    IDS_US_BASIC_CLOCK3     "16MHz  (X68000SUPER oc)"
+    IDS_US_BASIC_CLOCK4     "17.4MHz(X68000EXPERT oc)"
+    IDS_US_BASIC_CLOCK5     "22MHz  (¡Suerte!!)"
+    IDS_US_BASIC_MEMORY0    "2MB  (Estándar)"
     IDS_US_BASIC_MEMORY1    "4MB  (X68030)"
     IDS_US_BASIC_MEMORY2    "6MB"
     IDS_US_BASIC_MEMORY3    "8MB"
     IDS_US_BASIC_MEMORY4    "10MB"
-    IDS_US_BASIC_MEMORY5    "12MB (Maximum)"
+    IDS_US_BASIC_MEMORY5    "12MB (Máximo)"
 END
 
 STRINGTABLE
 BEGIN
-    IDC_US_SOUND_DEVICEG    "Device Setup"
-    IDC_US_SOUND_DEVICEC    "Select output device."
-    IDC_US_SOUND_RATEG      "Sound Rate Setup"
-    IDC_US_SOUND_RATE0      "Generates sounds at 44.1kHz. Default setting is 62.5kHz."
-    IDC_US_SOUND_RATE1      "Generates sounds at 48kHz. Default setting is 62.5kHz."
-    IDC_US_SOUND_RATE2      "Generates sounds at 88.2kHz. Default setting is 62.5kHz."
-    IDC_US_SOUND_RATE3      "Generates sounds at 96kHz. Default setting is 62.5kHz."
-    IDC_US_SOUND_RATE4      "Generates sounds at 62.5kHz. Defaut setting is 62.5kHz."
+    IDC_US_SOUND_DEVICEG    "Configuración de dispositivo"
+    IDC_US_SOUND_DEVICEC    "Seleccionar dispositivo de salida."
+    IDC_US_SOUND_RATEG      "Configuración de tasa de sonido"
+    IDC_US_SOUND_RATE0      "Genera sonidos a 44.1kHz. Configuración predeterminada es 62.5kHz."
+    IDC_US_SOUND_RATE1      "Genera sonidos a 48kHz. Configuración predeterminada es 62.5kHz."
+    IDC_US_SOUND_RATE2      "Genera sonidos a 88.2kHz. Configuración predeterminada es 62.5kHz."
+    IDC_US_SOUND_RATE3      "Genera sonidos a 96kHz. Configuración predeterminada es 62.5kHz."
+    IDC_US_SOUND_RATE4      "Genera sonidos a 62.5kHz. Configuración predeterminada es 62.5kHz."
 END
 
 STRINGTABLE
 BEGIN
-    IDC_US_SOUND_BUFFERG    "Sound Buffer Setup"
-    IDC_US_SOUND_BUF1L      "Specify the size of buffer. Default setting is 100ms."
-    IDC_US_SOUND_BUF1E      "Specify the size of buffer. Default setting is 100ms."
-    IDC_US_SOUND_BUF1S      "Specify the size of buffer. Default setting is 100ms."
-    IDC_US_SOUND_BUF1MS     "Specify the size of buffer. Default setting is 100ms."
-    IDC_US_SOUND_BUF2L      "Adjust interval time for polling buffer. Default setting is 5ms."
-    IDC_US_SOUND_BUF2E      "Adjust interval time for polling buffer. Default setting is 5ms."
-    IDC_US_SOUND_BUF2S      "Adjust interval time for polling buffer. Default setting is 5ms."
-    IDC_US_SOUND_BUF2MS     "Adjust interval time for polling buffer. Default setting is 5ms."
-    IDC_US_SOUND_OPTIONG    "Other Options"
-    IDC_US_SOUND_INTERP     "Enable Interpolution with converting ADPCM to WAV. Default setting is ON."
+    IDC_US_SOUND_BUFFERG    "Configuración de buffer de sonido"
+    IDC_US_SOUND_BUF1L      "Especificar tamaño del buffer. Configuración predeterminada es 100ms."
+    IDC_US_SOUND_BUF1E      "Especificar tamaño del buffer. Configuración predeterminada es 100ms."
+    IDC_US_SOUND_BUF1S      "Especificar tamaño del buffer. Configuración predeterminada es 100ms."
+    IDC_US_SOUND_BUF1MS     "Especificar tamaño del buffer. Configuración predeterminada es 100ms."
+    IDC_US_SOUND_BUF2L      "Ajustar intervalo de tiempo para pooling del buffer. Configuración predeterminada es 5ms."
+    IDC_US_SOUND_BUF2E      "Ajustar intervalo de tiempo para pooling del buffer. Configuración predeterminada es 5ms."
+    IDC_US_SOUND_BUF2S      "Ajustar intervalo de tiempo para pooling del buffer. Configuración predeterminada es 5ms."
+    IDC_US_SOUND_BUF2MS     "Ajustar intervalo de tiempo para pooling del buffer. Configuración predeterminada es 5ms."
+    IDC_US_SOUND_OPTIONG    "Otras opciones"
+    IDC_US_SOUND_INTERP     "Habilitar interpolación al convertir ADPCM a WAV. Configuración predeterminada es ON."
 END
 
 STRINGTABLE
 BEGIN
-    IDC_US_VOL_OUTG         "Output Setup"
-    IDC_US_VOL_VOLL         "Main Fader level."
-    IDC_US_VOL_VOLS         "Main Fader level."
-    IDC_US_VOL_VOLN         "Main Fader level."
+    IDC_US_VOL_OUTG         "Configuración de salida"
+    IDC_US_VOL_VOLL         "Nivel del mezclador principal."
+    IDC_US_VOL_VOLS         "Nivel del mezclador principal."
+    IDC_US_VOL_VOLN         "Nivel del mezclador principal."
+    IDC_US_VOL_MASTERL      "Nivel del fader de onda. Configuración predeterminada es 100."
+    IDC_US_VOL_MASTERS      "Nivel del fader de onda. Configuración predeterminada es 100."
+    IDC_US_VOL_MASTERN      "Nivel del fader de onda. Configuración predeterminada es 100."
+    IDC_US_VOL_SEPL         "Nivel del fader MIDI."
+    IDC_US_VOL_SEPS         "Nivel del fader MIDI."
+    IDC_US_VOL_SEPN         "Nivel del fader MIDI."
+    IDC_US_VOL_GENG         "Configuración de generación"
+    IDC_US_VOL_FML          "Nivel FM. Configuración predeterminada es 54."
+    IDC_US_VOL_FMC          "Habilitar sonido FM. Configuración predeterminada es ON."
+    IDC_US_VOL_FMS          "Nivel FM. Configuración predeterminada es 54."
+    IDC_US_VOL_FMN          "Nivel FM. Configuración predeterminada es 54."
+    IDC_US_VOL_ADPCML       "Nivel ADPCM. Configuración predeterminada es 52."
+    IDC_US_VOL_ADPCMC       "Habilitar sonido ADPCM. Configuración predeterminada es ON."
+    IDC_US_VOL_ADPCMS       "Nivel ADPCM. Configuración predeterminada es 52."
+    IDC_US_VOL_ADPCMN       "Nivel ADPCM. Configuración predeterminada es 52."
 END
 
 STRINGTABLE
 BEGIN
-    IDC_US_VOL_MASTERL      "Wave Fader level. Default setting is 100."
-    IDC_US_VOL_MASTERS      "Wave Fader level. Default setting is 100."
-    IDC_US_VOL_MASTERN      "Wave Fader level. Default setting is 100."
-    IDC_US_VOL_SEPL         "MIDI Fader level."
-    IDC_US_VOL_SEPS         "MIDI Fader level."
-    IDC_US_VOL_SEPN         "MIDI Fader level."
-    IDC_US_VOL_GENG         "Genaration Setup"
-    IDC_US_VOL_FML          "FM level. Default setting is 54."
-    IDC_US_VOL_FMC          "Enable FM sound. Default setting is ON."
-    IDC_US_VOL_FMS          "FM level. Default setting is 54."
-    IDC_US_VOL_FMN          "FM level. Default setting is 54."
-    IDC_US_VOL_ADPCML       "ADPCM level. Default setting is 52."
-    IDC_US_VOL_ADPCMC       "Enable ADPCM sound. Default setting is ON."
-    IDC_US_VOL_ADPCMS       "ADPCM level. Default setting is 52."
-    IDC_US_VOL_ADPCMN       "ADPCM level. Default setting is 52."
+    IDC_US_MISC_OPTG        "Otras configuraciones"
+    IDC_US_MISC_FDSPEED     "Habilitar emulación rápida de disquete. Configuración predeterminada es OFF."
+    IDC_US_MISC_FDLED       "Mostrar estado del motor como LED de disquete. Configuración predeterminada es OFF."
+    IDC_US_MISC_POPUP       "Crear todas las ventanas con estilo WS_POPUP. Configuración predeterminada es OFF."
+    IDC_US_MISC_AUTOMOUSE   "Activar modo ratón al cambiar modo de pantalla. Configuración predeterminada es OFF."
+    IDC_US_MISC_POWEROFF    "Iniciar XM6 sin activar el interruptor POWER. Configuración predeterminada es OFF."
 END
 
 STRINGTABLE
 BEGIN
-    IDC_US_MISC_OPTG        "Other Setup"
-    IDC_US_MISC_FDSPEED     "Enable fast emulation of floppy disk. Default setting is OFF."
-    IDC_US_MISC_FDLED       "Display the state of motor as floppy LED. Default setting is OFF."
-    IDC_US_MISC_POPUP       "Create all windows with WS_POPUP style. Default setting is OFF."
-    IDC_US_MISC_AUTOMOUSE   "Set the mouse mode on changing the screen mode. Defaut setting is OFF."
-    IDC_US_MISC_POWEROFF    "Start XM6 without turning on POWER SW. Default setting is OFF."
+    IDC_US_KBD_MAPG         "Configuración de mapeo de teclado"
+    IDC_US_KBD_MAPL         "Ver el mapeo."
+    IDC_US_KBD_EDITB        "Mostrar el mapeo."
+    IDC_US_KBD_DEFB         "Restaurar mapeo predeterminado."
+    IDC_US_KBD_NOCONB       "No conectar el teclado."
 END
 
 STRINGTABLE
 BEGIN
-    IDC_US_KBD_MAPG         "Key Mapping Setup"
-    IDC_US_KBD_MAPL         "View the mapping."
-    IDC_US_KBD_EDITB        "Display the mapping."
-    IDC_US_KBD_DEFB         "Restore to default mapping."
-    IDC_US_KBD_NOCONB       "Don't connect the keyboard."
+    IDC_US_MOUSE_SPEEDG     "Configuración de velocidad del ratón"
+    IDC_US_MOUSE_SLIDER     "Seleccionar proporción de velocidad del ratón para Windows."
+    IDC_US_MOUSE_PARS       "Seleccionar proporción de velocidad del ratón para Windows."
+    IDC_US_MOUSE_PORTG      "Configuración de puerto del ratón"
+    IDC_US_MOUSE_FPORT      "Conectar el ratón al panel frontal."
+    IDC_US_MOUSE_KPORT      "Conectar el ratón al teclado."
+    IDC_US_MOUSE_NPORT      "No conectar el ratón."
+    IDC_US_MOUSE_OPTG       "Otras opciones"
+    IDC_US_MOUSE_SWAPB      "Intercambiar botón izquierdo y derecho."
+    IDC_US_MOUSE_MIDB       "Deshabilitar el botón central."
+    IDC_US_MOUSE_TBG        "Cambiar modo de ratón a trackball."
 END
 
 STRINGTABLE
 BEGIN
-    IDC_US_MOUSE_SPEEDG     "Mouse Speed Setup"
-    IDC_US_MOUSE_SLIDER     "Select mouse speed ratio for Windows."
-    IDC_US_MOUSE_PARS       "Select mouse speed ratio for Windows."
-    IDC_US_MOUSE_PORTG      "Mouse Port Setup"
-    IDC_US_MOUSE_FPORT      "Connect the mouse to front panel."
-    IDC_US_MOUSE_KPORT      "Connect the mouse to keyboard."
-    IDC_US_MOUSE_NPORT      "Don't connect the mouse."
+    IDC_US_SASI_GROUP       "Configuración de disco duro SASI"
+    IDC_US_SASI_DRIVEL      "Seleccionar número de unidades. Se admiten unidades de 10/20/40MB."
+    IDC_US_SASI_DRIVEE      "Seleccionar número de unidades. Se admiten unidades de 10/20/40MB."
+    IDC_US_SASI_DRIVES      "Seleccionar número de unidades. Se admiten unidades de 10/20/40MB."
+    IDC_US_SASI_MEMSWB      "Permitir a XM6 actualizar el conmutador de memoria con el número de unidades."
+    IDC_US_SASI_LIST        "Para cambiar el nombre del archivo de imagen, haga clic en el área 'No.'."
 END
 
 STRINGTABLE
 BEGIN
-    IDC_US_MOUSE_OPTG       "Other Options"
-    IDC_US_MOUSE_SWAPB      "Swap the left and the right button."
-    IDC_US_MOUSE_MIDB       "Disable the middle button."
-    IDC_US_MOUSE_TBG        "Change mode from mouse to trackball."
+    IDC_US_SXSI_GROUP       "Configuración de disco SCSI (vía interfaz SASI)"
+    IDC_US_SXSI_DRIVEL      "Seleccionar número de unidades (incluye una unidad MO)."
+    IDC_US_SXSI_DRIVEE      "Seleccionar número de unidades (incluye una unidad MO)."
+    IDC_US_SXSI_MOCHECK     "Asignar ID SCSI de unidad MO primero."
+    IDC_US_SXSI_DRIVES      "Seleccionar número de unidades (incluye una unidad MO)."
+    IDC_US_SXSI_LIST        "Para cambiar el nombre del archivo de imagen, haga clic en el área 'ID'."
 END
 
 STRINGTABLE
 BEGIN
-    IDC_US_SASI_GROUP       "SASI Fixed Disk Setup"
-    IDC_US_SASI_DRIVEL      "Select the number of drives. 10/20/40MB drives are supported."
-    IDC_US_SASI_DRIVEE      "Select the number of drives. 10/20/40MB drives are supported."
-    IDC_US_SASI_DRIVES      "Select the number of drives. 10/20/40MB drives are supported."
-    IDC_US_SASI_MEMSWB      "Allow XM6 to update memory switch with the number of drives."
-    IDC_US_SASI_LIST        "To change the name of image file, please click 'No.' area."
+    IDC_US_PORT_COMG        "Configuración RS-232C"
+    IDC_US_PORT_COML        "Seleccionar el puerto COM asignado a RS-232C."
+    IDC_US_PORT_COMC        "Seleccionar el puerto COM asignado a RS-232C."
+    IDC_US_PORT_RECVL       "Nombre del archivo para registrar datos del puerto seleccionado."
+    IDC_US_PORT_RECVE       "Nombre del archivo para registrar datos del puerto seleccionado."
+    IDC_US_PORT_BAUDRATE    "Forzar la velocidad de RS-232C a 38400bps para RS-MIDI."
+    IDC_US_PORT_LPTG        "Configuración de impresora"
+    IDC_US_PORT_LPTL        "Seleccionar el puerto LPT asignado a la impresora."
+    IDC_US_PORT_LPTC        "Seleccionar el puerto LPT asignado a la impresora."
+    IDC_US_PORT_SENDL       "Nombre del archivo para registrar datos hacia la impresora."
+    IDC_US_PORT_SENDE       "Nombre del archivo para registrar datos hacia la impresora."
 END
 
 STRINGTABLE
 BEGIN
-    IDC_US_SXSI_GROUP       "SCSI Disk Setup (via SASI Interface)"
-    IDC_US_SXSI_DRIVEL      "Select the number of drives (includes one MO drive)."
-    IDC_US_SXSI_DRIVEE      "Select the number of drives (includes one MO drive)."
-    IDC_US_SXSI_MOCHECK     "Assign SCSI ID of MO drive at first."
+    IDC_US_MIDI_BIDG        "Configuración MIDI (Opc.)"
+    IDC_US_MIDI_BID0        "No hay interfaz MIDI instalada. Esta es la configuración predeterminada."
+    IDC_US_MIDI_BID1        "Interfaz MIDI (ID1) instalada. Configuración predeterminada es NINGUNA."
+    IDC_US_MIDI_BID2        "Interfaz MIDI (ID2) instalada. Configuración predeterminada es NINGUNA."
+    IDC_US_MIDI_ILEVELG     "Configuración de nivel de interrupción"
+    IDC_US_MIDI_ILEVEL4     "Usar INT4 para interfaz MIDI. Configuración predeterminada es INT4."
+    IDC_US_MIDI_ILEVEL2     "Usar INT2 para interfaz MIDI. Configuración predeterminada es INT4."
+    IDC_US_MIDI_RSTG        "Configuración de comando de reinicio"
+    IDC_US_MIDI_RSTGM       "Usar comando 'GM' para reiniciar dispositivo MIDI. Configuración predeterminada es GM."
+    IDC_US_MIDI_RSTGS       "Usar comando 'GS' para reiniciar dispositivo MIDI. Configuración predeterminada es GM."
+    IDC_US_MIDI_RSTXG       "Usar comando 'XG' para reiniciar dispositivo MIDI. Configuración predeterminada es GM."
+    IDC_US_MIDI_RSTLA       "Usar comando 'LA' para reiniciar dispositivo MIDI. Configuración predeterminada es GM."
+    IDC_US_MIDI_DEVG        "Configuración de dispositivo"
+    IDC_US_MIDI_INS         "Seleccionar dispositivo para entrada de datos MIDI."
+    IDC_US_MIDI_INC         "Seleccionar dispositivo para entrada de datos MIDI."
+    IDC_US_MIDI_DLYIL       "Especificar tiempo de retardo para recibir datos MIDI. Configuración predeterminada es 0ms."
+    IDC_US_MIDI_DLYIE       "Especificar tiempo de retardo para recibir datos MIDI. Configuración predeterminada es 0ms."
+    IDC_US_MIDI_DLYIS       "Especificar tiempo de retardo para recibir datos MIDI. Configuración predeterminada es 0ms."
+    IDC_US_MIDI_DLYIG       "Especificar tiempo de retardo para recibir datos MIDI. Configuración predeterminada es 0ms."
+    IDC_US_MIDI_OUTS        "Seleccionar dispositivo para salida de datos MIDI."
+    IDC_US_MIDI_OUTC        "Seleccionar dispositivo para salida de datos MIDI."
+    IDC_US_MIDI_DLYOL       "Especificar tiempo de retardo para enviar datos MIDI. Configuración predeterminada es 84ms."
+    IDC_US_MIDI_DLYOE       "Especificar tiempo de retardo para enviar datos MIDI. Configuración predeterminada es 84ms."
+    IDC_US_MIDI_DLYOS       "Especificar tiempo de retardo para enviar datos MIDI. Configuración predeterminada es 84ms."
+    IDC_US_MIDI_DLYOG       "Especificar tiempo de retardo para enviar datos MIDI. Configuración predeterminada es 84ms."
 END
 
 STRINGTABLE
 BEGIN
-    IDC_US_SXSI_DRIVES      "Select the number of drives (includes one MO drive)."
-    IDC_US_SXSI_LIST        "To change the name of image file, please click 'ID' area."
+    IDC_US_ALTER_ALTERG     "Configuración de modificaciones"
+    IDC_US_ALTER_SRAM       "Reemplazar chip SRAM 62C64 por 62C256. Configuración predeterminada es OFF."
+    IDC_US_ALTER_SCC        "Cambiar reloj SCC de 5.0MHz a 7.5MHz. Configuración predeterminada es OFF."
+    IDC_US_ALTER_POWERLED   "Reemplazar LED verde POWER por LED azul POWER. Configuración predeterminada es OFF."
+    IDC_US_ALTER_2DD        "Reemplazar unidad modo único 2HD por unidad modo dual 2DD/2HD. Configuración predeterminada es OFF."
+    IDC_US_ALTER_SASIG      "Configuración de bus SASI"
+    IDC_US_ALTER_PARITY     "Agregar circuito 74F280 para generar bit de paridad en bus SASI. Configuración predeterminada es ON."
 END
 
 STRINGTABLE
 BEGIN
-    IDC_US_PORT_COMG        "RS-232C Setup"
-    IDC_US_PORT_COML        "Select the COM port assigned to RS-232C."
-    IDC_US_PORT_COMC        "Select the COM port assigned to RS-232C."
-    IDC_US_PORT_RECVL       "The name of the file for logging data from selected port."
-    IDC_US_PORT_RECVE       "The name of the file for logging data from selected port."
-    IDC_US_PORT_BAUDRATE    "Force the speed of RS-232C to 38400bps for RS-MIDI."
-    IDC_US_PORT_LPTG        "Printer Setup"
-    IDC_US_PORT_LPTL        "Select the LPT port assigned to printer."
-    IDC_US_PORT_LPTC        "Select the LPT port assigned to printer."
-    IDC_US_PORT_SENDL       "The name of the file for logging data to printer."
-    IDC_US_PORT_SENDE       "The name of the file for logging data to printer."
+    IDC_US_TKEY_PORTG       "Configuración de puerto serie"
+    IDC_US_TKEY_COML        "Seleccionar puerto COM asignado a TrueKey."
+    IDC_US_TKEY_COMC        "Seleccionar puerto COM asignado a TrueKey."
+    IDC_US_TKEY_RTS         "Invertir línea RTS para señal READY."
+    IDC_US_TKEY_ASSIGNG     "Configuración de destino"
+    IDC_US_TKEY_VMC         "TrueKey se envía a VM cuando está ejecutando."
+    IDC_US_TKEY_WINC        "TrueKey se envía a Windows cuando se detiene."
+    IDC_US_TKEY_MAPG        "Ver mapeo de teclas. Haga clic en No. para cambiar tecla."
+    IDC_US_TKEY_LIST        "Ver mapeo de teclas. Haga clic en No. para cambiar tecla."
 END
 
 STRINGTABLE
 BEGIN
-    IDC_US_MIDI_BIDG        "MIDI (Opt.) Setup"
-    IDC_US_MIDI_BID0        "No MIDI I/F is installed. This is default setting."
-    IDC_US_MIDI_BID1        "MIDI I/F (ID1) is installed. Default setting is NONE."
-    IDC_US_MIDI_BID2        "MIDI I/F (ID2) is installed. Default setting is NONE."
-    IDC_US_MIDI_ILEVELG     "Interrupt Level Setup"
-    IDC_US_MIDI_ILEVEL4     "Use INT4 for MIDI I/F. Default settings is INT4."
-    IDC_US_MIDI_ILEVEL2     "Use INT2 for MIDI I/F. Default settings is INT4."
-    IDC_US_MIDI_RSTG        "Reset Command Setup"
-    IDC_US_MIDI_RSTGM       "Use 'GM command' to reset MIDI device. Default setting is GM."
-    IDC_US_MIDI_RSTGS       "Use 'GS command' to reset MIDI device. Default setting is GM."
-    IDC_US_MIDI_RSTXG       "Use 'XG command' to reset MIDI device. Default setting is GM."
-    IDC_US_MIDI_RSTLA       "Use 'LA command' to reset MIDI device. Default setting is GM."
-    IDC_US_MIDI_DEVG        "Device Setup"
-    IDC_US_MIDI_INS         "Select the device to input MIDI data."
-    IDC_US_MIDI_INC         "Select the device to input MIDI data."
-    IDC_US_MIDI_DLYIL       "Specify delayed time for receiveing MIDI data. Default setting is 0ms."
-END
-
-STRINGTABLE
-BEGIN
-    IDC_US_MIDI_DLYIE       "Specify delayed time for receiveing MIDI data. Default setting is 0ms."
-    IDC_US_MIDI_DLYIS       "Specify delayed time for receiveing MIDI data. Default setting is 0ms."
-    IDC_US_MIDI_DLYIG       "Specify delayed time for receiveing MIDI data. Default setting is 0ms."
-    IDC_US_MIDI_OUTS        "Select the device to output MIDI data."
-    IDC_US_MIDI_OUTC        "Select the device to output MIDI data."
-    IDC_US_MIDI_DLYOL       "Specify delayed time for sending MIDI data. Default setting is 84ms."
-    IDC_US_MIDI_DLYOE       "Specify delayed time for sending MIDI data. Default setting is 84ms."
-    IDC_US_MIDI_DLYOS       "Specify delayed time for sending MIDI data. Default setting is 84ms."
-    IDC_US_MIDI_DLYOG       "Specify delayed time for sending MIDI data. Default setting is 84ms."
-END
-
-STRINGTABLE
-BEGIN
-    IDC_US_ALTER_ALTERG     "Alteration Setup"
-    IDC_US_ALTER_SRAM       "Replace SRAM 62C64 chip to 62C256. Default setting is OFF."
-    IDC_US_ALTER_SCC        "Change SCC clock to 7.5MHz from 5.0MHz. Default setting is OFF."
-    IDC_US_ALTER_POWERLED   "Replace green POWER LED to blue POWER LED. Default setting is OFF."
-    IDC_US_ALTER_2DD        "Replace 2HD single mode drive to 2DD/2HD dual mode drive. Default setting is OFF."
-    IDC_US_ALTER_SASIG      "SASI Bus Setup"
-    IDC_US_ALTER_PARITY     "Add 74F280 circuit to generate a parity bit on SASI bus. Default setting is ON."
-END
-
-STRINGTABLE
-BEGIN
-    IDC_US_TKEY_PORTG       "Serial Port Setup"
-    IDC_US_TKEY_COML        "Select the COM Port assigned to TrueKey."
-    IDC_US_TKEY_COMC        "Select the COM Port assigned to TrueKey."
-    IDC_US_TKEY_RTS         "Invert RTS line for READY signal."
-    IDC_US_TKEY_ASSIGNG     "Destination Setup"
-    IDC_US_TKEY_VMC         "TrueKey is sent to VM when running."
-    IDC_US_TKEY_WINC        "TrueKey is sent to Windows when stopping."
-    IDC_US_TKEY_MAPG        "View key mapping. Please click No. to change key."
-    IDC_US_TKEY_LIST        "View key mapping. Please click No, to change key."
-END
-
-STRINGTABLE
-BEGIN
-    IDC_US_JOY_PORTG        "Port Setup"
-    IDC_US_JOY_PORTL1       "Select the device to be connected with port1."
-    IDC_US_JOY_PORTC1       "Select the device to be connected with port1."
-    IDC_US_JOY_PORTD1       "Show additional information of this device."
-    IDC_US_JOY_PORTL2       "Select the device to be connected with port2."
-    IDC_US_JOY_PORTC2       "Select the device to be connected with port2."
-    IDC_US_JOY_PORTD2       "Show additional information of this device."
-    IDC_US_JOY_DEVG         "Device Setup"
-END
-
-STRINGTABLE
-BEGIN
-    IDC_US_JOY_DEVLA        "Select the contoller to be connected with port1."
-    IDC_US_JOY_DEVCA        "Select the contoller to be connected with port1."
-    IDC_US_JOY_DEVAA        "Show additional information of selected contoller."
-    IDC_US_JOY_DEVLB        "Select the controller to be connected with port2."
-    IDC_US_JOY_DEVCB        "Select the controllerr to be connected with port2."
-    IDC_US_JOY_DEVAB        "Show additional information of selected contoller."
+    IDC_US_JOY_PORTG        "Configuración de puerto"
+    IDC_US_JOY_PORTL1       "Seleccionar dispositivo para conectar al puerto1."
+    IDC_US_JOY_PORTC1       "Seleccionar dispositivo para conectar al puerto1."
+    IDC_US_JOY_PORTD1       "Mostrar información adicional de este dispositivo."
+    IDC_US_JOY_PORTL2       "Seleccionar dispositivo para conectar al puerto2."
+    IDC_US_JOY_PORTC2       "Seleccionar dispositivo para conectar al puerto2."
+    IDC_US_JOY_PORTD2       "Mostrar información adicional de este dispositivo."
+    IDC_US_JOY_DEVG         "Configuración de dispositivo"
+    IDC_US_JOY_DEVLA        "Seleccionar controlador para conectar al puerto1."
+    IDC_US_JOY_DEVCA        "Seleccionar controlador para conectar al puerto1."
+    IDC_US_JOY_DEVAA        "Mostrar información adicional del controlador seleccionado."
+    IDC_US_JOY_DEVLB        "Seleccionar controlador para conectar al puerto2."
+    IDC_US_JOY_DEVCB        "Seleccionar controlador para conectar al puerto2."
+    IDC_US_JOY_DEVAB        "Mostrar información adicional del controlador seleccionado."
     IDC_US_JOY_DEVLC        " "
     IDC_US_JOY_DEVCC        " "
     IDC_US_JOY_DEVAC        " "
@@ -3860,160 +3827,147 @@ END
 
 STRINGTABLE
 BEGIN
-    IDC_US_SCSI_IFG         "SCSI Interface Setup"
-    IDC_US_SCSI_NONEB       "No SCSI I/F is installed. This is default setting."
-    IDC_US_SCSI_INTB        "Use internal SCSI I/F. SCSIINROM.DAT file is required. Default setting is NONE."
-    IDC_US_SCSI_EXTB        "Use external SCSI I/F. SCSIEXROM.DAT file is required. Default setting is NONE."
+    IDC_US_SCSI_IFG         "Configuración de interfaz SCSI"
+    IDC_US_SCSI_NONEB       "No hay interfaz SCSI instalada. Esta es la configuración predeterminada."
+    IDC_US_SCSI_INTB        "Usar interfaz SCSI interna. Se requiere archivo SCSIINROM.DAT. Configuración predeterminada es NINGUNA."
+    IDC_US_SCSI_EXTB        "Usar interfaz SCSI externa. Se requiere archivo SCSIEXROM.DAT. Configuración predeterminada es NINGUNA."
+    IDC_US_SCSI_GROUP       "Configuración de disco SCSI (vía interfaz SCSI)"
+    IDC_US_SCSI_DRIVEL      "Seleccionar número de unidades (incluye unidades MO y CD-ROM)."
+    IDC_US_SCSI_DRIVEE      "Seleccionar número de unidades (incluye unidades MO y CD-ROM)."
+    IDC_US_SCSI_DRIVES      "Seleccionar número de unidades (incluye unidades MO y CD-ROM)."
+    IDC_US_SCSI_MOCHECK     "Asignar ID SCSI de unidad MO primero."
+    IDC_US_SCSI_LIST        "Para cambiar el nombre del archivo de imagen, haga clic en el área 'ID'."
 END
 
 STRINGTABLE
 BEGIN
-    IDC_US_SCSI_GROUP       "SCSI Disk Setup (via SCSI Interface)"
-    IDC_US_SCSI_DRIVEL      "Select the number of drives (includes MO and CD-ROM drive)."
-    IDC_US_SCSI_DRIVEE      "Select the number of drives (includes MO and CD-ROM drive)."
-    IDC_US_SCSI_DRIVES      "Select the number of drives (includes MO and CD-ROM drive)."
-    IDC_US_SCSI_MOCHECK     "Assign SCSI ID of MO drive at first."
-    IDC_US_SCSI_LIST        "To change the name of image file, please click 'ID' area."
+    IDC_US_RESUME_DISKG     "Configuración de reanudación de disco"
+    IDC_US_RESUME_FDC       "Insertar imagen de disquete anterior al iniciar XM6. Configuración predeterminada es OFF."
+    IDC_US_RESUME_MOC       "Insertar imagen de disco MO anterior al iniciar XM6. Configuración predeterminada es OFF."
+    IDC_US_RESUME_CDC       "Insertar imagen de CD-ROM anterior al iniciar XM6. Configuración predeterminada es OFF."
+    IDC_US_RESUME_STATEG    "Configuración de reanudación de estado"
+    IDC_US_RESUME_XM6C      "Cargar y continuar archivo de estado anterior al iniciar XM6. Configuración predeterminada es OFF."
+    IDC_US_RESUME_MISCG     "Otras configuraciones de reanudación"
+    IDC_US_RESUME_SCREENC   "Restaurar propiedades de ventana anteriores al iniciar XM6. Configuración predeterminada es OFF."
+    IDC_US_RESUME_DIRC      "Restaurar directorio actual al iniciar XM6. Configuración predeterminada es OFF."
 END
 
 STRINGTABLE
 BEGIN
-    IDC_US_RESUME_DISKG     "Disk/Disc Resume Setup"
-    IDC_US_RESUME_FDC       "Insert previous floppy disk image file(s) when XM6 starts. Default setting is OFF."
-    IDC_US_RESUME_MOC       "Insert previous MO disk image file when XM6 starts. Default setting is OFF."
-    IDC_US_RESUME_CDC       "Insert previous CD-ROM disc image file when XM6 starts. Default setting is OFF."
-    IDC_US_RESUME_STATEG    "State Resume Setup"
-    IDC_US_RESUME_XM6C      "Load and continue previous state file when XM6 starts. Default setting is OFF."
-    IDC_US_RESUME_MISCG     "Other Resume Setup"
-    IDC_US_RESUME_SCREENC   "Restore previous window properties when XM6 starts. Default setting is OFF."
-    IDC_US_RESUME_DIRC      "Restore current directory when XM6 starts. Default settting is OFF."
-END
-
-STRINGTABLE
-BEGIN
-    IDS_US_CAPTION_RUN      "XM6 [Running]"
-    IDS_US_CAPTION_STOP     "XM6 [Stopped]"
-    IDS_US_INIT_VMERR       "Initializing the virtual machine is failed."
-    IDS_US_INIT_COMERR      "Initializing DirectX components is failed."
-    IDS_US_INIT_IPLERR      "IPLROM.DAT may not be version 1.00.\nContinue?"
-    IDS_US_INIT_CGERR       "CGROM.DAT may be different with X680x0's.\nContinue?"
-    IDS_US_FDOPEN           "All Supported Image Files|*.XDF;*.HDM;*.2HD;*.DUP;*.IMG;*.DIM;*.D68;*.D88|1.25MB Disk Image Files (XDF;HDM;2HD;DUP;IMG)|*.XDF;*.HDM;*.2HD;*.DUP;*.IMG;*.2DD;*.2HQ|DIM Image Files (DIM)|*.DIM|D68 Image Files (D68;D88)|*.D68;*.D88|720KB Image Files (2DD)|*.2DD|1.44MB Image Files (2HQ)|*.2HQ|All Files (*.*)|*.*||"
-    IDS_US_FDERR            "No file or Invalid file."
+    IDS_US_CAPTION_RUN      "XM6 [Ejecutando]"
+    IDS_US_CAPTION_STOP     "XM6 [Detenido]"
+    IDS_US_INIT_VMERR       "Error al inicializar la máquina virtual."
+    IDS_US_INIT_COMERR      "Error al inicializar componentes de DirectX."
+    IDS_US_INIT_IPLERR      "IPLROM.DAT puede no ser versión 1.00.\n¿Continuar?"
+    IDS_US_INIT_CGERR       "CGROM.DAT puede ser diferente al de X680x0.\n¿Continuar?"
+    IDS_US_FDOPEN           "Todos los archivos de imagen soportados|*.XDF;*.HDM;*.2HD;*.DUP;*.IMG;*.DIM;*.D68;*.D88|Archivos de imagen de 1.25MB (XDF;HDM;2HD;DUP;IMG)|*.XDF;*.HDM;*.2HD;*.DUP;*.IMG;*.2DD;*.2HQ|Archivos de imagen DIM (DIM)|*.DIM|Archivos de imagen D68 (D68;D88)|*.D68;*.D88|Archivos de imagen de 720KB (2DD)|*.2DD|Archivos de imagen de 1.44MB (2HQ)|*.2HQ|Todos los archivos (*.*)|*.*||"
+    IDS_US_FDERR            "Sin archivo o archivo inválido."
 END
 
 STRINGTABLE
 BEGIN
     IDS_US_NEWFD            "Se ha creado nuevo archivo de Floppy."
-    IDS_US_SASIOPEN         "SASI HD Image Files (*.HDF)|*.HDF|All Files (*.*)|*.*||"
-    IDS_US_NEWSASI          "New SASI HD image file has been created."
-    IDS_US_CREATEERR        "Creating image file is failed."
-    IDS_US_OPTIONS          "Options"
-    IDS_US_MOUSE_X68K       "Mouse emulation is enabled."
-    IDS_US_MOUSE_WIN        "Mouse emulation is disabled."
-    IDS_US_WAVOPEN          "WAV Audio Files (*.WAV)|*.WAV|All Files (*.*)|*.*||"
-    IDS_US_WAVSTART         "Dumping is started"
-    IDS_US_WAVSTOP          "Dumping is finished"
+    IDS_US_SASIOPEN         "Archivos de imagen de disco duro SASI (*.HDF)|*.HDF|Todos los archivos (*.*)|*.*||"
+    IDS_US_NEWSASI          "Nuevo archivo de imagen de disco duro SASI creado."
+    IDS_US_CREATEERR        "Error al crear archivo de imagen."
+    IDS_US_OPTIONS          "Opciones"
+    IDS_US_MOUSE_X68K       "Emulación de ratón habilitada."
+    IDS_US_MOUSE_WIN        "Emulación de ratón deshabilitada."
+    IDS_US_WAVOPEN          "Archivos de audio WAV (*.WAV)|*.WAV|Todos los archivos (*.*)|*.*||"
+    IDS_US_WAVSTART         "Volcado iniciado"
+    IDS_US_WAVSTOP          "Volcado terminado"
     IDS_US_KBD_NO           "No."
-    IDS_US_KBD_KEYTOP       "Name"
-    IDS_US_KBD_DIRECTX      "DirectX KeyID"
-    IDS_US_RESET            "Reset System"
-    IDS_US_KBDMAP_GUIDE     "Please click the left mouse button to edit."
-    IDS_US_STDWIN           "Standard Window &Pos"
+    IDS_US_KBD_KEYTOP       "Nombre"
+    IDS_US_KBD_DIRECTX      "ID de tecla DirectX"
+    IDS_US_RESET            "Reiniciar sistema"
+    IDS_US_KBDMAP_GUIDE     "Haga clic con el botón izquierdo del ratón para editar."
+    IDS_US_STDWIN           "Posición de ventana estándar"
 END
 
 STRINGTABLE
 BEGIN
-    IDS_US_SASI_CAPACITY    "Status"
-    IDS_US_SASI_FILENAME    "SASI-HD Image File"
+    IDS_US_SASI_CAPACITY    "Estado"
+    IDS_US_SASI_FILENAME    "Archivo de imagen SASI-HD"
     IDS_US_SASI_DEVERROR    "Err"
-    IDS_US_NEWSCSI          "New SCSI HD image file has been created."
-    IDS_US_NEWMO            "New SCSI MO image file has been created."
-    IDS_US_SCSIOPEN         "SCSI HD Image Files (*.HDS)|*.HDS|All Files (*.*)|*.*||"
-    IDS_US_MOOPEN           "SCSI MO Image Files (*.MOS)|*.MOS|All Files (*.*)|*.*||"
-    IDS_US_CANCEL           "Canceled"
-    IDS_US_MOERR            "No file or Invalid file."
-    IDS_US_SXSI_CAPACITY    "Status"
-    IDS_US_SXSI_FILENAME    "SCSI-HD Image File"
-    IDS_US_SXSI_SASI        "(SASI Fixed Drive)"
-    IDS_US_SXSI_MO          "(SCSI MO Drive)"
-    IDS_US_SXSI_INIT        "(Initiator)"
+    IDS_US_NEWSCSI          "Nuevo archivo de imagen de disco duro SCSI creado."
+    IDS_US_NEWMO            "Nuevo archivo de imagen de disco MO SCSI creado."
+    IDS_US_SCSIOPEN         "Archivos de imagen de disco SCSI (*.HDS)|*.HDS|Todos los archivos (*.*)|*.*||"
+    IDS_US_MOOPEN           "Archivos de imagen de disco MO SCSI (*.MOS)|*.MOS|Todos los archivos (*.*)|*.*||"
+    IDS_US_CANCEL           "Cancelado"
+    IDS_US_MOERR            "Sin archivo o archivo inválido."
+    IDS_US_SXSI_CAPACITY    "Estado"
+    IDS_US_SXSI_FILENAME    "Archivo de imagen SCSI-HD"
+    IDS_US_SXSI_SASI        "(Unidad de disco fijo SASI)"
+    IDS_US_SXSI_MO          "(Unidad MO SCSI)"
+    IDS_US_SXSI_INIT        "(Iniciador)"
     IDS_US_SXSI_NONE        " "
     IDS_US_SXSI_DEVERROR    "Err"
 END
 
 STRINGTABLE
 BEGIN
-    IDS_US_FDI_DISKNAME     "&Name (Until 16 Chars)"
-    IDS_US_FDI_COMMENT      "Comme&nt (Until 59 Chars)"
-    IDS_US_PORT_NOASSIGN    "(None)"
-    IDS_US_MIDI_NOASSIGN    "(None)"
-    IDS_US_MIDI_MAPPER      "MIDI Mapper"
-    IDS_US_SOUND_NOASSIGN   "(None)"
-    IDS_US_BADFDI_WARNING   "This floppy image file doesn't have right size. XM6 uses it as a 1.25MB normal image."
-    IDS_US_TKEY_NOASSIGN    "(None)"
+    IDS_US_FDI_DISKNAME     "&Nombre (Hasta 16 caracteres)"
+    IDS_US_FDI_COMMENT      "Co&mentario (Hasta 59 caracteres)"
+    IDS_US_PORT_NOASSIGN    "(Ninguno)"
+    IDS_US_MIDI_NOASSIGN    "(Ninguno)"
+    IDS_US_MIDI_MAPPER      "Mapeador MIDI"
+    IDS_US_SOUND_NOASSIGN   "(Ninguno)"
+    IDS_US_BADFDI_WARNING   "Este archivo de imagen de disquete no tiene el tamaño correcto. XM6 lo usará como imagen normal de 1.25MB."
+    IDS_US_TKEY_NOASSIGN    "(Ninguno)"
     IDS_US_TKEY_NO          "No."
-    IDS_US_TKEY_KEYTOP      "Name"
-    IDS_US_TKEY_VK          "VK KeyID"
-    IDS_US_INTERRUPT        "INTERRUPT switch is pressed."
-    IDS_US_POWEROFF         "Power has been turned off."
-    IDS_US_JOY_NOASSIGN     "(None)"
-    IDS_US_JOY_ATARI        "ATARI (Standard)"
+    IDS_US_TKEY_KEYTOP      "Nombre"
+    IDS_US_TKEY_VK          "ID de tecla VK"
+    IDS_US_INTERRUPT        "Interruptor INTERRUPT presionado."
+    IDS_US_POWEROFF         "La alimentación ha sido apagada."
+    IDS_US_JOY_NOASSIGN     "(Ninguno)"
+    IDS_US_JOY_ATARI        "ATARI (Estándar)"
     IDS_US_JOY_ATARISS      "ATARI+START/SELECT"
 END
 
 STRINGTABLE
 BEGIN
-    IDS_US_JOY_CYBERA       "Cyberstick (Analog)"
+    IDS_US_JOY_CYBERA       "Cyberstick (Analógico)"
     IDS_US_JOY_CYBERD       "Cyberstick (Digital)"
-    IDS_US_JOY_MD3          "Genesis 3 buttons"
-    IDS_US_JOY_MD6          "Genesis 6 buttons"
+    IDS_US_JOY_MD3          "Genesis 3 botones"
+    IDS_US_JOY_MD6          "Genesis 6 botones"
     IDS_US_JOY_CPSF         "CPS Fighter (SFC)"
     IDS_US_JOY_CPSFMD       "CPS Fighter (MD)"
     IDS_US_JOY_MAGICAL      "Magical Pad"
     IDS_US_JOY_LR           "XPD-1LR"
-    IDS_US_JOY_PACLAND      "Pacland 3 buttons"
-    IDS_US_JOY_BM           "BM68 6 buttons"
-    IDS_US_KBD_DELTITLE     "Delete"
-    IDS_US_KBD_DELMSG       "Delete the assignment No. %02X to %s.\nSure?"
-    IDS_US_JOYSET           "Device%c(%s) Setup"
-    IDS_US_JOYSET_NOASSIGN  "(None)"
-    IDS_US_JOYSET_BTNPORT   "Port%d-Button%d%s"
-    IDS_US_JOYSET_BTNLABEL  "Btn. %d"
-END
-
-STRINGTABLE
-BEGIN
-    IDS_US_JOYDET_ANALOG    "Analog"
-    IDS_US_XM6OPEN          "XM6 State Files (*.XM6)|*.XM6|All Files (*.*)|*.*||"
-    IDS_US_XM6LOADOK        "Restoring data has been completed."
-    IDS_US_XM6LOADERR       "Invalid file! now reset XM6..."
-    IDS_US_XM6SAVEOK        "Saving data has been completed."
-    IDS_US_XM6SAVEERR       "Write error!"
-    IDS_US_EXIT             "E&xit\tAlt+F4"
-    IDS_US_XM6LOADFILE      "Archivo no encontrado"
-    IDS_US_XM6LOADHDR       "Invalid file!"
-    IDS_US_XM6LOADVER       "Unrecognized version\n\n[Now]  version%1X.%02X\n[File] version%1X.%02X"
-    IDS_US_FILEUPDATE       "The file is updated after saving\n\n[F i l e]  %s\n[Recorded] %d/%d/%d\n[Current]  %d/%d/%d"
-    IDS_US_SCSI_CAPACITY    "Status"
-    IDS_US_SCSI_FILENAME    "SCSI-HD Image File"
-    IDS_US_SCSI_MO          "(SCSI MO Drive)"
-    IDS_US_SCSI_CD          "(SCSI CD-ROM Drive)"
-    IDS_US_SCSI_INIT        "(Initiator)"
-END
-
-STRINGTABLE
-BEGIN
+    IDS_US_JOY_PACLAND      "Pacland 3 botones"
+    IDS_US_JOY_BM           "BM68 6 botones"
+    IDS_US_KBD_DELTITLE     "Eliminar"
+    IDS_US_KBD_DELMSG       "Eliminar asignación No. %02X a %s.\n¿Seguro?"
+    IDS_US_JOYSET           "Configuración de dispositivo %c(%s)"
+    IDS_US_JOYSET_NOASSIGN  "(Ninguno)"
+    IDS_US_JOYSET_BTNPORT   "Puerto%d-Botón%d%s"
+    IDS_US_JOYSET_BTNLABEL  "Botón %d"
+    IDS_US_JOYDET_ANALOG    "Analógico"
+    IDS_US_XM6OPEN          "Archivos de estado de XM6 (*.XM6)|*.XM6|Todos los archivos (*.*)|*.*||"
+    IDS_US_XM6LOADOK        "Restauración de datos completada."
+    IDS_US_XM6LOADERR       "¡Archivo inválido! ahora reiniciando XM6..."
+    IDS_US_XM6SAVEOK        "Guardado de datos completado."
+    IDS_US_XM6SAVEERR       "¡Error de escritura!"
+    IDS_US_EXIT             "S&alir\tAlt+F4"
+    IDS_US_XM6LOADHDR       "¡Archivo inválido!"
+    IDS_US_XM6LOADVER       "Versión no reconocida\n\n[Ahora]  versión%1X.%02X\n[Archivo] versión%1X.%02X"
+    IDS_US_FILEUPDATE       "El archivo ha sido actualizado después de guardar\n\n[Archivo]  %s\n[Grabado] %d/%d/%d\n[Actual]  %d/%d/%d"
+    IDS_US_SCSI_CAPACITY    "Estado"
+    IDS_US_SCSI_FILENAME    "Archivo de imagen SCSI-HD"
+    IDS_US_SCSI_MO          "(Unidad MO SCSI)"
+    IDS_US_SCSI_CD          "(Unidad de CD-ROM SCSI)"
+    IDS_US_SCSI_INIT        "(Iniciador)"
     IDS_US_SCSI_NONE        " "
     IDS_US_SCSI_DEVERROR    "Err"
-    IDS_US_CDOPEN           "ISO9660 Image Files (*.ISO)|*.ISO|All Files (*.*)|*.*||"
-    IDS_US_CDERR            "No file or Invalid file."
-    IDS_US_SCHDSIZE         "The SCSI disk over 1017M bytes is not supported under SxSI."
-    IDS_US_MPUSXSI          "MPU no-wait function is enabled. The SxSI function may not work."
-    IDS_US_SAVECLOSE        "%s is updated. Save?"
-    IDS_US_PROCESSOR        "This processor is not supported.\nMMX and CMOV instructions are required."
+    IDS_US_CDOPEN           "Archivos de imagen ISO9660 (*.ISO)|*.ISO|Todos los archivos (*.*)|*.*||"
+    IDS_US_CDERR            "Sin archivo o archivo inválido."
+    IDS_US_SCHDSIZE         "El disco SCSI de más de 1017M bytes no es compatible con SxSI."
+    IDS_US_MPUSXSI          "Función sin espera de MPU habilitada. La función SxSI puede no funcionar."
+    IDS_US_SAVECLOSE        "%s ha sido actualizado. ¿Guardar?"
+    IDS_US_PROCESSOR        "Este procesador no es compatible.\nSe requieren instrucciones MMX y CMOV."
 END
 
-#endif    // Espa�ol (Espa�a, alfabetizaci�n internacional) resources
+#endif    // Espa�ol (Espa�a, alfabetizaci�n internacional) resources
 /////////////////////////////////////////////////////////////////////////////
 
 

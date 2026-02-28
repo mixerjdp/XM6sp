@@ -23,6 +23,8 @@
 #include "mfc_cfg.h"
 #include "mfc_res.h"
 #include "mfc_sch.h"
+#include <shlwapi.h>
+#pragma comment(lib, "shlwapi.lib")
 #include "mfc_inp.h"
 #include "mfc_draw.h"
 
@@ -30,6 +32,7 @@
 #define RENDERCMD_INIT 1
 #define RENDERCMD_RESET 2
 #define RENDERCMD_CLEANUP 3
+#define RENDERCMD_SHADER_APPLY_STATE 4
 
 static void WaitRenderAck(HANDLE hEvent, DWORD dwTimeout = 2000)
 {
@@ -82,6 +85,7 @@ CDrawView::CDrawView()
 	m_hRenderExitEvent = CreateEvent(NULL, FALSE, FALSE, NULL);
 	m_hRenderAckEvent = CreateEvent(NULL, FALSE, FALSE, NULL);
 	m_lRenderCmd = 0;
+	m_lPendingShaderEnable = -1;	// -1: no change
 	m_pRenderThread = AfxBeginThread(RenderThreadFunc, this, THREAD_PRIORITY_ABOVE_NORMAL, 0, CREATE_SUSPENDED);
 	if (m_pRenderThread) {
 		m_pRenderThread->m_bAutoDelete = FALSE;
@@ -91,6 +95,7 @@ CDrawView::CDrawView()
 	m_nStagingWidth = 0;
 	m_nStagingHeight = 0;
 	m_bShowOSD = FALSE;
+	m_lShaderEnabled = 0;	// 0: disabled, 1: enabled (use InterlockedExchange)
 	m_dwOSDUntil = 0;
 	m_dwPerfOSDLastTick = 0;
 	m_nPerfFPS = 0;
@@ -1017,6 +1022,76 @@ void FASTCALL CDrawView::ShowRenderStatusOSD(BOOL bVSync)
 
   //---------------------------------------------------------------------------
   //
+  //	Alternar Shader CRT
+  //
+  //---------------------------------------------------------------------------
+  //---------------------------------------------------------------------------
+  //
+  //	Alternar shader CRT (thread-safe)
+  //
+  //---------------------------------------------------------------------------
+void FASTCALL CDrawView::ToggleShader()
+{
+	// Toggle seguro con InterlockedCompareExchange
+	LONG oldValue, newValue;
+	do {
+		oldValue = m_lShaderEnabled;
+		newValue = (oldValue == 0) ? 1 : 0;
+	} while (InterlockedCompareExchange(&m_lShaderEnabled, newValue, oldValue) != oldValue);
+	
+	if (m_bUseDX9 && m_pRenderThread) {
+		// Notificar al render thread del cambio de estado
+		InterlockedExchange(&m_lPendingShaderEnable, newValue);
+		InterlockedExchange(&m_lRenderCmd, RENDERCMD_SHADER_APPLY_STATE);
+		SetEvent(m_hRenderEvent);
+	}
+	// Mostrar OSD
+	CString status;
+	status.Format(_T("CRT Shader: %s"), newValue ? _T("ON") : _T("OFF"));
+	m_dwPerfOSDLastTick = 0;
+	ShowOSD((LPCTSTR)status);
+	RequestPresent();
+}
+
+  //---------------------------------------------------------------------------
+  //
+  //	Activar/Desactivar Shader (thread-safe)
+  //
+  //---------------------------------------------------------------------------
+void FASTCALL CDrawView::SetShaderEnabled(BOOL bEnable)
+{
+	LONG newValue = bEnable ? 1 : 0;
+	InterlockedExchange(&m_lShaderEnabled, newValue);
+	if (m_bUseDX9 && m_pRenderThread) {
+		// Notificar al render thread del cambio de estado
+		InterlockedExchange(&m_lPendingShaderEnable, newValue);
+		InterlockedExchange(&m_lRenderCmd, RENDERCMD_SHADER_APPLY_STATE);
+		SetEvent(m_hRenderEvent);
+	}
+}
+
+  //---------------------------------------------------------------------------
+  //
+  //	Obtener estado de Shader (thread-safe)
+  //
+  //---------------------------------------------------------------------------
+BOOL FASTCALL CDrawView::IsShaderEnabled() const
+{
+	return (m_lShaderEnabled != 0) ? TRUE : FALSE;
+}
+
+  //---------------------------------------------------------------------------
+  //
+  //	Obtener si está activo modo DX9
+  //
+  //---------------------------------------------------------------------------
+BOOL FASTCALL CDrawView::IsDX9Active() const
+{
+	return m_bUseDX9 && m_pRenderThread != NULL;
+}
+
+  //---------------------------------------------------------------------------
+  //
   //	Hilo de Renderizado
   //
   //---------------------------------------------------------------------------
@@ -1056,6 +1131,33 @@ void FASTCALL CDrawView::RenderLoop()
 				}
 				SetEvent(m_hRenderAckEvent);
 				continue;
+			} else if (cmd == RENDERCMD_SHADER_APPLY_STATE) {
+				// Procesar cambio de estado del shader
+				LONG pendingEnable = InterlockedExchange(&m_lPendingShaderEnable, -1);
+				if (pendingEnable == 1) {
+					// Intentar cargar shader desde archivo
+					// Ruta: relativo al directorio del ejecutable
+					// Ej: XM6.exe en Debug/, busca Debug/shaders/crt.hlsl
+					// IMPORTANTE: Copiar carpeta shaders/ al mismo nivel que XM6.exe
+					TCHAR szShaderPath[MAX_PATH];
+					GetModuleFileName(NULL, szShaderPath, MAX_PATH);
+					PathRemoveFileSpec(szShaderPath);
+					PathAppend(szShaderPath, _T("shaders\\crt.hlsl"));
+					
+					if (m_DX9Renderer.CreateCRTShader(szShaderPath)) {
+						// Éxito: activar shader
+						m_DX9Renderer.SetShaderEnabled(TRUE);
+					} else {
+						// Fallo: mostrar OSD de error y desactivar
+						InterlockedExchange(&m_lShaderEnabled, 0);
+						m_DX9Renderer.SetShaderEnabled(FALSE);
+						ShowOSD(_T("CRT Shader: Failed to load"));
+						m_dwPerfOSDLastTick = 0;
+					}
+				} else if (pendingEnable == 0) {
+					// Desactivar shader explícitamente
+					m_DX9Renderer.SetShaderEnabled(FALSE);
+				}
 			}
 			
 			if (InterlockedExchange(&m_lPresentPending, 0) == 1) {
@@ -1201,6 +1303,10 @@ void FASTCALL CDrawView::DrawOSD(CDC *pDC)
 	}
 
 	if (!pDC) {
+		return;
+	}
+
+	if (!m_bShowOSD && !m_szOSDText[0]) {
 		return;
 	}
 

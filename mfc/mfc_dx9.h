@@ -29,6 +29,9 @@ public:
     // Status
     BOOL IsInitialized() const { return m_bInitialized; }
     BOOL IsDeviceLost() const { return m_bDeviceLost; }
+    BOOL IsShaderEnabled() const { return m_bShaderEnabled; }
+    void SetShaderEnabled(BOOL bEnable) { m_bShaderEnabled = bEnable; }
+    BOOL CreateCRTShader(LPCTSTR szPath);
 
 private:
     struct Vertex {
@@ -45,6 +48,7 @@ private:
     void ReleaseTexture();
     void ReleaseVertexBuffer();
     void ReleaseOverlayTexture();
+    void ReleaseCRTShader();
 
     HMODULE m_hD3D9;
     IDirect3D9* m_pD3D;
@@ -54,13 +58,16 @@ private:
     IDirect3DTexture9* m_pTexture;
     IDirect3DTexture9* m_pOverlayTexture;
     IDirect3DVertexBuffer9* m_pVertexBuffer;
+    IDirect3DPixelShader9* m_pCRTShader;	// Shader CRT para postproceso
 
     HWND m_hWnd;
     D3DPRESENT_PARAMETERS m_d3dpp;
+    TCHAR m_szCRTShaderPath[MAX_PATH];	// Ruta del shader CRT cargado
 
     BOOL m_bInitialized;
     BOOL m_bDeviceLost;
     BOOL m_bIsEx; // Indica si estamos usando D3D9Ex
+    BOOL m_bShaderEnabled; // Shader CRT habilitado
     DWORD m_dwOwnerThreadId; // Guardar ID del hilo
 
     int m_TexWidth;

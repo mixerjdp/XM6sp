@@ -1,27 +1,22 @@
-#include "os.h"
+﻿#include "os.h"
 #include "mfc_dx9.h"
 
-// Compilación moderna de shaders HLSL con D3DCompiler (no legacy D3DX9)
+// Cargamos dinﾃ｡micamente o pragma explﾃｭcito
 #pragma comment(lib, "d3d9.lib")
-#pragma comment(lib, "d3dcompiler.lib")
 
-#include <d3dcompiler.h>
-#define USE_D3DCOMPILER 1
-
-// Definición para cargar D3D9Ex dinámicamente si está en Win7+
+// Definiciﾃｳn para cargar D3D9Ex dinﾃ｡micamente si estﾃ｡ en Win7+
 typedef HRESULT(WINAPI* LPFNDIRECT3DCREATE9EX)(UINT, IDirect3D9Ex**);
 
 CDX9Renderer::CDX9Renderer()
     : m_hD3D9(NULL), m_pD3D(NULL), m_pD3DEx(NULL), m_pDevice(NULL), m_pDeviceEx(NULL), 
-      m_pTexture(NULL), m_pOverlayTexture(NULL), m_pVertexBuffer(NULL), m_pCRTShader(NULL), m_hWnd(NULL), m_bInitialized(FALSE), m_bDeviceLost(FALSE),
-      m_bIsEx(FALSE), m_bShaderEnabled(FALSE), m_dwOwnerThreadId(0), m_TexWidth(0), m_TexHeight(0), m_OverlayWidth(384), m_OverlayHeight(48),
+      m_pTexture(NULL), m_pOverlayTexture(NULL), m_pVertexBuffer(NULL), m_hWnd(NULL), m_bInitialized(FALSE), m_bDeviceLost(FALSE),
+      m_bIsEx(FALSE), m_dwOwnerThreadId(0), m_TexWidth(0), m_TexHeight(0), m_OverlayWidth(384), m_OverlayHeight(48),
       m_bOverlayEnabled(FALSE), m_bOverlayDirty(FALSE), m_hOverlayDC(NULL), m_hOverlayBitmap(NULL),
       m_hOverlayOldBitmap(NULL), m_hOverlayOldFont(NULL), m_pOverlayBits(NULL)
 {
     ZeroMemory(&m_d3dpp, sizeof(m_d3dpp));
 	m_szOverlayLine1[0] = _T('\0');
 	m_szOverlayLine2[0] = _T('\0');
-	m_szCRTShaderPath[0] = _T('\0');
 }
 
 CDX9Renderer::~CDX9Renderer() 
@@ -122,7 +117,6 @@ void CDX9Renderer::Cleanup()
 	ReleaseOverlayTexture();
 	ReleaseOverlayGDIResources();
 	ReleaseVertexBuffer();
-	ReleaseCRTShader();
 
     if (m_pDeviceEx) { m_pDeviceEx->Release(); m_pDeviceEx = NULL; }
     if (m_pDevice) { m_pDevice->Release(); m_pDevice = NULL; }
@@ -424,7 +418,6 @@ BOOL CDX9Renderer::ResetDevice(int width, int height, BOOL bWindowed, BOOL bVSyn
 
     ReleaseTexture();
     ReleaseOverlayTexture();
-    ReleaseCRTShader();
 
     if (width < 1) width = 1;
     if (height < 1) height = 1;
@@ -443,10 +436,6 @@ BOOL CDX9Renderer::ResetDevice(int width, int height, BOOL bWindowed, BOOL bVSyn
 
     if (SUCCEEDED(hr)) {
         SetupDeviceStates();
-        // Recargar shader si estaba habilitado
-        if (m_bShaderEnabled && m_szCRTShaderPath[0] != _T('\0')) {
-            CreateCRTShader(m_szCRTShaderPath);
-        }
         m_bDeviceLost = FALSE;
         return TRUE;
     }
@@ -550,18 +539,7 @@ BOOL CDX9Renderer::PresentFrame(int srcWidth, int srcHeight, BOOL fillWindow, BO
         m_pDevice->SetFVF(D3DFVF_XYZRHW | D3DFVF_TEX1);
         m_pDevice->SetStreamSource(0, m_pVertexBuffer, 0, sizeof(Vertex));
         m_pDevice->SetTexture(0, m_pTexture);
-        
-        // Aplicar CRT shader si está habilitado
-        if (m_bShaderEnabled && m_pCRTShader) {
-            m_pDevice->SetPixelShader(m_pCRTShader);
-        }
-        
         m_pDevice->DrawPrimitive(D3DPT_TRIANGLESTRIP, 0, 2);
-        
-        // Desactivar shader global antes de renderizar OSD (para que sea nítido)
-        if (m_bShaderEnabled && m_pCRTShader) {
-            m_pDevice->SetPixelShader(NULL);
-        }
 
 		// OSD por hardware (DX9)
 		if (m_bOverlayEnabled) {
@@ -642,85 +620,3 @@ BOOL CDX9Renderer::PresentFrame(int srcWidth, int srcHeight, BOOL fillWindow, BO
     return TRUE;
 }
 
-//---------------------------------------------------------------------------
-// Crear CRT Shader desde archivo HLSL (usando D3DCompiler moderno)
-//---------------------------------------------------------------------------
-BOOL CDX9Renderer::CreateCRTShader(LPCTSTR szPath)
-{
-    ASSERT(GetCurrentThreadId() == m_dwOwnerThreadId);
-    if (!m_pDevice || !szPath || szPath[0] == _T('\0'))
-        return FALSE;
-
-    // Liberar shader anterior si existe
-    ReleaseCRTShader();
-
-#if USE_D3DCOMPILER
-    ID3DBlob* pBytecode = NULL;
-    ID3DBlob* pErrors = NULL;
-
-    // Convertir szPath a LPCWSTR (D3DCompileFromFile siempre requiere Unicode)
-    wchar_t szPathW[MAX_PATH];
-    #ifdef _UNICODE
-        wcscpy_s(szPathW, MAX_PATH, szPath);
-    #else
-        // Convertir de ANSI a Unicode si es necesario
-        MultiByteToWideChar(CP_ACP, 0, szPath, -1, szPathW, MAX_PATH);
-    #endif
-
-    // Compilar shader HLSL con D3DCompiler (moderno, sin D3DX9 legacy)
-    HRESULT hr = D3DCompileFromFile(
-        szPathW,
-        NULL,                           // pDefines
-        D3D_COMPILE_STANDARD_FILE_INCLUDE,  // dwIncludeFlags
-        "main",                         // pEntrypoint
-        "ps_2_0",                       // pTarget (compatible con GPUs viejas)
-        0,                              // Flags1
-        0,                              // Flags2
-        &pBytecode,
-        &pErrors
-    );
-
-    if (FAILED(hr)) {
-        if (pErrors) {
-            const char* szMsg = (const char*)pErrors->GetBufferPointer();
-            OutputDebugStringA("CRT Shader compilation error:\n");
-            OutputDebugStringA(szMsg);
-            pErrors->Release();
-        }
-        return FALSE;
-    }
-
-    // Crear pixel shader desde bytecode compilado
-    hr = m_pDevice->CreatePixelShader(
-        (DWORD*)pBytecode->GetBufferPointer(),
-        &m_pCRTShader
-    );
-
-    pBytecode->Release();
-
-    if (FAILED(hr)) {
-        m_pCRTShader = NULL;
-        m_szCRTShaderPath[0] = _T('\0');
-        return FALSE;
-    }
-
-    // Éxito: guardar ruta para recarga futura (ej. en ResetDevice)
-    _tcsncpy_s(m_szCRTShaderPath, MAX_PATH, szPath, _TRUNCATE);
-    return TRUE;
-#else
-    // D3DCompiler no disponible; shader deshabilitado
-    OutputDebugStringA("Warning: D3DCompiler no disponible; shader CRT desabilitado\n");
-    return FALSE;
-#endif
-}
-
-//---------------------------------------------------------------------------
-// Liberar CRT Shader
-//---------------------------------------------------------------------------
-void CDX9Renderer::ReleaseCRTShader()
-{
-    if (m_pCRTShader) {
-        m_pCRTShader->Release();
-        m_pCRTShader = NULL;
-    }
-}

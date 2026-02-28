@@ -1,9 +1,9 @@
-//---------------------------------------------------------------------------
+﻿//---------------------------------------------------------------------------
 //
 //	X68000 EMULATOR "XM6"
 //
-//	Copyright (C) 2001-2006 �o�h�D(ytanaka@ipc-tokai.or.jp)
-//	[ MFC ���ʎq��` ]
+//	Copyright (C) 2001-2006 ・ｽo・ｽh・ｽD(ytanaka@ipc-tokai.or.jp)
+//	[ MFC ・ｽ・ｽ・ｽﾊ子・ｽ・ｽ` ]
 //
 //---------------------------------------------------------------------------
 
@@ -12,11 +12,11 @@
 #if !defined(mfc_res_h)
 #define mfc_res_h
 
-// ����R�}���h
+// ・ｽ・ｽ・ｽ・ｽR・ｽ}・ｽ・ｽ・ｽh
 #define IDM_STDWIN						4096
 #define IDM_US_STDWIN					9096
 
-// ���j���[�A�A�N�Z�����[�^�A�^�C�}�[�A�A�C�R���A�_�C�A���O
+// ・ｽ・ｽ・ｽj・ｽ・ｽ・ｽ[・ｽA・ｽA・ｽN・ｽZ・ｽ・ｽ・ｽ・ｽ・ｽ[・ｽ^・ｽA・ｽ^・ｽC・ｽ}・ｽ[・ｽA・ｽA・ｽC・ｽR・ｽ・ｽ・ｽA・ｽ_・ｽC・ｽA・ｽ・ｽ・ｽO
 #define IDI_APPICON						99
 #define IDI_XICON						100
 #define IDR_ACCELERATOR					101
@@ -57,7 +57,7 @@
 #define IDD_SCSIPAGE					136
 #define IDD_RESUMEPAGE					137
 
-// ���j���[�A�A�N�Z�����[�^�A�^�C�}�[�A�A�C�R���A�_�C�A���O(US)
+// ・ｽ・ｽ・ｽj・ｽ・ｽ・ｽ[・ｽA・ｽA・ｽN・ｽZ・ｽ・ｽ・ｽ・ｽ・ｽ[・ｽ^・ｽA・ｽ^・ｽC・ｽ}・ｽ[・ｽA・ｽA・ｽC・ｽR・ｽ・ｽ・ｽA・ｽ_・ｽC・ｽA・ｽ・ｽ・ｽO(US)
 #define IDR_US_DISMENU					152
 #define IDR_US_MEMORYMENU				153
 #define IDD_US_ABOUTDLG					154
@@ -91,7 +91,7 @@
 #define IDD_US_SCSIPAGE					186
 #define IDD_US_RESUMEPAGE				187
 
-// �o�[�W�������_�C�A���O
+// ・ｽo・ｽ[・ｽW・ｽ・ｽ・ｽ・ｽ・ｽ・ｽ・ｽ_・ｽC・ｽA・ｽ・ｽ・ｽO
 #define IDC_ABOUT_ICON					1000
 #define IDC_ABOUT_XM6					1001
 #define IDC_ABOUT_VER					1002
@@ -100,11 +100,11 @@
 #define IDC_ABOUT_CORLETT				1005
 #define IDC_ABOUT_CISC					1006
 
-// �A�h���X���̓_�C�A���O
+// ・ｽA・ｽh・ｽ・ｽ・ｽX・ｽ・ｽ・ｽﾍダ・ｽC・ｽA・ｽ・ｽ・ｽO
 #define IDC_ADDR_ADDRL					1010
 #define IDC_ADDR_ADDRE					1011
 
-// ��{�ݒ�y�[�W
+// ・ｽ・ｽ{・ｽﾝ抵ｿｽy・ｽ[・ｽW
 #define IDC_BASIC_HELP					1100
 #define IDC_BASIC_CLOCKG				1101
 #define IDC_BASIC_MEMORYG				1102
@@ -128,7 +128,7 @@
 #define IDS_BASIC_MEMORY4				1120
 #define IDS_BASIC_MEMORY5				1121
 
-// ��{�ݒ�y�[�W(US)
+// ・ｽ・ｽ{・ｽﾝ抵ｿｽy・ｽ[・ｽW(US)
 #define IDC_US_BASIC_CLOCKG				6101
 #define IDC_US_BASIC_MEMORYG			6102
 #define IDC_US_BASIC_MEMSWB				6103
@@ -151,7 +151,7 @@
 #define IDS_US_BASIC_MEMORY4			6120
 #define IDS_US_BASIC_MEMORY5			6121
 
-// �T�E���h�y�[�W
+// ・ｽT・ｽE・ｽ・ｽ・ｽh・ｽy・ｽ[・ｽW
 #define IDC_SOUND_DEVICEG				1200
 #define IDC_SOUND_DEVICEC				1201
 #define IDC_SOUND_RATEG					1202
@@ -173,7 +173,7 @@
 #define IDC_SOUND_INTERP				1218
 #define IDC_SOUND_HELP					1219
 
-// �T�E���h�y�[�W(US)
+// ・ｽT・ｽE・ｽ・ｽ・ｽh・ｽy・ｽ[・ｽW(US)
 #define IDC_US_SOUND_DEVICEG			6200
 #define IDC_US_SOUND_DEVICEC			6201
 #define IDC_US_SOUND_RATEG				6202
@@ -195,7 +195,7 @@
 #define IDC_US_SOUND_INTERP				6218
 #define IDC_US_SOUND_HELP				6219
 
-// ���ʃy�[�W
+// ・ｽ・ｽ・ｽﾊペ・ｽ[・ｽW
 #define IDC_VOL_OUTG					1300
 #define IDC_VOL_VOLL					1301
 #define IDC_VOL_VOLS					1302
@@ -217,7 +217,7 @@
 #define IDC_VOL_ADPCMN					1318
 #define IDC_VOL_HELP					1319
 
-// ���ʃy�[�W(US)
+// ・ｽ・ｽ・ｽﾊペ・ｽ[・ｽW(US)
 #define IDC_US_VOL_OUTG					6300
 #define IDC_US_VOL_VOLL					6301
 #define IDC_US_VOL_VOLS					6302
@@ -239,7 +239,7 @@
 #define IDC_US_VOL_ADPCMN				6318
 #define IDC_US_VOL_HELP					6319
 
-// ���̑��y�[�W
+// ・ｽ・ｽ・ｽﾌ托ｿｽ・ｽy・ｽ[・ｽW
 #define IDC_MISC_HELP					1400
 #define IDC_MISC_OPTG					1401
 #define IDC_MISC_FDSPEED				1402
@@ -251,10 +251,11 @@
 #define IDC_MISC_RENDERER				1410
 #define IDC_MISC_RENDERERL				1411
 #define IDR_MENU_POPUP                  40193
+#define IDM_TOGGLE_OSD                  40195
 #define IDC_BUSCAR                      1407
 #define IDC_EDIT1                       1408
 
-// ̑y[W(US)
+// ﾌ惣[W(US)
 #define IDC_US_MISC_HELP				6400
 #define IDC_US_MISC_OPTG				6401
 #define IDC_US_MISC_FDSPEED				6402
@@ -266,7 +267,7 @@
 #define IDC_US_MISC_RENDERER			6408
 #define IDC_US_MISC_RENDERERL			6409
 
-// �L�[�{�[�h�y�[�W
+// ・ｽL・ｽ[・ｽ{・ｽ[・ｽh・ｽy・ｽ[・ｽW
 #define IDC_KBD_HELP					1500
 #define IDC_KBD_MAPG					1501
 #define IDC_KBD_MAPL					1502
@@ -274,7 +275,7 @@
 #define IDC_KBD_DEFB					1504
 #define IDC_KBD_NOCONB					1505
 
-// �L�[�{�[�h�y�[�W(US)
+// ・ｽL・ｽ[・ｽ{・ｽ[・ｽh・ｽy・ｽ[・ｽW(US)
 #define IDC_US_KBD_HELP					6500
 #define IDC_US_KBD_MAPG					6501
 #define IDC_US_KBD_MAPL					6502
@@ -282,7 +283,7 @@
 #define IDC_US_KBD_DEFB					6504
 #define IDC_US_KBD_NOCONB				6505
 
-// �}�E�X�y�[�W
+// ・ｽ}・ｽE・ｽX・ｽy・ｽ[・ｽW
 #define IDC_MOUSE_HELP					1600
 #define IDC_MOUSE_SPEEDG				1601
 #define IDC_MOUSE_SLIDER				1602
@@ -296,7 +297,7 @@
 #define IDC_MOUSE_MIDB					1610
 #define IDC_MOUSE_TBG					1611
 
-// �}�E�X�y�[�W(US)
+// ・ｽ}・ｽE・ｽX・ｽy・ｽ[・ｽW(US)
 #define IDC_US_MOUSE_HELP				6600
 #define IDC_US_MOUSE_SPEEDG				6601
 #define IDC_US_MOUSE_SLIDER				6602
@@ -310,14 +311,14 @@
 #define IDC_US_MOUSE_MIDB				6610
 #define IDC_US_MOUSE_TBG				6611
 
-// �L�[�}�b�v�_�C�A���O�A�L�[���̓_�C�A���O
+// ・ｽL・ｽ[・ｽ}・ｽb・ｽv・ｽ_・ｽC・ｽA・ｽ・ｽ・ｽO・ｽA・ｽL・ｽ[・ｽ・ｽ・ｽﾍダ・ｽC・ｽA・ｽ・ｽ・ｽO
 #define IDC_KBDMAP_DISP					1700
 #define IDC_KBDMAP_STAT					1701
 #define IDC_KEYIN_LABEL					1702
 #define IDC_KEYIN_STATIC				1703
 #define IDC_KEYIN_KEY					1704
 
-// �|�[�g�y�[�W
+// ・ｽ|・ｽ[・ｽg・ｽy・ｽ[・ｽW
 #define IDC_PORT_HELP					1800
 #define IDC_PORT_COMG					1801
 #define IDC_PORT_COML					1802
@@ -331,7 +332,7 @@
 #define IDC_PORT_SENDL					1810
 #define IDC_PORT_SENDE					1811
 
-// �|�[�g�y�[�W(US)
+// ・ｽ|・ｽ[・ｽg・ｽy・ｽ[・ｽW(US)
 #define IDC_US_PORT_HELP				6800
 #define IDC_US_PORT_COMG				6801
 #define IDC_US_PORT_COML				6802
@@ -345,7 +346,7 @@
 #define IDC_US_PORT_SENDL				6810
 #define IDC_US_PORT_SENDE				6811
 
-// �����y�[�W
+// ・ｽ・ｽ・ｽ・ｽ・ｽy・ｽ[・ｽW
 #define IDC_ALTER_HELP					1900
 #define IDC_ALTER_ALTERG				1901
 #define IDC_ALTER_SRAM					1902
@@ -355,7 +356,7 @@
 #define IDC_ALTER_SASIG					1906
 #define IDC_ALTER_PARITY				1907
 
-// �����y�[�W(US)
+// ・ｽ・ｽ・ｽ・ｽ・ｽy・ｽ[・ｽW(US)
 #define IDC_US_ALTER_HELP				6900
 #define IDC_US_ALTER_ALTERG				6901
 #define IDC_US_ALTER_SRAM				6902
@@ -365,7 +366,7 @@
 #define IDC_US_ALTER_SASIG				6906
 #define IDC_US_ALTER_PARITY				6907
 
-// SASI�y�[�W
+// SASI・ｽy・ｽ[・ｽW
 #define IDC_SASI_GROUP					2000
 #define IDC_SASI_DRIVEL					2001
 #define IDC_SASI_DRIVEE					2002
@@ -374,7 +375,7 @@
 #define IDC_SASI_LIST					2005
 #define IDC_SASI_HELP					2006
 
-// SASI�y�[�W(US)
+// SASI・ｽy・ｽ[・ｽW(US)
 #define IDC_US_SASI_GROUP				7000
 #define IDC_US_SASI_DRIVEL				7001
 #define IDC_US_SASI_DRIVEE				7002
@@ -383,7 +384,7 @@
 #define IDC_US_SASI_LIST				7005
 #define IDC_US_SASI_HELP				7006
 
-// SxSI�y�[�W
+// SxSI・ｽy・ｽ[・ｽW
 #define IDC_SXSI_GROUP					2100
 #define IDC_SXSI_DRIVEL					2101
 #define IDC_SXSI_DRIVEE					2102
@@ -392,7 +393,7 @@
 #define IDC_SXSI_LIST					2105
 #define IDC_SXSI_HELP					2106
 
-// SxSI�y�[�W(US)
+// SxSI・ｽy・ｽ[・ｽW(US)
 #define IDC_US_SXSI_GROUP				7100
 #define IDC_US_SXSI_DRIVEL				7101
 #define IDC_US_SXSI_DRIVEE				7102
@@ -401,7 +402,7 @@
 #define IDC_US_SXSI_LIST				7105
 #define IDC_US_SXSI_HELP				7106
 
-// MIDI�y�[�W
+// MIDI・ｽy・ｽ[・ｽW
 #define IDC_MIDI_BIDG					2200
 #define IDC_MIDI_BID0					2201
 #define IDC_MIDI_BID1					2202
@@ -429,7 +430,7 @@
 #define IDC_MIDI_DLYOG					2224
 #define IDC_MIDI_HELP					2225
 
-// MIDI�y�[�W(US)
+// MIDI・ｽy・ｽ[・ｽW(US)
 #define IDC_US_MIDI_BIDG				7200
 #define IDC_US_MIDI_BID0				7201
 #define IDC_US_MIDI_BID1				7202
@@ -457,7 +458,7 @@
 #define IDC_US_MIDI_DLYOG				7224
 #define IDC_US_MIDI_HELP				7225
 
-// TrueKey�y�[�W
+// TrueKey・ｽy・ｽ[・ｽW
 #define IDC_TKEY_PORTG					2300
 #define IDC_TKEY_COML					2301
 #define IDC_TKEY_COMC					2302
@@ -469,7 +470,7 @@
 #define IDC_TKEY_LIST					2308
 #define IDC_TKEY_HELP					2309
 
-// TrueKey�y�[�W(US)
+// TrueKey・ｽy・ｽ[・ｽW(US)
 #define IDC_US_TKEY_PORTG				7300
 #define IDC_US_TKEY_COML				7301
 #define IDC_US_TKEY_COMC				7302
@@ -481,7 +482,7 @@
 #define IDC_US_TKEY_LIST				7308
 #define IDC_US_TKEY_HELP				7309
 
-// �W���C�X�e�B�b�N�y�[�W
+// ・ｽW・ｽ・ｽ・ｽC・ｽX・ｽe・ｽB・ｽb・ｽN・ｽy・ｽ[・ｽW
 #define IDC_JOY_PORTG					2400
 #define IDC_JOY_PORTL1					2401
 #define IDC_JOY_PORTC1					2402
@@ -501,7 +502,7 @@
 #define IDC_JOY_DEVAC					2416
 #define IDC_JOY_HELP					2417
 
-// �W���C�X�e�B�b�N�y�[�W(US)
+// ・ｽW・ｽ・ｽ・ｽC・ｽX・ｽe・ｽB・ｽb・ｽN・ｽy・ｽ[・ｽW(US)
 #define IDC_US_JOY_PORTG				7400
 #define IDC_US_JOY_PORTL1				7401
 #define IDC_US_JOY_PORTC1				7402
@@ -521,7 +522,7 @@
 #define IDC_US_JOY_DEVAC				7416
 #define IDC_US_JOY_HELP					7417
 
-// �W���C�X�e�B�b�N�ڍ׃_�C�A���O
+// ・ｽW・ｽ・ｽ・ｽC・ｽX・ｽe・ｽB・ｽb・ｽN・ｽﾚ細ダ・ｽC・ｽA・ｽ・ｽ・ｽO
 #define IDC_JOYDET_NAMEL				2420
 #define IDC_JOYDET_AXISL				2421
 #define IDC_JOYDET_AXISS				2422
@@ -532,7 +533,7 @@
 #define IDC_JOYDET_DATASL				2427
 #define IDC_JOYDET_DATASS				2428
 
-// �W���C�X�e�B�b�N�{�^���ݒ�y�[�W
+// ・ｽW・ｽ・ｽ・ｽC・ｽX・ｽe・ｽB・ｽb・ｽN・ｽ{・ｽ^・ｽ・ｽ・ｽﾝ抵ｿｽy・ｽ[・ｽW
 #define IDC_BTNSET_BTNG					2447
 #define IDC_BTNSET_BTNL					2448
 #define IDC_BTNSET_ASSIGNL				2449
@@ -586,7 +587,7 @@
 #define IDC_BTNSET_RAPIDC12				2497
 #define IDC_BTNSET_RAPIDL12				2498
 
-// �W���C�X�e�B�b�N�{�^���ݒ�y�[�W(US)
+// ・ｽW・ｽ・ｽ・ｽC・ｽX・ｽe・ｽB・ｽb・ｽN・ｽ{・ｽ^・ｽ・ｽ・ｽﾝ抵ｿｽy・ｽ[・ｽW(US)
 #define IDC_US_BTNSET_BTNG				7447
 #define IDC_US_BTNSET_BTNL				7448
 #define IDC_US_BTNSET_ASSIGNL			7449
@@ -640,7 +641,7 @@
 #define IDC_US_BTNSET_RAPIDC12			7497
 #define IDC_US_BTNSET_RAPIDL12			7498
 
-// SCSI�y�[�W
+// SCSI・ｽy・ｽ[・ｽW
 #define IDC_SCSI_IFG					2500
 #define IDC_SCSI_NONEB					2501
 #define IDC_SCSI_INTB					2502
@@ -653,7 +654,7 @@
 #define IDC_SCSI_LIST					2509
 #define IDC_SCSI_HELP					2510
 
-// SCSI�y�[�W(US)
+// SCSI・ｽy・ｽ[・ｽW(US)
 #define IDC_US_SCSI_IFG					7500
 #define IDC_US_SCSI_NONEB				7501
 #define IDC_US_SCSI_INTB				7502
@@ -666,7 +667,7 @@
 #define IDC_US_SCSI_LIST				7509
 #define IDC_US_SCSI_HELP				7510
 
-// ���W���[���y�[�W
+// ・ｽ・ｽ・ｽW・ｽ・ｽ・ｽ[・ｽ・ｽ・ｽy・ｽ[・ｽW
 #define IDC_RESUME_DISKG				2600
 #define IDC_RESUME_FDC					2601
 #define IDC_RESUME_MOC					2602
@@ -678,7 +679,7 @@
 #define IDC_RESUME_DIRC					2608
 #define IDC_RESUME_HELP					2609
 
-// ���W���[���y�[�W(US)
+// ・ｽ・ｽ・ｽW・ｽ・ｽ・ｽ[・ｽ・ｽ・ｽy・ｽ[・ｽW(US)
 #define IDC_US_RESUME_DISKG				7600
 #define IDC_US_RESUME_FDC				7601
 #define IDC_US_RESUME_MOC				7602
@@ -690,7 +691,7 @@
 #define IDC_US_RESUME_DIRC				7608
 #define IDC_US_RESUME_HELP				7609
 
-// �t���b�s�[�f�B�X�N�C���[�W�_�C�A���O
+// ・ｽt・ｽ・ｽ・ｽb・ｽs・ｽ[・ｽf・ｽB・ｽX・ｽN・ｽC・ｽ・ｽ・ｽ[・ｽW・ｽ_・ｽC・ｽA・ｽ・ｽ・ｽO
 #define IDC_FDI_FILEL					3000
 #define IDC_FDI_FILEE					3001
 #define IDC_FDI_FILEB					3002
@@ -712,7 +713,7 @@
 #define IDC_FDI_DRIVE1					3018
 #define IDC_FDI_NOTMOUNT				3019
 
-// ��e�ʃf�B�X�N�C���[�W�_�C�A���O
+// ・ｽ・ｽe・ｽﾊデ・ｽB・ｽX・ｽN・ｽC・ｽ・ｽ・ｽ[・ｽW・ｽ_・ｽC・ｽA・ｽ・ｽ・ｽO
 #define IDC_DISK_FILEL					3100
 #define IDC_DISK_FILEE					3101
 #define IDC_DISK_FILEB					3102
@@ -732,17 +733,17 @@
 #define IDC_DISK_OPTG					3116
 #define IDC_DISK_MOUNTB					3117
 
-// �f�B�X�N�쐬�i�s�_�C�A���O
+// ・ｽf・ｽB・ｽX・ｽN・ｽ・ｬ・ｽi・ｽs・ｽ_・ｽC・ｽA・ｽ・ｽ・ｽO
 #define IDC_DMAKE_PROGRESS				3200
 #define IDC_DMAKE_STATIC				3201
 
-// trap #0�_�C�A���O
+// trap #0・ｽ_・ｽC・ｽA・ｽ・ｽ・ｽO
 #define IDC_TRAP_D0L					3300
 #define IDC_TRAP_D0E					3301
 #define IDC_TRAP_D0S					3302
 #define IDC_TRAP_WARN					3304
 
-// �t�@�C�����j���[
+// ・ｽt・ｽ@・ｽC・ｽ・ｽ・ｽ・ｽ・ｽj・ｽ・ｽ・ｽ[
 #define IDM_OPEN						40000
 #define IDM_SAVE						40001
 #define IDM_SAVEAS						40002
@@ -763,7 +764,7 @@
 #define IDM_SAVEGLOBALCONFIG			40017
 #define IDM_SAVEGLOBALCONFIGANDRESET	40018
 
-// �t���b�s�[0���j���[
+// ・ｽt・ｽ・ｽ・ｽb・ｽs・ｽ[0・ｽ・ｽ・ｽj・ｽ・ｽ・ｽ[
 #define IDM_D0OPEN						40020
 #define IDM_D0EJECT 					40021
 #define IDM_D0WRITEP					40022
@@ -795,7 +796,7 @@
 #define IDM_D0_MRU7						40048
 #define IDM_D0_MRU8						40049
 
-// �t���b�s�[1���j���[
+// ・ｽt・ｽ・ｽ・ｽb・ｽs・ｽ[1・ｽ・ｽ・ｽj・ｽ・ｽ・ｽ[
 #define IDM_D1OPEN						40050
 #define IDM_D1EJECT 					40051
 #define IDM_D1WRITEP					40052
@@ -827,7 +828,7 @@
 #define IDM_D1_MRU7						40078
 #define IDM_D1_MRU8						40079
 
-// MO���j���[
+// MO・ｽ・ｽ・ｽj・ｽ・ｽ・ｽ[
 #define IDM_MOOPEN						40080
 #define IDM_MOEJECT						40081
 #define IDM_MOWRITEP					40082
@@ -842,7 +843,7 @@
 #define IDM_MO_MRU7						40091
 #define IDM_MO_MRU8						40092
 
-// CD���j���[
+// CD・ｽ・ｽ・ｽj・ｽ・ｽ・ｽ[
 #define IDM_CDOPEN						40100
 #define IDM_CDEJECT						40101
 #define IDM_CDFORCE						40102
@@ -856,19 +857,19 @@
 #define IDM_CD_MRU7						40110
 #define IDM_CD_MRU8						40111
 
-// �\�����j���[(�V�X�e��)
+// ・ｽ\・ｽ・ｽ・ｽ・ｽ・ｽj・ｽ・ｽ・ｽ[(・ｽV・ｽX・ｽe・ｽ・ｽ)
 #define IDM_LOG							40120
 #define IDM_SCHEDULER					40121
 #define IDM_DEVICE						40122
 
-// �\�����j���[(�v���Z�b�T)
+// ・ｽ\・ｽ・ｽ・ｽ・ｽ・ｽj・ｽ・ｽ・ｽ[(・ｽv・ｽ・ｽ・ｽZ・ｽb・ｽT)
 #define IDM_CPUREG						40123
 #define IDM_INT							40124
 #define IDM_DISASM						40125
 #define IDM_MEMORY						40126
 #define IDM_BREAKP						40127
 
-// �\�����j���[(�f�o�C�X)
+// ・ｽ\・ｽ・ｽ・ｽ・ｽ・ｽj・ｽ・ｽ・ｽ[(・ｽf・ｽo・ｽC・ｽX)
 #define IDM_MFP							40128
 #define IDM_DMAC						40129
 #define IDM_CRTC						40130
@@ -884,7 +885,7 @@
 #define IDM_MIDI						40140
 #define IDM_SCSI						40141
 
-// �\�����j���[(�r�f�I)
+// ・ｽ\・ｽ・ｽ・ｽ・ｽ・ｽj・ｽ・ｽ・ｽ[(・ｽr・ｽf・ｽI)
 #define IDM_TVRAM						40142
 #define IDM_G1024						40143
 #define IDM_G16P0						40144
@@ -900,7 +901,7 @@
 #define IDM_SPRITE						40154
 #define IDM_PALET						40155
 
-// �\�����j���[(�����_��)
+// ・ｽ\・ｽ・ｽ・ｽ・ｽ・ｽj・ｽ・ｽ・ｽ[(・ｽ・ｽ・ｽ・ｽ・ｽ_・ｽ・ｽ)
 #define IDM_REND_TEXT					40156
 #define IDM_REND_GP0					40157
 #define IDM_REND_GP1					40158
@@ -913,7 +914,7 @@
 #define IDM_REND_PALET					40165
 #define IDM_REND_MIX					40166
 
-// �\�����j���[(Win32)
+// ・ｽ\・ｽ・ｽ・ｽ・ｽ・ｽj・ｽ・ｽ・ｽ[(Win32)
 #define IDM_COMPONENT					40167
 #define IDM_OSINFO						40168
 #define IDM_SOUND						40169
@@ -922,7 +923,7 @@
 #define IDM_BITMAP						40172
 #define IDM_MIDIDRV						40173
 
-// �\�����j���[
+// ・ｽ\・ｽ・ｽ・ｽ・ｽ・ｽj・ｽ・ｽ・ｽ[
 #define IDM_CAPTION						40177
 #define IDM_MENU						40178
 #define IDM_STATUS						40179
@@ -931,27 +932,26 @@
 #define IDM_FULLSCREEN					40182
 #define IDM_TOGGLE_VSYNC         40183
 #define IDM_TOGGLE_RENDERER      40184
-#define IDM_TOGGLE_SHADER        40550
+#define IDM_TOGGLE_SHADER        40196
 
-// �f�o�b�O���j���[
+// ・ｽf・ｽo・ｽb・ｽO・ｽ・ｽ・ｽj・ｽ・ｽ・ｽ[
 #define IDM_EXEC 						40185
 #define IDM_BREAK						40186
 #define IDM_TRACE						40187
 
-// �c�[�����j���[
+// ・ｽc・ｽ[・ｽ・ｽ・ｽ・ｽ・ｽj・ｽ・ｽ・ｽ[
 #define IDM_MOUSEMODE					40190
 #define IDM_SOFTKEY						40191
 #define IDM_TIMEADJ						40192
 #define IDM_TRAP0						40193
 #define IDM_SAVEWAV						40194
-#define IDM_TOGGLE_OSD                  40195
+#define IDM_NEWFD						40195
 #define IDM_NEWSASI						40196
 #define IDM_NEWSCSI						40197
 #define IDM_NEWMO						40198
 #define IDM_OPTIONS						40199
-#define IDM_NEWFD						40551
 
-// �E�B���h�E���j���[(�ő�E�B���h�E��72���m��)
+// ・ｽE・ｽB・ｽ・ｽ・ｽh・ｽE・ｽ・ｽ・ｽj・ｽ・ｽ・ｽ[(・ｽﾅ托ｿｽE・ｽB・ｽ・ｽ・ｽh・ｽE・ｽ・ｽ72・ｽﾂゑｿｽ・ｽm・ｽ・ｽ)
 #define IDM_CASCADE						40220
 #define IDM_TILE						40221
 #define IDM_ICONIC						40222
@@ -961,10 +961,10 @@
 #define IDM_SWND_START					40226
 #define IDM_SWND_END					40298
 
-// �w���v���j���[
+// ・ｽw・ｽ・ｽ・ｽv・ｽ・ｽ・ｽj・ｽ・ｽ・ｽ[
 #define IDM_ABOUT						40299
 
-// �t�A�Z���u�����j���[
+// ・ｽt・ｽA・ｽZ・ｽ・ｽ・ｽu・ｽ・ｽ・ｽ・ｽ・ｽj・ｽ・ｽ・ｽ[
 #define IDM_DIS_NEWWIN					40300
 #define IDM_DIS_PC						40301
 #define IDM_DIS_ADDR					40302
@@ -1043,7 +1043,7 @@
 #define IDM_DIS_IOSC2					40381
 #define IDM_DIS_IOSC3					40382
 
-// ���������j���[
+// ・ｽ・ｽ・ｽ・ｽ・ｽ・ｽ・ｽ・ｽ・ｽj・ｽ・ｽ・ｽ[
 #define IDM_MEMORY_NEWWIN				40400
 #define IDM_MEMORY_ADDR					40401
 #define IDM_MEMORY_BYTE					40402
@@ -1066,7 +1066,7 @@
 #define IDM_MEMORY_E					40419
 #define IDM_MEMORY_F					40420
 
-// �G���A���j���[
+// ・ｽG・ｽ・ｽ・ｽA・ｽ・ｽ・ｽj・ｽ・ｽ・ｽ[
 #define IDM_AREA_MPU					40430
 #define IDM_AREA_IOCS					40431
 #define IDM_AREA_DOS					40432
@@ -1101,7 +1101,7 @@
 #define IDM_AREA_SCSIROM				40461
 #define IDM_AREA_IPLROM					40462
 
-// �q�X�g�����j���[
+// ・ｽq・ｽX・ｽg・ｽ・ｽ・ｽ・ｽ・ｽj・ｽ・ｽ・ｽ[
 #define IDM_HISTORY_0					40470
 #define IDM_HISTORY_1					40471
 #define IDM_HISTORY_2					40472
@@ -1113,7 +1113,7 @@
 #define IDM_HISTORY_8					40478
 #define IDM_HISTORY_9					40479
 
-// �X�^�b�N���j���[
+// ・ｽX・ｽ^・ｽb・ｽN・ｽ・ｽ・ｽj・ｽ・ｽ・ｽ[
 #define IDM_STACK_0						40480
 #define IDM_STACK_1						40481
 #define IDM_STACK_2						40482
@@ -1131,7 +1131,7 @@
 #define IDM_STACK_E						40494
 #define IDM_STACK_F						40495
 
-// PCG���j���[
+// PCG・ｽ・ｽ・ｽj・ｽ・ｽ・ｽ[
 #define IDM_PCG_0						40500
 #define IDM_PCG_1						40501
 #define IDM_PCG_2						40502
@@ -1149,7 +1149,7 @@
 #define IDM_PCG_E						40514
 #define IDM_PCG_F						40515
 
-// ���W�X�^���j���[
+// ・ｽ・ｽ・ｽW・ｽX・ｽ^・ｽ・ｽ・ｽj・ｽ・ｽ・ｽ[
 #define IDM_REG_D0						40600
 #define IDM_REG_D1						40601
 #define IDM_REG_D2						40602
@@ -1171,7 +1171,7 @@
 #define IDM_REG_PC						40618
 #define IDM_REG_SR						40619
 
-// �u���[�N�|�C���g���j���[
+// ・ｽu・ｽ・ｽ・ｽ[・ｽN・ｽ|・ｽC・ｽ・ｽ・ｽg・ｽ・ｽ・ｽj・ｽ・ｽ・ｽ[
 #define IDM_BREAKP_ENABLE				40700
 #define IDM_BREAKP_CLEAR				40701
 #define IDM_BREAKP_DEL					40702
@@ -1179,7 +1179,7 @@
 #define IDM_BREAKP_ALL					40704
 #define ID_FILE_CARGAR40006				40705
 
-// ������(�T�u�E�B���h�E)
+// ・ｽ・ｽ・ｽ・ｽ・ｽ・ｽ(・ｽT・ｽu・ｽE・ｽB・ｽ・ｽ・ｽh・ｽE)
 #define IDS_SWND_LOG					41000
 #define IDS_SWND_LOG_NUMBER				41001
 #define IDS_SWND_LOG_TIME				41002
@@ -1251,7 +1251,7 @@
 
 #define IDS_SWND_SOFTKEY				41600
 
-// ������(���̑�)
+// ・ｽ・ｽ・ｽ・ｽ・ｽ・ｽ(・ｽ・ｽ・ｽﾌ托ｿｽ)
 #define IDS_CAPTION_RUN					42000
 #define IDS_CAPTION_STOP				42001
 #define IDS_INIT_VMERR					42002
@@ -1349,7 +1349,7 @@
 #define IDS_SAVECLOSE					42094
 #define IDS_PROCESSOR					42095
 
-// ���j���[������(US)
+// ・ｽ・ｽ・ｽj・ｽ・ｽ・ｽ[・ｽ・ｽ・ｽ・ｽ・ｽ・ｽ(US)
 #define IDM_US_OPEN						45000
 #define IDM_US_SAVE						45001
 #define IDM_US_SAVEAS					45002
@@ -1426,7 +1426,7 @@
 #define IDM_US_RESTORE					45225
 #define IDM_US_ABOUT					45299
 
-// ������(�T�u�E�B���h�E, US)
+// ・ｽ・ｽ・ｽ・ｽ・ｽ・ｽ(・ｽT・ｽu・ｽE・ｽB・ｽ・ｽ・ｽh・ｽE, US)
 #define IDS_US_SWND_LOG					46000
 #define IDS_US_SWND_LOG_NUMBER			46001
 #define IDS_US_SWND_LOG_TIME			46002
@@ -1498,7 +1498,7 @@
 
 #define IDS_US_SWND_SOFTKEY				46600
 
-// ������(���̑�, US)
+// ・ｽ・ｽ・ｽ・ｽ・ｽ・ｽ(・ｽ・ｽ・ｽﾌ托ｿｽ, US)
 #define IDS_US_CAPTION_RUN				47000
 #define IDS_US_CAPTION_STOP				47001
 #define IDS_US_INIT_VMERR				47002
@@ -1598,3 +1598,4 @@
 
 #endif	// mfc_res_h
 #endif	// _WIN32
+

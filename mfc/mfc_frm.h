@@ -83,6 +83,8 @@ public:
 	void OnToggleRenderer();
 	void OnToggleVSync();
 	void OnToggleOSD();
+	void OnToggleShader();
+	void OnToggleShaderUI(CCmdUI *pCmdUI);
 
 	// Nombre de Archivo XM6   *-*
 	CString NombreArchivoXM6;
