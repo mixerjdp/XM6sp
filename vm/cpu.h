@@ -2,7 +2,7 @@
 //
 //	X68000 EMULATOR "XM6"
 //
-//	Copyright (C) 2001-2006 ‚o‚hD(ytanaka@ipc-tokai.or.jp)
+//	Copyright (C) 2001-2006 ï¼°ï¼©ï¼(ytanaka@ipc-tokai.or.jp)
 //	[ CPU(MC68000) ]
 //
 //---------------------------------------------------------------------------
@@ -11,25 +11,10 @@
 #define cpu_h
 
 #include "device.h"
-#include "starcpu.h"
+#include "musashi_adapter.h"
 
-//---------------------------------------------------------------------------
-//
-//	ŠO•”’è‹`
-//
-//---------------------------------------------------------------------------
-#if defined(__cplusplus)
-extern "C" {
-#endif	// __cplusplus
+// s68000getcounter/setcounter are declared in musashi_adapter.h
 
-extern DWORD s68000getcounter();
-										// ƒNƒƒbƒNƒJƒEƒ“ƒ^æ“¾
-extern void s68000setcounter(DWORD c);
-										// ƒNƒƒbƒNƒJƒEƒ“ƒ^İ’è
-
-#if defined(__cplusplus)
-}
-#endif	// __cplusplus
 
 //===========================================================================
 //
@@ -39,49 +24,49 @@ extern void s68000setcounter(DWORD c);
 class CPU : public Device
 {
 public:
-	// “à•”ƒf[ƒ^’è‹`
+	// å†…éƒ¨ãƒ‡ãƒ¼ã‚¿å®šç¾©
 	typedef struct {
-		DWORD dreg[8];					// ƒf[ƒ^ƒŒƒWƒXƒ^
-		DWORD areg[8];					// ƒAƒhƒŒƒXƒŒƒWƒXƒ^
-		DWORD sp;						// ƒXƒ^ƒbƒN—\”õ(USP or SSP)
-		DWORD pc;						// ƒvƒƒOƒ‰ƒ€ƒJƒEƒ“ƒ^
-		DWORD intr[8];					// Š„‚è‚İî•ñ
-		DWORD sr;						// ƒXƒe[ƒ^ƒXƒŒƒWƒXƒ^
-		DWORD intreq[8];				// Š„‚è‚İ—v‹‰ñ”
-		DWORD intack[8];				// Š„‚è‚İó—‰ñ”
-		DWORD odd;						// ÀsƒJƒEƒ“ƒ^
+		DWORD dreg[8];					// ãƒ‡ãƒ¼ã‚¿ãƒ¬ã‚¸ã‚¹ã‚¿
+		DWORD areg[8];					// ã‚¢ãƒ‰ãƒ¬ã‚¹ãƒ¬ã‚¸ã‚¹ã‚¿
+		DWORD sp;						// ã‚¹ã‚¿ãƒƒã‚¯äºˆå‚™(USP or SSP)
+		DWORD pc;						// ãƒ—ãƒ­ã‚°ãƒ©ãƒ ã‚«ã‚¦ãƒ³ã‚¿
+		DWORD intr[8];					// å‰²ã‚Šè¾¼ã¿æƒ…å ±
+		DWORD sr;						// ã‚¹ãƒ†ãƒ¼ã‚¿ã‚¹ãƒ¬ã‚¸ã‚¹ã‚¿
+		DWORD intreq[8];				// å‰²ã‚Šè¾¼ã¿è¦æ±‚å›æ•°
+		DWORD intack[8];				// å‰²ã‚Šè¾¼ã¿å—ç†å›æ•°
+		DWORD odd;						// å®Ÿè¡Œã‚«ã‚¦ãƒ³ã‚¿
 	} cpu_t;
 
 	typedef struct {
-		DWORD erraddr;					// ƒGƒ‰[ƒAƒhƒŒƒX
-		DWORD errtime;					// ƒGƒ‰[‚Ì‰¼‘zŠÔ
-		DWORD intreq[8];				// Š„‚è‚İ—v‹‰ñ”
-		DWORD intack[8];				// Š„‚è‚İó—‰ñ”
+		DWORD erraddr;					// ã‚¨ãƒ©ãƒ¼ã‚¢ãƒ‰ãƒ¬ã‚¹
+		DWORD errtime;					// ã‚¨ãƒ©ãƒ¼æ™‚ã®ä»®æƒ³æ™‚é–“
+		DWORD intreq[8];				// å‰²ã‚Šè¾¼ã¿è¦æ±‚å›æ•°
+		DWORD intack[8];				// å‰²ã‚Šè¾¼ã¿å—ç†å›æ•°
 	} cpusub_t;
 
 public:
-	// Šî–{ƒtƒ@ƒ“ƒNƒVƒ‡ƒ“
+	// åŸºæœ¬ãƒ•ã‚¡ãƒ³ã‚¯ã‚·ãƒ§ãƒ³
 	CPU(VM *p);
-										// ƒRƒ“ƒXƒgƒ‰ƒNƒ^
+										// ã‚³ãƒ³ã‚¹ãƒˆãƒ©ã‚¯ã‚¿
 	BOOL FASTCALL Init();
-										// ‰Šú‰»
+										// åˆæœŸåŒ–
 	void FASTCALL Cleanup();
-										// ƒNƒŠ[ƒ“ƒAƒbƒv
+										// ã‚¯ãƒªãƒ¼ãƒ³ã‚¢ãƒƒãƒ—
 	void FASTCALL Reset();
-										// ƒŠƒZƒbƒg
+										// ãƒªã‚»ãƒƒãƒˆ
 	BOOL FASTCALL Save(Fileio *fio, int ver);
-										// ƒZ[ƒu
+										// ã‚»ãƒ¼ãƒ–
 	BOOL FASTCALL Load(Fileio *fio, int ver);
-										// ƒ[ƒh
+										// ãƒ­ãƒ¼ãƒ‰
 	void FASTCALL ApplyCfg(const Config *config);
-										// İ’è“K—p
+										// è¨­å®šé©ç”¨
 
 public:
-	// ŠO•”API
+	// å¤–éƒ¨API
 	void FASTCALL GetCPU(cpu_t *buffer) const;
-										// CPUƒŒƒWƒXƒ^æ“¾
+										// CPUãƒ¬ã‚¸ã‚¹ã‚¿å–å¾—
 	void FASTCALL SetCPU(const cpu_t *buffer);
-										// CPUƒŒƒWƒXƒ^İ’è
+										// CPUãƒ¬ã‚¸ã‚¹ã‚¿è¨­å®š
 	DWORD FASTCALL Exec(int cycle) {
 		DWORD result;
 
@@ -96,39 +81,39 @@ public:
 		::s68000context.odometer = 0;
 		return result;
 	}
-										// Às
+										// å®Ÿè¡Œ
 	BOOL FASTCALL Interrupt(int level, int vector);
-										// Š„‚è‚İ
+										// å‰²ã‚Šè¾¼ã¿
 	void FASTCALL IntAck(int level);
-										// Š„‚è‚İACK
+										// å‰²ã‚Šè¾¼ã¿ACK
 	void FASTCALL IntCancel(int level);
-										// Š„‚è‚İƒLƒƒƒ“ƒZƒ‹
+										// å‰²ã‚Šè¾¼ã¿ã‚­ãƒ£ãƒ³ã‚»ãƒ«
 	DWORD FASTCALL GetCycle() const		{ return ::s68000readOdometer(); }
-										// ƒTƒCƒNƒ‹”æ“¾
+										// ã‚µã‚¤ã‚¯ãƒ«æ•°å–å¾—
 	DWORD FASTCALL GetPC() const		{ return ::s68000readPC(); }
-										// ƒvƒƒOƒ‰ƒ€ƒJƒEƒ“ƒ^æ“¾
+										// ãƒ—ãƒ­ã‚°ãƒ©ãƒ ã‚«ã‚¦ãƒ³ã‚¿å–å¾—
 	void FASTCALL ResetInst();
-										// RESET–½—ß
+										// RESETå‘½ä»¤
 	DWORD FASTCALL GetIOCycle()	const	{ return ::s68000getcounter(); }
-										// I/OƒTƒCƒNƒ‹æ“¾
+										// I/Oã‚µã‚¤ã‚¯ãƒ«å–å¾—
 	void FASTCALL SetIOCycle(DWORD c)	{ ::s68000setcounter(c); }
-										// I/OƒTƒCƒNƒ‹İ’è
+										// I/Oã‚µã‚¤ã‚¯ãƒ«è¨­å®š
 	void FASTCALL Release()				{ ::s68000releaseTimeslice(); }
-										// CPUÀs‚ğŒ»–½—ß‚Å‹­§I—¹
+										// CPUå®Ÿè¡Œã‚’ç¾å‘½ä»¤ã§å¼·åˆ¶çµ‚äº†
 	void FASTCALL BusErr(DWORD addr, BOOL read);
-										// ƒoƒXƒGƒ‰[
+										// ãƒã‚¹ã‚¨ãƒ©ãƒ¼
 	void FASTCALL AddrErr(DWORD addr, BOOL read);
-										// ƒAƒhƒŒƒXƒGƒ‰[
+										// ã‚¢ãƒ‰ãƒ¬ã‚¹ã‚¨ãƒ©ãƒ¼
 	void FASTCALL BusErrLog(DWORD addr, DWORD stat);
-										// ƒoƒXƒGƒ‰[‹L˜^
+										// ãƒã‚¹ã‚¨ãƒ©ãƒ¼è¨˜éŒ²
 	void FASTCALL AddrErrLog(DWORD addr, DWORD stat);
-										// ƒAƒhƒŒƒXƒGƒ‰[‹L˜^
+										// ã‚¢ãƒ‰ãƒ¬ã‚¹ã‚¨ãƒ©ãƒ¼è¨˜éŒ²
 
 private:
 	cpusub_t sub;
-										// “à•”ƒf[ƒ^
+										// å†…éƒ¨ãƒ‡ãƒ¼ã‚¿
 	Memory *memory;
-										// ƒƒ‚ƒŠ
+										// ãƒ¡ãƒ¢ãƒª
 	DMAC *dmac;
 										// DMAC
 	MFP *mfp;
@@ -142,7 +127,7 @@ private:
 	SCSI *scsi;
 										// SCSI
 	Scheduler *scheduler;
-										// ƒXƒPƒWƒ…[ƒ‰
+										// ã‚¹ã‚±ã‚¸ãƒ¥ãƒ¼ãƒ©
 };
 
 #endif	// cpu_h

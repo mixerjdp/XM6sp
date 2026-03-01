@@ -11,20 +11,16 @@
 #define scheduler_h
 
 #include "device.h"
-#include "starcpu.h"
+#include "musashi_adapter.h"
 
 //---------------------------------------------------------------------------
 //
-//	鬮倬溘え繧ｧ繧､繝�(Starscream蟆ら畑)
+//	鬮倬溘え繧ｧ繧､繝(Starscream蟆ら畑)
 //
 //---------------------------------------------------------------------------
+// s68000iocycle is declared in musashi_adapter.h
 #define SCHEDULER_FASTWAIT
-#if defined(SCHEDULER_FASTWAIT)
-extern "C" {
-extern DWORD s68000iocycle;
-										// __io_cycle_counter(Starscream)
-}
-#endif	// SCHEDULER_FASTWAIT
+
 
 //===========================================================================
 //
@@ -101,7 +97,7 @@ public:
 	void FASTCALL Break()				{ sch.brk = TRUE; }
 										// 螳溯｡御ｸｭ豁｢
 #ifdef SCHEDULER_FASTWAIT
-	void FASTCALL Wait(DWORD cycle)		{ sch.cycle += cycle; if (::s68000iocycle != (DWORD)-1) ::s68000iocycle -= cycle; }
+	void FASTCALL Wait(DWORD cycle)		{ sch.cycle += cycle; if (::s68000iocycle != (DWORD)-1) { ::s68000iocycle -= cycle; ::musashi_adjust_timeslice(-(int)cycle); } }
 										// CPU繧ｦ繧ｧ繧､繝�(縺吶∋縺ｦ繧､繝ｳ繝ｩ繧､繝ｳ)
 #else
 	void FASTCALL Wait(DWORD cycle)		{ ::s68000wait(cycle); sch.cycle += cycle; }

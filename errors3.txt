@@ -1,0 +1,5 @@
+﻿..\vm\cpu.cpp(82): error C2733: 's68000buserrlog' : second C linkage of overloaded function not allowed [c:\sw\XM62022\00proj.vc7\XM6.vcxproj]
+..\vm\cpu.cpp(92): error C2733: 's68000addrerrlog' : second C linkage of overloaded function not allowed [c:\sw\XM62022\00proj.vc7\XM6.vcxproj]
+..\vm\memory.cpp(552): error C2001: newline in constant [c:\sw\XM62022\00proj.vc7\XM6.vcxproj]
+..\vm\memory.cpp(552): fatal error C1057: unexpected end of file in macro expansion [c:\sw\XM62022\00proj.vc7\XM6.vcxproj]
+..\vm\memory.cpp(590): error C2001: newline in constant [c:\sw\XM62022\00proj.vc7\XM6.vcxproj]

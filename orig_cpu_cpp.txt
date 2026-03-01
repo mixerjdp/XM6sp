@@ -1,0 +1,718 @@
+//---------------------------------------------------------------------------
+//
+//	X68000 EMULATOR "XM6"
+//
+//	Copyright (C) 2001-2006 ???(ytanaka@ipc-tokai.or.jp)
+//	[ CPU(MC68000) ]
+//
+//---------------------------------------------------------------------------
+
+#include "os.h"
+#include "xm6.h"
+#include "iosc.h"
+#include "mfp.h"
+#include "vm.h"
+#include "log.h"
+#include "memory.h"
+#include "dmac.h"
+#include "scc.h"
+#include "midi.h"
+#include "scsi.h"
+#include "fileio.h"
+#include "cpu.h"
+
+//---------------------------------------------------------------------------
+//
+//	????????????????
+//
+//---------------------------------------------------------------------------
+#if defined(__cplusplus)
+extern "C" {
+#endif	// __cplusplus
+
+//---------------------------------------------------------------------------
+//
+//	?????? ???
+//
+//---------------------------------------------------------------------------
+static CPU *cpu;
+										// CPU
+
+//---------------------------------------------------------------------------
+//
+//	????
+//
+//---------------------------------------------------------------------------
+DWORD s68000fbpc(void);
+										// PC???????
+void s68000buserr(DWORD addr, DWORD param);
+										// ?????
+
+//---------------------------------------------------------------------------
+//
+//	RESET??????
+//
+//---------------------------------------------------------------------------
+static void cpu_resethandler(void)
+{
+	cpu->ResetInst();
+}
+
+//---------------------------------------------------------------------------
+//
+//	????ACK
+//
+//---------------------------------------------------------------------------
+void s68000intack(void)
+{
+	int sr;
+
+	sr = ::s68000context.sr;
+	sr >>= 8;
+	sr &= 0x0007;
+
+	cpu->IntAck(sr);
+}
+
+//---------------------------------------------------------------------------
+//
+//	???????
+//
+//---------------------------------------------------------------------------
+void s68000buserrlog(DWORD addr, DWORD stat)
+{
+	cpu->BusErrLog(addr, stat);
+}
+
+//---------------------------------------------------------------------------
+//
+//	?????????
+//
+//---------------------------------------------------------------------------
+void s68000addrerrlog(DWORD addr, DWORD stat)
+{
+	cpu->AddrErrLog(addr, stat);
+}
+
+#if defined(__cplusplus)
+}
+#endif	// __cplusplus
+
+//===========================================================================
+//
+//	CPU
+//
+//===========================================================================
+//#define CPU_LOG
+
+//---------------------------------------------------------------------------
+//
+//	???????
+//
+//---------------------------------------------------------------------------
+CPU::CPU(VM *p) : Device(p)
+{
+	// ????ID????
+	dev.id = MAKEID('C', 'P', 'U', ' ');
+	dev.desc = "MPU (MC68000)";
+
+	// ???????
+	memory = NULL;
+	dmac = NULL;
+	mfp = NULL;
+	iosc = NULL;
+	scc = NULL;
+	midi = NULL;
+	scsi = NULL;
+	scheduler = NULL;
+}
+
+//---------------------------------------------------------------------------
+//
+//	???
+//
+//---------------------------------------------------------------------------
+BOOL FASTCALL CPU::Init()
+{
+	ASSERT(this);
+
+	// ?????
+	if (!Device::Init()) {
+		return FALSE;
+	}
+
+	// CPU??
+	::cpu = this;
+
+	// ?????
+	memory = (Memory*)vm->SearchDevice(MAKEID('M', 'E', 'M', ' '));
+	ASSERT(memory);
+
+	// DMAC??
+	dmac = (DMAC*)vm->SearchDevice(MAKEID('D', 'M', 'A', 'C'));
+	ASSERT(dmac);
+
+	// MFP??
+	mfp = (MFP*)vm->SearchDevice(MAKEID('M', 'F', 'P', ' '));
+	ASSERT(mfp);
+
+	// IOSC??
+	iosc = (IOSC*)vm->SearchDevice(MAKEID('I', 'O', 'S', 'C'));
+	ASSERT(iosc);
+
+	// SCC??
+	scc = (SCC*)vm->SearchDevice(MAKEID('S', 'C', 'C', ' '));
+	ASSERT(scc);
+
+	// MIDI??
+	midi = (MIDI*)vm->SearchDevice(MAKEID('M', 'I', 'D', 'I'));
+	ASSERT(midi);
+
+	// SCSI??
+	scsi = (SCSI*)vm->SearchDevice(MAKEID('S', 'C', 'S', 'I'));
+	ASSERT(scsi);
+
+	// ????????
+	scheduler = (Scheduler*)vm->SearchDevice(MAKEID('S', 'C', 'H', 'E'));
+	ASSERT(scheduler);
+
+	// CPU??????????????
+	::s68000init();
+
+	return TRUE;
+}
+
+//---------------------------------------------------------------------------
+//
+//	???????
+//
+//---------------------------------------------------------------------------
+void FASTCALL CPU::Cleanup()
+{
+	ASSERT(this);
+
+	// ??????
+	Device::Cleanup();
+}
+
+//---------------------------------------------------------------------------
+//
+//	????
+//
+//---------------------------------------------------------------------------
+void FASTCALL CPU::Reset()
+{
+	int i;
+	S68000CONTEXT context;
+	DWORD bit;
+
+	ASSERT(this);
+	LOG0(Log::Normal, "????");
+
+	// ????????????????
+	sub.erraddr = 0;
+	sub.errtime = 0;
+
+	// ???????????
+	for (i=0; i<8; i++) {
+		sub.intreq[i] = 0;
+		sub.intack[i] = 0;
+	}
+
+	// ???????????(??????)
+	memory->MakeContext(TRUE);
+
+	// ????
+	::s68000reset();
+	::s68000context.resethandler = cpu_resethandler;
+	::s68000context.odometer = 0;
+
+	// ????????????
+	::s68000GetContext(&context);
+	for (i=1; i<=7; i++) {
+		bit = (1 << i);
+		if (context.interrupts[0] & bit) {
+			context.interrupts[0] &= (BYTE)(~bit);
+			context.interrupts[i] = 0;
+		}
+	}
+	::s68000SetContext(&context);
+
+	// ???????????(??)
+	memory->MakeContext(FALSE);
+}
+
+//---------------------------------------------------------------------------
+//
+//	???
+//
+//---------------------------------------------------------------------------
+BOOL FASTCALL CPU::Save(Fileio *fio, int /*ver*/)
+{
+	size_t sz;
+	cpu_t cpu;
+
+	ASSERT(this);
+	ASSERT(fio);
+
+	LOG0(Log::Normal, "???");
+
+	// ????????
+	GetCPU(&cpu);
+
+	// ???????
+	sz = sizeof(cpu_t);
+	if (!fio->Write(&sz, sizeof(sz))) {
+		return FALSE;
+	}
+
+	// ??????
+	if (!fio->Write(&cpu, (int)sz)) {
+		return FALSE;
+	}
+
+	// ???????(??)
+	sz = sizeof(cpusub_t);
+	if (!fio->Write(&sz, sizeof(sz))) {
+		return FALSE;
+	}
+
+	// ??????(??)
+	if (!fio->Write(&sub, (int)sz)) {
+		return FALSE;
+	}
+
+	return TRUE;
+}
+
+//---------------------------------------------------------------------------
+//
+//	???
+//
+//---------------------------------------------------------------------------
+BOOL FASTCALL CPU::Load(Fileio *fio, int /*ver*/)
+{
+	cpu_t cpu;
+	size_t sz;
+
+	ASSERT(this);
+	ASSERT(fio);
+
+	LOG0(Log::Normal, "???");
+
+	// ??????????
+	if (!fio->Read(&sz, sizeof(sz))) {
+		return FALSE;
+	}
+	if (sz != sizeof(cpu_t)) {
+		return FALSE;
+	}
+
+	// ??????
+	if (!fio->Read(&cpu, (int)sz)) {
+		return FALSE;
+	}
+
+	// ??(??????????)
+	memory->MakeContext(TRUE);
+	::s68000reset();
+	memory->MakeContext(FALSE);
+	SetCPU(&cpu);
+
+	// ??????????(??)
+	if (!fio->Read(&sz, sizeof(sz))) {
+		return FALSE;
+	}
+	if (sz != sizeof(cpusub_t)) {
+		return FALSE;
+	}
+
+	// ??????(??)
+	if (!fio->Read(&sub, (int)sz)) {
+		return FALSE;
+	}
+
+	return TRUE;
+}
+
+//---------------------------------------------------------------------------
+//
+//	????
+//
+//---------------------------------------------------------------------------
+void FASTCALL CPU::ApplyCfg(const Config* /*config*/)
+{
+	ASSERT(this);
+
+	LOG0(Log::Normal, "????");
+}
+
+//---------------------------------------------------------------------------
+//
+//	CPU??????
+//
+//---------------------------------------------------------------------------
+void FASTCALL CPU::GetCPU(cpu_t *buffer) const
+{
+	int i;
+
+	ASSERT(this);
+	ASSERT(buffer);
+
+	// Dreg, Areg
+	for (i=0; i<8; i++) {
+		buffer->dreg[i] = ::s68000context.dreg[i];
+		buffer->areg[i] = ::s68000context.areg[i];
+	}
+
+	// ????
+	for (i=0; i<8; i++) {
+		buffer->intr[i] = (DWORD)::s68000context.interrupts[i];
+		buffer->intreq[i] = sub.intreq[i];
+		buffer->intack[i] = sub.intack[i];
+	}
+
+	// ???
+	buffer->sp = ::s68000context.asp;
+	buffer->pc = ::s68000context.pc;
+	buffer->sr = (DWORD)::s68000context.sr;
+	buffer->odd = ::s68000context.odometer;
+}
+
+//---------------------------------------------------------------------------
+//
+//	CPU??????
+//
+//---------------------------------------------------------------------------
+void FASTCALL CPU::SetCPU(const cpu_t *buffer)
+{
+	int i;
+	S68000CONTEXT context;
+
+	ASSERT(this);
+	ASSERT(buffer);
+
+	// ????????
+	::s68000GetContext(&context);
+
+	// Dreg, Areg
+	for (i=0; i<8; i++) {
+		context.dreg[i] = buffer->dreg[i];
+		context.areg[i] = buffer->areg[i];
+	}
+
+	// ????
+	for (i=0; i<8; i++) {
+		context.interrupts[i] = (BYTE)buffer->intr[i];
+		sub.intreq[i] = buffer->intreq[i];
+		sub.intack[i] = buffer->intack[i];
+	}
+
+	// ???
+	context.asp = buffer->sp;
+	context.pc = buffer->pc;
+	context.sr = (WORD)buffer->sr;
+	context.odometer = buffer->odd;
+
+	// ????????
+	::s68000SetContext(&context);
+}
+
+//---------------------------------------------------------------------------
+//
+//	????
+//
+//---------------------------------------------------------------------------
+BOOL FASTCALL CPU::Interrupt(int level, int vector)
+{
+	int ret;
+
+	// INTERRUPT SWITCH???NMI????????-1
+	ASSERT(this);
+	ASSERT((level >= 1) && (level <= 7));
+	ASSERT(vector >= -1);
+
+	// ?????
+	ret = ::s68000interrupt(level, vector);
+
+	// ????
+	if (ret == 0) {
+#if defined(CPU_LOG)
+		LOG2(Log::Normal, "???????? ???%d ???$%02X", level, vector);
+#endif	// CPU_LOG
+		sub.intreq[level]++;
+		return TRUE;
+	}
+
+	return FALSE;
+}
+
+//---------------------------------------------------------------------------
+//
+//	????ACK
+//
+//---------------------------------------------------------------------------
+void FASTCALL CPU::IntAck(int level)
+{
+	ASSERT(this);
+	ASSERT((level >= 1) && (level <= 7));
+
+#if defined(CPU_LOG)
+	LOG1(Log::Normal, "??????ACK ???%d", level);
+#endif	// CPU_LOG
+
+	// ???????
+	sub.intack[level]++;
+
+	// ????????
+	switch (level) {
+		// IOSC,SCSI(??)
+		case 1:
+			iosc->IntAck();
+			scsi->IntAck(1);
+			break;
+
+		// MIDI,SCSI(???2)
+		case 2:
+			midi->IntAck(2);
+			scsi->IntAck(2);
+			break;
+
+		// DMAC
+		case 3:
+			dmac->IntAck();
+			break;
+
+		// MIDI,SCSI(???4)
+		case 4:
+			midi->IntAck(4);
+			scsi->IntAck(4);
+			break;
+
+		// SCC
+		case 5:
+			scc->IntAck();
+			break;
+
+		// MFP
+		case 6:
+			mfp->IntAck();
+			break;
+
+		// ???
+		default:
+			break;
+	}
+}
+
+//---------------------------------------------------------------------------
+//
+//	?????????
+//
+//---------------------------------------------------------------------------
+void FASTCALL CPU::IntCancel(int level)
+{
+	S68000CONTEXT context;
+	DWORD bit;
+
+	ASSERT(this);
+	ASSERT((level >= 1) && (level <= 7));
+
+	// ??????????????
+	::s68000GetContext(&context);
+
+	// ??????????
+	bit = (1 << level);
+	if (context.interrupts[0] & bit) {
+#if defined(CPU_LOG)
+		LOG1(Log::Normal, "????????? ???%d", level);
+#endif	// CPU_LOG
+
+		// ???????
+		context.interrupts[0] &= (BYTE)(~bit);
+
+		// ????0
+		context.interrupts[level] = 0;
+
+		// ?????????
+		sub.intreq[level]--;
+	}
+
+	// ???????????
+	::s68000SetContext(&context);
+}
+
+//---------------------------------------------------------------------------
+//
+//	RESET??
+//
+//---------------------------------------------------------------------------
+void FASTCALL CPU::ResetInst()
+{
+	Device *device;
+
+	ASSERT(this);
+	LOG0(Log::Detail, "RESET??");
+
+	// ??????
+	device = (Device*)vm->SearchDevice(MAKEID('M', 'E', 'M', ' '));
+	ASSERT(device);
+
+	// ????????????????????????
+	// ?????CPU?RESET?????????????????
+	while (device) {
+		device->Reset();
+		device = device->GetNextDevice();
+	}
+}
+
+//---------------------------------------------------------------------------
+//
+//	?????
+//	?DMA????????????????
+//	?CPU???????????????????????????
+//
+//---------------------------------------------------------------------------
+void FASTCALL CPU::BusErr(DWORD addr, BOOL read)
+{
+	DWORD pc;
+	DWORD stat;
+
+	ASSERT(this);
+	ASSERT(addr <= 0xffffff);
+
+	// DMAC????????DMAC???DMAC????
+	if (dmac->IsDMA()) {
+		dmac->BusErr(addr, read);
+		return;
+	}
+
+	// ????????????+2???????????????(LONG????)
+	if (addr == (sub.erraddr + 2)) {
+		if (scheduler->GetTotalTime() == sub.errtime) {
+			return;
+		}
+	}
+
+	// ??????????
+	sub.erraddr = addr;
+	sub.errtime = scheduler->GetTotalTime();
+
+	// PC??(???????????????)
+	pc = GetPC();
+
+	// ????(Word)
+	stat = memory->ReadOnly(pc);
+	stat <<= 8;
+	stat |= memory->ReadOnly(pc + 1);
+	stat <<= 16;
+
+	// ????????????(?????????????)
+	stat |= 0x09;
+	if (::s68000context.sr & 0x2000) {
+		stat |= 0x04;
+	}
+	if (read) {
+		stat |= 0x10;
+	}
+
+	// ???????
+	::s68000buserr(addr, stat);
+}
+
+//---------------------------------------------------------------------------
+//
+//	???????
+//	?DMA??????????????????
+//	?CPU?????????????????????????????
+//
+//---------------------------------------------------------------------------
+void FASTCALL CPU::AddrErr(DWORD addr, BOOL read)
+{
+	DWORD pc;
+	DWORD stat;
+
+	ASSERT(this);
+	ASSERT(addr <= 0xffffff);
+	ASSERT(addr & 1);
+
+	// DMAC????????DMAC???DMAC????
+	if (dmac->IsDMA()) {
+		dmac->AddrErr(addr, read);
+		return;
+	}
+
+	// ????????????+2???????????????(LONG????)
+	if (addr == (sub.erraddr + 2)) {
+		if (scheduler->GetTotalTime() == sub.errtime) {
+			return;
+		}
+	}
+
+	// ??????????
+	sub.erraddr = addr;
+	sub.errtime = scheduler->GetTotalTime();
+
+	// PC??(???????????????)
+	pc = GetPC();
+
+	// ????(Word)
+	stat = memory->ReadOnly(pc);
+	stat <<= 8;
+	stat |= memory->ReadOnly(pc + 1);
+	stat <<= 16;
+
+	// ????????????(?????????????)
+	stat |= 0x8009;
+	if (::s68000context.sr & 0x2000) {
+		stat |= 0x04;
+	}
+	if (read) {
+		stat |= 0x10;
+	}
+
+	// ???????(?????????????)
+	::s68000buserr(addr, stat);
+}
+
+//---------------------------------------------------------------------------
+//
+//	???????
+//	?CPU????????????????????????
+//
+//---------------------------------------------------------------------------
+void FASTCALL CPU::BusErrLog(DWORD addr, DWORD stat)
+{
+	ASSERT(this);
+
+	// ?????(24bit?????????)
+	addr &= 0xffffff;
+
+	if (stat & 0x10) {
+		LOG1(Log::Warning, "?????(????) $%06X", addr);
+	}
+	else {
+		LOG1(Log::Warning, "?????(????) $%06X", addr);
+	}
+}
+
+//---------------------------------------------------------------------------
+//
+//	?????????
+//	?CPU??????????????????????????
+//
+//---------------------------------------------------------------------------
+void FASTCALL CPU::AddrErrLog(DWORD addr, DWORD stat)
+{
+	ASSERT(this);
+
+	// ?????(24bit?????????)
+	addr &= 0xffffff;
+
+	if (stat & 0x10) {
+		LOG1(Log::Warning, "???????(????) $%06X", addr);
+	}
+	else {
+		LOG1(Log::Warning, "???????(????) $%06X", addr);
+	}
+}

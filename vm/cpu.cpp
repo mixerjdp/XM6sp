@@ -2,7 +2,7 @@
 //
 //	X68000 EMULATOR "XM6"
 //
-//	Copyright (C) 2001-2006 ‚o‚hD(ytanaka@ipc-tokai.or.jp)
+//	Copyright (C) 2001-2006 ï¼°ï¼©ï¼(ytanaka@ipc-tokai.or.jp)
 //	[ CPU(MC68000) ]
 //
 //---------------------------------------------------------------------------
@@ -23,7 +23,7 @@
 
 //---------------------------------------------------------------------------
 //
-//	ƒAƒZƒ“ƒuƒ‰ƒRƒA‚Æ‚ÌƒCƒ“ƒ^ƒtƒF[ƒX
+//	ã‚¢ã‚»ãƒ³ãƒ–ãƒ©ã‚³ã‚¢ã¨ã®ã‚¤ãƒ³ã‚¿ãƒ•ã‚§ãƒ¼ã‚¹
 //
 //---------------------------------------------------------------------------
 #if defined(__cplusplus)
@@ -32,7 +32,7 @@ extern "C" {
 
 //---------------------------------------------------------------------------
 //
-//	ƒXƒ^ƒeƒBƒbƒN ƒ[ƒN
+//	ã‚¹ã‚¿ãƒ†ã‚£ãƒƒã‚¯ ãƒ¯ãƒ¼ã‚¯
 //
 //---------------------------------------------------------------------------
 static CPU *cpu;
@@ -40,17 +40,17 @@ static CPU *cpu;
 
 //---------------------------------------------------------------------------
 //
-//	ŠO•”’è‹`
+//	å¤–éƒ¨å®šç¾©
 //
 //---------------------------------------------------------------------------
-DWORD s68000fbpc(void);
-										// PCƒtƒB[ƒhƒoƒbƒN
-void s68000buserr(DWORD addr, DWORD param);
-										// ƒoƒXƒGƒ‰[
+// Forward declarations removed - now in musashi_adapter.h
+// DWORD s68000fbpc(void);
+// void s68000buserr(DWORD addr, DWORD param);
+										// ãƒã‚¹ã‚¨ãƒ©ãƒ¼
 
 //---------------------------------------------------------------------------
 //
-//	RESET–½—ßƒnƒ“ƒhƒ‰
+//	RESETå‘½ä»¤ãƒãƒ³ãƒ‰ãƒ©
 //
 //---------------------------------------------------------------------------
 static void cpu_resethandler(void)
@@ -60,23 +60,17 @@ static void cpu_resethandler(void)
 
 //---------------------------------------------------------------------------
 //
-//	Š„‚è‚İACK
+//	å‰²ã‚Šè¾¼ã¿ACK
 //
 //---------------------------------------------------------------------------
-void s68000intack(void)
+void s68000intack(int level)
 {
-	int sr;
-
-	sr = ::s68000context.sr;
-	sr >>= 8;
-	sr &= 0x0007;
-
-	cpu->IntAck(sr);
+	cpu->IntAck(level);
 }
 
 //---------------------------------------------------------------------------
 //
-//	ƒoƒXƒGƒ‰[‹L˜^
+//	ãƒã‚¹ã‚¨ãƒ©ãƒ¼è¨˜éŒ²
 //
 //---------------------------------------------------------------------------
 void s68000buserrlog(DWORD addr, DWORD stat)
@@ -86,7 +80,7 @@ void s68000buserrlog(DWORD addr, DWORD stat)
 
 //---------------------------------------------------------------------------
 //
-//	ƒAƒhƒŒƒXƒGƒ‰[‹L˜^
+//	ã‚¢ãƒ‰ãƒ¬ã‚¹ã‚¨ãƒ©ãƒ¼è¨˜éŒ²
 //
 //---------------------------------------------------------------------------
 void s68000addrerrlog(DWORD addr, DWORD stat)
@@ -107,16 +101,16 @@ void s68000addrerrlog(DWORD addr, DWORD stat)
 
 //---------------------------------------------------------------------------
 //
-//	ƒRƒ“ƒXƒgƒ‰ƒNƒ^
+//	ã‚³ãƒ³ã‚¹ãƒˆãƒ©ã‚¯ã‚¿
 //
 //---------------------------------------------------------------------------
 CPU::CPU(VM *p) : Device(p)
 {
-	// ƒfƒoƒCƒXID‚ğ‰Šú‰»
+	// ãƒ‡ãƒã‚¤ã‚¹IDã‚’åˆæœŸåŒ–
 	dev.id = MAKEID('C', 'P', 'U', ' ');
 	dev.desc = "MPU (MC68000)";
 
-	// ƒ|ƒCƒ“ƒ^‰Šú‰»
+	// ãƒã‚¤ãƒ³ã‚¿åˆæœŸåŒ–
 	memory = NULL;
 	dmac = NULL;
 	mfp = NULL;
@@ -129,54 +123,54 @@ CPU::CPU(VM *p) : Device(p)
 
 //---------------------------------------------------------------------------
 //
-//	‰Šú‰»
+//	åˆæœŸåŒ–
 //
 //---------------------------------------------------------------------------
 BOOL FASTCALL CPU::Init()
 {
 	ASSERT(this);
 
-	// Šî–{ƒNƒ‰ƒX
+	// åŸºæœ¬ã‚¯ãƒ©ã‚¹
 	if (!Device::Init()) {
 		return FALSE;
 	}
 
-	// CPU‹L‰¯
+	// CPUè¨˜æ†¶
 	::cpu = this;
 
-	// ƒƒ‚ƒŠæ“¾
+	// ãƒ¡ãƒ¢ãƒªå–å¾—
 	memory = (Memory*)vm->SearchDevice(MAKEID('M', 'E', 'M', ' '));
 	ASSERT(memory);
 
-	// DMACæ“¾
+	// DMACå–å¾—
 	dmac = (DMAC*)vm->SearchDevice(MAKEID('D', 'M', 'A', 'C'));
 	ASSERT(dmac);
 
-	// MFPæ“¾
+	// MFPå–å¾—
 	mfp = (MFP*)vm->SearchDevice(MAKEID('M', 'F', 'P', ' '));
 	ASSERT(mfp);
 
-	// IOSCæ“¾
+	// IOSCå–å¾—
 	iosc = (IOSC*)vm->SearchDevice(MAKEID('I', 'O', 'S', 'C'));
 	ASSERT(iosc);
 
-	// SCCæ“¾
+	// SCCå–å¾—
 	scc = (SCC*)vm->SearchDevice(MAKEID('S', 'C', 'C', ' '));
 	ASSERT(scc);
 
-	// MIDIæ“¾
+	// MIDIå–å¾—
 	midi = (MIDI*)vm->SearchDevice(MAKEID('M', 'I', 'D', 'I'));
 	ASSERT(midi);
 
-	// SCSIæ“¾
+	// SCSIå–å¾—
 	scsi = (SCSI*)vm->SearchDevice(MAKEID('S', 'C', 'S', 'I'));
 	ASSERT(scsi);
 
-	// ƒXƒPƒWƒ…[ƒ‰æ“¾
+	// ã‚¹ã‚±ã‚¸ãƒ¥ãƒ¼ãƒ©å–å¾—
 	scheduler = (Scheduler*)vm->SearchDevice(MAKEID('S', 'C', 'H', 'E'));
 	ASSERT(scheduler);
 
-	// CPUƒRƒA‚ÌƒWƒƒƒ“ƒvƒe[ƒuƒ‹‚ğì¬
+	// CPUã‚³ã‚¢ã®ã‚¸ãƒ£ãƒ³ãƒ—ãƒ†ãƒ¼ãƒ–ãƒ«ã‚’ä½œæˆ
 	::s68000init();
 
 	return TRUE;
@@ -184,20 +178,20 @@ BOOL FASTCALL CPU::Init()
 
 //---------------------------------------------------------------------------
 //
-//	ƒNƒŠ[ƒ“ƒAƒbƒv
+//	ã‚¯ãƒªãƒ¼ãƒ³ã‚¢ãƒƒãƒ—
 //
 //---------------------------------------------------------------------------
 void FASTCALL CPU::Cleanup()
 {
 	ASSERT(this);
 
-	// Šî–{ƒNƒ‰ƒX‚Ö
+	// åŸºæœ¬ã‚¯ãƒ©ã‚¹ã¸
 	Device::Cleanup();
 }
 
 //---------------------------------------------------------------------------
 //
-//	ƒŠƒZƒbƒg
+//	ãƒªã‚»ãƒƒãƒˆ
 //
 //---------------------------------------------------------------------------
 void FASTCALL CPU::Reset()
@@ -207,27 +201,27 @@ void FASTCALL CPU::Reset()
 	DWORD bit;
 
 	ASSERT(this);
-	LOG0(Log::Normal, "ƒŠƒZƒbƒg");
+	LOG0(Log::Normal, "ãƒªã‚»ãƒƒãƒˆ");
 
-	// ƒGƒ‰[ƒAƒhƒŒƒXAƒGƒ‰[ŠÔƒNƒŠƒA
+	// ã‚¨ãƒ©ãƒ¼ã‚¢ãƒ‰ãƒ¬ã‚¹ã€ã‚¨ãƒ©ãƒ¼æ™‚é–“ã‚¯ãƒªã‚¢
 	sub.erraddr = 0;
 	sub.errtime = 0;
 
-	// Š„‚è‚İƒJƒEƒ“ƒgƒNƒŠƒA
+	// å‰²ã‚Šè¾¼ã¿ã‚«ã‚¦ãƒ³ãƒˆã‚¯ãƒªã‚¢
 	for (i=0; i<8; i++) {
 		sub.intreq[i] = 0;
 		sub.intack[i] = 0;
 	}
 
-	// ƒƒ‚ƒŠƒRƒ“ƒeƒLƒXƒgì¬(ƒŠƒZƒbƒgê—p)
+	// ãƒ¡ãƒ¢ãƒªã‚³ãƒ³ãƒ†ã‚­ã‚¹ãƒˆä½œæˆ(ãƒªã‚»ãƒƒãƒˆå°‚ç”¨)
 	memory->MakeContext(TRUE);
 
-	// ƒŠƒZƒbƒg
+	// ãƒªã‚»ãƒƒãƒˆ
 	::s68000reset();
 	::s68000context.resethandler = cpu_resethandler;
 	::s68000context.odometer = 0;
 
-	// Š„‚è‚İ‚ğ‚·‚×‚Äæ‚èÁ‚·
+	// å‰²ã‚Šè¾¼ã¿ã‚’ã™ã¹ã¦å–ã‚Šæ¶ˆã™
 	::s68000GetContext(&context);
 	for (i=1; i<=7; i++) {
 		bit = (1 << i);
@@ -238,13 +232,13 @@ void FASTCALL CPU::Reset()
 	}
 	::s68000SetContext(&context);
 
-	// ƒƒ‚ƒŠƒRƒ“ƒeƒLƒXƒgì¬(’Êí)
+	// ãƒ¡ãƒ¢ãƒªã‚³ãƒ³ãƒ†ã‚­ã‚¹ãƒˆä½œæˆ(é€šå¸¸)
 	memory->MakeContext(FALSE);
 }
 
 //---------------------------------------------------------------------------
 //
-//	ƒZ[ƒu
+//	ã‚»ãƒ¼ãƒ–
 //
 //---------------------------------------------------------------------------
 BOOL FASTCALL CPU::Save(Fileio *fio, int /*ver*/)
@@ -255,29 +249,29 @@ BOOL FASTCALL CPU::Save(Fileio *fio, int /*ver*/)
 	ASSERT(this);
 	ASSERT(fio);
 
-	LOG0(Log::Normal, "ƒZ[ƒu");
+	LOG0(Log::Normal, "ã‚»ãƒ¼ãƒ–");
 
-	// ƒRƒ“ƒeƒLƒXƒgæ“¾
+	// ã‚³ãƒ³ãƒ†ã‚­ã‚¹ãƒˆå–å¾—
 	GetCPU(&cpu);
 
-	// ƒTƒCƒY‚ğƒZ[ƒu
+	// ã‚µã‚¤ã‚ºã‚’ã‚»ãƒ¼ãƒ–
 	sz = sizeof(cpu_t);
 	if (!fio->Write(&sz, sizeof(sz))) {
 		return FALSE;
 	}
 
-	// À‘Ì‚ğƒZ[ƒu
+	// å®Ÿä½“ã‚’ã‚»ãƒ¼ãƒ–
 	if (!fio->Write(&cpu, (int)sz)) {
 		return FALSE;
 	}
 
-	// ƒTƒCƒY‚ğƒZ[ƒu(ƒTƒu)
+	// ã‚µã‚¤ã‚ºã‚’ã‚»ãƒ¼ãƒ–(ã‚µãƒ–)
 	sz = sizeof(cpusub_t);
 	if (!fio->Write(&sz, sizeof(sz))) {
 		return FALSE;
 	}
 
-	// À‘Ì‚ğƒZ[ƒu(ƒTƒu)
+	// å®Ÿä½“ã‚’ã‚»ãƒ¼ãƒ–(ã‚µãƒ–)
 	if (!fio->Write(&sub, (int)sz)) {
 		return FALSE;
 	}
@@ -287,7 +281,7 @@ BOOL FASTCALL CPU::Save(Fileio *fio, int /*ver*/)
 
 //---------------------------------------------------------------------------
 //
-//	ƒ[ƒh
+//	ãƒ­ãƒ¼ãƒ‰
 //
 //---------------------------------------------------------------------------
 BOOL FASTCALL CPU::Load(Fileio *fio, int /*ver*/)
@@ -298,9 +292,9 @@ BOOL FASTCALL CPU::Load(Fileio *fio, int /*ver*/)
 	ASSERT(this);
 	ASSERT(fio);
 
-	LOG0(Log::Normal, "ƒ[ƒh");
+	LOG0(Log::Normal, "ãƒ­ãƒ¼ãƒ‰");
 
-	// ƒTƒCƒY‚ğƒ[ƒhAÆ‡
+	// ã‚µã‚¤ã‚ºã‚’ãƒ­ãƒ¼ãƒ‰ã€ç…§åˆ
 	if (!fio->Read(&sz, sizeof(sz))) {
 		return FALSE;
 	}
@@ -308,18 +302,18 @@ BOOL FASTCALL CPU::Load(Fileio *fio, int /*ver*/)
 		return FALSE;
 	}
 
-	// À‘Ì‚ğƒ[ƒh
+	// å®Ÿä½“ã‚’ãƒ­ãƒ¼ãƒ‰
 	if (!fio->Read(&cpu, (int)sz)) {
 		return FALSE;
 	}
 
-	// “K—p(ƒŠƒZƒbƒg‚µ‚Ä‚©‚çs‚¤)
+	// é©ç”¨(ãƒªã‚»ãƒƒãƒˆã—ã¦ã‹ã‚‰è¡Œã†)
 	memory->MakeContext(TRUE);
 	::s68000reset();
 	memory->MakeContext(FALSE);
 	SetCPU(&cpu);
 
-	// ƒTƒCƒY‚ğƒ[ƒhAÆ‡(ƒTƒu)
+	// ã‚µã‚¤ã‚ºã‚’ãƒ­ãƒ¼ãƒ‰ã€ç…§åˆ(ã‚µãƒ–)
 	if (!fio->Read(&sz, sizeof(sz))) {
 		return FALSE;
 	}
@@ -327,7 +321,7 @@ BOOL FASTCALL CPU::Load(Fileio *fio, int /*ver*/)
 		return FALSE;
 	}
 
-	// À‘Ì‚ğƒ[ƒh(ƒTƒu)
+	// å®Ÿä½“ã‚’ãƒ­ãƒ¼ãƒ‰(ã‚µãƒ–)
 	if (!fio->Read(&sub, (int)sz)) {
 		return FALSE;
 	}
@@ -337,19 +331,19 @@ BOOL FASTCALL CPU::Load(Fileio *fio, int /*ver*/)
 
 //---------------------------------------------------------------------------
 //
-//	İ’è“K—p
+//	è¨­å®šé©ç”¨
 //
 //---------------------------------------------------------------------------
 void FASTCALL CPU::ApplyCfg(const Config* /*config*/)
 {
 	ASSERT(this);
 
-	LOG0(Log::Normal, "İ’è“K—p");
+	LOG0(Log::Normal, "è¨­å®šé©ç”¨");
 }
 
 //---------------------------------------------------------------------------
 //
-//	CPUƒŒƒWƒXƒ^æ“¾
+//	CPUãƒ¬ã‚¸ã‚¹ã‚¿å–å¾—
 //
 //---------------------------------------------------------------------------
 void FASTCALL CPU::GetCPU(cpu_t *buffer) const
@@ -365,14 +359,14 @@ void FASTCALL CPU::GetCPU(cpu_t *buffer) const
 		buffer->areg[i] = ::s68000context.areg[i];
 	}
 
-	// Š„‚è‚İ
+	// å‰²ã‚Šè¾¼ã¿
 	for (i=0; i<8; i++) {
 		buffer->intr[i] = (DWORD)::s68000context.interrupts[i];
 		buffer->intreq[i] = sub.intreq[i];
 		buffer->intack[i] = sub.intack[i];
 	}
 
-	// ‚»‚Ì‘¼
+	// ãã®ä»–
 	buffer->sp = ::s68000context.asp;
 	buffer->pc = ::s68000context.pc;
 	buffer->sr = (DWORD)::s68000context.sr;
@@ -381,7 +375,7 @@ void FASTCALL CPU::GetCPU(cpu_t *buffer) const
 
 //---------------------------------------------------------------------------
 //
-//	CPUƒŒƒWƒXƒ^İ’è
+//	CPUãƒ¬ã‚¸ã‚¹ã‚¿è¨­å®š
 //
 //---------------------------------------------------------------------------
 void FASTCALL CPU::SetCPU(const cpu_t *buffer)
@@ -392,7 +386,7 @@ void FASTCALL CPU::SetCPU(const cpu_t *buffer)
 	ASSERT(this);
 	ASSERT(buffer);
 
-	// ƒRƒ“ƒeƒLƒXƒgæ“¾
+	// ã‚³ãƒ³ãƒ†ã‚­ã‚¹ãƒˆå–å¾—
 	::s68000GetContext(&context);
 
 	// Dreg, Areg
@@ -401,44 +395,44 @@ void FASTCALL CPU::SetCPU(const cpu_t *buffer)
 		context.areg[i] = buffer->areg[i];
 	}
 
-	// Š„‚è‚İ
+	// å‰²ã‚Šè¾¼ã¿
 	for (i=0; i<8; i++) {
 		context.interrupts[i] = (BYTE)buffer->intr[i];
 		sub.intreq[i] = buffer->intreq[i];
 		sub.intack[i] = buffer->intack[i];
 	}
 
-	// ‚»‚Ì‘¼
+	// ãã®ä»–
 	context.asp = buffer->sp;
 	context.pc = buffer->pc;
 	context.sr = (WORD)buffer->sr;
 	context.odometer = buffer->odd;
 
-	// ƒRƒ“ƒeƒLƒXƒgİ’è
+	// ã‚³ãƒ³ãƒ†ã‚­ã‚¹ãƒˆè¨­å®š
 	::s68000SetContext(&context);
 }
 
 //---------------------------------------------------------------------------
 //
-//	Š„‚è‚İ
+//	å‰²ã‚Šè¾¼ã¿
 //
 //---------------------------------------------------------------------------
 BOOL FASTCALL CPU::Interrupt(int level, int vector)
 {
 	int ret;
 
-	// INTERRUPT SWITCH‚É‚æ‚éNMIŠ„‚è‚İ‚ÍƒxƒNƒ^-1
+	// INTERRUPT SWITCHã«ã‚ˆã‚‹NMIå‰²ã‚Šè¾¼ã¿ã¯ãƒ™ã‚¯ã‚¿-1
 	ASSERT(this);
 	ASSERT((level >= 1) && (level <= 7));
 	ASSERT(vector >= -1);
 
-	// ƒŠƒNƒGƒXƒg
+	// ãƒªã‚¯ã‚¨ã‚¹ãƒˆ
 	ret = ::s68000interrupt(level, vector);
 
-	// Œ‹‰Ê•]‰¿
+	// çµæœè©•ä¾¡
 	if (ret == 0) {
 #if defined(CPU_LOG)
-		LOG2(Log::Normal, "Š„‚è‚İ—v‹ó— ƒŒƒxƒ‹%d ƒxƒNƒ^$%02X", level, vector);
+		LOG2(Log::Normal, "å‰²ã‚Šè¾¼ã¿è¦æ±‚å—ç† ãƒ¬ãƒ™ãƒ«%d ãƒ™ã‚¯ã‚¿$%02X", level, vector);
 #endif	// CPU_LOG
 		sub.intreq[level]++;
 		return TRUE;
@@ -449,7 +443,7 @@ BOOL FASTCALL CPU::Interrupt(int level, int vector)
 
 //---------------------------------------------------------------------------
 //
-//	Š„‚è‚İACK
+//	å‰²ã‚Šè¾¼ã¿ACK
 //
 //---------------------------------------------------------------------------
 void FASTCALL CPU::IntAck(int level)
@@ -458,21 +452,21 @@ void FASTCALL CPU::IntAck(int level)
 	ASSERT((level >= 1) && (level <= 7));
 
 #if defined(CPU_LOG)
-	LOG1(Log::Normal, "Š„‚è‚İ—v‹ACK ƒŒƒxƒ‹%d", level);
+	LOG1(Log::Normal, "å‰²ã‚Šè¾¼ã¿è¦æ±‚ACK ãƒ¬ãƒ™ãƒ«%d", level);
 #endif	// CPU_LOG
 
-	// ƒJƒEƒ“ƒgƒAƒbƒv
+	// ã‚«ã‚¦ãƒ³ãƒˆã‚¢ãƒƒãƒ—
 	sub.intack[level]++;
 
-	// Š„‚è‚İƒŒƒxƒ‹•Ê
+	// å‰²ã‚Šè¾¼ã¿ãƒ¬ãƒ™ãƒ«åˆ¥
 	switch (level) {
-		// IOSC,SCSI(“à‘ )
+		// IOSC,SCSI(å†…è”µ)
 		case 1:
 			iosc->IntAck();
 			scsi->IntAck(1);
 			break;
 
-		// MIDI,SCSI(ƒŒƒxƒ‹2)
+		// MIDI,SCSI(ãƒ¬ãƒ™ãƒ«2)
 		case 2:
 			midi->IntAck(2);
 			scsi->IntAck(2);
@@ -483,7 +477,7 @@ void FASTCALL CPU::IntAck(int level)
 			dmac->IntAck();
 			break;
 
-		// MIDI,SCSI(ƒŒƒxƒ‹4)
+		// MIDI,SCSI(ãƒ¬ãƒ™ãƒ«4)
 		case 4:
 			midi->IntAck(4);
 			scsi->IntAck(4);
@@ -499,7 +493,7 @@ void FASTCALL CPU::IntAck(int level)
 			mfp->IntAck();
 			break;
 
-		// ‚»‚Ì‘¼
+		// ãã®ä»–
 		default:
 			break;
 	}
@@ -507,7 +501,7 @@ void FASTCALL CPU::IntAck(int level)
 
 //---------------------------------------------------------------------------
 //
-//	Š„‚è‚İƒLƒƒƒ“ƒZƒ‹
+//	å‰²ã‚Šè¾¼ã¿ã‚­ãƒ£ãƒ³ã‚»ãƒ«
 //
 //---------------------------------------------------------------------------
 void FASTCALL CPU::IntCancel(int level)
@@ -518,33 +512,33 @@ void FASTCALL CPU::IntCancel(int level)
 	ASSERT(this);
 	ASSERT((level >= 1) && (level <= 7));
 
-	// ƒRƒ“ƒeƒLƒXƒg‚ğ’¼Ú‘‚«Š·‚¦‚é
+	// ã‚³ãƒ³ãƒ†ã‚­ã‚¹ãƒˆã‚’ç›´æ¥æ›¸ãæ›ãˆã‚‹
 	::s68000GetContext(&context);
 
-	// ŠY“–ƒrƒbƒg‚ªƒIƒ“‚È‚ç
+	// è©²å½“ãƒ“ãƒƒãƒˆãŒã‚ªãƒ³ãªã‚‰
 	bit = (1 << level);
 	if (context.interrupts[0] & bit) {
 #if defined(CPU_LOG)
-		LOG1(Log::Normal, "Š„‚è‚İƒLƒƒƒ“ƒZƒ‹ ƒŒƒxƒ‹%d", level);
+		LOG1(Log::Normal, "å‰²ã‚Šè¾¼ã¿ã‚­ãƒ£ãƒ³ã‚»ãƒ« ãƒ¬ãƒ™ãƒ«%d", level);
 #endif	// CPU_LOG
 
-		// ƒrƒbƒg‚ğ~‚ë‚·
+		// ãƒ“ãƒƒãƒˆã‚’é™ã‚ã™
 		context.interrupts[0] &= (BYTE)(~bit);
 
-		// ƒxƒNƒ^‚Í0
+		// ãƒ™ã‚¯ã‚¿ã¯0
 		context.interrupts[level] = 0;
 
-		// ƒŠƒNƒGƒXƒg‚ğ‰º‚°‚é
+		// ãƒªã‚¯ã‚¨ã‚¹ãƒˆã‚’ä¸‹ã’ã‚‹
 		sub.intreq[level]--;
 	}
 
-	// ƒRƒ“ƒeƒLƒXƒg‚ğ‘‚«‚Ş
+	// ã‚³ãƒ³ãƒ†ã‚­ã‚¹ãƒˆã‚’æ›¸ãè¾¼ã‚€
 	::s68000SetContext(&context);
 }
 
 //---------------------------------------------------------------------------
 //
-//	RESET–½—ß
+//	RESETå‘½ä»¤
 //
 //---------------------------------------------------------------------------
 void FASTCALL CPU::ResetInst()
@@ -552,14 +546,14 @@ void FASTCALL CPU::ResetInst()
 	Device *device;
 
 	ASSERT(this);
-	LOG0(Log::Detail, "RESET–½—ß");
+	LOG0(Log::Detail, "RESETå‘½ä»¤");
 
-	// ƒƒ‚ƒŠ‚ğæ“¾
+	// ãƒ¡ãƒ¢ãƒªã‚’å–å¾—
 	device = (Device*)vm->SearchDevice(MAKEID('M', 'E', 'M', ' '));
 	ASSERT(device);
 
-	// ƒƒ‚ƒŠƒfƒoƒCƒX‚É‘Î‚µ‚Ä‚·‚×‚ÄƒŠƒZƒbƒg‚ğ‚©‚¯‚Ä‚¨‚­
-	// ³Šm‚É‚ÍACPU‚ÌRESETM†‚ª‚Ç‚±‚Ü‚Å“`‚í‚Á‚Ä‚¢‚é‚©‚É‚æ‚é
+	// ãƒ¡ãƒ¢ãƒªãƒ‡ãƒã‚¤ã‚¹ã«å¯¾ã—ã¦ã™ã¹ã¦ãƒªã‚»ãƒƒãƒˆã‚’ã‹ã‘ã¦ãŠã
+	// æ­£ç¢ºã«ã¯ã€CPUã®RESETä¿¡å·ãŒã©ã“ã¾ã§ä¼ã‚ã£ã¦ã„ã‚‹ã‹ã«ã‚ˆã‚‹
 	while (device) {
 		device->Reset();
 		device = device->GetNextDevice();
@@ -568,9 +562,9 @@ void FASTCALL CPU::ResetInst()
 
 //---------------------------------------------------------------------------
 //
-//	ƒoƒXƒGƒ‰[
-//	¦DMA“]‘—‚É‚æ‚éƒoƒXƒGƒ‰[‚à‚±‚±‚É—ˆ‚é
-//	¦CPUƒRƒA“à•”‚ÅƒoƒXƒGƒ‰[‚Æ”»’è‚µ‚½ê‡‚ÍA‚±‚±‚ğŒo—R‚µ‚È‚¢
+//	ãƒã‚¹ã‚¨ãƒ©ãƒ¼
+//	â€»DMAè»¢é€ã«ã‚ˆã‚‹ãƒã‚¹ã‚¨ãƒ©ãƒ¼ã‚‚ã“ã“ã«æ¥ã‚‹
+//	â€»CPUã‚³ã‚¢å†…éƒ¨ã§ãƒã‚¹ã‚¨ãƒ©ãƒ¼ã¨åˆ¤å®šã—ãŸå ´åˆã¯ã€ã“ã“ã‚’çµŒç”±ã—ãªã„
 //
 //---------------------------------------------------------------------------
 void FASTCALL CPU::BusErr(DWORD addr, BOOL read)
@@ -581,33 +575,33 @@ void FASTCALL CPU::BusErr(DWORD addr, BOOL read)
 	ASSERT(this);
 	ASSERT(addr <= 0xffffff);
 
-	// DMAC‚É“]‘—’†‚©•·‚­BDMAC’†‚È‚çDMAC‚É”C‚¹‚é
+	// DMACã«è»¢é€ä¸­ã‹èãã€‚DMACä¸­ãªã‚‰DMACã«ä»»ã›ã‚‹
 	if (dmac->IsDMA()) {
 		dmac->BusErr(addr, read);
 		return;
 	}
 
-	// ƒAƒhƒŒƒX‚ª‘O‰ñ‚ÌƒAƒhƒŒƒX+2‚ÅA‚©‚ÂŠÔ‚ª“¯‚¶‚È‚ç–³‹‚·‚é(LONGƒAƒNƒZƒX)
+	// ã‚¢ãƒ‰ãƒ¬ã‚¹ãŒå‰å›ã®ã‚¢ãƒ‰ãƒ¬ã‚¹+2ã§ã€ã‹ã¤æ™‚é–“ãŒåŒã˜ãªã‚‰ç„¡è¦–ã™ã‚‹(LONGã‚¢ã‚¯ã‚»ã‚¹)
 	if (addr == (sub.erraddr + 2)) {
 		if (scheduler->GetTotalTime() == sub.errtime) {
 			return;
 		}
 	}
 
-	// ƒAƒhƒŒƒX‚ÆŠÔ‚ğXV
+	// ã‚¢ãƒ‰ãƒ¬ã‚¹ã¨æ™‚é–“ã‚’æ›´æ–°
 	sub.erraddr = addr;
 	sub.errtime = scheduler->GetTotalTime();
 
-	// PCæ“¾(ŠY“––½—ß‚ÌƒIƒyƒR[ƒh‚ÉˆÊ’u‚·‚é)
+	// PCå–å¾—(è©²å½“å‘½ä»¤ã®ã‚ªãƒšã‚³ãƒ¼ãƒ‰ã«ä½ç½®ã™ã‚‹)
 	pc = GetPC();
 
-	// “Ç‚İo‚µ(Word)
+	// èª­ã¿å‡ºã—(Word)
 	stat = memory->ReadOnly(pc);
 	stat <<= 8;
 	stat |= memory->ReadOnly(pc + 1);
 	stat <<= 16;
 
-	// ƒtƒ@ƒ“ƒNƒVƒ‡ƒ“ƒR[ƒhì¬(í‚Éƒf[ƒ^ƒAƒNƒZƒX‚Æ‚İ‚È‚·)
+	// ãƒ•ã‚¡ãƒ³ã‚¯ã‚·ãƒ§ãƒ³ã‚³ãƒ¼ãƒ‰ä½œæˆ(å¸¸ã«ãƒ‡ãƒ¼ã‚¿ã‚¢ã‚¯ã‚»ã‚¹ã¨ã¿ãªã™)
 	stat |= 0x09;
 	if (::s68000context.sr & 0x2000) {
 		stat |= 0x04;
@@ -616,15 +610,15 @@ void FASTCALL CPU::BusErr(DWORD addr, BOOL read)
 		stat |= 0x10;
 	}
 
-	// ƒoƒXƒGƒ‰[”­s
+	// ãƒã‚¹ã‚¨ãƒ©ãƒ¼ç™ºè¡Œ
 	::s68000buserr(addr, stat);
 }
 
 //---------------------------------------------------------------------------
 //
-//	ƒAƒhƒŒƒXƒGƒ‰[
-//	¦DMA“]‘—‚É‚æ‚éƒAƒhƒŒƒXƒGƒ‰[‚à‚±‚±‚É—ˆ‚é
-//	¦CPUƒRƒA“à•”‚ÅƒAƒhƒŒƒXƒGƒ‰[‚Æ”»’è‚µ‚½ê‡‚ÍA‚±‚±‚ğŒo—R‚µ‚È‚¢
+//	ã‚¢ãƒ‰ãƒ¬ã‚¹ã‚¨ãƒ©ãƒ¼
+//	â€»DMAè»¢é€ã«ã‚ˆã‚‹ã‚¢ãƒ‰ãƒ¬ã‚¹ã‚¨ãƒ©ãƒ¼ã‚‚ã“ã“ã«æ¥ã‚‹
+//	â€»CPUã‚³ã‚¢å†…éƒ¨ã§ã‚¢ãƒ‰ãƒ¬ã‚¹ã‚¨ãƒ©ãƒ¼ã¨åˆ¤å®šã—ãŸå ´åˆã¯ã€ã“ã“ã‚’çµŒç”±ã—ãªã„
 //
 //---------------------------------------------------------------------------
 void FASTCALL CPU::AddrErr(DWORD addr, BOOL read)
@@ -636,33 +630,33 @@ void FASTCALL CPU::AddrErr(DWORD addr, BOOL read)
 	ASSERT(addr <= 0xffffff);
 	ASSERT(addr & 1);
 
-	// DMAC‚É“]‘—’†‚©•·‚­BDMAC’†‚È‚çDMAC‚É”C‚¹‚é
+	// DMACã«è»¢é€ä¸­ã‹èãã€‚DMACä¸­ãªã‚‰DMACã«ä»»ã›ã‚‹
 	if (dmac->IsDMA()) {
 		dmac->AddrErr(addr, read);
 		return;
 	}
 
-	// ƒAƒhƒŒƒX‚ª‘O‰ñ‚ÌƒAƒhƒŒƒX+2‚ÅA‚©‚ÂŠÔ‚ª“¯‚¶‚È‚ç–³‹‚·‚é(LONGƒAƒNƒZƒX)
+	// ã‚¢ãƒ‰ãƒ¬ã‚¹ãŒå‰å›ã®ã‚¢ãƒ‰ãƒ¬ã‚¹+2ã§ã€ã‹ã¤æ™‚é–“ãŒåŒã˜ãªã‚‰ç„¡è¦–ã™ã‚‹(LONGã‚¢ã‚¯ã‚»ã‚¹)
 	if (addr == (sub.erraddr + 2)) {
 		if (scheduler->GetTotalTime() == sub.errtime) {
 			return;
 		}
 	}
 
-	// ƒAƒhƒŒƒX‚ÆŠÔ‚ğXV
+	// ã‚¢ãƒ‰ãƒ¬ã‚¹ã¨æ™‚é–“ã‚’æ›´æ–°
 	sub.erraddr = addr;
 	sub.errtime = scheduler->GetTotalTime();
 
-	// PCæ“¾(ŠY“––½—ß‚ÌƒIƒyƒR[ƒh‚ÉˆÊ’u‚·‚é)
+	// PCå–å¾—(è©²å½“å‘½ä»¤ã®ã‚ªãƒšã‚³ãƒ¼ãƒ‰ã«ä½ç½®ã™ã‚‹)
 	pc = GetPC();
 
-	// “Ç‚İo‚µ(Word)
+	// èª­ã¿å‡ºã—(Word)
 	stat = memory->ReadOnly(pc);
 	stat <<= 8;
 	stat |= memory->ReadOnly(pc + 1);
 	stat <<= 16;
 
-	// ƒtƒ@ƒ“ƒNƒVƒ‡ƒ“ƒR[ƒhì¬(í‚Éƒf[ƒ^ƒAƒNƒZƒX‚Æ‚İ‚È‚·)
+	// ãƒ•ã‚¡ãƒ³ã‚¯ã‚·ãƒ§ãƒ³ã‚³ãƒ¼ãƒ‰ä½œæˆ(å¸¸ã«ãƒ‡ãƒ¼ã‚¿ã‚¢ã‚¯ã‚»ã‚¹ã¨ã¿ãªã™)
 	stat |= 0x8009;
 	if (::s68000context.sr & 0x2000) {
 		stat |= 0x04;
@@ -671,48 +665,48 @@ void FASTCALL CPU::AddrErr(DWORD addr, BOOL read)
 		stat |= 0x10;
 	}
 
-	// ƒoƒXƒGƒ‰[”­s(“à•”‚ÅƒAƒhƒŒƒXƒGƒ‰[‚Ö•ªŠò)
+	// ãƒã‚¹ã‚¨ãƒ©ãƒ¼ç™ºè¡Œ(å†…éƒ¨ã§ã‚¢ãƒ‰ãƒ¬ã‚¹ã‚¨ãƒ©ãƒ¼ã¸åˆ†å²)
 	::s68000buserr(addr, stat);
 }
 
 //---------------------------------------------------------------------------
 //
-//	ƒoƒXƒGƒ‰[‹L˜^
-//	¦CPUƒRƒA“à•”‚ÅƒoƒXƒGƒ‰[‚Æ”»’è‚µ‚½ê‡‚àA‚±‚±‚ğ’Ê‚é
+//	ãƒã‚¹ã‚¨ãƒ©ãƒ¼è¨˜éŒ²
+//	â€»CPUã‚³ã‚¢å†…éƒ¨ã§ãƒã‚¹ã‚¨ãƒ©ãƒ¼ã¨åˆ¤å®šã—ãŸå ´åˆã‚‚ã€ã“ã“ã‚’é€šã‚‹
 //
 //---------------------------------------------------------------------------
 void FASTCALL CPU::BusErrLog(DWORD addr, DWORD stat)
 {
 	ASSERT(this);
 
-	// •K‚¸ƒ}ƒXƒN(24bit‚ğ’´‚¦‚éê‡‚ª‚ ‚é)
+	// å¿…ãšãƒã‚¹ã‚¯(24bitã‚’è¶…ãˆã‚‹å ´åˆãŒã‚ã‚‹)
 	addr &= 0xffffff;
 
 	if (stat & 0x10) {
-		LOG1(Log::Warning, "ƒoƒXƒGƒ‰[(“Ç‚İ‚İ) $%06X", addr);
+		LOG1(Log::Warning, "ãƒã‚¹ã‚¨ãƒ©ãƒ¼(èª­ã¿è¾¼ã¿) $%06X", addr);
 	}
 	else {
-		LOG1(Log::Warning, "ƒoƒXƒGƒ‰[(‘‚«‚İ) $%06X", addr);
+		LOG1(Log::Warning, "ãƒã‚¹ã‚¨ãƒ©ãƒ¼(æ›¸ãè¾¼ã¿) $%06X", addr);
 	}
 }
 
 //---------------------------------------------------------------------------
 //
-//	ƒAƒhƒŒƒXƒGƒ‰[‹L˜^
-//	¦CPUƒRƒA“à•”‚ÅƒAƒhƒŒƒXƒGƒ‰[‚Æ”»’è‚µ‚½ê‡‚àA‚±‚±‚ğ’Ê‚é
+//	ã‚¢ãƒ‰ãƒ¬ã‚¹ã‚¨ãƒ©ãƒ¼è¨˜éŒ²
+//	â€»CPUã‚³ã‚¢å†…éƒ¨ã§ã‚¢ãƒ‰ãƒ¬ã‚¹ã‚¨ãƒ©ãƒ¼ã¨åˆ¤å®šã—ãŸå ´åˆã‚‚ã€ã“ã“ã‚’é€šã‚‹
 //
 //---------------------------------------------------------------------------
 void FASTCALL CPU::AddrErrLog(DWORD addr, DWORD stat)
 {
 	ASSERT(this);
 
-	// •K‚¸ƒ}ƒXƒN(24bit‚ğ’´‚¦‚éê‡‚ª‚ ‚é)
+	// å¿…ãšãƒã‚¹ã‚¯(24bitã‚’è¶…ãˆã‚‹å ´åˆãŒã‚ã‚‹)
 	addr &= 0xffffff;
 
 	if (stat & 0x10) {
-		LOG1(Log::Warning, "ƒAƒhƒŒƒXƒGƒ‰[(“Ç‚İ‚İ) $%06X", addr);
+		LOG1(Log::Warning, "ã‚¢ãƒ‰ãƒ¬ã‚¹ã‚¨ãƒ©ãƒ¼(èª­ã¿è¾¼ã¿) $%06X", addr);
 	}
 	else {
-		LOG1(Log::Warning, "ƒAƒhƒŒƒXƒGƒ‰[(‘‚«‚İ) $%06X", addr);
+		LOG1(Log::Warning, "ã‚¢ãƒ‰ãƒ¬ã‚¹ã‚¨ãƒ©ãƒ¼(æ›¸ãè¾¼ã¿) $%06X", addr);
 	}
 }

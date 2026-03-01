@@ -1,0 +1,2 @@
+﻿Debug\XM6.exe : fatal error LNK1120: 1 unresolved externals [c:\sw\XM62022\00proj.vc7\XM6.vcxproj]
+musashi_mem.obj : error LNK2001: unresolved external symbol _musashi_is_resetting [c:\sw\XM62022\00proj.vc7\XM6.vcxproj]

@@ -1,0 +1,401 @@
+﻿	if (mem.type != mem.now) {
+		// ROM繧定ｪｭ縺ｿ逶ｴ縺・
+		if (!LoadROM(mem.type)) {
+			// 繧ｻ繝ｼ繝匁凾縺ｫ蟄伜惠縺励※縺・◆ROM縺後√↑縺上↑縺｣縺ｦ縺・ｋ
+			LoadROM(mem.now);
+			return FALSE;
+		}
+
+		// ROM縺ｮ隱ｭ縺ｿ逶ｴ縺励↓謌仙粥縺励◆
+		mem.now = mem.type;
+		context = TRUE;
+	}
+
+	// SCSI ROM縺ｮ蜀・ｮｹ繧定ｪｭ繧 (X68030莉･螟・
+	if (mem.type != X68030) {
+		if (!fio->Read(mem.scsi, 0x2000)) {
+			return FALSE;
+		}
+	}
+
+	// mem.size繧定ｪｭ繧
+	if (!fio->Read(&size, sizeof(size))) {
+		return FALSE;
+	}
+
+	// mem.size縺ｨ荳閾ｴ縺励※縺・↑縺代ｌ縺ｰ
+	if (mem.size != size) {
+		// 螟画峩縺励※
+		mem.size = size;
+
+		// 蜀咲｢ｺ菫・
+		delete[] mem.ram;
+		mem.ram = NULL;
+		mem.length = mem.size * 0x100000;
+		try {
+			mem.ram = new BYTE[ mem.length ];
+		}
+		catch (...) {
+			mem.ram = NULL;
+		}
+		if (!mem.ram) {
+			// 繝｡繝｢繝ｪ荳崎ｶｳ縺ｮ蝣ｴ蜷医・2MB縺ｫ蝗ｺ螳・
+			mem.config = 0;
+			mem.size = 2;
+			mem.length = mem.size * 0x100000;
+			mem.ram = new BYTE[ mem.length ];
+
+			// 繝ｭ繝ｼ繝牙､ｱ謨・
+			return FALSE;
+		}
+
+		// 繧ｳ繝ｳ繝・く繧ｹ繝亥・菴懈・縺悟ｿ・ｦ・
+		context = TRUE;
+	}
+
+	// 繝｡繝｢繝ｪ繧定ｪｭ繧
+	if (!fio->Read(mem.ram, mem.length)) {
+		return FALSE;
+	}
+
+	// 蠢・ｦ√〒縺ゅｌ縺ｰ縲√さ繝ｳ繝・く繧ｹ繝医ｒ菴懊ｊ逶ｴ縺・
+	if (context) {
+		MakeContext(FALSE);
+	}
+
+	return TRUE;
+}
+
+//---------------------------------------------------------------------------
+//
+//	險ｭ螳夐←逕ｨ
+//
+//---------------------------------------------------------------------------
+void FASTCALL Memory::ApplyCfg(const Config *config)
+{
+	ASSERT(this);
+	ASSERT(config);
+	LOG0(Log::Normal, "險ｭ螳夐←逕ｨ");
+
+	// 繝｡繝｢繝ｪ遞ｮ蛻･(ROM繝ｭ繝ｼ繝峨・谺｡蝗槭Μ繧ｻ繝・ヨ譎・
+	mem.type = (memtype)config->mem_type;
+
+	// RAM繧ｵ繧､繧ｺ(繝｡繝｢繝ｪ遒ｺ菫昴・谺｡蝗槭Μ繧ｻ繝・ヨ譎・
+	mem.config = config->ram_size;
+	ASSERT((mem.config >= 0) && (mem.config <= 5));
+
+	// 繝｡繝｢繝ｪ繧ｹ繧､繝・メ閾ｪ蜍墓峩譁ｰ
+	mem.memsw = config->ram_sramsync;
+}
+
+//---------------------------------------------------------------------------
+//
+//	繝舌う繝郁ｪｭ縺ｿ霎ｼ縺ｿ
+//
+//---------------------------------------------------------------------------
+DWORD FASTCALL Memory::ReadByte(DWORD addr)
+{
+	DWORD index;
+
+	ASSERT(this);
+	ASSERT(addr <= 0xffffff);
+	ASSERT(mem.now != None);
+
+	// 繝｡繧､繝ｳRAM
+	if (addr < mem.length) {
+		return (DWORD)mem.ram[addr ^ 1];
+	}
+
+	// IPL
+	if (addr >= 0xfe0000) {
+		addr &= 0x1ffff;
+		addr ^= 1;
+		return (DWORD)mem.ipl[addr];
+	}
+
+	// IPL繧､繝｡繝ｼ繧ｸ or SCSI蜀・鳩
+	if (addr >= 0xfc0000) {
+		// IPL繧､繝｡繝ｼ繧ｸ縺・
+		if ((mem.now == SASI) || (mem.now == SCSIExt)) {
+			// IPL繧､繝｡繝ｼ繧ｸ
+			addr &= 0x1ffff;
+			addr ^= 1;
+			return (DWORD)mem.ipl[addr];
+		}
+		// SCSI蜀・鳩縺・遽・峇繝√ぉ繝・け)
+		if (addr < 0xfc2000) {
+			// SCSI蜀・鳩
+			addr &= 0x1fff;
+			addr ^= 1;
+			return (DWORD)mem.scsi[addr];
+		}
+		// X68030 IPL蜑榊濠縺・
+		if (mem.now == X68030) {
+			// X68030 IPL蜑榊濠
+			addr &= 0x1ffff;
+			addr ^= 1;
+			return (DWORD)mem.scsi[addr];
+		}
+		// SCSI蜀・鳩繝｢繝・Ν縺ｧ縲ヽOM遽・峇螟・
+		return 0xff;
+	}
+
+	// CG
+	if (addr >= 0xf00000) {
+		addr &= 0xfffff;
+		addr ^= 1;
+		return (DWORD)mem.cg[addr];
+	}
+
+	// SCSI螟紋ｻ・
+	if (mem.now == SCSIExt) {
+		if ((addr >= 0xea0020) && (addr <= 0xea1fff)) {
+			addr &= 0x1fff;
+			addr ^= 1;
+			return (DWORD)mem.scsi[addr];
+		}
+	}
+
+	// 繝・ヰ繧､繧ｹ繝・ぅ繧ｹ繝代ャ繝・
+	if (addr >= 0xc00000) {
+		index = addr - 0xc00000;
+		index >>= 13;
+		ASSERT(index < 0x180);
+		if (mem.table[index] != (MemDevice*)this) {
+			return mem.table[index]->ReadByte(addr);
+		}
+	}
+
+	LOG1(Log::Warning, "(message)", addr);
+	cpu->BusErr(addr, TRUE);
+	return 0xff;
+}
+
+//---------------------------------------------------------------------------
+//
+//	繝ｯ繝ｼ繝芽ｪｭ縺ｿ霎ｼ縺ｿ
+//
+//---------------------------------------------------------------------------
+DWORD FASTCALL Memory::ReadWord(DWORD addr)
+{
+	DWORD data;
+	DWORD index;
+	WORD *ptr;
+
+	ASSERT(this);
+	ASSERT(addr <= 0xffffff);
+	ASSERT(mem.now != None);
+
+	// CPU縺九ｉ縺ｮ蝣ｴ蜷医・蛛ｶ謨ｰ菫晁ｨｼ縺輔ｌ縺ｦ縺・ｋ縺後．MAC縺九ｉ縺ｮ蝣ｴ蜷医・繝√ぉ繝・け蠢・ｦ√≠繧・
+	if (addr & 1) {
+		// 荳譌ｦCPU縺ｸ貂｡縺・CPU邨檎罰縺ｧDMA縺ｸ)
+		cpu->AddrErr(addr, TRUE);
+		return 0xffff;
+	}
+
+	// 繝｡繧､繝ｳRAM
+	if (addr < mem.length) {
+		ptr = (WORD*)(&mem.ram[addr]);
+		data = (DWORD)*ptr;
+		return data;
+	}
+
+	// IPL
+	if (addr >= 0xfe0000) {
+		addr &= 0x1ffff;
+		ptr = (WORD*)(&mem.ipl[addr]);
+		data = (DWORD)*ptr;
+		return data;
+	}
+
+	// IPL繧､繝｡繝ｼ繧ｸ or SCSI蜀・鳩
+	if (addr >= 0xfc0000) {
+		// IPL繧､繝｡繝ｼ繧ｸ縺・
+		if ((mem.now == SASI) || (mem.now == SCSIExt)) {
+			// IPL繧､繝｡繝ｼ繧ｸ
+			addr &= 0x1ffff;
+			ptr = (WORD*)(&mem.ipl[addr]);
+			data = (DWORD)*ptr;
+			return data;
+		}
+		// SCSI蜀・鳩縺・遽・峇繝√ぉ繝・け)
+		if (addr < 0xfc2000) {
+			// SCSI蜀・鳩
+			addr &= 0x1fff;
+			ptr = (WORD*)(&mem.scsi[addr]);
+			data = (DWORD)*ptr;
+			return data;
+		}
+		// X68030 IPL蜑榊濠縺・
+		if (mem.now == X68030) {
+			// X68030 IPL蜑榊濠
+			addr &= 0x1ffff;
+			ptr = (WORD*)(&mem.scsi[addr]);
+			data = (DWORD)*ptr;
+			return data;
+		}
+		// SCSI蜀・鳩繝｢繝・Ν縺ｧ縲ヽOM遽・峇螟・
+		return 0xffff;
+	}
+
+	// CG
+	if (addr >= 0xf00000) {
+		addr &= 0xfffff;
+		ptr = (WORD*)(&mem.cg[addr]);
+		data = (DWORD)*ptr;
+		return data;
+	}
+
+	// SCSI螟紋ｻ・
+	if (mem.now == SCSIExt) {
+		if ((addr >= 0xea0020) && (addr <= 0xea1fff)) {
+			addr &= 0x1fff;
+			ptr = (WORD*)(&mem.scsi[addr]);
+			data = (DWORD)*ptr;
+			return data;
+		}
+	}
+
+	// 繝・ヰ繧､繧ｹ繝・ぅ繧ｹ繝代ャ繝・
+	if (addr >= 0xc00000) {
+		index = addr - 0xc00000;
+		index >>= 13;
+		ASSERT(index < 0x180);
+		if (mem.table[index] != (MemDevice*)this) {
+			return mem.table[index]->ReadWord(addr);
+		}
+	}
+
+	// 繝舌せ繧ｨ繝ｩ繝ｼ
+	LOG1(Log::Warning, "(message)", addr);
+	cpu->BusErr(addr, TRUE);
+	return 0xffff;
+}
+
+//---------------------------------------------------------------------------
+//
+//	繝舌う繝域嶌縺崎ｾｼ縺ｿ
+//
+//---------------------------------------------------------------------------
+void FASTCALL Memory::WriteByte(DWORD addr, DWORD data)
+{
+	DWORD index;
+
+	ASSERT(this);
+	ASSERT(addr <= 0xffffff);
+	ASSERT(data < 0x100);
+	ASSERT(mem.now != None);
+
+	// 繝｡繧､繝ｳRAM
+	if (addr < mem.length) {
+		mem.ram[addr ^ 1] = (BYTE)data;
+		return;
+	}
+
+	// IPL,SCSI,CG
+	if (addr >= 0xf00000) {
+		return;
+	}
+
+	// 繝・ヰ繧､繧ｹ繝・ぅ繧ｹ繝代ャ繝・
+	if (addr >= 0xc00000) {
+		index = addr - 0xc00000;
+		index >>= 13;
+		ASSERT(index < 0x180);
+		if (mem.table[index] != (MemDevice*)this) {
+			mem.table[index]->WriteByte(addr, data);
+			return;
+		}
+	}
+
+	// 繝舌せ繧ｨ繝ｩ繝ｼ
+	cpu->BusErr(addr, FALSE);
+	LOG2(Log::Warning, "(message)", addr, data);
+}
+
+//---------------------------------------------------------------------------
+//
+//	繝ｯ繝ｼ繝画嶌縺崎ｾｼ縺ｿ
+//
+//---------------------------------------------------------------------------
+void FASTCALL Memory::WriteWord(DWORD addr, DWORD data)
+{
+	WORD *ptr;
+	DWORD index;
+
+	ASSERT(this);
+	ASSERT(addr <= 0xffffff);
+	ASSERT(data < 0x10000);
+	ASSERT(mem.now != None);
+
+	// CPU縺九ｉ縺ｮ蝣ｴ蜷医・蛛ｶ謨ｰ菫晁ｨｼ縺輔ｌ縺ｦ縺・ｋ縺後．MAC縺九ｉ縺ｮ蝣ｴ蜷医・繝√ぉ繝・け蠢・ｦ√≠繧・
+	if (addr & 1) {
+		// 荳譌ｦCPU縺ｸ貂｡縺・CPU邨檎罰縺ｧDMA縺ｸ)
+		cpu->AddrErr(addr, FALSE);
+		return;
+	}
+
+	// 繝｡繧､繝ｳRAM
+	if (addr < mem.length) {
+		ptr = (WORD*)(&mem.ram[addr]);
+		*ptr = (WORD)data;
+		return;
+	}
+
+	// IPL,SCSI,CG
+	if (addr >= 0xf00000) {
+		return;
+	}
+
+	// 繝・ヰ繧､繧ｹ繝・ぅ繧ｹ繝代ャ繝・
+	if (addr >= 0xc00000) {
+		index = addr - 0xc00000;
+		index >>= 13;
+		ASSERT(index < 0x180);
+		if (mem.table[index] != (MemDevice*)this) {
+			mem.table[index]->WriteWord(addr, data);
+			return;
+		}
+	}
+
+	// 繝舌せ繧ｨ繝ｩ繝ｼ
+	cpu->BusErr(addr, FALSE);
+	LOG2(Log::Warning, "(message)", addr, data);
+}
+
+//---------------------------------------------------------------------------
+//
+//	隱ｭ縺ｿ霎ｼ縺ｿ縺ｮ縺ｿ
+//
+//---------------------------------------------------------------------------
+DWORD FASTCALL Memory::ReadOnly(DWORD addr) const
+{
+	DWORD index;
+
+	ASSERT(this);
+	ASSERT(addr <= 0xffffff);
+	ASSERT(mem.now != None);
+
+	// 繝｡繧､繝ｳRAM
+	if (addr < mem.length) {
+		return (DWORD)mem.ram[addr ^ 1];
+	}
+
+	// IPL
+	if (addr >= 0xfe0000) {
+		addr &= 0x1ffff;
+		addr ^= 1;
+		return (DWORD)mem.ipl[addr];
+	}
+
+	// IPL繧､繝｡繝ｼ繧ｸ or SCSI蜀・鳩
+	if (addr >= 0xfc0000) {
+		// IPL繧､繝｡繝ｼ繧ｸ縺・
+		if ((mem.now == SASI) || (mem.now == SCSIExt)) {
+			// IPL繧､繝｡繝ｼ繧ｸ
+			addr &= 0x1ffff;
+			addr ^= 1;
+			return (DWORD)mem.ipl[addr];
+		}
+		// SCSI蜀・鳩縺・遽・峇繝√ぉ繝・け)
+		if (addr < 0xfc2000) {

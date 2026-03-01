@@ -1,0 +1,120 @@
+1048: void FASTCALL Memory::MakeContext(BOOL reset)
+1049: {
+1050: 	int index;
+1051: 	int area;
+1052: 	GVRAM *gvram;
+1053: 	TVRAM *tvram;
+1054: 
+1055: 	ASSERT(this);
+1056: 
+1057: 	// ?????
+1058: 	if (reset) {
+1059: 		// ???????????(CPU::Reset??MakeContext???????)
+1060: 		ASSERT(areaset);
+1061: 		areaset->Reset();
+1062: 
+1063: 		// ????????????($FF00000???$0000000?????)
+1064: 		s_pgr[0].lowaddr = 0;
+1065: 		s_pgr[0].highaddr = 0xffff;
+1066: 		s_pgr[0].offset = ((DWORD)mem.ipl) + 0x10000;
+1067: 		u_pgr[0].lowaddr = 0;
+1068: 		u_pgr[0].highaddr = 0xffff;
+1069: 		u_pgr[0].offset = ((DWORD)mem.ipl) + 0x10000;
+1070: 
+1071: 		// ???????
+1072: 		TerminateProgramRegion(1, s_pgr);
+1073: 		TerminateProgramRegion(1, u_pgr);
+1074: 
+1075: 		// ????????
+1076: 		TerminateDataRegion(0, u_rbr);
+1077: 		TerminateDataRegion(0, s_rbr);
+1078: 		TerminateDataRegion(0, u_rwr);
+1079: 		TerminateDataRegion(0, s_rwr);
+1080: 		TerminateDataRegion(0, u_wbr);
+1081: 		TerminateDataRegion(0, s_wbr);
+1082: 		TerminateDataRegion(0, u_wwr);
+1083: 		TerminateDataRegion(0, s_wwr);
+1084: 		return;
+1085: 	}
+1086: 
+1087: 	// ???????? - ?????(User)
+1088: 	index = 0;
+1089: 	area = areaset->GetArea();
+1090: 	u_pgr[index].lowaddr = (area + 1) << 13;
+1091: 	u_pgr[index].highaddr = mem.length - 1;
+1092: 	u_pgr[index].offset = (DWORD)mem.ram;
+1093: 	index++;
+1094: 	TerminateProgramRegion(index, u_pgr);
+1095: 
+1096: 	// ???????? - ?????(Super)
+1097: 	index = 0;
+1098: 	s_pgr[index].lowaddr = 0;
+1099: 	s_pgr[index].highaddr = mem.length - 1;
+1100: 	s_pgr[index].offset = (DWORD)mem.ram;
+1101: 	index++;
+1102: 
+1103: 	// IPL
+1104: 	s_pgr[index].lowaddr = 0xfe0000;
+1105: 	s_pgr[index].highaddr = 0xffffff;
+1106: 	s_pgr[index].offset = ((DWORD)mem.ipl) - 0xfe0000;
+1107: 	index++;
+1108: 
+1109: 	// SCSI??
+1110: 	if (mem.now == SCSIExt) {
+1111: 		s_pgr[index].lowaddr = 0xea0000;
+1112: 		s_pgr[index].highaddr = 0xea1fff;
+1113: 		s_pgr[index].offset = ((DWORD)mem.scsi) - 0xea0000;
+1114: 		index++;
+1115: 	}
+1116: 
+1117: 	// IPL???? or SCSI??
+1118: 	if ((mem.now == SASI) || (mem.now == SCSIExt)) {
+1119: 		// IPL????
+1120: 		s_pgr[index].lowaddr = 0xfc0000;
+1121: 		s_pgr[index].highaddr = 0xfdffff;
+1122: 		s_pgr[index].offset = ((DWORD)mem.ipl) - 0xfc0000;
+1123: 		index++;
+1124: 	}
+1125: 	else {
+1126: 		// SCSI??
+1127: 		s_pgr[index].lowaddr = 0xfc0000;
+1128: 		s_pgr[index].highaddr = 0xfc1fff;
+1129: 		s_pgr[index].offset = ((DWORD)mem.scsi) - 0xfc0000;
+1130: 		if (mem.now == X68030) {
+1131: 			// X68030 IPL??
+1132: 			s_pgr[index].lowaddr = 0xfc0000;
+1133: 			s_pgr[index].highaddr = 0xfdffff;
+1134: 			s_pgr[index].offset = ((DWORD)mem.scsi) - 0xfc0000;
+1135: 		}
+1136: 		index++;
+1137: 	}
+1138: 
+1139: 	// ??????VRAM
+1140: 	gvram = (GVRAM*)vm->SearchDevice(MAKEID('G', 'V', 'R', 'M'));
+1141: 	ASSERT(gvram);
+1142: 	s_pgr[index].lowaddr = 0xc00000;
+1143: 	s_pgr[index].highaddr = 0xdfffff;
+1144: 	s_pgr[index].offset = ((DWORD)gvram->GetGVRAM()) - 0xc00000;
+1145: 	index++;
+1146: 
+1147: 	// ????VRAM
+1148: 	tvram = (TVRAM*)vm->SearchDevice(MAKEID('T', 'V', 'R', 'M'));
+1149: 	ASSERT(tvram);
+1150: 	s_pgr[index].lowaddr = 0xe00000;
+1151: 	s_pgr[index].highaddr = 0xe7ffff;
+1152: 	s_pgr[index].offset = ((DWORD)tvram->GetTVRAM()) - 0xe00000;
+1153: 	index++;
+1154: 
+1155: 	// SRAM
+1156: 	ASSERT(sram);
+1157: 	s_pgr[index].lowaddr = 0xed0000;
+1158: 	s_pgr[index].highaddr = 0xed0000 + (sram->GetSize() << 10) - 1;
+1159: 	s_pgr[index].offset = ((DWORD)sram->GetSRAM()) - 0xed0000;
+1160: 	index++;
+1161: 	TerminateProgramRegion(index, s_pgr);
+1162: 
+1163: 	// ???????? - ????(User)
+1164: 	index = 0;
+1165: 	area = areaset->GetArea();
+1166: 
+1167: 	// ???????????

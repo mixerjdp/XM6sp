@@ -1,0 +1,5 @@
+﻿c:\sw\xm62022\cpu\musashi\m68kconf_xm6.h(113): fatal error C1070: mismatched #if/#endif pair in file 'c:\sw\xm62022\cpu\musashi\m68kconf_xm6.h' (..\cpu\Musashi\m68kcpu.c) [c:\sw\XM62022\00proj.vc7\XM6.vcxproj]
+c:\sw\xm62022\cpu\musashi\m68kconf_xm6.h(113): fatal error C1070: mismatched #if/#endif pair in file 'c:\sw\xm62022\cpu\musashi\m68kconf_xm6.h' (..\cpu\Musashi\m68kdasm.c) [c:\sw\XM62022\00proj.vc7\XM6.vcxproj]
+c:\sw\xm62022\cpu\musashi\m68kconf_xm6.h(113): fatal error C1070: mismatched #if/#endif pair in file 'c:\sw\xm62022\cpu\musashi\m68kconf_xm6.h' (..\cpu\Musashi\m68kops.c) [c:\sw\XM62022\00proj.vc7\XM6.vcxproj]
+c:\sw\xm62022\cpu\musashi\m68kconf_xm6.h(113): fatal error C1070: mismatched #if/#endif pair in file 'c:\sw\xm62022\cpu\musashi\m68kconf_xm6.h' (..\vm\musashi_adapter.cpp) [c:\sw\XM62022\00proj.vc7\XM6.vcxproj]
+c:\sw\xm62022\cpu\musashi\m68kconf_xm6.h(113): fatal error C1070: mismatched #if/#endif pair in file 'c:\sw\xm62022\cpu\musashi\m68kconf_xm6.h' (..\vm\musashi_mem.cpp) [c:\sw\XM62022\00proj.vc7\XM6.vcxproj]

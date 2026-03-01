@@ -1,0 +1,148 @@
+//---------------------------------------------------------------------------
+//
+//	X68000 EMULATOR "XM6"
+//
+//	Copyright (C) 2001-2006 ???(ytanaka@ipc-tokai.or.jp)
+//	[ CPU(MC68000) ]
+//
+//---------------------------------------------------------------------------
+
+#if !defined(cpu_h)
+#define cpu_h
+
+#include "device.h"
+#include "starcpu.h"
+
+//---------------------------------------------------------------------------
+//
+//	????
+//
+//---------------------------------------------------------------------------
+#if defined(__cplusplus)
+extern "C" {
+#endif	// __cplusplus
+
+extern DWORD s68000getcounter();
+										// ??????????
+extern void s68000setcounter(DWORD c);
+										// ??????????
+
+#if defined(__cplusplus)
+}
+#endif	// __cplusplus
+
+//===========================================================================
+//
+//	CPU
+//
+//===========================================================================
+class CPU : public Device
+{
+public:
+	// ???????
+	typedef struct {
+		DWORD dreg[8];					// ???????
+		DWORD areg[8];					// ????????
+		DWORD sp;						// ??????(USP or SSP)
+		DWORD pc;						// ?????????
+		DWORD intr[8];					// ??????
+		DWORD sr;						// ?????????
+		DWORD intreq[8];				// ????????
+		DWORD intack[8];				// ????????
+		DWORD odd;						// ??????
+	} cpu_t;
+
+	typedef struct {
+		DWORD erraddr;					// ???????
+		DWORD errtime;					// ?????????
+		DWORD intreq[8];				// ????????
+		DWORD intack[8];				// ????????
+	} cpusub_t;
+
+public:
+	// ?????????
+	CPU(VM *p);
+										// ???????
+	BOOL FASTCALL Init();
+										// ???
+	void FASTCALL Cleanup();
+										// ???????
+	void FASTCALL Reset();
+										// ????
+	BOOL FASTCALL Save(Fileio *fio, int ver);
+										// ???
+	BOOL FASTCALL Load(Fileio *fio, int ver);
+										// ???
+	void FASTCALL ApplyCfg(const Config *config);
+										// ????
+
+public:
+	// ??API
+	void FASTCALL GetCPU(cpu_t *buffer) const;
+										// CPU??????
+	void FASTCALL SetCPU(const cpu_t *buffer);
+										// CPU??????
+	DWORD FASTCALL Exec(int cycle) {
+		DWORD result;
+
+		if (::s68000exec(cycle) <= 0x80000000) {
+			result = ::s68000context.odometer;
+			::s68000context.odometer = 0;
+			return result;
+		}
+
+		result = ::s68000context.odometer;
+		result |= 0x80000000;
+		::s68000context.odometer = 0;
+		return result;
+	}
+										// ??
+	BOOL FASTCALL Interrupt(int level, int vector);
+										// ????
+	void FASTCALL IntAck(int level);
+										// ????ACK
+	void FASTCALL IntCancel(int level);
+										// ?????????
+	DWORD FASTCALL GetCycle() const		{ return ::s68000readOdometer(); }
+										// ???????
+	DWORD FASTCALL GetPC() const		{ return ::s68000readPC(); }
+										// ???????????
+	void FASTCALL ResetInst();
+										// RESET??
+	DWORD FASTCALL GetIOCycle()	const	{ return ::s68000getcounter(); }
+										// I/O??????
+	void FASTCALL SetIOCycle(DWORD c)	{ ::s68000setcounter(c); }
+										// I/O??????
+	void FASTCALL Release()				{ ::s68000releaseTimeslice(); }
+										// CPU???????????
+	void FASTCALL BusErr(DWORD addr, BOOL read);
+										// ?????
+	void FASTCALL AddrErr(DWORD addr, BOOL read);
+										// ???????
+	void FASTCALL BusErrLog(DWORD addr, DWORD stat);
+										// ???????
+	void FASTCALL AddrErrLog(DWORD addr, DWORD stat);
+										// ?????????
+
+private:
+	cpusub_t sub;
+										// ?????
+	Memory *memory;
+										// ???
+	DMAC *dmac;
+										// DMAC
+	MFP *mfp;
+										// MFP
+	IOSC *iosc;
+										// IOSC
+	SCC *scc;
+										// SCC
+	MIDI *midi;
+										// MIDI
+	SCSI *scsi;
+										// SCSI
+	Scheduler *scheduler;
+										// ??????
+};
+
+#endif	// cpu_h
