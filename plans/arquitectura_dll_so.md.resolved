@@ -1,0 +1,200 @@
+# Arquitectura DLL/SO para la VM — Análisis de Viabilidad
+
+## ¿Es posible? Sí, y es la decisión arquitectónica correcta.
+
+La capa VM (`vm/`) tiene **cero dependencias inversas** hacia la capa host (`mfc/`). El grep confirma que no existe ni una sola referencia a `CFrmWnd`, `CDrawView`, `CSound`, `CInput` u otra clase MFC dentro de `vm/`. El flujo de datos es **unidireccional por polling**:
+
+```mermaid
+graph LR
+    subgraph "DLL/SO: xm6core"
+        VM["VM::Exec()"]
+        RENDER["Render<br/>Buffer DWORD[]"]
+        OPM["OPM/ADPCM<br/>Audio samples"]
+        KBD["Keyboard<br/>Estado teclas"]
+        SCHED["Scheduler<br/>Timing"]
+    end
+
+    subgraph "Frontend A: MFC (Windows)"
+        MFC_DRAW["mfc_draw.cpp<br/>Lee buffer → D3D9"]
+        MFC_SND["mfc_snd.cpp<br/>Lee samples → DirectSound"]
+        MFC_INP["mfc_inp.cpp<br/>Escribe teclas → VM"]
+        MFC_SCH["mfc_sch.cpp<br/>Controla timing"]
+    end
+
+    subgraph "Frontend B: SDL2 (Linux/Windows)"
+        SDL_REND["sdl_render.cpp<br/>Lee buffer → SDL_Texture"]
+        SDL_AUD["sdl_audio.cpp<br/>Lee samples → SDL_Audio"]
+        SDL_INP["sdl_input.cpp<br/>Escribe teclas → VM"]
+        SDL_SCH["sdl_sched.cpp<br/>Controla timing"]
+    end
+
+    MFC_DRAW -->|"polling"| RENDER
+    MFC_SND -->|"polling"| OPM
+    MFC_INP -->|"push"| KBD
+    MFC_SCH -->|"control"| SCHED
+
+    SDL_REND -->|"polling"| RENDER
+    SDL_AUD -->|"polling"| OPM
+    SDL_INP -->|"push"| KBD
+    SDL_SCH -->|"control"| SCHED
+```
+
+El patrón actual ya es de tipo **"biblioteca pasiva"**: el host llama a `VM::Exec()`, luego consulta el estado (framebuffer, samples de audio) y empuja input. La VM no "llama de vuelta" al host. Esto hace la separación DLL/SO **muy natural**.
+
+---
+
+## Diseño de la API de la Librería
+
+### ¿C puro o C++?
+
+**Recomendación: API C pura** (con implementación interna en C++).
+
+- Exportar clases C++ a través de límites DLL/SO es frágil (name mangling, vtable layout, ABI del compilador)
+- Una API C funciona con cualquier compilador y cualquier frontend (incluso uno en Rust, Python, etc.)
+- Internamente la librería sigue siendo C++ — no hay que reescribir nada
+
+### API propuesta: `xm6core.h`
+
+```cpp
+#ifndef XM6CORE_API_H
+#define XM6CORE_API_H
+
+#include <stdint.h>
+
+#ifdef _WIN32
+    #ifdef XM6CORE_EXPORTS
+        #define XM6API __declspec(dllexport)
+    #else
+        #define XM6API __declspec(dllimport)
+    #endif
+#else
+    #define XM6API __attribute__((visibility("default")))
+#endif
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+// --- Ciclo de vida ---
+typedef struct XM6Handle_t* XM6Handle;
+
+XM6API XM6Handle   xm6_create(void);
+XM6API void         xm6_destroy(XM6Handle h);
+XM6API int          xm6_load_ipl(XM6Handle h, const char* path);
+XM6API int          xm6_reset(XM6Handle h);
+
+// --- Emulación ---
+XM6API void         xm6_exec(XM6Handle h);           // Un frame de emulación
+XM6API int          xm6_get_power(XM6Handle h);
+XM6API void         xm6_set_power(XM6Handle h, int on);
+
+// --- Video (polling) ---
+XM6API const uint32_t* xm6_get_framebuffer(XM6Handle h, int* w, int* h_out);
+XM6API int          xm6_is_frame_ready(XM6Handle h);  // ¿Nuevo frame disponible?
+
+// --- Audio (polling) ---
+XM6API int          xm6_get_audio_samples(XM6Handle h, int16_t* buf, int max_samples);
+
+// --- Input (push) ---
+XM6API void         xm6_key_down(XM6Handle h, int scancode);
+XM6API void         xm6_key_up(XM6Handle h, int scancode);
+XM6API void         xm6_mouse_move(XM6Handle h, int dx, int dy);
+XM6API void         xm6_mouse_button(XM6Handle h, int button, int pressed);
+XM6API void         xm6_joystick_state(XM6Handle h, int port, uint32_t buttons, int ax, int ay);
+
+// --- Discos ---
+XM6API int          xm6_fdd_open(XM6Handle h, int drive, const char* path);
+XM6API void         xm6_fdd_eject(XM6Handle h, int drive);
+XM6API int          xm6_hdd_open(XM6Handle h, int unit, const char* path);
+
+// --- Estado ---
+XM6API int          xm6_save_state(XM6Handle h, const char* path);
+XM6API int          xm6_load_state(XM6Handle h, const char* path);
+
+// --- Info ---
+XM6API const char*  xm6_get_version(void);
+
+#ifdef __cplusplus
+}
+#endif
+#endif // XM6CORE_API_H
+```
+
+### Interior de la DLL (implementación)
+
+```cpp
+// xm6core_impl.cpp — dentro de la DLL, wrapper sobre las clases C++ existentes
+#include "xm6core.h"
+#include "vm.h"
+#include "render.h"
+#include "schedule.h"
+// ...
+
+struct XM6Handle_t {
+    VM*        vm;
+    Scheduler* scheduler;
+    Render*    render;
+    // ... todos los componentes de la VM
+};
+
+XM6API XM6Handle xm6_create(void) {
+    XM6Handle_t* h = new XM6Handle_t;
+    h->vm = new VM;
+    // ... inicialización interna
+    return h;
+}
+
+XM6API void xm6_exec(XM6Handle h) {
+    h->scheduler->Exec();  // Llama al bucle original
+}
+```
+
+---
+
+## Impacto en el Plan Incremental
+
+El plan original cambia ligeramente. Las fases 1-4 se mantienen casi idénticas, pero la Fase 4 ahora produce una **librería compartida** en vez de estática:
+
+| Fase | Antes | Ahora |
+|:-----|:------|:------|
+| 4 | `libxm6vm.a` (estática) | **`xm6core.dll`** / **`libxm6core.so`** (compartida) |
+| 5 | SDL2 frontend linkea estáticamente | SDL2 frontend carga `libxm6core.so` |
+| — | MFC frontend monolítico | MFC frontend carga `xm6core.dll` (refactor gradual) |
+
+### CMake actualizado (Fase 4)
+
+```cmake
+# Librería compartida (DLL/SO)
+add_library(xm6core SHARED
+    ${VM_SOURCES}
+    ${CPU_SOURCES}
+    xm6core_impl.cpp
+)
+target_compile_definitions(xm6core PRIVATE XM6CORE_EXPORTS)
+
+# Frontend SDL2 (Fase 5)
+add_executable(xm6sp-sdl sdl/sdl_main.cpp ...)
+target_link_libraries(xm6sp-sdl xm6core SDL2::SDL2)
+
+# Frontend MFC (solo Windows, refactorizado)
+if(WIN32)
+    add_executable(xm6sp-mfc ${MFC_SOURCES})
+    target_link_libraries(xm6sp-mfc xm6core)
+endif()
+```
+
+---
+
+## Limitaciones y Consideraciones
+
+> [!WARNING]
+> **Starscream tiene estado global.** Las variables `s68000context`, `s68000exec`, etc. son globales. Esto significa que **solo puede existir una instancia de la VM por proceso**. No es un problema práctico (nadie ejecuta dos emuladores X68000 simultáneos), pero impide diseñar una API re-entrante limpia. El `XM6Handle` es un singleton de facto.
+
+> [!NOTE]
+> **El refactor del frontend MFC es opcional.** No es necesario modificar el frontend MFC actual para que use la DLL inmediatamente. Puedes:
+> 1. Compilar el proyecto Windows igual que antes (monolítico)
+> 2. Compilar la DLL/SO solo para el frontend SDL2 (Linux + opcionalmente Windows)
+> 3. Migrar el frontend MFC a usar la DLL *después*, si se desea
+
+> [!IMPORTANT]
+> **La frontera DLL introduce overhead mínimo.** En un emulador que ejecuta millones de instrucciones por segundo, la llamada a `xm6_exec()` una vez por frame (~60 FPS) no tiene costo perceptible. El buffer de video se comparte por puntero directo, no por copia.
