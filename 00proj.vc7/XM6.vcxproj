@@ -1,4 +1,4 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <Project DefaultTargets="Build" ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup Label="ProjectConfigurations">
     <ProjectConfiguration Include="Debug|Win32">
@@ -174,6 +174,7 @@
     <ClCompile Include="..\vm\ppi.cpp" />
     <ClCompile Include="..\vm\printer.cpp" />
     <ClCompile Include="..\vm\render.cpp" />
+    <ClCompile Include="..\vm\rend_soft.cpp" />
     <ClCompile Include="..\vm\rtc.cpp" />
     <ClCompile Include="..\vm\sasi.cpp" />
     <ClCompile Include="..\vm\scc.cpp" />
@@ -257,25 +258,9 @@
     <ClCompile Include="..\mfc\mfc_ver.cpp" />
     <ClCompile Include="..\mfc\mfc_vid.cpp" />
     <ClCompile Include="..\mfc\mfc_w32.cpp" />
+    <ClCompile Include="..\vm\core_soft.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <CustomBuild Include="..\vm\core_asm.asm">
-      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">nasmw -f win32 -o $(IntDir)%(Filename).obj %(FullPath)
-</Command>
-      <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(IntDir)%(Filename).obj;%(Outputs)</Outputs>
-      <Command Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">nasmw -f win32 -o $(IntDir)%(Filename).obj %(FullPath)
-</Command>
-      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(IntDir)%(Filename).obj;%(Outputs)</Outputs>
-    </CustomBuild>
-    <CustomBuild Include="..\vm\rend_asm.asm">
-      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">nasmw -f win32 -o $(IntDir)%(Filename).obj %(FullPath)
-</Command>
-      <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(IntDir)%(Filename).obj;%(Outputs)</Outputs>
-      <Command Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">nasmw -f win32 -o $(IntDir)%(Filename).obj %(FullPath)
-</Command>
-      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(IntDir)%(Filename).obj;%(Outputs)</Outputs>
-    </CustomBuild>
-
     <CustomBuild Include="..\mfc\mfc_asm.asm">
       <Command Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">nasmw -f win32 -o $(IntDir)%(Filename).obj %(FullPath)
 </Command>
@@ -297,7 +282,7 @@
     <ClInclude Include="areaset.h" />
     <ClInclude Include="cisc.h" />
     <ClInclude Include="config.h" />
-    <ClInclude Include="core_asm.h" />
+    <ClInclude Include="core_soft.h" />
     <ClInclude Include="cpu.h" />
     <ClInclude Include="crtc.h" />
     <ClInclude Include="device.h" />
@@ -325,7 +310,7 @@
     <ClInclude Include="os.h" />
     <ClInclude Include="ppi.h" />
     <ClInclude Include="printer.h" />
-    <ClInclude Include="rend_asm.h" />
+    <ClInclude Include="rend_soft.h" />
     <ClInclude Include="render.h" />
     <ClInclude Include="renderin.h" />
     <ClInclude Include="rtc.h" />

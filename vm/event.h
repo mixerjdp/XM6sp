@@ -2,8 +2,8 @@
 //
 //	X68000 EMULATOR "XM6"
 //
-//	Copyright (C) 2001-2006 ‚o‚hD(ytanaka@ipc-tokai.or.jp)
-//	[ ƒCƒxƒ“ƒg ]
+//	Copyright (C) 2001-2006 ï¼°ï¼©ï¼(ytanaka@ipc-tokai.or.jp)
+//	[ ã‚¤ãƒ™ãƒ³ãƒˆ ]
 //
 //---------------------------------------------------------------------------
 
@@ -12,93 +12,94 @@
 
 //===========================================================================
 //
-//	ƒCƒxƒ“ƒg
+//	ã‚¤ãƒ™ãƒ³ãƒˆ
 //
 //===========================================================================
 class Event
 {
 public:
-	// “à•”ƒf[ƒ^’è‹`
+	// å†…éƒ¨ãƒ‡ãƒ¼ã‚¿å®šç¾©
 #if defined(_WIN32)
 #pragma pack(push, 8)
 #endif	// _WIN32
 	typedef struct {
-		DWORD remain;					// c‚èŠÔ
-		DWORD time;						// ƒg[ƒ^ƒ‹ŠÔ
-		DWORD user;						// ƒ†[ƒU’è‹`ƒf[ƒ^
-		Device *device;					// eƒfƒoƒCƒX
-		Scheduler *scheduler;			// ƒXƒPƒWƒ…[ƒ‰
-		Event *next;					// Ÿ‚ÌƒCƒxƒ“ƒg
-		char desc[0x20];				// –¼Ì
+		DWORD remain;					// æ®‹ã‚Šæ™‚é–“
+		DWORD time;						// ãƒˆãƒ¼ã‚¿ãƒ«æ™‚é–“
+		DWORD user;						// ãƒ¦ãƒ¼ã‚¶å®šç¾©ãƒ‡ãƒ¼ã‚¿
+		Device *device;					// è¦ªãƒ‡ãƒã‚¤ã‚¹
+		Scheduler *scheduler;			// ã‚¹ã‚±ã‚¸ãƒ¥ãƒ¼ãƒ©
+		Event *next;					// æ¬¡ã®ã‚¤ãƒ™ãƒ³ãƒˆ
+		char desc[0x20];				// åç§°
 	} event_t;
 #if defined(_WIN32)
 #pragma pack(pop)
 #endif	// _WIN32
 
 public:
-	// Šî–{ƒtƒ@ƒ“ƒNƒVƒ‡ƒ“
+	// åŸºæœ¬ãƒ•ã‚¡ãƒ³ã‚¯ã‚·ãƒ§ãƒ³
 	Event();
-										// ƒRƒ“ƒXƒgƒ‰ƒNƒ^
+										// ã‚³ãƒ³ã‚¹ãƒˆãƒ©ã‚¯ã‚¿
 	virtual ~Event();
-										// ƒfƒXƒgƒ‰ƒNƒ^
+										// ãƒ‡ã‚¹ãƒˆãƒ©ã‚¯ã‚¿
 #if !defined(NDEBUG)
 	void FASTCALL AssertDiag() const;
-										// f’f
+										// è¨ºæ–­
 #endif	// NDEBUG
 
-	// ƒ[ƒhEƒZ[ƒu
+	// ãƒ­ãƒ¼ãƒ‰ãƒ»ã‚»ãƒ¼ãƒ–
 	BOOL FASTCALL Save(Fileio *fio, int ver);
-										// ƒZ[ƒu
+										// ã‚»ãƒ¼ãƒ–
 	BOOL FASTCALL Load(Fileio *fio, int ver);
-										// ƒ[ƒh
+										// ãƒ­ãƒ¼ãƒ‰
 
-	// ƒvƒƒpƒeƒB
+	// ãƒ—ãƒ­ãƒ‘ãƒ†ã‚£
 	void FASTCALL SetDevice(Device *p);
-										// eƒfƒoƒCƒXİ’è
+										// è¦ªãƒ‡ãƒã‚¤ã‚¹è¨­å®š
 	Device* FASTCALL GetDevice() const	{ return ev.device; }
-										// eƒfƒoƒCƒXæ“¾
+										// è¦ªãƒ‡ãƒã‚¤ã‚¹å–å¾—
 	void FASTCALL SetDesc(const char *desc);
-										// –¼Ìİ’è
+										// åç§°è¨­å®š
 	const char* FASTCALL GetDesc() const;
-										// –¼Ìæ“¾
+										// åç§°å–å¾—
 	void FASTCALL SetUser(DWORD data)	{ ev.user = data; }
-										// ƒ†[ƒU’è‹`ƒf[ƒ^İ’è
+										// ãƒ¦ãƒ¼ã‚¶å®šç¾©ãƒ‡ãƒ¼ã‚¿è¨­å®š
 	DWORD FASTCALL GetUser() const		{ return ev.user; }
-										// ƒ†[ƒU’è‹`ƒf[ƒ^æ“¾
+										// ãƒ¦ãƒ¼ã‚¶å®šç¾©ãƒ‡ãƒ¼ã‚¿å–å¾—
 
-	// ŠÔŠÇ—
+	// æ™‚é–“ç®¡ç†
 	void FASTCALL SetTime(DWORD hus);
-										// ŠÔüŠúİ’è
+										// æ™‚é–“å‘¨æœŸè¨­å®š
 	DWORD FASTCALL GetTime() const		{ return ev.time; }
-										// ŠÔüŠúæ“¾
+										// æ™‚é–“å‘¨æœŸå–å¾—
 	DWORD FASTCALL GetRemain() const	{ return ev.remain; }
-										// c‚èŠÔæ“¾
+										// æ®‹ã‚Šæ™‚é–“å–å¾—
 	void FASTCALL Exec(DWORD hus);
-										// ŠÔ‚ği‚ß‚é
+										// æ™‚é–“ã‚’é€²ã‚ã‚‹
 
-	// ƒŠƒ“ƒNİ’èEíœ
+	// ãƒªãƒ³ã‚¯è¨­å®šãƒ»å‰Šé™¤
 	void FASTCALL SetNextEvent(Event *p) { ev.next = p; }
-										// Ÿ‚ÌƒCƒxƒ“ƒg‚ğİ’è
+										// æ¬¡ã®ã‚¤ãƒ™ãƒ³ãƒˆã‚’è¨­å®š
 	Event* FASTCALL GetNextEvent() const { return ev.next; }
-										// Ÿ‚ÌƒCƒxƒ“ƒg‚ğæ“¾
+										// æ¬¡ã®ã‚¤ãƒ™ãƒ³ãƒˆã‚’å–å¾—
 
 private:
-	// “à•”ƒf[ƒ^’è‹`(Ver2.01‚Ü‚ÅBenable‚ª‚ ‚é)
+	// å†…éƒ¨ãƒ‡ãƒ¼ã‚¿å®šç¾©(Ver2.01ã¾ã§ã€‚enableãŒã‚ã‚‹)
 	typedef struct {
-		Device *device;					// eƒfƒoƒCƒX
-		Scheduler *scheduler;			// ƒXƒPƒWƒ…[ƒ‰
-		Event *next;					// Ÿ‚ÌƒCƒxƒ“ƒg
-		char desc[0x20];				// –¼Ì
-		DWORD user;						// ƒ†[ƒU’è‹`ƒf[ƒ^
-		BOOL enable;					// ƒCƒl[ƒuƒ‹ŠÔ
-		DWORD time;						// ƒg[ƒ^ƒ‹ŠÔ
-		DWORD remain;					// c‚èŠÔ
+		Device *device;					// è¦ªãƒ‡ãƒã‚¤ã‚¹
+		Scheduler *scheduler;			// ã‚¹ã‚±ã‚¸ãƒ¥ãƒ¼ãƒ©
+		Event *next;					// æ¬¡ã®ã‚¤ãƒ™ãƒ³ãƒˆ
+		char desc[0x20];				// åç§°
+		DWORD user;						// ãƒ¦ãƒ¼ã‚¶å®šç¾©ãƒ‡ãƒ¼ã‚¿
+		BOOL enable;					// ã‚¤ãƒãƒ¼ãƒ–ãƒ«æ™‚é–“
+		DWORD time;						// ãƒˆãƒ¼ã‚¿ãƒ«æ™‚é–“
+		DWORD remain;					// æ®‹ã‚Šæ™‚é–“
 	} event201_t;
 
 	BOOL FASTCALL Load201(Fileio *fio);
-										// ƒ[ƒh(version 2.01ˆÈ‘O)
+										// ãƒ­ãƒ¼ãƒ‰(version 2.01ä»¥å‰)
+public:
 	event_t ev;
-										// “à•”ƒ[ƒN
+										// å†…éƒ¨ãƒ¯ãƒ¼ã‚¯
 };
 
 #endif	// event_h

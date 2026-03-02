@@ -2,8 +2,8 @@
 //
 //	X68000 EMULATOR "XM6"
 //
-//	Copyright (C) 2001-2005 ‚o‚hD(ytanaka@ipc-tokai.or.jp)
-//	[ ƒŒƒ“ƒ_ƒ‰ ]
+//	Copyright (C) 2001-2005 ï¼°ï¼©ï¼(ytanaka@ipc-tokai.or.jp)
+//	[ ãƒ¬ãƒ³ãƒ€ãƒ© ]
 //
 //---------------------------------------------------------------------------
 
@@ -15,58 +15,58 @@
 #include "tvram.h"
 #include "gvram.h"
 #include "sprite.h"
-#include "rend_asm.h"
+#include "rend_soft.h"
 #include "render.h"
 
 //===========================================================================
 //
-//	ƒŒƒ“ƒ_ƒ‰
+//	ãƒ¬ãƒ³ãƒ€ãƒ©
 //
 //===========================================================================
 //#define REND_LOG
 
 //---------------------------------------------------------------------------
 //
-//	’è”’è‹`
+//	å®šæ•°å®šç¾©
 //
 //---------------------------------------------------------------------------
-#define REND_COLOR0		0x80000000		// ƒJƒ‰[0ƒtƒ‰ƒO(rend_asm.asm‚Åg—p)
+#define REND_COLOR0		0x80000000		// ã‚«ãƒ©ãƒ¼0ãƒ•ãƒ©ã‚°(rend_asm.asmã§ä½¿ç”¨)
 
 //---------------------------------------------------------------------------
 //
-//	ƒRƒ“ƒXƒgƒ‰ƒNƒ^
+//	ã‚³ãƒ³ã‚¹ãƒˆãƒ©ã‚¯ã‚¿
 //
 //---------------------------------------------------------------------------
 Render::Render(VM *p) : Device(p)
 {
-	// ƒfƒoƒCƒXID‚ğ‰Šú‰»
+	// ãƒ‡ãƒã‚¤ã‚¹IDã‚’åˆæœŸåŒ–
 	dev.id = MAKEID('R', 'E', 'N', 'D');
 	dev.desc = "Renderer";
 
-	// ƒfƒoƒCƒXƒ|ƒCƒ“ƒ^
+	// ãƒ‡ãƒã‚¤ã‚¹ãƒã‚¤ãƒ³ã‚¿
 	crtc = NULL;
 	vc = NULL;
 	sprite = NULL;
 
-	// ƒ[ƒNƒGƒŠƒA‰Šú‰»(CRTC)
+	// ãƒ¯ãƒ¼ã‚¯ã‚¨ãƒªã‚¢åˆæœŸåŒ–(CRTC)
 	render.crtc = FALSE;
 	render.width = 768;
 	render.h_mul = 1;
 	render.height = 512;
 	render.v_mul = 1;
 
-	// ƒ[ƒNƒGƒŠƒA‰Šú‰»(ƒpƒŒƒbƒg)
+	// ãƒ¯ãƒ¼ã‚¯ã‚¨ãƒªã‚¢åˆæœŸåŒ–(ãƒ‘ãƒ¬ãƒƒãƒˆ)
 	render.palbuf = NULL;
 	render.palptr = NULL;
 	render.palvc = NULL;
 
-	// ƒ[ƒNƒGƒŠƒA‰Šú‰»(ƒeƒLƒXƒg)
+	// ãƒ¯ãƒ¼ã‚¯ã‚¨ãƒªã‚¢åˆæœŸåŒ–(ãƒ†ã‚­ã‚¹ãƒˆ)
 	render.textflag = NULL;
 	render.texttv = NULL;
 	render.textbuf = NULL;
 	render.textout = NULL;
 
-	// ƒ[ƒNƒGƒŠƒA‰Šú‰»(ƒOƒ‰ƒtƒBƒbƒN)
+	// ãƒ¯ãƒ¼ã‚¯ã‚¨ãƒªã‚¢åˆæœŸåŒ–(ã‚°ãƒ©ãƒ•ã‚£ãƒƒã‚¯)
 	render.grpflag = NULL;
 	render.grpgv = NULL;
 	render.grpbuf[0] = NULL;
@@ -74,7 +74,7 @@ Render::Render(VM *p) : Device(p)
 	render.grpbuf[2] = NULL;
 	render.grpbuf[3] = NULL;
 
-	// ƒ[ƒNƒGƒŠƒA‰Šú‰»(PCG,ƒXƒvƒ‰ƒCƒg,BG)
+	// ãƒ¯ãƒ¼ã‚¯ã‚¨ãƒªã‚¢åˆæœŸåŒ–(PCG,ã‚¹ãƒ—ãƒ©ã‚¤ãƒˆ,BG)
 	render.pcgbuf = NULL;
 	render.spptr = NULL;
 	render.bgspbuf = NULL;
@@ -82,7 +82,7 @@ Render::Render(VM *p) : Device(p)
 	render.bgptr[0] = NULL;
 	render.bgptr[1] = NULL;
 
-	// ƒ[ƒNƒGƒŠƒA‰Šú‰»(‡¬)
+	// ãƒ¯ãƒ¼ã‚¯ã‚¨ãƒªã‚¢åˆæœŸåŒ–(åˆæˆ)
 	render.mixbuf = NULL;
 	render.mixwidth = 0;
 	render.mixheight = 0;
@@ -95,16 +95,16 @@ Render::Render(VM *p) : Device(p)
 	memset(render.mixand, 0, sizeof(render.mixand));
 	memset(render.mixmap, 0, sizeof(render.mixmap));
 
-	// ƒ[ƒNƒGƒŠƒA‰Šú‰»(•`‰æ)
+	// ãƒ¯ãƒ¼ã‚¯ã‚¨ãƒªã‚¢åˆæœŸåŒ–(æç”»)
 	render.drawflag = NULL;
 
-	// ‚»‚Ì‘¼
+	// ãã®ä»–
 	cmov = FALSE;
 }
 
 //---------------------------------------------------------------------------
 //
-//	‰Šú‰»
+//	åˆæœŸåŒ–
 //
 //---------------------------------------------------------------------------
 BOOL FASTCALL Render::Init()
@@ -113,20 +113,20 @@ BOOL FASTCALL Render::Init()
 
 	ASSERT(this);
 
-	// Šî–{ƒNƒ‰ƒX
+	// åŸºæœ¬ã‚¯ãƒ©ã‚¹
 	if (!Device::Init()) {
 		return FALSE;
 	}
 
-	// CRTCæ“¾
+	// CRTCå–å¾—
 	crtc = (CRTC*)vm->SearchDevice(MAKEID('C', 'R', 'T', 'C'));
 	ASSERT(crtc);
 
-	// VCæ“¾
+	// VCå–å¾—
 	vc = (VC*)vm->SearchDevice(MAKEID('V', 'C', ' ', ' '));
 	ASSERT(vc);
 
-	// ƒpƒŒƒbƒgƒoƒbƒtƒ@Šm•Û(4MB)
+	// ãƒ‘ãƒ¬ãƒƒãƒˆãƒãƒƒãƒ•ã‚¡ç¢ºä¿(4MB)
 	try {
 		render.palbuf = new DWORD[0x10000 * 16];
 	}
@@ -137,7 +137,7 @@ BOOL FASTCALL Render::Init()
 		return FALSE;
 	}
 
-	// ƒeƒLƒXƒgVRAMƒoƒbƒtƒ@Šm•Û(4.7MB)
+	// ãƒ†ã‚­ã‚¹ãƒˆVRAMãƒãƒƒãƒ•ã‚¡ç¢ºä¿(4.7MB)
 	try {
 		render.textflag = new BOOL[1024 * 32];
 		render.textbuf = new BYTE[1024 * 512];
@@ -162,7 +162,7 @@ BOOL FASTCALL Render::Init()
 		render.textmod[i] = TRUE;
 	}
 
-	// ƒOƒ‰ƒtƒBƒbƒNVRAMƒoƒbƒtƒ@Šm•Û(8.2MB)
+	// ã‚°ãƒ©ãƒ•ã‚£ãƒƒã‚¯VRAMãƒãƒƒãƒ•ã‚¡ç¢ºä¿(8.2MB)
 	try {
 		render.grpflag = new BOOL[512 * 32 * 4];
 		render.grpbuf[0] = new DWORD[512 * 1024 * 4];
@@ -185,7 +185,7 @@ BOOL FASTCALL Render::Init()
 		render.grppal[i] = TRUE;
 	}
 
-	// PCGƒoƒbƒtƒ@Šm•Û(4MB)
+	// PCGãƒãƒƒãƒ•ã‚¡ç¢ºä¿(4MB)
 	try {
 		render.pcgbuf = new DWORD[ 16 * 256 * 16 * 16 ];
 	}
@@ -196,7 +196,7 @@ BOOL FASTCALL Render::Init()
 		return FALSE;
 	}
 
-	// ƒXƒvƒ‰ƒCƒgƒ|ƒCƒ“ƒ^Šm•Û(256KB)
+	// ã‚¹ãƒ—ãƒ©ã‚¤ãƒˆãƒã‚¤ãƒ³ã‚¿ç¢ºä¿(256KB)
 	try {
 		render.spptr = new DWORD*[ 128 * 512 ];
 	}
@@ -207,7 +207,7 @@ BOOL FASTCALL Render::Init()
 		return FALSE;
 	}
 
-	// BGƒ|ƒCƒ“ƒ^Šm•Û(768KB)
+	// BGãƒã‚¤ãƒ³ã‚¿ç¢ºä¿(768KB)
 	try {
 		render.bgptr[0] = new DWORD*[ (64 * 2) * 1024 ];
 		memset(render.bgptr[0], 0, sizeof(DWORD*) * (64 * 2 * 1024));
@@ -226,9 +226,9 @@ BOOL FASTCALL Render::Init()
 	memset(render.bgall, 0, sizeof(render.bgall));
 	memset(render.bgmod, 0, sizeof(render.bgmod));
 
-	// BG/ƒXƒvƒ‰ƒCƒgƒoƒbƒtƒ@Šm•Û(1MB)
+	// BG/ã‚¹ãƒ—ãƒ©ã‚¤ãƒˆãƒãƒƒãƒ•ã‚¡ç¢ºä¿(1MB)
 	try {
-		render.bgspbuf = new DWORD[ 512 * 512 + 16];	// +16‚Íb’è‘[’u
+		render.bgspbuf = new DWORD[ 512 * 512 + 16];	// +16ã¯æš«å®šæªç½®
 	}
 	catch (...) {
 		return FALSE;
@@ -237,7 +237,7 @@ BOOL FASTCALL Render::Init()
 		return FALSE;
 	}
 
-	// •`‰æƒtƒ‰ƒOƒoƒbƒtƒ@Šm•Û(256KB)
+	// æç”»ãƒ•ãƒ©ã‚°ãƒãƒƒãƒ•ã‚¡ç¢ºä¿(256KB)
 	try {
 		render.drawflag = new BOOL[64 * 1024];
 	}
@@ -249,10 +249,10 @@ BOOL FASTCALL Render::Init()
 	}
 	memset(render.drawflag, 0, sizeof(BOOL) * 64 * 1024);
 
-	// ƒpƒŒƒbƒgì¬
+	// ãƒ‘ãƒ¬ãƒƒãƒˆä½œæˆ
 	MakePalette();
 
-	// ‚»‚Ì‘¼ƒ[ƒNƒGƒŠƒA
+	// ãã®ä»–ãƒ¯ãƒ¼ã‚¯ã‚¨ãƒªã‚¢
 	render.contlevel = 0;
 	cmov = ::IsCMOV();
 
@@ -261,7 +261,7 @@ BOOL FASTCALL Render::Init()
 
 //---------------------------------------------------------------------------
 //
-//	ƒNƒŠ[ƒ“ƒAƒbƒv
+//	ã‚¯ãƒªãƒ¼ãƒ³ã‚¢ãƒƒãƒ—
 //
 //---------------------------------------------------------------------------
 void FASTCALL Render::Cleanup()
@@ -270,19 +270,19 @@ void FASTCALL Render::Cleanup()
 
 	ASSERT(this);
 
-	// •`‰æƒtƒ‰ƒO
+	// æç”»ãƒ•ãƒ©ã‚°
 	if (render.drawflag) {
 		delete[] render.drawflag;
 		render.drawflag = NULL;
 	}
 
-	// BG/ƒXƒvƒ‰ƒCƒgƒoƒbƒtƒ@
+	// BG/ã‚¹ãƒ—ãƒ©ã‚¤ãƒˆãƒãƒƒãƒ•ã‚¡
 	if (render.bgspbuf) {
 		delete[] render.bgspbuf;
 		render.bgspbuf = NULL;
 	}
 
-	// BGƒ|ƒCƒ“ƒ^
+	// BGãƒã‚¤ãƒ³ã‚¿
 	if (render.bgptr[0]) {
 		delete[] render.bgptr[0];
 		render.bgptr[0] = NULL;
@@ -292,19 +292,19 @@ void FASTCALL Render::Cleanup()
 		render.bgptr[1] = NULL;
 	}
 
-	// ƒXƒvƒ‰ƒCƒgƒ|ƒCƒ“ƒ^
+	// ã‚¹ãƒ—ãƒ©ã‚¤ãƒˆãƒã‚¤ãƒ³ã‚¿
 	if (render.spptr) {
 		delete[] render.spptr;
 		render.spptr = NULL;
 	}
 
-	// PCGƒoƒbƒtƒ@
+	// PCGãƒãƒƒãƒ•ã‚¡
 	if (render.pcgbuf) {
 		delete[] render.pcgbuf;
 		render.pcgbuf = NULL;
 	}
 
-	// ƒOƒ‰ƒtƒBƒbƒNVRAMƒoƒbƒtƒ@
+	// ã‚°ãƒ©ãƒ•ã‚£ãƒƒã‚¯VRAMãƒãƒƒãƒ•ã‚¡
 	if (render.grpflag) {
 		delete[] render.grpflag;
 		render.grpflag = NULL;
@@ -316,7 +316,7 @@ void FASTCALL Render::Cleanup()
 		}
 	}
 
-	// ƒeƒLƒXƒgVRAMƒoƒbƒtƒ@
+	// ãƒ†ã‚­ã‚¹ãƒˆVRAMãƒãƒƒãƒ•ã‚¡
 	if (render.textflag) {
 		delete[] render.textflag;
 		render.textflag = NULL;
@@ -330,19 +330,19 @@ void FASTCALL Render::Cleanup()
 		render.textout = NULL;
 	}
 
-	// ƒpƒŒƒbƒgƒoƒbƒtƒ@
+	// ãƒ‘ãƒ¬ãƒƒãƒˆãƒãƒƒãƒ•ã‚¡
 	if (render.palbuf) {
 		delete[] render.palbuf;
 		render.palbuf = NULL;
 	}
 
-	// Šî–{ƒNƒ‰ƒX‚Ö
+	// åŸºæœ¬ã‚¯ãƒ©ã‚¹ã¸
 	Device::Cleanup();
 }
 
 //---------------------------------------------------------------------------
 //
-//	ƒŠƒZƒbƒg
+//	ãƒªã‚»ãƒƒãƒˆ
 //
 //---------------------------------------------------------------------------
 void FASTCALL Render::Reset()
@@ -355,51 +355,51 @@ void FASTCALL Render::Reset()
 	DWORD **ptr;
 
 	ASSERT(this);
-	LOG0(Log::Normal, "ƒŠƒZƒbƒg");
+	LOG0(Log::Normal, "ãƒªã‚»ãƒƒãƒˆ");
 
-	// ƒrƒfƒIƒRƒ“ƒgƒ[ƒ‰‚æ‚èƒ|ƒCƒ“ƒ^æ“¾
+	// ãƒ“ãƒ‡ã‚ªã‚³ãƒ³ãƒˆãƒ­ãƒ¼ãƒ©ã‚ˆã‚Šãƒã‚¤ãƒ³ã‚¿å–å¾—
 	ASSERT(vc);
 	render.palvc = (const WORD*)vc->GetPalette();
 
-	// ƒeƒLƒXƒgVRAM‚æ‚èƒ|ƒCƒ“ƒ^æ“¾
+	// ãƒ†ã‚­ã‚¹ãƒˆVRAMã‚ˆã‚Šãƒã‚¤ãƒ³ã‚¿å–å¾—
 	tvram = (TVRAM*)vm->SearchDevice(MAKEID('T', 'V', 'R', 'M'));
 	ASSERT(tvram);
 	render.texttv = tvram->GetTVRAM();
 
-	// ƒOƒ‰ƒtƒBƒbƒNVRAM‚æ‚èƒ|ƒCƒ“ƒ^æ“¾
+	// ã‚°ãƒ©ãƒ•ã‚£ãƒƒã‚¯VRAMã‚ˆã‚Šãƒã‚¤ãƒ³ã‚¿å–å¾—
 	gvram = (GVRAM*)vm->SearchDevice(MAKEID('G', 'V', 'R', 'M'));
 	ASSERT(gvram);
 	render.grpgv = gvram->GetGVRAM();
 
-	// ƒXƒvƒ‰ƒCƒgƒRƒ“ƒgƒ[ƒ‰‚æ‚èƒ|ƒCƒ“ƒ^æ“¾
+	// ã‚¹ãƒ—ãƒ©ã‚¤ãƒˆã‚³ãƒ³ãƒˆãƒ­ãƒ¼ãƒ©ã‚ˆã‚Šãƒã‚¤ãƒ³ã‚¿å–å¾—
 	sprite = (Sprite*)vm->SearchDevice(MAKEID('S', 'P', 'R', ' '));
 	ASSERT(sprite);
 	render.sprmem = sprite->GetPCG() - 0x8000;
 
-	// ƒ[ƒNƒGƒŠƒA‰Šú‰»
+	// ãƒ¯ãƒ¼ã‚¯ã‚¨ãƒªã‚¢åˆæœŸåŒ–
 	render.first = 0;
 	render.last = 0;
 	render.enable = TRUE;
 	render.act = TRUE;
 	render.count = 2;
 
-	// ƒ[ƒNƒGƒŠƒA‰Šú‰»(crtc, vc)
+	// ãƒ¯ãƒ¼ã‚¯ã‚¨ãƒªã‚¢åˆæœŸåŒ–(crtc, vc)
 	render.crtc = FALSE;
 	render.vc = FALSE;
 
-	// ƒ[ƒNƒGƒŠƒA‰Šú‰»(ƒRƒ“ƒgƒ‰ƒXƒg)
+	// ãƒ¯ãƒ¼ã‚¯ã‚¨ãƒªã‚¢åˆæœŸåŒ–(ã‚³ãƒ³ãƒˆãƒ©ã‚¹ãƒˆ)
 	render.contrast = FALSE;
 
-	// ƒ[ƒNƒGƒŠƒA‰Šú‰»(ƒpƒŒƒbƒg)
+	// ãƒ¯ãƒ¼ã‚¯ã‚¨ãƒªã‚¢åˆæœŸåŒ–(ãƒ‘ãƒ¬ãƒƒãƒˆ)
 	render.palette = FALSE;
 	render.palptr = render.palbuf;
 
-	// ƒ[ƒNƒGƒŠƒA‰Šú‰»(ƒeƒLƒXƒg)
+	// ãƒ¯ãƒ¼ã‚¯ã‚¨ãƒªã‚¢åˆæœŸåŒ–(ãƒ†ã‚­ã‚¹ãƒˆ)
 	render.texten = FALSE;
 	render.textx = 0;
 	render.texty = 0;
 
-	// ƒ[ƒNƒGƒŠƒA‰Šú‰»(ƒOƒ‰ƒtƒBƒbƒN)
+	// ãƒ¯ãƒ¼ã‚¯ã‚¨ãƒªã‚¢åˆæœŸåŒ–(ã‚°ãƒ©ãƒ•ã‚£ãƒƒã‚¯)
 	for (i=0; i<4; i++) {
 		render.grpen[i] = FALSE;
 		render.grpx[i] = 0;
@@ -407,18 +407,18 @@ void FASTCALL Render::Reset()
 	}
 	render.grptype = 4;
 
-	// ƒ[ƒNƒGƒŠƒA‰Šú‰»(PCG)
-	// ƒŠƒZƒbƒg’¼Œã‚ÍBG,Sprite‚Æ‚à‚·‚×‚Ä•\¦‚µ‚È‚¢¨PCG‚Í–¢g—p
+	// ãƒ¯ãƒ¼ã‚¯ã‚¨ãƒªã‚¢åˆæœŸåŒ–(PCG)
+	// ãƒªã‚»ãƒƒãƒˆç›´å¾Œã¯BG,Spriteã¨ã‚‚ã™ã¹ã¦è¡¨ç¤ºã—ãªã„â†’PCGã¯æœªä½¿ç”¨
 	memset(render.pcgready, 0, sizeof(render.pcgready));
 	memset(render.pcguse, 0, sizeof(render.pcguse));
 	memset(render.pcgpal, 0, sizeof(render.pcgpal));
 
-	// ƒ[ƒNƒGƒŠƒA‰Šú‰»(ƒXƒvƒ‰ƒCƒg)
+	// ãƒ¯ãƒ¼ã‚¯ã‚¨ãƒªã‚¢åˆæœŸåŒ–(ã‚¹ãƒ—ãƒ©ã‚¤ãƒˆ)
 	memset(render.spptr, 0, sizeof(DWORD*) * 128 * 512);
 	memset(render.spreg, 0, sizeof(render.spreg));
 	memset(render.spuse, 0, sizeof(render.spuse));
 
-	// ƒ[ƒNƒGƒŠƒA‰Šú‰»(BG)
+	// ãƒ¯ãƒ¼ã‚¯ã‚¨ãƒªã‚¢åˆæœŸåŒ–(BG)
 	memset(render.bgreg, 0, sizeof(render.bgreg));
 	render.bgdisp[0] = FALSE;
 	render.bgdisp[1] = FALSE;
@@ -430,12 +430,12 @@ void FASTCALL Render::Reset()
 	render.bgy[0] = 0;
 	render.bgy[1] = 0;
 
-	// ƒ[ƒNƒGƒŠƒA‰Šú‰»(BG/ƒXƒvƒ‰ƒCƒg)
+	// ãƒ¯ãƒ¼ã‚¯ã‚¨ãƒªã‚¢åˆæœŸåŒ–(BG/ã‚¹ãƒ—ãƒ©ã‚¤ãƒˆ)
 	render.bgspflag = FALSE;
 	render.bgspdisp = FALSE;
 	memset(render.bgspmod, 0, sizeof(render.bgspmod));
 
-	// BG‚Ì‰Šú‰»ó‘Ô‚ğ‚Â‚­‚é(‚·‚×‚Ä0000)
+	// BGã®åˆæœŸåŒ–çŠ¶æ…‹ã‚’ã¤ãã‚‹(ã™ã¹ã¦0000)
 	for (i=0; i<(64*64); i++) {
 		render.bgreg[0][i] = 0x10000;
 		render.bgreg[1][i] = 0x10000;
@@ -471,19 +471,19 @@ void FASTCALL Render::Reset()
 		}
 	}
 
-	// ƒ[ƒNƒGƒŠƒA‰Šú‰»(‡¬)
+	// ãƒ¯ãƒ¼ã‚¯ã‚¨ãƒªã‚¢åˆæœŸåŒ–(åˆæˆ)
 	render.mixtype = 0;
 }
 
 //---------------------------------------------------------------------------
 //
-//	ƒZ[ƒu
+//	ã‚»ãƒ¼ãƒ–
 //
 //---------------------------------------------------------------------------
 BOOL FASTCALL Render::Save(Fileio *fio, int ver)
 {
 	ASSERT(this);
-	LOG0(Log::Normal, "ƒZ[ƒu");
+	LOG0(Log::Normal, "ã‚»ãƒ¼ãƒ–");
 
 	printf("%d %d", ver, fio);
 
@@ -492,13 +492,13 @@ BOOL FASTCALL Render::Save(Fileio *fio, int ver)
 
 //---------------------------------------------------------------------------
 //
-//	ƒ[ƒh
+//	ãƒ­ãƒ¼ãƒ‰
 //
 //---------------------------------------------------------------------------
 BOOL FASTCALL Render::Load(Fileio *fio, int ver)
 {
 	ASSERT(this);
-	LOG0(Log::Normal, "ƒ[ƒh");
+	LOG0(Log::Normal, "ãƒ­ãƒ¼ãƒ‰");
 	printf("%d %d", ver, fio);
 
 	return TRUE;
@@ -506,19 +506,19 @@ BOOL FASTCALL Render::Load(Fileio *fio, int ver)
 
 //---------------------------------------------------------------------------
 //
-//	İ’è“K—p
+//	è¨­å®šé©ç”¨
 //
 //---------------------------------------------------------------------------
 void FASTCALL Render::ApplyCfg(const Config *config)
 {
 	ASSERT(config);
-	LOG0(Log::Normal, "İ’è“K—p");
+	LOG0(Log::Normal, "è¨­å®šé©ç”¨");
 	printf("%d", config);
 }
 
 //---------------------------------------------------------------------------
 //
-//	ƒtƒŒ[ƒ€ŠJn
+//	ãƒ•ãƒ¬ãƒ¼ãƒ é–‹å§‹
 //
 //---------------------------------------------------------------------------
 void FASTCALL Render::StartFrame()
@@ -528,34 +528,34 @@ void FASTCALL Render::StartFrame()
 
 	ASSERT(this);
 
-	// ‚±‚ÌƒtƒŒ[ƒ€‚ÍƒXƒLƒbƒv‚·‚é‚©
+	// ã“ã®ãƒ•ãƒ¬ãƒ¼ãƒ ã¯ã‚¹ã‚­ãƒƒãƒ—ã™ã‚‹ã‹
 	if ((render.count != 0) || !render.enable) {
 		render.act = FALSE;
 		return;
 	}
 
-	// ‚±‚ÌƒtƒŒ[ƒ€‚ÍƒŒƒ“ƒ_ƒŠƒ“ƒO‚·‚é
+	// ã“ã®ãƒ•ãƒ¬ãƒ¼ãƒ ã¯ãƒ¬ãƒ³ãƒ€ãƒªãƒ³ã‚°ã™ã‚‹
 	render.act = TRUE;
 
-	// ƒ‰ƒXƒ^‚ğƒNƒŠƒA
+	// ãƒ©ã‚¹ã‚¿ã‚’ã‚¯ãƒªã‚¢
 	render.first = 0;
 	render.last = -1;
 
-	// CRTCƒtƒ‰ƒO‚ğŒŸ¸
+	// CRTCãƒ•ãƒ©ã‚°ã‚’æ¤œæŸ»
 	if (render.crtc) {
 #if defined(REND_LOG)
-		LOG0(Log::Normal, "CRTCˆ—");
+		LOG0(Log::Normal, "CRTCå‡¦ç†");
 #endif	// REND_LOG
 
-		// ƒf[ƒ^æ“¾
+		// ãƒ‡ãƒ¼ã‚¿å–å¾—
 		crtc->GetCRTC(&crtcdata);
 
-		// h_dotsAv_dots‚ª0‚È‚ç•Û—¯
+		// h_dotsã€v_dotsãŒ0ãªã‚‰ä¿ç•™
 		if ((crtcdata.h_dots == 0) || (crtcdata.v_dots == 0)) {
 			return;
 		}
 
-		// î•ñ‚ğƒRƒs[
+		// æƒ…å ±ã‚’ã‚³ãƒ”ãƒ¼
 		render.width = crtcdata.h_dots;
 		render.h_mul = crtcdata.h_mul;
 		render.height = crtcdata.v_dots;
@@ -565,55 +565,55 @@ void FASTCALL Render::StartFrame()
 			render.height >>= 1;
 		}
 
-		// ‡¬ƒoƒbƒtƒ@‚Ìˆ—’·‚ğ’²®
+		// åˆæˆãƒãƒƒãƒ•ã‚¡ã®å‡¦ç†é•·ã‚’èª¿æ•´
 		render.mixlen = render.width;
 		if (render.mixwidth < render.width) {
 			render.mixlen = render.mixwidth;
 		}
 
-		// ƒXƒvƒ‰ƒCƒgƒŠƒZƒbƒg(mixlen‚ÉˆË‘¶‚·‚é‚½‚ß)
+		// ã‚¹ãƒ—ãƒ©ã‚¤ãƒˆãƒªã‚»ãƒƒãƒˆ(mixlenã«ä¾å­˜ã™ã‚‹ãŸã‚)
 		SpriteReset();
 
-		// ‘Sƒ‰ƒCƒ“‡¬
+		// å…¨ãƒ©ã‚¤ãƒ³åˆæˆ
 		for (i=0; i<1024; i++) {
 			render.mix[i] = TRUE;
 		}
 
-		// ƒIƒt
+		// ã‚ªãƒ•
 		render.crtc = FALSE;
 	}
 }
 
 //---------------------------------------------------------------------------
 //
-//	ƒtƒŒ[ƒ€I—¹
+//	ãƒ•ãƒ¬ãƒ¼ãƒ çµ‚äº†
 //
 //---------------------------------------------------------------------------
 void FASTCALL Render::EndFrame()
 {
 	ASSERT(this);
 
-	// –³Œø‚È‚ç‰½‚à‚µ‚È‚¢
+	// ç„¡åŠ¹ãªã‚‰ä½•ã‚‚ã—ãªã„
 	if (!render.act) {
 		return;
 	}
 
-	// ‚±‚±‚Ü‚Å‚Ìƒ‰ƒXƒ^‚ğˆ—
+	// ã“ã“ã¾ã§ã®ãƒ©ã‚¹ã‚¿ã‚’å‡¦ç†
 	if (render.last > 0) {
 		render.last = render.height;
 		Process();
 	}
 
-	// ƒJƒEƒ“ƒgUp
+	// ã‚«ã‚¦ãƒ³ãƒˆUp
 	render.count++;
 
-	// –³Œø‰»
+	// ç„¡åŠ¹åŒ–
 	render.act = FALSE;
 }
 
 //---------------------------------------------------------------------------
 //
-//	‡¬ƒoƒbƒtƒ@ƒZƒbƒg
+//	åˆæˆãƒãƒƒãƒ•ã‚¡ã‚»ãƒƒãƒˆ
 //
 //---------------------------------------------------------------------------
 void FASTCALL Render::SetMixBuf(DWORD *buf, int width, int height)
@@ -624,18 +624,18 @@ void FASTCALL Render::SetMixBuf(DWORD *buf, int width, int height)
 	ASSERT(width >= 0);
 	ASSERT(height >= 0);
 
-	// İ’è
+	// è¨­å®š
 	render.mixbuf = buf;
 	render.mixwidth = width;
 	render.mixheight = height;
 
-	// ‡¬ƒoƒbƒtƒ@‚Ìˆ—’·‚ğ’²®
+	// åˆæˆãƒãƒƒãƒ•ã‚¡ã®å‡¦ç†é•·ã‚’èª¿æ•´
 	render.mixlen = render.width;
 	if (render.mixwidth < render.width) {
 		render.mixlen = render.mixwidth;
 	}
 
-	// ‚·‚×‚Ä‚Ì‡¬‚ğw¦
+	// ã™ã¹ã¦ã®åˆæˆã‚’æŒ‡ç¤º
 	for (i=0; i<1024; i++) {
 		render.mix[i] = TRUE;
 	}
@@ -643,34 +643,34 @@ void FASTCALL Render::SetMixBuf(DWORD *buf, int width, int height)
 
 //---------------------------------------------------------------------------
 //
-//	CRTCƒZƒbƒg
+//	CRTCã‚»ãƒƒãƒˆ
 //
 //---------------------------------------------------------------------------
 void FASTCALL Render::SetCRTC()
 {
 	ASSERT(this);
 
-	// ƒtƒ‰ƒOON‚Ì‚İ
+	// ãƒ•ãƒ©ã‚°ONã®ã¿
 	render.crtc = TRUE;
 	render.vc = TRUE;
 }
 
 //---------------------------------------------------------------------------
 //
-//	VCƒZƒbƒg
+//	VCã‚»ãƒƒãƒˆ
 //
 //---------------------------------------------------------------------------
 void FASTCALL Render::SetVC()
 {
 	ASSERT(this);
 
-	// ƒtƒ‰ƒOON‚Ì‚İ
+	// ãƒ•ãƒ©ã‚°ONã®ã¿
 	render.vc = TRUE;
 }
 
 //---------------------------------------------------------------------------
 //
-//	VCˆ—
+//	VCå‡¦ç†
 //
 //---------------------------------------------------------------------------
 void FASTCALL Render::Video()
@@ -688,19 +688,19 @@ void FASTCALL Render::Video()
 	DWORD shift[4];
 	DWORD an[4];
 
-	// VCƒtƒ‰ƒO‚ğ~‚ë‚·
+	// VCãƒ•ãƒ©ã‚°ã‚’é™ã‚ã™
 	render.vc = FALSE;
 
-	// ƒtƒ‰ƒOON
+	// ãƒ•ãƒ©ã‚°ON
 	for (i=0; i<1024; i++) {
 		render.mix[i] = TRUE;
 	}
 
-	// VCƒf[ƒ^ACRTCƒf[ƒ^‚ğæ“¾
+	// VCãƒ‡ãƒ¼ã‚¿ã€CRTCãƒ‡ãƒ¼ã‚¿ã‚’å–å¾—
 	p = vc->GetWorkAddr();
 	q = crtc->GetWorkAddr();
 
-	// ƒeƒLƒXƒgƒCƒl[ƒuƒ‹
+	// ãƒ†ã‚­ã‚¹ãƒˆã‚¤ãƒãƒ¼ãƒ–ãƒ«
 	if (p->ton && !q->tmem) {
 		render.texten = TRUE;
 	}
@@ -708,7 +708,7 @@ void FASTCALL Render::Video()
 		render.texten = FALSE;
 	}
 
-	// ƒOƒ‰ƒtƒBƒbƒNƒ^ƒCƒv
+	// ã‚°ãƒ©ãƒ•ã‚£ãƒƒã‚¯ã‚¿ã‚¤ãƒ—
 	type = 0;
 	if (!p->siz) {
 		type = (int)(p->col + 1);
@@ -720,7 +720,7 @@ void FASTCALL Render::Video()
 		}
 	}
 
-	// ƒOƒ‰ƒtƒBƒbƒNƒCƒl[ƒuƒ‹A—Dæ“xƒ}ƒbƒv
+	// ã‚°ãƒ©ãƒ•ã‚£ãƒƒã‚¯ã‚¤ãƒãƒ¼ãƒ–ãƒ«ã€å„ªå…ˆåº¦ãƒãƒƒãƒ—
 	render.mixpage = 0;
 	for (i=0; i<4; i++) {
 		render.grpen[i] = FALSE;
@@ -753,7 +753,7 @@ void FASTCALL Render::Video()
 			// 512x512x2
 			case 2:
 				for (i=0; i<2; i++) {
-					// ƒy[ƒW0‚Ìƒ`ƒFƒbƒN
+					// ãƒšãƒ¼ã‚¸0ã®ãƒã‚§ãƒƒã‚¯
 					if ((p->gp[i * 2 + 0] == 0) && (p->gp[i * 2 + 1] == 1)) {
 						if (p->gs[i * 2 + 0] && p->gs[i * 2 + 1]) {
 							map[i] = 0;
@@ -761,7 +761,7 @@ void FASTCALL Render::Video()
 							render.mixpage++;
 						}
 					}
-					// ƒy[ƒW1‚Ìƒ`ƒFƒbƒN
+					// ãƒšãƒ¼ã‚¸1ã®ãƒã‚§ãƒƒã‚¯
 					if ((p->gp[i * 2 + 0] == 2) && (p->gp[i * 2 + 1] == 3)) {
 						if (p->gs[i * 2 + 0] && p->gs[i * 2 + 1]) {
 							map[i] = 2;
@@ -792,7 +792,7 @@ void FASTCALL Render::Video()
 		}
 	}
 
-	// ƒOƒ‰ƒtƒBƒbƒNƒoƒbƒtƒ@‚ğƒZƒbƒg
+	// ã‚°ãƒ©ãƒ•ã‚£ãƒƒã‚¯ãƒãƒƒãƒ•ã‚¡ã‚’ã‚»ãƒƒãƒˆ
 	j = 0;
 	for (i=0; i<4; i++) {
 		if (map[i] >= 0) {
@@ -810,18 +810,18 @@ void FASTCALL Render::Video()
 		}
 	}
 
-	// —Dæ‡ˆÊ‚ğæ“¾
+	// å„ªå…ˆé †ä½ã‚’å–å¾—
 	tx = p->tx;
 	sp = p->sp;
 	gr = p->gr;
 
-	// ƒ^ƒCƒv‰Šú‰»
+	// ã‚¿ã‚¤ãƒ—åˆæœŸåŒ–
 	render.mixtype = 0;
 
-	// BG/ƒXƒvƒ‰ƒCƒg•\¦Ø‘Ö‚©
+	// BG/ã‚¹ãƒ—ãƒ©ã‚¤ãƒˆè¡¨ç¤ºåˆ‡æ›¿ã‹
 	if ((q->hd >= 2) || (!p->son)) {
 		if (render.bgspflag) {
-			// BG/ƒXƒvƒ‰ƒCƒg•\¦ON->OFF
+			// BG/ã‚¹ãƒ—ãƒ©ã‚¤ãƒˆè¡¨ç¤ºON->OFF
 			render.bgspflag = FALSE;
 			for (i=0; i<512; i++) {
 				render.bgspmod[i] = TRUE;
@@ -831,7 +831,7 @@ void FASTCALL Render::Video()
 	}
 	else {
 		if (!render.bgspflag) {
-			// BG/ƒXƒvƒ‰ƒCƒg•\¦OFF->ON
+			// BG/ã‚¹ãƒ—ãƒ©ã‚¤ãƒˆè¡¨ç¤ºOFF->ON
 			render.bgspflag = TRUE;
 			for (i=0; i<512; i++) {
 				render.bgspmod[i] = TRUE;
@@ -840,18 +840,18 @@ void FASTCALL Render::Video()
 		}
 	}
 
-	// İ’è(q->hd >= 2‚Ìê‡‚ÍƒXƒvƒ‰ƒCƒg–Ê‚È‚µ)
+	// è¨­å®š(q->hd >= 2ã®å ´åˆã¯ã‚¹ãƒ—ãƒ©ã‚¤ãƒˆé¢ãªã—)
 	if ((q->hd >= 2) || (!p->son)) {
-		// ƒXƒvƒ‰ƒCƒg‚È‚µ
+		// ã‚¹ãƒ—ãƒ©ã‚¤ãƒˆãªã—
 		if (!render.texten) {
-			// ƒeƒLƒXƒg‚È‚µ
+			// ãƒ†ã‚­ã‚¹ãƒˆãªã—
 			if (render.mixpage == 0) {
-				// ƒOƒ‰ƒtƒBƒbƒN‚È‚µ(type=0)
+				// ã‚°ãƒ©ãƒ•ã‚£ãƒƒã‚¯ãªã—(type=0)
 				render.mixtype = 0;
 				return;
 			}
 			if (render.mixpage == 1) {
-				// ƒOƒ‰ƒtƒBƒbƒN1–Ê‚Ì‚İ(type=1)
+				// ã‚°ãƒ©ãƒ•ã‚£ãƒƒã‚¯1é¢ã®ã¿(type=1)
 				render.mixptr[0] = ptr[0];
 				render.mixshift[0] = shift[0];
 				render.mixx[0] = &render.grpx[ map[0] ];
@@ -861,7 +861,7 @@ void FASTCALL Render::Video()
 				return;
 			}
 			if (render.mixpage == 2) {
-				// ƒOƒ‰ƒtƒBƒbƒN2–Ê‚Ì‚İ(type=2)
+				// ã‚°ãƒ©ãƒ•ã‚£ãƒƒã‚¯2é¢ã®ã¿(type=2)
 				for (i=0; i<2; i++) {
 					render.mixptr[i] = ptr[i];
 					render.mixshift[i] = shift[i];
@@ -873,7 +873,7 @@ void FASTCALL Render::Video()
 				return;
 			}
 			ASSERT((render.mixpage == 3) || (render.mixpage == 4));
-			// ƒOƒ‰ƒtƒBƒbƒN3–ÊˆÈã‚Ì‚İ(type=4)
+			// ã‚°ãƒ©ãƒ•ã‚£ãƒƒã‚¯3é¢ä»¥ä¸Šã®ã¿(type=4)
 			for (i=0; i<render.mixpage; i++) {
 				render.mixptr[i + 4] = ptr[i];
 				render.mixshift[i + 4] = shift[i];
@@ -884,9 +884,9 @@ void FASTCALL Render::Video()
 			render.mixtype = 4;
 			return;
 		}
-		// ƒeƒLƒXƒg‚ ‚è
+		// ãƒ†ã‚­ã‚¹ãƒˆã‚ã‚Š
 		if (render.mixpage == 0) {
-			// ƒOƒ‰ƒtƒBƒbƒN‚È‚µBƒeƒLƒXƒg‚Ì‚İ(type=1)
+			// ã‚°ãƒ©ãƒ•ã‚£ãƒƒã‚¯ãªã—ã€‚ãƒ†ã‚­ã‚¹ãƒˆã®ã¿(type=1)
 			render.mixptr[0] = render.textout;
 			render.mixshift[0] = 10;
 			render.mixx[0] = &render.textx;
@@ -896,9 +896,9 @@ void FASTCALL Render::Video()
 				return;
 		}
 		if (render.mixpage == 1) {
-			// ƒeƒLƒXƒg+ƒOƒ‰ƒtƒBƒbƒN1–Ê
+			// ãƒ†ã‚­ã‚¹ãƒˆ+ã‚°ãƒ©ãƒ•ã‚£ãƒƒã‚¯1é¢
 			if (tx < gr) {
-				// ƒeƒLƒXƒg‘O–Ê(type=3)
+				// ãƒ†ã‚­ã‚¹ãƒˆå‰é¢(type=3)
 				render.mixptr[0] = render.textout;
 				render.mixshift[0] = 10;
 				render.mixx[0] = &render.textx;
@@ -912,7 +912,7 @@ void FASTCALL Render::Video()
 				render.mixtype = 3;
 				return;
 			}
-			// ƒOƒ‰ƒtƒBƒbƒN‘O–Ê(type=3,tx=gr‚ÍƒOƒ‰ƒtƒBƒbƒN‘O–ÊA‘åí—ªII)
+			// ã‚°ãƒ©ãƒ•ã‚£ãƒƒã‚¯å‰é¢(type=3,tx=grã¯ã‚°ãƒ©ãƒ•ã‚£ãƒƒã‚¯å‰é¢ã€å¤§æˆ¦ç•¥II)
 			render.mixptr[1] = render.textout;
 			render.mixshift[1] = 10;
 			render.mixx[1] = &render.textx;
@@ -926,7 +926,7 @@ void FASTCALL Render::Video()
 			render.mixtype = 3;
 			return;
 		}
-		// ƒeƒLƒXƒg+ƒOƒ‰ƒtƒBƒbƒN2–ÊˆÈã(type=5, type=6)
+		// ãƒ†ã‚­ã‚¹ãƒˆ+ã‚°ãƒ©ãƒ•ã‚£ãƒƒã‚¯2é¢ä»¥ä¸Š(type=5, type=6)
 		ASSERT((render.mixpage >= 2) && (render.mixpage <= 6));
 		render.mixptr[0] = render.textout;
 		render.mixshift[0] = 10;
@@ -949,11 +949,11 @@ void FASTCALL Render::Video()
 		return;
 	}
 
-	// ƒXƒvƒ‰ƒCƒg‚ ‚è
+	// ã‚¹ãƒ—ãƒ©ã‚¤ãƒˆã‚ã‚Š
 	if (!render.texten) {
-		// ƒeƒLƒXƒg‚È‚µ
+		// ãƒ†ã‚­ã‚¹ãƒˆãªã—
 		if (render.mixpage == 0) {
-			// ƒOƒ‰ƒtƒBƒbƒN‚È‚µAƒXƒvƒ‰ƒCƒg‚Ì‚İ(type=1)
+			// ã‚°ãƒ©ãƒ•ã‚£ãƒƒã‚¯ãªã—ã€ã‚¹ãƒ—ãƒ©ã‚¤ãƒˆã®ã¿(type=1)
 			render.mixptr[0] = render.bgspbuf;
 			render.mixshift[0] = 9;
 			render.mixx[0] = &render.zero;
@@ -963,9 +963,9 @@ void FASTCALL Render::Video()
 			return;
 		}
 		if (render.mixpage == 1) {
-			// ƒXƒvƒ‰ƒCƒg+ƒOƒ‰ƒtƒBƒbƒN1–Ê(type=3)
+			// ã‚¹ãƒ—ãƒ©ã‚¤ãƒˆ+ã‚°ãƒ©ãƒ•ã‚£ãƒƒã‚¯1é¢(type=3)
 			if (sp < gr) {
-				// ƒXƒvƒ‰ƒCƒg‘O–Ê
+				// ã‚¹ãƒ—ãƒ©ã‚¤ãƒˆå‰é¢
 				render.mixptr[0] = render.bgspbuf;
 				render.mixshift[0] = 9;
 				render.mixx[0] = &render.zero;
@@ -979,7 +979,7 @@ void FASTCALL Render::Video()
 				render.mixtype = 3;
 				return;
 			}
-			// ƒOƒ‰ƒtƒBƒbƒN‘O–Ê(sp=gr‚Í•s–¾)
+			// ã‚°ãƒ©ãƒ•ã‚£ãƒƒã‚¯å‰é¢(sp=grã¯ä¸æ˜)
 			render.mixptr[1] = render.bgspbuf;
 			render.mixshift[1] = 9;
 			render.mixx[1] = &render.zero;
@@ -993,7 +993,7 @@ void FASTCALL Render::Video()
 			render.mixtype = 3;
 			return;
 		}
-		// ƒXƒvƒ‰ƒCƒg+ƒOƒ‰ƒtƒBƒbƒN2–ÊˆÈã(type=5, type=6)
+		// ã‚¹ãƒ—ãƒ©ã‚¤ãƒˆ+ã‚°ãƒ©ãƒ•ã‚£ãƒƒã‚¯2é¢ä»¥ä¸Š(type=5, type=6)
 		ASSERT((render.mixpage >= 2) && (render.mixpage <= 4));
 		render.mixptr[0] = render.bgspbuf;
 		render.mixshift[0] = 9;
@@ -1016,11 +1016,11 @@ void FASTCALL Render::Video()
 		return;
 	}
 
-	// ƒeƒLƒXƒg‚ ‚è
+	// ãƒ†ã‚­ã‚¹ãƒˆã‚ã‚Š
 	if (render.mixpage == 0) {
-		// ƒOƒ‰ƒtƒBƒbƒN‚È‚µBƒeƒLƒXƒg{ƒXƒvƒ‰ƒCƒg(type=3)
+		// ã‚°ãƒ©ãƒ•ã‚£ãƒƒã‚¯ãªã—ã€‚ãƒ†ã‚­ã‚¹ãƒˆï¼‹ã‚¹ãƒ—ãƒ©ã‚¤ãƒˆ(type=3)
 		if (tx <= sp) {
-			// tx=sp‚ÍƒeƒLƒXƒg‘O–Ê(LMZ2)
+			// tx=spã¯ãƒ†ã‚­ã‚¹ãƒˆå‰é¢(LMZ2)
 			render.mixptr[0] = render.textout;
 			render.mixshift[0] = 10;
 			render.mixx[0] = &render.textx;
@@ -1034,7 +1034,7 @@ void FASTCALL Render::Video()
 			render.mixtype = 3;
 			return;
 		}
-		// ƒXƒvƒ‰ƒCƒg‘O–Ê
+		// ã‚¹ãƒ—ãƒ©ã‚¤ãƒˆå‰é¢
 		render.mixptr[1] = render.textout;
 		render.mixshift[1] = 10;
 		render.mixx[1] = &render.textx;
@@ -1049,12 +1049,12 @@ void FASTCALL Render::Video()
 		return;
 	}
 
-	// —Dæ‡ˆÊŒˆ’è
+	// å„ªå…ˆé †ä½æ±ºå®š
 	if (tx == 3) tx--;
 	if (sp == 3) sp--;
 	if (gr == 3) gr--;
 	if (tx == sp) {
-		// “K“–‚ÉŒˆ‚ß‚Ä‚¢‚é
+		// é©å½“ã«æ±ºã‚ã¦ã„ã‚‹
 		if (tx < gr) {
 			tx = 0;
 			sp = 1;
@@ -1067,7 +1067,7 @@ void FASTCALL Render::Video()
 		}
 	}
 	if (tx == gr) {
-		// “K“–‚ÉŒˆ‚ß‚Ä‚¢‚é
+		// é©å½“ã«æ±ºã‚ã¦ã„ã‚‹
 		if (tx < sp) {
 			tx = 0;
 			gr = 1;
@@ -1080,7 +1080,7 @@ void FASTCALL Render::Video()
 		}
 	}
 	if (sp == gr) {
-		// “K“–‚ÉŒˆ‚ß‚Ä‚¢‚é
+		// é©å½“ã«æ±ºã‚ã¦ã„ã‚‹
 		if (sp < tx) {
 			sp = 0;
 			gr = 1;
@@ -1101,7 +1101,7 @@ void FASTCALL Render::Video()
 	render.mixmap[gr] = 2;
 
 	if (render.mixpage == 1) {
-		// ƒeƒLƒXƒg{ƒXƒvƒ‰ƒCƒg{ƒOƒ‰ƒtƒBƒbƒN1–Ê(type=7)
+		// ãƒ†ã‚­ã‚¹ãƒˆï¼‹ã‚¹ãƒ—ãƒ©ã‚¤ãƒˆï¼‹ã‚°ãƒ©ãƒ•ã‚£ãƒƒã‚¯1é¢(type=7)
 		render.mixptr[0] = render.textout;
 		render.mixshift[0] = 10;
 		render.mixx[0] = &render.textx;
@@ -1121,7 +1121,7 @@ void FASTCALL Render::Video()
 		return;
 	}
 
-	// ƒeƒLƒXƒg{ƒXƒvƒ‰ƒCƒg{ƒOƒ‰ƒtƒBƒbƒN‚Q–ÊˆÈã(type=8)
+	// ãƒ†ã‚­ã‚¹ãƒˆï¼‹ã‚¹ãƒ—ãƒ©ã‚¤ãƒˆï¼‹ã‚°ãƒ©ãƒ•ã‚£ãƒƒã‚¯ï¼’é¢ä»¥ä¸Š(type=8)
 	render.mixptr[0] = render.textout;
 	render.mixshift[0] = 10;
 	render.mixx[0] = &render.textx;
@@ -1144,23 +1144,23 @@ void FASTCALL Render::Video()
 
 //---------------------------------------------------------------------------
 //
-//	ƒRƒ“ƒgƒ‰ƒXƒgİ’è
+//	ã‚³ãƒ³ãƒˆãƒ©ã‚¹ãƒˆè¨­å®š
 //
 //---------------------------------------------------------------------------
 void FASTCALL Render::SetContrast(int cont)
 {
-	// ƒVƒXƒeƒ€ƒ|[ƒg‚Ì“_‚Åˆê’vƒ`ƒFƒbƒN‚ğs‚¤‚Ì‚ÅAˆÙ‚È‚Á‚Ä‚¢‚éê‡‚Ì‚İ
+	// ã‚·ã‚¹ãƒ†ãƒ ãƒãƒ¼ãƒˆã®æ™‚ç‚¹ã§ä¸€è‡´ãƒã‚§ãƒƒã‚¯ã‚’è¡Œã†ã®ã§ã€ç•°ãªã£ã¦ã„ã‚‹å ´åˆã®ã¿
 	ASSERT(this);
 	ASSERT((cont >= 0) && (cont <= 15));
 
-	// •ÏX‚Æƒtƒ‰ƒOON
+	// å¤‰æ›´ã¨ãƒ•ãƒ©ã‚°ON
 	render.contlevel = cont;
 	render.contrast = TRUE;
 }
 
 //---------------------------------------------------------------------------
 //
-//	ƒRƒ“ƒgƒ‰ƒXƒgæ“¾
+//	ã‚³ãƒ³ãƒˆãƒ©ã‚¹ãƒˆå–å¾—
 //
 //---------------------------------------------------------------------------
 int FASTCALL Render::GetContrast() const
@@ -1173,19 +1173,19 @@ int FASTCALL Render::GetContrast() const
 
 //---------------------------------------------------------------------------
 //
-//	ƒRƒ“ƒgƒ‰ƒXƒgˆ—
+//	ã‚³ãƒ³ãƒˆãƒ©ã‚¹ãƒˆå‡¦ç†
 //
 //---------------------------------------------------------------------------
 void FASTCALL Render::Contrast()
 {
 	int i;
 
-	// ƒ|ƒCƒ“ƒgˆÊ’u‚ğ•ÏXAƒtƒ‰ƒODown
+	// ãƒã‚¤ãƒ³ãƒˆä½ç½®ã‚’å¤‰æ›´ã€ãƒ•ãƒ©ã‚°Down
 	render.palptr = render.palbuf;
 	render.palptr += (render.contlevel << 16);
 	render.contrast = FALSE;
 
-	// ƒpƒŒƒbƒgƒtƒ‰ƒO‚ğ‘S‚ÄUp
+	// ãƒ‘ãƒ¬ãƒƒãƒˆãƒ•ãƒ©ã‚°ã‚’å…¨ã¦Up
 	for (i=0; i<0x200; i++) {
 		render.palmod[i] = TRUE;
 	}
@@ -1194,7 +1194,7 @@ void FASTCALL Render::Contrast()
 
 //---------------------------------------------------------------------------
 //
-//	ƒpƒŒƒbƒgì¬
+//	ãƒ‘ãƒ¬ãƒƒãƒˆä½œæˆ
 //
 //---------------------------------------------------------------------------
 void FASTCALL Render::MakePalette()
@@ -1206,15 +1206,15 @@ void FASTCALL Render::MakePalette()
 
 	ASSERT(render.palbuf);
 
-	// ‰Šú‰»
+	// åˆæœŸåŒ–
 	p = render.palbuf;
 
-	// ƒRƒ“ƒgƒ‰ƒXƒgƒ‹[ƒv
+	// ã‚³ãƒ³ãƒˆãƒ©ã‚¹ãƒˆãƒ«ãƒ¼ãƒ—
 	for (i=0; i<16; i++) {
-		// ”ä—¦‚ğZo
+		// æ¯”ç‡ã‚’ç®—å‡º
 		ratio = 256 - ((15 - i) << 4);
 
-		// ì¬ƒ‹[ƒv
+		// ä½œæˆãƒ«ãƒ¼ãƒ—
 		for (j=0; j<0x10000; j++) {
 			*p++ = ConvPalette(j, ratio);
 		}
@@ -1223,7 +1223,7 @@ void FASTCALL Render::MakePalette()
 
 //---------------------------------------------------------------------------
 //
-//	ƒpƒŒƒbƒg•ÏŠ·
+//	ãƒ‘ãƒ¬ãƒƒãƒˆå¤‰æ›
 //
 //---------------------------------------------------------------------------
 DWORD FASTCALL Render::ConvPalette(int color, int ratio)
@@ -1236,27 +1236,27 @@ DWORD FASTCALL Render::ConvPalette(int color, int ratio)
 	ASSERT((color >= 0) && (color < 0x10000));
 	ASSERT((ratio >= 0) && (ratio <= 0x100));
 
-	// ‘S‚ÄƒRƒs[
+	// å…¨ã¦ã‚³ãƒ”ãƒ¼
 	r = (DWORD)color;
 	g = (DWORD)color;
 	b = (DWORD)color;
 
-	// MSB‚©‚çG:5AR:5AB:5AI:1‚Ì‡‚É‚È‚Á‚Ä‚¢‚é
-	// ‚±‚ê‚ğ R:8 G:8 B:8‚ÌDWORD‚É•ÏŠ·Bb31-b24‚Íg‚í‚È‚¢
+	// MSBã‹ã‚‰G:5ã€R:5ã€B:5ã€I:1ã®é †ã«ãªã£ã¦ã„ã‚‹
+	// ã“ã‚Œã‚’ R:8 G:8 B:8ã®DWORDã«å¤‰æ›ã€‚b31-b24ã¯ä½¿ã‚ãªã„
 	r <<= 13;
 	r &= 0xf80000;
 	g &= 0x00f800;
 	b <<= 2;
 	b &= 0x0000f8;
 
-	// ‹P“xƒrƒbƒg‚Íˆê—¥Up(Œ³ƒf[ƒ^‚ª0‚Ìê‡‚àA!=0‚É‚·‚éŒø‰Ê‚ ‚è)
+	// è¼åº¦ãƒ“ãƒƒãƒˆã¯ä¸€å¾‹Up(å…ƒãƒ‡ãƒ¼ã‚¿ãŒ0ã®å ´åˆã‚‚ã€!=0ã«ã™ã‚‹åŠ¹æœã‚ã‚Š)
 	if (color & 1) {
 		r |= 0x070000;
 		g |= 0x000700;
 		b |= 0x000007;
 	}
 
-	// ƒRƒ“ƒgƒ‰ƒXƒg‚ğ‰e‹¿‚³‚¹‚é
+	// ã‚³ãƒ³ãƒˆãƒ©ã‚¹ãƒˆã‚’å½±éŸ¿ã•ã›ã‚‹
 	b *= ratio;
 	b >>= 8;
 	g *= ratio;
@@ -1271,7 +1271,7 @@ DWORD FASTCALL Render::ConvPalette(int color, int ratio)
 
 //---------------------------------------------------------------------------
 //
-//	ƒpƒŒƒbƒgæ“¾
+//	ãƒ‘ãƒ¬ãƒƒãƒˆå–å¾—
 //
 //---------------------------------------------------------------------------
 const DWORD* FASTCALL Render::GetPalette() const
@@ -1284,7 +1284,7 @@ const DWORD* FASTCALL Render::GetPalette() const
 
 //---------------------------------------------------------------------------
 //
-//	ƒpƒŒƒbƒgˆ—
+//	ãƒ‘ãƒ¬ãƒƒãƒˆå‡¦ç†
 //
 //---------------------------------------------------------------------------
 void FASTCALL Render::Palette()
@@ -1296,27 +1296,27 @@ void FASTCALL Render::Palette()
 	int i;
 	int j;
 
-	// ƒtƒ‰ƒOOFF
+	// ãƒ•ãƒ©ã‚°OFF
 	tx = FALSE;
 	gr = FALSE;
 	sp = FALSE;
 
-	// ƒOƒ‰ƒtƒBƒbƒN
+	// ã‚°ãƒ©ãƒ•ã‚£ãƒƒã‚¯
 	for (i=0; i<0x100; i++) {
 		if (render.palmod[i]) {
 			data = (DWORD)render.palvc[i];
 			render.paldata[i] = render.palptr[data];
 
-			// ƒOƒ‰ƒtƒBƒbƒN‚É‰e‹¿Aƒtƒ‰ƒOOFF
+			// ã‚°ãƒ©ãƒ•ã‚£ãƒƒã‚¯ã«å½±éŸ¿ã€ãƒ•ãƒ©ã‚°OFF
 			gr = TRUE;
 			render.palmod[i] = FALSE;
 
-			// “§–¾F‚Ìˆ—
+			// é€æ˜è‰²ã®å‡¦ç†
 			if (i == 0) {
 				render.paldata[i] |= REND_COLOR0;
 			}
 
-			// 65536F‚Ì‚½‚ß‚ÌƒpƒŒƒbƒgƒf[ƒ^İ’è
+			// 65536è‰²ã®ãŸã‚ã®ãƒ‘ãƒ¬ãƒƒãƒˆãƒ‡ãƒ¼ã‚¿è¨­å®š
 			j = i >> 1;
 			if (i & 1) {
 				j += 128;
@@ -1326,24 +1326,24 @@ void FASTCALL Render::Palette()
 		}
 	}
 
-	// ƒeƒLƒXƒgŒ“ƒXƒvƒ‰ƒCƒg
+	// ãƒ†ã‚­ã‚¹ãƒˆå…¼ã‚¹ãƒ—ãƒ©ã‚¤ãƒˆ
 	for (i=0x100; i<0x110; i++) {
 		if (render.palmod[i]) {
 			data = (DWORD)render.palvc[i];
 			render.paldata[i] = render.palptr[data];
 
-			// ƒeƒLƒXƒg‚É‰e‹¿Aƒtƒ‰ƒOOFF
+			// ãƒ†ã‚­ã‚¹ãƒˆã«å½±éŸ¿ã€ãƒ•ãƒ©ã‚°OFF
 			tx = TRUE;
 			render.palmod[i] = FALSE;
 
-			// “§–¾F‚Ìˆ—
+			// é€æ˜è‰²ã®å‡¦ç†
 			if (i == 0x100) {
 				render.paldata[i] |= REND_COLOR0;
-				// 0x100‚ÍBGEƒXƒvƒ‰ƒCƒg‚É‚à•K‚¸‰e‹¿
+				// 0x100ã¯BGãƒ»ã‚¹ãƒ—ãƒ©ã‚¤ãƒˆã«ã‚‚å¿…ãšå½±éŸ¿
 				sp = TRUE;
 			}
 
-			// PCGŒŸ¸
+			// PCGæ¤œæŸ»
 			memset(&render.pcgready[0], 0, sizeof(BOOL) * 256);
 			if (render.pcgpal[0] > 0) {
 				sp = TRUE;
@@ -1351,20 +1351,20 @@ void FASTCALL Render::Palette()
 		}
 	}
 
-	// ƒXƒvƒ‰ƒCƒg
+	// ã‚¹ãƒ—ãƒ©ã‚¤ãƒˆ
 	for (i=0x110; i<0x200; i++) {
 		if (render.palmod[i]) {
-			// ƒXƒvƒ‰ƒCƒg‚É‰e‹¿Aƒtƒ‰ƒOOFF
+			// ã‚¹ãƒ—ãƒ©ã‚¤ãƒˆã«å½±éŸ¿ã€ãƒ•ãƒ©ã‚°OFF
 			data = (DWORD)render.palvc[i];
 			render.paldata[i] = render.palptr[data];
 			render.palmod[i] = FALSE;
 
-			// “§–¾F‚Ìˆ—
+			// é€æ˜è‰²ã®å‡¦ç†
 			if ((i & 0x00f) == 0) {
 				render.paldata[i] |= REND_COLOR0;
 			}
 
-			// PCGŒŸ¸
+			// PCGæ¤œæŸ»
 			memset(&render.pcgready[(i & 0xf0) << 4], 0, sizeof(BOOL) * 256);
 			if (render.pcgpal[(i & 0xf0) >> 4] > 0) {
 				sp = TRUE;
@@ -1372,35 +1372,35 @@ void FASTCALL Render::Palette()
 		}
 	}
 
-	// ƒOƒ‰ƒtƒBƒbƒNƒtƒ‰ƒO
+	// ã‚°ãƒ©ãƒ•ã‚£ãƒƒã‚¯ãƒ•ãƒ©ã‚°
 	if (gr) {
-		// ƒtƒ‰ƒOON
+		// ãƒ•ãƒ©ã‚°ON
 		for (i=0; i<512*4; i++) {
 			render.grppal[i] = TRUE;
 		}
 	}
 
-	// ƒeƒLƒXƒgƒtƒ‰ƒO
+	// ãƒ†ã‚­ã‚¹ãƒˆãƒ•ãƒ©ã‚°
 	if (tx) {
 		for (i=0; i<1024; i++) {
 			render.textpal[i] = TRUE;
 		}
 	}
 
-	// ƒXƒvƒ‰ƒCƒgƒtƒ‰ƒO
+	// ã‚¹ãƒ—ãƒ©ã‚¤ãƒˆãƒ•ãƒ©ã‚°
 	if (sp) {
 		for (i=0; i<512; i++) {
 			render.bgspmod[i] = TRUE;
 		}
 	}
 
-	// ƒpƒŒƒbƒgƒtƒ‰ƒOOFF
+	// ãƒ‘ãƒ¬ãƒƒãƒˆãƒ•ãƒ©ã‚°OFF
 	render.palette = FALSE;
 }
 
 //---------------------------------------------------------------------------
 //
-//	ƒeƒLƒXƒgƒXƒNƒ[ƒ‹
+//	ãƒ†ã‚­ã‚¹ãƒˆã‚¹ã‚¯ãƒ­ãƒ¼ãƒ«
 //
 //---------------------------------------------------------------------------
 void FASTCALL Render::TextScrl(DWORD x, DWORD y)
@@ -1411,19 +1411,19 @@ void FASTCALL Render::TextScrl(DWORD x, DWORD y)
 	ASSERT(x < 1024);
 	ASSERT(y < 1024);
 
-	// ”äŠrƒ`ƒFƒbƒN
+	// æ¯”è¼ƒãƒã‚§ãƒƒã‚¯
 	if ((render.textx == x) && (render.texty == y)) {
 		return;
 	}
 
-	// ƒ[ƒNXV
+	// ãƒ¯ãƒ¼ã‚¯æ›´æ–°
 	render.textx = x;
 	render.texty = y;
 
-	// ƒtƒ‰ƒOON
+	// ãƒ•ãƒ©ã‚°ON
 	if (render.texten) {
 #if defined(REND_LOG)
-		LOG2(Log::Normal, "ƒeƒLƒXƒgƒXƒNƒ[ƒ‹ x=%d y=%d", x, y);
+		LOG2(Log::Normal, "ãƒ†ã‚­ã‚¹ãƒˆã‚¹ã‚¯ãƒ­ãƒ¼ãƒ« x=%d y=%d", x, y);
 #endif	// REND_LOG
 
 		for (i=0; i<1024; i++) {
@@ -1434,7 +1434,7 @@ void FASTCALL Render::TextScrl(DWORD x, DWORD y)
 
 //---------------------------------------------------------------------------
 //
-//	ƒeƒLƒXƒgƒRƒs[
+//	ãƒ†ã‚­ã‚¹ãƒˆã‚³ãƒ”ãƒ¼
 //
 //---------------------------------------------------------------------------
 void FASTCALL Render::TextCopy(DWORD src, DWORD dst, DWORD plane)
@@ -1444,7 +1444,7 @@ void FASTCALL Render::TextCopy(DWORD src, DWORD dst, DWORD plane)
 	ASSERT((dst >= 0) && (dst < 256));
 	ASSERT(plane < 16);
 
-	// ƒAƒZƒ“ƒuƒ‰ƒTƒu
+	// ã‚¢ã‚»ãƒ³ãƒ–ãƒ©ã‚µãƒ–
 	RendTextCopy(&render.texttv[src << 9],
 				 &render.texttv[dst << 9],
 				 plane,
@@ -1454,7 +1454,7 @@ void FASTCALL Render::TextCopy(DWORD src, DWORD dst, DWORD plane)
 
 //---------------------------------------------------------------------------
 //
-//	ƒeƒLƒXƒgƒoƒbƒtƒ@æ“¾
+//	ãƒ†ã‚­ã‚¹ãƒˆãƒãƒƒãƒ•ã‚¡å–å¾—
 //
 //---------------------------------------------------------------------------
 const DWORD* FASTCALL Render::GetTextBuf() const
@@ -1467,7 +1467,7 @@ const DWORD* FASTCALL Render::GetTextBuf() const
 
 //---------------------------------------------------------------------------
 //
-//	ƒeƒLƒXƒgˆ—
+//	ãƒ†ã‚­ã‚¹ãƒˆå‡¦ç†
 //
 //---------------------------------------------------------------------------
 void FASTCALL Render::Text(int raster)
@@ -1481,44 +1481,44 @@ void FASTCALL Render::Text(int raster)
 	ASSERT(render.textbuf);
 	ASSERT(render.palbuf);
 
-	// ƒfƒBƒZ[ƒuƒ‹‚È‚ç‰½‚à‚µ‚È‚¢
+	// ãƒ‡ã‚£ã‚»ãƒ¼ãƒ–ãƒ«ãªã‚‰ä½•ã‚‚ã—ãªã„
 	if (!render.texten) {
 		return;
 	}
 
-	// À‰æ–ÊYZo
+	// å®Ÿç”»é¢Yç®—å‡º
 	y = (raster + render.texty) & 0x3ff;
 
-	// •ÏXƒtƒ‰ƒO(’€ŸŒ^)
+	// å¤‰æ›´ãƒ•ãƒ©ã‚°(é€æ¬¡å‹)
 	if (render.textmod[y]) {
-		// ƒtƒ‰ƒOˆ—
+		// ãƒ•ãƒ©ã‚°å‡¦ç†
 		render.textmod[y] = FALSE;
 		render.mix[raster] = TRUE;
 
-		// …•½‚’¼•ÏŠ·
+		// æ°´å¹³å‚ç›´å¤‰æ›
 		RendTextMem(render.texttv + (y << 7),
 					render.textflag + (y << 5),
 					render.textbuf + (y << 9));
 
-		// ‚’¼ƒpƒŒƒbƒg•ÏŠ·
+		// å‚ç›´ãƒ‘ãƒ¬ãƒƒãƒˆå¤‰æ›
 		RendTextPal(render.textbuf + (y << 9),
 					render.textout + (y << 10),
 					render.textflag + (y << 5),
 					render.paldata + 0x100);
 	}
 
-	// ƒpƒŒƒbƒg(ˆêŠ‡Œ^)
+	// ãƒ‘ãƒ¬ãƒƒãƒˆ(ä¸€æ‹¬å‹)
 	if (render.textpal[y]) {
-		// ƒtƒ‰ƒOˆ—
+		// ãƒ•ãƒ©ã‚°å‡¦ç†
 		render.textpal[y] = FALSE;
 
-		// ‚’¼ƒpƒŒƒbƒg•ÏŠ·
+		// å‚ç›´ãƒ‘ãƒ¬ãƒƒãƒˆå¤‰æ›
 		RendTextAll(render.textbuf + (y << 9),
 					render.textout + (y << 10),
 					render.paldata + 0x100);
 		render.mix[raster] = TRUE;
 
-		// y == 1023‚È‚çƒRƒs[‚·‚é
+		// y == 1023ãªã‚‰ã‚³ãƒ”ãƒ¼ã™ã‚‹
 		if (y == 1023) {
 			memcpy(render.textout + (1024 << 10), render.textout + (1023 << 10), sizeof(DWORD) * 1024);
 		}
@@ -1527,7 +1527,7 @@ void FASTCALL Render::Text(int raster)
 
 //---------------------------------------------------------------------------
 //
-//	ƒOƒ‰ƒtƒBƒbƒNƒoƒbƒtƒ@æ“¾
+//	ã‚°ãƒ©ãƒ•ã‚£ãƒƒã‚¯ãƒãƒƒãƒ•ã‚¡å–å¾—
 //
 //---------------------------------------------------------------------------
 const DWORD* FASTCALL Render::GetGrpBuf(int index) const
@@ -1541,7 +1541,7 @@ const DWORD* FASTCALL Render::GetGrpBuf(int index) const
 
 //---------------------------------------------------------------------------
 //
-//	ƒOƒ‰ƒtƒBƒbƒNƒXƒNƒ[ƒ‹
+//	ã‚°ãƒ©ãƒ•ã‚£ãƒƒã‚¯ã‚¹ã‚¯ãƒ­ãƒ¼ãƒ«
 //
 //---------------------------------------------------------------------------
 void FASTCALL Render::GrpScrl(int block, DWORD x, DWORD y)
@@ -1554,7 +1554,7 @@ void FASTCALL Render::GrpScrl(int block, DWORD x, DWORD y)
 	ASSERT(x < 1024);
 	ASSERT(y < 1024);
 
-	// ”äŠrƒ`ƒFƒbƒNB”ñ•\¦‚È‚çXV‚È‚µ
+	// æ¯”è¼ƒãƒã‚§ãƒƒã‚¯ã€‚éè¡¨ç¤ºãªã‚‰æ›´æ–°ãªã—
 	flag = FALSE;
 	if ((render.grpx[block] != x) || (render.grpy[block] != y)) {
 		render.grpx[block] = x;
@@ -1562,13 +1562,13 @@ void FASTCALL Render::GrpScrl(int block, DWORD x, DWORD y)
 		flag = render.grpen[block];
 	}
 
-	// ƒtƒ‰ƒOˆ—
+	// ãƒ•ãƒ©ã‚°å‡¦ç†
 	if (!flag) {
 		return;
 	}
 
 #if defined(REND_LOG)
-	LOG3(Log::Normal, "ƒOƒ‰ƒtƒBƒbƒNƒXƒNƒ[ƒ‹ block=%d x=%d y=%d", block, x, y);
+	LOG3(Log::Normal, "ã‚°ãƒ©ãƒ•ã‚£ãƒƒã‚¯ã‚¹ã‚¯ãƒ­ãƒ¼ãƒ« block=%d x=%d y=%d", block, x, y);
 #endif	// REND_LOG
 
 	for (i=0; i<1024; i++) {
@@ -1578,7 +1578,7 @@ void FASTCALL Render::GrpScrl(int block, DWORD x, DWORD y)
 
 //---------------------------------------------------------------------------
 //
-//	ƒOƒ‰ƒtƒBƒbƒNˆ—
+//	ã‚°ãƒ©ãƒ•ã‚£ãƒƒã‚¯å‡¦ç†
 //
 //---------------------------------------------------------------------------
 void FASTCALL Render::Grp(int block, int raster)
@@ -1593,27 +1593,27 @@ void FASTCALL Render::Grp(int block, int raster)
 	ASSERT(render.grpgv);
 
 	if (render.grptype == 0) {
-		// 1024ƒ‚[ƒh‚Íƒy[ƒW0‚ğ‚İ‚é
+		// 1024ãƒ¢ãƒ¼ãƒ‰ã¯ãƒšãƒ¼ã‚¸0ã‚’ã¿ã‚‹
 		if (!render.grpen[0]) {
 			return;
 		}
 	}
 	else {
-		// ‚»‚êˆÈŠO
+		// ãã‚Œä»¥å¤–
 		if (!render.grpen[block]) {
 			return;
 		}
 	}
 
-	// ƒ^ƒCƒv•Ê
+	// ã‚¿ã‚¤ãƒ—åˆ¥
 	switch (render.grptype) {
-		// ƒ^ƒCƒv0:1024~1024 16Color
+		// ã‚¿ã‚¤ãƒ—0:1024Ã—1024 16Color
 		case 0:
-			// ƒIƒtƒZƒbƒgZo
+			// ã‚ªãƒ•ã‚»ãƒƒãƒˆç®—å‡º
 			offset = (raster + render.grpy[0]) & 0x3ff;
 			y = offset & 0x1ff;
 
-			// •\¦‘ÎÛƒ`ƒFƒbƒN
+			// è¡¨ç¤ºå¯¾è±¡ãƒã‚§ãƒƒã‚¯
 			if ((offset < 512) && (block >= 2)) {
 				return;
 			}
@@ -1621,7 +1621,7 @@ void FASTCALL Render::Grp(int block, int raster)
 				return;
 			}
 
-			// ƒpƒŒƒbƒg‚Ìê‡‚Í‘S—Ìˆæˆ—
+			// ãƒ‘ãƒ¬ãƒƒãƒˆã®å ´åˆã¯å…¨é ˜åŸŸå‡¦ç†
 			if (render.grppal[y + (block << 9)]) {
 				render.grppal[y + (block << 9)] = FALSE;
 				render.grpmod[y + (block << 9)] = FALSE;
@@ -1629,7 +1629,7 @@ void FASTCALL Render::Grp(int block, int raster)
 					render.grpflag[(y << 5) + (block << 14) + i] = FALSE;
 				}
 				switch (block) {
-					// ã”¼•ª‚ÍƒuƒƒbƒN0‚Å‘ã•
+					// ä¸ŠåŠåˆ†ã¯ãƒ–ãƒ­ãƒƒã‚¯0ã§ä»£ï¿½
 					case 0:
 						if (Rend1024A(render.grpgv + (y << 10),
 									render.grpbuf[0] + (offset << 11),
@@ -1638,7 +1638,7 @@ void FASTCALL Render::Grp(int block, int raster)
 						}
 					case 1:
 						break;
-					// ‰º”¼•ª‚ÍƒuƒƒbƒN2‚Å‘ã•
+					// ä¸‹åŠåˆ†ã¯ãƒ–ãƒ­ãƒƒã‚¯2ã§ä»£ï¿½
 					case 2:
 						if (Rend1024B(render.grpgv + (y << 10),
 									render.grpbuf[0] + (offset << 11),
@@ -1651,35 +1651,35 @@ void FASTCALL Render::Grp(int block, int raster)
 				return;
 			}
 
-			// ‚»‚êˆÈŠO‚Ígrpmod‚ğŒ©‚Äˆ—
+			// ãã‚Œä»¥å¤–ã¯grpmodã‚’è¦‹ã¦å‡¦ç†
 			if (!render.grpmod[y + (block << 9)]) {
 				return;
 			}
 			render.grpmod[y + (block << 9)] = FALSE;
 			render.mix[raster] = TRUE;
 			switch (block) {
-				// ƒuƒƒbƒN0-¶ã
+				// ãƒ–ãƒ­ãƒƒã‚¯0-å·¦ä¸Š
 				case 0:
 					Rend1024C(render.grpgv + (y << 10),
 								render.grpbuf[0] + (offset << 11),
 								render.grpflag + (y << 5),
 								render.paldata);
 					break;
-				// ƒuƒƒbƒN1-‰Eã
+				// ãƒ–ãƒ­ãƒƒã‚¯1-å³ä¸Š
 				case 1:
 					Rend1024D(render.grpgv + (y << 10),
 								render.grpbuf[0] + (offset << 11),
 								render.grpflag + (y << 5) + 0x4000,
 								render.paldata);
 					break;
-				// ƒuƒƒbƒN2-¶‰º
+				// ãƒ–ãƒ­ãƒƒã‚¯2-å·¦ä¸‹
 				case 2:
 					Rend1024E(render.grpgv + (y << 10),
 								render.grpbuf[0] + (offset << 11),
 								render.grpflag + (y << 5) + 0x8000,
 								render.paldata);
 					break;
-				// ƒuƒƒbƒN3-‰E‰º
+				// ãƒ–ãƒ­ãƒƒã‚¯3-å³ä¸‹
 				case 3:
 					Rend1024F(render.grpgv + (y << 10),
 								render.grpbuf[0] + (offset << 11),
@@ -1689,13 +1689,13 @@ void FASTCALL Render::Grp(int block, int raster)
 			}
 			return;
 
-		// ƒ^ƒCƒv1:512~512 16Color
+		// ã‚¿ã‚¤ãƒ—1:512Ã—512 16Color
 		case 1:
 			switch (block) {
-				// ƒy[ƒW0
+				// ãƒšãƒ¼ã‚¸0
 				case 0:
 					y = (raster + render.grpy[0]) & 0x1ff;
-					// ƒpƒŒƒbƒg
+					// ãƒ‘ãƒ¬ãƒƒãƒˆ
 					if (render.grppal[y]) {
 						render.grppal[y] = FALSE;
 						render.grpmod[y] = FALSE;
@@ -1709,7 +1709,7 @@ void FASTCALL Render::Grp(int block, int raster)
 						}
 						return;
 					}
-					// ’Êí
+					// é€šå¸¸
 					if (render.grpmod[y]) {
 						render.grpmod[y] = FALSE;
 						render.mix[raster] = TRUE;
@@ -1719,10 +1719,10 @@ void FASTCALL Render::Grp(int block, int raster)
 								render.paldata);
 					}
 					return;
-				// ƒy[ƒW1
+				// ãƒšãƒ¼ã‚¸1
 				case 1:
 					y = (raster + render.grpy[1]) & 0x1ff;
-					// ƒpƒŒƒbƒg
+					// ãƒ‘ãƒ¬ãƒƒãƒˆ
 					if (render.grppal[y + 512]) {
 						render.grppal[y + 512] = FALSE;
 						render.grpmod[y + 512] = FALSE;
@@ -1736,7 +1736,7 @@ void FASTCALL Render::Grp(int block, int raster)
 						}
 						return;
 					}
-					// ’Êí
+					// é€šå¸¸
 					if (render.grpmod[y + 512]) {
 						render.grpmod[y + 512] = FALSE;
 						render.mix[raster] = TRUE;
@@ -1746,10 +1746,10 @@ void FASTCALL Render::Grp(int block, int raster)
 								render.paldata);
 					}
 					return;
-				// ƒy[ƒW2
+				// ãƒšãƒ¼ã‚¸2
 				case 2:
 					y = (raster + render.grpy[2]) & 0x1ff;
-					// ƒpƒŒƒbƒg
+					// ãƒ‘ãƒ¬ãƒƒãƒˆ
 					if (render.grppal[y + 1024]) {
 						render.grppal[y + 1024] = FALSE;
 						render.grpmod[y + 1024] = FALSE;
@@ -1763,7 +1763,7 @@ void FASTCALL Render::Grp(int block, int raster)
 						}
 						return;
 					}
-					// ’Êí
+					// é€šå¸¸
 					if (render.grpmod[y + 1024]) {
 						render.grpmod[y + 1024] = FALSE;
 						render.mix[raster] = TRUE;
@@ -1773,10 +1773,10 @@ void FASTCALL Render::Grp(int block, int raster)
 								render.paldata);
 					}
 					return;
-				// ƒy[ƒW3
+				// ãƒšãƒ¼ã‚¸3
 				case 3:
 					y = (raster + render.grpy[3]) & 0x1ff;
-					// ƒpƒŒƒbƒg
+					// ãƒ‘ãƒ¬ãƒƒãƒˆ
 					if (render.grppal[y + 1536]) {
 						render.grppal[y + 1536] = FALSE;
 						render.grpmod[y + 1536] = FALSE;
@@ -1790,7 +1790,7 @@ void FASTCALL Render::Grp(int block, int raster)
 						}
 						return;
 					}
-					// ’Êí
+					// é€šå¸¸
 					if (render.grpmod[y + 1536]) {
 						render.grpmod[y + 1536] = FALSE;
 						render.mix[raster] = TRUE;
@@ -1803,14 +1803,14 @@ void FASTCALL Render::Grp(int block, int raster)
 			}
 			return;
 
-		// ƒ^ƒCƒv2:512~512 256Color
+		// ã‚¿ã‚¤ãƒ—2:512Ã—512 256Color
 		case 2:
 			ASSERT((block == 0) || (block == 2));
 			if (block == 0) {
-				// ƒIƒtƒZƒbƒgZo
+				// ã‚ªãƒ•ã‚»ãƒƒãƒˆç®—å‡º
 				y = (raster + render.grpy[0]) & 0x1ff;
 
-				// ƒpƒŒƒbƒg‚Ìê‡‚Í‘S—Ìˆæˆ—
+				// ãƒ‘ãƒ¬ãƒƒãƒˆã®å ´åˆã¯å…¨é ˜åŸŸå‡¦ç†
 				if (render.grppal[y]) {
 					render.grppal[y] = FALSE;
 					render.grpmod[y] = FALSE;
@@ -1825,7 +1825,7 @@ void FASTCALL Render::Grp(int block, int raster)
 					return;
 				}
 
-				// ‚»‚êˆÈŠO‚Ígrpmod‚ğŒ©‚Äˆ—
+				// ãã‚Œä»¥å¤–ã¯grpmodã‚’è¦‹ã¦å‡¦ç†
 				if (!render.grpmod[y]) {
 					return;
 				}
@@ -1838,10 +1838,10 @@ void FASTCALL Render::Grp(int block, int raster)
 							render.paldata);
 			}
 			else {
-				// ƒIƒtƒZƒbƒgZo
+				// ã‚ªãƒ•ã‚»ãƒƒãƒˆç®—å‡º
 				y = (raster + render.grpy[2]) & 0x1ff;
 
-				// ƒpƒŒƒbƒg‚Ìê‡‚Í‘S—Ìˆæˆ—
+				// ãƒ‘ãƒ¬ãƒƒãƒˆã®å ´åˆã¯å…¨é ˜åŸŸå‡¦ç†
 				if (render.grppal[0x400 + y]) {
 					render.grppal[0x400 + y] = FALSE;
 					render.grpmod[0x400 + y] = FALSE;
@@ -1856,7 +1856,7 @@ void FASTCALL Render::Grp(int block, int raster)
 					return;
 				}
 
-				// ‚»‚êˆÈŠO‚Ígrpmod‚ğŒ©‚Äˆ—
+				// ãã‚Œä»¥å¤–ã¯grpmodã‚’è¦‹ã¦å‡¦ç†
 				if (!render.grpmod[0x400 + y]) {
 					return;
 				}
@@ -1864,7 +1864,7 @@ void FASTCALL Render::Grp(int block, int raster)
 				render.grpmod[0x400 + y] = FALSE;
 				render.mix[raster] = TRUE;
 
-				// ƒŒƒ“ƒ_ƒŠƒ“ƒO
+				// ãƒ¬ãƒ³ãƒ€ãƒªãƒ³ã‚°
 				Rend256B(render.grpgv + (y << 10),
 							render.grpbuf[2] + (y << 10),
 							render.grpflag + 0x8000 + (y << 5),
@@ -1872,15 +1872,15 @@ void FASTCALL Render::Grp(int block, int raster)
 			}
 			return;
 
-		// ƒ^ƒCƒv3:512x512 –¢’è‹`
+		// ã‚¿ã‚¤ãƒ—3:512x512 æœªå®šç¾©
 		case 3:
-		// ƒ^ƒCƒv4:512x512 65536Color
+		// ã‚¿ã‚¤ãƒ—4:512x512 65536Color
 		case 4:
 			ASSERT(block == 0);
-			// ƒIƒtƒZƒbƒgZo
+			// ã‚ªãƒ•ã‚»ãƒƒãƒˆç®—å‡º
 			y = (raster + render.grpy[0]) & 0x1ff;
 
-			// ƒpƒŒƒbƒg‚Ìê‡‚Í‘S—Ìˆæˆ—
+			// ãƒ‘ãƒ¬ãƒƒãƒˆã®å ´åˆã¯å…¨é ˜åŸŸå‡¦ç†
 			if (render.grppal[y]) {
 				render.grppal[y] = FALSE;
 				render.grpmod[y] = FALSE;
@@ -1896,7 +1896,7 @@ void FASTCALL Render::Grp(int block, int raster)
 				return;
 			}
 
-			// ‚»‚êˆÈŠO‚Ígrpmod‚ğŒ©‚Äˆ—
+			// ãã‚Œä»¥å¤–ã¯grpmodã‚’è¦‹ã¦å‡¦ç†
 			if (!render.grpmod[y]) {
 				return;
 			}
@@ -1913,13 +1913,13 @@ void FASTCALL Render::Grp(int block, int raster)
 
 //===========================================================================
 //
-//	ƒŒƒ“ƒ_ƒ‰(BGEƒXƒvƒ‰ƒCƒg•”)
+//	ãƒ¬ãƒ³ãƒ€ãƒ©(BGãƒ»ã‚¹ãƒ—ãƒ©ã‚¤ãƒˆéƒ¨)
 //
 //===========================================================================
 
 //---------------------------------------------------------------------------
 //
-//	ƒXƒvƒ‰ƒCƒgƒŒƒWƒXƒ^ƒŠƒZƒbƒg
+//	ã‚¹ãƒ—ãƒ©ã‚¤ãƒˆãƒ¬ã‚¸ã‚¹ã‚¿ãƒªã‚»ãƒƒãƒˆ
 //
 //---------------------------------------------------------------------------
 void FASTCALL Render::SpriteReset()
@@ -1927,7 +1927,7 @@ void FASTCALL Render::SpriteReset()
 	DWORD addr;
 	WORD data;
 
-	// ƒXƒvƒ‰ƒCƒgƒŒƒWƒXƒ^İ’è
+	// ã‚¹ãƒ—ãƒ©ã‚¤ãƒˆãƒ¬ã‚¸ã‚¹ã‚¿è¨­å®š
 	for (addr=0; addr<0x400; addr+=2) {
 		data = *(WORD*)(&render.sprmem[addr]);
 		SpriteReg(addr, data);
@@ -1936,7 +1936,7 @@ void FASTCALL Render::SpriteReset()
 
 //---------------------------------------------------------------------------
 //
-//	ƒXƒvƒ‰ƒCƒgƒŒƒWƒXƒ^•ÏX
+//	ã‚¹ãƒ—ãƒ©ã‚¤ãƒˆãƒ¬ã‚¸ã‚¹ã‚¿å¤‰æ›´
 //
 //---------------------------------------------------------------------------
 void FASTCALL Render::SpriteReg(DWORD addr, DWORD data)
@@ -1955,10 +1955,10 @@ void FASTCALL Render::SpriteReg(DWORD addr, DWORD data)
 	ASSERT(addr < 0x400);
 	ASSERT((addr & 1) == 0);
 
-	// ƒCƒ“ƒfƒNƒVƒ“ƒO‚Æƒf[ƒ^§ŒÀ
+	// ã‚¤ãƒ³ãƒ‡ã‚¯ã‚·ãƒ³ã‚°ã¨ãƒ‡ãƒ¼ã‚¿åˆ¶é™
 	index = (int)(addr >> 3);
 	switch ((addr & 7) >> 1) {
-		// X,Y(0`1023)
+		// X,Y(0ï½1023)
 		case 0:
 		case 1:
 			data &= 0x3ff;
@@ -1973,20 +1973,20 @@ void FASTCALL Render::SpriteReg(DWORD addr, DWORD data)
 			break;
 	}
 
-	// ptrİ’è(&spptr[index << 9])
+	// ptrè¨­å®š(&spptr[index << 9])
 	ptr = &render.spptr[index << 9];
 
-	// ƒŒƒWƒXƒ^‚ÌƒoƒbƒNƒAƒbƒv
+	// ãƒ¬ã‚¸ã‚¹ã‚¿ã®ãƒãƒƒã‚¯ã‚¢ãƒƒãƒ—
 	next = &render.spreg[index << 2];
 	reg[0] = next[0];
 	reg[1] = next[1];
 	reg[2] = next[2];
 	reg[3] = next[3];
 
-	// ƒŒƒWƒXƒ^‚Ö‘‚«‚İ
+	// ãƒ¬ã‚¸ã‚¹ã‚¿ã¸æ›¸ãè¾¼ã¿
 	render.spreg[addr >> 1] = data;
 
-	// ¡Œã—LŒø‚É‚È‚é‚©ƒ`ƒFƒbƒN
+	// ä»Šå¾Œæœ‰åŠ¹ã«ãªã‚‹ã‹ãƒã‚§ãƒƒã‚¯
 	use = TRUE;
 	if (next[0] == 0) {
 		use = FALSE;
@@ -2004,16 +2004,16 @@ void FASTCALL Render::SpriteReg(DWORD addr, DWORD data)
 		use = FALSE;
 	}
 
-	// ‚¢‚Ü‚Ü‚Å–³Œø‚ÅA‚±‚ê‚©‚ç‚à–³Œø‚È‚ç‰½‚à‚µ‚È‚¢
+	// ã„ã¾ã¾ã§ç„¡åŠ¹ã§ã€ã“ã‚Œã‹ã‚‰ã‚‚ç„¡åŠ¹ãªã‚‰ä½•ã‚‚ã—ãªã„
 	if (!render.spuse[index]) {
 		if (!use) {
 			return;
 		}
 	}
 
-	// ‚¢‚Ü‚Ü‚Å—LŒø‚È‚Ì‚ÅAˆê“x‚Æ‚ß‚é
+	// ã„ã¾ã¾ã§æœ‰åŠ¹ãªã®ã§ã€ä¸€åº¦ã¨ã‚ã‚‹
 	if (render.spuse[index]) {
-		// –³Œøˆ—(PCG)
+		// ç„¡åŠ¹å‡¦ç†(PCG)
 		pcgno = reg[2] & 0xfff;
 		ASSERT(render.pcguse[ pcgno ] > 0);
 		render.pcguse[ pcgno ]--;
@@ -2021,7 +2021,7 @@ void FASTCALL Render::SpriteReg(DWORD addr, DWORD data)
 		ASSERT(render.pcgpal[ pcgno ] > 0);
 		render.pcgpal[ pcgno ]--;
 
-		// –³Œøˆ—(ƒ|ƒCƒ“ƒ^)
+		// ç„¡åŠ¹å‡¦ç†(ãƒã‚¤ãƒ³ã‚¿)
 		for (i=0; i<16; i++) {
 			j = (int)(reg[1] - 16 + i);
 			if ((j >= 0) && (j < 512)) {
@@ -2030,26 +2030,26 @@ void FASTCALL Render::SpriteReg(DWORD addr, DWORD data)
 			}
 		}
 
-		// ¡Œã–³Œø‚È‚çA‚±‚±‚ÅI—¹
+		// ä»Šå¾Œç„¡åŠ¹ãªã‚‰ã€ã“ã“ã§çµ‚äº†
 		if (!use) {
 			render.spuse[index] = FALSE;
 			return;
 		}
 	}
 
-	// “o˜^ˆ—(g—pƒtƒ‰ƒO)
+	// ç™»éŒ²å‡¦ç†(ä½¿ç”¨ãƒ•ãƒ©ã‚°)
 	render.spuse[index] = TRUE;
 
-	// “o˜^ˆ—(PCG)
+	// ç™»éŒ²å‡¦ç†(PCG)
 	pcgno = next[2] & 0xfff;
 	render.pcguse[ pcgno ]++;
 	offset = pcgno << 8;
 	pcgno >>= 8;
 	render.pcgpal[ pcgno ]++;
 
-	// PCGƒAƒhƒŒƒX‚ğŒvZAƒ|ƒCƒ“ƒ^ƒZƒbƒg
+	// PCGã‚¢ãƒ‰ãƒ¬ã‚¹ã‚’è¨ˆç®—ã€ãƒã‚¤ãƒ³ã‚¿ã‚»ãƒƒãƒˆ
 	if (next[2] & 0x8000) {
-		// V”½“]
+		// Våè»¢
 		offset += 0xf0;
 		for (i=0; i<16; i++) {
 			j = (int)(next[1] - 16 + i);
@@ -2061,7 +2061,7 @@ void FASTCALL Render::SpriteReg(DWORD addr, DWORD data)
 		}
 	}
 	else {
-		// ƒm[ƒ}ƒ‹
+		// ãƒãƒ¼ãƒãƒ«
 		for (i=0; i<16; i++) {
 			j = (int)(next[1] - 16 + i);
 			if ((j >= 0) && (j < 512)) {
@@ -2075,7 +2075,7 @@ void FASTCALL Render::SpriteReg(DWORD addr, DWORD data)
 
 //---------------------------------------------------------------------------
 //
-//	BGƒXƒNƒ[ƒ‹•ÏX
+//	BGã‚¹ã‚¯ãƒ­ãƒ¼ãƒ«å¤‰æ›´
 //
 //---------------------------------------------------------------------------
 void FASTCALL Render::BGScrl(int page, DWORD x, DWORD y)
@@ -2087,21 +2087,21 @@ void FASTCALL Render::BGScrl(int page, DWORD x, DWORD y)
 	ASSERT(x < 1024);
 	ASSERT(y < 1024);
 
-	// ”äŠrAˆê’v‚µ‚Ä‚ê‚Î‰½‚à‚µ‚È‚¢
+	// æ¯”è¼ƒã€ä¸€è‡´ã—ã¦ã‚Œã°ä½•ã‚‚ã—ãªã„
 	if ((render.bgx[page] == x) && (render.bgy[page] == y)) {
 		return;
 	}
 
-	// XV
+	// æ›´æ–°
 	render.bgx[page] = x;
 	render.bgy[page] = y;
 
-	// 768~512‚È‚ç–³ˆÓ–¡
+	// 768Ã—512ãªã‚‰ç„¡æ„å‘³
 	if (!render.bgspflag) {
 		return;
 	}
 
-	// •\¦’†‚È‚çABGSPMOD‚ğã‚°‚é
+	// è¡¨ç¤ºä¸­ãªã‚‰ã€BGSPMODã‚’ä¸Šã’ã‚‹
 	flag = FALSE;
 	if (render.bgdisp[0]) {
 		flag = TRUE;
@@ -2118,7 +2118,7 @@ void FASTCALL Render::BGScrl(int page, DWORD x, DWORD y)
 
 //---------------------------------------------------------------------------
 //
-//	BGƒRƒ“ƒgƒ[ƒ‹•ÏX
+//	BGã‚³ãƒ³ãƒˆãƒ­ãƒ¼ãƒ«å¤‰æ›´
 //
 //---------------------------------------------------------------------------
 void FASTCALL Render::BGCtrl(int index, BOOL flag)
@@ -2133,13 +2133,13 @@ void FASTCALL Render::BGCtrl(int index, BOOL flag)
 	DWORD mid;
 	DWORD high;
 
-	// ƒtƒ‰ƒOOFF
+	// ãƒ•ãƒ©ã‚°OFF
 	areaflag[0] = FALSE;
 	areaflag[1] = FALSE;
 
-	// ƒ^ƒCƒv•Ê
+	// ã‚¿ã‚¤ãƒ—åˆ¥
 	switch (index) {
-		// BG0 •\¦ƒtƒ‰ƒO
+		// BG0 è¡¨ç¤ºãƒ•ãƒ©ã‚°
 		case 0:
 			if (render.bgdisp[0] == flag) {
 				return;
@@ -2147,7 +2147,7 @@ void FASTCALL Render::BGCtrl(int index, BOOL flag)
 			render.bgdisp[0] = flag;
 			break;
 
-		// BG1 •\¦ƒtƒ‰ƒO
+		// BG1 è¡¨ç¤ºãƒ•ãƒ©ã‚°
 		case 1:
 			if (render.bgdisp[1] == flag) {
 				return;
@@ -2155,7 +2155,7 @@ void FASTCALL Render::BGCtrl(int index, BOOL flag)
 			render.bgdisp[1] = flag;
 			break;
 
-		// BG0 ƒGƒŠƒA•ÏX
+		// BG0 ã‚¨ãƒªã‚¢å¤‰æ›´
 		case 2:
 			if (render.bgarea[0] == flag) {
 				return;
@@ -2164,7 +2164,7 @@ void FASTCALL Render::BGCtrl(int index, BOOL flag)
 			areaflag[0] = TRUE;
 			break;
 
-		// BG1 ƒGƒŠƒA•ÏX
+		// BG1 ã‚¨ãƒªã‚¢å¤‰æ›´
 		case 3:
 			if (render.bgarea[1] == flag) {
 				return;
@@ -2173,7 +2173,7 @@ void FASTCALL Render::BGCtrl(int index, BOOL flag)
 			areaflag[1] = TRUE;
 			break;
 
-		// BGƒTƒCƒY•ÏX
+		// BGã‚µã‚¤ã‚ºå¤‰æ›´
 		case 4:
 			if (render.bgsize == flag) {
 				return;
@@ -2183,16 +2183,16 @@ void FASTCALL Render::BGCtrl(int index, BOOL flag)
 			areaflag[1] = TRUE;
 			break;
 
-		// ‚»‚Ì‘¼(‚ ‚è‚¦‚È‚¢)
+		// ãã®ä»–(ã‚ã‚Šãˆãªã„)
 		default:
 			ASSERT(FALSE);
 			return;
 	}
 
-	// ƒtƒ‰ƒOˆ—
+	// ãƒ•ãƒ©ã‚°å‡¦ç†
 	for (i=0; i<2; i++) {
 		if (areaflag[i]) {
-			// Œ»ó‚Åg‚Á‚Ä‚¢‚érender.pcguse‚ğƒJƒbƒg
+			// ç¾çŠ¶ã§ä½¿ã£ã¦ã„ã‚‹render.pcguseã‚’ã‚«ãƒƒãƒˆ
 			reg = render.bgreg[i];
 			for (j=0; j<(64 * 64); j++) {
 				pcgno = reg[j];
@@ -2206,22 +2206,22 @@ void FASTCALL Render::BGCtrl(int index, BOOL flag)
 				}
 			}
 
-			// ƒf[ƒ^ƒAƒhƒŒƒX‚ğZo($EBE000,$EBC000)
+			// ãƒ‡ãƒ¼ã‚¿ã‚¢ãƒ‰ãƒ¬ã‚¹ã‚’ç®—å‡º($EBE000,$EBC000)
 			area = (WORD*)render.sprmem;
 			area += 0x6000;
 			if (render.bgarea[i]) {
 				area += 0x1000;
 			}
 
-			// 64~64ƒ[ƒhƒRƒs[B$10000‚Ìƒrƒbƒg‚Íí‚É0
+			// 64Ã—64ãƒ¯ãƒ¼ãƒ‰ã‚³ãƒ”ãƒ¼ã€‚$10000ã®ãƒ“ãƒƒãƒˆã¯å¸¸ã«0
 			if (render.bgsize) {
-				// 16x16‚Í‚»‚Ì‚Ü‚Ü
+				// 16x16ã¯ãã®ã¾ã¾
 				for (j=0; j<(64*64); j++) {
 					render.bgreg[i][j] = (DWORD)area[j];
 				}
 			}
 			else {
-				// 8x8‚ÍH•v‚ª•K—vBPCG(0-255)‚ğ>>2‚µAÁ‚¦‚½bit0,1‚ğbit17,18‚Ö
+				// 8x8ã¯å·¥å¤«ãŒå¿…è¦ã€‚PCG(0-255)ã‚’>>2ã—ã€æ¶ˆãˆãŸbit0,1ã‚’bit17,18ã¸
 				for (j=0; j<(64*64); j++) {
 					low = (DWORD)area[j];
 					mid = low;
@@ -2235,14 +2235,14 @@ void FASTCALL Render::BGCtrl(int index, BOOL flag)
 				}
 			}
 
-			// bgall‚ÌƒZƒbƒg
+			// bgallã®ã‚»ãƒƒãƒˆ
 			for (j=0; j<64; j++) {
 				render.bgall[i][j] = TRUE;
 			}
 		}
 	}
 
-	// ‚Ç‚Ì•ÏX‚Å‚àA768~512ˆÈŠO‚È‚çbgspmod‚ğã‚°‚é
+	// ã©ã®å¤‰æ›´ã§ã‚‚ã€768Ã—512ä»¥å¤–ãªã‚‰bgspmodã‚’ä¸Šã’ã‚‹
 	if (render.bgspflag) {
 		for (i=0; i<512; i++) {
 			render.bgspmod[i] = TRUE;
@@ -2252,7 +2252,7 @@ void FASTCALL Render::BGCtrl(int index, BOOL flag)
 
 //---------------------------------------------------------------------------
 //
-//	BGƒƒ‚ƒŠ•ÏX
+//	BGãƒ¡ãƒ¢ãƒªå¤‰æ›´
 //
 //---------------------------------------------------------------------------
 void FASTCALL Render::BGMem(DWORD addr, WORD data)
@@ -2269,9 +2269,9 @@ void FASTCALL Render::BGMem(DWORD addr, WORD data)
 
 	ASSERT((addr >= 0xc000) && (addr < 0x10000));
 
-	// ƒy[ƒWƒ‹[ƒv
+	// ãƒšãƒ¼ã‚¸ãƒ«ãƒ¼ãƒ—
 	for (i=0; i<2; i++) {
-		// ŠY“–ƒy[ƒW‚Ìƒf[ƒ^ƒGƒŠƒA‚Æˆê’v‚µ‚Ä‚¢‚é‚©
+		// è©²å½“ãƒšãƒ¼ã‚¸ã®ãƒ‡ãƒ¼ã‚¿ã‚¨ãƒªã‚¢ã¨ä¸€è‡´ã—ã¦ã„ã‚‹ã‹
 		flag = FALSE;
 		if ((render.bgarea[i] == FALSE) && (addr < 0xe000)) {
 			flag = TRUE;
@@ -2283,13 +2283,13 @@ void FASTCALL Render::BGMem(DWORD addr, WORD data)
 			continue;
 		}
 
-		// ƒCƒ“ƒfƒbƒNƒX(<64x64)AƒŒƒWƒXƒ^ƒ|ƒCƒ“ƒ^æ“¾
+		// ã‚¤ãƒ³ãƒ‡ãƒƒã‚¯ã‚¹(<64x64)ã€ãƒ¬ã‚¸ã‚¹ã‚¿ãƒã‚¤ãƒ³ã‚¿å–å¾—
 		index = (int)(addr & 0x1fff);
 		index >>= 1;
 		ASSERT((index >= 0) && (index < 64*64));
 		pcgno = render.bgreg[i][index];
 
-		// ˆÈ‘O‚Ìpcguse‚ğÁ‚·
+		// ä»¥å‰ã®pcguseã‚’æ¶ˆã™
 		if (pcgno & 0x10000) {
 			pcgno &= 0xfff;
 			ASSERT(render.pcguse[ pcgno ] > 0);
@@ -2299,13 +2299,13 @@ void FASTCALL Render::BGMem(DWORD addr, WORD data)
 			render.pcgpal[ pcgno ]--;
 		}
 
-		// ƒRƒs[
+		// ã‚³ãƒ”ãƒ¼
 		if (render.bgsize) {
-			// 16x16‚Í‚»‚Ì‚Ü‚Ü
+			// 16x16ã¯ãã®ã¾ã¾
 			render.bgreg[i][index] = (DWORD)data;
 		}
 		else {
-			// 8x8‚ÍH•v‚ª•K—vBPCG(0-255)‚ğ>>2‚µAÁ‚¦‚½bit0,1‚ğbit17,18‚Ö
+			// 8x8ã¯å·¥å¤«ãŒå¿…è¦ã€‚PCG(0-255)ã‚’>>2ã—ã€æ¶ˆãˆãŸbit0,1ã‚’bit17,18ã¸
 			low = (DWORD)data;
 			mid = low;
 			high = low;
@@ -2317,10 +2317,10 @@ void FASTCALL Render::BGMem(DWORD addr, WORD data)
 			render.bgreg[i][index] = (DWORD)(low | mid | high);
 		}
 
-		// bgall‚ğã‚°‚é
+		// bgallã‚’ä¸Šã’ã‚‹
 		render.bgall[i][index >> 6] = TRUE;
 
-		// •\¦’†‚Å‚È‚¯‚ê‚ÎI—¹Bbgsize=1‚Åƒy[ƒW1‚Ìê‡‚àI—¹
+		// è¡¨ç¤ºä¸­ã§ãªã‘ã‚Œã°çµ‚äº†ã€‚bgsize=1ã§ãƒšãƒ¼ã‚¸1ã®å ´åˆã‚‚çµ‚äº†
 		if (!render.bgspflag || !render.bgdisp[i]) {
 			continue;
 		}
@@ -2328,7 +2328,7 @@ void FASTCALL Render::BGMem(DWORD addr, WORD data)
 			continue;
 		}
 
-		// ƒXƒNƒ[ƒ‹ˆÊ’u‚©‚çŒvZ‚µAbgspmod‚ğã‚°‚é
+		// ã‚¹ã‚¯ãƒ­ãƒ¼ãƒ«ä½ç½®ã‹ã‚‰è¨ˆç®—ã—ã€bgspmodã‚’ä¸Šã’ã‚‹
 		index >>= 6;
 		if (render.bgsize) {
 			// 16x16
@@ -2355,7 +2355,7 @@ void FASTCALL Render::BGMem(DWORD addr, WORD data)
 
 //---------------------------------------------------------------------------
 //
-//	PCGƒƒ‚ƒŠ•ÏX
+//	PCGãƒ¡ãƒ¢ãƒªå¤‰æ›´
 //
 //---------------------------------------------------------------------------
 void FASTCALL Render::PCGMem(DWORD addr)
@@ -2369,23 +2369,23 @@ void FASTCALL Render::PCGMem(DWORD addr)
 	ASSERT(addr < 0x10000);
 	ASSERT((addr & 1) == 0);
 
-	// ƒCƒ“ƒfƒbƒNƒX‚ğo‚·
+	// ã‚¤ãƒ³ãƒ‡ãƒƒã‚¯ã‚¹ã‚’å‡ºã™
 	addr &= 0x7fff;
 	index = (int)(addr >> 7);
 	ASSERT((index >= 0) && (index < 256));
 
-	// render.pcgready‚ğÁ‚·
+	// render.pcgreadyã‚’æ¶ˆã™
 	for (i=0; i<16; i++) {
 		render.pcgready[index + (i << 8)] = FALSE;
 	}
 
-	// render.pcguse‚ª>0‚È‚ç
+	// render.pcguseãŒ>0ãªã‚‰
 	count = 0;
 	for (i=0; i<16; i++) {
 		count += render.pcguse[index + (i << 8)];
 	}
 	if (count > 0) {
-		// d•û‚È‚¢‚Ì‚ÅABG/ƒXƒvƒ‰ƒCƒgÄ‡¬‚ğŒˆ’è
+		// ä»•æ–¹ãªã„ã®ã§ã€BG/ã‚¹ãƒ—ãƒ©ã‚¤ãƒˆå†åˆæˆã‚’æ±ºå®š
 		for (i=0; i<512; i++) {
 			render.bgspmod[i] = TRUE;
 		}
@@ -2394,7 +2394,7 @@ void FASTCALL Render::PCGMem(DWORD addr)
 
 //---------------------------------------------------------------------------
 //
-//	PCGƒoƒbƒtƒ@æ“¾
+//	PCGãƒãƒƒãƒ•ã‚¡å–å¾—
 //
 //---------------------------------------------------------------------------
 const DWORD* FASTCALL Render::GetPCGBuf() const
@@ -2407,7 +2407,7 @@ const DWORD* FASTCALL Render::GetPCGBuf() const
 
 //---------------------------------------------------------------------------
 //
-//	BG/ƒXƒvƒ‰ƒCƒgƒoƒbƒtƒ@æ“¾
+//	BG/ã‚¹ãƒ—ãƒ©ã‚¤ãƒˆãƒãƒƒãƒ•ã‚¡å–å¾—
 //
 //---------------------------------------------------------------------------
 const DWORD* FASTCALL Render::GetBGSpBuf() const
@@ -2420,7 +2420,7 @@ const DWORD* FASTCALL Render::GetBGSpBuf() const
 
 //---------------------------------------------------------------------------
 //
-//	BG/ƒXƒvƒ‰ƒCƒg
+//	BG/ã‚¹ãƒ—ãƒ©ã‚¤ãƒˆ
 //
 //---------------------------------------------------------------------------
 void FASTCALL Render::BGSprite(int raster)
@@ -2431,44 +2431,44 @@ void FASTCALL Render::BGSprite(int raster)
 	DWORD *buf;
 	DWORD pcgno;
 
-	// BGƒXƒvƒ‰ƒCƒg‚ğMix‚µ‚È‚¢ƒtƒ‰ƒO‚Ìƒ`ƒFƒbƒN‚ª•K—v‚©B‰º‚ÌASSERTB
+	// BGã‚¹ãƒ—ãƒ©ã‚¤ãƒˆã‚’Mixã—ãªã„ãƒ•ãƒ©ã‚°ã®ãƒã‚§ãƒƒã‚¯ãŒå¿…è¦ã‹ã€‚ä¸‹ã®ASSERTã€‚
 
-	// BG,ƒXƒvƒ‰ƒCƒg‚Æ‚à512‚Ü‚Å‚µ‚©l‚¦‚Ä‚¢‚È‚¢
+	// BG,ã‚¹ãƒ—ãƒ©ã‚¤ãƒˆã¨ã‚‚512ã¾ã§ã—ã‹è€ƒãˆã¦ã„ãªã„
 	if (raster >= 512) return;
 //	ASSERT((raster >= 0) && (raster < 512));
 
-	// ‰¡•‚à512‚Ü‚ÅB‚±‚ê‚à‘å‘O’ñ
+	// æ¨ªå¹…ã‚‚512ã¾ã§ã€‚ã“ã‚Œã‚‚å¤§å‰æ
 	if (render.mixlen > 512) return;
 //	ASSERT(render.mixlen <= 512);
 
-	// ƒtƒ‰ƒOƒ`ƒFƒbƒNAƒIƒtA‡¬w¦
+	// ãƒ•ãƒ©ã‚°ãƒã‚§ãƒƒã‚¯ã€ã‚ªãƒ•ã€åˆæˆæŒ‡ç¤º
 	if (!render.bgspmod[raster]) {
 		return;
 	}
 	render.bgspmod[raster] = FALSE;
 	render.mix[raster] = TRUE;
 
-	// ƒoƒbƒtƒ@ƒNƒŠƒA
-	// ‚±‚±‚ÅƒpƒŒƒbƒg$100‚Å–„‚ß‚é(o‚½ƒcƒCLoading)
+	// ãƒãƒƒãƒ•ã‚¡ã‚¯ãƒªã‚¢
+	// ã“ã“ã§ãƒ‘ãƒ¬ãƒƒãƒˆ$100ã§åŸ‹ã‚ã‚‹(å‡ºãŸãƒ„ã‚¤Loading)
 	buf = &render.bgspbuf[raster << 9];
 	RendClrSprite(buf, render.paldata[0x100], render.mixlen);
 	if (!sprite->IsDisplay()) {
-		// ”ñ•\¦‚È‚ç$80000000‚Ìƒrƒbƒg‚Í—‚Æ‚·(o‚½ƒcƒCF3)
+		// éè¡¨ç¤ºãªã‚‰$80000000ã®ãƒ“ãƒƒãƒˆã¯è½ã¨ã™(å‡ºãŸãƒ„ã‚¤F3)
 		RendClrSprite(buf, render.paldata[0x100] & 0x00ffffff, render.mixlen);
 		return;
 	}
 
-	// ˆê”ÔŒã‚ë‚É‚­‚é(PRW=1)ƒXƒvƒ‰ƒCƒg
+	// ä¸€ç•ªå¾Œã‚ã«ãã‚‹(PRW=1)ã‚¹ãƒ—ãƒ©ã‚¤ãƒˆ
 	reg = &render.spreg[127 << 2];
 	ptr = &render.spptr[127 << 9];
 	ptr += raster;
 	for (i=127; i>=0; i--) {
 		if (render.spuse[i]) {
-			// g—p’†
+			// ä½¿ç”¨ä¸­
 			if (reg[3] == 1) {
 				// PRW=1
 				if (*ptr) {
-					// •\¦
+					// è¡¨ç¤º
 					pcgno = reg[2] & 0xfff;
 					if (!render.pcgready[pcgno]) {
 						ASSERT(render.pcguse[pcgno] > 0);
@@ -2484,27 +2484,27 @@ void FASTCALL Render::BGSprite(int raster)
 				}
 			}
 		}
-		// Ÿ‚ÌƒXƒvƒ‰ƒCƒg(SP0‚ª‚à‚Á‚Æ‚àè‘O)
+		// æ¬¡ã®ã‚¹ãƒ—ãƒ©ã‚¤ãƒˆ(SP0ãŒã‚‚ã£ã¨ã‚‚æ‰‹å‰)
 		reg -= 4;
 		ptr -= 512;
 	}
 
-	// BG1‚ğ•\¦
+	// BG1ã‚’è¡¨ç¤º
 	if (render.bgdisp[1] && !render.bgsize) {
 		BG(1, raster, buf);
 	}
 
-	// ’†ŠÔ‚É‚­‚é(PRW=2)ƒXƒvƒ‰ƒCƒg
+	// ä¸­é–“ã«ãã‚‹(PRW=2)ã‚¹ãƒ—ãƒ©ã‚¤ãƒˆ
 	reg = &render.spreg[127 << 2];
 	ptr = &render.spptr[127 << 9];
 	ptr += raster;
 	for (i=127; i>=0; i--) {
 		if (render.spuse[i]) {
-			// g—p’†
+			// ä½¿ç”¨ä¸­
 			if (reg[3] == 2) {
 				// PRW=2
 				if (*ptr) {
-					// •\¦
+					// è¡¨ç¤º
 					pcgno = reg[2] & 0xfff;
 					if (!render.pcgready[pcgno]) {
 						ASSERT(render.pcguse[pcgno] > 0);
@@ -2520,27 +2520,27 @@ void FASTCALL Render::BGSprite(int raster)
 				}
 			}
 		}
-		// Ÿ‚ÌƒXƒvƒ‰ƒCƒg(SP0‚ª‚à‚Á‚Æ‚àè‘O)
+		// æ¬¡ã®ã‚¹ãƒ—ãƒ©ã‚¤ãƒˆ(SP0ãŒã‚‚ã£ã¨ã‚‚æ‰‹å‰)
 		reg -= 4;
 		ptr -= 512;
 	}
 
-	// BG0‚ğ•\¦
+	// BG0ã‚’è¡¨ç¤º
 	if (render.bgdisp[0]) {
 		BG(0, raster, buf);
 	}
 
-	// è‘O‚É‚­‚é(PRW=3)ƒXƒvƒ‰ƒCƒg
+	// æ‰‹å‰ã«ãã‚‹(PRW=3)ã‚¹ãƒ—ãƒ©ã‚¤ãƒˆ
 	reg = &render.spreg[127 << 2];
 	ptr = &render.spptr[127 << 9];
 	ptr += raster;
 	for (i=127; i>=0; i--) {
 		if (render.spuse[i]) {
-			// g—p’†
+			// ä½¿ç”¨ä¸­
 			if (reg[3] == 3) {
 				// PRW=3
 				if (*ptr) {
-					// •\¦
+					// è¡¨ç¤º
 					pcgno = reg[2] & 0xfff;
 					if (!render.pcgready[pcgno]) {
 						ASSERT(render.pcguse[pcgno] > 0);
@@ -2556,7 +2556,7 @@ void FASTCALL Render::BGSprite(int raster)
 				}
 			}
 		}
-		// Ÿ‚ÌƒXƒvƒ‰ƒCƒg(SP0‚ª‚à‚Á‚Æ‚àè‘O)
+		// æ¬¡ã®ã‚¹ãƒ—ãƒ©ã‚¤ãƒˆ(SP0ãŒã‚‚ã£ã¨ã‚‚æ‰‹å‰)
 		reg -= 4;
 		ptr -= 512;
 	}
@@ -2579,36 +2579,36 @@ void FASTCALL Render::BG(int page, int raster, DWORD *buf)
 	ASSERT((raster >= 0) && (raster < 512));
 	ASSERT(buf);
 
-	// yƒuƒƒbƒN‚ğŠ„‚èo‚·
+	// yãƒ–ãƒ­ãƒƒã‚¯ã‚’å‰²ã‚Šå‡ºã™
 	y = render.bgy[page] + raster;
 	if (render.bgsize) {
-		// 16x16ƒ‚[ƒh
+		// 16x16ãƒ¢ãƒ¼ãƒ‰
 		y &= (1024 - 1);
 		y >>= 4;
 	}
 	else {
-		// 8x8ƒ‚[ƒh
+		// 8x8ãƒ¢ãƒ¼ãƒ‰
 		y &= (512 - 1);
 		y >>= 3;
 	}
 	ASSERT((y >= 0) && (y < 64));
 
-	// bgall‚ªTRUE‚È‚çA‚»‚ÌyƒuƒƒbƒN‚Å•ÏXƒf[ƒ^‚ ‚è
+	// bgallãŒTRUEãªã‚‰ã€ãã®yãƒ–ãƒ­ãƒƒã‚¯ã§å¤‰æ›´ãƒ‡ãƒ¼ã‚¿ã‚ã‚Š
 	if (render.bgall[page][y]) {
 		render.bgall[page][y] = FALSE;
 		BGBlock(page, y);
 	}
 
-	// •\¦
+	// è¡¨ç¤º
 	ptr = render.bgptr[page];
 	if (!render.bgsize) {
-		// 8x8‚Ì•\¦
+		// 8x8ã®è¡¨ç¤º
 		x = render.bgx[page] & (512 - 1);
 		ptr += (((render.bgy[page] + raster) & (512 - 1)) << 7);
 
-		// Š„‚èØ‚ê‚é‚©ƒ`ƒFƒbƒN
+		// å‰²ã‚Šåˆ‡ã‚Œã‚‹ã‹ãƒã‚§ãƒƒã‚¯
 		if ((x & 7) == 0) {
-			// 8x8AŠ„‚èØ‚ê‚é
+			// 8x8ã€å‰²ã‚Šåˆ‡ã‚Œã‚‹
 			x >>= 3;
 			if (cmov) {
 				RendBG8C(ptr, buf, x, render.mixlen, render.pcgready,
@@ -2621,13 +2621,13 @@ void FASTCALL Render::BG(int page, int raster, DWORD *buf)
 			return;
 		}
 
-		// Å‰‚Ì”¼’[ƒuƒƒbƒN‚ğÀs
+		// æœ€åˆã®åŠç«¯ãƒ–ãƒ­ãƒƒã‚¯ã‚’å®Ÿè¡Œ
 		rest = 8 - (x & 7);
 		ASSERT((rest > 0) && (rest < 8));
 		RendBG8P(&ptr[(x & 0xfff8) >> 2], buf, (x & 7), rest, render.pcgready,
 				render.sprmem, render.pcgbuf, render.paldata);
 
-		// —]‚è‚ğ’²‚×‚Ä8dot’PˆÊ•ª‚ğˆ—
+		// ä½™ã‚Šã‚’èª¿ã¹ã¦8dotå˜ä½åˆ†ã‚’å‡¦ç†
 		len = render.mixlen - rest;
 		x += rest;
 		x &= (512 - 1);
@@ -2641,7 +2641,7 @@ void FASTCALL Render::BG(int page, int raster, DWORD *buf)
 				render.sprmem, render.pcgbuf, render.paldata);
 		}
 
-		// ÅŒã
+		// æœ€å¾Œ
 		if (len & 7) {
 			x += (len & 0xfff8);
 			x &= (512 - 1);
@@ -2651,13 +2651,13 @@ void FASTCALL Render::BG(int page, int raster, DWORD *buf)
 		return;
 	}
 
-	// 16x16‚Ì•\¦
+	// 16x16ã®è¡¨ç¤º
 	x = render.bgx[page] & (1024 - 1);
 	ptr += (((render.bgy[page] + raster) & (1024 - 1)) << 7);
 
-	// Š„‚èØ‚ê‚é‚©ƒ`ƒFƒbƒN
+	// å‰²ã‚Šåˆ‡ã‚Œã‚‹ã‹ãƒã‚§ãƒƒã‚¯
 	if ((x & 15) == 0) {
-		// 16x16AŠ„‚èØ‚ê‚é
+		// 16x16ã€å‰²ã‚Šåˆ‡ã‚Œã‚‹
 		x >>= 4;
 		if (cmov) {
 			RendBG16C(ptr, buf, x, render.mixlen, render.pcgready,
@@ -2670,13 +2670,13 @@ void FASTCALL Render::BG(int page, int raster, DWORD *buf)
 		return;
 	}
 
-	// Å‰‚Ì”¼’[ƒuƒƒbƒN‚ğÀs
+	// æœ€åˆã®åŠç«¯ãƒ–ãƒ­ãƒƒã‚¯ã‚’å®Ÿè¡Œ
 	rest = 16 - (x & 15);
 	ASSERT((rest > 0) && (rest < 16));
 	RendBG16P(&ptr[(x & 0xfff0) >> 3], buf, (x & 15), rest, render.pcgready,
 			render.sprmem, render.pcgbuf, render.paldata);
 
-	// —]‚è‚ğ’²‚×‚Ä16dot’PˆÊ•ª‚ğˆ—
+	// ä½™ã‚Šã‚’èª¿ã¹ã¦16dotå˜ä½åˆ†ã‚’å‡¦ç†
 	len = render.mixlen - rest;
 	x += rest;
 	x &= (1024 - 1);
@@ -2690,7 +2690,7 @@ void FASTCALL Render::BG(int page, int raster, DWORD *buf)
 			render.sprmem, render.pcgbuf, render.paldata);
 	}
 
-	// ÅŒã
+	// æœ€å¾Œ
 	if (len & 15) {
 		x += (len & 0xfff0);
 		x &= (1024 - 1);
@@ -2702,7 +2702,7 @@ void FASTCALL Render::BG(int page, int raster, DWORD *buf)
 
 //---------------------------------------------------------------------------
 //
-//	BG(ƒuƒƒbƒNˆ—)
+//	BG(ãƒ–ãƒ­ãƒƒã‚¯å‡¦ç†)
 //
 //---------------------------------------------------------------------------
 void FASTCALL Render::BGBlock(int page, int y)
@@ -2718,10 +2718,10 @@ void FASTCALL Render::BGBlock(int page, int y)
 	ASSERT((page == 0) || (page == 1));
 	ASSERT((y >= 0) && (y < 64));
 
-	// ƒŒƒWƒXƒ^ƒ|ƒCƒ“ƒ^‚ğ“¾‚é
+	// ãƒ¬ã‚¸ã‚¹ã‚¿ãƒã‚¤ãƒ³ã‚¿ã‚’å¾—ã‚‹
 	reg = &render.bgreg[page][y << 6];
 
-	// BGƒ|ƒCƒ“ƒ^‚ğ“¾‚é
+	// BGãƒã‚¤ãƒ³ã‚¿ã‚’å¾—ã‚‹
 	ptr = render.bgptr[page];
 	if (render.bgsize) {
 		ptr += (y << 11);
@@ -2730,29 +2730,29 @@ void FASTCALL Render::BGBlock(int page, int y)
 		ptr += (y << 10);
 	}
 
-	// ƒ‹[ƒv
+	// ãƒ«ãƒ¼ãƒ—
 	for (i=0; i<64; i++) {
-		// æ“¾
+		// å–å¾—
 		bgdata = reg[i];
 
-		// $10000‚ª—§‚Á‚Ä‚¢‚ê‚ÎOK
+		// $10000ãŒç«‹ã£ã¦ã„ã‚Œã°OK
 		if (bgdata & 0x10000) {
 			ptr += 2;
 			continue;
 		}
 
-		// $10000‚ğOR
+		// $10000ã‚’OR
 		reg[i] |= 0x10000;
 
-		// pcgno‚ğ“¾‚é
+		// pcgnoã‚’å¾—ã‚‹
 		pcgno = bgdata & 0xfff;
 
-		// ƒTƒCƒY•Ê
+		// ã‚µã‚¤ã‚ºåˆ¥
 		if (render.bgsize) {
 			// 16x16
 			pcgbuf = &render.pcgbuf[ (pcgno << 8) ];
 			if (bgdata & 0x8000) {
-				// ã‰º”½“]
+				// ä¸Šä¸‹åè»¢
 				pcgbuf += 0xf0;
 				for (j=0; j<16; j++) {
 					ptr[0] = pcgbuf;
@@ -2762,7 +2762,7 @@ void FASTCALL Render::BGBlock(int page, int y)
 				}
 			}
 			else {
-				// ’Êí
+				// é€šå¸¸
 				for (j=0; j<16; j++) {
 					ptr[0] = pcgbuf;
 					ptr[1] = (DWORD*)bgdata;
@@ -2773,7 +2773,7 @@ void FASTCALL Render::BGBlock(int page, int y)
 			ptr -= 2048;
 		}
 		else {
-			// 8x8Bbit17,bit18‚ğl—¶‚·‚é
+			// 8x8ã€‚bit17,bit18ã‚’è€ƒæ…®ã™ã‚‹
 			pcgbuf = &render.pcgbuf[ (pcgno << 8) ];
 			if (bgdata & 0x20000) {
 				pcgbuf += 0x80;
@@ -2783,7 +2783,7 @@ void FASTCALL Render::BGBlock(int page, int y)
 			}
 
 			if (bgdata & 0x8000) {
-				// ã‰º”½“]
+				// ä¸Šä¸‹åè»¢
 				pcgbuf += 0x70;
 				for (j=0; j<8; j++) {
 					ptr[0] = pcgbuf;
@@ -2793,7 +2793,7 @@ void FASTCALL Render::BGBlock(int page, int y)
 				}
 			}
 			else {
-				// ’Êí
+				// é€šå¸¸
 				for (j=0; j<8; j++) {
 					ptr[0] = pcgbuf;
 					ptr[1] = (DWORD*)bgdata;
@@ -2804,25 +2804,25 @@ void FASTCALL Render::BGBlock(int page, int y)
 			ptr -= 1024;
 		}
 
-		// “o˜^ˆ—(PCG)
+		// ç™»éŒ²å‡¦ç†(PCG)
 		render.pcguse[ pcgno ]++;
 		pcgno = (pcgno >> 8) & 0x0f;
 		render.pcgpal[ pcgno ]++;
 
-		// ƒ|ƒCƒ“ƒ^‚ği‚ß‚é
+		// ãƒã‚¤ãƒ³ã‚¿ã‚’é€²ã‚ã‚‹
 		ptr += 2;
 	}
 }
 
 //===========================================================================
 //
-//	ƒŒƒ“ƒ_ƒ‰(‡¬•”)
+//	ãƒ¬ãƒ³ãƒ€ãƒ©(åˆæˆéƒ¨)
 //
 //===========================================================================
 
 //---------------------------------------------------------------------------
 //
-//	‡¬
+//	åˆæˆ
 //
 //---------------------------------------------------------------------------
 void FASTCALL Render::Mix(int y)
@@ -2834,7 +2834,7 @@ void FASTCALL Render::Mix(int y)
 	int offset;
 	DWORD buf[1024];
 
-	// ‡¬w¦‚ª–³‚¢ê‡A‡¬ƒoƒbƒtƒ@‚ª–³‚¢ê‡AyƒI[ƒo[‚Ìê‡return
+	// åˆæˆæŒ‡ç¤ºãŒç„¡ã„å ´åˆã€åˆæˆãƒãƒƒãƒ•ã‚¡ãŒç„¡ã„å ´åˆã€yã‚ªãƒ¼ãƒãƒ¼ã®å ´åˆreturn
 	if ((!render.mix[y]) || (!render.mixbuf)) {
 		return;
 	}
@@ -2844,20 +2844,20 @@ void FASTCALL Render::Mix(int y)
 	ASSERT(render.mixlen > 0);
 
 #if defined(REND_LOG)
-	LOG1(Log::Normal, "‡¬ y=%d", y);
+	LOG1(Log::Normal, "åˆæˆ y=%d", y);
 #endif	// REND_LOG
 
-	// ƒtƒ‰ƒOOFFA‡¬ƒoƒbƒtƒ@ƒAƒhƒŒƒX‰Šú‰»
+	// ãƒ•ãƒ©ã‚°OFFã€åˆæˆãƒãƒƒãƒ•ã‚¡ã‚¢ãƒ‰ãƒ¬ã‚¹åˆæœŸåŒ–
 	render.mix[y] = FALSE;
 	q = &render.mixbuf[render.mixwidth * y];
 
 	switch (render.mixtype) {
-		// ƒ^ƒCƒv0(•\¦‚µ‚È‚¢)
+		// ã‚¿ã‚¤ãƒ—0(è¡¨ç¤ºã—ãªã„)
 		case 0:
 			RendMix00(q, render.drawflag + (y << 6), render.mixlen);
 			return;
 
-		// ƒ^ƒCƒv1(1–Ê‚Ì‚İ)
+		// ã‚¿ã‚¤ãƒ—1(1é¢ã®ã¿)
 		case 1:
 			offset = (*render.mixy[0] + y) & render.mixand[0];
 			p = render.mixptr[0];
@@ -2867,7 +2867,7 @@ void FASTCALL Render::Mix(int y)
 			RendMix01(q, p, render.drawflag + (y << 6), render.mixlen);
 			return;
 
-		// ƒ^ƒCƒv2(2–ÊAƒJƒ‰[0d‚Ë‡‚í‚¹)
+		// ã‚¿ã‚¤ãƒ—2(2é¢ã€ã‚«ãƒ©ãƒ¼0é‡ã­åˆã‚ã›)
 		case 2:
 			offset = (*render.mixy[0] + y) & render.mixand[0];
 			p = render.mixptr[0];
@@ -2887,7 +2887,7 @@ void FASTCALL Render::Mix(int y)
 			}
 			return;
 
-		// ƒ^ƒCƒv3(2–ÊA’Êíd‚Ë‡‚í‚¹)
+		// ã‚¿ã‚¤ãƒ—3(2é¢ã€é€šå¸¸é‡ã­åˆã‚ã›)
 		case 3:
 			offset = (*render.mixy[0] + y) & render.mixand[0];
 			p = render.mixptr[0];
@@ -2907,13 +2907,13 @@ void FASTCALL Render::Mix(int y)
 			}
 			return;
 
-		// ƒ^ƒCƒv4(ƒOƒ‰ƒtƒBƒbƒN‚Ì‚İ3–Ê or 4–Ê)
+		// ã‚¿ã‚¤ãƒ—4(ã‚°ãƒ©ãƒ•ã‚£ãƒƒã‚¯ã®ã¿3é¢ or 4é¢)
 		case 4:
 			MixGrp(y, buf);
 			RendMix01(q, buf, render.drawflag + (y << 6), render.mixlen);
 			break;
 
-		// ƒ^ƒCƒv5(ƒOƒ‰ƒtƒBƒbƒN{ƒeƒLƒXƒgAƒeƒLƒXƒg—Dæ’Êíd‚Ë‡‚í‚¹)
+		// ã‚¿ã‚¤ãƒ—5(ã‚°ãƒ©ãƒ•ã‚£ãƒƒã‚¯ï¼‹ãƒ†ã‚­ã‚¹ãƒˆã€ãƒ†ã‚­ã‚¹ãƒˆå„ªå…ˆé€šå¸¸é‡ã­åˆã‚ã›)
 		case 5:
 			MixGrp(y, buf);
 			offset = (*render.mixy[0] + y) & render.mixand[0];
@@ -2929,7 +2929,7 @@ void FASTCALL Render::Mix(int y)
 			}
 			return;
 
-		// ƒ^ƒCƒv6(ƒOƒ‰ƒtƒBƒbƒN{ƒeƒLƒXƒgAƒOƒ‰ƒtƒBƒbƒN—Dæ’Êíd‚Ë‡‚í‚¹)
+		// ã‚¿ã‚¤ãƒ—6(ã‚°ãƒ©ãƒ•ã‚£ãƒƒã‚¯ï¼‹ãƒ†ã‚­ã‚¹ãƒˆã€ã‚°ãƒ©ãƒ•ã‚£ãƒƒã‚¯å„ªå…ˆé€šå¸¸é‡ã­åˆã‚ã›)
 		case 6:
 			MixGrp(y, buf);
 			offset = (*render.mixy[0] + y) & render.mixand[0];
@@ -2944,7 +2944,7 @@ void FASTCALL Render::Mix(int y)
 			}
 			return;
 
-		// ƒ^ƒCƒv7(ƒeƒLƒXƒg{ƒXƒvƒ‰ƒCƒg{ƒOƒ‰ƒtƒBƒbƒN1–Ê)
+		// ã‚¿ã‚¤ãƒ—7(ãƒ†ã‚­ã‚¹ãƒˆï¼‹ã‚¹ãƒ—ãƒ©ã‚¤ãƒˆï¼‹ã‚°ãƒ©ãƒ•ã‚£ãƒƒã‚¯1é¢)
 		case 7:
 			offset = (*render.mixy[0] + y) & render.mixand[0];
 			ptr[0] = render.mixptr[0];
@@ -2968,7 +2968,7 @@ void FASTCALL Render::Mix(int y)
 			}
 			return;
 
-		// ƒ^ƒCƒv8(ƒeƒLƒXƒg+ƒXƒvƒ‰ƒCƒg+ƒOƒ‰ƒtƒBƒbƒN‚Q–ÊˆÈã)
+		// ã‚¿ã‚¤ãƒ—8(ãƒ†ã‚­ã‚¹ãƒˆ+ã‚¹ãƒ—ãƒ©ã‚¤ãƒˆ+ã‚°ãƒ©ãƒ•ã‚£ãƒƒã‚¯ï¼’é¢ä»¥ä¸Š)
 		case 8:
 			MixGrp(y, buf);
 			offset = (*render.mixy[0] + y) & render.mixand[0];
@@ -2990,7 +2990,7 @@ void FASTCALL Render::Mix(int y)
 			}
 			return;
 
-		// ‚»‚Ì‘¼
+		// ãã®ä»–
 		default:
 			ASSERT(FALSE);
 			break;
@@ -2999,7 +2999,7 @@ void FASTCALL Render::Mix(int y)
 
 //---------------------------------------------------------------------------
 //
-//	ƒOƒ‰ƒtƒBƒbƒN‡¬
+//	ã‚°ãƒ©ãƒ•ã‚£ãƒƒã‚¯åˆæˆ
 //
 //---------------------------------------------------------------------------
 void FASTCALL Render::MixGrp(int y, DWORD *buf)
@@ -3014,17 +3014,17 @@ void FASTCALL Render::MixGrp(int y, DWORD *buf)
 	ASSERT((y >= 0) && (y < render.mixheight));
 
 	switch (render.mixpage) {
-		// ‚È‚µ(‘¼‚Ìrender.mixpage‚Å‹zû)
+		// ãªã—(ä»–ã®render.mixpageã§å¸å)
 		case 0:
 			ASSERT(FALSE);
 			return;
 
-		// 1–Ê(‘¼‚Ìrender.mixpage‚Å‹zû)
+		// 1é¢(ä»–ã®render.mixpageã§å¸å)
 		case 1:
 			ASSERT(FALSE);
 			return;
 
-		// 2–Ê
+		// 2é¢
 		case 2:
 			offset = (*render.mixy[4] + y) & render.mixand[4];
 			p = render.mixptr[4];
@@ -3045,7 +3045,7 @@ void FASTCALL Render::MixGrp(int y, DWORD *buf)
 			}
 			break;
 
-		// 3–Ê
+		// 3é¢
 		case 3:
 			offset = (*render.mixy[4] + y) & render.mixand[4];
 			p = render.mixptr[4];
@@ -3073,7 +3073,7 @@ void FASTCALL Render::MixGrp(int y, DWORD *buf)
 			}
 			break;
 
-		// 4–Ê
+		// 4é¢
 		case 4:
 			offset = (*render.mixy[4] + y) & render.mixand[4];
 			p = render.mixptr[4];
@@ -3102,7 +3102,7 @@ void FASTCALL Render::MixGrp(int y, DWORD *buf)
 			RendGrp04(buf, p, q, r, s, render.mixlen);
 			return;
 
-		// ‚»‚Ì‘¼
+		// ãã®ä»–
 		default:
 			ASSERT(FALSE);
 			break;
@@ -3111,27 +3111,27 @@ void FASTCALL Render::MixGrp(int y, DWORD *buf)
 
 //---------------------------------------------------------------------------
 //
-//	‡¬ƒoƒbƒtƒ@æ“¾
+//	åˆæˆãƒãƒƒãƒ•ã‚¡å–å¾—
 //
 //---------------------------------------------------------------------------
 const DWORD* FASTCALL Render::GetMixBuf() const
 {
 	ASSERT(this);
 
-	// NULL‚Ìê‡‚à‚ ‚è
+	// NULLã®å ´åˆã‚‚ã‚ã‚Š
 	return render.mixbuf;
 }
 
 //---------------------------------------------------------------------------
 //
-//	ƒŒƒ“ƒ_ƒŠƒ“ƒO
+//	ãƒ¬ãƒ³ãƒ€ãƒªãƒ³ã‚°
 //
 //---------------------------------------------------------------------------
 void FASTCALL Render::Process()
 {
 	int i;
 
-	// s‚«‚·‚¬‚Ä‚¢‚éê‡‚Í•s—v
+	// è¡Œãã™ãã¦ã„ã‚‹å ´åˆã¯ä¸è¦
 	if (render.first >= render.last) {
 		return;
 	}
@@ -3139,32 +3139,32 @@ void FASTCALL Render::Process()
 	// VC
 	if (render.vc) {
 #if defined(REND_LOG)
-		LOG0(Log::Normal, "ƒrƒfƒIˆ—");
+		LOG0(Log::Normal, "ãƒ“ãƒ‡ã‚ªå‡¦ç†");
 #endif	// RENDER_LOG
 		Video();
 	}
 
-	// ƒRƒ“ƒgƒ‰ƒXƒg
+	// ã‚³ãƒ³ãƒˆãƒ©ã‚¹ãƒˆ
 	if (render.contrast) {
 #if defined(REND_LOG)
-		LOG0(Log::Normal, "ƒRƒ“ƒgƒ‰ƒXƒgˆ—");
+		LOG0(Log::Normal, "ã‚³ãƒ³ãƒˆãƒ©ã‚¹ãƒˆå‡¦ç†");
 #endif	// RENDER_LOG
 		Contrast();
 	}
 
-	// ƒpƒŒƒbƒg
+	// ãƒ‘ãƒ¬ãƒƒãƒˆ
 	if (render.palette) {
 #if defined(REND_LOG)
-		LOG0(Log::Normal, "ƒpƒŒƒbƒgˆ—");
+		LOG0(Log::Normal, "ãƒ‘ãƒ¬ãƒƒãƒˆå‡¦ç†");
 #endif	// RENDER_LOG
 		Palette();
 	}
 
-	// first==0‚ÍAƒXƒvƒ‰ƒCƒg‚Ì•\¦ON/OFF‚ğŒŸ¸
+	// first==0ã¯ã€ã‚¹ãƒ—ãƒ©ã‚¤ãƒˆã®è¡¨ç¤ºON/OFFã‚’æ¤œæŸ»
 	if (render.first == 0) {
 		if (sprite->IsDisplay()) {
 			if (!render.bgspdisp) {
-				// ƒXƒvƒ‰ƒCƒgCPU¨Video
+				// ã‚¹ãƒ—ãƒ©ã‚¤ãƒˆCPUâ†’Video
 				for (i=0; i<512; i++) {
 					render.bgspmod[i] = TRUE;
 				}
@@ -3173,7 +3173,7 @@ void FASTCALL Render::Process()
 		}
 		else {
 			if (render.bgspdisp) {
-				// ƒXƒvƒ‰ƒCƒgVideo¨CPU
+				// ã‚¹ãƒ—ãƒ©ã‚¤ãƒˆVideoâ†’CPU
 				for (i=0; i<512; i++) {
 					render.bgspmod[i] = TRUE;
 				}
@@ -3182,9 +3182,9 @@ void FASTCALL Render::Process()
 		}
 	}
 
-	// ‚’¼x2‚Ìê‡
+	// å‚ç›´x2ã®å ´åˆ
 	if ((render.v_mul == 2) && !render.lowres) {
-		// I/O‘¤‚ÅŠg‘å‚·‚é‚½‚ßAc•ûŒü‚Í”¼•ª‚µ‚©ì‚ç‚È‚¢
+		// I/Oå´ã§æ‹¡å¤§ã™ã‚‹ãŸã‚ã€ç¸¦æ–¹å‘ã¯åŠåˆ†ã—ã‹ä½œã‚‰ãªã„
 		for (i=render.first; i<render.last; i++) {
 			if ((i & 1) == 0) {
 				Text(i >> 1);
@@ -3196,16 +3196,16 @@ void FASTCALL Render::Process()
 				Mix(i >> 1);
 			}
 		}
-		// XV
+		// æ›´æ–°
 		render.first = render.last;
 		return;
 	}
 
-	// ƒCƒ“ƒ^ƒŒ[ƒX‚Ìê‡
+	// ã‚¤ãƒ³ã‚¿ãƒ¬ãƒ¼ã‚¹ã®å ´åˆ
 	if ((render.v_mul == 0) && render.lowres) {
-		// ‹ô”EŠï”‚ğ“¯‚Éì‚é(À‹@‚Æ‚ÍˆÙ‚È‚é)
+		// å¶æ•°ãƒ»å¥‡æ•°ã‚’åŒæ™‚ã«ä½œã‚‹(å®Ÿæ©Ÿã¨ã¯ç•°ãªã‚‹)
 		for (i=render.first; i<render.last; i++) {
-			// ƒeƒLƒXƒgEƒOƒ‰ƒtƒBƒbƒN
+			// ãƒ†ã‚­ã‚¹ãƒˆãƒ»ã‚°ãƒ©ãƒ•ã‚£ãƒƒã‚¯
 			Text((i << 1) + 0);
 			Text((i << 1) + 1);
 			Grp(0, (i << 1) + 0);
@@ -3221,12 +3221,12 @@ void FASTCALL Render::Process()
 			Mix((i << 1) + 0);
 			Mix((i << 1) + 1);
 		}
-		// XV
+		// æ›´æ–°
 		render.first = render.last;
 		return;
 	}
 
-	// ’Êíƒ‹[ƒv
+	// é€šå¸¸ãƒ«ãƒ¼ãƒ—
 	for (i=render.first; i<render.last; i++) {
 		Text(i);
 		Grp(0, i);
@@ -3236,7 +3236,7 @@ void FASTCALL Render::Process()
 		BGSprite(i);
 		Mix(i);
 	}
-	// XV
+	// æ›´æ–°
 	render.first = render.last;
 }
 

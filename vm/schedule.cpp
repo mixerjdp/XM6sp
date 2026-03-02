@@ -15,7 +15,7 @@
 #include "cpu.h"
 #include "event.h"
 #include "dmac.h"
-#include "core_asm.h"
+#include "core_soft.h"
 #include "config.h"
 #include "fileio.h"
 
