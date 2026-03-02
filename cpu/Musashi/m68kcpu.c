@@ -937,6 +937,12 @@ void m68k_set_cpu_type(unsigned int cpu_type)
 }
 
 /* Execute some instructions until we use up num_cycles clock cycles */
+#ifdef _DEBUG
+#include <stdio.h>
+static int trace_counter = 0;
+static FILE* trace_fp = NULL;
+#endif
+
 /* ASG: removed per-instruction interrupt checks */
 int m68k_execute(int num_cycles)
 {
@@ -980,6 +986,27 @@ int m68k_execute(int num_cycles)
 			/* Record previous program counter */
 			REG_PPC = REG_PC;
 						
+#ifdef _DEBUG
+			if (trace_fp && trace_counter > 0) {
+				int skip = 0;
+				if (REG_PC >= 0x00FF0510 && REG_PC <= 0x00FF0522) skip = 1;
+				if (REG_PC >= 0x00FFABC0 && REG_PC <= 0x00FFABC4) skip = 1;
+				if (REG_PC >= 0x00FF0984 && REG_PC <= 0x00FF0986) skip = 1;
+				
+				if (!skip) {
+					fprintf(trace_fp, "%08X: IR=%04X D=%08X,%08X,%08X,%08X,%08X,%08X,%08X,%08X A=%08X,%08X,%08X,%08X,%08X,%08X,%08X,%08X SR=%04X\n",
+						REG_PC, m68k_read_memory_16(REG_PC), 
+						REG_D[0], REG_D[1], REG_D[2], REG_D[3], REG_D[4], REG_D[5], REG_D[6], REG_D[7],
+						REG_A[0], REG_A[1], REG_A[2], REG_A[3], REG_A[4], REG_A[5], REG_A[6], REG_A[7],
+						m68ki_get_sr());
+					trace_counter--;
+					if (trace_counter == 0) {
+						fclose(trace_fp); trace_fp = NULL;
+					}
+				}
+			}
+#endif
+
 			/* Record previous D/A register state (in case of bus error) */
 			for (i = 15; i >= 0; i--){
 				REG_DA_SAVE[i] = REG_DA[i];
@@ -1099,7 +1126,14 @@ void m68k_pulse_bus_error(void)
 /* Pulse the RESET line on the CPU */
 void m68k_pulse_reset(void)
 {
-	
+#ifdef _DEBUG
+	if (trace_fp) { fclose(trace_fp); trace_fp = NULL; }
+	trace_fp = fopen("C:\\sw\\XM62022\\cpu_trace.log", "w");
+	if (trace_fp) {
+		fprintf(trace_fp, "--- CPU RESET ---\n");
+		trace_counter = 1000000;
+	}
+#endif
 
 	/* Disable the PMMU on reset */
 	m68ki_cpu.pmmu_enabled = 0;

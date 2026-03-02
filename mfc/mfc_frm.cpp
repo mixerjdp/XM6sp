@@ -1428,6 +1428,8 @@ LONG CFrmWnd::OnKick(UINT /*uParam*/, LONG /*lParam*/)
 	RestoreDiskState();
 
 	// –³ŒÀƒ‹[ƒv
+	DWORD dwStartTick = ::GetTickCount();
+	BOOL bAutoResetDone = FALSE;
 	dwTick20 = ::GetTickCount();
 	dwTick40 = dwTick20;
 	dwTick80 = dwTick20;
@@ -1458,11 +1460,17 @@ LONG CFrmWnd::OnKick(UINT /*uParam*/, LONG /*lParam*/)
 			// XVƒJƒEƒ“ƒ^Up
 			dwNow = ::GetTickCount();
 
-			// ƒXƒe[ƒ^ƒXEŽÀs‚Í20ms
+			
 			if ((dwNow - dwTick20) >= 20) {
 				dwTick20 = dwNow;
 				pInfo->UpdateStatus();
 				UpdateExec();
+				
+				// HACK: Auto-reset para sortear el bug del Cold Boot
+				if (!bAutoResetDone && (dwNow - dwStartTick) >= 800) {
+					bAutoResetDone = TRUE;
+					OnReset();
+				}
 			}
 
 			if ((dwNow - dwTick40) >= 40) {
