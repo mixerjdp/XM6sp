@@ -979,7 +979,7 @@ int m68k_execute(int num_cycles)
 
 			/* Record previous program counter */
 			REG_PPC = REG_PC;
-
+						
 			/* Record previous D/A register state (in case of bus error) */
 			for (i = 15; i >= 0; i--){
 				REG_DA_SAVE[i] = REG_DA[i];
@@ -1099,6 +1099,8 @@ void m68k_pulse_bus_error(void)
 /* Pulse the RESET line on the CPU */
 void m68k_pulse_reset(void)
 {
+	
+
 	/* Disable the PMMU on reset */
 	m68ki_cpu.pmmu_enabled = 0;
 

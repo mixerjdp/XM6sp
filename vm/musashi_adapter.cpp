@@ -105,8 +105,14 @@ static void SyncContextFromMusashi(void)
 	s68000context.asp = m68k_get_reg(NULL, M68K_REG_USP);
 
 	// Odometer: cycles consumed so far in this run
+	// Must subtract musashi_wait_cycles to avoid double-counting.
+	// Wait() already adds to sch.cycle; if the odometer also includes
+	// Wait cycles, GetPassedTime() = GetCycle() + sch.cycle double-counts.
 	if (musashi_executing) {
-		s68000context.odometer = (unsigned)m68k_cycles_run();
+		int raw = (int)m68k_cycles_run();
+		int adjusted = raw - musashi_wait_cycles;
+		if (adjusted < 0) adjusted = 0;
+		s68000context.odometer = (unsigned)adjusted;
 	}
 }
 
@@ -284,7 +290,11 @@ void s68000SetContext(void *context)
 unsigned s68000readOdometer(void)
 {
 	if (musashi_executing) {
-		return (unsigned)m68k_cycles_run();
+		// Subtract Wait() cycles to avoid double-counting in GetPassedTime()
+		int raw = (int)m68k_cycles_run();
+		int adjusted = raw - musashi_wait_cycles;
+		if (adjusted < 0) adjusted = 0;
+		return (unsigned)adjusted;
 	}
 	return s68000context.odometer;
 }

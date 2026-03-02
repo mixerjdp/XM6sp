@@ -1,0 +1,577 @@
+//---------------------------------------------------------------------------
+//
+//	X68000 EMULATOR "XM6"
+//
+//	Copyright (C) 2001-2006 ???(ytanaka@ipc-tokai.or.jp)
+//	[ ??????RAM ]
+//
+//---------------------------------------------------------------------------
+
+#include "os.h"
+#include "xm6.h"
+#include "vm.h"
+#include "log.h"
+#include "filepath.h"
+#include "fileio.h"
+#include "cpu.h"
+#include "schedule.h"
+#include "memory.h"
+#include "config.h"
+#include "sram.h"
+
+//===========================================================================
+//
+//	??????RAM
+//
+//===========================================================================
+//#define SRAM_LOG
+
+//---------------------------------------------------------------------------
+//
+//	???????
+//
+//---------------------------------------------------------------------------
+SRAM::SRAM(VM *p) : MemDevice(p)
+{
+	// ????ID????
+	dev.id = MAKEID('S', 'R', 'A', 'M');
+	dev.desc = "Static RAM";
+
+	// ?????????????
+	memdev.first = 0xed0000;
+	memdev.last = 0xedffff;
+
+	// ??????
+	sram_size = 16;
+	write_en = FALSE;
+	mem_sync = TRUE;
+	changed = FALSE;
+}
+
+//---------------------------------------------------------------------------
+//
+//	???
+//
+//---------------------------------------------------------------------------
+BOOL FASTCALL SRAM::Init()
+{
+	Fileio fio;
+	int i;
+	BYTE data;
+
+	ASSERT(this);
+
+	// ?????
+	if (!MemDevice::Init()) {
+		return FALSE;
+	}
+
+	// ???
+	memset(sram, 0xff, sizeof(sram));
+
+	// ?????????
+	sram_path.SysFile(Filepath::SRAM);
+	fio.Load(sram_path, sram, sizeof(sram));
+
+	// ????????
+	for (i=0; i<sizeof(sram); i+=2) {
+		data = sram[i];
+		sram[i] = sram[i + 1];
+		sram[i + 1] = data;
+	}
+
+	// ????
+	ASSERT(!changed);
+
+	return TRUE;
+}
+
+//---------------------------------------------------------------------------
+//
+//	???????
+//
+//---------------------------------------------------------------------------
+void FASTCALL SRAM::Cleanup()
+{
+	Fileio fio;
+	int i;
+	BYTE data;
+
+	ASSERT(this);
+
+	// ?????
+	if (changed) {
+		// ????????
+		for (i=0; i<sizeof(sram); i+=2) {
+			data = sram[i];
+			sram[i] = sram[i + 1];
+			sram[i + 1] = data;
+		}
+
+		// ????
+		fio.Save(sram_path, sram, sram_size << 10);
+	}
+
+	// ??????
+	MemDevice::Cleanup();
+}
+
+//---------------------------------------------------------------------------
+//
+//	????
+//
+//---------------------------------------------------------------------------
+void FASTCALL SRAM::Reset()
+{
+	ASSERT(this);
+	ASSERT_DIAG();
+
+	LOG0(Log::Normal, "????");
+
+	// ??????????
+	write_en = FALSE;
+}
+
+//---------------------------------------------------------------------------
+//
+//	???
+//
+//---------------------------------------------------------------------------
+BOOL FASTCALL SRAM::Save(Fileio *fio, int /*ver*/)
+{
+	ASSERT(this);
+	ASSERT(fio);
+	ASSERT_DIAG();
+
+	LOG0(Log::Normal, "???");
+
+	// SRAM???
+	if (!fio->Write(&sram_size, sizeof(sram_size))) {
+		return FALSE;
+	}
+
+	// SRAM??(64KB????)
+	if (!fio->Write(&sram, sizeof(sram))) {
+		return FALSE;
+	}
+
+	// ?????????
+	if (!fio->Write(&write_en, sizeof(write_en))) {
+		return FALSE;
+	}
+
+	// ?????
+	if (!fio->Write(&mem_sync, sizeof(mem_sync))) {
+		return FALSE;
+	}
+
+	return TRUE;
+}
+
+//---------------------------------------------------------------------------
+//
+//	???
+//
+//---------------------------------------------------------------------------
+BOOL FASTCALL SRAM::Load(Fileio *fio, int /*ver*/)
+{
+	BYTE *buf;
+
+	ASSERT(this);
+	ASSERT(fio);
+	ASSERT_DIAG();
+
+	LOG0(Log::Normal, "???");
+
+	// ??????
+	try {
+		buf = new BYTE[sizeof(sram)];
+	}
+	catch (...) {
+		buf = NULL;
+	}
+	if (!buf) {
+		return FALSE;
+	}
+
+	// SRAM???
+	if (!fio->Read(&sram_size, sizeof(sram_size))) {
+		delete[] buf;
+		return FALSE;
+	}
+
+	// SRAM??(64KB????)
+	if (!fio->Read(buf, sizeof(sram))) {
+		delete[] buf;
+		return FALSE;
+	}
+
+	// ?????
+	if (memcmp(sram, buf, sizeof(sram)) != 0) {
+		memcpy(sram, buf, sizeof(sram));
+		changed = TRUE;
+	}
+
+	// ????????
+	delete[] buf;
+	buf = NULL;
+
+	// ?????????
+	if (!fio->Read(&write_en, sizeof(write_en))) {
+		return FALSE;
+	}
+
+	// ?????
+	if (!fio->Read(&mem_sync, sizeof(mem_sync))) {
+		return FALSE;
+	}
+
+	return TRUE;
+}
+
+//---------------------------------------------------------------------------
+//
+//	????
+//
+//---------------------------------------------------------------------------
+void FASTCALL SRAM::ApplyCfg(const Config *config)
+{
+	ASSERT(this);
+	ASSERT(config);
+	ASSERT_DIAG();
+
+	LOG0(Log::Normal, "????");
+
+	// SRAM???
+	if (config->sram_64k) {
+		sram_size = 64;
+#if defined(SRAM_LOG)
+		LOG0(Log::Detail, "?????? 64KB");
+#endif	// SRAM_LOG
+	}
+	else {
+		sram_size = 16;
+	}
+
+	// ???????????
+	mem_sync = config->ram_sramsync;
+}
+
+#if !defined(NDEBUG)
+//---------------------------------------------------------------------------
+//
+//	??
+//
+//---------------------------------------------------------------------------
+void FASTCALL SRAM::AssertDiag() const
+{
+	// ?????
+	MemDevice::AssertDiag();
+
+	ASSERT(this);
+	ASSERT(GetID() == MAKEID('S', 'R', 'A', 'M'));
+	ASSERT(memdev.first == 0xed0000);
+	ASSERT(memdev.last == 0xedffff);
+	ASSERT((sram_size == 16) || (sram_size == 32) || (sram_size == 48) || (sram_size == 64));
+	ASSERT((write_en == TRUE) || (write_en == FALSE));
+	ASSERT((mem_sync == TRUE) || (mem_sync == FALSE));
+	ASSERT((changed == TRUE) || (changed == FALSE));
+}
+#endif	// NDEBUG
+
+//---------------------------------------------------------------------------
+//
+//	???????
+//
+//---------------------------------------------------------------------------
+DWORD FASTCALL SRAM::ReadByte(DWORD addr)
+{
+	DWORD size;
+
+	ASSERT(this);
+	ASSERT((addr >= memdev.first) && (addr <= memdev.last));
+	ASSERT_DIAG();
+
+	// ???????
+	addr -= memdev.first;
+	size = (DWORD)(sram_size << 10);
+
+	// ???????
+	if (size <= addr) {
+		// ?????
+		cpu->BusErr(memdev.first + addr, TRUE);
+		return 0xff;
+	}
+
+	// ????
+	scheduler->Wait(1);
+
+	// ????(????????????)
+	return (DWORD)sram[addr ^ 1];
+}
+
+//---------------------------------------------------------------------------
+//
+//	???????
+//
+//---------------------------------------------------------------------------
+DWORD FASTCALL SRAM::ReadWord(DWORD addr)
+{
+	DWORD size;
+
+	ASSERT(this);
+	ASSERT((addr >= memdev.first) && (addr <= memdev.last));
+	ASSERT((addr & 1) == 0);
+	ASSERT_DIAG();
+
+	// ???????
+	addr -= memdev.first;
+	size = (DWORD)(sram_size << 10);
+
+	// ???????
+	if (size <= addr) {
+		// ?????
+		cpu->BusErr(memdev.first + addr, TRUE);
+		return 0xff;
+	}
+
+	// ????
+	scheduler->Wait(1);
+
+	// ????(?????????)
+	return (DWORD)(*(WORD *)&sram[addr]);
+}
+
+//---------------------------------------------------------------------------
+//
+//	???????
+//
+//---------------------------------------------------------------------------
+void FASTCALL SRAM::WriteByte(DWORD addr, DWORD data)
+{
+	DWORD size;
+
+	ASSERT(this);
+	ASSERT((addr >= memdev.first) && (addr <= memdev.last));
+	ASSERT(data < 0x100);
+	ASSERT_DIAG();
+
+	// ???????
+	addr -= memdev.first;
+	size = (DWORD)(sram_size << 10);
+
+	// ???????
+	if (size <= addr) {
+		// ?????
+		cpu->BusErr(memdev.first + addr, FALSE);
+		return;
+	}
+
+	// ??????????
+	if (!write_en) {
+		LOG1(Log::Warning, "?????? $%06X", memdev.first + addr);
+		return;
+	}
+
+	// ????
+	scheduler->Wait(1);
+
+	// ????$09?$00 or $10????????????????????????????????
+	// (??????Memory::Reset????????????????????????)
+	if ((addr == 0x09) && (data == 0x10)) {
+		if (cpu->GetPC() == 0xff03a8) {
+			if (mem_sync) {
+				LOG2(Log::Warning, "???????? $%06X <- $%02X", memdev.first + addr, data);
+				return;
+			}
+		}
+	}
+
+	// ????(????????????)
+	if (addr < 0x100) {
+		LOG2(Log::Detail, "????????? $%06X <- $%02X", memdev.first + addr, data);
+	}
+	if (sram[addr ^ 1] != (BYTE)data) {
+		sram[addr ^ 1] = (BYTE)data;
+		changed = TRUE;
+	}
+}
+
+//---------------------------------------------------------------------------
+//
+//	???????
+//
+//---------------------------------------------------------------------------
+void FASTCALL SRAM::WriteWord(DWORD addr, DWORD data)
+{
+	DWORD size;
+
+	ASSERT(this);
+	ASSERT((addr >= memdev.first) && (addr <= memdev.last));
+	ASSERT((addr & 1) == 0);
+	ASSERT(data < 0x10000);
+	ASSERT_DIAG();
+
+	// ???????
+	addr -= memdev.first;
+	size = (DWORD)(sram_size << 10);
+
+	// ???????
+	if (size <= addr) {
+		// ?????
+		cpu->BusErr(memdev.first + addr, FALSE);
+		return;
+	}
+
+	// ??????????
+	if (!write_en) {
+		LOG1(Log::Warning, "?????? $%06X", memdev.first + addr);
+		return;
+	}
+
+	// ????
+	scheduler->Wait(1);
+
+	// ????(?????????)
+	if (addr < 0x100) {
+		LOG2(Log::Detail, "????????? $%06X <- $%04X", memdev.first + addr, data);
+	}
+	if (*(WORD *)&sram[addr] != (WORD)data) {
+		*(WORD *)&sram[addr] = (WORD)data;
+		changed = TRUE;
+	}
+}
+
+//---------------------------------------------------------------------------
+//
+//	??????
+//
+//---------------------------------------------------------------------------
+DWORD FASTCALL SRAM::ReadOnly(DWORD addr) const
+{
+	DWORD size;
+
+	ASSERT(this);
+	ASSERT((addr >= memdev.first) && (addr <= memdev.last));
+	ASSERT_DIAG();
+
+	// ???????
+	addr -= memdev.first;
+	size = (DWORD)(sram_size << 10);
+
+	// ???????
+	if (size <= addr) {
+		return 0xff;
+	}
+
+	// ????(????????????)
+	return (DWORD)sram[addr ^ 1];
+}
+
+//---------------------------------------------------------------------------
+//
+//	SRAM??????
+//
+//---------------------------------------------------------------------------
+const BYTE* FASTCALL SRAM::GetSRAM() const
+{
+	ASSERT(this);
+	ASSERT_DIAG();
+
+	return sram;
+}
+
+//---------------------------------------------------------------------------
+//
+//	SRAM?????
+//
+//---------------------------------------------------------------------------
+int FASTCALL SRAM::GetSize() const
+{
+	ASSERT(this);
+	ASSERT_DIAG();
+
+	return sram_size;
+}
+
+//---------------------------------------------------------------------------
+//
+//	??????
+//
+//---------------------------------------------------------------------------
+void FASTCALL SRAM::WriteEnable(BOOL enable)
+{
+	ASSERT(this);
+	ASSERT_DIAG();
+
+	write_en = enable;
+
+	if (write_en) {
+		LOG0(Log::Detail, "SRAM??????");
+	}
+	else {
+		LOG0(Log::Detail, "SRAM??????");
+	}
+}
+
+//---------------------------------------------------------------------------
+//
+//	?????????
+//
+//---------------------------------------------------------------------------
+void FASTCALL SRAM::SetMemSw(DWORD offset, DWORD data)
+{
+	ASSERT(this);
+	ASSERT(offset < 0x100);
+	ASSERT(data < 0x100);
+	ASSERT_DIAG();
+
+	LOG2(Log::Detail, "????????? $%06X <- $%02X", memdev.first + offset, data);
+	if (sram[offset ^ 1] != (BYTE)data) {
+		sram[offset ^ 1] = (BYTE)data;
+		changed = TRUE;
+	}
+}
+
+//---------------------------------------------------------------------------
+//
+//	?????????
+//
+//---------------------------------------------------------------------------
+DWORD FASTCALL SRAM::GetMemSw(DWORD offset) const
+{
+	ASSERT(this);
+	ASSERT(offset < 0x100);
+	ASSERT_DIAG();
+
+	return (DWORD)sram[offset ^ 1];
+}
+
+//---------------------------------------------------------------------------
+//
+//	????????
+//
+//---------------------------------------------------------------------------
+void FASTCALL SRAM::UpdateBoot()
+{
+	WORD *ptr;
+
+	ASSERT(this);
+	ASSERT_DIAG();
+
+	// ??????
+	changed = TRUE;
+
+	// ??????($ED0044)
+	ptr = (WORD *)&sram[0x0044];
+
+	// ???????(Low)
+	if (ptr[1] != 0xffff) {
+		ptr[1] = ptr[1] + 1;
+		return;
+	}
+
+	// ???????(High)
+	ptr[1] = 0x0000;
+	ptr[0] = ptr[0] + 1;
+}

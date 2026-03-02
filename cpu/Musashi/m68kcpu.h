@@ -1938,8 +1938,11 @@ static inline void m68ki_exception_bus_error(void)
 
 	uint sr = m68ki_init_exception();
 
-	/* Note: This is implemented for 68010 only! */
-	m68ki_stack_frame_1000(REG_PPC, sr, EXCEPTION_BUS_ERROR);
+	if (CPU_TYPE_IS_010_PLUS(CPU_TYPE)) {
+		m68ki_stack_frame_1000(REG_PPC, sr, EXCEPTION_BUS_ERROR);
+	} else {
+		m68ki_stack_frame_buserr(sr);
+	}
 
 	m68ki_jump_vector(EXCEPTION_BUS_ERROR);
 
