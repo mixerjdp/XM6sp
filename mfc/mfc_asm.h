@@ -2,7 +2,7 @@
 //
 //	EMULADOR X68000 "XM6"
 //
-//	Copyright (C) 2001-2006 ÇoÇhÅD(ytanaka@ipc-tokai.or.jp)
+//	Copyright (C) 2001-2006 ÔøΩoÔøΩhÔøΩD(ytanaka@ipc-tokai.or.jp)
 //	[ Sub-ensamblador MFC ]
 //
 //---------------------------------------------------------------------------
@@ -25,6 +25,12 @@ BOOL IsMMXSupport(void);
 										// Verificacion de soporte MMX
 BOOL IsCMOVSupport(void);
 										// Verificacion de soporte CMOV
+
+// Portable C/C++ replacements (used selectively while ASM migration is in progress)
+BOOL IsMMXSupportPortable(void);
+BOOL IsCMOVSupportPortable(void);
+void SoundMMXPortable(DWORD *pSrc, WORD *pDst, int nBytes);
+void SoundEMMSPortable(void);
 
 void SoundMMX(DWORD *pSrc, WORD *pDst, int nBytes);
 										// Redimensionamiento de muestras de sonido (MMX)

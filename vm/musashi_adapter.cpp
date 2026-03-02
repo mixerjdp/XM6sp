@@ -26,7 +26,7 @@
 
 extern "C" void musashi_trace_hook(unsigned int pc)
 {
-	static FILE* trace_file = NULL;
+/*	static FILE* trace_file = NULL;
 	static int trace_count = 0;
 
 	if (trace_count >= 1000) return;
@@ -49,7 +49,7 @@ extern "C" void musashi_trace_hook(unsigned int pc)
 	if (trace_count >= 1000) {
 		fprintf(trace_file, "--- TRACE END ---\n");
 		fclose(trace_file);
-	}
+	}*/
 }
 
 //---------------------------------------------------------------------------

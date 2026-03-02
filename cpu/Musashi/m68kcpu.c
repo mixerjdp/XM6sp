@@ -987,7 +987,7 @@ int m68k_execute(int num_cycles)
 			REG_PPC = REG_PC;
 						
 #ifdef _DEBUG
-			if (trace_fp && trace_counter > 0) {
+			/*if (trace_fp && trace_counter > 0) {
 				int skip = 0;
 				if (REG_PC >= 0x00FF0510 && REG_PC <= 0x00FF0522) skip = 1;
 				if (REG_PC >= 0x00FFABC0 && REG_PC <= 0x00FFABC4) skip = 1;
@@ -1004,7 +1004,7 @@ int m68k_execute(int num_cycles)
 						fclose(trace_fp); trace_fp = NULL;
 					}
 				}
-			}
+			}*/
 #endif
 
 			/* Record previous D/A register state (in case of bus error) */
@@ -1127,12 +1127,12 @@ void m68k_pulse_bus_error(void)
 void m68k_pulse_reset(void)
 {
 #ifdef _DEBUG
-	if (trace_fp) { fclose(trace_fp); trace_fp = NULL; }
+	/*if (trace_fp) { fclose(trace_fp); trace_fp = NULL; }
 	trace_fp = fopen("C:\\sw\\XM62022\\cpu_trace.log", "w");
 	if (trace_fp) {
 		fprintf(trace_fp, "--- CPU RESET ---\n");
 		trace_counter = 1000000;
-	}
+	}*/
 #endif
 
 	/* Disable the PMMU on reset */

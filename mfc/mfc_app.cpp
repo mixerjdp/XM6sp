@@ -2,7 +2,7 @@
 //
 //	EMULADOR X68000 "XM6"
 //
-//	Copyright (C) 2001-2006 ‚o‚hD(ytanaka@ipc-tokai.or.jp)
+//	Copyright (C) 2001-2006 ï¿½oï¿½hï¿½D(ytanaka@ipc-tokai.or.jp)
 //	[ Aplicacion MFC ]
 //
 //---------------------------------------------------------------------------
@@ -239,7 +239,7 @@ BOOL FASTCALL FileOpenDlg(CWnd *pParent, LPSTR lpszPath, UINT nFilterID)
 //---------------------------------------------------------------------------
 //
 //	Dialogo de guardado de archivo
-//	* lpszPath siempre debe inicializarse antes de llamarBlpszExt‚Íæ“ª3•¶š‚Ì‚İ—LŒø
+//	* lpszPath siempre debe inicializarse antes de llamarï¿½BlpszExtï¿½Íæ“ª3ï¿½ï¿½ï¿½ï¿½ï¿½Ì‚İ—Lï¿½ï¿½
 //
 //---------------------------------------------------------------------------
 BOOL FASTCALL FileSaveDlg(CWnd *pParent, LPSTR lpszPath, LPCTSTR lpszExt, UINT nFilterID)
@@ -417,10 +417,10 @@ BOOL CApp::InitInstance()
 		CFile::Remove("SRAM.dat");
 	}
 	catch (CFileException* e) {
-		// Manejo de excepciones específicas de CFile
-		// Puedes acceder a la información detallada de la excepción utilizando métodos como GetErrorMessage
-		TRACE(_T("Excepción de CFile\n"));
-		e->Delete();  // Importante liberar la memoria de la excepción
+		// Manejo de excepciones especï¿½ficas de CFile
+		// Puedes acceder a la informaciï¿½n detallada de la excepciï¿½n utilizando mï¿½todos como GetErrorMessage
+		TRACE(_T("Excepciï¿½n de CFile\n"));
+		e->Delete();  // Importante liberar la memoria de la excepciï¿½n
 	}
 
 	// Inicializacion
@@ -533,7 +533,7 @@ BOOL FASTCALL CApp::CheckEnvironment()
 				// Obtener direccion de DrawTextW
 				pDrawTextW = (DRAWTEXTWIDE)::GetProcAddress(m_hUser32, _T("DrawTextW"));
 				if (pDrawTextW) {
-					// CP932‚Ö‚Ì•ÏŠ·‚Æ•¦‚ª‰Â?
+					// CP932ï¿½Ö‚Ì•ÏŠï¿½ï¿½Æ•ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½?
 					::bSupport932 = TRUE;
 				}
 			}
@@ -546,11 +546,11 @@ BOOL FASTCALL CApp::CheckEnvironment()
 
 	// Determinacion de CMOV
 	::bCMOV = FALSE;
-	if (::IsCMOVSupport()) {
+	if (::IsCMOVSupportPortable()) {
 		::bCMOV = TRUE;
 	}
 
-	// Determinacion de MMX(Windows98ˆÈ~‚Ì‚İ)
+	// Determinacion de MMX(Windows98ï¿½È~ï¿½Ì‚ï¿½)
 	::bMMX = FALSE;
 	if (ovi.dwMajorVersion >= 4) {
 		// Windows 95 o Windows NT 4 o posterior
@@ -560,7 +560,7 @@ BOOL FASTCALL CApp::CheckEnvironment()
 		}
 		else {
 			// Depende del procesador
-			::bMMX = ::IsMMXSupport();
+			::bMMX = ::IsMMXSupportPortable();
 		}
 	}
 
@@ -622,7 +622,7 @@ HWND FASTCALL CApp::SearchXM6Wnd()
 
 //---------------------------------------------------------------------------
 //
-//	XM6Busqueda de ventanaƒR[ƒ‹ƒoƒbƒN
+//	XM6Busqueda de ventanaï¿½Rï¿½[ï¿½ï¿½ï¿½oï¿½bï¿½N
 //
 //---------------------------------------------------------------------------
 BOOL CALLBACK CApp::EnumXM6Proc(HWND hWnd, LPARAM lParam)

@@ -1,2 +1,0 @@
-﻿..\vm\memory.cpp(552): error C2001: newline in constant [c:\sw\XM62022\00proj.vc7\XM6.vcxproj]
-..\vm\memory.cpp(552): fatal error C1057: unexpected end of file in macro expansion [c:\sw\XM62022\00proj.vc7\XM6.vcxproj]

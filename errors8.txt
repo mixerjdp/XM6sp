@@ -1,3 +1,0 @@
-﻿..\cpu\Musashi\m68kcpu.c(609): error C2086: 'jmp_buf m68ki_aerr_trap' : redefinition [c:\sw\XM62022\00proj.vc7\XM6.vcxproj]
-C:\Program Files (x86)\Microsoft Visual Studio 11.0\VC\include\swprintf.inl(41): error C2664: '_vswprintf_c_l' : cannot convert parameter 4 from 'void *' to '_locale_t' (..\cpu\Musashi\m68kcpu.c) [c:\sw\XM62022\00proj.vc7\XM6.vcxproj]
-C:\Program Files (x86)\Microsoft Visual Studio 11.0\VC\include\swprintf.inl(51): error C2664: '_vswprintf_c_l' : cannot convert parameter 4 from 'void *' to '_locale_t' (..\cpu\Musashi\m68kcpu.c) [c:\sw\XM62022\00proj.vc7\XM6.vcxproj]

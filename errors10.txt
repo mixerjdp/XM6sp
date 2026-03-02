@@ -1,1 +1,0 @@
-﻿..\cpu\Musashi\m68kcpu.c(610): error C2086: 'jmp_buf m68ki_aerr_trap' : redefinition [c:\sw\XM62022\00proj.vc7\XM6.vcxproj]

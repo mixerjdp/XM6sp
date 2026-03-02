@@ -250,6 +250,7 @@
     <ClCompile Include="..\mfc\mfc_rend.cpp" />
     <ClCompile Include="..\mfc\mfc_sch.cpp" />
     <ClCompile Include="..\mfc\mfc_snd.cpp" />
+    <ClCompile Include="..\mfc\mfc_asm_portable.cpp" />
     <ClCompile Include="..\mfc\mfc_stat.cpp" />
     <ClCompile Include="..\mfc\mfc_sub.cpp" />
     <ClCompile Include="..\mfc\mfc_sys.cpp" />
@@ -259,16 +260,6 @@
     <ClCompile Include="..\mfc\mfc_vid.cpp" />
     <ClCompile Include="..\mfc\mfc_w32.cpp" />
     <ClCompile Include="..\vm\core_soft.cpp" />
-  </ItemGroup>
-  <ItemGroup>
-    <CustomBuild Include="..\mfc\mfc_asm.asm">
-      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">nasmw -f win32 -o $(IntDir)%(Filename).obj %(FullPath)
-</Command>
-      <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(IntDir)%(Filename).obj;%(Outputs)</Outputs>
-      <Command Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">nasmw -f win32 -o $(IntDir)%(Filename).obj %(FullPath)
-</Command>
-      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(IntDir)%(Filename).obj;%(Outputs)</Outputs>
-    </CustomBuild>
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="..\mfc\mfc_res.rc">

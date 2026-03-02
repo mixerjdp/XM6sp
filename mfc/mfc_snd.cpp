@@ -2,8 +2,8 @@
 //
 //	X68000 EMULATOR "XM6"
 //
-//	Copyright (C) 2001-2006 ‚o‚hD(ytanaka@ipc-tokai.or.jp)
-//	[ MFC ƒTƒEƒ“ƒh ]
+//	Copyright (C) 2001-2006 ï¿½oï¿½hï¿½D(ytanaka@ipc-tokai.or.jp)
+//	[ MFC ï¿½Tï¿½Eï¿½ï¿½ï¿½h ]
 //
 //---------------------------------------------------------------------------
 
@@ -25,22 +25,22 @@
 
 //===========================================================================
 //
-//	ƒTƒEƒ“ƒh
+//	ï¿½Tï¿½Eï¿½ï¿½ï¿½h
 //
 //===========================================================================
 
 //---------------------------------------------------------------------------
 //
-//	ƒRƒ“ƒXƒgƒ‰ƒNƒ^
+//	ï¿½Rï¿½ï¿½ï¿½Xï¿½gï¿½ï¿½ï¿½Nï¿½^
 //
 //---------------------------------------------------------------------------
 CSound::CSound(CFrmWnd *pWnd) : CComponent(pWnd)
 {
-	// ƒRƒ“ƒ|[ƒlƒ“ƒgƒpƒ‰ƒ[ƒ^
+	// ï¿½Rï¿½ï¿½ï¿½|ï¿½[ï¿½lï¿½ï¿½ï¿½gï¿½pï¿½ï¿½ï¿½ï¿½ï¿½[ï¿½^
 	m_dwID = MAKEID('S', 'N', 'D', ' ');
 	m_strDesc = _T("Sound Renderer");
 
-	// ƒ[ƒN‰Šú‰»(İ’èƒpƒ‰ƒ[ƒ^)
+	// ï¿½ï¿½ï¿½[ï¿½Nï¿½ï¿½ï¿½ï¿½ï¿½ï¿½(ï¿½İ’ï¿½pï¿½ï¿½ï¿½ï¿½ï¿½[ï¿½^)
 	m_uRate = 0;
 	m_uTick = 90;
 	m_uPoll = 7;
@@ -52,7 +52,7 @@ CSound::CSound(CFrmWnd *pWnd) : CComponent(pWnd)
 	m_nFMVol = 54;
 	m_nADPCMVol = 52;
 
-	// ƒ[ƒN‰Šú‰»(DirectSound‚ÆƒIƒuƒWƒFƒNƒg)
+	// ï¿½ï¿½ï¿½[ï¿½Nï¿½ï¿½ï¿½ï¿½ï¿½ï¿½(DirectSoundï¿½ÆƒIï¿½uï¿½Wï¿½Fï¿½Nï¿½g)
 	m_lpDS = NULL;
 	m_lpDSp = NULL;
 	m_lpDSb = NULL;
@@ -65,7 +65,7 @@ CSound::CSound(CFrmWnd *pWnd) : CComponent(pWnd)
 	m_nDeviceNum = 0;
 	m_nSelectDevice = 0;
 
-	// ƒ[ƒN‰Šú‰»(WAV˜^‰¹)
+	// ï¿½ï¿½ï¿½[ï¿½Nï¿½ï¿½ï¿½ï¿½ï¿½ï¿½(WAVï¿½^ï¿½ï¿½)
 	m_pWav = NULL;
 	m_nWav = 0;
 	m_dwWav = 0;
@@ -73,42 +73,42 @@ CSound::CSound(CFrmWnd *pWnd) : CComponent(pWnd)
 
 //---------------------------------------------------------------------------
 //
-//	‰Šú‰»
+//	ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 //
 //---------------------------------------------------------------------------
 BOOL FASTCALL CSound::Init()
 {
-	// Šî–{ƒNƒ‰ƒX
+	// ï¿½ï¿½{ï¿½Nï¿½ï¿½ï¿½X
 	if (!CComponent::Init()) {
 		return FALSE;
 	}
 
-	// ƒXƒPƒWƒ…[ƒ‰æ“¾
+	// ï¿½Xï¿½Pï¿½Wï¿½ï¿½ï¿½[ï¿½ï¿½ï¿½æ“¾
 	m_pScheduler = (Scheduler*)::GetVM()->SearchDevice(MAKEID('S', 'C', 'H', 'E'));
 	ASSERT(m_pScheduler);
 
-	// OPMIFæ“¾
+	// OPMIFï¿½æ“¾
 	m_pOPMIF = (OPMIF*)::GetVM()->SearchDevice(MAKEID('O', 'P', 'M', ' '));
 	ASSERT(m_pOPMIF);
 
-	// ADPCMæ“¾
+	// ADPCMï¿½æ“¾
 	m_pADPCM = (ADPCM*)::GetVM()->SearchDevice(MAKEID('A', 'P', 'C', 'M'));
 	ASSERT(m_pADPCM);
 
-	// SCSIæ“¾
+	// SCSIï¿½æ“¾
 	m_pSCSI = (SCSI*)::GetVM()->SearchDevice(MAKEID('S', 'C', 'S', 'I'));
 	ASSERT(m_pSCSI);
 
-	// ƒfƒoƒCƒX—ñ‹“
+	// ï¿½fï¿½oï¿½Cï¿½Xï¿½ï¿½
 	EnumDevice();
 
-	// ‚±‚±‚Å‚Í‰Šú‰»‚µ‚È‚¢(ApplyCfg‚É”C‚¹‚é)
+	// ï¿½ï¿½ï¿½ï¿½ï¿½Å‚Íï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½È‚ï¿½(ApplyCfgï¿½É”Cï¿½ï¿½ï¿½ï¿½)
 	return TRUE;
 }
 
 //---------------------------------------------------------------------------
 //
-//	‰Šú‰»ƒTƒu
+//	ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Tï¿½u
 //
 //---------------------------------------------------------------------------
 BOOL FASTCALL CSound::InitSub()
@@ -117,7 +117,7 @@ BOOL FASTCALL CSound::InitSub()
 	DSBUFFERDESC dsbd;
 	WAVEFORMATEX wfex;
 
-	// rate==0‚È‚çA‰½‚à‚µ‚È‚¢
+	// rate==0ï¿½È‚ï¿½Aï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½È‚ï¿½
 	if (m_uRate == 0) {
 		return TRUE;
 	}
@@ -128,7 +128,7 @@ BOOL FASTCALL CSound::InitSub()
 	ASSERT(!m_lpBuf);
 	ASSERT(!m_pOPM);
 
-	// ƒfƒoƒCƒX‚ª‚È‚¯‚ê‚Î0‚Å‚µA‚»‚ê‚Å‚à‚È‚¯‚ê‚Îreturn
+	// ï¿½fï¿½oï¿½Cï¿½Xï¿½ï¿½ï¿½È‚ï¿½ï¿½ï¿½ï¿½0ï¿½Åï¿½ï¿½ï¿½ï¿½Aï¿½ï¿½ï¿½ï¿½Å‚ï¿½ï¿½È‚ï¿½ï¿½ï¿½ï¿½return
 	if (m_nDeviceNum <= m_nSelectDevice) {
 		if (m_nDeviceNum == 0) {
 			return TRUE;
@@ -136,18 +136,18 @@ BOOL FASTCALL CSound::InitSub()
 		m_nSelectDevice = 0;
 	}
 
-	// DiectSoundƒIƒuƒWƒFƒNƒgì¬
+	// DiectSoundï¿½Iï¿½uï¿½Wï¿½Fï¿½Nï¿½gï¿½ì¬
 	if (FAILED(DirectSoundCreate(m_lpGUID[m_nSelectDevice], &m_lpDS, NULL))) {
-		// ƒfƒoƒCƒX‚Íg—p’†
+		// ï¿½fï¿½oï¿½Cï¿½Xï¿½Ígï¿½pï¿½ï¿½
 		return TRUE;
 	}
 
-	// ‹¦’²ƒŒƒxƒ‹‚ğİ’è(—Dæ‹¦’²)
+	// ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½xï¿½ï¿½ï¿½ï¿½İ’ï¿½(ï¿½Dï¿½æ‹¦ï¿½ï¿½)
 	if (FAILED(m_lpDS->SetCooperativeLevel(m_pFrmWnd->m_hWnd, DSSCL_PRIORITY))) {
 		return FALSE;
 	}
 
-	// ƒvƒ‰ƒCƒ}ƒŠƒoƒbƒtƒ@‚ğì¬
+	// ï¿½vï¿½ï¿½ï¿½Cï¿½}ï¿½ï¿½ï¿½oï¿½bï¿½tï¿½@ï¿½ï¿½ï¿½ì¬
 	memset(&dsbd, 0, sizeof(dsbd));
 	dsbd.dwSize = sizeof(dsbd);
 	dsbd.dwFlags = DSBCAPS_PRIMARYBUFFER;
@@ -155,7 +155,7 @@ BOOL FASTCALL CSound::InitSub()
 		return FALSE;
 	}
 
-	// ƒvƒ‰ƒCƒ}ƒŠƒoƒbƒtƒ@‚ÌƒtƒH[ƒ}ƒbƒg‚ğw’è
+	// ï¿½vï¿½ï¿½ï¿½Cï¿½}ï¿½ï¿½ï¿½oï¿½bï¿½tï¿½@ï¿½Ìƒtï¿½Hï¿½[ï¿½}ï¿½bï¿½gï¿½ï¿½ï¿½wï¿½ï¿½
 	memset(&wfex, 0, sizeof(wfex));
 	wfex.wFormatTag = WAVE_FORMAT_PCM;
 	wfex.nChannels = 2;
@@ -167,7 +167,7 @@ BOOL FASTCALL CSound::InitSub()
 		return FALSE;
 	}
 
-	// ƒZƒJƒ“ƒ_ƒŠƒoƒbƒtƒ@‚ğì¬
+	// ï¿½Zï¿½Jï¿½ï¿½ï¿½_ï¿½ï¿½ï¿½oï¿½bï¿½tï¿½@ï¿½ï¿½ï¿½ì¬
 	memset(&pcmwf, 0, sizeof(pcmwf));
 	pcmwf.wf.wFormatTag = WAVE_FORMAT_PCM;
 	pcmwf.wf.nChannels = 2;
@@ -179,14 +179,14 @@ BOOL FASTCALL CSound::InitSub()
 	dsbd.dwSize = sizeof(dsbd);
 	dsbd.dwFlags = DSBCAPS_STICKYFOCUS | DSBCAPS_GETCURRENTPOSITION2 | DSBCAPS_CTRLVOLUME;
 	dsbd.dwBufferBytes = (pcmwf.wf.nAvgBytesPerSec * m_uTick) / 1000;
-	dsbd.dwBufferBytes = ((dsbd.dwBufferBytes + 7) >> 3) << 3;	// 8ƒoƒCƒg‹«ŠE
+	dsbd.dwBufferBytes = ((dsbd.dwBufferBytes + 7) >> 3) << 3;	// 8ï¿½oï¿½Cï¿½gï¿½ï¿½ï¿½E
 	m_uBufSize = dsbd.dwBufferBytes;
 	dsbd.lpwfxFormat = (LPWAVEFORMATEX)&pcmwf;
 	if (FAILED(m_lpDS->CreateSoundBuffer(&dsbd, &m_lpDSb, NULL))) {
 		return FALSE;
 	}
 
-	// ƒTƒEƒ“ƒhƒoƒbƒtƒ@‚ğì¬(ƒZƒJƒ“ƒ_ƒŠƒoƒbƒtƒ@‚Æ“¯ˆê‚Ì’·‚³A1’PˆÊDWORD)
+	// ï¿½Tï¿½Eï¿½ï¿½ï¿½hï¿½oï¿½bï¿½tï¿½@ï¿½ï¿½ï¿½ì¬(ï¿½Zï¿½Jï¿½ï¿½ï¿½_ï¿½ï¿½ï¿½oï¿½bï¿½tï¿½@ï¿½Æ“ï¿½ï¿½ï¿½Ì’ï¿½ï¿½ï¿½ï¿½A1ï¿½Pï¿½ï¿½DWORD)
 	try {
 		m_lpBuf = new DWORD [ m_uBufSize / 2 ];
 	}
@@ -198,17 +198,17 @@ BOOL FASTCALL CSound::InitSub()
 	}
 	memset(m_lpBuf, sizeof(DWORD) * (m_uBufSize / 2), m_uBufSize);
 
-	// OPMƒfƒoƒCƒX(•W€)‚ğì¬
+	// OPMï¿½fï¿½oï¿½Cï¿½X(ï¿½Wï¿½ï¿½)ï¿½ï¿½ï¿½ì¬
 	m_pOPM = new FM::OPM;
 	m_pOPM->Init(4000000, m_uRate, true);
 	m_pOPM->Reset();
 	m_pOPM->SetVolume(m_nFMVol);
 
-	// OPMIF‚Ö’Ê’m
+	// OPMIFï¿½Ö’Ê’m
 	m_pOPMIF->InitBuf(m_uRate);
 	m_pOPMIF->SetEngine(m_pOPM);
 
-	// ƒCƒl[ƒuƒ‹‚È‚ç‰‰‘tŠJn
+	// ï¿½Cï¿½lï¿½[ï¿½uï¿½ï¿½ï¿½È‚ç‰‰ï¿½tï¿½Jï¿½n
 	if (m_bEnable) {
 		Play();
 	}
@@ -218,46 +218,46 @@ BOOL FASTCALL CSound::InitSub()
 
 //---------------------------------------------------------------------------
 //
-//	ƒNƒŠ[ƒ“ƒAƒbƒv
+//	ï¿½Nï¿½ï¿½ï¿½[ï¿½ï¿½ï¿½Aï¿½bï¿½v
 //
 //---------------------------------------------------------------------------
 void FASTCALL CSound::Cleanup()
 {
-	// ƒNƒŠ[ƒ“ƒAƒbƒvƒTƒu
+	// ï¿½Nï¿½ï¿½ï¿½[ï¿½ï¿½ï¿½Aï¿½bï¿½vï¿½Tï¿½u
 	CleanupSub();
 
-	// Šî–{ƒNƒ‰ƒX
+	// ï¿½ï¿½{ï¿½Nï¿½ï¿½ï¿½X
 	CComponent::Cleanup();
 }
 
 //---------------------------------------------------------------------------
 //
-//	ƒNƒŠ[ƒ“ƒAƒbƒvƒTƒu
+//	ï¿½Nï¿½ï¿½ï¿½[ï¿½ï¿½ï¿½Aï¿½bï¿½vï¿½Tï¿½u
 //
 //---------------------------------------------------------------------------
 void FASTCALL CSound::CleanupSub()
 {
-	// ƒTƒEƒ“ƒh’â~
+	// ï¿½Tï¿½Eï¿½ï¿½ï¿½hï¿½ï¿½~
 	Stop();
 
-	// OPMIF‚Ö’Ê’m
+	// OPMIFï¿½Ö’Ê’m
 	if (m_pOPMIF) {
 		m_pOPMIF->SetEngine(NULL);
 	}
 
-	// OPM‚ğ‰ğ•ú
+	// OPMï¿½ï¿½ï¿½ï¿½ï¿½
 	if (m_pOPM) {
 		delete m_pOPM;
 		m_pOPM = NULL;
 	}
 
-	// ƒTƒEƒ“ƒhì¬ƒoƒbƒtƒ@‚ğ‰ğ•ú
+	// ï¿½Tï¿½Eï¿½ï¿½ï¿½hï¿½ì¬ï¿½oï¿½bï¿½tï¿½@ï¿½ï¿½ï¿½ï¿½ï¿½
 	if (m_lpBuf) {
 		delete[] m_lpBuf;
 		m_lpBuf = NULL;
 	}
 
-	// DirectSoundBuffer‚ğ‰ğ•ú
+	// DirectSoundBufferï¿½ï¿½ï¿½ï¿½ï¿½
 	if (m_lpDSb) {
 		m_lpDSb->Release();
 		m_lpDSb = NULL;
@@ -267,19 +267,19 @@ void FASTCALL CSound::CleanupSub()
 		m_lpDSp = NULL;
 	}
 
-	// DirectSound‚ğ‰ğ•ú
+	// DirectSoundï¿½ï¿½ï¿½ï¿½ï¿½
 	if (m_lpDS) {
 		m_lpDS->Release();
 		m_lpDS = NULL;
 	}
 
-	// uRate‚ğƒNƒŠƒA
+	// uRateï¿½ï¿½ï¿½Nï¿½ï¿½ï¿½A
 	m_uRate = 0;
 }
 
 //---------------------------------------------------------------------------
 //
-//	İ’è“K—p
+//	ï¿½İ’ï¿½Kï¿½p
 //
 //---------------------------------------------------------------------------
 void FASTCALL CSound::ApplyCfg(const Config *pConfig)
@@ -289,7 +289,7 @@ void FASTCALL CSound::ApplyCfg(const Config *pConfig)
 	ASSERT(this);
 	ASSERT(pConfig);
 
-	// Ä‰Šú‰»ƒ`ƒFƒbƒN
+	// ï¿½Äï¿½ï¿½ï¿½ï¿½ï¿½ï¿½`ï¿½Fï¿½bï¿½N
 	bFlag = FALSE;
 	if (m_nSelectDevice != pConfig->sound_device) {
 		bFlag = TRUE;
@@ -301,43 +301,43 @@ void FASTCALL CSound::ApplyCfg(const Config *pConfig)
 		bFlag = TRUE;
 	}
 
-	// Ä‰Šú‰»
+	// ï¿½Äï¿½ï¿½ï¿½ï¿½ï¿½
 	if (bFlag) {
 		CleanupSub();
 		m_nSelectDevice = pConfig->sound_device;
 		m_uRate = RateTable[pConfig->sample_rate];
 		m_uTick = pConfig->primary_buffer * 10;
 
-		// 62.5kHz‚Ìê‡‚ÍAˆê“x96kHz‚ÉƒZƒbƒg‚µ‚Ä‚©‚ç(Prodigy7.1‘Îô)
+		// 62.5kHzï¿½Ìê‡ï¿½ÍAï¿½ï¿½x96kHzï¿½ÉƒZï¿½bï¿½gï¿½ï¿½ï¿½Ä‚ï¿½ï¿½ï¿½(Prodigy7.1ï¿½Îï¿½)
 		if (m_uRate == 62500) {
-			// 96kHz‚Å‰Šú‰»
+			// 96kHzï¿½Åï¿½ï¿½ï¿½ï¿½ï¿½
 			m_uRate = 96000;
 			InitSub();
 
-			// ‰Šú‰»‚Å‚«‚½ê‡‚ÍA­‚µ‚¾‚¯‰‰‘t‚·‚é
+			// ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Å‚ï¿½ï¿½ï¿½ï¿½ê‡ï¿½ÍAï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½tï¿½ï¿½ï¿½ï¿½
 			if (m_lpDSb) {
-				// ƒXƒ^[ƒg
+				// ï¿½Xï¿½^ï¿½[ï¿½g
 				if (!m_bEnable) {
 					m_lpDSb->Play(0, 0, DSBPLAY_LOOPING);
 				}
 
-				// ­‚µ‚¾‚¯
+				// ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 				::Sleep(20);
 
-				// ~‚ß‚é
+				// ï¿½~ï¿½ß‚ï¿½
 				if (!m_bEnable) {
 					m_lpDSb->Stop();
 				}
 			}
 
-			// 62.5kHz‚Å‰Šú‰»
+			// 62.5kHzï¿½Åï¿½ï¿½ï¿½ï¿½ï¿½
 			CleanupSub();
 			m_uRate = 62500;
 		}
 		InitSub();
 	}
 
-	// í‚Éİ’è
+	// ï¿½ï¿½Éİ’ï¿½
 	if (m_pOPM) {
 		SetVolume(pConfig->master_volume);
 		m_pOPMIF->EnableFM(pConfig->fm_enable);
@@ -351,7 +351,7 @@ void FASTCALL CSound::ApplyCfg(const Config *pConfig)
 
 //---------------------------------------------------------------------------
 //
-//	ƒTƒ“ƒvƒŠƒ“ƒOƒŒ[ƒgƒe[ƒuƒ‹
+//	ï¿½Tï¿½ï¿½ï¿½vï¿½ï¿½ï¿½ï¿½ï¿½Oï¿½ï¿½ï¿½[ï¿½gï¿½eï¿½[ï¿½uï¿½ï¿½
 //
 //---------------------------------------------------------------------------
 const UINT CSound::RateTable[] = {
@@ -365,20 +365,20 @@ const UINT CSound::RateTable[] = {
 
 //---------------------------------------------------------------------------
 //
-//	—LŒøƒtƒ‰ƒOİ’è
+//	ï¿½Lï¿½ï¿½ï¿½tï¿½ï¿½ï¿½Oï¿½İ’ï¿½
 //
 //---------------------------------------------------------------------------
 void FASTCALL CSound::Enable(BOOL bEnable)
 {
 	if (bEnable) {
-		// –³Œø¨—LŒø ‰‰‘tŠJn
+		// ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Lï¿½ï¿½ ï¿½ï¿½ï¿½tï¿½Jï¿½n
 		if (!m_bEnable) {
 			m_bEnable = TRUE;
 			Play();
 		}
 	}
 	else {
-		// —LŒø¨–³Œø ‰‰‘t’â~
+		// ï¿½Lï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½tï¿½ï¿½~
 		if (m_bEnable) {
 			m_bEnable = FALSE;
 			Stop();
@@ -388,19 +388,19 @@ void FASTCALL CSound::Enable(BOOL bEnable)
 
 //---------------------------------------------------------------------------
 //
-//	‰‰‘tŠJn
+//	ï¿½ï¿½ï¿½tï¿½Jï¿½n
 //
 //---------------------------------------------------------------------------
 void FASTCALL CSound::Play()
 {
 	ASSERT(m_bEnable);
 
-	// Šù‚É‰‰‘tŠJn‚È‚ç•K—v‚È‚µ
+	// ï¿½ï¿½ï¿½É‰ï¿½ï¿½tï¿½Jï¿½nï¿½È‚ï¿½Kï¿½vï¿½È‚ï¿½
 	if (m_bPlay) {
 		return;
 	}
 
-	// ƒ|ƒCƒ“ƒ^‚ª—LŒø‚È‚ç‰‰‘tŠJn
+	// ï¿½|ï¿½Cï¿½ï¿½ï¿½^ï¿½ï¿½ï¿½Lï¿½ï¿½ï¿½È‚ç‰‰ï¿½tï¿½Jï¿½n
 	if (m_pOPM) {
 		m_lpDSb->Play(0, 0, DSBPLAY_LOOPING);
 		m_bPlay = TRUE;
@@ -411,22 +411,22 @@ void FASTCALL CSound::Play()
 
 //---------------------------------------------------------------------------
 //
-//	‰‰‘t’â~
+//	ï¿½ï¿½ï¿½tï¿½ï¿½~
 //
 //---------------------------------------------------------------------------
 void FASTCALL CSound::Stop()
 {
-	// Šù‚É‰‰‘t’â~‚È‚ç•K—v‚È‚µ
+	// ï¿½ï¿½ï¿½É‰ï¿½ï¿½tï¿½ï¿½~ï¿½È‚ï¿½Kï¿½vï¿½È‚ï¿½
 	if (!m_bPlay) {
 		return;
 	}
 
-	// WAVƒZ[ƒuI—¹
+	// WAVï¿½Zï¿½[ï¿½uï¿½Iï¿½ï¿½
 	if (m_pWav) {
 		EndSaveWav();
 	}
 
-	// ƒ|ƒCƒ“ƒ^‚ª—LŒø‚È‚ç‰‰‘t’â~
+	// ï¿½|ï¿½Cï¿½ï¿½ï¿½^ï¿½ï¿½ï¿½Lï¿½ï¿½ï¿½È‚ç‰‰ï¿½tï¿½ï¿½~
 	if (m_pOPM) {
 		m_lpDSb->Stop();
 		m_bPlay = FALSE;
@@ -435,7 +435,7 @@ void FASTCALL CSound::Stop()
 
 //---------------------------------------------------------------------------
 //
-//	is
+//	ï¿½iï¿½s
 //
 //---------------------------------------------------------------------------
 void FASTCALL CSound::Process(BOOL bRun)
@@ -452,31 +452,31 @@ void FASTCALL CSound::Process(BOOL bRun)
 
 	ASSERT(this);
 
-	// ƒJƒEƒ“ƒgˆ—(m_nPoll‰ñ‚É‚P‰ñA‚½‚¾‚µVM’â~’†‚Íí)
+	// ï¿½Jï¿½Eï¿½ï¿½ï¿½gï¿½ï¿½ï¿½ï¿½(m_nPollï¿½ï¿½É‚Pï¿½ï¿½Aï¿½ï¿½ï¿½ï¿½ï¿½ï¿½VMï¿½ï¿½~ï¿½ï¿½ï¿½Íí)
 	m_uCount++;
 	if ((m_uCount < m_uPoll) && bRun) {
 		return;
 	}
 	m_uCount = 0;
 
-	// ƒfƒBƒZ[ƒuƒ‹‚È‚çA‰½‚à‚µ‚È‚¢
+	// ï¿½fï¿½Bï¿½Zï¿½[ï¿½uï¿½ï¿½ï¿½È‚ï¿½Aï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½È‚ï¿½
 	if (!m_bEnable) {
 		return;
 	}
 
-	// ‰Šú‰»‚³‚ê‚Ä‚¢‚È‚¯‚ê‚ÎA‰½‚à‚µ‚È‚¢
+	// ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ä‚ï¿½ï¿½È‚ï¿½ï¿½ï¿½ÎAï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½È‚ï¿½
 	if (!m_pOPM) {
 		m_pScheduler->SetSoundTime(0);
 		return;
 	}
 
-	// ƒvƒŒƒCó‘Ô‚Å‚È‚¯‚ê‚ÎAŠÖŒW‚È‚µ
+	// ï¿½vï¿½ï¿½ï¿½Cï¿½ï¿½Ô‚Å‚È‚ï¿½ï¿½ï¿½ÎAï¿½ÖŒWï¿½È‚ï¿½
 	if (!m_bPlay) {
 		m_pScheduler->SetSoundTime(0);
 		return;
 	}
 
-	// Œ»İ‚ÌƒvƒŒƒCˆÊ’u‚ğ“¾‚é(ƒoƒCƒg’PˆÊ)
+	// ï¿½ï¿½ï¿½İ‚Ìƒvï¿½ï¿½ï¿½Cï¿½Ê’uï¿½ğ“¾‚ï¿½(ï¿½oï¿½Cï¿½gï¿½Pï¿½ï¿½)
 	ASSERT(m_lpDSb);
 	ASSERT(m_lpBuf);
 	if (FAILED(m_lpDSb->GetCurrentPosition(&dwOffset, &dwWrite))) {
@@ -485,7 +485,7 @@ void FASTCALL CSound::Process(BOOL bRun)
 	ASSERT(m_lpDSb);
 	ASSERT(m_lpBuf);
 
-	// ‘O‰ñ‘‚«‚ñ‚¾ˆÊ’u‚©‚çA‹ó‚«ƒTƒCƒY‚ğŒvZ(ƒoƒCƒg’PˆÊ)
+	// ï¿½Oï¿½ñ‘‚ï¿½ï¿½ï¿½ï¿½ñ‚¾ˆÊ’uï¿½ï¿½ï¿½ï¿½Aï¿½ó‚«ƒTï¿½Cï¿½Yï¿½ï¿½ï¿½vï¿½Z(ï¿½oï¿½Cï¿½gï¿½Pï¿½ï¿½)
 	if (m_dwWrite <= dwOffset) {
 		dwRequest = dwOffset - m_dwWrite;
 	}
@@ -494,32 +494,32 @@ void FASTCALL CSound::Process(BOOL bRun)
 		dwRequest += dwOffset;
 	}
 
-	// ‹ó‚«ƒTƒCƒY‚ª‘S‘Ì‚Ì1/4‚ğ’´‚¦‚Ä‚¢‚È‚¯‚ê‚ÎAŸ‚Ì‹@‰ï‚É
+	// ï¿½ó‚«ƒTï¿½Cï¿½Yï¿½ï¿½ï¿½Sï¿½Ì‚ï¿½1/4ï¿½ğ’´‚ï¿½ï¿½Ä‚ï¿½ï¿½È‚ï¿½ï¿½ï¿½ÎAï¿½ï¿½ï¿½Ì‹@ï¿½ï¿½ï¿½
 	if (dwRequest < (m_uBufSize / 4)) {
 		return;
 	}
 
-	// ‹ó‚«ƒTƒ“ƒvƒ‹‚ÉŠ·Z(L,R‚Å1‚Â‚Æ”‚¦‚é)
+	// ï¿½ó‚«ƒTï¿½ï¿½ï¿½vï¿½ï¿½ï¿½ÉŠï¿½ï¿½Z(L,Rï¿½ï¿½1ï¿½Â‚Æï¿½ï¿½ï¿½ï¿½ï¿½)
 	ASSERT((dwRequest & 3) == 0);
 	dwRequest /= 4;
 
-	// m_lpBuf‚Éƒoƒbƒtƒ@ƒf[ƒ^‚ğì¬B‚Ü‚¸bRunƒ`ƒFƒbƒN
+	// m_lpBufï¿½Éƒoï¿½bï¿½tï¿½@ï¿½fï¿½[ï¿½^ï¿½ï¿½ï¿½ì¬ï¿½Bï¿½Ü‚ï¿½bRunï¿½`ï¿½Fï¿½bï¿½N
 	if (!bRun) {
 		memset(m_lpBuf, 0, m_uBufSize * 2);
 		m_pOPMIF->InitBuf(m_uRate);
 	}
 	else {
-		// OPM‚É‘Î‚µ‚ÄAˆ——v‹‚Æ‘¬“x§Œä
+		// OPMï¿½É‘Î‚ï¿½ï¿½ÄAï¿½ï¿½ï¿½ï¿½ï¿½vï¿½ï¿½ï¿½Æ‘ï¿½ï¿½xï¿½ï¿½ï¿½ï¿½
 		dwReady = m_pOPMIF->ProcessBuf();
 		m_pOPMIF->GetBuf(m_lpBuf, (int)dwRequest);
 		if (dwReady < dwRequest) {
 			dwRequest = dwReady;
 		}
 
-		// ADPCM‚É‘Î‚µ‚ÄAƒf[ƒ^‚ğ—v‹(‰ÁZ‚·‚é‚±‚Æ)
+		// ADPCMï¿½É‘Î‚ï¿½ï¿½ÄAï¿½fï¿½[ï¿½^ï¿½ï¿½vï¿½ï¿½(ï¿½ï¿½ï¿½Zï¿½ï¿½ï¿½é‚±ï¿½ï¿½)
 		m_pADPCM->GetBuf(m_lpBuf, (int)dwRequest);
 
-		// ADPCM‚Ì“¯Šúˆ—
+		// ADPCMï¿½Ì“ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 		if (dwReady > dwRequest) {
 			m_pADPCM->Wait(dwReady - dwRequest);
 		}
@@ -527,40 +527,40 @@ void FASTCALL CSound::Process(BOOL bRun)
 			m_pADPCM->Wait(0);
 		}
 
-		// SCSI‚É‘Î‚µ‚ÄAƒf[ƒ^‚ğ—v‹(‰ÁZ‚·‚é‚±‚Æ)
+		// SCSIï¿½É‘Î‚ï¿½ï¿½ÄAï¿½fï¿½[ï¿½^ï¿½ï¿½vï¿½ï¿½(ï¿½ï¿½ï¿½Zï¿½ï¿½ï¿½é‚±ï¿½ï¿½)
 		m_pSCSI->GetBuf(m_lpBuf, (int)dwRequest, m_uRate);
 	}
 
-	// Ÿ‚¢‚ÅƒƒbƒN
+	// ï¿½ï¿½ï¿½ï¿½ï¿½Åƒï¿½ï¿½bï¿½N
 	hr = m_lpDSb->Lock(m_dwWrite, (dwRequest * 4),
 						(void**)&pBuf1, &dwSize1,
 						(void**)&pBuf2, &dwSize2,
 						0);
-	// ƒoƒbƒtƒ@‚ª¸‚í‚ê‚Ä‚¢‚ê‚ÎAƒŠƒXƒgƒA
+	// ï¿½oï¿½bï¿½tï¿½@ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ä‚ï¿½ï¿½ï¿½ÎAï¿½ï¿½ï¿½Xï¿½gï¿½A
 	if (hr == DSERR_BUFFERLOST) {
 		m_lpDSb->Restore();
 	}
-	// ƒƒbƒN¬Œ÷‚µ‚È‚¯‚ê‚ÎA‘±‚¯‚Ä‚àˆÓ–¡‚ª‚È‚¢
+	// ï¿½ï¿½ï¿½bï¿½Nï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½È‚ï¿½ï¿½ï¿½ÎAï¿½ï¿½ï¿½ï¿½ï¿½Ä‚ï¿½ï¿½Ó–ï¿½ï¿½ï¿½ï¿½È‚ï¿½
 	if (FAILED(hr)) {
 		m_dwWrite = dwOffset;
 		return;
 	}
 
-	// —Êq‰»bit=16‚ğ‘O’ñ‚Æ‚·‚é
+	// ï¿½Êqï¿½ï¿½bit=16ï¿½ï¿½Oï¿½ï¿½Æ‚ï¿½ï¿½ï¿½
 	ASSERT((dwSize1 & 1) == 0);
 	ASSERT((dwSize2 & 1) == 0);
 
-	// MMX–½—ß‚É‚æ‚éƒpƒbƒN(dwSize1+dwSize2‚ÅA•½‹Ï5000`15000’ö“x‚Íˆ—‚·‚é)
-	SoundMMX(m_lpBuf, pBuf1, dwSize1);
+	// MMXï¿½ï¿½ï¿½ß‚É‚ï¿½ï¿½pï¿½bï¿½N(dwSize1+dwSize2ï¿½ÅAï¿½ï¿½ï¿½ï¿½5000ï¿½`15000ï¿½ï¿½ï¿½xï¿½Íï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½)
+	SoundMMXPortable(m_lpBuf, pBuf1, dwSize1);
 	if (dwSize2 > 0) {
-		SoundMMX(&m_lpBuf[dwSize1 / 2], pBuf2, dwSize2);
+		SoundMMXPortable(&m_lpBuf[dwSize1 / 2], pBuf2, dwSize2);
 	}
-	SoundEMMS();
+	SoundEMMSPortable();
 
-	// ƒAƒ“ƒƒbƒN
+	// ï¿½Aï¿½ï¿½ï¿½ï¿½ï¿½bï¿½N
 	m_lpDSb->Unlock(pBuf1, dwSize1, pBuf2, dwSize2);
 
-	// m_dwWriteXV
+	// m_dwWriteï¿½Xï¿½V
 	m_dwWrite += dwSize1;
 	m_dwWrite += dwSize2;
 	if (m_dwWrite >= m_uBufSize) {
@@ -568,7 +568,7 @@ void FASTCALL CSound::Process(BOOL bRun)
 	}
 	ASSERT(m_dwWrite < m_uBufSize);
 
-	// “®ì’†‚È‚çWAVXV
+	// ï¿½ï¿½ï¿½ì’†ï¿½È‚ï¿½WAVï¿½Xï¿½V
 	if (bRun && m_pWav) {
 		ProcessSaveWav((int*)m_lpBuf, (dwSize1 + dwSize2));
 	}
@@ -576,7 +576,7 @@ void FASTCALL CSound::Process(BOOL bRun)
 
 //---------------------------------------------------------------------------
 //
-//	‰¹—ÊƒZƒbƒg
+//	ï¿½ï¿½ï¿½ÊƒZï¿½bï¿½g
 //
 //---------------------------------------------------------------------------
 void FASTCALL CSound::SetVolume(int nVolume)
@@ -586,23 +586,23 @@ void FASTCALL CSound::SetVolume(int nVolume)
 	ASSERT(this);
 	ASSERT((nVolume >= 0) && (nVolume <= 100));
 
-	// ‰Šú‰»‚³‚ê‚Ä‚¢‚È‚¯‚ê‚Îİ’è‚µ‚È‚¢
+	// ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ä‚ï¿½ï¿½È‚ï¿½ï¿½ï¿½Îİ’è‚µï¿½È‚ï¿½
 	if (!m_pOPM) {
 		return;
 	}
 
-	// ’l‚ğ•ÏŠ·
+	// ï¿½lï¿½ï¿½ÏŠï¿½
 	lVolume = 100 - nVolume;
 	lVolume *= (DSBVOLUME_MAX - DSBVOLUME_MIN);
 	lVolume /= -200;
 
-	// İ’è
+	// ï¿½İ’ï¿½
 	m_lpDSb->SetVolume(lVolume);
 }
 
 //---------------------------------------------------------------------------
 //
-//	‰¹—Êæ“¾
+//	ï¿½ï¿½ï¿½Êæ“¾
 //
 //---------------------------------------------------------------------------
 int FASTCALL CSound::GetVolume()
@@ -611,18 +611,18 @@ int FASTCALL CSound::GetVolume()
 
 	ASSERT(this);
 
-	// ‰Šú‰»‚³‚ê‚Ä‚¢‚È‚¯‚ê‚ÎAŠù’è‚Ì’l‚ğó‚¯æ‚é
+	// ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ä‚ï¿½ï¿½È‚ï¿½ï¿½ï¿½ÎAï¿½ï¿½ï¿½ï¿½Ì’lï¿½ï¿½ï¿½ó‚¯ï¿½ï¿½
 	if (!m_pOPM) {
 		return m_nMaster;
 	}
 
-	// ’l‚ğæ“¾
+	// ï¿½lï¿½ï¿½ï¿½æ“¾
 	ASSERT(m_lpDSb);
 	if (FAILED(m_lpDSb->GetVolume(&lVolume))) {
 		return 0;
 	}
 
-	// ’l‚ğ•â³
+	// ï¿½lï¿½ï¿½â³
 	lVolume *= -200;
 	lVolume /= (DSBVOLUME_MAX - DSBVOLUME_MIN);
 	ASSERT((lVolume >= 0) && (lVolume <= 200));
@@ -638,7 +638,7 @@ int FASTCALL CSound::GetVolume()
 
 //---------------------------------------------------------------------------
 //
-//	FM‰¹Œ¹‰¹—ÊƒZƒbƒg
+//	FMï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ÊƒZï¿½bï¿½g
 //
 //---------------------------------------------------------------------------
 void FASTCALL CSound::SetFMVol(int nVol)
@@ -646,10 +646,10 @@ void FASTCALL CSound::SetFMVol(int nVol)
 	ASSERT(this);
 	ASSERT((nVol >= 0) && (nVol <= 100));
 
-	// ƒRƒs[
+	// ï¿½Rï¿½sï¿½[
 	m_nFMVol = nVol;
 
-	// İ’è
+	// ï¿½İ’ï¿½
 	if (m_pOPM) {
 		m_pOPM->SetVolume(m_nFMVol);
 	}
@@ -657,7 +657,7 @@ void FASTCALL CSound::SetFMVol(int nVol)
 
 //---------------------------------------------------------------------------
 //
-//	ADPCM‰¹Œ¹‰¹—ÊƒZƒbƒg
+//	ADPCMï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ÊƒZï¿½bï¿½g
 //
 //---------------------------------------------------------------------------
 void FASTCALL CSound::SetADPCMVol(int nVol)
@@ -665,31 +665,31 @@ void FASTCALL CSound::SetADPCMVol(int nVol)
 	ASSERT(this);
 	ASSERT((nVol >= 0) && (nVol <= 100));
 
-	// ƒRƒs[
+	// ï¿½Rï¿½sï¿½[
 	m_nADPCMVol = nVol;
 
-	// İ’è
+	// ï¿½İ’ï¿½
 	ASSERT(m_pADPCM);
 	m_pADPCM->SetVolume(m_nADPCMVol);
 }
 
 //---------------------------------------------------------------------------
 //
-//	ƒfƒoƒCƒX—ñ‹“
+//	ï¿½fï¿½oï¿½Cï¿½Xï¿½ï¿½
 //
 //---------------------------------------------------------------------------
 void FASTCALL CSound::EnumDevice()
 {
-	// ‰Šú‰»
+	// ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 	m_nDeviceNum = 0;
 
-	// —ñ‹“ŠJn
+	// ï¿½ñ‹“ŠJï¿½n
 	DirectSoundEnumerate(EnumCallback, this);
 }
 
 //---------------------------------------------------------------------------
 //
-//	ƒfƒoƒCƒX—ñ‹“ƒR[ƒ‹ƒoƒbƒN
+//	ï¿½fï¿½oï¿½Cï¿½Xï¿½ñ‹“ƒRï¿½[ï¿½ï¿½ï¿½oï¿½bï¿½N
 //
 //---------------------------------------------------------------------------
 BOOL CALLBACK CSound::EnumCallback(LPGUID lpGuid, LPCTSTR lpDescr, LPCTSTR /*lpModule*/, LPVOID lpContext)
@@ -697,15 +697,15 @@ BOOL CALLBACK CSound::EnumCallback(LPGUID lpGuid, LPCTSTR lpDescr, LPCTSTR /*lpM
 	CSound *pSound;
 	int index;
 
-	// thisƒ|ƒCƒ“ƒ^ó‚¯æ‚è
+	// thisï¿½|ï¿½Cï¿½ï¿½ï¿½^ï¿½ó‚¯ï¿½ï¿½
 	pSound = (CSound*)lpContext;
 	ASSERT(pSound);
 
-	// ƒJƒŒƒ“ƒg‚ª16–¢–‚È‚ç‹L‰¯
+	// ï¿½Jï¿½ï¿½ï¿½ï¿½ï¿½gï¿½ï¿½16ï¿½ï¿½ï¿½ï¿½ï¿½È‚ï¿½Lï¿½ï¿½
 	if (pSound->m_nDeviceNum < 16) {
 		index = pSound->m_nDeviceNum;
 
-		// “o˜^
+		// ï¿½oï¿½^
 		pSound->m_lpGUID[index] = lpGuid;
 		pSound->m_DeviceDescr[index] = lpDescr;
 		pSound->m_nDeviceNum++;
@@ -716,7 +716,7 @@ BOOL CALLBACK CSound::EnumCallback(LPGUID lpGuid, LPCTSTR lpDescr, LPCTSTR /*lpM
 
 //---------------------------------------------------------------------------
 //
-//	ƒ}ƒXƒ^‰¹—Êæ“¾
+//	ï¿½}ï¿½Xï¿½^ï¿½ï¿½ï¿½Êæ“¾
 //
 //---------------------------------------------------------------------------
 int FASTCALL CSound::GetMasterVol(int& nMaximum)
@@ -733,32 +733,32 @@ int FASTCALL CSound::GetMasterVol(int& nMaximum)
 
 	ASSERT(this);
 
-	// g—p‚µ‚Ä‚¢‚éƒfƒoƒCƒX”Ô†‚ª0‚Å‚ ‚é‚±‚Æ‚ª•K—v
+	// ï¿½gï¿½pï¿½ï¿½ï¿½Ä‚ï¿½ï¿½ï¿½fï¿½oï¿½Cï¿½Xï¿½Ôï¿½ï¿½ï¿½0ï¿½Å‚ï¿½ï¿½é‚±ï¿½Æ‚ï¿½ï¿½Kï¿½v
 	if ((m_nSelectDevice != 0) || (m_uRate == 0)) {
 		return -1;
 	}
 
-	// ƒ~ƒLƒT‚ğƒI[ƒvƒ“
+	// ï¿½~ï¿½Lï¿½Tï¿½ï¿½ï¿½Iï¿½[ï¿½vï¿½ï¿½
 	mmResult = ::mixerOpen(&hMixer, 0, 0, 0,
 					MIXER_OBJECTF_MIXER);
 	if (mmResult != MMSYSERR_NOERROR) {
-		// ƒ~ƒLƒTƒI[ƒvƒ“ƒGƒ‰[
+		// ï¿½~ï¿½Lï¿½Tï¿½Iï¿½[ï¿½vï¿½ï¿½ï¿½Gï¿½ï¿½ï¿½[
 		return -1;
 	}
 
-	// ƒ‰ƒCƒ“î•ñ‚ğ“¾‚é
+	// ï¿½ï¿½ï¿½Cï¿½ï¿½ï¿½ï¿½ï¿½ğ“¾‚ï¿½
 	memset(&mixLine, 0, sizeof(mixLine));
 	mixLine.cbStruct = sizeof(mixLine);
 	mixLine.dwComponentType = MIXERLINE_COMPONENTTYPE_DST_SPEAKERS;
 	mmResult = ::mixerGetLineInfo((HMIXEROBJ)hMixer, &mixLine,
 					MIXER_OBJECTF_HMIXER | MIXER_GETLINEINFOF_COMPONENTTYPE);
 	if (mmResult != MMSYSERR_NOERROR) {
-		// ƒNƒ[ƒY‚µ‚ÄI—¹
+		// ï¿½Nï¿½ï¿½ï¿½[ï¿½Yï¿½ï¿½ï¿½ÄIï¿½ï¿½
 		::mixerClose(hMixer);
 		return -1;
 	}
 
-	// ƒRƒ“ƒgƒ[ƒ‹î•ñ‚ğ“¾‚é
+	// ï¿½Rï¿½ï¿½ï¿½gï¿½ï¿½ï¿½[ï¿½ï¿½ï¿½ï¿½ï¿½ğ“¾‚ï¿½
 	memset(&mixLCs, 0, sizeof(mixLCs));
 	mixLCs.cbStruct = sizeof(mixLCs);
 	mixLCs.dwLineID = mixLine.dwLineID;
@@ -770,12 +770,12 @@ int FASTCALL CSound::GetMasterVol(int& nMaximum)
 	mmResult = ::mixerGetLineControls((HMIXEROBJ)hMixer, &mixLCs,
 					MIXER_OBJECTF_HMIXER | MIXER_GETLINECONTROLSF_ONEBYTYPE);
 	if (mmResult != MMSYSERR_NOERROR) {
-		// ƒNƒ[ƒY‚µ‚ÄI—¹
+		// ï¿½Nï¿½ï¿½ï¿½[ï¿½Yï¿½ï¿½ï¿½ÄIï¿½ï¿½
 		::mixerClose(hMixer);
 		return -1;
 	}
 
-	// ƒRƒ“ƒgƒ[ƒ‹‚ÌŒÂ”‚ğŒ©‚ÄAƒƒ‚ƒŠŠm•Û
+	// ï¿½Rï¿½ï¿½ï¿½gï¿½ï¿½ï¿½[ï¿½ï¿½ï¿½ÌŒÂï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ÄAï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½mï¿½ï¿½
 	nNum = 1;
 	if (mixLine.cChannels > 0) {
 		nNum *= mixLine.cChannels;
@@ -785,7 +785,7 @@ int FASTCALL CSound::GetMasterVol(int& nMaximum)
 	}
 	pData = new MIXERCONTROLDETAILS_UNSIGNED[nNum];
 
-	// ƒRƒ“ƒgƒ[ƒ‹‚Ì’l‚ğ“¾‚é
+	// ï¿½Rï¿½ï¿½ï¿½gï¿½ï¿½ï¿½[ï¿½ï¿½ï¿½Ì’lï¿½ğ“¾‚ï¿½
 	memset(&mixDetail, 0, sizeof(mixDetail));
 	mixDetail.cbStruct = sizeof(mixDetail);
 	mixDetail.dwControlID = mixCtrl.dwControlID;
@@ -796,25 +796,25 @@ int FASTCALL CSound::GetMasterVol(int& nMaximum)
 	mmResult = ::mixerGetControlDetails((HMIXEROBJ)hMixer, &mixDetail,
 					MIXER_OBJECTF_HMIXER | MIXER_GETCONTROLDETAILSF_VALUE);
 	if (mmResult != MMSYSERR_NOERROR) {
-		// ƒNƒ[ƒY‚µ‚ÄI—¹
+		// ï¿½Nï¿½ï¿½ï¿½[ï¿½Yï¿½ï¿½ï¿½ÄIï¿½ï¿½
 		delete[] pData;
 		::mixerClose(hMixer);
 		return -1;
 	}
 
-	// Å¬’l‚ª0‚Ìê‡‚Ì‚İ
+	// ï¿½Åï¿½ï¿½lï¿½ï¿½0ï¿½Ìê‡ï¿½Ì‚ï¿½
 	if (mixCtrl.Bounds.lMinimum != 0) {
-		// ƒNƒ[ƒY‚µ‚ÄI—¹
+		// ï¿½Nï¿½ï¿½ï¿½[ï¿½Yï¿½ï¿½ï¿½ÄIï¿½ï¿½
 		delete[] pData;
 		::mixerClose(hMixer);
 		return -1;
 	}
 
-	// ’l‚ğˆ—
+	// ï¿½lï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 	nValue = pData[0].dwValue;
 	nMaximum = mixCtrl.Bounds.lMaximum;
 
-	// ¬Œ÷
+	// ï¿½ï¿½ï¿½ï¿½
 	delete[] pData;
 	::mixerClose(hMixer);
 
@@ -823,7 +823,7 @@ int FASTCALL CSound::GetMasterVol(int& nMaximum)
 
 //---------------------------------------------------------------------------
 //
-//	ƒ}ƒXƒ^‰¹—ÊƒZƒbƒg
+//	ï¿½}ï¿½Xï¿½^ï¿½ï¿½ï¿½ÊƒZï¿½bï¿½g
 //
 //---------------------------------------------------------------------------
 void FASTCALL CSound::SetMasterVol(int nVolume)
@@ -840,32 +840,32 @@ void FASTCALL CSound::SetMasterVol(int nVolume)
 
 	ASSERT(this);
 
-	// g—p‚µ‚Ä‚¢‚éƒfƒoƒCƒX”Ô†‚ª0‚Å‚ ‚é‚±‚Æ‚ª•K—v
+	// ï¿½gï¿½pï¿½ï¿½ï¿½Ä‚ï¿½ï¿½ï¿½fï¿½oï¿½Cï¿½Xï¿½Ôï¿½ï¿½ï¿½0ï¿½Å‚ï¿½ï¿½é‚±ï¿½Æ‚ï¿½ï¿½Kï¿½v
 	if ((m_nSelectDevice != 0) || (m_uRate == 0)) {
 		return;
 	}
 
-	// ƒ~ƒLƒT‚ğƒI[ƒvƒ“
+	// ï¿½~ï¿½Lï¿½Tï¿½ï¿½ï¿½Iï¿½[ï¿½vï¿½ï¿½
 	mmResult = ::mixerOpen(&hMixer, 0, 0, 0,
 					MIXER_OBJECTF_MIXER);
 	if (mmResult != MMSYSERR_NOERROR) {
-		// ƒ~ƒLƒTƒI[ƒvƒ“ƒGƒ‰[
+		// ï¿½~ï¿½Lï¿½Tï¿½Iï¿½[ï¿½vï¿½ï¿½ï¿½Gï¿½ï¿½ï¿½[
 		return;
 	}
 
-	// ƒ‰ƒCƒ“î•ñ‚ğ“¾‚é
+	// ï¿½ï¿½ï¿½Cï¿½ï¿½ï¿½ï¿½ï¿½ğ“¾‚ï¿½
 	memset(&mixLine, 0, sizeof(mixLine));
 	mixLine.cbStruct = sizeof(mixLine);
 	mixLine.dwComponentType = MIXERLINE_COMPONENTTYPE_DST_SPEAKERS;
 	mmResult = ::mixerGetLineInfo((HMIXEROBJ)hMixer, &mixLine,
 					MIXER_OBJECTF_HMIXER | MIXER_GETLINEINFOF_COMPONENTTYPE);
 	if (mmResult != MMSYSERR_NOERROR) {
-		// ƒNƒ[ƒY‚µ‚ÄI—¹
+		// ï¿½Nï¿½ï¿½ï¿½[ï¿½Yï¿½ï¿½ï¿½ÄIï¿½ï¿½
 		::mixerClose(hMixer);
 		return;
 	}
 
-	// ƒRƒ“ƒgƒ[ƒ‹î•ñ‚ğ“¾‚é
+	// ï¿½Rï¿½ï¿½ï¿½gï¿½ï¿½ï¿½[ï¿½ï¿½ï¿½ï¿½ï¿½ğ“¾‚ï¿½
 	memset(&mixLCs, 0, sizeof(mixLCs));
 	mixLCs.cbStruct = sizeof(mixLCs);
 	mixLCs.dwLineID = mixLine.dwLineID;
@@ -877,12 +877,12 @@ void FASTCALL CSound::SetMasterVol(int nVolume)
 	mmResult = ::mixerGetLineControls((HMIXEROBJ)hMixer, &mixLCs,
 					MIXER_OBJECTF_HMIXER | MIXER_GETLINECONTROLSF_ONEBYTYPE);
 	if (mmResult != MMSYSERR_NOERROR) {
-		// ƒNƒ[ƒY‚µ‚ÄI—¹
+		// ï¿½Nï¿½ï¿½ï¿½[ï¿½Yï¿½ï¿½ï¿½ÄIï¿½ï¿½
 		::mixerClose(hMixer);
 		return;
 	}
 
-	// ƒRƒ“ƒgƒ[ƒ‹‚ÌŒÂ”‚ğŒ©‚ÄAƒƒ‚ƒŠŠm•Û
+	// ï¿½Rï¿½ï¿½ï¿½gï¿½ï¿½ï¿½[ï¿½ï¿½ï¿½ÌŒÂï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ÄAï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½mï¿½ï¿½
 	nNum = 1;
 	if (mixLine.cChannels > 0) {
 		nNum *= mixLine.cChannels;
@@ -892,7 +892,7 @@ void FASTCALL CSound::SetMasterVol(int nVolume)
 	}
 	pData = new MIXERCONTROLDETAILS_UNSIGNED[nNum];
 
-	// ƒRƒ“ƒgƒ[ƒ‹‚Ì’l‚ğ“¾‚é
+	// ï¿½Rï¿½ï¿½ï¿½gï¿½ï¿½ï¿½[ï¿½ï¿½ï¿½Ì’lï¿½ğ“¾‚ï¿½
 	memset(&mixDetail, 0, sizeof(mixDetail));
 	mixDetail.cbStruct = sizeof(mixDetail);
 	mixDetail.dwControlID = mixCtrl.dwControlID;
@@ -903,20 +903,20 @@ void FASTCALL CSound::SetMasterVol(int nVolume)
 	mmResult = ::mixerGetControlDetails((HMIXEROBJ)hMixer, &mixDetail,
 					MIXER_OBJECTF_HMIXER | MIXER_GETCONTROLDETAILSF_VALUE);
 	if (mmResult != MMSYSERR_NOERROR) {
-		// ƒNƒ[ƒY‚µ‚ÄI—¹
+		// ï¿½Nï¿½ï¿½ï¿½[ï¿½Yï¿½ï¿½ï¿½ÄIï¿½ï¿½
 		delete[] pData;
 		::mixerClose(hMixer);
 		return;
 	}
 
-	// ’l‚ğˆ—
+	// ï¿½lï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 	ASSERT(mixCtrl.Bounds.lMinimum <= nVolume);
 	ASSERT(nVolume <= mixCtrl.Bounds.lMaximum);
 	for (nIndex=0; nIndex<nNum; nIndex++) {
 		pData[nIndex].dwValue = (DWORD)nVolume;
 	}
 
-	// ƒRƒ“ƒgƒ[ƒ‹‚Ì’l‚ğİ’è
+	// ï¿½Rï¿½ï¿½ï¿½gï¿½ï¿½ï¿½[ï¿½ï¿½ï¿½Ì’lï¿½ï¿½İ’ï¿½
 	mmResult = mixerSetControlDetails((HMIXEROBJ)hMixer, &mixDetail,
 					MIXER_OBJECTF_HMIXER | MIXER_GETCONTROLDETAILSF_VALUE);
 	if (mmResult != MMSYSERR_NOERROR) {
@@ -925,14 +925,14 @@ void FASTCALL CSound::SetMasterVol(int nVolume)
 		return;
 	}
 
-	// ¬Œ÷
+	// ï¿½ï¿½ï¿½ï¿½
 	::mixerClose(hMixer);
 	delete[] pData;
 }
 
 //---------------------------------------------------------------------------
 //
-//	WAVƒZ[ƒuŠJn
+//	WAVï¿½Zï¿½[ï¿½uï¿½Jï¿½n
 //
 //---------------------------------------------------------------------------
 BOOL FASTCALL CSound::StartSaveWav(LPCTSTR lpszWavFile)
@@ -943,27 +943,27 @@ BOOL FASTCALL CSound::StartSaveWav(LPCTSTR lpszWavFile)
 	ASSERT(this);
 	ASSERT(lpszWavFile);
 
-	// Šù‚É˜^‰¹’†‚È‚çƒGƒ‰[
+	// ï¿½ï¿½ï¿½É˜^ï¿½ï¿½ï¿½ï¿½ï¿½È‚ï¿½Gï¿½ï¿½ï¿½[
 	if (m_pWav) {
 		return FALSE;
 	}
-	// Ä¶’†‚Å‚È‚¯‚ê‚ÎƒGƒ‰[
+	// ï¿½Äï¿½ï¿½ï¿½ï¿½Å‚È‚ï¿½ï¿½ï¿½ÎƒGï¿½ï¿½ï¿½[
 	if (!m_bEnable || !m_bPlay) {
 		return FALSE;
 	}
 
-	// ƒtƒ@ƒCƒ‹ì¬‚ğ‚İ‚é
+	// ï¿½tï¿½@ï¿½Cï¿½ï¿½ï¿½ì¬ï¿½ï¿½ï¿½ï¿½ï¿½İ‚ï¿½
 	if (!m_WavFile.Open(lpszWavFile, Fileio::WriteOnly)) {
 		return FALSE;
 	}
 
-	// RIFFƒwƒbƒ_‘‚«‚İ
+	// RIFFï¿½wï¿½bï¿½_ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 	if (!m_WavFile.Write((BYTE*)"RIFF0123WAVEfmt ", 16)) {
 		m_WavFile.Close();
 		return FALSE;
 	}
 
-	// WAVEFORMATEX‘‚«‚İ
+	// WAVEFORMATEXï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 	dwSize = sizeof(wfex);
 	if (!m_WavFile.Write((BYTE*)&dwSize, sizeof(dwSize))) {
 		m_WavFile.Close();
@@ -982,13 +982,13 @@ BOOL FASTCALL CSound::StartSaveWav(LPCTSTR lpszWavFile)
 		return FALSE;
 	}
 
-	// dataƒTƒuƒwƒbƒ_‘‚«‚İ
+	// dataï¿½Tï¿½uï¿½wï¿½bï¿½_ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 	if (!m_WavFile.Write((BYTE*)"data0123", 8)) {
 		m_WavFile.Close();
 		return FALSE;
 	}
 
-	// ˜^‰¹ƒoƒbƒtƒ@‚ğŠm•Û
+	// ï¿½^ï¿½ï¿½ï¿½oï¿½bï¿½tï¿½@ï¿½ï¿½ï¿½mï¿½ï¿½
 	try {
 		m_pWav = new WORD[0x20000];
 	}
@@ -999,11 +999,11 @@ BOOL FASTCALL CSound::StartSaveWav(LPCTSTR lpszWavFile)
 		return FALSE;
 	}
 
-	// ƒ[ƒN‰Šú‰»
+	// ï¿½ï¿½ï¿½[ï¿½Nï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 	m_nWav = 0;
 	m_dwWav = 0;
 
-	// ƒRƒ“ƒ|[ƒlƒ“ƒg‚Ìƒtƒ‰ƒO‚ğƒNƒŠƒA
+	// ï¿½Rï¿½ï¿½ï¿½|ï¿½[ï¿½lï¿½ï¿½ï¿½gï¿½Ìƒtï¿½ï¿½ï¿½Oï¿½ï¿½ï¿½Nï¿½ï¿½ï¿½A
 	m_pOPMIF->ClrStarted();
 	m_pADPCM->ClrStarted();
 
@@ -1012,14 +1012,14 @@ BOOL FASTCALL CSound::StartSaveWav(LPCTSTR lpszWavFile)
 
 //---------------------------------------------------------------------------
 //
-//	WAVƒZ[ƒu’†‚©
+//	WAVï¿½Zï¿½[ï¿½uï¿½ï¿½ï¿½ï¿½
 //
 //---------------------------------------------------------------------------
 BOOL FASTCALL CSound::IsSaveWav() const
 {
 	ASSERT(this);
 
-	// ƒoƒbƒtƒ@‚Åƒ`ƒFƒbƒN
+	// ï¿½oï¿½bï¿½tï¿½@ï¿½Åƒ`ï¿½Fï¿½bï¿½N
 	if (m_pWav) {
 		return TRUE;
 	}
@@ -1029,7 +1029,7 @@ BOOL FASTCALL CSound::IsSaveWav() const
 
 //---------------------------------------------------------------------------
 //
-//	WAVƒZ[ƒu
+//	WAVï¿½Zï¿½[ï¿½u
 //
 //---------------------------------------------------------------------------
 void FASTCALL CSound::ProcessSaveWav(int *pStream, DWORD dwLength)
@@ -1044,19 +1044,19 @@ void FASTCALL CSound::ProcessSaveWav(int *pStream, DWORD dwLength)
 	ASSERT(dwLength > 0);
 	ASSERT((dwLength & 3) == 0);
 
-	// Startedƒtƒ‰ƒO‚ğ’²‚×A‚Æ‚à‚ÉƒNƒŠƒA‚È‚çƒXƒLƒbƒv
+	// Startedï¿½tï¿½ï¿½ï¿½Oï¿½ğ’²‚×Aï¿½Æ‚ï¿½ï¿½ÉƒNï¿½ï¿½ï¿½Aï¿½È‚ï¿½Xï¿½Lï¿½bï¿½v
 	if (!m_pOPMIF->IsStarted() && !m_pADPCM->IsStarted()) {
 		return;
 	}
 
-	// ‘O”¼EŒã”¼‚É•ª‚¯‚é•K—v‚ª‚ ‚é‚©ƒ`ƒFƒbƒN
+	// ï¿½Oï¿½ï¿½ï¿½Eï¿½ã”¼ï¿½É•ï¿½ï¿½ï¿½ï¿½ï¿½Kï¿½vï¿½ï¿½ï¿½ï¿½ï¿½é‚©ï¿½`ï¿½Fï¿½bï¿½N
 	dwPrev = 0;
 	if ((dwLength + m_nWav) >= 256 * 1024) {
 		dwPrev = 256 * 1024 - m_nWav;
 		dwLength -= dwPrev;
 	}
 
-	// ‘O”¼
+	// ï¿½Oï¿½ï¿½
 	if (dwPrev > 0) {
 		nLen = (int)(dwPrev >> 1);
 		for (i=0; i<nLen; i++) {
@@ -1074,7 +1074,7 @@ void FASTCALL CSound::ProcessSaveWav(int *pStream, DWORD dwLength)
 		m_nWav = 0;
 	}
 
-	// Œã”¼
+	// ï¿½ã”¼
 	nLen = (int)(dwLength >> 1);
 	for (i=0; i<nLen; i++) {
 		rawData = *pStream++;
@@ -1093,30 +1093,30 @@ void FASTCALL CSound::ProcessSaveWav(int *pStream, DWORD dwLength)
 
 //---------------------------------------------------------------------------
 //
-//	WAVƒZ[ƒuI—¹
+//	WAVï¿½Zï¿½[ï¿½uï¿½Iï¿½ï¿½
 //
 //---------------------------------------------------------------------------
 void FASTCALL CSound::EndSaveWav()
 {
 	DWORD dwLength;
 
-	// c‚Á‚½ƒf[ƒ^‚ğ‘‚«‚Ş
+	// ï¿½cï¿½ï¿½ï¿½ï¿½ï¿½fï¿½[ï¿½^ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 	if (m_nWav > 0) {
 		m_WavFile.Write(m_pWav, m_nWav);
 		m_nWav = 0;
 	}
 
-	// ƒwƒbƒ_C³
+	// ï¿½wï¿½bï¿½_ï¿½Cï¿½ï¿½
 	m_WavFile.Seek(4);
 	dwLength = m_dwWav + sizeof(WAVEFORMATEX) + 20;
 	m_WavFile.Write((BYTE*)&dwLength, sizeof(dwLength));
 	m_WavFile.Seek(sizeof(WAVEFORMATEX) + 24);
 	m_WavFile.Write((BYTE*)&m_dwWav, sizeof(m_dwWav));
 
-	// ƒtƒ@ƒCƒ‹ƒNƒ[ƒY
+	// ï¿½tï¿½@ï¿½Cï¿½ï¿½ï¿½Nï¿½ï¿½ï¿½[ï¿½Y
 	m_WavFile.Close();
 
-	// ƒƒ‚ƒŠ‰ğ•ú
+	// ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 	delete[] m_pWav;
 	m_pWav = NULL;
 }
