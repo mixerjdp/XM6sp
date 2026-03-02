@@ -1,4 +1,4 @@
-//---------------------------------------------------------------------------
+﻿//---------------------------------------------------------------------------
 //
 //	X68000 EMULATOR "XM6"
 //
@@ -1376,57 +1376,60 @@ LONG CFrmWnd::OnKick(UINT /*uParam*/, LONG /*lParam*/)
 		::GetVM()->PowerSW(FALSE);
 	}
 
+	// PLAN G: Bloqueo Maestro de la VM durante toda la inicialización inicial
+	::LockVM();
+
 	// Preparacion de la subventana
 	m_strWndClsName = AfxRegisterWndClass(CS_HREDRAW | CS_VREDRAW | CS_DBLCLKS);
 
 	// Activa el componente. Sin embargo, el Programador es configurable.
+	// PLAN G: InicializaciÃ³n AtÃ³mica
 	GetView()->Enable(TRUE);
 	pComponent = m_pFirstComponent;
 	while (pComponent) {
-		// ƒXƒPƒWƒ…[ƒ‰‚©
 		if (pComponent->GetID() == MAKEID('S', 'C', 'H', 'E')) {
-			if (config.power_off) {
-				// “dŒ¹OFF‚Å‹N“®
-				pComponent->Enable(FALSE);
-				pComponent = pComponent->GetNextComponent();
-				continue;
-			}
+			pComponent = pComponent->GetNextComponent();
+			continue;
 		}
-
-		// ƒCƒl[ƒuƒ‹
 		pComponent->Enable(TRUE);
 		pComponent = pComponent->GetNextComponent();
 	}
 
-	// ƒŠƒZƒbƒg(ƒXƒe[ƒ^ƒXƒo[‚Ì‚½‚ß)
 	if (!config.power_off) {
 		OnReset();
 	}
 
-	// ƒRƒ}ƒ“ƒhƒ‰ƒCƒ“ˆ—
+	RestoreDiskState();
+
 	lpszCmd = AfxGetApp()->m_lpCmdLine;
 	lpszCommand = A2T(lpszCmd);
 	if (_tcslen(lpszCommand) > 0) {
 		InitCmd(lpszCommand);
 	}
 
-	// Å‘å‰»Žw’è‚Å‚ ‚ê‚ÎA–ß‚µ‚½Œã‚ÉAƒtƒ‹ƒXƒNƒŠ[ƒ“
 	bFullScreen = FALSE;
 	if (IsZoomed()) {
 		ShowWindow(SW_RESTORE);
 		bFullScreen = TRUE;
 	}
 
-	// ƒEƒCƒ“ƒhƒEˆÊ’u‚ðƒŒƒWƒ…[ƒ€
 	bFullScreen = RestoreFrameWnd(bFullScreen);
 	if (bFullScreen) {
-		// Å‘å‰»Žw’è‚©A‘O‰ñŽÀsŽž‚Éƒtƒ‹ƒXƒNƒŠ[ƒ“
 		PostMessage(WM_COMMAND, IDM_FULLSCREEN);
 	}
 
-	// ƒfƒBƒXƒNEƒXƒe[ƒg‚ðƒŒƒWƒ…[ƒ€
-	RestoreDiskState();
+	pComponent = m_pFirstComponent;
+	while (pComponent) {
+		if (pComponent->GetID() == MAKEID('S', 'C', 'H', 'E')) {
+			if (!config.power_off) {
+				pComponent->Enable(TRUE);
+			}
+			break;
+		}
+		pComponent = pComponent->GetNextComponent();
+	}
 
+	::UnlockVM();
 	// –³ŒÀƒ‹[ƒv
 	DWORD dwStartTick = ::GetTickCount();
 	BOOL bAutoResetDone = FALSE;
@@ -1467,7 +1470,7 @@ LONG CFrmWnd::OnKick(UINT /*uParam*/, LONG /*lParam*/)
 				UpdateExec();
 				
 				// HACK: Auto-reset para sortear el bug del Cold Boot
-				if (!bAutoResetDone && (dwNow - dwStartTick) >= 800) {
+				if (!bAutoResetDone && (dwNow - dwStartTick) >= 90) {
 					bAutoResetDone = TRUE;
 					OnReset();
 				}
