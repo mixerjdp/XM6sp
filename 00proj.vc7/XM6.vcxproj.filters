@@ -213,6 +213,9 @@
     <ClCompile Include="..\mfc\mfc_snd.cpp">
       <Filter>ソース ファイル\MFC</Filter>
     </ClCompile>
+    <ClCompile Include="..\mfc\mfc_asm_portable.cpp">
+      <Filter>ソース ファイル\MFC</Filter>
+    </ClCompile>
     <ClCompile Include="..\mfc\mfc_stat.cpp">
       <Filter>ソース ファイル\MFC</Filter>
     </ClCompile>
@@ -476,9 +479,6 @@
   <ItemGroup>
     <CustomBuild Include="..\cpu\star.asm">
       <Filter>ソース ファイル\VM</Filter>
-    </CustomBuild>
-    <CustomBuild Include="..\mfc\mfc_asm.asm">
-      <Filter>ソース ファイル\MFC</Filter>
     </CustomBuild>
   </ItemGroup>
   <ItemGroup>
