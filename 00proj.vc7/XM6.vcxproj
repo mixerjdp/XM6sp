@@ -233,16 +233,9 @@
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">NotUsing</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">NotUsing</PrecompiledHeader>
     </ClCompile>
+    <ClCompile Include="..\vm\core_soft.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <CustomBuild Include="..\vm\core_asm.asm">
-      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">nasmw -f win32 -o $(IntDir)%(Filename).obj %(FullPath)
-</Command>
-      <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(IntDir)%(Filename).obj;%(Outputs)</Outputs>
-      <Command Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">nasmw -f win32 -o $(IntDir)%(Filename).obj %(FullPath)
-</Command>
-      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(IntDir)%(Filename).obj;%(Outputs)</Outputs>
-    </CustomBuild>
     <CustomBuild Include="..\vm\rend_asm.asm">
       <Command Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">nasmw -f win32 -o $(IntDir)%(Filename).obj %(FullPath)
 </Command>
@@ -273,7 +266,7 @@
     <ClInclude Include="areaset.h" />
     <ClInclude Include="cisc.h" />
     <ClInclude Include="config.h" />
-    <ClInclude Include="core_asm.h" />
+    <ClInclude Include="core_soft.h" />
     <ClInclude Include="cpu.h" />
     <ClInclude Include="crtc.h" />
     <ClInclude Include="device.h" />

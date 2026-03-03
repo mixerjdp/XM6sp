@@ -19,7 +19,7 @@
 #include "tvram.h"
 #include "sram.h"
 #include "config.h"
-#include "core_asm.h"
+#include "core_soft.h"
 #include "memory.h"
 
 //---------------------------------------------------------------------------

@@ -234,6 +234,9 @@
     <ClCompile Include="..\mfc\mfc_w32.cpp">
       <Filter>ソース ファイル\MFC</Filter>
     </ClCompile>
+    <ClCompile Include="..\vm\core_soft.cpp">
+      <Filter>ソース ファイル\VM</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="..\mfc\mfc_res.rc">
@@ -253,7 +256,7 @@
     <ClInclude Include="config.h">
       <Filter>ヘッダー ファイル\VM</Filter>
     </ClInclude>
-    <ClInclude Include="core_asm.h">
+    <ClInclude Include="core_soft.h">
       <Filter>ヘッダー ファイル\VM</Filter>
     </ClInclude>
     <ClInclude Include="cpu.h">
@@ -468,9 +471,6 @@
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <CustomBuild Include="..\vm\core_asm.asm">
-      <Filter>ソース ファイル\VM</Filter>
-    </CustomBuild>
     <CustomBuild Include="..\vm\rend_asm.asm">
       <Filter>ソース ファイル\VM</Filter>
     </CustomBuild>
