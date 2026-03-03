@@ -89,13 +89,12 @@ int musashi_int_ack(int level)
 {
 	int vector;
 
-	cpu->IntAck(level);
-
 	vector = g_pending_vector[level];
 	g_pending_vector[level] = -1;
 	g_pending_mask &= ~(1u << level);
 
 	::m68k_set_irq(GetHighestPendingIRQ());
+	cpu->IntAck(level);
 
 	if (vector < 0) {
 		return M68K_INT_ACK_AUTOVECTOR;
@@ -495,10 +494,17 @@ BOOL FASTCALL CPU::Interrupt(int level, int vector)
 	ASSERT((level >= 1) && (level <= 7));
 	ASSERT(vector >= -1);
 
-    // Record vector and raise highest pending level.
+	// Keep Starscream semantics: if this IRQ level is already pending,
+	// reject duplicate requests and return FALSE.
+	if (g_pending_mask & (1u << level)) {
+		return FALSE;
+	}
+
+	// Record vector and raise highest pending level.
 	g_pending_vector[level] = vector;
 	g_pending_mask |= (1u << level);
 	::m68k_set_irq(GetHighestPendingIRQ());
+	::s68000releaseTimeslice();
 
 	{
 #if defined(CPU_LOG)

@@ -28,6 +28,17 @@ static int musashi_executing = 0;
 static int musashi_wait_cycles = 0;
 static int musashi_exec_calls = 0;
 
+static int GetHighestPendingLegacyIRQ(void)
+{
+	unsigned char mask = s68000context.interrupts[0];
+	for (int level = 7; level >= 1; level--) {
+		if (mask & (1u << level)) {
+			return level;
+		}
+	}
+	return 0;
+}
+
 static int MusashiTraceEnabled(void)
 {
 	static int enabled = -1;
@@ -158,12 +169,31 @@ unsigned s68000exec(int n)
 int s68000interrupt(int level, int vector)
 {
 	if (level < 1 || level > 7) {
-		return -1;
+		return 2; // bad input (Starscream contract)
+	}
+	if (vector > 255 || vector < -2) {
+		return 2; // bad input (Starscream contract)
 	}
 
-	s68000context.interrupts[0] |= (unsigned char)(1 << level);
-	s68000context.interrupts[level] = (unsigned char)((vector < 0) ? 0xFF : (vector & 0xFF));
-	m68k_set_irq(level);
+	{
+		unsigned char bit = (unsigned char)(1u << level);
+		if (s68000context.interrupts[0] & bit) {
+			return 1; // duplicate level request rejected
+		}
+
+		s68000context.interrupts[0] |= bit;
+		if (vector == -2) {
+			s68000context.interrupts[level] = 0x18; // spurious
+		}
+		else if (vector < 0) {
+			s68000context.interrupts[level] = (unsigned char)(0x18 + level); // autovector
+		}
+		else {
+			s68000context.interrupts[level] = (unsigned char)(vector & 0xFF);
+		}
+	}
+
+	m68k_set_irq(GetHighestPendingLegacyIRQ());
 	return 0;
 }
 
