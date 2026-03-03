@@ -37,6 +37,42 @@
 #include "mfc_cfg.h"
 #include "mfc_stat.h"
 
+#include <stdarg.h>
+
+static void XM6BootTrace(LPCTSTR format, ...)
+{
+	static TCHAR s_path[_MAX_PATH] = _T("");
+	if (s_path[0] == _T('\0')) {
+		TCHAR module[_MAX_PATH];
+		TCHAR drive[_MAX_DRIVE];
+		TCHAR dir[_MAX_DIR];
+		::GetModuleFileName(NULL, module, _MAX_PATH);
+		_tsplitpath(module, drive, dir, NULL, NULL);
+		_tmakepath(s_path, drive, dir, _T("xm6_boot_trace"), _T(".log"));
+	}
+
+	TCHAR body[768];
+	va_list ap;
+	va_start(ap, format);
+	_vstprintf_s(body, _countof(body), format, ap);
+	va_end(ap);
+
+	SYSTEMTIME st;
+	::GetLocalTime(&st);
+
+	TCHAR line[896];
+	_stprintf_s(line, _countof(line), _T("[%02u:%02u:%02u.%03u] %s\r\n"),
+		st.wHour, st.wMinute, st.wSecond, st.wMilliseconds, body);
+
+	HANDLE h = ::CreateFile(s_path, FILE_APPEND_DATA, FILE_SHARE_READ | FILE_SHARE_WRITE,
+		NULL, OPEN_ALWAYS, FILE_ATTRIBUTE_NORMAL, NULL);
+	if (h != INVALID_HANDLE_VALUE) {
+		DWORD bytes = 0;
+		::WriteFile(h, line, (DWORD)(_tcslen(line) * sizeof(TCHAR)), &bytes, NULL);
+		::CloseHandle(h);
+	}
+}
+
 //===========================================================================
 //
 //	Ventana del marco
@@ -930,6 +966,7 @@ void FASTCALL CFrmWnd::InitCmd(LPCTSTR lpszCmd)
 	// lpszCmd es el comando completo con comillas incluidas
 	// Inicialización de punteros y banderas
 	BOOL bReset = FALSE;
+	XM6BootTrace(_T("InitCmd input='%s'"), lpszCmd);
 
 	// Crear un objeto CString a partir de lpszCmd
 	CString cmdString(lpszCmd);
@@ -961,7 +998,9 @@ void FASTCALL CFrmWnd::InitCmd(LPCTSTR lpszCmd)
 	// En caso de reinicio, solicitarlo
 	if (bReset)
 	{
+		XM6BootTrace(_T("InitCmd requests OnReset"));
 		OnReset();
+		XM6BootTrace(_T("InitCmd finished OnReset"));
 	}
 }
 
@@ -986,6 +1025,7 @@ BOOL FASTCALL CFrmWnd::InitCmdSub(int nDrive, LPCTSTR lpszPath)
 	ASSERT(this);
 	ASSERT((nDrive == 0) || (nDrive == 1));
 	ASSERT(lpszPath);
+	XM6BootTrace(_T("InitCmdSub drive=%d path='%s'"), nDrive, lpszPath);
 
 	// Inicializacion de pFDI
 	pFDI = NULL;
@@ -993,6 +1033,7 @@ BOOL FASTCALL CFrmWnd::InitCmdSub(int nDrive, LPCTSTR lpszPath)
 	// Comprobacion de archivo abierto
 	path.SetPath(lpszPath);
 	if (!fio.Open(path, Fileio::ReadOnly)) {
+		XM6BootTrace(_T("InitCmdSub open failed"));
 		return FALSE;
 	}
 	dwSize = fio.GetFileSize();
@@ -1012,12 +1053,14 @@ BOOL FASTCALL CFrmWnd::InitCmdSub(int nDrive, LPCTSTR lpszPath)
 		nDrive = 2;
 
 		if (!m_pSASI->Open(path)) {
+			XM6BootTrace(_T("InitCmdSub MO open failed"));
 			// Fallo de asignacion de MO
 			GetScheduler()->Reset();
 			ResetCaption();
 			::UnlockVM();
 			return FALSE;
 		}
+		XM6BootTrace(_T("InitCmdSub MO open ok"));
 	}
 	else {
 		if (dwSize >= 0x200000) {
@@ -1026,6 +1069,7 @@ BOOL FASTCALL CFrmWnd::InitCmdSub(int nDrive, LPCTSTR lpszPath)
 
 			// Pretratamiento abierto
 			if (!OnOpenPrep(path, FALSE)) {
+				XM6BootTrace(_T("InitCmdSub HD OnOpenPrep failed"));
 				// Archivos que faltan o versiones incorrectas, etc.
 				GetScheduler()->Reset();
 				ResetCaption();
@@ -1036,7 +1080,11 @@ BOOL FASTCALL CFrmWnd::InitCmdSub(int nDrive, LPCTSTR lpszPath)
 			// Ejecucion de la carga (dejelo en manos de OnOpenSub)
 			::UnlockVM();
 			if (OnOpenSub(path)) {
+				XM6BootTrace(_T("InitCmdSub HD OnOpenSub ok"));
 				Filepath::SetDefaultDir(szPath);
+			}
+			else {
+				XM6BootTrace(_T("InitCmdSub HD OnOpenSub failed"));
 			}
 			// No hay reinicio
 			return FALSE;
@@ -1046,12 +1094,14 @@ BOOL FASTCALL CFrmWnd::InitCmdSub(int nDrive, LPCTSTR lpszPath)
 			/* ACA SE INICIALIZA IMAGEN DISKETTE DESDE LINEA DE COMANDOS */ 
 
 			if (!m_pFDD->Open(nDrive, path)) {
+				XM6BootTrace(_T("InitCmdSub FD open failed drive=%d"), nDrive);
 				// Fallo de asignacion de FD
 				GetScheduler()->Reset();
 				ResetCaption();
 				::UnlockVM();
 				return FALSE;
 			}
+			XM6BootTrace(_T("InitCmdSub FD open ok drive=%d"), nDrive);
 			pFDI = m_pFDD->GetFDI(nDrive);
 		}
 	}
@@ -1077,6 +1127,7 @@ BOOL FASTCALL CFrmWnd::InitCmdSub(int nDrive, LPCTSTR lpszPath)
 	}
 
 	// I—¹
+	XM6BootTrace(_T("InitCmdSub done without reset"));
 	return FALSE;
 }
 
@@ -1331,6 +1382,8 @@ LONG CFrmWnd::OnKick(UINT /*uParam*/, LONG /*lParam*/)
 	LPCTSTR lpszCommand;
 	BOOL bFullScreen;
 
+	XM6BootTrace(_T("OnKick enter status=%d"), m_nStatus);
+
 	// Tratamiento de errores en primer lugar
 	switch (m_nStatus) {
 		// VMƒGƒ‰[
@@ -1376,38 +1429,46 @@ LONG CFrmWnd::OnKick(UINT /*uParam*/, LONG /*lParam*/)
 		::GetVM()->PowerSW(FALSE);
 	}
 
+	// Inicializacion atomica de VM para evitar carreras de arranque.
+	::LockVM();
+	XM6BootTrace(_T("OnKick LockVM power_off=%d"), config.power_off ? 1 : 0);
+
 	// Preparacion de la subventana
 	m_strWndClsName = AfxRegisterWndClass(CS_HREDRAW | CS_VREDRAW | CS_DBLCLKS);
 
-	// Activa el componente. Sin embargo, el Programador es configurable.
+	// Activa componentes, pero difiere Scheduler hasta terminar restauracion.
 	GetView()->Enable(TRUE);
 	pComponent = m_pFirstComponent;
 	while (pComponent) {
-		// ƒXƒPƒWƒ…[ƒ‰‚©
 		if (pComponent->GetID() == MAKEID('S', 'C', 'H', 'E')) {
-			if (config.power_off) {
-				// “dŒ¹OFF‚Å‹N“®
-				pComponent->Enable(FALSE);
-				pComponent = pComponent->GetNextComponent();
-				continue;
-			}
+			pComponent = pComponent->GetNextComponent();
+			continue;
 		}
 
-		// ƒCƒl[ƒuƒ‹
 		pComponent->Enable(TRUE);
 		pComponent = pComponent->GetNextComponent();
 	}
 
 	// ƒŠƒZƒbƒg(ƒXƒe[ƒ^ƒXƒo[‚Ì‚½‚ß)
 	if (!config.power_off) {
+		XM6BootTrace(_T("OnKick calling OnReset pre-boot"));
 		OnReset();
+		XM6BootTrace(_T("OnKick finished OnReset pre-boot"));
 	}
+
+	// Restaurar discos/estado con VM bloqueada (antes de habilitar scheduler)
+	XM6BootTrace(_T("OnKick RestoreDiskState begin"));
+	RestoreDiskState();
+	XM6BootTrace(_T("OnKick RestoreDiskState end"));
 
 	// ƒRƒ}ƒ“ƒhƒ‰ƒCƒ“ˆ—
 	lpszCmd = AfxGetApp()->m_lpCmdLine;
 	lpszCommand = A2T(lpszCmd);
+	XM6BootTrace(_T("OnKick cmdline len=%u"), (unsigned)_tcslen(lpszCommand));
 	if (_tcslen(lpszCommand) > 0) {
+		XM6BootTrace(_T("OnKick InitCmd begin"));
 		InitCmd(lpszCommand);
+		XM6BootTrace(_T("OnKick InitCmd end"));
 	}
 
 	// Å‘å‰»Žw’è‚Å‚ ‚ê‚ÎA–ß‚µ‚½Œã‚ÉAƒtƒ‹ƒXƒNƒŠ[ƒ“
@@ -1424,8 +1485,21 @@ LONG CFrmWnd::OnKick(UINT /*uParam*/, LONG /*lParam*/)
 		PostMessage(WM_COMMAND, IDM_FULLSCREEN);
 	}
 
-	// ƒfƒBƒXƒNEƒXƒe[ƒg‚ðƒŒƒWƒ…[ƒ€
-	RestoreDiskState();
+	// Habilitar Scheduler al final para arrancar con estado estable.
+	pComponent = m_pFirstComponent;
+	while (pComponent) {
+		if (pComponent->GetID() == MAKEID('S', 'C', 'H', 'E')) {
+			if (!config.power_off) {
+				pComponent->Enable(TRUE);
+				XM6BootTrace(_T("OnKick scheduler enabled"));
+			}
+			break;
+		}
+		pComponent = pComponent->GetNextComponent();
+	}
+
+	::UnlockVM();
+	XM6BootTrace(_T("OnKick UnlockVM and entering main loop"));
 
 	// –³ŒÀƒ‹[ƒv
 	dwTick20 = ::GetTickCount();

@@ -58,7 +58,7 @@
       <Optimization>Full</Optimization>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <OmitFramePointers>true</OmitFramePointers>
-      <AdditionalIncludeDirectories>../mfc;../vm;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>../mfc;../vm;../cpu;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>WIN32;_WINDOWS;_CRT_SECURE_NO_WARNINGS;_DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <MinimalRebuild>false</MinimalRebuild>
       <BasicRuntimeChecks>Default</BasicRuntimeChecks>
@@ -99,7 +99,7 @@
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <FavorSizeOrSpeed>Speed</FavorSizeOrSpeed>
       <OmitFramePointers>true</OmitFramePointers>
-      <AdditionalIncludeDirectories>../mfc;../vm;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>../mfc;../vm;../cpu;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>WIN32;_WINDOWS;NDEBUG;_CRT_SECURE_NO_WARNINGS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <MinimalRebuild>false</MinimalRebuild>
       <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
@@ -213,6 +213,26 @@
     <ClCompile Include="..\mfc\mfc_ver.cpp" />
     <ClCompile Include="..\mfc\mfc_vid.cpp" />
     <ClCompile Include="..\mfc\mfc_w32.cpp" />
+    <ClCompile Include="..\vm\musashi_adapter.cpp" />
+    <ClCompile Include="..\cpu\musashi\softfloat\softfloat.cpp" />
+    <ClCompile Include="..\cpu\musashi\m68kcpu.cpp">
+      <ObjectFileName Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(IntDir)m68kcpu.obj</ObjectFileName>
+      <ObjectFileName Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(IntDir)m68kcpu.obj</ObjectFileName>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">NotUsing</PrecompiledHeader>
+    </ClCompile>
+    <ClCompile Include="..\cpu\musashi\m68kops.cpp">
+      <ObjectFileName Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(IntDir)m68kops.obj</ObjectFileName>
+      <ObjectFileName Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(IntDir)m68kops.obj</ObjectFileName>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">NotUsing</PrecompiledHeader>
+    </ClCompile>
+    <ClCompile Include="..\cpu\musashi\m68kdasm.cpp">
+      <ObjectFileName Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(IntDir)m68kdasm.obj</ObjectFileName>
+      <ObjectFileName Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(IntDir)m68kdasm.obj</ObjectFileName>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">NotUsing</PrecompiledHeader>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <CustomBuild Include="..\vm\core_asm.asm">
@@ -231,16 +251,7 @@
 </Command>
       <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(IntDir)%(Filename).obj;%(Outputs)</Outputs>
     </CustomBuild>
-    <CustomBuild Include="..\cpu\star.asm">
-      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">%(RootDir)%(Directory)\star %(RootDir)%(Directory)\star.asm
-nasmw -f win32 -o $(IntDir)%(Filename).obj %(FullPath)
-</Command>
-      <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(IntDir)%(Filename).obj;%(Outputs)</Outputs>
-      <Command Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">%(RootDir)%(Directory)\star %(RootDir)%(Directory)\star.asm
-nasmw -f win32 -o $(IntDir)%(Filename).obj %(FullPath)
-</Command>
-      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(IntDir)%(Filename).obj;%(Outputs)</Outputs>
-    </CustomBuild>
+    <!-- star.asm removed: replaced by Musashi CPU core -->
     <CustomBuild Include="..\mfc\mfc_asm.asm">
       <Command Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">nasmw -f win32 -o $(IntDir)%(Filename).obj %(FullPath)
 </Command>
@@ -299,7 +310,9 @@ nasmw -f win32 -o $(IntDir)%(Filename).obj %(FullPath)
     <ClInclude Include="schedule.h" />
     <ClInclude Include="sprite.h" />
     <ClInclude Include="sram.h" />
-    <ClInclude Include="starcpu.h" />
+    <ClInclude Include="..\cpu\musashi\m68k.h" />
+    <ClInclude Include="..\cpu\musashi\m68kconf.h" />
+    <ClInclude Include="..\cpu\musashi\m68kcpu.h" />
     <ClInclude Include="sync.h" />
     <ClInclude Include="sysport.h" />
     <ClInclude Include="tvram.h" />
@@ -334,12 +347,7 @@ nasmw -f win32 -o $(IntDir)%(Filename).obj %(FullPath)
     <ClInclude Include="mfc_vid.h" />
     <ClInclude Include="mfc_w32.h" />
   </ItemGroup>
-  <ItemGroup>
-    <ProjectReference Include="star.vcxproj">
-      <Project>{73cb5212-2ebc-4b6f-9b40-8daa46fb0ab2}</Project>
-      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
-    </ProjectReference>
-  </ItemGroup>
+  <!-- star.vcxproj reference removed: replaced by Musashi -->
   <ItemGroup>
     <Image Include="..\mfc\res\crt.bmp" />
     <Image Include="..\mfc\res\x68000.ico" />

@@ -1,9 +1,9 @@
-//---------------------------------------------------------------------------
+ï»¿//---------------------------------------------------------------------------
 //
 //	X68000 EMULATOR "XM6"
 //
-//	Copyright (C) 2001-2006 ‚o‚hD(ytanaka@ipc-tokai.or.jp)
-//	[ ƒƒ‚ƒŠ ]
+//	Copyright (C) 2001-2006 ï¿½oï¿½hï¿½D(ytanaka@ipc-tokai.or.jp)
+//	[ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ]
 //
 //---------------------------------------------------------------------------
 
@@ -11,138 +11,110 @@
 #define memory_h
 
 #include "device.h"
-#include "starcpu.h"
+#include "musashi/m68k.h"
 
 //===========================================================================
 //
-//	ŠO•”ŠÖ”
+//	ï¿½Oï¿½ï¿½ï¿½Öï¿½
 //
 //===========================================================================
 #if defined(__cplusplus)
 extern "C" {
 #endif	// __cplusplus
 void ReadBusErr(DWORD addr);
-										// “Ç‚Ýž‚ÝƒoƒXƒGƒ‰[
+										// ï¿½Ç‚Ýï¿½ï¿½Ýƒoï¿½Xï¿½Gï¿½ï¿½ï¿½[
 void WriteBusErr(DWORD addr);
-										// ‘‚«ž‚ÝƒoƒXƒGƒ‰[
+										// ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ýƒoï¿½Xï¿½Gï¿½ï¿½ï¿½[
 #if defined(__cplusplus)
 }
 #endif	// __cplusplus
 
 //===========================================================================
 //
-//	ƒƒ‚ƒŠ
+//	ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 //
 //===========================================================================
 class Memory : public MemDevice
 {
 public:
-	// ƒƒ‚ƒŠŽí•Ê(=ƒVƒXƒeƒ€Ží•Ê)
+	// ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½(=ï¿½Vï¿½Xï¿½eï¿½ï¿½ï¿½ï¿½ï¿½)
 	enum memtype {
-		None,							// ƒ[ƒh‚³‚ê‚Ä‚¢‚È‚¢
-		SASI,							// v1.00-SASI(‰‘ã/ACE/EXPERT/PRO)
-		SCSIInt,						// v1.00-SCSI“à‘ (SUPER)
-		SCSIExt,						// v1.00-SCSIŠO•tƒ{[ƒh(‰‘ã/ACE/EXPERT/PRO)
-		XVI,							// v1.10-SCSI“à‘ (XVI)
-		Compact,						// v1.20-SCSI“à‘ (Compact)
-		X68030							// v1.50-SCSI“à‘ (X68030)
+		None,							// ï¿½ï¿½ï¿½[ï¿½hï¿½ï¿½ï¿½ï¿½Ä‚ï¿½ï¿½È‚ï¿½
+		SASI,							// v1.00-SASI(ï¿½ï¿½ï¿½ï¿½/ACE/EXPERT/PRO)
+		SCSIInt,						// v1.00-SCSIï¿½ï¿½ï¿½(SUPER)
+		SCSIExt,						// v1.00-SCSIï¿½Oï¿½tï¿½{ï¿½[ï¿½h(ï¿½ï¿½ï¿½ï¿½/ACE/EXPERT/PRO)
+		XVI,							// v1.10-SCSIï¿½ï¿½ï¿½(XVI)
+		Compact,						// v1.20-SCSIï¿½ï¿½ï¿½(Compact)
+		X68030							// v1.50-SCSIï¿½ï¿½ï¿½(X68030)
 	};
 
-	// “à•”ƒf[ƒ^’è‹`
+	// ï¿½ï¿½ï¿½ï¿½fï¿½[ï¿½^ï¿½ï¿½`
 	typedef struct {
-		MemDevice* table[0x180];		// ƒWƒƒƒ“ƒvƒe[ƒuƒ‹
-		int size;						// RAMƒTƒCƒY(2,4,6,8,10,12)
-		int config;						// RAMÝ’è’l(0`5)
-		DWORD length;					// RAMÅIƒoƒCƒg+1
-		BYTE *ram;						// ƒƒCƒ“RAM
+		MemDevice* table[0x180];		// ï¿½Wï¿½ï¿½ï¿½ï¿½ï¿½vï¿½eï¿½[ï¿½uï¿½ï¿½
+		int size;						// RAMï¿½Tï¿½Cï¿½Y(2,4,6,8,10,12)
+		int config;						// RAMï¿½Ý’ï¿½l(0ï¿½`5)
+		DWORD length;					// RAMï¿½ÅIï¿½oï¿½Cï¿½g+1
+		BYTE *ram;						// ï¿½ï¿½ï¿½Cï¿½ï¿½RAM
 		BYTE *ipl;						// IPL ROM (128KB)
 		BYTE *cg;						// CG ROM(768KB)
 		BYTE *scsi;						// SCSI ROM (8KB)
-		memtype type;					// ƒƒ‚ƒŠŽí•Ê(ƒŠƒZƒbƒgŒã)
-		memtype now;					// ƒƒ‚ƒŠŽí•Ê(ƒJƒŒƒ“ƒg)
-		BOOL memsw;						// ƒƒ‚ƒŠƒXƒCƒbƒ`Ž©“®XV
+		memtype type;					// ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½(ï¿½ï¿½ï¿½Zï¿½bï¿½gï¿½ï¿½)
+		memtype now;					// ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½(ï¿½Jï¿½ï¿½ï¿½ï¿½ï¿½g)
+		BOOL memsw;						// ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Xï¿½Cï¿½bï¿½`ï¿½ï¿½ï¿½ï¿½ï¿½Xï¿½V
 	} memory_t;
 
 public:
-	// Šî–{ƒtƒ@ƒ“ƒNƒVƒ‡ƒ“
+	// ï¿½ï¿½{ï¿½tï¿½@ï¿½ï¿½ï¿½Nï¿½Vï¿½ï¿½ï¿½ï¿½
 	Memory(VM *p);
-										// ƒRƒ“ƒXƒgƒ‰ƒNƒ^
+										// ï¿½Rï¿½ï¿½ï¿½Xï¿½gï¿½ï¿½ï¿½Nï¿½^
 	BOOL FASTCALL Init();
-										// ‰Šú‰»
+										// ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 	void FASTCALL Cleanup();
-										// ƒNƒŠ[ƒ“ƒAƒbƒv
+										// ï¿½Nï¿½ï¿½ï¿½[ï¿½ï¿½ï¿½Aï¿½bï¿½v
 	void FASTCALL Reset();
-										// ƒŠƒZƒbƒg
+										// ï¿½ï¿½ï¿½Zï¿½bï¿½g
 	BOOL FASTCALL Save(Fileio *fio, int ver);
-										// ƒZ[ƒu
+										// ï¿½Zï¿½[ï¿½u
 	BOOL FASTCALL Load(Fileio *fio, int ver);
-										// ƒ[ƒh
+										// ï¿½ï¿½ï¿½[ï¿½h
 	void FASTCALL ApplyCfg(const Config *config);
-										// Ý’è“K—p
+										// ï¿½Ý’ï¿½Kï¿½p
 
-	// ƒƒ‚ƒŠƒfƒoƒCƒX
+	// ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½fï¿½oï¿½Cï¿½X
 	DWORD FASTCALL ReadByte(DWORD addr);
-										// ƒoƒCƒg“Ç‚Ýž‚Ý
+										// ï¿½oï¿½Cï¿½gï¿½Ç‚Ýï¿½ï¿½ï¿½
 	DWORD FASTCALL ReadWord(DWORD addr);
-										// ƒ[ƒh“Ç‚Ýž‚Ý
+										// ï¿½ï¿½ï¿½[ï¿½hï¿½Ç‚Ýï¿½ï¿½ï¿½
 	void FASTCALL WriteByte(DWORD addr, DWORD data);
-										// ƒoƒCƒg‘‚«ž‚Ý
+										// ï¿½oï¿½Cï¿½gï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 	void FASTCALL WriteWord(DWORD addr, DWORD data);
-										// ƒ[ƒh‘‚«ž‚Ý
+										// ï¿½ï¿½ï¿½[ï¿½hï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 	DWORD FASTCALL ReadOnly(DWORD addr) const;
-										// “Ç‚Ýž‚Ý‚Ì‚Ý
+										// ï¿½Ç‚Ýï¿½ï¿½Ý‚Ì‚ï¿½
 
-	// ŠO•”API
+	// ï¿½Oï¿½ï¿½API
 	void FASTCALL MakeContext(BOOL reset);
-										// ƒƒ‚ƒŠƒRƒ“ƒeƒLƒXƒgì¬
+										// ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Rï¿½ï¿½ï¿½eï¿½Lï¿½Xï¿½gï¿½ì¬
 	BOOL FASTCALL CheckIPL() const;
-										// IPLƒo[ƒWƒ‡ƒ“ƒ`ƒFƒbƒN
+										// IPLï¿½oï¿½[ï¿½Wï¿½ï¿½ï¿½ï¿½ï¿½`ï¿½Fï¿½bï¿½N
 	BOOL FASTCALL CheckCG() const;
-										// CGƒ`ƒFƒbƒN
+										// CGï¿½`ï¿½Fï¿½bï¿½N
 	const BYTE* FASTCALL GetCG() const;
-										// CGŽæ“¾
+										// CGï¿½æ“¾
 	const BYTE* FASTCALL GetSCSI() const;
-										// SCSIŽæ“¾
+										// SCSIï¿½æ“¾
 	memtype FASTCALL GetMemType() const { return mem.now; }
-										// ƒƒ‚ƒŠŽí•ÊŽæ“¾
+										// ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ÊŽæ“¾
 
 private:
 	BOOL FASTCALL LoadROM(memtype target);
-										// ROMƒ[ƒh
+										// ROMï¿½ï¿½ï¿½[ï¿½h
 	void FASTCALL InitTable();
-										// ƒfƒR[ƒhƒe[ƒuƒ‹‰Šú‰»
-	void FASTCALL TerminateProgramRegion(int index, STARSCREAM_PROGRAMREGION *spr);
-										// ƒvƒƒOƒ‰ƒ€ƒŠ[ƒWƒ‡ƒ“I—¹
-	void FASTCALL TerminateDataRegion(int index, STARSCREAM_DATAREGION *sdr);
-										// ƒf[ƒ^ƒŠ[ƒWƒ‡ƒ“I—¹
-	AreaSet *areaset;
-										// ƒGƒŠƒAƒZƒbƒg
-	SRAM *sram;
-										// SRAM
-	memory_t mem;
-										// “à•”ƒf[ƒ^
+										// init table
 
-	// ƒŠ[ƒWƒ‡ƒ“ (Starscream“Á—L)
-	STARSCREAM_PROGRAMREGION u_pgr[10];
-										// ƒvƒƒOƒ‰ƒ€ƒŠ[ƒWƒ‡ƒ“(User)
-	STARSCREAM_PROGRAMREGION s_pgr[10];
-										// ƒvƒƒOƒ‰ƒ€ƒŠ[ƒWƒ‡ƒ“(Super)
-	STARSCREAM_DATAREGION u_rbr[10];
-										// Read ByteƒŠ[ƒWƒ‡ƒ“(User)
-	STARSCREAM_DATAREGION s_rbr[10];
-										// Read ByteƒŠ[ƒWƒ‡ƒ“(Super)
-	STARSCREAM_DATAREGION u_rwr[10];
-										// Read WordƒŠ[ƒWƒ‡ƒ“(User)
-	STARSCREAM_DATAREGION s_rwr[10];
-										// Read WordƒŠ[ƒWƒ‡ƒ“(Super)
-	STARSCREAM_DATAREGION u_wbr[10];
-										// Write ByteƒŠ[ƒWƒ‡ƒ“(User)
-	STARSCREAM_DATAREGION s_wbr[10];
-										// Write ByteƒŠ[ƒWƒ‡ƒ“(Super)
-	STARSCREAM_DATAREGION u_wwr[10];
-										// Write WordƒŠ[ƒWƒ‡ƒ“(User)
-	STARSCREAM_DATAREGION s_wwr[10];
-										// Write WordƒŠ[ƒWƒ‡ƒ“(Super)
+	AreaSet *areaset;
+	SRAM *sram;
+	memory_t mem;
 };
 
 #endif	// memory_h

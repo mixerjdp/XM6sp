@@ -1,9 +1,9 @@
-//---------------------------------------------------------------------------
+ï»¿//---------------------------------------------------------------------------
 //
 //	X68000 EMULATOR "XM6"
 //
-//	Copyright (C) 2001-2006 ‚o‚hD(ytanaka@ipc-tokai.or.jp)
-//	[ ƒƒ‚ƒŠ ]
+//	Copyright (C) 2001-2006 ï¼°ï¼©ï¼(ytanaka@ipc-tokai.or.jp)
+//	[ ãƒ¡ãƒ¢ãƒª ]
 //
 //---------------------------------------------------------------------------
 
@@ -24,21 +24,22 @@
 
 //---------------------------------------------------------------------------
 //
-//	ƒXƒ^ƒeƒBƒbƒN ƒ[ƒN
+//	ã‚¹ã‚¿ãƒ†ã‚£ãƒƒã‚¯ ãƒ¯ãƒ¼ã‚¯
 //
 //---------------------------------------------------------------------------
 static CPU *pCPU;
+extern bool musashi_is_resetting;
 
 //---------------------------------------------------------------------------
 //
-//	ƒoƒXƒGƒ‰[ÄŒ»•”(ƒƒCƒ“ƒƒ‚ƒŠ–¢À‘•ƒGƒŠƒA‚Ì‚İ)
+//	ãƒã‚¹ã‚¨ãƒ©ãƒ¼å†ç¾éƒ¨(ãƒ¡ã‚¤ãƒ³ãƒ¡ãƒ¢ãƒªæœªå®Ÿè£…ã‚¨ãƒªã‚¢ã®ã¿)
 //
 //---------------------------------------------------------------------------
 extern "C" {
 
 //---------------------------------------------------------------------------
 //
-//	“Ç‚İ‚İƒoƒXƒGƒ‰[
+//	èª­ã¿è¾¼ã¿ãƒã‚¹ã‚¨ãƒ©ãƒ¼
 //
 //---------------------------------------------------------------------------
 void ReadBusErr(DWORD addr)
@@ -48,7 +49,7 @@ void ReadBusErr(DWORD addr)
 
 //---------------------------------------------------------------------------
 //
-//	‘‚«‚İƒoƒXƒGƒ‰[
+//	æ›¸ãè¾¼ã¿ãƒã‚¹ã‚¨ãƒ©ãƒ¼
 //
 //---------------------------------------------------------------------------
 void WriteBusErr(DWORD addr)
@@ -59,67 +60,67 @@ void WriteBusErr(DWORD addr)
 
 //===========================================================================
 //
-//	ƒƒ‚ƒŠ
+//	ãƒ¡ãƒ¢ãƒª
 //
 //===========================================================================
 
 //---------------------------------------------------------------------------
 //
-//	ƒRƒ“ƒXƒgƒ‰ƒNƒ^
+//	ã‚³ãƒ³ã‚¹ãƒˆãƒ©ã‚¯ã‚¿
 //
 //---------------------------------------------------------------------------
 Memory::Memory(VM *p) : MemDevice(p)
 {
-	// ƒfƒoƒCƒXID‚ğ‰Šú‰»
+	// ãƒ‡ãƒã‚¤ã‚¹IDã‚’åˆæœŸåŒ–
 	dev.id = MAKEID('M', 'E', 'M', ' ');
 	dev.desc = "Memory Ctrl (OHM2)";
 
-	// ŠJnƒAƒhƒŒƒXAI—¹ƒAƒhƒŒƒX
+	// é–‹å§‹ã‚¢ãƒ‰ãƒ¬ã‚¹ã€çµ‚äº†ã‚¢ãƒ‰ãƒ¬ã‚¹
 	memdev.first = 0;
 	memdev.last = 0xffffff;
 
-	// RAM/ROMƒoƒbƒtƒ@
+	// RAM/ROMãƒãƒƒãƒ•ã‚¡
 	mem.ram = NULL;
 	mem.ipl = NULL;
 	mem.cg = NULL;
 	mem.scsi = NULL;
 
-	// RAM‚Í2MB
+	// RAMã¯2MB
 	mem.size = 2;
 	mem.config = 0;
 	mem.length = 0;
 
-	// ƒƒ‚ƒŠƒ^ƒCƒv‚Í–¢ƒ[ƒh
+	// ãƒ¡ãƒ¢ãƒªã‚¿ã‚¤ãƒ—ã¯æœªãƒ­ãƒ¼ãƒ‰
 	mem.type = None;
 	mem.now = None;
 
-	// ƒIƒuƒWƒFƒNƒg
+	// ã‚ªãƒ–ã‚¸ã‚§ã‚¯ãƒˆ
 	areaset = NULL;
 	sram = NULL;
 
-	// ‚»‚Ì‘¼
+	// ãã®ä»–
 	memset(mem.table, 0, sizeof(mem.table));
 	mem.memsw = TRUE;
 
-	// staticƒ[ƒN
+	// staticãƒ¯ãƒ¼ã‚¯
 	::pCPU = NULL;
 }
 
 //---------------------------------------------------------------------------
 //
-//	‰Šú‰»
+//	åˆæœŸåŒ–
 //
 //---------------------------------------------------------------------------
 BOOL FASTCALL Memory::Init()
 {
 	ASSERT(this);
 
-	// Šî–{ƒNƒ‰ƒX
+	// åŸºæœ¬ã‚¯ãƒ©ã‚¹
 	if (!MemDevice::Init()) {
 		return FALSE;
 	}
 
-	// ƒƒCƒ“ƒƒ‚ƒŠ
+	// ãƒ¡ã‚¤ãƒ³ãƒ¡ãƒ¢ãƒª
 	mem.length = mem.size * 0x100000;
 	try {
 		mem.ram = new BYTE[ mem.length ];
@@ -131,7 +132,7 @@ BOOL FASTCALL Memory::Init()
 		return FALSE;
 	}
 
-	// ƒƒCƒ“ƒƒ‚ƒŠ‚ğƒ[ƒƒNƒŠƒA‚·‚é
+	// ãƒ¡ã‚¤ãƒ³ãƒ¡ãƒ¢ãƒªã‚’ã‚¼ãƒ­ã‚¯ãƒªã‚¢ã™ã‚‹
 	memset(mem.ram, 0x00, mem.length);
 
 	// IPL ROM
@@ -167,13 +168,13 @@ BOOL FASTCALL Memory::Init()
 		return FALSE;
 	}
 
-	// SASI‚ÌROM‚Í•K{‚È‚Ì‚ÅAæ‚Éƒ[ƒh‚·‚é
+	// SASIã®ROMã¯å¿…é ˆãªã®ã§ã€å…ˆã«ãƒ­ãƒ¼ãƒ‰ã™ã‚‹
 	if (!LoadROM(SASI)) {
-		// IPLROM.DAT, CGROM.DAT‚ª‘¶İ‚µ‚È‚¢ƒpƒ^[ƒ“
+		// IPLROM.DAT, CGROM.DATãŒå­˜åœ¨ã—ãªã„ãƒ‘ã‚¿ãƒ¼ãƒ³
 		return FALSE;
 	}
 
-	// ‘¼‚ÌROM‚ª‚ ‚ê‚ÎAXVI¨Compact¨030‚Ì‡‚ÅAæ‚ÉŒ©‚Â‚©‚Á‚½‚à‚Ì‚ğ—Dæ‚·‚é
+	// ä»–ã®ROMãŒã‚ã‚Œã°ã€XVIâ†’Compactâ†’030ã®é †ã§ã€å…ˆã«è¦‹ã¤ã‹ã£ãŸã‚‚ã®ã‚’å„ªå…ˆã™ã‚‹
 	if (LoadROM(XVI)) {
 		mem.now = XVI;
 	}
@@ -188,36 +189,25 @@ BOOL FASTCALL Memory::Init()
 		}
 	}
 
-	// XVI,Compact,030‚¢‚¸‚ê‚à‘¶İ‚µ‚È‚¯‚ê‚ÎAÄ“xSASI‚ğ“Ç‚Ş
+	// XVI,Compact,030ã„ãšã‚Œã‚‚å­˜åœ¨ã—ãªã‘ã‚Œã°ã€å†åº¦SASIã‚’èª­ã‚€
 	if (mem.type == None) {
 		LoadROM(SASI);
 		mem.now = SASI;
 	}
 
-	// ƒŠ[ƒWƒ‡ƒ“ƒGƒŠƒA‚ğİ’è
-	::s68000context.u_fetch = u_pgr;
-	::s68000context.s_fetch = s_pgr;
-	::s68000context.u_readbyte = u_rbr;
-	::s68000context.s_readbyte = s_rbr;
-	::s68000context.u_readword = u_rwr;
-	::s68000context.s_readword = s_rwr;
-	::s68000context.u_writebyte = u_wbr;
-	::s68000context.s_writebyte = s_wbr;
-	::s68000context.u_writeword = u_wwr;
-	::s68000context.s_writeword = s_wwr;
-
-	// ƒGƒŠƒAƒZƒbƒgæ“¾
+	// ãƒªãƒ¼ã‚¸ãƒ§ãƒ³ã‚¨ãƒªã‚¢ã‚’è¨­å®š (Musashi usa adapter, no s68000context)
+	// ã‚¨ãƒªã‚¢ã‚»ãƒƒãƒˆå–å¾—
 	areaset = (AreaSet*)vm->SearchDevice(MAKEID('A', 'R', 'E', 'A'));
 	ASSERT(areaset);
 
-	// SRAMæ“¾
+	// SRAMå–å¾—
 	sram = (SRAM*)vm->SearchDevice(MAKEID('S', 'R', 'A', 'M'));
 	ASSERT(sram);
 
-	// staticƒ[ƒN
+	// staticãƒ¯ãƒ¼ã‚¯
 	::pCPU = cpu;
 
-	// ‰Šú‰»ƒe[ƒuƒ‹İ’è
+	// åˆæœŸåŒ–ãƒ†ãƒ¼ãƒ–ãƒ«è¨­å®š
 	InitTable();
 
 	return TRUE;
@@ -225,7 +215,7 @@ BOOL FASTCALL Memory::Init()
 
 //---------------------------------------------------------------------------
 //
-//	ROMƒ[ƒh
+//	ROMãƒ­ãƒ¼ãƒ‰
 //
 //---------------------------------------------------------------------------
 BOOL FASTCALL Memory::LoadROM(memtype target)
@@ -240,7 +230,7 @@ BOOL FASTCALL Memory::LoadROM(memtype target)
 
 	ASSERT(this);
 
-	// ˆê’U‚·‚×‚Ä‚ÌROMƒGƒŠƒA‚ğÁ‹‚µANone‚É
+	// ä¸€æ—¦ã™ã¹ã¦ã®ROMã‚¨ãƒªã‚¢ã‚’æ¶ˆå»ã—ã€Noneã«
 	memset(mem.ipl, 0xff, 0x20000);
 	memset(mem.cg, 0xff, 0xc0000);
 	memset(mem.scsi, 0xff, 0x20000);
@@ -270,7 +260,7 @@ BOOL FASTCALL Memory::LoadROM(memtype target)
 		return FALSE;
 	}
 
-	// IPLƒoƒCƒgƒXƒƒbƒv
+	// IPLãƒã‚¤ãƒˆã‚¹ãƒ¯ãƒƒãƒ—
 	ptr = mem.ipl;
 	for (i=0; i<0x10000; i++) {
 		data = ptr[0];
@@ -282,14 +272,14 @@ BOOL FASTCALL Memory::LoadROM(memtype target)
 	// CG
 	path.SysFile(Filepath::CG);
 	if (!fio.Load(path, mem.cg, 0xc0000)) {
-		// ƒtƒ@ƒCƒ‹‚ª‚È‚¯‚ê‚ÎACGTMP‚ÅƒŠƒgƒ‰ƒC
+		// ãƒ•ã‚¡ã‚¤ãƒ«ãŒãªã‘ã‚Œã°ã€CGTMPã§ãƒªãƒˆãƒ©ã‚¤
 		path.SysFile(Filepath::CGTMP);
 		if (!fio.Load(path, mem.cg, 0xc0000)) {
 			return FALSE;
 		}
 	}
 
-	// CGƒoƒCƒgƒXƒƒbƒv
+	// CGãƒã‚¤ãƒˆã‚¹ãƒ¯ãƒƒãƒ—
 	ptr = mem.cg;
 	for (i=0; i<0x60000; i++) {
 		data = ptr[0];
@@ -301,7 +291,7 @@ BOOL FASTCALL Memory::LoadROM(memtype target)
 	// SCSI
 	scsi_req = FALSE;
 	switch (target) {
-		// “à‘ 
+		// å†…è”µ
 		case SCSIInt:
 		case XVI:
 		case Compact:
@@ -312,21 +302,21 @@ BOOL FASTCALL Memory::LoadROM(memtype target)
 			path.SysFile(Filepath::ROM030);
 			scsi_req = TRUE;
 			break;
-		// ŠO•t
+		// å¤–ä»˜
 		case SCSIExt:
 			path.SysFile(Filepath::SCSIExt);
 			scsi_req = TRUE;
 			break;
-		// SASI(ROM•K—v‚È‚µ)
+		// SASI(ROMå¿…è¦ãªã—)
 		case SASI:
 			break;
-		// ‚»‚Ì‘¼(‚ ‚è“¾‚È‚¢)
+		// ãã®ä»–(ã‚ã‚Šå¾—ãªã„)
 		default:
 			ASSERT(FALSE);
 			break;
 	}
 	if (scsi_req) {
-		// X68030‚Ì‚İROM30.DAT(0x20000ƒoƒCƒg)A‚»‚Ì‘¼‚Í0x2000ƒoƒCƒg‚Åƒgƒ‰ƒC
+		// X68030ã®ã¿ROM30.DAT(0x20000ãƒã‚¤ãƒˆ)ã€ãã®ä»–ã¯0x2000ãƒã‚¤ãƒˆã§ãƒˆãƒ©ã‚¤
 		if (target == X68030) {
 			scsi_size = 0x20000;
 		}
@@ -334,17 +324,17 @@ BOOL FASTCALL Memory::LoadROM(memtype target)
 			scsi_size = 0x2000;
 		}
 
-		// æ‚Éƒ|ƒCƒ“ƒ^‚ğİ’è
+		// å…ˆã«ãƒã‚¤ãƒ³ã‚¿ã‚’è¨­å®š
 		ptr = mem.scsi;
 
-		// ƒ[ƒh
+		// ãƒ­ãƒ¼ãƒ‰
 		if (!fio.Load(path, mem.scsi, scsi_size)) {
-			// SCSIExt‚Í0x1fe0ƒoƒCƒg‚à‹–‚·(WinX68k‚‘¬”Å‚ÆŒİŠ·‚ğ‚Æ‚é)
+			// SCSIExtã¯0x1fe0ãƒã‚¤ãƒˆã‚‚è¨±ã™(WinX68ké«˜é€Ÿç‰ˆã¨äº’æ›ã‚’ã¨ã‚‹)
 			if (target != SCSIExt) {
 				return FALSE;
 			}
 
-			// 0x1fe0ƒoƒCƒg‚ÅÄƒgƒ‰ƒC
+			// 0x1fe0ãƒã‚¤ãƒˆã§å†ãƒˆãƒ©ã‚¤
 			scsi_size = 0x1fe0;
 			ptr = &mem.scsi[0x20];
 			if (!fio.Load(path, &mem.scsi[0x0020], scsi_size)) {
@@ -352,7 +342,7 @@ BOOL FASTCALL Memory::LoadROM(memtype target)
 			}
 		}
 
-		// SCSIƒoƒCƒgƒXƒƒbƒv
+		// SCSIãƒã‚¤ãƒˆã‚¹ãƒ¯ãƒƒãƒ—
 		for (i=0; i<scsi_size; i+=2) {
 			data = ptr[0];
 			ptr[0] = ptr[1];
@@ -361,15 +351,15 @@ BOOL FASTCALL Memory::LoadROM(memtype target)
 		}
 	}
 
-	// ƒ^[ƒQƒbƒg‚ğƒJƒŒƒ“ƒg‚ÉƒZƒbƒg‚µ‚ÄA¬Œ÷
+	// ã‚¿ãƒ¼ã‚²ãƒƒãƒˆã‚’ã‚«ãƒ¬ãƒ³ãƒˆã«ã‚»ãƒƒãƒˆã—ã¦ã€æˆåŠŸ
 	mem.type = target;
 	return TRUE;
 }
 
 //---------------------------------------------------------------------------
 //
-//	‰Šú‰»ƒe[ƒuƒ‹ì¬
-//	¦ƒƒ‚ƒŠƒfƒR[ƒ_‚ÉˆË‘¶
+//	åˆæœŸåŒ–ãƒ†ãƒ¼ãƒ–ãƒ«ä½œæˆ
+//	â€»ãƒ¡ãƒ¢ãƒªãƒ‡ã‚³ãƒ¼ãƒ€ã«ä¾å­˜
 //
 //---------------------------------------------------------------------------
 void FASTCALL Memory::InitTable()
@@ -389,44 +379,44 @@ void FASTCALL Memory::InitTable()
 
 	ASSERT(this);
 
-	// ƒ|ƒCƒ“ƒ^‰Šú‰»
+	// ãƒã‚¤ãƒ³ã‚¿åˆæœŸåŒ–
 	mdev = this;
 	i = 0;
 
-	// MemoryˆÈ~‚ÌƒfƒoƒCƒX‚ğ‰ñ‚Á‚ÄAƒ|ƒCƒ“ƒ^‚ğ”z—ñ‚É—‚Æ‚·
+	// Memoryä»¥é™ã®ãƒ‡ãƒã‚¤ã‚¹ã‚’å›ã£ã¦ã€ãƒã‚¤ãƒ³ã‚¿ã‚’é…åˆ—ã«è½ã¨ã™
 	while (mdev) {
 		devarray[i] = mdev;
 
-		// Ÿ‚Ö
+		// æ¬¡ã¸
 		i++;
 		mdev = (MemDevice*)mdev->GetNextDevice();
 	}
 
-	// ƒAƒZƒ“ƒuƒ‰ƒ‹[ƒ`ƒ“‚ğŒÄ‚Ño‚µAƒe[ƒuƒ‹‚ğˆø‚«“n‚·
+	// ã‚¢ã‚»ãƒ³ãƒ–ãƒ©ãƒ«ãƒ¼ãƒãƒ³ã‚’å‘¼ã³å‡ºã—ã€ãƒ†ãƒ¼ãƒ–ãƒ«ã‚’å¼•ãæ¸¡ã™
 	MemInitDecode(this, devarray);
 
-	// ƒAƒZƒ“ƒuƒ‰ƒ‹[ƒ`ƒ“‚Åo—ˆ‚½ƒe[ƒuƒ‹‚ğ‹t‚É–ß‚·(ƒAƒ‰ƒCƒ“ƒƒ“ƒg‚É’ˆÓ)
+	// ã‚¢ã‚»ãƒ³ãƒ–ãƒ©ãƒ«ãƒ¼ãƒãƒ³ã§å‡ºæ¥ãŸãƒ†ãƒ¼ãƒ–ãƒ«ã‚’é€†ã«æˆ»ã™(ã‚¢ãƒ©ã‚¤ãƒ³ãƒ¡ãƒ³ãƒˆã«æ³¨æ„)
 	table = MemDecodeTable;
 	for (i=0; i<0x180; i++) {
-		// 4ƒoƒCƒg‚²‚Æ‚ÉDWORD’l‚ğæ‚è‚İAƒ|ƒCƒ“ƒ^‚ÉƒLƒƒƒXƒg
+		// 4ãƒã‚¤ãƒˆã”ã¨ã«DWORDå€¤ã‚’å–ã‚Šè¾¼ã¿ã€ãƒã‚¤ãƒ³ã‚¿ã«ã‚­ãƒ£ã‚¹ãƒˆ
 		ptr = *(DWORD*)table;
 		mem.table[i] = (MemDevice*)ptr;
 
-		// Ÿ‚Ö
+		// æ¬¡ã¸
 		table += 4;
 	}
 }
 
 //---------------------------------------------------------------------------
 //
-//	ƒNƒŠ[ƒ“ƒAƒbƒv
+//	ã‚¯ãƒªãƒ¼ãƒ³ã‚¢ãƒƒãƒ—
 //
 //---------------------------------------------------------------------------
 void FASTCALL Memory::Cleanup()
 {
 	ASSERT(this);
 
-	// ƒƒ‚ƒŠ‰ğ•ú
+	// ãƒ¡ãƒ¢ãƒªè§£æ”¾
 	if (mem.ram) {
 		delete[] mem.ram;
 		mem.ram = NULL;
@@ -444,13 +434,13 @@ void FASTCALL Memory::Cleanup()
 		mem.scsi = NULL;
 	}
 
-	// Šî–{ƒNƒ‰ƒX‚Ö
+	// åŸºæœ¬ã‚¯ãƒ©ã‚¹ã¸
 	MemDevice::Cleanup();
 }
 
 //---------------------------------------------------------------------------
 //
-//	ƒŠƒZƒbƒg
+//	ãƒªã‚»ãƒƒãƒˆ
 //
 //---------------------------------------------------------------------------
 void FASTCALL Memory::Reset()
@@ -458,30 +448,30 @@ void FASTCALL Memory::Reset()
 	int size;
 
 	ASSERT(this);
-	LOG0(Log::Normal, "ƒŠƒZƒbƒg");
+	LOG0(Log::Normal, "ãƒªã‚»ãƒƒãƒˆ");
 
-	// ƒƒ‚ƒŠƒ^ƒCƒv‚ªˆê’v‚µ‚Ä‚¢‚é‚©
+	// ãƒ¡ãƒ¢ãƒªã‚¿ã‚¤ãƒ—ãŒä¸€è‡´ã—ã¦ã„ã‚‹ã‹
 	if (mem.type != mem.now) {
 		if (LoadROM(mem.type)) {
-			// ROM‚ª‘¶İ‚µ‚Ä‚¢‚éBƒ[ƒh‚Å‚«‚½
+			// ROMãŒå­˜åœ¨ã—ã¦ã„ã‚‹ã€‚ãƒ­ãƒ¼ãƒ‰ã§ããŸ
 			mem.now = mem.type;
 		}
 		else {
-			// ROM‚ª‘¶İ‚µ‚È‚¢BSASIƒ^ƒCƒv‚Æ‚µ‚ÄAİ’è‚àSASI‚É–ß‚·
+			// ROMãŒå­˜åœ¨ã—ãªã„ã€‚SASIã‚¿ã‚¤ãƒ—ã¨ã—ã¦ã€è¨­å®šã‚‚SASIã«æˆ»ã™
 			LoadROM(SASI);
 			mem.now = SASI;
 			mem.type = SASI;
 		}
 
-		// ƒRƒ“ƒeƒLƒXƒg‚ğì‚è’¼‚·(CPU::Reset‚ÍŠ®—¹‚µ‚Ä‚¢‚é‚½‚ßA•K‚¸FALSE)
+		// ã‚³ãƒ³ãƒ†ã‚­ã‚¹ãƒˆã‚’ä½œã‚Šç›´ã™(CPU::Resetã¯å®Œäº†ã—ã¦ã„ã‚‹ãŸã‚ã€å¿…ãšFALSE)
 		MakeContext(FALSE);
 	}
 
-	// ƒƒ‚ƒŠƒTƒCƒY‚ªˆê’v‚µ‚Ä‚¢‚é‚©
+	// ãƒ¡ãƒ¢ãƒªã‚µã‚¤ã‚ºãŒä¸€è‡´ã—ã¦ã„ã‚‹ã‹
 	if (mem.size == ((mem.config + 1) * 2)) {
-		// ˆê’v‚µ‚Ä‚¢‚é‚Ì‚ÅAƒƒ‚ƒŠƒXƒCƒbƒ`©“®XVƒ`ƒFƒbƒN
+		// ä¸€è‡´ã—ã¦ã„ã‚‹ã®ã§ã€ãƒ¡ãƒ¢ãƒªã‚¹ã‚¤ãƒƒãƒè‡ªå‹•æ›´æ–°ãƒã‚§ãƒƒã‚¯
 		if (mem.memsw) {
-			// $ED0008 : ƒƒCƒ“RAMƒTƒCƒY
+			// $ED0008 : ãƒ¡ã‚¤ãƒ³RAMã‚µã‚¤ã‚º
 			size = mem.size << 4;
 			sram->SetMemSw(0x08, 0x00);
 			sram->SetMemSw(0x09, size);
@@ -491,10 +481,10 @@ void FASTCALL Memory::Reset()
 		return;
 	}
 
-	// •ÏX
+	// å¤‰æ›´
 	mem.size = (mem.config + 1) * 2;
 
-	// ÄŠm•Û
+	// å†ç¢ºä¿
 	ASSERT(mem.ram);
 	delete[] mem.ram;
 	mem.ram = NULL;
@@ -503,31 +493,31 @@ void FASTCALL Memory::Reset()
 		mem.ram = new BYTE[ mem.length ];
 	}
 	catch (...) {
-		// ƒƒ‚ƒŠ•s‘«‚Ìê‡‚Í2MB‚ÉŒÅ’è
+		// ãƒ¡ãƒ¢ãƒªä¸è¶³ã®å ´åˆã¯2MBã«å›ºå®š
 		mem.config = 0;
 		mem.size = 2;
 		mem.length = mem.size * 0x100000;
 		mem.ram = new BYTE[ mem.length ];
 	}
 	if (!mem.ram) {
-		// ƒƒ‚ƒŠ•s‘«‚Ìê‡‚Í2MB‚ÉŒÅ’è
+		// ãƒ¡ãƒ¢ãƒªä¸è¶³ã®å ´åˆã¯2MBã«å›ºå®š
 		mem.config = 0;
 		mem.size = 2;
 		mem.length = mem.size * 0x100000;
 		mem.ram = new BYTE[ mem.length ];
 	}
 
-	// ƒƒ‚ƒŠ‚ªŠm•Û‚Å‚«‚Ä‚¢‚éê‡‚Ì‚İ
+	// ãƒ¡ãƒ¢ãƒªãŒç¢ºä¿ã§ãã¦ã„ã‚‹å ´åˆã®ã¿
 	if (mem.ram) {
 		memset(mem.ram, 0x00, mem.length);
 
-		// ƒRƒ“ƒeƒLƒXƒg‚ğì‚è’¼‚·(CPU::Reset‚ÍŠ®—¹‚µ‚Ä‚¢‚é‚½‚ßA•K‚¸FALSE)
+		// ã‚³ãƒ³ãƒ†ã‚­ã‚¹ãƒˆã‚’ä½œã‚Šç›´ã™(CPU::Resetã¯å®Œäº†ã—ã¦ã„ã‚‹ãŸã‚ã€å¿…ãšFALSE)
 		MakeContext(FALSE);
 	}
 
-	// ƒƒ‚ƒŠƒXƒCƒbƒ`©“®XV
+	// ãƒ¡ãƒ¢ãƒªã‚¹ã‚¤ãƒƒãƒè‡ªå‹•æ›´æ–°
 	if (mem.memsw) {
-		// $ED0008 : ƒƒCƒ“RAMƒTƒCƒY
+		// $ED0008 : ãƒ¡ã‚¤ãƒ³RAMã‚µã‚¤ã‚º
 		size = mem.size << 4;
 		sram->SetMemSw(0x08, 0x00);
 		sram->SetMemSw(0x09, size);
@@ -538,32 +528,32 @@ void FASTCALL Memory::Reset()
 
 //---------------------------------------------------------------------------
 //
-//	ƒZ[ƒu
+//	ã‚»ãƒ¼ãƒ–
 //
 //---------------------------------------------------------------------------
 BOOL FASTCALL Memory::Save(Fileio *fio, int /*ver*/)
 {
 	ASSERT(this);
-	LOG0(Log::Normal, "ƒZ[ƒu");
+	LOG0(Log::Normal, "ã‚»ãƒ¼ãƒ–");
 
-	// ƒ^ƒCƒv‚ğ‘‚­
+	// ã‚¿ã‚¤ãƒ—ã‚’æ›¸ã
 	if (!fio->Write(&mem.now, sizeof(mem.now))) {
 		return FALSE;
 	}
 
-	// SCSI ROM‚Ì“à—e‚ğ‘‚­ (X68030ˆÈŠO)
+	// SCSI ROMã®å†…å®¹ã‚’æ›¸ã (X68030ä»¥å¤–)
 	if (mem.now != X68030) {
 		if (!fio->Write(mem.scsi, 0x2000)) {
 			return FALSE;
 		}
 	}
 
-	// mem.size‚ğ‘‚­
+	// mem.sizeã‚’æ›¸ã
 	if (!fio->Write(&mem.size, sizeof(mem.size))) {
 		return FALSE;
 	}
 
-	// ƒƒ‚ƒŠ‚ğ‘‚­
+	// ãƒ¡ãƒ¢ãƒªã‚’æ›¸ã
 	if (!fio->Write(mem.ram, mem.length)) {
 		return FALSE;
 	}
@@ -573,7 +563,7 @@ BOOL FASTCALL Memory::Save(Fileio *fio, int /*ver*/)
 
 //---------------------------------------------------------------------------
 //
-//	ƒ[ƒh
+//	ãƒ­ãƒ¼ãƒ‰
 //
 //---------------------------------------------------------------------------
 BOOL FASTCALL Memory::Load(Fileio *fio, int /*ver*/)
@@ -582,48 +572,48 @@ BOOL FASTCALL Memory::Load(Fileio *fio, int /*ver*/)
 	BOOL context;
 
 	ASSERT(this);
-	LOG0(Log::Normal, "ƒ[ƒh");
+	LOG0(Log::Normal, "ãƒ­ãƒ¼ãƒ‰");
 
-	// ƒRƒ“ƒeƒLƒXƒg‚ğì‚è’¼‚³‚È‚¢
+	// ã‚³ãƒ³ãƒ†ã‚­ã‚¹ãƒˆã‚’ä½œã‚Šç›´ã•ãªã„
 	context = FALSE;
 
-	// ƒ^ƒCƒv‚ğ“Ç‚Ş
+	// ã‚¿ã‚¤ãƒ—ã‚’èª­ã‚€
 	if (!fio->Read(&mem.type, sizeof(mem.type))) {
 		return FALSE;
 	}
 
-	// ƒ^ƒCƒv‚ªŒ»İ‚Ì‚à‚Ì‚Æˆá‚Á‚Ä‚¢‚ê‚Î
+	// ã‚¿ã‚¤ãƒ—ãŒç¾åœ¨ã®ã‚‚ã®ã¨é•ã£ã¦ã„ã‚Œã°
 	if (mem.type != mem.now) {
-		// ROM‚ğ“Ç‚İ’¼‚·
+		// ROMã‚’èª­ã¿ç›´ã™
 		if (!LoadROM(mem.type)) {
-			// ƒZ[ƒu‚É‘¶İ‚µ‚Ä‚¢‚½ROM‚ªA‚È‚­‚È‚Á‚Ä‚¢‚é
+			// ã‚»ãƒ¼ãƒ–æ™‚ã«å­˜åœ¨ã—ã¦ã„ãŸROMãŒã€ãªããªã£ã¦ã„ã‚‹
 			LoadROM(mem.now);
 			return FALSE;
 		}
 
-		// ROM‚Ì“Ç‚İ’¼‚µ‚É¬Œ÷‚µ‚½
+		// ROMã®èª­ã¿ç›´ã—ã«æˆåŠŸã—ãŸ
 		mem.now = mem.type;
 		context = TRUE;
 	}
 
-	// SCSI ROM‚Ì“à—e‚ğ“Ç‚Ş (X68030ˆÈŠO)
+	// SCSI ROMã®å†…å®¹ã‚’èª­ã‚€ (X68030ä»¥å¤–)
 	if (mem.type != X68030) {
 		if (!fio->Read(mem.scsi, 0x2000)) {
 			return FALSE;
 		}
 	}
 
-	// mem.size‚ğ“Ç‚Ş
+	// mem.sizeã‚’èª­ã‚€
 	if (!fio->Read(&size, sizeof(size))) {
 		return FALSE;
 	}
 
-	// mem.size‚Æˆê’v‚µ‚Ä‚¢‚È‚¯‚ê‚Î
+	// mem.sizeã¨ä¸€è‡´ã—ã¦ã„ãªã‘ã‚Œã°
 	if (mem.size != size) {
-		// •ÏX‚µ‚Ä
+		// å¤‰æ›´ã—ã¦
 		mem.size = size;
 
-		// ÄŠm•Û
+		// å†ç¢ºä¿
 		delete[] mem.ram;
 		mem.ram = NULL;
 		mem.length = mem.size * 0x100000;
@@ -634,26 +624,26 @@ BOOL FASTCALL Memory::Load(Fileio *fio, int /*ver*/)
 			mem.ram = NULL;
 		}
 		if (!mem.ram) {
-			// ƒƒ‚ƒŠ•s‘«‚Ìê‡‚Í2MB‚ÉŒÅ’è
+			// ãƒ¡ãƒ¢ãƒªä¸è¶³ã®å ´åˆã¯2MBã«å›ºå®š
 			mem.config = 0;
 			mem.size = 2;
 			mem.length = mem.size * 0x100000;
 			mem.ram = new BYTE[ mem.length ];
 
-			// ƒ[ƒh¸”s
+			// ãƒ­ãƒ¼ãƒ‰å¤±æ•—
 			return FALSE;
 		}
 
-		// ƒRƒ“ƒeƒLƒXƒgÄì¬‚ª•K—v
+		// ã‚³ãƒ³ãƒ†ã‚­ã‚¹ãƒˆå†ä½œæˆãŒå¿…è¦
 		context = TRUE;
 	}
 
-	// ƒƒ‚ƒŠ‚ğ“Ç‚Ş
+	// ãƒ¡ãƒ¢ãƒªã‚’èª­ã‚€
 	if (!fio->Read(mem.ram, mem.length)) {
 		return FALSE;
 	}
 
-	// •K—v‚Å‚ ‚ê‚ÎAƒRƒ“ƒeƒLƒXƒg‚ğì‚è’¼‚·
+	// å¿…è¦ã§ã‚ã‚Œã°ã€ã‚³ãƒ³ãƒ†ã‚­ã‚¹ãƒˆã‚’ä½œã‚Šç›´ã™
 	if (context) {
 		MakeContext(FALSE);
 	}
@@ -663,29 +653,29 @@ BOOL FASTCALL Memory::Load(Fileio *fio, int /*ver*/)
 
 //---------------------------------------------------------------------------
 //
-//	İ’è“K—p
+//	è¨­å®šé©ç”¨
 //
 //---------------------------------------------------------------------------
 void FASTCALL Memory::ApplyCfg(const Config *config)
 {
 	ASSERT(this);
 	ASSERT(config);
-	LOG0(Log::Normal, "İ’è“K—p");
+	LOG0(Log::Normal, "è¨­å®šé©ç”¨");
 
-	// ƒƒ‚ƒŠí•Ê(ROMƒ[ƒh‚ÍŸ‰ñƒŠƒZƒbƒg)
+	// ãƒ¡ãƒ¢ãƒªç¨®åˆ¥(ROMãƒ­ãƒ¼ãƒ‰ã¯æ¬¡å›ãƒªã‚»ãƒƒãƒˆæ™‚)
 	mem.type = (memtype)config->mem_type;
 
-	// RAMƒTƒCƒY(ƒƒ‚ƒŠŠm•Û‚ÍŸ‰ñƒŠƒZƒbƒg)
+	// RAMã‚µã‚¤ã‚º(ãƒ¡ãƒ¢ãƒªç¢ºä¿ã¯æ¬¡å›ãƒªã‚»ãƒƒãƒˆæ™‚)
 	mem.config = config->ram_size;
 	ASSERT((mem.config >= 0) && (mem.config <= 5));
 
-	// ƒƒ‚ƒŠƒXƒCƒbƒ`©“®XV
+	// ãƒ¡ãƒ¢ãƒªã‚¹ã‚¤ãƒƒãƒè‡ªå‹•æ›´æ–°
 	mem.memsw = config->ram_sramsync;
 }
 
 //---------------------------------------------------------------------------
 //
-//	ƒoƒCƒg“Ç‚İ‚İ
+//	ãƒã‚¤ãƒˆèª­ã¿è¾¼ã¿
 //
 //---------------------------------------------------------------------------
 DWORD FASTCALL Memory::ReadByte(DWORD addr)
@@ -696,7 +686,13 @@ DWORD FASTCALL Memory::ReadByte(DWORD addr)
 	ASSERT(addr <= 0xffffff);
 	ASSERT(mem.now != None);
 
-	// ƒƒCƒ“RAM
+	// During CPU reset vector fetch, map 0x000000-0x00FFFF to IPL high area
+	// (equivalent to the temporary reset context used by Starscream).
+	if (addr < 0x10000 && musashi_is_resetting) {
+		return (DWORD)mem.ipl[(addr + 0x10000) ^ 1];
+	}
+
+	// ãƒ¡ã‚¤ãƒ³RAM
 	if (addr < mem.length) {
 		return (DWORD)mem.ram[addr ^ 1];
 	}
@@ -708,30 +704,30 @@ DWORD FASTCALL Memory::ReadByte(DWORD addr)
 		return (DWORD)mem.ipl[addr];
 	}
 
-	// IPLƒCƒ[ƒW or SCSI“à‘ 
+	// IPLã‚¤ãƒ¡ãƒ¼ã‚¸ or SCSIå†…è”µ
 	if (addr >= 0xfc0000) {
-		// IPLƒCƒ[ƒW‚©
+		// IPLã‚¤ãƒ¡ãƒ¼ã‚¸ã‹
 		if ((mem.now == SASI) || (mem.now == SCSIExt)) {
-			// IPLƒCƒ[ƒW
+			// IPLã‚¤ãƒ¡ãƒ¼ã‚¸
 			addr &= 0x1ffff;
 			addr ^= 1;
 			return (DWORD)mem.ipl[addr];
 		}
-		// SCSI“à‘ ‚©(”ÍˆÍƒ`ƒFƒbƒN)
+		// SCSIå†…è”µã‹(ç¯„å›²ãƒã‚§ãƒƒã‚¯)
 		if (addr < 0xfc2000) {
-			// SCSI“à‘ 
+			// SCSIå†…è”µ
 			addr &= 0x1fff;
 			addr ^= 1;
 			return (DWORD)mem.scsi[addr];
 		}
-		// X68030 IPL‘O”¼‚©
+		// X68030 IPLå‰åŠã‹
 		if (mem.now == X68030) {
-			// X68030 IPL‘O”¼
+			// X68030 IPLå‰åŠ
 			addr &= 0x1ffff;
 			addr ^= 1;
 			return (DWORD)mem.scsi[addr];
 		}
-		// SCSI“à‘ ƒ‚ƒfƒ‹‚ÅAROM”ÍˆÍŠO
+		// SCSIå†…è”µãƒ¢ãƒ‡ãƒ«ã§ã€ROMç¯„å›²å¤–
 		return 0xff;
 	}
 
@@ -742,7 +738,7 @@ DWORD FASTCALL Memory::ReadByte(DWORD addr)
 		return (DWORD)mem.cg[addr];
 	}
 
-	// SCSIŠO•t
+	// SCSIå¤–ä»˜
 	if (mem.now == SCSIExt) {
 		if ((addr >= 0xea0020) && (addr <= 0xea1fff)) {
 			addr &= 0x1fff;
@@ -751,7 +747,7 @@ DWORD FASTCALL Memory::ReadByte(DWORD addr)
 		}
 	}
 
-	// ƒfƒoƒCƒXƒfƒBƒXƒpƒbƒ`
+	// ãƒ‡ãƒã‚¤ã‚¹ãƒ‡ã‚£ã‚¹ãƒ‘ãƒƒãƒ
 	if (addr >= 0xc00000) {
 		index = addr - 0xc00000;
 		index >>= 13;
@@ -761,14 +757,14 @@ DWORD FASTCALL Memory::ReadByte(DWORD addr)
 		}
 	}
 
-	LOG1(Log::Warning, "–¢’è‹`ƒoƒCƒg“Ç‚İ‚İ $%06X", addr);
+	LOG1(Log::Warning, "æœªå®šç¾©ãƒã‚¤ãƒˆèª­ã¿è¾¼ã¿ $%06X", addr);
 	cpu->BusErr(addr, TRUE);
 	return 0xff;
 }
 
 //---------------------------------------------------------------------------
 //
-//	ƒ[ƒh“Ç‚İ‚İ
+//	ãƒ¯ãƒ¼ãƒ‰èª­ã¿è¾¼ã¿
 //
 //---------------------------------------------------------------------------
 DWORD FASTCALL Memory::ReadWord(DWORD addr)
@@ -781,14 +777,21 @@ DWORD FASTCALL Memory::ReadWord(DWORD addr)
 	ASSERT(addr <= 0xffffff);
 	ASSERT(mem.now != None);
 
-	// CPU‚©‚ç‚Ìê‡‚Í‹ô”•ÛØ‚³‚ê‚Ä‚¢‚é‚ªADMAC‚©‚ç‚Ìê‡‚Íƒ`ƒFƒbƒN•K—v‚ ‚è
+	// CPUã‹ã‚‰ã®å ´åˆã¯å¶æ•°ä¿è¨¼ã•ã‚Œã¦ã„ã‚‹ãŒã€DMACã‹ã‚‰ã®å ´åˆã¯ãƒã‚§ãƒƒã‚¯å¿…è¦ã‚ã‚Š
 	if (addr & 1) {
-		// ˆê’UCPU‚Ö“n‚·(CPUŒo—R‚ÅDMA‚Ö)
+		// ä¸€æ—¦CPUã¸æ¸¡ã™(CPUçµŒç”±ã§DMAã¸)
 		cpu->AddrErr(addr, TRUE);
 		return 0xffff;
 	}
 
-	// ƒƒCƒ“RAM
+	// During CPU reset vector fetch, map 0x000000-0x00FFFF to IPL high area.
+	if (addr < 0x10000 && musashi_is_resetting) {
+		ptr = (WORD*)(&mem.ipl[addr + 0x10000]);
+		data = (DWORD)*ptr;
+		return data;
+	}
+
+	// ãƒ¡ã‚¤ãƒ³RAM
 	if (addr < mem.length) {
 		ptr = (WORD*)(&mem.ram[addr]);
 		data = (DWORD)*ptr;
@@ -803,33 +806,33 @@ DWORD FASTCALL Memory::ReadWord(DWORD addr)
 		return data;
 	}
 
-	// IPLƒCƒ[ƒW or SCSI“à‘ 
+	// IPLã‚¤ãƒ¡ãƒ¼ã‚¸ or SCSIå†…è”µ
 	if (addr >= 0xfc0000) {
-		// IPLƒCƒ[ƒW‚©
+		// IPLã‚¤ãƒ¡ãƒ¼ã‚¸ã‹
 		if ((mem.now == SASI) || (mem.now == SCSIExt)) {
-			// IPLƒCƒ[ƒW
+			// IPLã‚¤ãƒ¡ãƒ¼ã‚¸
 			addr &= 0x1ffff;
 			ptr = (WORD*)(&mem.ipl[addr]);
 			data = (DWORD)*ptr;
 			return data;
 		}
-		// SCSI“à‘ ‚©(”ÍˆÍƒ`ƒFƒbƒN)
+		// SCSIå†…è”µã‹(ç¯„å›²ãƒã‚§ãƒƒã‚¯)
 		if (addr < 0xfc2000) {
-			// SCSI“à‘ 
+			// SCSIå†…è”µ
 			addr &= 0x1fff;
 			ptr = (WORD*)(&mem.scsi[addr]);
 			data = (DWORD)*ptr;
 			return data;
 		}
-		// X68030 IPL‘O”¼‚©
+		// X68030 IPLå‰åŠã‹
 		if (mem.now == X68030) {
-			// X68030 IPL‘O”¼
+			// X68030 IPLå‰åŠ
 			addr &= 0x1ffff;
 			ptr = (WORD*)(&mem.scsi[addr]);
 			data = (DWORD)*ptr;
 			return data;
 		}
-		// SCSI“à‘ ƒ‚ƒfƒ‹‚ÅAROM”ÍˆÍŠO
+		// SCSIå†…è”µãƒ¢ãƒ‡ãƒ«ã§ã€ROMç¯„å›²å¤–
 		return 0xffff;
 	}
 
@@ -841,7 +844,7 @@ DWORD FASTCALL Memory::ReadWord(DWORD addr)
 		return data;
 	}
 
-	// SCSIŠO•t
+	// SCSIå¤–ä»˜
 	if (mem.now == SCSIExt) {
 		if ((addr >= 0xea0020) && (addr <= 0xea1fff)) {
 			addr &= 0x1fff;
@@ -851,7 +854,7 @@ DWORD FASTCALL Memory::ReadWord(DWORD addr)
 		}
 	}
 
-	// ƒfƒoƒCƒXƒfƒBƒXƒpƒbƒ`
+	// ãƒ‡ãƒã‚¤ã‚¹ãƒ‡ã‚£ã‚¹ãƒ‘ãƒƒãƒ
 	if (addr >= 0xc00000) {
 		index = addr - 0xc00000;
 		index >>= 13;
@@ -861,15 +864,15 @@ DWORD FASTCALL Memory::ReadWord(DWORD addr)
 		}
 	}
 
-	// ƒoƒXƒGƒ‰[
-	LOG1(Log::Warning, "–¢’è‹`ƒ[ƒh“Ç‚İ‚İ $%06X", addr);
+	// ãƒã‚¹ã‚¨ãƒ©ãƒ¼
+	LOG1(Log::Warning, "æœªå®šç¾©ãƒ¯ãƒ¼ãƒ‰èª­ã¿è¾¼ã¿ $%06X", addr);
 	cpu->BusErr(addr, TRUE);
 	return 0xffff;
 }
 
 //---------------------------------------------------------------------------
 //
-//	ƒoƒCƒg‘‚«‚İ
+//	ãƒã‚¤ãƒˆæ›¸ãè¾¼ã¿
 //
 //---------------------------------------------------------------------------
 void FASTCALL Memory::WriteByte(DWORD addr, DWORD data)
@@ -881,7 +884,7 @@ void FASTCALL Memory::WriteByte(DWORD addr, DWORD data)
 	ASSERT(data < 0x100);
 	ASSERT(mem.now != None);
 
-	// ƒƒCƒ“RAM
+	// ãƒ¡ã‚¤ãƒ³RAM
 	if (addr < mem.length) {
 		mem.ram[addr ^ 1] = (BYTE)data;
 		return;
@@ -892,7 +895,7 @@ void FASTCALL Memory::WriteByte(DWORD addr, DWORD data)
 		return;
 	}
 
-	// ƒfƒoƒCƒXƒfƒBƒXƒpƒbƒ`
+	// ãƒ‡ãƒã‚¤ã‚¹ãƒ‡ã‚£ã‚¹ãƒ‘ãƒƒãƒ
 	if (addr >= 0xc00000) {
 		index = addr - 0xc00000;
 		index >>= 13;
@@ -903,14 +906,14 @@ void FASTCALL Memory::WriteByte(DWORD addr, DWORD data)
 		}
 	}
 
-	// ƒoƒXƒGƒ‰[
+	// ãƒã‚¹ã‚¨ãƒ©ãƒ¼
 	cpu->BusErr(addr, FALSE);
-	LOG2(Log::Warning, "–¢’è‹`ƒoƒCƒg‘‚«‚İ $%06X <- $%02X", addr, data);
+	LOG2(Log::Warning, "æœªå®šç¾©ãƒã‚¤ãƒˆæ›¸ãè¾¼ã¿ $%06X <- $%02X", addr, data);
 }
 
 //---------------------------------------------------------------------------
 //
-//	ƒ[ƒh‘‚«‚İ
+//	ãƒ¯ãƒ¼ãƒ‰æ›¸ãè¾¼ã¿
 //
 //---------------------------------------------------------------------------
 void FASTCALL Memory::WriteWord(DWORD addr, DWORD data)
@@ -923,14 +926,14 @@ void FASTCALL Memory::WriteWord(DWORD addr, DWORD data)
 	ASSERT(data < 0x10000);
 	ASSERT(mem.now != None);
 
-	// CPU‚©‚ç‚Ìê‡‚Í‹ô”•ÛØ‚³‚ê‚Ä‚¢‚é‚ªADMAC‚©‚ç‚Ìê‡‚Íƒ`ƒFƒbƒN•K—v‚ ‚è
+	// CPUã‹ã‚‰ã®å ´åˆã¯å¶æ•°ä¿è¨¼ã•ã‚Œã¦ã„ã‚‹ãŒã€DMACã‹ã‚‰ã®å ´åˆã¯ãƒã‚§ãƒƒã‚¯å¿…è¦ã‚ã‚Š
 	if (addr & 1) {
-		// ˆê’UCPU‚Ö“n‚·(CPUŒo—R‚ÅDMA‚Ö)
+		// ä¸€æ—¦CPUã¸æ¸¡ã™(CPUçµŒç”±ã§DMAã¸)
 		cpu->AddrErr(addr, FALSE);
 		return;
 	}
 
-	// ƒƒCƒ“RAM
+	// ãƒ¡ã‚¤ãƒ³RAM
 	if (addr < mem.length) {
 		ptr = (WORD*)(&mem.ram[addr]);
 		*ptr = (WORD)data;
@@ -942,7 +945,7 @@ void FASTCALL Memory::WriteWord(DWORD addr, DWORD data)
 		return;
 	}
 
-	// ƒfƒoƒCƒXƒfƒBƒXƒpƒbƒ`
+	// ãƒ‡ãƒã‚¤ã‚¹ãƒ‡ã‚£ã‚¹ãƒ‘ãƒƒãƒ
 	if (addr >= 0xc00000) {
 		index = addr - 0xc00000;
 		index >>= 13;
@@ -953,14 +956,14 @@ void FASTCALL Memory::WriteWord(DWORD addr, DWORD data)
 		}
 	}
 
-	// ƒoƒXƒGƒ‰[
+	// ãƒã‚¹ã‚¨ãƒ©ãƒ¼
 	cpu->BusErr(addr, FALSE);
-	LOG2(Log::Warning, "–¢’è‹`ƒ[ƒh‘‚«‚İ $%06X <- $%04X", addr, data);
+	LOG2(Log::Warning, "æœªå®šç¾©ãƒ¯ãƒ¼ãƒ‰æ›¸ãè¾¼ã¿ $%06X <- $%04X", addr, data);
 }
 
 //---------------------------------------------------------------------------
 //
-//	“Ç‚İ‚İ‚Ì‚İ
+//	èª­ã¿è¾¼ã¿ã®ã¿
 //
 //---------------------------------------------------------------------------
 DWORD FASTCALL Memory::ReadOnly(DWORD addr) const
@@ -971,7 +974,12 @@ DWORD FASTCALL Memory::ReadOnly(DWORD addr) const
 	ASSERT(addr <= 0xffffff);
 	ASSERT(mem.now != None);
 
-	// ƒƒCƒ“RAM
+	// During CPU reset vector fetch, map 0x000000-0x00FFFF to IPL high area.
+	if (addr < 0x10000 && musashi_is_resetting) {
+		return (DWORD)mem.ipl[(addr + 0x10000) ^ 1];
+	}
+
+	// ãƒ¡ã‚¤ãƒ³RAM
 	if (addr < mem.length) {
 		return (DWORD)mem.ram[addr ^ 1];
 	}
@@ -983,30 +991,30 @@ DWORD FASTCALL Memory::ReadOnly(DWORD addr) const
 		return (DWORD)mem.ipl[addr];
 	}
 
-	// IPLƒCƒ[ƒW or SCSI“à‘ 
+	// IPLã‚¤ãƒ¡ãƒ¼ã‚¸ or SCSIå†…è”µ
 	if (addr >= 0xfc0000) {
-		// IPLƒCƒ[ƒW‚©
+		// IPLã‚¤ãƒ¡ãƒ¼ã‚¸ã‹
 		if ((mem.now == SASI) || (mem.now == SCSIExt)) {
-			// IPLƒCƒ[ƒW
+			// IPLã‚¤ãƒ¡ãƒ¼ã‚¸
 			addr &= 0x1ffff;
 			addr ^= 1;
 			return (DWORD)mem.ipl[addr];
 		}
-		// SCSI“à‘ ‚©(”ÍˆÍƒ`ƒFƒbƒN)
+		// SCSIå†…è”µã‹(ç¯„å›²ãƒã‚§ãƒƒã‚¯)
 		if (addr < 0xfc2000) {
-			// SCSI“à‘ 
+			// SCSIå†…è”µ
 			addr &= 0x1fff;
 			addr ^= 1;
 			return (DWORD)mem.scsi[addr];
 		}
-		// X68030 IPL‘O”¼‚©
+		// X68030 IPLå‰åŠã‹
 		if (mem.now == X68030) {
-			// X68030 IPL‘O”¼
+			// X68030 IPLå‰åŠ
 			addr &= 0x1ffff;
 			addr ^= 1;
 			return (DWORD)mem.scsi[addr];
 		}
-		// SCSI“à‘ ƒ‚ƒfƒ‹‚ÅAROM”ÍˆÍŠO
+		// SCSIå†…è”µãƒ¢ãƒ‡ãƒ«ã§ã€ROMç¯„å›²å¤–
 		return 0xff;
 	}
 
@@ -1017,7 +1025,7 @@ DWORD FASTCALL Memory::ReadOnly(DWORD addr) const
 		return (DWORD)mem.cg[addr];
 	}
 
-	// SCSIŠO•t
+	// SCSIå¤–ä»˜
 	if (mem.now == SCSIExt) {
 		if ((addr >= 0xea0020) && (addr <= 0xea1fff)) {
 			addr &= 0x1fff;
@@ -1026,7 +1034,7 @@ DWORD FASTCALL Memory::ReadOnly(DWORD addr) const
 		}
 	}
 
-	// ƒfƒoƒCƒXƒfƒBƒXƒpƒbƒ`
+	// ãƒ‡ãƒã‚¤ã‚¹ãƒ‡ã‚£ã‚¹ãƒ‘ãƒƒãƒ
 	if (addr >= 0xc00000) {
 		index = addr - 0xc00000;
 		index >>= 13;
@@ -1036,314 +1044,36 @@ DWORD FASTCALL Memory::ReadOnly(DWORD addr) const
 		}
 	}
 
-	// ƒ}ƒbƒv‚³‚ê‚Ä‚¢‚È‚¢
+	// ãƒãƒƒãƒ—ã•ã‚Œã¦ã„ãªã„
 	return 0xff;
 }
 
 //---------------------------------------------------------------------------
 //
-//	ƒRƒ“ƒeƒLƒXƒgì¬
+//	ã‚³ãƒ³ãƒ†ã‚­ã‚¹ãƒˆä½œæˆ
 //
 //---------------------------------------------------------------------------
 void FASTCALL Memory::MakeContext(BOOL reset)
 {
-	int index;
-	int area;
-	GVRAM *gvram;
-	TVRAM *tvram;
-
 	ASSERT(this);
-
-	// ƒŠƒZƒbƒg‚©
+	
 	if (reset) {
-		// ƒGƒŠƒAƒZƒbƒg‚ğƒŠƒZƒbƒg(CPU::Reset‚©‚çMakeContext‚ªŒÄ‚Î‚ê‚é‚½‚ß)
 		ASSERT(areaset);
 		areaset->Reset();
-
-		// ƒŠƒZƒbƒgê—pƒRƒ“ƒeƒLƒXƒg($FF00000`‚ªA$0000000`‚ÉŒ©‚¦‚é)
-		s_pgr[0].lowaddr = 0;
-		s_pgr[0].highaddr = 0xffff;
-		s_pgr[0].offset = ((DWORD)mem.ipl) + 0x10000;
-		u_pgr[0].lowaddr = 0;
-		u_pgr[0].highaddr = 0xffff;
-		u_pgr[0].offset = ((DWORD)mem.ipl) + 0x10000;
-
-		// ƒvƒƒOƒ‰ƒ€I—¹
-		TerminateProgramRegion(1, s_pgr);
-		TerminateProgramRegion(1, u_pgr);
-
-		// ƒf[ƒ^‚Í‘S‚Ä–³‚µ
-		TerminateDataRegion(0, u_rbr);
-		TerminateDataRegion(0, s_rbr);
-		TerminateDataRegion(0, u_rwr);
-		TerminateDataRegion(0, s_rwr);
-		TerminateDataRegion(0, u_wbr);
-		TerminateDataRegion(0, s_wbr);
-		TerminateDataRegion(0, u_wwr);
-		TerminateDataRegion(0, s_wwr);
 		return;
 	}
 
-	// ’ÊíƒRƒ“ƒeƒLƒXƒg - ƒvƒƒOƒ‰ƒ€(User)
-	index = 0;
-	area = areaset->GetArea();
-	u_pgr[index].lowaddr = (area + 1) << 13;
-	u_pgr[index].highaddr = mem.length - 1;
-	u_pgr[index].offset = (DWORD)mem.ram;
-	index++;
-	TerminateProgramRegion(index, u_pgr);
-
-	// ’ÊíƒRƒ“ƒeƒLƒXƒg - ƒvƒƒOƒ‰ƒ€(Super)
-	index = 0;
-	s_pgr[index].lowaddr = 0;
-	s_pgr[index].highaddr = mem.length - 1;
-	s_pgr[index].offset = (DWORD)mem.ram;
-	index++;
-
-	// IPL
-	s_pgr[index].lowaddr = 0xfe0000;
-	s_pgr[index].highaddr = 0xffffff;
-	s_pgr[index].offset = ((DWORD)mem.ipl) - 0xfe0000;
-	index++;
-
-	// SCSIŠO•t
-	if (mem.now == SCSIExt) {
-		s_pgr[index].lowaddr = 0xea0000;
-		s_pgr[index].highaddr = 0xea1fff;
-		s_pgr[index].offset = ((DWORD)mem.scsi) - 0xea0000;
-		index++;
-	}
-
-	// IPLƒCƒ[ƒW or SCSI“à‘ 
-	if ((mem.now == SASI) || (mem.now == SCSIExt)) {
-		// IPLƒCƒ[ƒW
-		s_pgr[index].lowaddr = 0xfc0000;
-		s_pgr[index].highaddr = 0xfdffff;
-		s_pgr[index].offset = ((DWORD)mem.ipl) - 0xfc0000;
-		index++;
-	}
-	else {
-		// SCSI“à‘ 
-		s_pgr[index].lowaddr = 0xfc0000;
-		s_pgr[index].highaddr = 0xfc1fff;
-		s_pgr[index].offset = ((DWORD)mem.scsi) - 0xfc0000;
-		if (mem.now == X68030) {
-			// X68030 IPL‘O”¼
-			s_pgr[index].lowaddr = 0xfc0000;
-			s_pgr[index].highaddr = 0xfdffff;
-			s_pgr[index].offset = ((DWORD)mem.scsi) - 0xfc0000;
-		}
-		index++;
-	}
-
-	// ƒOƒ‰ƒtƒBƒbƒNVRAM
-	gvram = (GVRAM*)vm->SearchDevice(MAKEID('G', 'V', 'R', 'M'));
-	ASSERT(gvram);
-	s_pgr[index].lowaddr = 0xc00000;
-	s_pgr[index].highaddr = 0xdfffff;
-	s_pgr[index].offset = ((DWORD)gvram->GetGVRAM()) - 0xc00000;
-	index++;
-
-	// ƒeƒLƒXƒgVRAM
-	tvram = (TVRAM*)vm->SearchDevice(MAKEID('T', 'V', 'R', 'M'));
-	ASSERT(tvram);
-	s_pgr[index].lowaddr = 0xe00000;
-	s_pgr[index].highaddr = 0xe7ffff;
-	s_pgr[index].offset = ((DWORD)tvram->GetTVRAM()) - 0xe00000;
-	index++;
-
-	// SRAM
-	ASSERT(sram);
-	s_pgr[index].lowaddr = 0xed0000;
-	s_pgr[index].highaddr = 0xed0000 + (sram->GetSize() << 10) - 1;
-	s_pgr[index].offset = ((DWORD)sram->GetSRAM()) - 0xed0000;
-	index++;
-	TerminateProgramRegion(index, s_pgr);
-
-	// ’ÊíƒRƒ“ƒeƒLƒXƒg - “Ç‚İo‚µ(User)
-	index = 0;
-	area = areaset->GetArea();
-
-	// ƒ†[ƒUƒAƒNƒZƒX‰Â”\‹óŠÔ
-	u_rbr[index].lowaddr = (area + 1) << 13;
-	u_rbr[index].highaddr = mem.length - 1;
-	u_rbr[index].memorycall = NULL;
-	u_rbr[index].userdata = (void*)&mem.ram[(area + 1) << 13];
-	index++;
-
-	// ƒX[ƒpƒoƒCƒU‹óŠÔ
-	u_rbr[index].lowaddr = 0;
-	u_rbr[index].highaddr = ((area + 1) << 13) - 1;
-	u_rbr[index].memorycall = ::ReadErrC;
-	u_rbr[index].userdata = NULL;
-	index++;
-
-	// ƒƒCƒ“ƒƒ‚ƒŠ–¢À‘•‹óŠÔ{ƒX[ƒp[ƒoƒCƒUI/O‹óŠÔ
-	u_rbr[index].lowaddr = (mem.size << 20);
-	u_rbr[index].highaddr = 0xebffff;
-	u_rbr[index].memorycall = ::ReadErrC;
-	s_rbr[index].userdata = NULL;
-	index++;
-
-	// ƒ†[ƒUI/O‹óŠÔ($EC0000-$ECFFFF)
-	u_rbr[index].lowaddr = 0xec0000;
-	u_rbr[index].highaddr = 0xecffff;
-	u_rbr[index].memorycall = ::ReadByteC;
-	s_rbr[index].userdata = NULL;
-	index++;
-
-	// ƒX[ƒpƒoƒCƒU‹óŠÔ(SRAM,CG,IPL,SCSI)
-	u_rbr[index].lowaddr = 0xed0000;
-	u_rbr[index].highaddr = 0xffffff;
-	u_rbr[index].memorycall = ReadErrC;
-	s_rbr[index].userdata = NULL;
-	index++;
-	TerminateDataRegion(index, u_rbr);
-
-	// ‘¼‚ÖˆÚ‚·(ReadWord, User)
-	memcpy(u_rwr, u_rbr, sizeof(u_rbr));
-	u_rwr[index - 2].memorycall = ::ReadWordC;
-
-	// ‘¼‚ÖˆÚ‚·(WriteByte, User)
-	memcpy(u_wbr, u_rbr, sizeof(u_rbr));
-	u_wbr[index - 2].memorycall = ::WriteByteC;
-	u_wbr[index - 1].memorycall = ::WriteErrC;
-	u_wbr[index - 3].memorycall = ::WriteErrC;
-	u_wbr[index - 4].memorycall = ::WriteErrC;
-
-	// ‘¼‚ÖˆÚ‚·(WriteWord, User)
-	memcpy(u_wwr, u_wbr, sizeof(u_wbr));
-	u_wwr[index - 2].memorycall = ::WriteWordC;
-
-	// ’ÊíƒRƒ“ƒeƒLƒXƒg - “Ç‚İo‚µ(Super)
-	index = 0;
-	s_rbr[index].lowaddr = 0;
-	s_rbr[index].highaddr = mem.length - 1;
-	s_rbr[index].memorycall = NULL;
-	s_rbr[index].userdata = (void*)mem.ram;
-	index++;
-
-	// CG
-	s_rbr[index].lowaddr = 0xf00000;
-	s_rbr[index].highaddr = 0xfbffff;
-	s_rbr[index].memorycall = NULL;
-	s_rbr[index].userdata = (void*)mem.cg;
-	index++;
-
-	// IPL
-	s_rbr[index].lowaddr = 0xfe0000;
-	s_rbr[index].highaddr = 0xffffff;
-	s_rbr[index].memorycall = NULL;
-	s_rbr[index].userdata = (void*)mem.ipl;
-	index++;
-
-	// SCSIŠO•t
-	if (mem.now == SCSIExt) {
-		s_rbr[index].lowaddr = 0xea0020;
-		s_rbr[index].highaddr = 0xea1fff;
-		s_rbr[index].memorycall = NULL;
-		s_rbr[index].userdata = (void*)(&mem.scsi[0x20]);
-		index++;
-	}
-
-	// IPLƒCƒ[ƒW or SCSI“à‘ 
-	if ((mem.now == SASI) || (mem.now == SCSIExt)) {
-		// IPLƒCƒ[ƒW
-		s_rbr[index].lowaddr = 0xfc0000;
-		s_rbr[index].highaddr = 0xfdffff;
-		s_rbr[index].memorycall = NULL;
-		s_rbr[index].userdata = (void*)mem.ipl;
-		index++;
-	}
-	else {
-		// SCSI“à‘ 
-		s_rbr[index].lowaddr = 0xfc0000;
-		s_rbr[index].highaddr = 0xfc1fff;
-		s_rbr[index].memorycall = NULL;
-		s_rbr[index].userdata = (void*)mem.scsi;
-		if (mem.now == X68030) {
-			// X68030 IPL‘O”¼
-			s_rbr[index].lowaddr = 0xfc0000;
-			s_rbr[index].highaddr = 0xfdffff;
-			s_rbr[index].memorycall = NULL;
-			s_rbr[index].userdata = (void*)mem.scsi;
-		}
-		index++;
-	}
-
-	// ‚»‚êˆÈŠO(ŠO•”ƒR[ƒ‹)
-	s_rbr[index].lowaddr = (mem.size << 20);
-	s_rbr[index].highaddr = 0xefffff;
-	s_rbr[index].memorycall = ::ReadByteC;
-	s_rbr[index].userdata = NULL;
-	index++;
-	TerminateDataRegion(index, s_rbr);
-
-	// ‘¼‚ÖˆÚ‚·
-	memcpy(s_rwr, s_rbr, sizeof(s_rbr));
-	s_rwr[index - 1].memorycall = ::ReadWordC;
-
-	// ’ÊíƒRƒ“ƒeƒLƒXƒg - ‘‚«‚İ(Super)
-	index = 0;
-	s_wbr[index].lowaddr = 0;
-	s_wbr[index].highaddr = mem.length - 1;
-	s_wbr[index].memorycall = NULL;
-	s_wbr[index].userdata = (void*)mem.ram;
-	index++;
-
-	// ‚»‚êˆÈŠO(ŠO•”ƒR[ƒ‹)
-	s_wbr[index].lowaddr = (mem.size << 20);
-	s_wbr[index].highaddr = 0xefffff;
-	s_wbr[index].memorycall = ::WriteByteC;
-	s_wbr[index].userdata = NULL;
-	index++;
-	TerminateDataRegion(index, s_wbr);
-
-	// ‘¼‚ÖˆÚ‚·
-	memcpy(s_wwr, s_wbr, sizeof(s_wbr));
-	s_wwr[index - 1].memorycall = ::WriteWordC;
-
-	// cpu->Release‚ğ–Y‚ê‚¸‚É
+	// Keep legacy behavior: force CPU to end current timeslice when
+	// memory context changes outside reset initialization.
 	cpu->Release();
 }
 
-//---------------------------------------------------------------------------
-//
-//	ƒvƒƒOƒ‰ƒ€ƒŠ[ƒWƒ‡ƒ“I—¹
-//
-//---------------------------------------------------------------------------
-void FASTCALL Memory::TerminateProgramRegion(int index, STARSCREAM_PROGRAMREGION *spr)
-{
-	ASSERT(this);
-	ASSERT((index >= 0) && (index < 10));
-	ASSERT(spr);
 
-	spr[index].lowaddr = (DWORD)-1;
-	spr[index].highaddr = (DWORD)-1;
-	spr[index].offset = 0;
-}
 
 //---------------------------------------------------------------------------
 //
-//	ƒf[ƒ^ƒŠ[ƒWƒ‡ƒ“I—¹
-//
-//---------------------------------------------------------------------------
-void FASTCALL Memory::TerminateDataRegion(int index, STARSCREAM_DATAREGION *sdr)
-{
-	ASSERT(this);
-	ASSERT((index >= 0) && (index < 10));
-	ASSERT(sdr);
-
-	sdr[index].lowaddr = (DWORD)-1;
-	sdr[index].highaddr = (DWORD)-1;
-	sdr[index].memorycall = NULL;
-	sdr[index].userdata = NULL;
-}
-
-//---------------------------------------------------------------------------
-//
-//	IPLƒo[ƒWƒ‡ƒ“ƒ`ƒFƒbƒN
-//	¦IPL‚ªversion1.00(87/05/07)‚Å‚ ‚é‚©”Û‚©‚ğƒ`ƒFƒbƒN
+//	IPLãƒãƒ¼ã‚¸ãƒ§ãƒ³ãƒã‚§ãƒƒã‚¯
+//	â€»IPLãŒversion1.00(87/05/07)ã§ã‚ã‚‹ã‹å¦ã‹ã‚’ãƒã‚§ãƒƒã‚¯
 //
 //---------------------------------------------------------------------------
 BOOL FASTCALL Memory::CheckIPL() const
@@ -1351,17 +1081,17 @@ BOOL FASTCALL Memory::CheckIPL() const
 	ASSERT(this);
 	ASSERT(mem.now != None);
 
-	// ‘¶İƒ`ƒFƒbƒN
+	// å­˜åœ¨ãƒã‚§ãƒƒã‚¯
 	if (!mem.ipl) {
 		return FALSE;
 	}
 
-	// SASIƒ^ƒCƒv‚Ìê‡‚Ì‚İƒ`ƒFƒbƒN‚·‚é
+	// SASIã‚¿ã‚¤ãƒ—ã®å ´åˆã®ã¿ãƒã‚§ãƒƒã‚¯ã™ã‚‹
 	if (mem.now != SASI) {
 		return TRUE;
 	}
 
-	// “ú•t(BCD)‚ğƒ`ƒFƒbƒN
+	// æ—¥ä»˜(BCD)ã‚’ãƒã‚§ãƒƒã‚¯
 	if (mem.ipl[0x1000a] != 0x87) {
 		return FALSE;
 	}
@@ -1377,8 +1107,8 @@ BOOL FASTCALL Memory::CheckIPL() const
 
 //---------------------------------------------------------------------------
 //
-//	CGƒ`ƒFƒbƒN
-//	¦8x8ƒhƒbƒgƒtƒHƒ“ƒg(‘S‹@í‹¤’Ê)‚ÌSum,Xor‚Åƒ`ƒFƒbƒN
+//	CGãƒã‚§ãƒƒã‚¯
+//	â€»8x8ãƒ‰ãƒƒãƒˆãƒ•ã‚©ãƒ³ãƒˆ(å…¨æ©Ÿç¨®å…±é€š)ã®Sum,Xorã§ãƒã‚§ãƒƒã‚¯
 //
 //---------------------------------------------------------------------------
 BOOL FASTCALL Memory::CheckCG() const
@@ -1391,24 +1121,24 @@ BOOL FASTCALL Memory::CheckCG() const
 	ASSERT(this);
 	ASSERT(mem.now != None);
 
-	// ‘¶İƒ`ƒFƒbƒN
+	// å­˜åœ¨ãƒã‚§ãƒƒã‚¯
 	if (!mem.cg) {
 		return FALSE;
 	}
 
-	// ‰Šúİ’è
+	// åˆæœŸè¨­å®š
 	add = 0;
 	eor = 0;
 	ptr = &mem.cg[0x3a800];
 
-	// ADD, XORƒ‹[ƒv
+	// ADD, XORãƒ«ãƒ¼ãƒ—
 	for (i=0; i<0x1000; i++) {
 		add = (BYTE)(add + *ptr);
 		eor ^= *ptr;
 		ptr++;
 	}
 
-	// ƒ`ƒFƒbƒN(XVI‚Å‚ÌÀ‘ª’l)
+	// ãƒã‚§ãƒƒã‚¯(XVIã§ã®å®Ÿæ¸¬å€¤)
 	if ((add != 0xec) || (eor != 0x84)) {
 		return FALSE;
 	}
@@ -1418,7 +1148,7 @@ BOOL FASTCALL Memory::CheckCG() const
 
 //---------------------------------------------------------------------------
 //
-//	CGæ“¾
+//	CGå–å¾—
 //
 //---------------------------------------------------------------------------
 const BYTE* FASTCALL Memory::GetCG() const
@@ -1431,7 +1161,7 @@ const BYTE* FASTCALL Memory::GetCG() const
 
 //---------------------------------------------------------------------------
 //
-//	SCSIæ“¾
+//	SCSIå–å¾—
 //
 //---------------------------------------------------------------------------
 const BYTE* FASTCALL Memory::GetSCSI() const

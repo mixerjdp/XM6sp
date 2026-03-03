@@ -1,4 +1,4 @@
-/*
+﻿/*
 ** Starscream 680x0 emulation library
 ** Copyright 1997, 1998, 1999 Neill Corlett
 ** XM6 version - Copyright 2001-2003 PI.
@@ -13,7 +13,7 @@
 #include <stdarg.h>
 #include <ctype.h>
 #include <assert.h>
-#include "starcpu.h"
+#include "musashi/m68k.h"
 
 void (*cpudebug_get)(char*, int);
 void (*cpudebug_put)(const char*);
