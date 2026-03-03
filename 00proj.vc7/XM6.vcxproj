@@ -174,6 +174,7 @@
     <ClCompile Include="..\vm\ppi.cpp" />
     <ClCompile Include="..\vm\printer.cpp" />
     <ClCompile Include="..\vm\render.cpp" />
+    <ClCompile Include="..\vm\rend_soft.cpp" />
     <ClCompile Include="..\vm\rtc.cpp" />
     <ClCompile Include="..\vm\sasi.cpp" />
     <ClCompile Include="..\vm\scc.cpp" />
@@ -236,14 +237,6 @@
     <ClCompile Include="..\vm\core_soft.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <CustomBuild Include="..\vm\rend_asm.asm">
-      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">nasmw -f win32 -o $(IntDir)%(Filename).obj %(FullPath)
-</Command>
-      <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(IntDir)%(Filename).obj;%(Outputs)</Outputs>
-      <Command Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">nasmw -f win32 -o $(IntDir)%(Filename).obj %(FullPath)
-</Command>
-      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(IntDir)%(Filename).obj;%(Outputs)</Outputs>
-    </CustomBuild>
     <!-- star.asm removed: replaced by Musashi CPU core -->
     <CustomBuild Include="..\mfc\mfc_asm.asm">
       <Command Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">nasmw -f win32 -o $(IntDir)%(Filename).obj %(FullPath)
@@ -294,7 +287,7 @@
     <ClInclude Include="os.h" />
     <ClInclude Include="ppi.h" />
     <ClInclude Include="printer.h" />
-    <ClInclude Include="rend_asm.h" />
+    <ClInclude Include="rend_soft.h" />
     <ClInclude Include="render.h" />
     <ClInclude Include="renderin.h" />
     <ClInclude Include="rtc.h" />

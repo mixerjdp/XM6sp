@@ -82,7 +82,6 @@ public:
 	Event* FASTCALL GetNextEvent() const { return ev.next; }
 										// 次のイベントを取得
 
-public:
 	// 内部データ定義(Ver2.01まで。enableがある)
 	typedef struct {
 		Device *device;					// 親デバイス

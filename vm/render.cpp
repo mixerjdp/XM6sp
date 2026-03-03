@@ -15,7 +15,7 @@
 #include "tvram.h"
 #include "gvram.h"
 #include "sprite.h"
-#include "rend_asm.h"
+#include "rend_soft.h"
 #include "render.h"
 
 //===========================================================================
@@ -3239,4 +3239,5 @@ void FASTCALL Render::Process()
 	// çXêV
 	render.first = render.last;
 }
+
 

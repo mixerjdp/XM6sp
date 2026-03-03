@@ -120,6 +120,9 @@
     <ClCompile Include="..\vm\render.cpp">
       <Filter>ソース ファイル\VM</Filter>
     </ClCompile>
+    <ClCompile Include="..\vm\rend_soft.cpp">
+      <Filter>ソース ファイル\VM</Filter>
+    </ClCompile>
     <ClCompile Include="..\vm\rtc.cpp">
       <Filter>ソース ファイル\VM</Filter>
     </ClCompile>
@@ -340,7 +343,7 @@
     <ClInclude Include="printer.h">
       <Filter>ヘッダー ファイル\VM</Filter>
     </ClInclude>
-    <ClInclude Include="rend_asm.h">
+    <ClInclude Include="rend_soft.h">
       <Filter>ヘッダー ファイル\VM</Filter>
     </ClInclude>
     <ClInclude Include="render.h">
@@ -471,9 +474,6 @@
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <CustomBuild Include="..\vm\rend_asm.asm">
-      <Filter>ソース ファイル\VM</Filter>
-    </CustomBuild>
     <CustomBuild Include="..\cpu\star.asm">
       <Filter>ソース ファイル\VM</Filter>
     </CustomBuild>
