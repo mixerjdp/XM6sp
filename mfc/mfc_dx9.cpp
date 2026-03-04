@@ -491,15 +491,29 @@ BOOL CDX9Renderer::PresentFrame(int srcWidth, int srcHeight, BOOL fillWindow, BO
         float destW, destH, destX = 0, destY = 0;
         if (fillWindow) {
             if (keepAspect) {
-                float srcAspect = (float)srcWidth / (float)srcHeight;
-                float backAspect = bw / bh;
-                if (srcAspect > backAspect) {
-                    destW = bw;
-                    destH = bw / srcAspect;
-                } else {
-                    destH = bh;
-                    destW = bh * srcAspect;
+                int scaleX = (srcWidth > 0) ? ((int)bw / srcWidth) : 1;
+                int scaleY = (srcHeight > 0) ? ((int)bh / srcHeight) : 1;
+                int scale = (scaleX < scaleY) ? scaleX : scaleY;
+                if (scale < 1) {
+                    scale = 1;
                 }
+
+                destW = (float)(srcWidth * scale);
+                destH = (float)(srcHeight * scale);
+
+                if ((destW > bw) || (destH > bh)) {
+                    float srcAspect = (float)srcWidth / (float)srcHeight;
+                    float backAspect = bw / bh;
+                    if (srcAspect > backAspect) {
+                        destW = bw;
+                        destH = bw / srcAspect;
+                    }
+                    else {
+                        destH = bh;
+                        destW = bh * srcAspect;
+                    }
+                }
+
                 destX = (bw - destW) / 2.0f;
                 destY = (bh - destH) / 2.0f;
             } else {
@@ -509,6 +523,10 @@ BOOL CDX9Renderer::PresentFrame(int srcWidth, int srcHeight, BOOL fillWindow, BO
         } else {
             destW = (float)srcWidth;
             destH = (float)srcHeight;
+        }
+
+        if (keepAspect || !fillWindow) {
+            m_pDevice->Clear(0, NULL, D3DCLEAR_TARGET, D3DCOLOR_XRGB(0, 0, 0), 1.0f, 0);
         }
 
         Vertex *pVertices = NULL;

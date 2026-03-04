@@ -86,7 +86,7 @@ CDrawView::CDrawView()
 	m_hRenderAckEvent = CreateEvent(NULL, FALSE, FALSE, NULL);
 	m_lRenderCmd = 0;
 	m_lPendingShaderEnable = -1;	// -1: no change
-	m_pRenderThread = AfxBeginThread(RenderThreadFunc, this, THREAD_PRIORITY_ABOVE_NORMAL, 0, CREATE_SUSPENDED);
+	m_pRenderThread = AfxBeginThread(RenderThreadFunc, this, THREAD_PRIORITY_NORMAL, 0, CREATE_SUSPENDED);
 	if (m_pRenderThread) {
 		m_pRenderThread->m_bAutoDelete = FALSE;
 		m_pRenderThread->ResumeThread();
@@ -98,6 +98,8 @@ CDrawView::CDrawView()
 	m_lShaderEnabled = 0;	// 0: disabled, 1: enabled (use InterlockedExchange)
 	m_dwOSDUntil = 0;
 	m_dwPerfOSDLastTick = 0;
+	m_dwLastPresentTick = 0;
+	m_dwPresentMinInterval = 16;
 	m_nPerfFPS = 0;
 	m_szPerfLine[0] = _T('\0');
 	m_szOSDText[0] = _T('\0');
@@ -1171,23 +1173,51 @@ void FASTCALL CDrawView::RenderLoop()
 			
 			if (InterlockedExchange(&m_lPresentPending, 0) == 1) {
 				BOOL bPresented = FALSE;
-				if (m_bEnable && m_Info.hBitmap && m_Info.pWork && m_Info.pBits) {
+				DWORD dwCapNow = GetTickCount();
+				if (!m_bRenderVSync && (m_dwPresentMinInterval > 0) && (m_dwLastPresentTick != 0)) {
+					if ((dwCapNow - m_dwLastPresentTick) < m_dwPresentMinInterval) {
+						bPresented = TRUE;
+					}
+				}
+				if (!bPresented && m_bEnable && m_Info.hBitmap && m_Info.pWork && m_Info.pBits) {
 					if (m_DX9Renderer.IsInitialized()) {
 						int srcWidth = 0;
 						int srcHeight = 0;
 						int srcPitch = 0;
+						int dirtyCount = 0;
 						BOOL bCopied = FALSE;
+						BOOL bHasDirty = FALSE;
+						BOOL bNeedOverlay = FALSE;
 						BOOL bUpdated = FALSE;
+						DWORD dwNow = 0;
 
 						::LockVM();
 						CRect rect;
 						GetClientRect(&rect);
 						ReCalc(rect);
+						dwNow = GetTickCount();
+						bNeedOverlay = (m_bShowOSD || (m_szOSDText[0] && (dwNow <= m_dwOSDUntil))) ? TRUE : FALSE;
 						srcWidth = m_Info.nWidth;
 						srcHeight = m_Info.nHeight;
 						srcPitch = m_Info.nBMPWidth;
 
-						if ((srcWidth > 0) && (srcHeight > 0) && (srcPitch >= srcWidth)) {
+						if (m_Info.bBltAll) {
+							bHasDirty = TRUE;
+						}
+						else {
+							dirtyCount = m_Info.nHeight * 64;
+							if (dirtyCount > 0) {
+								BOOL *pDirty = m_Info.pWork->drawflag;
+								for (int i = 0; i < dirtyCount; i++) {
+									if (pDirty[i]) {
+										bHasDirty = TRUE;
+										break;
+									}
+								}
+							}
+						}
+
+						if (bHasDirty && (srcWidth > 0) && (srcHeight > 0) && (srcPitch >= srcWidth)) {
 							if (!m_pStagingBuffer || (m_nStagingWidth < srcWidth) || (m_nStagingHeight < srcHeight)) {
 								int newWidth = (m_nStagingWidth > srcWidth) ? m_nStagingWidth : srcWidth;
 								int newHeight = (m_nStagingHeight > srcHeight) ? m_nStagingHeight : srcHeight;
@@ -1213,23 +1243,41 @@ void FASTCALL CDrawView::RenderLoop()
 							}
 						}
 
-						FinishFrame();
+						if (bHasDirty) {
+							FinishFrame();
+						}
 						::UnlockVM();
 
-						if (bCopied) {
-							bUpdated = m_DX9Renderer.UpdateSurface(m_pStagingBuffer, srcWidth, srcHeight, srcWidth);
+						if (!bHasDirty && !bNeedOverlay) {
+							bPresented = TRUE;
 						}
 
-						if (bUpdated) {
-							DrawOSD(NULL);
-							m_DX9Renderer.SetOverlayText(m_bShowOSD ? m_szPerfLine : NULL,
-								(m_szOSDText[0] && (GetTickCount() <= m_dwOSDUntil)) ? m_szOSDText : NULL);
-							if (m_DX9Renderer.PresentFrame(srcWidth, srcHeight, TRUE, FALSE)) {
+						if (bHasDirty && bCopied) {
+							bUpdated = m_DX9Renderer.UpdateSurface(m_pStagingBuffer, srcWidth, srcHeight, srcWidth);
+						}
+						else if (!bHasDirty) {
+							bUpdated = TRUE;
+						}
+
+						if (!bPresented && bUpdated) {
+							if ((srcWidth <= 0) || (srcHeight <= 0)) {
 								bPresented = TRUE;
+							}
+							else if (bNeedOverlay) {
+								DrawOSD(NULL);
+							}
+							if (!bPresented) {
+								m_DX9Renderer.SetOverlayText(m_bShowOSD ? m_szPerfLine : NULL,
+									(m_szOSDText[0] && (dwNow <= m_dwOSDUntil)) ? m_szOSDText : NULL);
+								if (m_DX9Renderer.PresentFrame(srcWidth, srcHeight, TRUE,
+									(m_pFrmWnd && m_pFrmWnd->m_bFullScreen && m_pFrmWnd->m_bIntegerScaling) ? TRUE : FALSE)) {
+									bPresented = TRUE;
+									m_dwLastPresentTick = GetTickCount();
+								}
 							}
 						}
 					}
-					
+
 					if (!bPresented) {
 						m_bUseDX9 = FALSE;
 						if (m_DX9Renderer.IsInitialized()) {

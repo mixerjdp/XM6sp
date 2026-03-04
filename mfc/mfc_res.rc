@@ -159,6 +159,7 @@ BEGIN
         MENUITEM SEPARATOR
         MENUITEM "�A�X�y�N�g��ɂ��킹�Ċg��(&A)", IDM_STRETCH
         MENUITEM "�t���X�N���[��(&U)\tAlt+Enter", IDM_FULLSCREEN
+        MENUITEM "Integer Scaling (&I)", IDM_TOGGLE_INTEGER_SCALING
     END
     POPUP "�f�o�b�O(&D)"
     BEGIN
@@ -689,6 +690,7 @@ BEGIN
             MENUITEM SEPARATOR
             MENUITEM "Stretch with &Aspect Ratio",  IDM_STRETCH
             MENUITEM "F&ull Screen\tAlt+Enter",     IDM_FULLSCREEN
+            MENUITEM "&Integer Scaling",            IDM_TOGGLE_INTEGER_SCALING
             MENUITEM "&CRT Shader\tF9",             IDM_TOGGLE_SHADER
         END
         POPUP "&Depurar"

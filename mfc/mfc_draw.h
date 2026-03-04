@@ -206,6 +206,8 @@ private:
 	DWORD m_dwOSDUntil;
 
 	DWORD m_dwPerfOSDLastTick;
+	DWORD m_dwLastPresentTick;
+	DWORD m_dwPresentMinInterval;
 	int m_nPerfFPS;
 	TCHAR m_szPerfLine[96];
 	TCHAR m_szOSDText[64];

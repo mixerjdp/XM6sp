@@ -1,3 +1,69 @@
+Analisis 1:
+
+La idea clave: convertir el emulador en un núcleo headless (sin UI), y que cada frontend (MFC, SDL2, Qt) solo haga ventana/audio/input/menús.
+
+Arquitectura sugerida
+
+xm6_core (DLL): CPU, memoria, dispositivos, render interno, audio interno, save/load state, mount/eject medios.
+xm6_runtime (puede ir dentro de la misma DLL): estado de ejecución (stop/run/pause/reset), timeline, step loop, comandos.
+frontend_* (EXE): MFC o SDL2 o Qt; presenta video, saca audio, manda input, abre diálogos.
+Dónde poner scheduler, reset, boot
+
+Reset y Power deben vivir en el core/runtime (no en UI).
+El scheduler también: pero idealmente como modo doble:
+step() (determinista, sin hilos)
+run() (hilo opcional gestionado por runtime)
+El frontend solo manda comandos: “mount FD0”, “power on”, “cold reset”, “warm reset”.
+OnKick de MFC desaparece como lógica central; se reemplaza por una secuencia explícita en runtime:
+crear VM
+aplicar config
+montar medios / cargar state
+power/reset según política
+run
+API mínima recomendada (C ABI)
+
+// xm6_api.h
+typedef struct xm6_handle xm6_handle;
+
+xm6_handle* xm6_create(const xm6_config* cfg);
+void xm6_destroy(xm6_handle*);
+
+int xm6_mount_floppy(xm6_handle*, int drive, const char* path, int write_protect);
+int xm6_mount_hdd(xm6_handle*, int unit, const char* path);
+int xm6_load_state(xm6_handle*, const char* path);
+int xm6_save_state(xm6_handle*, const char* path);
+
+void xm6_power(xm6_handle*, int on);
+void xm6_reset(xm6_handle*, int warm);   // 0 cold, 1 warm
+
+// ejecución
+void xm6_step_us(xm6_handle*, int usec); // modo host-driven
+void xm6_run_start(xm6_handle*);         // modo runtime-thread
+void xm6_run_stop(xm6_handle*);
+
+// video/audio/input
+int  xm6_get_frame(xm6_handle*, xm6_frame* out);    // dirty rects o frame completo
+int  xm6_pull_audio(xm6_handle*, int16_t* dst, int frames);
+void xm6_push_input(xm6_handle*, const xm6_input_event* ev);
+Recomendación fuerte
+
+Usa C ABI (no clases C++) para exportar DLL: te facilita SDL2/Qt/C#/Rust después.
+No expongas structs internos del VM; usa handles opacos.
+Define un xm6_api_version() para compatibilidad futura.
+Plan de migración realista (sin romper todo)
+
+Crear interfaz HostServices en VM (log, tiempo, file, audio/video hooks).
+Sacar dependencias MFC directas del scheduler (CDrawView, CInput, etc.).
+Hacer un runner de consola headless que ejecute ROM/disco (sin UI).
+Encapsular eso en DLL (xm6_core.dll).
+Adaptar MFC para consumir la DLL (será tu prueba de compatibilidad).
+Luego crear frontend SDL2/Qt encima de la misma API.
+Sobre tu bug de cold/warm boot En esta arquitectura lo eliminas mejor con una máquina de estados de arranque (boot policy explícita), no con lógica dispersa entre UI + scheduler + restore.
+
+
+
+Analisis 2:
+
 # Arquitectura DLL/SO para la VM — Análisis de Viabilidad
 
 ## ¿Es posible? Sí, y es la decisión arquitectónica correcta.

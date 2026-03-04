@@ -134,6 +134,7 @@ CFrmWnd::CFrmWnd()
 	m_nWndLeft = 0;
 	m_nWndTop = 0;
 	m_bVSyncEnabled = TRUE;
+	m_bIntegerScaling = FALSE;
 
 	// Subventana
 	m_strWndClsName.Empty();
@@ -350,6 +351,8 @@ BEGIN_MESSAGE_MAP(CFrmWnd, CFrameWnd)
 	ON_COMMAND(IDM_TOGGLE_RENDERER, OnToggleRenderer)
 	ON_COMMAND(IDM_TOGGLE_OSD, OnToggleOSD)
 	ON_COMMAND(IDM_TOGGLE_VSYNC, OnToggleVSync)
+	ON_COMMAND(IDM_TOGGLE_INTEGER_SCALING, OnToggleIntegerScaling)
+	ON_UPDATE_COMMAND_UI(IDM_TOGGLE_INTEGER_SCALING, OnToggleIntegerScalingUI)
 	ON_COMMAND(IDM_TOGGLE_SHADER, OnToggleShader)
 	ON_UPDATE_COMMAND_UI(IDM_TOGGLE_SHADER, OnToggleShaderUI)
 
@@ -3330,6 +3333,23 @@ void CFrmWnd::OnToggleVSync()
 	CString info;
 	info.Format(_T("VSync: %s"), m_bVSyncEnabled ? _T("ON") : _T("OFF"));
 	SetInfo(info);
+}
+
+void CFrmWnd::OnToggleIntegerScaling()
+{
+	m_bIntegerScaling = !m_bIntegerScaling;
+
+	CString info;
+	info.Format(_T("Integer Scaling: %s"), m_bIntegerScaling ? _T("ON") : _T("OFF"));
+	SetInfo(info);
+}
+
+void CFrmWnd::OnToggleIntegerScalingUI(CCmdUI *pCmdUI)
+{
+	if (pCmdUI) {
+		pCmdUI->SetCheck(m_bIntegerScaling ? 1 : 0);
+		pCmdUI->Enable(TRUE);
+	}
 }
 
 //---------------------------------------------------------------------------

@@ -74,6 +74,7 @@ public:
 	BOOL m_bFullScreen;
 	BOOL m_bBorderless;
 	BOOL m_bVSyncEnabled;
+	BOOL m_bIntegerScaling;
 	WINDOWPLACEMENT m_wpPrev;
 	DWORD m_dwPrevStyle;
 	DWORD m_dwPrevExStyle;
@@ -82,6 +83,8 @@ public:
 	void ExitBorderlessFullscreen();
 	void OnToggleRenderer();
 	void OnToggleVSync();
+	void OnToggleIntegerScaling();
+	void OnToggleIntegerScalingUI(CCmdUI *pCmdUI);
 	void OnToggleOSD();
 	void OnToggleShader();
 	void OnToggleShaderUI(CCmdUI *pCmdUI);
