@@ -10,6 +10,7 @@
 #include "os.h"
 #include "xm6.h"
 #include "vm.h"
+#include "cpu.h"
 #include "log.h"
 #include "schedule.h"
 #include "fileio.h"

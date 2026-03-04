@@ -11,7 +11,7 @@
 #if !defined (core_soft_h)
 #define core_soft_h
 
-#include "event.h"
+#include "xm6.h"
 
 //---------------------------------------------------------------------------
 //

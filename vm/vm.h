@@ -11,8 +11,6 @@
 #define vm_h
 
 #include "log.h"
-#include "schedule.h"
-#include "cpu.h"
 #include "filepath.h"
 
 //===========================================================================
@@ -62,7 +60,7 @@ public:
 										// 実行
 	void FASTCALL Trace();
 										// トレース
-	void FASTCALL Break()				{ scheduler->Break(); }
+	void FASTCALL Break();
 										// 実行中止
 
 	// バージョン
@@ -80,7 +78,7 @@ public:
 										// 電源制御
 	BOOL FASTCALL IsPower() const		{ return power; }
 										// 電源状態取得
-	void FASTCALL Interrupt() const		{ cpu->Interrupt(7, -1); }
+	void FASTCALL Interrupt() const;
 										// NMI割り込み
 	Log log;
 										// ログ

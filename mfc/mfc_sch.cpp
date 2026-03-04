@@ -12,6 +12,7 @@
 #include "os.h"
 #include "xm6.h"
 #include "vm.h"
+#include "schedule.h"
 #include "cpu.h"
 #include "mouse.h"
 #include "render.h"

@@ -12,6 +12,7 @@
 #include "os.h"
 #include "xm6.h"
 #include "vm.h"
+#include "schedule.h"
 #include "midi.h"
 #include "config.h"
 #include "mfc_com.h"

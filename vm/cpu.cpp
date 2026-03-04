@@ -12,6 +12,7 @@
 #include "iosc.h"
 #include "mfp.h"
 #include "vm.h"
+#include "schedule.h"
 #include "log.h"
 #include "memory.h"
 #include "dmac.h"
