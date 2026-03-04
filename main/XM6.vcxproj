@@ -238,7 +238,6 @@
     <ClCompile Include="..\vm\core_soft.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <!-- star.asm removed: replaced by Musashi CPU core -->
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="..\mfc\mfc_res.rc">
@@ -326,7 +325,6 @@
     <ClInclude Include="mfc_vid.h" />
     <ClInclude Include="mfc_w32.h" />
   </ItemGroup>
-  <!-- star.vcxproj reference removed: replaced by Musashi -->
   <ItemGroup>
     <Image Include="..\mfc\res\crt.bmp" />
     <Image Include="..\mfc\res\x68000.ico" />
