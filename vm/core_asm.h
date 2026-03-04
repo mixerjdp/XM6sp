@@ -10,6 +10,8 @@
 #if !defined (core_asm_h)
 #define core_asm_h
 
+#include "xm6.h"
+
 //#if _MSC_VER >= 1200
 
 #if defined(__cplusplus)

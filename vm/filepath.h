@@ -10,6 +10,9 @@
 #if !defined(filepath_h)
 #define filepath_h
 
+#include "os.h"
+#include "xm6.h"
+
 #if defined(_WIN32)
 
 //---------------------------------------------------------------------------

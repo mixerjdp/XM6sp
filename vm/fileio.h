@@ -10,6 +10,9 @@
 #if !defined(fileio_h)
 #define fileio_h
 
+#include "os.h"
+#include "xm6.h"
+
 //===========================================================================
 //
 //	ƒtƒ@ƒCƒ‹I/O

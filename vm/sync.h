@@ -9,6 +9,7 @@
 
 #if !defined(sync_h)
 #define sync_h
+#include "xm6.h"
 #if defined(_WIN32)
 
 //---------------------------------------------------------------------------

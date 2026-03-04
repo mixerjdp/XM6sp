@@ -11,6 +11,7 @@
 #if !defined(windrv_h)
 #define windrv_h
 
+#include "os.h"
 #include "device.h"
 
 //¡Å‘åƒXƒŒƒbƒh”

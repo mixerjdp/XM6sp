@@ -10,6 +10,8 @@
 #if !defined (rend_asm_h)
 #define rend_asm_h
 
+#include "xm6.h"
+
 #if defined(__cplusplus)
 extern "C" {
 #endif	//__cplusplus
