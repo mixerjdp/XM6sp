@@ -545,7 +545,7 @@ private:
 										// ƒ^ƒXƒNƒo[‰B‚·
 	BOOL RestoreFrameWnd(BOOL bFullScreen);
 										// ƒEƒBƒ“ƒhƒE•œŒ³
-	void RestoreDiskState();
+	BOOL RestoreDiskState();
 										// ƒfƒBƒXƒNEƒXƒe[ƒg•œŒ³
 	int m_nStatus;
 										// ƒXƒe[ƒ^ƒXƒR[ƒh

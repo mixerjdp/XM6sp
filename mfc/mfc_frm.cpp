@@ -988,7 +988,7 @@ void FASTCALL CFrmWnd::InitCmd(LPCTSTR lpszCmd)
 		LPCTSTR szPath = (LPCTSTR)part;
 
 		// Intentar abrir
-		bReset = InitCmdSub(i, szPath);
+		bReset |= InitCmdSub(i, szPath);
 
 		// Obtener la siguiente parte
 		part = cmdString.Tokenize(_T(" "), curPos);
@@ -1381,6 +1381,7 @@ LONG CFrmWnd::OnKick(UINT /*uParam*/, LONG /*lParam*/)
 	LPSTR lpszCmd;
 	LPCTSTR lpszCommand;
 	BOOL bFullScreen;
+	BOOL bLoadedXM6State;
 
 	XM6BootTrace(_T("OnKick enter status=%d"), m_nStatus);
 
@@ -1429,37 +1430,30 @@ LONG CFrmWnd::OnKick(UINT /*uParam*/, LONG /*lParam*/)
 		::GetVM()->PowerSW(FALSE);
 	}
 
-	// Inicializacion atomica de VM para evitar carreras de arranque.
-	::LockVM();
-	XM6BootTrace(_T("OnKick LockVM power_off=%d"), config.power_off ? 1 : 0);
-
 	// Preparacion de la subventana
 	m_strWndClsName = AfxRegisterWndClass(CS_HREDRAW | CS_VREDRAW | CS_DBLCLKS);
 
-	// Activa componentes, pero difiere Scheduler hasta terminar restauracion.
+	// Activa el componente. Sin embargo, el Programador es configurable.
 	GetView()->Enable(TRUE);
 	pComponent = m_pFirstComponent;
 	while (pComponent) {
 		if (pComponent->GetID() == MAKEID('S', 'C', 'H', 'E')) {
-			pComponent = pComponent->GetNextComponent();
-			continue;
+			if (config.power_off) {
+				// “dŒ¹OFF‚Å‹N“®
+				pComponent->Enable(FALSE);
+				pComponent = pComponent->GetNextComponent();
+				continue;
+			}
 		}
 
 		pComponent->Enable(TRUE);
 		pComponent = pComponent->GetNextComponent();
 	}
 
-	// ƒŠƒZƒbƒg(ƒXƒe[ƒ^ƒXƒo[‚Ì‚½‚ß)
+	// OnReset pre-boot suprimido para evitar reset antes de RestoreDiskState.
 	if (!config.power_off) {
-		XM6BootTrace(_T("OnKick calling OnReset pre-boot"));
-		OnReset();
-		XM6BootTrace(_T("OnKick finished OnReset pre-boot"));
+		XM6BootTrace(_T("OnKick skip OnReset pre-boot"));
 	}
-
-	// Restaurar discos/estado con VM bloqueada (antes de habilitar scheduler)
-	XM6BootTrace(_T("OnKick RestoreDiskState begin"));
-	RestoreDiskState();
-	XM6BootTrace(_T("OnKick RestoreDiskState end"));
 
 	// ƒRƒ}ƒ“ƒhƒ‰ƒCƒ“ˆ—
 	lpszCmd = AfxGetApp()->m_lpCmdLine;
@@ -1485,21 +1479,24 @@ LONG CFrmWnd::OnKick(UINT /*uParam*/, LONG /*lParam*/)
 		PostMessage(WM_COMMAND, IDM_FULLSCREEN);
 	}
 
-	// Habilitar Scheduler al final para arrancar con estado estable.
-	pComponent = m_pFirstComponent;
-	while (pComponent) {
-		if (pComponent->GetID() == MAKEID('S', 'C', 'H', 'E')) {
-			if (!config.power_off) {
-				pComponent->Enable(TRUE);
-				XM6BootTrace(_T("OnKick scheduler enabled"));
-			}
-			break;
-		}
-		pComponent = pComponent->GetNextComponent();
-	}
+	// ƒfƒBƒXƒNEƒXƒe[ƒg‚ðƒŒƒWƒ…[ƒ€
+	XM6BootTrace(_T("OnKick RestoreDiskState begin"));
+	bLoadedXM6State = RestoreDiskState();
+	XM6BootTrace(_T("OnKick RestoreDiskState end loaded_state=%d"), bLoadedXM6State ? 1 : 0);
 
-	::UnlockVM();
-	XM6BootTrace(_T("OnKick UnlockVM and entering main loop"));
+	if (config.power_off) {
+		XM6BootTrace(_T("OnKick skip OnReset post-restore (power_off)"));
+	}
+	else if (bLoadedXM6State) {
+		XM6BootTrace(_T("OnKick skip OnReset post-restore (state loaded)"));
+	}
+	else {
+		XM6BootTrace(_T("OnKick delay before OnReset post-restore: 90ms"));
+		::Sleep(90);
+		XM6BootTrace(_T("OnKick calling OnReset post-restore"));
+		OnReset();
+		XM6BootTrace(_T("OnKick finished OnReset post-restore"));
+	}
 
 	// –³ŒÀƒ‹[ƒv
 	dwTick20 = ::GetTickCount();
@@ -2023,7 +2020,7 @@ BOOL CFrmWnd::RestoreFrameWnd(BOOL bFullScreen)
 //	Restaurar el estado del disco
 //
 //---------------------------------------------------------------------------
-void CFrmWnd::RestoreDiskState()
+BOOL CFrmWnd::RestoreDiskState()
 {
 	int nDrive;
 	TCHAR szMRU[_MAX_PATH];
@@ -2054,7 +2051,7 @@ void CFrmWnd::RestoreDiskState()
 					}
 
 					// ‚±‚êˆÈ~‚Íˆ—‚µ‚È‚¢(FD, MO, CD‚ÌƒAƒNƒZƒX’†‚ÉƒZ[ƒu‚µ‚½ê‡)
-					return;
+					return TRUE;
 				}
 			}
 		}
@@ -2139,6 +2136,8 @@ void CFrmWnd::RestoreDiskState()
 	if (config.resume_dir) {
 		Filepath::SetDefaultDir(config.resume_path);
 	}
+
+	return FALSE;
 }
 
 //---------------------------------------------------------------------------
