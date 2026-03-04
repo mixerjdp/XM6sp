@@ -22,7 +22,6 @@
 #include "mfc_cpu.h"
 #include "mfc_cfg.h"
 #include "mfc_res.h"
-#include "mfc_sch.h"
 #include <shlwapi.h>
 #pragma comment(lib, "shlwapi.lib")
 #include "mfc_inp.h"

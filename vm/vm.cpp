@@ -9,6 +9,7 @@
 
 #include "os.h"
 #include "xm6.h"
+#include "vm.h"
 #include "device.h"
 #include "schedule.h"
 #include "cpu.h"
@@ -43,8 +44,6 @@
 #include "neptune.h"
 #include "filepath.h"
 #include "fileio.h"
-#include "vm.h"
-#include "vm.h"
 #include <vector>
 #include <algorithm>
 
