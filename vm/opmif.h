@@ -12,7 +12,7 @@
 
 #include "device.h"
 #include "event.h"
-#include "opm.h"
+namespace FM { class OPM; }
 
 //===========================================================================
 //
