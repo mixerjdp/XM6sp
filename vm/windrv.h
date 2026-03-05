@@ -13,6 +13,7 @@
 
 #include "os.h"
 #include "device.h"
+#include "host_services.h"
 
 //■最大スレッド数
 #define WINDRV_THREAD_MAX	3
@@ -27,10 +28,6 @@
 
 class FileSys;
 
-typedef void (FASTCALL *windrv_host_sync_callback_t)(void *user);
-void FASTCALL WindrvSetHostSyncCallbacks(windrv_host_sync_callback_t lock_vm_cb, windrv_host_sync_callback_t unlock_vm_cb, void *user);
-void FASTCALL WindrvHostLockVM(void);
-void FASTCALL WindrvHostUnlockVM(void);
 
 //---------------------------------------------------------------------------
 //
@@ -250,9 +247,9 @@ public:
 										// ユニット番号取得
 	Memory* FASTCALL GetMemory() const { ASSERT(this); return memory; }
 										// ユニット番号取得
-	void FASTCALL LockXM() { ASSERT(this); if (m_bReady) ::WindrvHostLockVM(); }
+	void FASTCALL LockXM();
 										// VMへのアクセス開始
-	void FASTCALL UnlockXM() { ASSERT(this); if (m_bReady) ::WindrvHostUnlockVM(); }
+	void FASTCALL UnlockXM();
 										// VMへのアクセス終了
 	void FASTCALL Ready();
 										// コマンド完了を待たずにVMスレッド実行再開
@@ -455,6 +452,11 @@ public:
 
 		// プロセス
 		FileSys *fs;					// ファイルシステム
+
+		// host callback
+		host_sync_callback_t lock_vm_cb;
+		host_sync_callback_t unlock_vm_cb;
+		void *sync_user;
 	} windrv_t;
 
 public:
@@ -485,6 +487,9 @@ public:
 	// 外部API
 	void FASTCALL SetFileSys(FileSys *fs);
 										// ファイルシステム設定
+	void FASTCALL SetHostSyncCallbacks(host_sync_callback_t lock_vm_cb, host_sync_callback_t unlock_vm_cb, void *user);
+	void FASTCALL HostLockVM() const;
+	void FASTCALL HostUnlockVM() const;
 
 	// コマンドハンドラ用 外部API
 	void FASTCALL SetUnitMax(DWORD nUnitMax) { ASSERT(this); windrv.drives = nUnitMax; }
@@ -600,3 +605,4 @@ public:
 };
 
 #endif // windrv_h
+

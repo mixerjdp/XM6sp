@@ -18,31 +18,6 @@
 #include "cpu.h"
 #include "config.h"
 #include "windrv.h"
-static windrv_host_sync_callback_t g_windrv_lock_vm_cb = NULL;
-static windrv_host_sync_callback_t g_windrv_unlock_vm_cb = NULL;
-static void *g_windrv_sync_user = NULL;
-
-void FASTCALL WindrvSetHostSyncCallbacks(windrv_host_sync_callback_t lock_vm_cb, windrv_host_sync_callback_t unlock_vm_cb, void *user)
-{
-	g_windrv_lock_vm_cb = lock_vm_cb;
-	g_windrv_unlock_vm_cb = unlock_vm_cb;
-	g_windrv_sync_user = user;
-}
-
-void FASTCALL WindrvHostLockVM(void)
-{
-	if (g_windrv_lock_vm_cb) {
-		g_windrv_lock_vm_cb(g_windrv_sync_user);
-	}
-}
-
-void FASTCALL WindrvHostUnlockVM(void)
-{
-	if (g_windrv_unlock_vm_cb) {
-		g_windrv_unlock_vm_cb(g_windrv_sync_user);
-	}
-}
-
 //===========================================================================
 //
 //	Human68k
@@ -422,6 +397,23 @@ DWORD FASTCALL CWindrv::ExecuteCompatible(DWORD nA5)
 //	コマンド完了を待たずにVMスレッド実行再開
 //
 //---------------------------------------------------------------------------
+void FASTCALL CWindrv::LockXM()
+{
+	ASSERT(this);
+
+	if (m_bReady && windrv) {
+		windrv->HostLockVM();
+	}
+}
+
+void FASTCALL CWindrv::UnlockXM()
+{
+	ASSERT(this);
+
+	if (m_bReady && windrv) {
+		windrv->HostUnlockVM();
+	}
+}
 void FASTCALL CWindrv::Ready()
 {
 	ASSERT(this);
@@ -632,6 +624,9 @@ BOOL FASTCALL Windrv::Init()
 	// ドライブ0、ファイルシステム無し
 	windrv.drives = 0;
 	windrv.fs = NULL;
+	windrv.lock_vm_cb = NULL;
+	windrv.unlock_vm_cb = NULL;
+	windrv.sync_user = NULL;
 
 	// スレッド初期化
 	Memory* memory = (Memory*)vm->SearchDevice(MAKEID('M', 'E', 'M', ' '));
@@ -1062,6 +1057,32 @@ void FASTCALL CWindrv::ExecuteCommand()
 //	ファイルシステム設定
 //
 //---------------------------------------------------------------------------
+void FASTCALL Windrv::SetHostSyncCallbacks(host_sync_callback_t lock_vm_cb, host_sync_callback_t unlock_vm_cb, void *user)
+{
+	ASSERT(this);
+
+	windrv.lock_vm_cb = lock_vm_cb;
+	windrv.unlock_vm_cb = unlock_vm_cb;
+	windrv.sync_user = user;
+}
+
+void FASTCALL Windrv::HostLockVM() const
+{
+	ASSERT(this);
+
+	if (windrv.lock_vm_cb) {
+		windrv.lock_vm_cb(windrv.sync_user);
+	}
+}
+
+void FASTCALL Windrv::HostUnlockVM() const
+{
+	ASSERT(this);
+
+	if (windrv.unlock_vm_cb) {
+		windrv.unlock_vm_cb(windrv.sync_user);
+	}
+}
 void FASTCALL Windrv::SetFileSys(FileSys *fs)
 {
 	ASSERT(this);
@@ -3047,3 +3068,4 @@ void FASTCALL Windrv::Log(DWORD level, char* message) const
 	LOG((enum Log::loglevel)level, "%s", message);
 }
 #endif // WINDRV_LOG
+

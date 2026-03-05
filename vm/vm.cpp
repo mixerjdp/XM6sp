@@ -233,7 +233,7 @@ void FASTCALL VM::Interrupt() const
 
 	cpu->Interrupt(7, -1);
 }
-void FASTCALL VM::SetHostMessageCallback(HostMessageCallback callback, void *user)
+void FASTCALL VM::SetHostMessageCallback(host_message_callback_t callback, void *user)
 {
 	ASSERT(this);
 
@@ -241,12 +241,33 @@ void FASTCALL VM::SetHostMessageCallback(HostMessageCallback callback, void *use
 	host_message_user = user;
 }
 
-void FASTCALL VM::SetHostSyncCallbacks(HostSyncCallback lock_vm_cb, HostSyncCallback unlock_vm_cb, void *user)
+void FASTCALL VM::SetHostSyncCallbacks(host_sync_callback_t lock_vm_cb, host_sync_callback_t unlock_vm_cb, void *user)
 {
 	ASSERT(this);
-	::WindrvSetHostSyncCallbacks((windrv_host_sync_callback_t)lock_vm_cb, (windrv_host_sync_callback_t)unlock_vm_cb, user);
+
+	Windrv* pWindrv = (Windrv*)SearchDevice(MAKEID('W', 'D', 'R', 'V'));
+	ASSERT(pWindrv);
+	if (!pWindrv) {
+		return;
+	}
+
+	pWindrv->SetHostSyncCallbacks(lock_vm_cb, unlock_vm_cb, user);
 }
 
+
+void FASTCALL VM::SetHostServices(const host_services_t *services)
+{
+	ASSERT(this);
+
+	if (!services) {
+		SetHostMessageCallback(NULL, NULL);
+		SetHostSyncCallbacks(NULL, NULL, NULL);
+		return;
+	}
+
+	SetHostMessageCallback(services->message, services->user);
+	SetHostSyncCallbacks(services->lock_vm, services->unlock_vm, services->user);
+}
 void FASTCALL VM::NotifyHostMessage(const TCHAR* message) const
 {
 	ASSERT(this);
@@ -740,3 +761,4 @@ void FASTCALL VM::GetVersion(DWORD& major, DWORD& minor)
 	major = major_ver;
 	minor = minor_ver;
 }
+

@@ -12,6 +12,7 @@
 
 #include "log.h"
 #include "filepath.h"
+#include "host_services.h"
 
 //===========================================================================
 //
@@ -21,8 +22,6 @@
 class VM
 {
 public:
-	typedef void (FASTCALL *HostMessageCallback)(const TCHAR* message, void *user);
-	typedef void (FASTCALL *HostSyncCallback)(void *user);
 
 	// 基本ファンクション
 	VM();
@@ -83,8 +82,9 @@ public:
 										// 電源状態取得
 	void FASTCALL Interrupt() const;
 										// NMI割り込み
-	void FASTCALL SetHostMessageCallback(HostMessageCallback callback, void *user);
-	void FASTCALL SetHostSyncCallbacks(HostSyncCallback lock_vm_cb, HostSyncCallback unlock_vm_cb, void *user);
+	void FASTCALL SetHostMessageCallback(host_message_callback_t callback, void *user);
+	void FASTCALL SetHostSyncCallbacks(host_sync_callback_t lock_vm_cb, host_sync_callback_t unlock_vm_cb, void *user);
+	void FASTCALL SetHostServices(const host_services_t *services);
 						// Host callback for non-fatal messages
 
 	Log log;
@@ -114,7 +114,7 @@ private:
 	DWORD minor_ver;
 										// マイナーバージョン
 	void FASTCALL NotifyHostMessage(const TCHAR* message) const;
-	HostMessageCallback host_message_callback;
+	host_message_callback_t host_message_callback;
 	void *host_message_user;
 
 	Filepath current;
@@ -122,3 +122,5 @@ private:
 };
 
 #endif	// vm_h
+
+
