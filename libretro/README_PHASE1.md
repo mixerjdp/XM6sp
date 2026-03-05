@@ -15,6 +15,8 @@ This folder contains a libretro bridge implementation that uses
 - Savestates: memory serialize/unserialize via `xm6_state_size` and
   `xm6_{save,load}_state_mem`.
 - RAM exposure through `retro_get_memory_data/size`.
+  - If backend `xm6core.dll` does not export `xm6_get_main_ram`, the core still
+    loads and only disables RAM exposure.
 - Disk control + disk control ext callbacks.
 - BIOS/system path handoff from frontend system dir to
   `xm6_set_system_dir`.
@@ -37,6 +39,23 @@ Or with the included batch script:
 build_libretro.bat
 ```
 
+This MinGW build now links statically (`-static -static-libgcc -static-libstdc++`)
+to avoid runtime DLL mismatches in RetroArch.
+
+## Build (Windows/MSVC)
+
+Use the MSVC helper script to generate architecture-specific DLLs:
+
+```bat
+build_libretro_msvc.bat win32
+build_libretro_msvc.bat win64
+```
+
+Outputs:
+
+- `xm6_libretro_win32.dll`
+- `xm6_libretro_win64.dll`
+
 Output:
 
 - `xm6_libretro.dll`
@@ -47,6 +66,16 @@ Place both files together in RetroArch `cores/`:
 
 - `xm6_libretro.dll`
 - `xm6core.dll`
+
+Architecture must match:
+
+- `RetroArch Win32` + `xm6_libretro_win32.dll` + `xm6core.dll` (x86)
+- `RetroArch Win64` + `xm6_libretro_win64.dll` + `xm6core.dll` (x64)
+
+Current repo backend:
+
+- `main/Debug_DLL/xm6core.dll` is x86 (`machine 14C`), so it is compatible with
+  Win32 RetroArch only.
 
 BIOS files must be in RetroArch `system/` directory so the core can resolve:
 

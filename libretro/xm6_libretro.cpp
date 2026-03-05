@@ -43,6 +43,7 @@ static bool g_disk_ejected = false;
 
 static bool g_use_exec_to_frame = true;
 static bool g_pad_start_select_as_xf = true;
+static unsigned g_video_not_ready_count = 0;
 
 static bool g_prev_start = false;
 static bool g_prev_select = false;
@@ -80,6 +81,9 @@ struct xm6_api_t {
   int (XM6CORE_CALL *load_state_mem)(XM6Handle handle, const void *buffer, unsigned int size) = nullptr;
 
   void *(XM6CORE_CALL *get_main_ram)(XM6Handle handle, unsigned int *out_size) = nullptr;
+  int (XM6CORE_CALL *diag_init_probe)(char *out_text, unsigned int out_text_size) = nullptr;
+  int (XM6CORE_CALL *video_attach_default_buffer)(XM6Handle handle, unsigned int width,
+                                                  unsigned int height) = nullptr;
 };
 
 static xm6_api_t g_xm6;
@@ -99,6 +103,29 @@ static void core_log(enum retro_log_level level, const char *fmt, ...)
     OutputDebugStringA(buffer);
     OutputDebugStringA("\n");
   }
+}
+
+static void core_log_last_error(const char *prefix)
+{
+  const DWORD err = GetLastError();
+  char *msg = nullptr;
+  const DWORD flags = FORMAT_MESSAGE_ALLOCATE_BUFFER |
+                      FORMAT_MESSAGE_FROM_SYSTEM |
+                      FORMAT_MESSAGE_IGNORE_INSERTS;
+  DWORD len = FormatMessageA(flags, nullptr, err, 0,
+                             reinterpret_cast<LPSTR>(&msg), 0, nullptr);
+  if (len > 0 && msg) {
+    while (len > 0 && (msg[len - 1] == '\r' || msg[len - 1] == '\n')) {
+      msg[len - 1] = '\0';
+      --len;
+    }
+    core_log(RETRO_LOG_ERROR, "[xm6-libretro] %s (winerr=%lu: %s)",
+             prefix, static_cast<unsigned long>(err), msg);
+    LocalFree(msg);
+    return;
+  }
+  core_log(RETRO_LOG_ERROR, "[xm6-libretro] %s (winerr=%lu)",
+           prefix, static_cast<unsigned long>(err));
 }
 
 static bool get_core_module_dir(char *out_dir, size_t out_dir_size)
@@ -180,7 +207,7 @@ static bool load_xm6_api()
   }
 
   if (!g_xm6.module) {
-    core_log(RETRO_LOG_ERROR, "[xm6-libretro] Could not load xm6core.dll");
+    core_log_last_error("Could not load xm6core.dll");
     return false;
   }
 
@@ -199,12 +226,18 @@ static bool load_xm6_api()
       !load_required_symbol(&g_xm6.eject_fdd, "xm6_eject_fdd") ||
       !load_required_symbol(&g_xm6.state_size, "xm6_state_size") ||
       !load_required_symbol(&g_xm6.save_state_mem, "xm6_save_state_mem") ||
-      !load_required_symbol(&g_xm6.load_state_mem, "xm6_load_state_mem") ||
-      !load_required_symbol(&g_xm6.get_main_ram, "xm6_get_main_ram")) {
+      !load_required_symbol(&g_xm6.load_state_mem, "xm6_load_state_mem")) {
     unload_xm6_api();
     return false;
   }
 
+  load_optional_symbol(&g_xm6.get_main_ram, "xm6_get_main_ram");
+  if (!g_xm6.get_main_ram) {
+    core_log(RETRO_LOG_WARN, "[xm6-libretro] Optional symbol not found: xm6_get_main_ram (RAM exposure disabled)");
+  }
+
+  load_optional_symbol(&g_xm6.diag_init_probe, "xm6_diag_init_probe");
+  load_optional_symbol(&g_xm6.video_attach_default_buffer, "xm6_video_attach_default_buffer");
   load_optional_symbol(&g_xm6.exec_to_frame, "xm6_exec_to_frame");
   load_optional_symbol(&g_xm6.set_system_dir, "xm6_set_system_dir");
 
@@ -223,8 +256,22 @@ static bool ensure_xm6_handle()
 
   g_xm6_handle = g_xm6.create();
   if (!g_xm6_handle) {
+    if (g_xm6.diag_init_probe) {
+      char diag_msg[512] = {};
+      if (g_xm6.diag_init_probe(diag_msg, static_cast<unsigned int>(sizeof(diag_msg))) == XM6CORE_OK &&
+          diag_msg[0] != '\0') {
+        core_log(RETRO_LOG_ERROR, "[xm6-libretro] %s", diag_msg);
+      }
+    }
     core_log(RETRO_LOG_ERROR, "[xm6-libretro] xm6_create failed");
     return false;
+  }
+
+  if (g_xm6.video_attach_default_buffer) {
+    const int rc = g_xm6.video_attach_default_buffer(g_xm6_handle, 1024, 1024);
+    if (rc != XM6CORE_OK) {
+      core_log(RETRO_LOG_WARN, "[xm6-libretro] video_attach_default_buffer failed rc=%d", rc);
+    }
   }
 
   if (g_xm6.audio_configure(g_xm6_handle, k_sample_rate) != XM6CORE_OK) {
@@ -263,7 +310,130 @@ static bool set_system_directory_from_frontend()
     return true;
   }
 
-  return g_xm6.set_system_dir(sys_dir) == XM6CORE_OK;
+  std::string normalized = sys_dir;
+  const char last = normalized.empty() ? '\0' : normalized[normalized.size() - 1];
+  if (last != '\\' && last != '/') {
+    normalized.push_back('\\');
+  }
+
+  core_log(RETRO_LOG_INFO, "[xm6-libretro] set_system_dir: %s", normalized.c_str());
+  return g_xm6.set_system_dir(normalized.c_str()) == XM6CORE_OK;
+}
+
+static bool get_frontend_system_directory(std::string *out_dir)
+{
+  if (!out_dir || !g_environ_cb) {
+    return false;
+  }
+  const char *sys_dir = nullptr;
+  if (!g_environ_cb(RETRO_ENVIRONMENT_GET_SYSTEM_DIRECTORY, &sys_dir) ||
+      !sys_dir || !*sys_dir) {
+    return false;
+  }
+  *out_dir = sys_dir;
+  return true;
+}
+
+static bool file_exists(const std::string &path)
+{
+  if (path.empty()) {
+    return false;
+  }
+  const DWORD attrs = GetFileAttributesA(path.c_str());
+  return attrs != INVALID_FILE_ATTRIBUTES && (attrs & FILE_ATTRIBUTE_DIRECTORY) == 0;
+}
+
+static bool get_file_size_bytes(const std::string &path, unsigned long long *out_size)
+{
+  if (out_size) {
+    *out_size = 0;
+  }
+  if (path.empty()) {
+    return false;
+  }
+
+  WIN32_FILE_ATTRIBUTE_DATA data = {};
+  if (!GetFileAttributesExA(path.c_str(), GetFileExInfoStandard, &data)) {
+    return false;
+  }
+  if (data.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) {
+    return false;
+  }
+
+  const unsigned long long size =
+      (static_cast<unsigned long long>(data.nFileSizeHigh) << 32) |
+      static_cast<unsigned long long>(data.nFileSizeLow);
+  if (out_size) {
+    *out_size = size;
+  }
+  return true;
+}
+
+static std::string join_path(const std::string &dir, const char *name)
+{
+  if (!name || !*name) {
+    return dir;
+  }
+  if (dir.empty()) {
+    return std::string(name);
+  }
+  const char last = dir[dir.size() - 1];
+  if (last == '\\' || last == '/') {
+    return dir + name;
+  }
+  return dir + "\\" + name;
+}
+
+static void log_system_bios_probe()
+{
+  std::string sys_dir;
+  if (!get_frontend_system_directory(&sys_dir)) {
+    core_log(RETRO_LOG_WARN, "[xm6-libretro] Frontend system dir is empty/unavailable");
+    return;
+  }
+
+  const std::string ipl = join_path(sys_dir, "IPLROM.DAT");
+  const std::string cg = join_path(sys_dir, "CGROM.DAT");
+  const std::string cgtmp = join_path(sys_dir, "CGROM.TMP");
+
+  const bool have_ipl = file_exists(ipl);
+  const bool have_cg = file_exists(cg) || file_exists(cgtmp);
+  unsigned long long ipl_size = 0;
+  unsigned long long cg_size = 0;
+  unsigned long long cgtmp_size = 0;
+  const bool have_ipl_size = get_file_size_bytes(ipl, &ipl_size);
+  const bool have_cg_size = get_file_size_bytes(cg, &cg_size);
+  const bool have_cgtmp_size = get_file_size_bytes(cgtmp, &cgtmp_size);
+
+  core_log(RETRO_LOG_INFO, "[xm6-libretro] system dir: %s", sys_dir.c_str());
+  if (!have_ipl) {
+    core_log(RETRO_LOG_ERROR, "[xm6-libretro] Missing BIOS file: %s", ipl.c_str());
+  }
+  if (!have_cg) {
+    core_log(RETRO_LOG_ERROR,
+             "[xm6-libretro] Missing BIOS file: %s (or %s)", cg.c_str(), cgtmp.c_str());
+  }
+  if (have_ipl_size) {
+    core_log(RETRO_LOG_INFO, "[xm6-libretro] IPLROM.DAT size=%llu bytes (expected 131072)",
+             ipl_size);
+    if (ipl_size != 131072ull) {
+      core_log(RETRO_LOG_ERROR, "[xm6-libretro] IPLROM.DAT invalid size: %llu", ipl_size);
+    }
+  }
+  if (have_cg_size) {
+    core_log(RETRO_LOG_INFO, "[xm6-libretro] CGROM.DAT size=%llu bytes (expected 786432)",
+             cg_size);
+    if (cg_size != 786432ull) {
+      core_log(RETRO_LOG_ERROR, "[xm6-libretro] CGROM.DAT invalid size: %llu", cg_size);
+    }
+  }
+  if (have_cgtmp_size) {
+    core_log(RETRO_LOG_INFO, "[xm6-libretro] CGROM.TMP size=%llu bytes (expected 786432)",
+             cgtmp_size);
+    if (cgtmp_size != 786432ull) {
+      core_log(RETRO_LOG_ERROR, "[xm6-libretro] CGROM.TMP invalid size: %llu", cgtmp_size);
+    }
+  }
 }
 
 static std::string trim_copy(const std::string &s)
@@ -406,6 +576,8 @@ static bool mount_current_disk()
              g_disk_index, path.c_str());
     return false;
   }
+  core_log(RETRO_LOG_INFO, "[xm6-libretro] Mounted disk[%u] on FDD%d: %s",
+           g_disk_index, g_disk_drive, path.c_str());
   return true;
 }
 
@@ -437,6 +609,11 @@ static void apply_core_option_values()
   } else {
     g_pad_start_select_as_xf = true;
   }
+
+  core_log(RETRO_LOG_INFO, "[xm6-libretro] options: drive=FDD%d exec_mode=%s start_select=%s",
+           g_disk_drive,
+           g_use_exec_to_frame ? "exec_to_frame" : "legacy_exec",
+           g_pad_start_select_as_xf ? "xf_keys" : "disabled");
 }
 
 static void register_core_options()
@@ -590,6 +767,28 @@ static unsigned calc_audio_frames_for_run()
     frames = 2048;
   }
   return frames;
+}
+
+static void push_geometry_if_changed(unsigned width, unsigned height)
+{
+  if (!g_environ_cb || width == 0 || height == 0) {
+    return;
+  }
+
+  if (width == g_frame_width && height == g_frame_height) {
+    return;
+  }
+
+  g_frame_width = width;
+  g_frame_height = height;
+
+  retro_game_geometry geom = {};
+  geom.base_width = g_frame_width;
+  geom.base_height = g_frame_height;
+  geom.max_width = 1024;
+  geom.max_height = 1024;
+  geom.aspect_ratio = 4.0f / 3.0f;
+  g_environ_cb(RETRO_ENVIRONMENT_SET_GEOMETRY, &geom);
 }
 
 static bool joy_pressed(unsigned id)
@@ -850,6 +1049,7 @@ void retro_init(void)
   g_disk_ejected = false;
   g_prev_start = false;
   g_prev_select = false;
+  g_video_not_ready_count = 0;
   g_audio_buffer.clear();
 
   load_xm6_api();
@@ -910,12 +1110,19 @@ bool retro_load_game(const struct retro_game_info *info)
   if (!info || !info->path || !*info->path) {
     return false;
   }
-  if (!ensure_xm6_handle()) {
+  if (!load_xm6_api()) {
     return false;
   }
 
   if (!set_system_directory_from_frontend()) {
     core_log(RETRO_LOG_WARN, "[xm6-libretro] Could not set system directory");
+  }
+  log_system_bios_probe();
+
+  if (!ensure_xm6_handle()) {
+    // If VM init failed, this probe makes missing BIOS/path issues explicit.
+    log_system_bios_probe();
+    return false;
   }
 
   apply_core_option_values();
@@ -970,6 +1177,7 @@ void retro_unload_game(void)
   g_disk_ejected = false;
   g_prev_start = false;
   g_prev_select = false;
+  g_video_not_ready_count = 0;
 }
 
 unsigned retro_get_region(void)
@@ -1006,16 +1214,28 @@ void retro_run(void)
   }
 
   xm6_video_frame_t frame = {};
-  if (g_xm6.video_poll(g_xm6_handle, &frame) == XM6CORE_OK && frame.pixels_argb32 &&
-      frame.width > 0 && frame.height > 0) {
-    g_frame_width = frame.width;
-    g_frame_height = frame.height;
+  int vrc = g_xm6.video_poll(g_xm6_handle, &frame);
+  if (vrc != XM6CORE_OK && g_use_exec_to_frame) {
+    // Fallback for backends where exec_to_frame does not expose a ready frame reliably.
+    g_xm6.exec(g_xm6_handle, 36000);
+    vrc = g_xm6.video_poll(g_xm6_handle, &frame);
+  }
+
+  if (vrc == XM6CORE_OK && frame.pixels_argb32 && frame.width > 0 && frame.height > 0) {
+    g_video_not_ready_count = 0;
+    push_geometry_if_changed(frame.width, frame.height);
     if (g_video_cb) {
       g_video_cb(frame.pixels_argb32, frame.width, frame.height,
                  frame.stride_pixels * sizeof(uint32_t));
     }
     g_xm6.video_consume(g_xm6_handle);
   } else if (g_video_cb) {
+    ++g_video_not_ready_count;
+    if ((g_video_not_ready_count % 120u) == 1u) {
+      core_log(RETRO_LOG_WARN,
+               "[xm6-libretro] video not ready (count=%u), showing previous/blank frame",
+               g_video_not_ready_count);
+    }
     g_video_cb(nullptr, g_frame_width, g_frame_height, g_frame_width * sizeof(uint32_t));
   }
 
@@ -1026,6 +1246,9 @@ void retro_run(void)
     if (g_xm6.audio_mix(g_xm6_handle, g_audio_buffer.data(), want_frames, &out_frames) == XM6CORE_OK &&
         out_frames > 0) {
       g_audio_batch_cb(g_audio_buffer.data(), out_frames);
+    } else if (want_frames > 0) {
+      std::memset(g_audio_buffer.data(), 0, want_frames * 2 * sizeof(int16_t));
+      g_audio_batch_cb(g_audio_buffer.data(), want_frames);
     }
   } else if (g_audio_cb) {
     g_audio_cb(0, 0);

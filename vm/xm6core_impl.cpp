@@ -25,6 +25,7 @@
 #include "fdd.h"
 #include "ppi.h"
 #include "opmif.h"
+#include "opm.h"
 #include "adpcm.h"
 #include "sasi.h"
 #include "scsi.h"
@@ -56,6 +57,7 @@ struct XM6Context {
 	Mouse *mouse;
 	FDD *fdd;
 	OPMIF *opmif;
+	FM::OPM *opm_engine;
 	ADPCM *adpcm;
 	SASI *sasi;
 	SCSI *scsi;
@@ -193,6 +195,12 @@ XM6CORE_API void XM6CORE_CALL xm6_destroy(XM6Handle handle)
 		delete ctx->vm;
 		ctx->vm = NULL;
 	}
+
+	if (ctx->opmif) {
+		ctx->opmif->SetEngine(NULL);
+	}
+	delete ctx->opm_engine;
+	ctx->opm_engine = NULL;
 
 	delete[] ctx->opm_buf;
 	delete[] ctx->adpcm_buf;
@@ -685,10 +693,29 @@ XM6CORE_API int XM6CORE_CALL xm6_video_poll(
 		return XM6CORE_ERR_NOT_READY;
 	}
 
+	if (r->width <= 0 || r->height <= 0 || r->mixwidth <= 0 || r->mixheight <= 0) {
+		return XM6CORE_ERR_NOT_READY;
+	}
+
+	unsigned int visible_w = (unsigned int)r->width;
+	unsigned int visible_h = (unsigned int)r->height;
+	unsigned int stride = (unsigned int)r->mixwidth;
+	unsigned int max_h = (unsigned int)r->mixheight;
+
+	if (visible_w > stride) {
+		visible_w = stride;
+	}
+	if (visible_h > max_h) {
+		visible_h = max_h;
+	}
+	if (visible_w == 0 || visible_h == 0) {
+		return XM6CORE_ERR_NOT_READY;
+	}
+
 	out_frame->pixels_argb32 = (const unsigned int*)r->mixbuf;
-	out_frame->width = (unsigned int)r->mixwidth;
-	out_frame->height = (unsigned int)r->mixheight;
-	out_frame->stride_pixels = (unsigned int)r->mixwidth;
+	out_frame->width = visible_w;
+	out_frame->height = visible_h;
+	out_frame->stride_pixels = stride;
 
 	return XM6CORE_OK;
 }
@@ -749,8 +776,24 @@ XM6CORE_API int XM6CORE_CALL xm6_audio_configure(
 	}
 
 	// Inicializar buffers de síntesis en OPM y ADPCM
+	if (ctx->opmif) {
+		ctx->opmif->SetEngine(NULL);
+	}
+	delete ctx->opm_engine;
+	ctx->opm_engine = new(std::nothrow) FM::OPM;
+	if (!ctx->opm_engine) {
+		return XM6CORE_ERR_INIT_FAILED;
+	}
+	ctx->opm_engine->Init(4000000, sample_rate, true);
+	ctx->opm_engine->Reset();
+	ctx->opm_engine->SetVolume(54);
+
 	ctx->opmif->InitBuf((DWORD)sample_rate);
+	ctx->opmif->SetEngine(ctx->opm_engine);
+	ctx->opmif->EnableFM(TRUE);
 	ctx->adpcm->InitBuf((DWORD)sample_rate);
+	ctx->adpcm->EnableADPCM(TRUE);
+	ctx->adpcm->SetVolume(52);
 
 	// Realocar buffer temporal de mezcla (stereo: 2 DWORDs por frame)
 	// Tamaño máximo razonable: 1 segundo de audio
@@ -813,39 +856,39 @@ XM6CORE_API int XM6CORE_CALL xm6_audio_mix(
 
 	// OPM: procesar y obtener samples disponibles
 	DWORD ready = ctx->opmif->ProcessBuf();
-	if (ready > frames) {
-		ready = frames;
-	}
 
 	// Limpiar buffer temporal
 	memset(ctx->opm_buf, 0, frames * 2 * sizeof(DWORD));
 
-	// OPM: llenar buffer (stereo DWORD interleaved)
-	ctx->opmif->GetBuf(ctx->opm_buf, (int)ready);
+	// Igual que frontend MFC: pedir frames y luego recortar a ready.
+	ctx->opmif->GetBuf(ctx->opm_buf, (int)frames);
+	if (ready < frames) {
+		frames = ready;
+	}
 
 	// ADPCM: sumar al mismo buffer
-	ctx->adpcm->GetBuf(ctx->opm_buf, (int)ready);
+	ctx->adpcm->GetBuf(ctx->opm_buf, (int)frames);
 
-	// ADPCM: sincronización
-	if (ready < frames) {
-		ctx->adpcm->Wait(0);
+	// ADPCM: sincronizacion
+	if (ready > frames) {
+		ctx->adpcm->Wait((int)(ready - frames));
 	} else {
 		ctx->adpcm->Wait(0);
 	}
 
 	// SCSI CD-DA: sumar al mismo buffer
 	if (ctx->scsi) {
-		ctx->scsi->GetBuf(ctx->opm_buf, (int)ready, (DWORD)ctx->audio_rate);
+		ctx->scsi->GetBuf(ctx->opm_buf, (int)frames, (DWORD)ctx->audio_rate);
 	}
 
-	// Convertir int32 stereo ↁEint16 stereo interleaved
+	// Convertir int32 stereo -> int16 stereo interleaved
 	const int *src = (const int*)ctx->opm_buf;
-	unsigned int total_samples = ready * 2;  // L + R
+	unsigned int total_samples = frames * 2;  // L + R
 	for (unsigned int i = 0; i < total_samples; i++) {
 		out_interleaved_stereo[i] = saturate_s16(src[i]);
 	}
 
-	*out_frames = (unsigned int)ready;
+	*out_frames = frames;
 	return XM6CORE_OK;
 }
 

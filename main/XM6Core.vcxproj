@@ -158,6 +158,7 @@
     <ClCompile Include="..\vm\vm.cpp" />
     <ClCompile Include="..\vm\windrv.cpp" />
     <ClCompile Include="..\vm\core_soft.cpp" />
+    <ClCompile Include="..\vm\xm6core_diag.cpp" />
     <ClCompile Include="..\vm\xm6core_impl.cpp" />
     <ClCompile Include="..\vm\xm6core_stubs.cpp" />
     <ClCompile Include="..\vm\musashi_adapter.cpp" />

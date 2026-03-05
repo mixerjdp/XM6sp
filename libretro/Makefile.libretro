@@ -3,7 +3,7 @@ TARGET := $(TARGET_NAME)_libretro.dll
 
 CXX ?= g++
 CXXFLAGS ?= -O2 -std=gnu++14 -Wall -Wextra -Wno-cast-function-type -D__LIBRETRO__
-LDFLAGS ?= -shared
+LDFLAGS ?= -shared -static -static-libgcc -static-libstdc++
 
 SOURCES := xm6_libretro.cpp
 INCLUDES := -I. -I../vm

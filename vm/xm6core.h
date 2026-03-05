@@ -46,6 +46,7 @@ typedef struct xm6_video_frame_t {
 typedef void (XM6CORE_CALL *xm6_message_callback_t)(const char* message, void* user);
 
 XM6CORE_API const char* XM6CORE_CALL xm6_get_version(void);
+XM6CORE_API const char* XM6CORE_CALL xm6_get_last_error(void);
 
 XM6CORE_API XM6Handle XM6CORE_CALL xm6_create(void);
 XM6CORE_API void XM6CORE_CALL xm6_destroy(XM6Handle handle);
@@ -99,6 +100,9 @@ XM6CORE_API int XM6CORE_CALL xm6_save_state_mem(XM6Handle handle, void* buffer, 
 XM6CORE_API int XM6CORE_CALL xm6_load_state_mem(XM6Handle handle, const void* buffer, unsigned int size);
 
 XM6CORE_API void* XM6CORE_CALL xm6_get_main_ram(XM6Handle handle, unsigned int* out_size);
+XM6CORE_API int XM6CORE_CALL xm6_diag_init_probe(char* out_text, unsigned int out_text_size);
+XM6CORE_API int XM6CORE_CALL xm6_video_attach_default_buffer(
+  XM6Handle handle, unsigned int width, unsigned int height);
 
 XM6CORE_API void XM6CORE_CALL xm6_get_vm_version(XM6Handle handle, unsigned int* out_major, unsigned int* out_minor);
 
