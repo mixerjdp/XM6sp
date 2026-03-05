@@ -1,0 +1,99 @@
+//----------------------------------------------------------------------------
+//
+//  XM6 Core C API
+//
+//----------------------------------------------------------------------------
+
+#ifndef XM6CORE_H
+#define XM6CORE_H
+
+#if defined(_WIN32)
+  #if defined(XM6CORE_EXPORTS)
+    #define XM6CORE_API __declspec(dllexport)
+  #elif defined(XM6CORE_STATIC)
+    #define XM6CORE_API
+  #else
+    #define XM6CORE_API __declspec(dllimport)
+  #endif
+  #define XM6CORE_CALL __cdecl
+#else
+  #define XM6CORE_API
+  #define XM6CORE_CALL
+#endif
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+typedef struct XM6Handle__* XM6Handle;
+
+enum {
+  XM6CORE_OK = 0,
+  XM6CORE_ERR_INVALID_ARGUMENT = -1,
+  XM6CORE_ERR_INVALID_HANDLE = -2,
+  XM6CORE_ERR_INIT_FAILED = -3,
+  XM6CORE_ERR_IO = -4,
+  XM6CORE_ERR_NOT_READY = -5
+};
+
+typedef struct xm6_video_frame_t {
+  const unsigned int* pixels_argb32;
+  unsigned int width;
+  unsigned int height;
+  unsigned int stride_pixels;
+} xm6_video_frame_t;
+
+typedef void (XM6CORE_CALL *xm6_message_callback_t)(const char* message, void* user);
+
+XM6CORE_API const char* XM6CORE_CALL xm6_get_version(void);
+
+XM6CORE_API XM6Handle XM6CORE_CALL xm6_create(void);
+XM6CORE_API void XM6CORE_CALL xm6_destroy(XM6Handle handle);
+
+XM6CORE_API int XM6CORE_CALL xm6_set_message_callback(XM6Handle handle, xm6_message_callback_t callback, void* user);
+
+XM6CORE_API int XM6CORE_CALL xm6_exec(XM6Handle handle, unsigned int hus);
+XM6CORE_API int XM6CORE_CALL xm6_reset(XM6Handle handle);
+XM6CORE_API int XM6CORE_CALL xm6_set_power(XM6Handle handle, int enabled);
+XM6CORE_API int XM6CORE_CALL xm6_get_power(XM6Handle handle);
+XM6CORE_API int XM6CORE_CALL xm6_set_power_switch(XM6Handle handle, int enabled);
+XM6CORE_API int XM6CORE_CALL xm6_get_power_switch(XM6Handle handle);
+
+XM6CORE_API int XM6CORE_CALL xm6_video_poll(XM6Handle handle, xm6_video_frame_t* out_frame);
+XM6CORE_API int XM6CORE_CALL xm6_video_consume(XM6Handle handle);
+
+XM6CORE_API int XM6CORE_CALL xm6_audio_configure(XM6Handle handle, unsigned int sample_rate);
+XM6CORE_API int XM6CORE_CALL xm6_audio_mix(
+  XM6Handle handle,
+  short* out_interleaved_stereo,
+  unsigned int frames,
+  unsigned int* out_frames
+);
+
+XM6CORE_API int XM6CORE_CALL xm6_input_key(XM6Handle handle, unsigned int xm6_keycode, int pressed);
+XM6CORE_API int XM6CORE_CALL xm6_input_mouse(XM6Handle handle, int x, int y, int left, int right);
+XM6CORE_API int XM6CORE_CALL xm6_input_mouse_reset(XM6Handle handle);
+
+XM6CORE_API int XM6CORE_CALL xm6_input_joy(
+  XM6Handle handle,
+  int port,
+  const unsigned int axes[4],
+  const int buttons[8]
+);
+
+XM6CORE_API int XM6CORE_CALL xm6_mount_fdd(XM6Handle handle, int drive, const char* image_path, int media_hint);
+XM6CORE_API int XM6CORE_CALL xm6_eject_fdd(XM6Handle handle, int drive, int force);
+
+XM6CORE_API int XM6CORE_CALL xm6_mount_sasi_hdd(XM6Handle handle, int slot, const char* image_path);
+XM6CORE_API int XM6CORE_CALL xm6_mount_scsi_hdd(XM6Handle handle, int slot, const char* image_path);
+
+XM6CORE_API int XM6CORE_CALL xm6_save_state(XM6Handle handle, const char* state_path);
+XM6CORE_API int XM6CORE_CALL xm6_load_state(XM6Handle handle, const char* state_path);
+
+XM6CORE_API void XM6CORE_CALL xm6_get_vm_version(XM6Handle handle, unsigned int* out_major, unsigned int* out_minor);
+
+#ifdef __cplusplus
+}
+#endif
+
+#endif  // XM6CORE_H
