@@ -12,6 +12,8 @@
 #if !defined(mfc_snd_h)
 #define mfc_snd_h
 
+#include "mfc.h"
+
 #include "opm.h"
 #include "fileio.h"
 

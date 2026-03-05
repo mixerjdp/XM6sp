@@ -12,6 +12,8 @@
 #if !defined(mfc_info_h)
 #define mfc_info_h
 
+#include "mfc.h"
+
 #include "mfc_com.h"
 
 //===========================================================================

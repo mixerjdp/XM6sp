@@ -21,6 +21,8 @@
 class VM
 {
 public:
+	typedef void (FASTCALL *HostMessageCallback)(const TCHAR* message, void *user);
+
 	// 基本ファンクション
 	VM();
 										// コンストラクタ
@@ -80,6 +82,9 @@ public:
 										// 電源状態取得
 	void FASTCALL Interrupt() const;
 										// NMI割り込み
+	void FASTCALL SetHostMessageCallback(HostMessageCallback callback, void *user);
+						// Host callback for non-fatal messages
+
 	Log log;
 										// ログ
 
@@ -106,6 +111,10 @@ private:
 										// メジャーバージョン
 	DWORD minor_ver;
 										// マイナーバージョン
+	void FASTCALL NotifyHostMessage(const TCHAR* message) const;
+	HostMessageCallback host_message_callback;
+	void *host_message_user;
+
 	Filepath current;
 										// カレントデータ
 };

@@ -39,7 +39,7 @@ public:
 										// RAMセーブ
 
 #if defined(_WIN32)
-	BOOL FASTCALL Open(LPCTSTR fname, OpenMode mode);
+	BOOL FASTCALL Open(const TCHAR* fname, OpenMode mode);
 										// オープン
 #endif	// _WIN32
 	BOOL FASTCALL Open(const Filepath& path, OpenMode mode);

@@ -23,7 +23,7 @@ int OPM::pmtable[4][OPM_LFOENTS];
 OPM::OPM()
 {
 	lfo_count_ = 0;
-	lfo_count_prev_ = (UINT)~0;
+	lfo_count_prev_ = (unsigned int)~0;
 	BuildLFOTable();
 	for (int i=0; i<8; i++)
 	{

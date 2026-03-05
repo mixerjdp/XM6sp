@@ -12,6 +12,8 @@
 #if !defined (mfc_asm_h)
 #define mfc_asm_h
 
+#include "mfc.h"
+
 #if defined(__cplusplus)
 extern "C" {
 #endif	//__cplusplus

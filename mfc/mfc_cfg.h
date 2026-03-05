@@ -12,6 +12,8 @@
 #if !defined(mfc_cfg_h)
 #define mfc_cfg_h
 
+#include "mfc.h"
+
 #include "config.h"
 #include "ppi.h"
 

@@ -12,6 +12,8 @@
 #if !defined(mfc_com_h)
 #define mfc_com_h
 
+#include "mfc.h"
+
   //===========================================================================
   //
   //	Componente

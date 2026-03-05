@@ -12,6 +12,8 @@
 #if !defined(mfc_dev_h)
 #define mfc_dev_h
 
+#include "mfc.h"
+
 #include "mfp.h"
 #include "dmac.h"
 #include "scc.h"

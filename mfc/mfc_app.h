@@ -12,6 +12,8 @@
 #if !defined(mfc_app_h)
 #define mfc_app_h
 
+#include "mfc.h"
+
 //===========================================================================
 //
 //	Aplicacion

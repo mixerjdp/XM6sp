@@ -12,6 +12,8 @@
 #if !defined(mfc_port_h)
 #define mfc_port_h
 
+#include "mfc.h"
+
 #include "fileio.h"
 #include "mfc_que.h"
 

@@ -27,6 +27,9 @@
 
 class FileSys;
 
+void FASTCALL LockVM(void);
+void FASTCALL UnlockVM(void);
+
 //---------------------------------------------------------------------------
 //
 //	ステータスコード定義
@@ -253,7 +256,7 @@ public:
 										// コマンド完了を待たずにVMスレッド実行再開
 
 	// スレッド実体
-	static DWORD WINAPI Run(VOID* pThis);
+	static DWORD __stdcall Run(void* pThis);
 										// スレッド実行開始ポイント
 	void FASTCALL Runner();
 										// スレッド実体
@@ -389,11 +392,11 @@ private:
 										// VMスレッド実行再開のときTRUE
 	BOOL m_bTerminate;
 										// スレッド利用終了のときTRUE
-	HANDLE m_hThread;
+	void* m_hThread;
 										// スレッドハンドル
-	HANDLE m_hEventStart;
+	void* m_hEventStart;
 										// コマンド実行開始通知
-	HANDLE m_hEventReady;
+	void* m_hEventReady;
 										// VMスレッド実行再開通知
 };
 

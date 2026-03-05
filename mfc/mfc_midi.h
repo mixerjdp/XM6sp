@@ -12,6 +12,8 @@
 #if !defined(mfc_midi_h)
 #define mfc_midi_h
 
+#include "mfc.h"
+
 #include "mfc_com.h"
 #include "mfc_que.h"
 

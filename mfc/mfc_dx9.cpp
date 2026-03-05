@@ -1,3 +1,4 @@
+#include "mfc.h"
 #include "os.h"
 #include "mfc_dx9.h"
 

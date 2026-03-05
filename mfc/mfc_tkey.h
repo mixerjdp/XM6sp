@@ -12,6 +12,8 @@
 #if !defined(mfc_tkey_h)
 #define mfc_tkey_h
 
+#include "mfc.h"
+
 #include "fileio.h"
 #include "mfc_que.h"
 

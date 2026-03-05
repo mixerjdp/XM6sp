@@ -12,6 +12,8 @@
 #if !defined(mfc_rend_h)
 #define mfc_rend_h
 
+#include "mfc.h"
+
 #include "mfc_sub.h"
 
 //===========================================================================

@@ -7,6 +7,7 @@
 //
 //---------------------------------------------------------------------------
 
+#include <windows.h>
 #include "os.h"
 #include "xm6.h"
 #include "vm.h"
@@ -71,6 +72,8 @@ VM::VM()
 	mfp = NULL;
 	rtc = NULL;
 	sram = NULL;
+	host_message_callback = NULL;
+	host_message_user = NULL;
 
 	// バージョン(実際はプラットフォームから再設定される)
 	major_ver = 0x01;
@@ -230,6 +233,28 @@ void FASTCALL VM::Interrupt() const
 
 	cpu->Interrupt(7, -1);
 }
+void FASTCALL VM::SetHostMessageCallback(HostMessageCallback callback, void *user)
+{
+	ASSERT(this);
+
+	host_message_callback = callback;
+	host_message_user = user;
+}
+
+void FASTCALL VM::NotifyHostMessage(const TCHAR* message) const
+{
+	ASSERT(this);
+	ASSERT(message);
+
+	if (host_message_callback) {
+		host_message_callback(message, host_message_user);
+		return;
+	}
+
+	::OutputDebugString(message);
+	::OutputDebugString(_T("\n"));
+}
+
 DWORD FASTCALL VM::Save(const Filepath& googlePath) {
 	ASSERT(this);
 
@@ -238,13 +263,13 @@ DWORD FASTCALL VM::Save(const Filepath& googlePath) {
 	DWORD pos = OriginalSave(tempPath);  // Llama original Save (renombra tu vieja VM::Save a OriginalSave)
 	if (pos == 0) {
 		// Log error o MessageBox para debug
-		AfxMessageBox(_T("Fallo al guardar a temp"));
+		NotifyHostMessage(_T("Fallo al guardar a temp"));
 		return 0;
 	}
 
 	// Copia temp a google
 	if (!::CopyFile(tempPath.GetPath(), googlePath.GetPath(), FALSE)) {
-		AfxMessageBox(_T("Fallo copia a google - posible corrupci por sync"));
+		NotifyHostMessage(_T("Fallo copia a google - posible corrupci por sync"));
 		_tunlink(tempPath.GetPath());
 		return 0;
 	}

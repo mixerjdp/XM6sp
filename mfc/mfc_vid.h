@@ -12,6 +12,8 @@
 #if !defined(mfc_vid_h)
 #define mfc_vid_h
 
+#include "mfc.h"
+
 #include "mfc_sub.h"
 
 //===========================================================================

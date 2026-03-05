@@ -9,6 +9,7 @@
 
 #if defined(_WIN32)
 
+#include <windows.h>
 #include "os.h"
 #include "xm6.h"
 #include "filepath.h"
@@ -109,7 +110,7 @@ void FASTCALL Filepath::SysFile(SysFileType sys)
 //	ファイル設定(ユーザ)
 //
 //---------------------------------------------------------------------------
-void FASTCALL Filepath::SetPath(LPCTSTR lpszPath)
+void FASTCALL Filepath::SetPath(const TCHAR* lpszPath)
 {
 	ASSERT(this);
 	ASSERT(lpszPath);
@@ -190,11 +191,12 @@ void FASTCALL Filepath::SetBaseDir()
 //	Establecer nombre base para el archivo de configuraci
 //
 //---------------------------------------------------------------------------
-void FASTCALL Filepath::SetBaseFile(CString Nombre)
+void FASTCALL Filepath::SetBaseFile(const TCHAR* lpszName)
 {
 	TCHAR szModule[_MAX_PATH];
 
 	ASSERT(this);
+	ASSERT(lpszName);
 	ASSERT(_tcslen(m_szPath) > 0);
 
 	// モジュールのパス名を得る
@@ -202,7 +204,7 @@ void FASTCALL Filepath::SetBaseFile(CString Nombre)
 	
 	// En este lugar se determina el nombre del archivo de configuracion *-*
 	_tsplitpath(szModule, m_szDrive, m_szDir, m_szFile, NULL);
-	_tcscpy(m_szFile, Nombre);
+	_tcscpy(m_szFile, lpszName);
 
 
 	// 合成
@@ -261,23 +263,25 @@ BOOL FASTCALL Filepath::IsClear() const
 //---------------------------------------------------------------------------
 const char* FASTCALL Filepath::GetShort() const
 {
-	char *lpszFile;
-	char *lpszExt;
-
 	ASSERT(this);
 
-	// TCHAR文字列からchar文字列へ変換
-	lpszFile = T2A((LPTSTR)&m_szFile[0]);
-	lpszExt = T2A((LPTSTR)&m_szExt[0]);
+#if defined(UNICODE)
+	char file[_MAX_FNAME];
+	char ext[_MAX_EXT];
+	if (::WideCharToMultiByte(CP_ACP, 0, m_szFile, -1, file, sizeof(file), NULL, NULL) <= 0) {
+		file[0] = '\0';
+	}
+	if (::WideCharToMultiByte(CP_ACP, 0, m_szExt, -1, ext, sizeof(ext), NULL, NULL) <= 0) {
+		ext[0] = '\0';
+	}
+	strcpy(ShortName, file);
+	strcat(ShortName, ext);
+#else
+	strcpy(ShortName, m_szFile);
+	strcat(ShortName, m_szExt);
+#endif
 
-	// 固定バッファへ合成
-	strcpy(ShortName, lpszFile);
-	strcat(ShortName, lpszExt);
-
-	// strlenで調べたとき、最大59になるように細工
 	ShortName[59] = '\0';
-
-	// const charとして返す
 	return (const char*)ShortName;
 }
 
@@ -287,7 +291,7 @@ const char* FASTCALL Filepath::GetShort() const
 //	※返されるポインタは一時的なもの。すぐコピーすること
 //
 //---------------------------------------------------------------------------
-LPCTSTR FASTCALL Filepath::GetFileExt() const
+const TCHAR* FASTCALL Filepath::GetFileExt() const
 {
 	ASSERT(this);
 
@@ -296,7 +300,7 @@ LPCTSTR FASTCALL Filepath::GetFileExt() const
 	_tcscat(FileExt, m_szExt);
 
 	// LPCTSTRとして返す
-	return (LPCTSTR)FileExt;
+	return (const TCHAR*)FileExt;
 }
 
 //---------------------------------------------------------------------------
@@ -329,7 +333,7 @@ void FASTCALL Filepath::ClearDefaultDir()
 //	デフォルトディレクトリ設定
 //
 //---------------------------------------------------------------------------
-void FASTCALL Filepath::SetDefaultDir(LPCTSTR lpszPath)
+void FASTCALL Filepath::SetDefaultDir(const TCHAR* lpszPath)
 {
 	TCHAR szDrive[_MAX_DRIVE];
 	TCHAR szDir[_MAX_DIR];
@@ -349,9 +353,9 @@ void FASTCALL Filepath::SetDefaultDir(LPCTSTR lpszPath)
 //	デフォルトディレクトリ取得
 //
 //---------------------------------------------------------------------------
-LPCTSTR FASTCALL Filepath::GetDefaultDir()
+const TCHAR* FASTCALL Filepath::GetDefaultDir()
 {
-	return (LPCTSTR)DefaultDir;
+	return (const TCHAR*)DefaultDir;
 }
 
 //---------------------------------------------------------------------------
@@ -362,30 +366,29 @@ LPCTSTR FASTCALL Filepath::GetDefaultDir()
 BOOL FASTCALL Filepath::Save(Fileio *fio, int /*ver*/)
 {
 	TCHAR szPath[_MAX_PATH];
-	CFile file;
 	FILETIME ft;
 
 	ASSERT(this);
 	ASSERT(fio);
 
-	// ゼロクリアして、ゴミを消したものを作る
 	memset(szPath, 0, sizeof(szPath));
 	_tcscpy(szPath, m_szPath);
 
-	// ファイルパスを保存
 	if (!fio->Write(szPath, sizeof(szPath))) {
 		return FALSE;
 	}
 
-	// ファイル日付を取得(2038年問題を避けるため、Win32より取得)
 	memset(&ft, 0, sizeof(ft));
-	if (file.Open(szPath, CFile::modeRead)) {
-		::GetFileTime((HANDLE)file.m_hFile, NULL, NULL, &ft);
-		file.Close();
+	HANDLE hFile = ::CreateFile(szPath, GENERIC_READ, FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
+	if (hFile != INVALID_HANDLE_VALUE) {
+		::GetFileTime(hFile, NULL, NULL, &ft);
+		::CloseHandle(hFile);
 	}
 
-	// 最終書き込み日付を保存
-	if (!fio->Write(&ft, sizeof(ft))) {
+	filepath_time_t saved;
+	saved.low = ft.dwLowDateTime;
+	saved.high = ft.dwHighDateTime;
+	if (!fio->Write(&saved, sizeof(saved))) {
 		return FALSE;
 	}
 
@@ -400,36 +403,43 @@ BOOL FASTCALL Filepath::Save(Fileio *fio, int /*ver*/)
 BOOL FASTCALL Filepath::Load(Fileio *fio, int /*ver*/)
 {
 	TCHAR szPath[_MAX_PATH];
-	CFile file;
+	HANDLE hFile;
 
 	ASSERT(this);
 	ASSERT(fio);
 
-	// フルパスを読み込み
 	if (!fio->Read(szPath, sizeof(szPath))) {
 		return FALSE;
 	}
 
-	// セット
 	SetPath(szPath);
 
-	// 最終書き込み日付を読み込む
 	if (!fio->Read(&m_SavedTime, sizeof(m_SavedTime))) {
 		return FALSE;
 	}
 
-	// ファイル日付を取得(2038年問題を避けるため、Win32より取得)
-	if (!file.Open(szPath, CFile::modeRead)) {
-		// ファイルが存在しなくても、エラーとはしない
+	hFile = ::CreateFile(szPath, GENERIC_READ, FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
+	if (hFile == INVALID_HANDLE_VALUE) {
 		return TRUE;
 	}
-	if (!::GetFileTime((HANDLE)file.m_hFile, NULL, NULL, &m_CurrentTime)) {
+	FILETIME currentTime;
+	if (!::GetFileTime(hFile, NULL, NULL, &currentTime)) {
+		::CloseHandle(hFile);
 		return FALSE;
 	}
-	file.Close();
+	::CloseHandle(hFile);
 
-	// ftの方が新しかった場合、更新フラグUp
-	if (::CompareFileTime(&m_CurrentTime, &m_SavedTime) <= 0) {
+	m_CurrentTime.low = currentTime.dwLowDateTime;
+	m_CurrentTime.high = currentTime.dwHighDateTime;
+
+	FILETIME currentCmp;
+	FILETIME savedCmp;
+	currentCmp.dwLowDateTime = m_CurrentTime.low;
+	currentCmp.dwHighDateTime = m_CurrentTime.high;
+	savedCmp.dwLowDateTime = m_SavedTime.low;
+	savedCmp.dwHighDateTime = m_SavedTime.high;
+
+	if (::CompareFileTime(&currentCmp, &savedCmp) <= 0) {
 		m_bUpdate = FALSE;
 	}
 	else {
@@ -456,7 +466,7 @@ BOOL FASTCALL Filepath::IsUpdate() const
 //	セーブ時間情報を取得
 //
 //---------------------------------------------------------------------------
-void FASTCALL Filepath::GetUpdateTime(FILETIME *pSaved, FILETIME *pCurrent) const
+void FASTCALL Filepath::GetUpdateTime(filepath_time_t *pSaved, filepath_time_t *pCurrent) const
 {
 	ASSERT(this);
 	ASSERT(m_bUpdate);
@@ -471,7 +481,7 @@ void FASTCALL Filepath::GetUpdateTime(FILETIME *pSaved, FILETIME *pCurrent) cons
 //	システムファイルテーブル
 //
 //---------------------------------------------------------------------------
-LPCTSTR Filepath::SystemFile[] = {
+const TCHAR* Filepath::SystemFile[] = {
 	_T("IPLROM.DAT"),
 	_T("IPLROMXV.DAT"),
 	_T("IPLROMCO.DAT"),

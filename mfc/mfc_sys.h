@@ -12,6 +12,8 @@
 #if !defined(mfc_sys_h)
 #define mfc_sys_h
 
+#include "mfc.h"
+
 #include "mfc_sub.h"
 #include "log.h"
 

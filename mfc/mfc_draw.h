@@ -12,6 +12,8 @@
 #if !defined(mfc_draw_h)
 #define mfc_draw_h
 
+#include "mfc.h"
+
 #include "mfc_dx9.h"
 
   //===========================================================================

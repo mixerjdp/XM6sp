@@ -13,6 +13,8 @@
 #if !defined(mfc_host_h)
 #define mfc_host_h
 
+#include "mfc.h"
+
 #include "device.h"
 #include "windrv.h"
 

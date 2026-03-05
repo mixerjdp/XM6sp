@@ -2,43 +2,31 @@
 //
 //	X68000 EMULATOR "XM6"
 //
-//	Copyright (C) 2001,2002 ＰＩ．(ytanaka@ipc-tokai.or.jp)
-//	[ 同期オブジェクト ]
+//	[ Synchronization object ]
 //
 //---------------------------------------------------------------------------
 
 #if !defined(sync_h)
 #define sync_h
+
+#include "os.h"
 #include "xm6.h"
+
 #if defined(_WIN32)
 
-//---------------------------------------------------------------------------
-//
-//	MFCクラス定義
-//
-//---------------------------------------------------------------------------
-class CCriticalSection;
+struct _RTL_CRITICAL_SECTION;
+typedef struct _RTL_CRITICAL_SECTION CRITICAL_SECTION;
 
-//===========================================================================
-//
-//	同期オブジェクト
-//
-//===========================================================================
 class Sync
 {
 public:
 	Sync();
-										// コンストラクタ
 	virtual ~Sync();
-										// デストラクタ
 	void FASTCALL Lock();
-										// ロック
 	void FASTCALL Unlock();
-										// アンロック
 
 private:
-	CCriticalSection *csect;
-										// クリティカルセクション
+	CRITICAL_SECTION *csect;
 };
 
 #endif	// _WIN32

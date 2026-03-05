@@ -9,6 +9,7 @@
 #include <string.h>
 #include <stdarg.h>
 #include <stdio.h>
+#include <windows.h>
 
 #include "os.h"
 #include "xm6.h"

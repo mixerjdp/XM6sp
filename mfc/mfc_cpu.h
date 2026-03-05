@@ -12,6 +12,8 @@
 #if !defined(mfc_cpu_h)
 #define mfc_cpu_h
 
+#include "mfc.h"
+
 #include "mfc_sub.h"
 
   //===========================================================================

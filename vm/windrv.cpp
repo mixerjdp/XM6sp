@@ -413,7 +413,7 @@ void FASTCALL CWindrv::Ready()
 //	スレッド実行開始ポイント
 //
 //---------------------------------------------------------------------------
-DWORD WINAPI CWindrv::Run(VOID* pThis)
+DWORD __stdcall CWindrv::Run(void* pThis)
 {
 	ASSERT(pThis);
 

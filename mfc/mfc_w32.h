@@ -12,6 +12,8 @@
 #if !defined(mfc_w32_h)
 #define mfc_w32_h
 
+#include "mfc.h"
+
 #include "keyboard.h"
 #include "mfc_sub.h"
 #include "mfc_midi.h"

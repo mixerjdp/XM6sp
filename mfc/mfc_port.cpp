@@ -9,6 +9,8 @@
 
 #if defined(_WIN32)
 
+#include "mfc.h"
+
 #include "os.h"
 #include "xm6.h"
 #include "vm.h"

@@ -12,6 +12,7 @@
 #if !defined(mfc_res_h)
 #define mfc_res_h
 
+
 // ����R�}���h
 #define IDM_STDWIN						4096
 #define IDM_US_STDWIN					9096
