@@ -2,7 +2,7 @@
 //
 //	X68000 EMULATOR "XM6"
 //
-//	Copyright (C) 2001-2006 ‚o‚hD(ytanaka@ipc-tokai.or.jp)
+//	Copyright (C) 2001-2006 ï¼°ï¼©ï¼(ytanaka@ipc-tokai.or.jp)
 //	[ SASI ]
 //
 //---------------------------------------------------------------------------
@@ -31,23 +31,23 @@
 
 //---------------------------------------------------------------------------
 //
-//	ƒRƒ“ƒXƒgƒ‰ƒNƒ^
+//	ã‚³ãƒ³ã‚¹ãƒˆãƒ©ã‚¯ã‚¿
 //
 //---------------------------------------------------------------------------
 SASI::SASI(VM *p) : MemDevice(p)
 {
-	// ƒfƒoƒCƒXID‚ğ‰Šú‰»
+	// ãƒ‡ãƒã‚¤ã‚¹IDã‚’åˆæœŸåŒ–
 	dev.id = MAKEID('S', 'A', 'S', 'I');
 	dev.desc = "SASI (IOSC-2)";
 
-	// ŠJnƒAƒhƒŒƒXAI—¹ƒAƒhƒŒƒX
+	// é–‹å§‹ã‚¢ãƒ‰ãƒ¬ã‚¹ã€çµ‚äº†ã‚¢ãƒ‰ãƒ¬ã‚¹
 	memdev.first = 0xe96000;
 	memdev.last = 0xe97fff;
 }
 
 //---------------------------------------------------------------------------
 //
-//	‰Šú‰»
+//	åˆæœŸåŒ–
 //
 //---------------------------------------------------------------------------
 BOOL FASTCALL SASI::Init()
@@ -56,40 +56,40 @@ BOOL FASTCALL SASI::Init()
 
 	ASSERT(this);
 
-	// Šî–{ƒNƒ‰ƒX
+	// åŸºæœ¬ã‚¯ãƒ©ã‚¹
 	if (!MemDevice::Init()) {
 		return FALSE;
 	}
 
-	// DMACæ“¾
+	// DMACå–å¾—
 	dmac = (DMAC*)vm->SearchDevice(MAKEID('D', 'M', 'A', 'C'));
 	ASSERT(dmac);
 
-	// IOSCæ“¾
+	// IOSCå–å¾—
 	iosc = (IOSC*)vm->SearchDevice(MAKEID('I', 'O', 'S', 'C'));
 	ASSERT(iosc);
 
-	// SRAMæ“¾
+	// SRAMå–å¾—
 	sram = (SRAM*)vm->SearchDevice(MAKEID('S', 'R', 'A', 'M'));
 	ASSERT(sram);
 
-	// SCSIæ“¾
+	// SCSIå–å¾—
 	scsi = (SCSI*)vm->SearchDevice(MAKEID('S', 'C', 'S', 'I'));
 	ASSERT(scsi);
 
-	// “à•”ƒf[ƒ^‰Šú‰»
+	// å†…éƒ¨ãƒ‡ãƒ¼ã‚¿åˆæœŸåŒ–
 	memset(&sasi, 0, sizeof(sasi));
 	sxsicpu = FALSE;
 
-	// ƒfƒBƒXƒNì¬
+	// ãƒ‡ã‚£ã‚¹ã‚¯ä½œæˆ
 	for (i=0; i<SASIMax; i++) {
 		sasi.disk[i] = new Disk(this);
 	}
 
-	// ƒJƒŒƒ“ƒg‚È‚µ
+	// ã‚«ãƒ¬ãƒ³ãƒˆãªã—
 	sasi.current = NULL;
 
-	// ƒCƒxƒ“ƒgì¬
+	// ã‚¤ãƒ™ãƒ³ãƒˆä½œæˆ
 	event.SetDevice(this);
 	event.SetDesc("Data Transfer");
 	event.SetUser(0);
@@ -101,7 +101,7 @@ BOOL FASTCALL SASI::Init()
 
 //---------------------------------------------------------------------------
 //
-//	ƒNƒŠ[ƒ“ƒAƒbƒv
+//	ã‚¯ãƒªãƒ¼ãƒ³ã‚¢ãƒƒãƒ—
 //
 //---------------------------------------------------------------------------
 void FASTCALL SASI::Cleanup()
@@ -110,7 +110,7 @@ void FASTCALL SASI::Cleanup()
 
 	ASSERT(this);
 
-	// ƒfƒBƒXƒN‚ğíœ
+	// ãƒ‡ã‚£ã‚¹ã‚¯ã‚’å‰Šé™¤
 	for (i=0; i<SASIMax; i++) {
 		if (sasi.disk[i]) {
 			delete sasi.disk[i];
@@ -118,13 +118,13 @@ void FASTCALL SASI::Cleanup()
 		}
 	}
 
-	// Šî–{ƒNƒ‰ƒX‚Ö
+	// åŸºæœ¬ã‚¯ãƒ©ã‚¹ã¸
 	MemDevice::Cleanup();
 }
 
 //---------------------------------------------------------------------------
 //
-//	ƒŠƒZƒbƒg
+//	ãƒªã‚»ãƒƒãƒˆ
 //
 //---------------------------------------------------------------------------
 void FASTCALL SASI::Reset()
@@ -133,31 +133,31 @@ void FASTCALL SASI::Reset()
 	Memory::memtype type;
 
 	ASSERT(this);
-	LOG0(Log::Normal, "ƒŠƒZƒbƒg");
+	LOG0(Log::Normal, "ãƒªã‚»ãƒƒãƒˆ");
 
-	// SCSIƒ^ƒCƒv(ƒƒ‚ƒŠ‚É–â‚¢‡‚í‚¹‚é)
+	// SCSIã‚¿ã‚¤ãƒ—(ãƒ¡ãƒ¢ãƒªã«å•ã„åˆã‚ã›ã‚‹)
 	memory = (Memory*)vm->SearchDevice(MAKEID('M', 'E', 'M', ' '));
 	ASSERT(memory);
 	type = memory->GetMemType();
 	switch (type) {
-		// SASI‚Ì‚İ
+		// SASIã®ã¿
 		case Memory::None:
 		case Memory::SASI:
 			sasi.scsi_type = 0;
 			break;
 
-		// ŠO•t
+		// å¤–ä»˜
 		case Memory::SCSIExt:
 			sasi.scsi_type = 1;
 			break;
 
-		// ‚»‚Ì‘¼(“à‘ )
+		// ãã®ä»–(å†…è”µ)
 		default:
 			sasi.scsi_type = 2;
 			break;
 	}
 
-	// SCSI‚ğg‚¤ê‡ASxSI‚Æ‚Í”r‘¼‚Æ‚·‚é(SxSI‹Ö~)
+	// SCSIã‚’ä½¿ã†å ´åˆã€SxSIã¨ã¯æ’ä»–ã¨ã™ã‚‹(SxSIç¦æ­¢)
 	if (sasi.scsi_type != 0) {
 		if (sasi.sxsi_drives != 0) {
 			sasi.sxsi_drives = 0;
@@ -165,43 +165,43 @@ void FASTCALL SASI::Reset()
 		}
 	}
 
-	// ƒƒ‚ƒŠƒXƒCƒbƒ`‘‚«‚İ
+	// ãƒ¡ãƒ¢ãƒªã‚¹ã‚¤ãƒƒãƒæ›¸ãè¾¼ã¿
 	if (sasi.memsw) {
-		// SASI‚ª‘¶İ‚·‚éê‡‚Ì‚İAƒZƒbƒg
+		// SASIãŒå­˜åœ¨ã™ã‚‹å ´åˆã®ã¿ã€ã‚»ãƒƒãƒˆ
 		if (sasi.scsi_type < 2) {
-			// $ED005A:SASIƒfƒBƒXƒN”
+			// $ED005A:SASIãƒ‡ã‚£ã‚¹ã‚¯æ•°
 			sram->SetMemSw(0x5a, sasi.sasi_drives);
 		}
 		else {
-			// SASIƒCƒ“ƒ^ƒtƒF[ƒX‚ª‚È‚¢‚Ì‚Å0
+			// SASIã‚¤ãƒ³ã‚¿ãƒ•ã‚§ãƒ¼ã‚¹ãŒãªã„ã®ã§0
 			sram->SetMemSw(0x5a, 0x00);
 		}
 
-		// SCSI‚ª‘¶İ‚µ‚È‚¢ê‡‚Ì‚İAƒNƒŠƒA
+		// SCSIãŒå­˜åœ¨ã—ãªã„å ´åˆã®ã¿ã€ã‚¯ãƒªã‚¢
 		if (sasi.scsi_type == 0) {
-			// $ED006F:SCSIƒtƒ‰ƒO('V'‚ÅSCSI—LŒø)
+			// $ED006F:SCSIãƒ•ãƒ©ã‚°('V'ã§SCSIæœ‰åŠ¹)
 			sram->SetMemSw(0x6f, 0x00);
-			// $ED0070:SCSIí•Ê(–{‘Ì/ŠO•t)+–{‘ÌSCSI ID
+			// $ED0070:SCSIç¨®åˆ¥(æœ¬ä½“/å¤–ä»˜)+æœ¬ä½“SCSI ID
 			sram->SetMemSw(0x70, 0x07);
-			// $ED0071:SCSI‚É‚æ‚éSASIƒGƒ~ƒ…ƒŒ[ƒVƒ‡ƒ“ƒtƒ‰ƒO
+			// $ED0071:SCSIã«ã‚ˆã‚‹SASIã‚¨ãƒŸãƒ¥ãƒ¬ãƒ¼ã‚·ãƒ§ãƒ³ãƒ•ãƒ©ã‚°
 			sram->SetMemSw(0x71, 0x00);
 		}
 	}
 
-	// ƒCƒxƒ“ƒgƒŠƒZƒbƒg
+	// ã‚¤ãƒ™ãƒ³ãƒˆãƒªã‚»ãƒƒãƒˆ
 	event.SetUser(0);
 	event.SetTime(0);
 
-	// ƒoƒXƒŠƒZƒbƒg
+	// ãƒã‚¹ãƒªã‚»ãƒƒãƒˆ
 	BusFree();
 
-	// ƒJƒŒƒ“ƒgƒfƒoƒCƒX‚È‚µ
+	// ã‚«ãƒ¬ãƒ³ãƒˆãƒ‡ãƒã‚¤ã‚¹ãªã—
 	sasi.current = NULL;
 }
 
 //---------------------------------------------------------------------------
 //
-//	ƒZ[ƒu
+//	ã‚»ãƒ¼ãƒ–
 //
 //---------------------------------------------------------------------------
 BOOL FASTCALL SASI::Save(Fileio *fio, int ver)
@@ -212,9 +212,9 @@ BOOL FASTCALL SASI::Save(Fileio *fio, int ver)
 	ASSERT(this);
 	ASSERT(fio);
 
-	LOG0(Log::Normal, "ƒZ[ƒu");
+	LOG0(Log::Normal, "ã‚»ãƒ¼ãƒ–");
 
-	// ƒfƒBƒXƒN‚ğƒtƒ‰ƒbƒVƒ…
+	// ãƒ‡ã‚£ã‚¹ã‚¯ã‚’ãƒ•ãƒ©ãƒƒã‚·ãƒ¥
 	for (i=0; i<SASIMax; i++) {
 		ASSERT(sasi.disk[i]);
 		if (!sasi.disk[i]->Flush()) {
@@ -222,23 +222,23 @@ BOOL FASTCALL SASI::Save(Fileio *fio, int ver)
 		}
 	}
 
-	// ƒTƒCƒY‚ğƒZ[ƒu
+	// ã‚µã‚¤ã‚ºã‚’ã‚»ãƒ¼ãƒ–
 	sz = sizeof(sasi_t);
 	if (!fio->Write(&sz, sizeof(sz))) {
 		return FALSE;
 	}
 
-	// À‘Ì‚ğƒZ[ƒu
+	// å®Ÿä½“ã‚’ã‚»ãƒ¼ãƒ–
 	if (!fio->Write(&sasi, (int)sz)) {
 		return FALSE;
 	}
 
-	// ƒCƒxƒ“ƒg‚ğƒZ[ƒu
+	// ã‚¤ãƒ™ãƒ³ãƒˆã‚’ã‚»ãƒ¼ãƒ–
 	if (!event.Save(fio, ver)) {
 		return FALSE;
 	}
 
-	// ƒpƒX‚ğƒZ[ƒu
+	// ãƒ‘ã‚¹ã‚’ã‚»ãƒ¼ãƒ–
 	for (i=0; i<SASIMax; i++) {
 		if (!sasihd[i].Save(fio, ver)) {
 			return FALSE;
@@ -253,12 +253,12 @@ BOOL FASTCALL SASI::Save(Fileio *fio, int ver)
 		return FALSE;
 	}
 
-	// version2.02Šg’£
+	// version2.02æ‹¡å¼µ
 	if (!fio->Write(&sxsicpu, sizeof(sxsicpu))) {
 		return FALSE;
 	}
 
-	// version2.03Šg’£
+	// version2.03æ‹¡å¼µ
 	for (i=0; i<SASIMax; i++) {
 		ASSERT(sasi.disk[i]);
 		if (!sasi.disk[i]->Save(fio, ver)) {
@@ -271,7 +271,7 @@ BOOL FASTCALL SASI::Save(Fileio *fio, int ver)
 
 //---------------------------------------------------------------------------
 //
-//	ƒ[ƒh
+//	ãƒ­ãƒ¼ãƒ‰
 //
 //---------------------------------------------------------------------------
 BOOL FASTCALL SASI::Load(Fileio *fio, int ver)
@@ -283,9 +283,9 @@ BOOL FASTCALL SASI::Load(Fileio *fio, int ver)
 	ASSERT(this);
 	ASSERT(fio);
 
-	LOG0(Log::Normal, "ƒ[ƒh");
+	LOG0(Log::Normal, "ãƒ­ãƒ¼ãƒ‰");
 
-	// ƒTƒCƒY‚ğƒ[ƒhAÆ‡
+	// ã‚µã‚¤ã‚ºã‚’ãƒ­ãƒ¼ãƒ‰ã€ç…§åˆ
 	if (!fio->Read(&sz, sizeof(sz))) {
 		return FALSE;
 	}
@@ -293,34 +293,34 @@ BOOL FASTCALL SASI::Load(Fileio *fio, int ver)
 		return FALSE;
 	}
 
-	// ƒoƒbƒtƒ@‚ÖÀ‘Ì‚ğƒ[ƒh
+	// ãƒãƒƒãƒ•ã‚¡ã¸å®Ÿä½“ã‚’ãƒ­ãƒ¼ãƒ‰
 	if (!fio->Read(&buf, (int)sz)) {
 		return FALSE;
 	}
 
-	// ƒfƒBƒXƒN‚ğ‰Šú‰»
+	// ãƒ‡ã‚£ã‚¹ã‚¯ã‚’åˆæœŸåŒ–
 	for (i=0; i<SASIMax; i++) {
 		ASSERT(sasi.disk[i]);
 		delete sasi.disk[i];
 		sasi.disk[i] = new Disk(this);
 	}
 
-	// ƒ|ƒCƒ“ƒ^‚ğˆÚ‚·
+	// ãƒã‚¤ãƒ³ã‚¿ã‚’ç§»ã™
 	for (i=0; i<SASIMax; i++) {
 		buf.disk[i] = sasi.disk[i];
 	}
 
-	// ˆÚ“®
+	// ç§»å‹•
 	sasi = buf;
 	sasi.mo = NULL;
 	sasi.current = NULL;
 
-	// ƒCƒxƒ“ƒg‚ğƒ[ƒh
+	// ã‚¤ãƒ™ãƒ³ãƒˆã‚’ãƒ­ãƒ¼ãƒ‰
 	if (!event.Load(fio, ver)) {
 		return FALSE;
 	}
 
-	// ƒpƒX‚ğƒ[ƒh
+	// ãƒ‘ã‚¹ã‚’ãƒ­ãƒ¼ãƒ‰
 	for (i=0; i<SASIMax; i++) {
 		if (!sasihd[i].Load(fio, ver)) {
 			return FALSE;
@@ -335,7 +335,7 @@ BOOL FASTCALL SASI::Load(Fileio *fio, int ver)
 		return FALSE;
 	}
 
-	// version2.02Šg’£
+	// version2.02æ‹¡å¼µ
 	sxsicpu = FALSE;
 	if (ver >= 0x0202) {
 		if (!fio->Read(&sxsicpu, sizeof(sxsicpu))) {
@@ -343,10 +343,10 @@ BOOL FASTCALL SASI::Load(Fileio *fio, int ver)
 		}
 	}
 
-	// ƒfƒBƒXƒN‚ğì‚è’¼‚·
+	// ãƒ‡ã‚£ã‚¹ã‚¯ã‚’ä½œã‚Šç›´ã™
 	Construct();
 
-	// version2.03Šg’£
+	// version2.03æ‹¡å¼µ
 	if (ver >= 0x0203) {
 		for (i=0; i<SASIMax; i++) {
 			ASSERT(sasi.disk[i]);
@@ -361,7 +361,7 @@ BOOL FASTCALL SASI::Load(Fileio *fio, int ver)
 
 //---------------------------------------------------------------------------
 //
-//	İ’è“K—p
+//	è¨­å®šé©ç”¨
 //
 //---------------------------------------------------------------------------
 void FASTCALL SASI::ApplyCfg(const Config *config)
@@ -371,40 +371,62 @@ void FASTCALL SASI::ApplyCfg(const Config *config)
 	ASSERT(this);
 	ASSERT(config);
 
-	LOG0(Log::Normal, "İ’è“K—p");
+	LOG0(Log::Normal, "è¨­å®šé©ç”¨");
 
-	// SASIƒhƒ‰ƒCƒu”
+	// SASIãƒ‰ãƒ©ã‚¤ãƒ–æ•°
 	sasi.sasi_drives = config->sasi_drives;
 
-	// ƒƒ‚ƒŠƒXƒCƒbƒ`©“®XV
+	// ãƒ¡ãƒ¢ãƒªã‚¹ã‚¤ãƒƒãƒè‡ªå‹•æ›´æ–°
 	sasi.memsw = config->sasi_sramsync;
 
-	// SASIƒtƒ@ƒCƒ‹–¼
+	// SASIãƒ•ã‚¡ã‚¤ãƒ«å
 	for (i=0; i<SASIMax; i++) {
 		sasihd[i].SetPath(config->sasi_file[i]);
 	}
 
-	// ƒpƒŠƒeƒB‰ñ˜H•t‰Á
+	// ãƒ‘ãƒªãƒ†ã‚£å›è·¯ä»˜åŠ 
 	sasi.parity = config->sasi_parity;
 
-	// SCSIƒhƒ‰ƒCƒu”
+	// SCSIãƒ‰ãƒ©ã‚¤ãƒ–æ•°
 	sasi.sxsi_drives = config->sxsi_drives;
 
-	// SCSIƒtƒ@ƒCƒ‹–¼
+	// SCSIãƒ•ã‚¡ã‚¤ãƒ«å
 	for (i=0; i<SCSIMax; i++) {
 		scsihd[i].SetPath(config->sxsi_file[i]);
 	}
 
-	// MO—Dæƒtƒ‰ƒO
+	// MOå„ªå…ˆãƒ•ãƒ©ã‚°
 	sasi.mo_first = config->sxsi_mofirst;
 
-	// ƒfƒBƒXƒNÄ\’z
+	// ãƒ‡ã‚£ã‚¹ã‚¯å†æ§‹ç¯‰
 	Construct();
 }
 
 //---------------------------------------------------------------------------
+//	SASI HDD ãƒ‘ã‚¹è¨­å®š (å¤–éƒ¨APIç”¨)
+//---------------------------------------------------------------------------
+void FASTCALL SASI::SetSASIPath(int slot, const Filepath& path)
+{
+	if (slot >= 0 && slot < SASIMax) {
+		sasihd[slot].SetPath(path.GetPath());
+		Construct();
+	}
+}
+
+//---------------------------------------------------------------------------
+//	SCSI HDD ãƒ‘ã‚¹è¨­å®š (å¤–éƒ¨APIç”¨)
+//---------------------------------------------------------------------------
+void FASTCALL SASI::SetSCSIPath(int slot, const Filepath& path)
+{
+	if (slot >= 0 && slot < SCSIMax) {
+		scsihd[slot].SetPath(path.GetPath());
+		Construct();
+	}
+}
+
+//---------------------------------------------------------------------------
 //
-//	ƒoƒCƒg“Ç‚İ‚İ
+//	ãƒã‚¤ãƒˆèª­ã¿è¾¼ã¿
 //
 //---------------------------------------------------------------------------
 DWORD FASTCALL SASI::ReadByte(DWORD addr)
@@ -414,18 +436,18 @@ DWORD FASTCALL SASI::ReadByte(DWORD addr)
 	ASSERT(this);
 	ASSERT((addr >= memdev.first) && (addr <= memdev.last));
 
-	// SCSI“à‘ ‚©
+	// SCSIå†…è”µã‹
 	if (sasi.scsi_type >= 2) {
-		// 0x40’PˆÊ‚Åƒ‹[ƒv
+		// 0x40å˜ä½ã§ãƒ«ãƒ¼ãƒ—
 		addr &= 0x3f;
 
-		// —Ìˆæƒ`ƒFƒbƒN
+		// é ˜åŸŸãƒã‚§ãƒƒã‚¯
 		if (addr >= 0x20) {
-			// SCSI—Ìˆæ
+			// SCSIé ˜åŸŸ
 			return scsi->ReadByte(addr - 0x20);
 		}
 		if ((addr & 1) == 0) {
-			// ‹ô”ƒoƒCƒg‚ÍƒfƒR[ƒh‚³‚ê‚Ä‚¢‚È‚¢
+			// å¶æ•°ãƒã‚¤ãƒˆã¯ãƒ‡ã‚³ãƒ¼ãƒ‰ã•ã‚Œã¦ã„ãªã„
 			return 0xff;
 		}
 		addr &= 0x07;
@@ -435,20 +457,20 @@ DWORD FASTCALL SASI::ReadByte(DWORD addr)
 		return 0;
 	}
 
-	// Šï”ƒAƒhƒŒƒX‚Ì‚İ
+	// å¥‡æ•°ã‚¢ãƒ‰ãƒ¬ã‚¹ã®ã¿
 	if (addr & 1) {
-		// 8ƒoƒCƒg’PˆÊ‚Åƒ‹[ƒv
+		// 8ãƒã‚¤ãƒˆå˜ä½ã§ãƒ«ãƒ¼ãƒ—
 		addr &= 0x07;
 
-		// ƒEƒFƒCƒg
+		// ã‚¦ã‚§ã‚¤ãƒˆ
 		scheduler->Wait(1);
 
-		// ƒf[ƒ^ƒŒƒWƒXƒ^
+		// ãƒ‡ãƒ¼ã‚¿ãƒ¬ã‚¸ã‚¹ã‚¿
 		if (addr == 1) {
 			return ReadData();
 		}
 
-		// ƒXƒe[ƒ^ƒXƒŒƒWƒXƒ^
+		// ã‚¹ãƒ†ãƒ¼ã‚¿ã‚¹ãƒ¬ã‚¸ã‚¹ã‚¿
 		if (addr == 3) {
 			data = 0;
 			if (sasi.msg) {
@@ -469,17 +491,17 @@ DWORD FASTCALL SASI::ReadByte(DWORD addr)
 			return data;
 		}
 
-		// ‚»‚êˆÈŠO‚ÌƒŒƒWƒXƒ^‚ÍWrite Only
+		// ãã‚Œä»¥å¤–ã®ãƒ¬ã‚¸ã‚¹ã‚¿ã¯Write Only
 		return 0xff;
 	}
 
-	// ‹ô”ƒAƒhƒŒƒX‚ÍƒfƒR[ƒh‚³‚ê‚Ä‚¢‚È‚¢
+	// å¶æ•°ã‚¢ãƒ‰ãƒ¬ã‚¹ã¯ãƒ‡ã‚³ãƒ¼ãƒ‰ã•ã‚Œã¦ã„ãªã„
 	return 0xff;
 }
 
 //---------------------------------------------------------------------------
 //
-//	ƒ[ƒh“Ç‚İ‚İ
+//	ãƒ¯ãƒ¼ãƒ‰èª­ã¿è¾¼ã¿
 //
 //---------------------------------------------------------------------------
 DWORD FASTCALL SASI::ReadWord(DWORD addr)
@@ -493,7 +515,7 @@ DWORD FASTCALL SASI::ReadWord(DWORD addr)
 
 //---------------------------------------------------------------------------
 //
-//	ƒoƒCƒg‘‚«‚İ
+//	ãƒã‚¤ãƒˆæ›¸ãè¾¼ã¿
 //
 //---------------------------------------------------------------------------
 void FASTCALL SASI::WriteByte(DWORD addr, DWORD data)
@@ -502,67 +524,67 @@ void FASTCALL SASI::WriteByte(DWORD addr, DWORD data)
 	ASSERT((addr >= memdev.first) && (addr <= memdev.last));
 	ASSERT(data < 0x100);
 
-	// SCSI“à‘ ‚©
+	// SCSIå†…è”µã‹
 	if (sasi.scsi_type >= 2) {
-		// 0x40’PˆÊ‚Åƒ‹[ƒv
+		// 0x40å˜ä½ã§ãƒ«ãƒ¼ãƒ—
 		addr &= 0x3f;
 
-		// —Ìˆæƒ`ƒFƒbƒN
+		// é ˜åŸŸãƒã‚§ãƒƒã‚¯
 		if (addr >= 0x20) {
-			// SCSI—Ìˆæ
+			// SCSIé ˜åŸŸ
 			scsi->WriteByte(addr - 0x20, data);
 		}
-		// SASI—Ìˆæ‚ÍA‰½‚à‚µ‚È‚¢
+		// SASIé ˜åŸŸã¯ã€ä½•ã‚‚ã—ãªã„
 		return;
 	}
 
-	// Šï”ƒAƒhƒŒƒX‚Ì‚İ
+	// å¥‡æ•°ã‚¢ãƒ‰ãƒ¬ã‚¹ã®ã¿
 	if (addr & 1) {
-		// 8ƒoƒCƒg’PˆÊ‚Åƒ‹[ƒv
+		// 8ãƒã‚¤ãƒˆå˜ä½ã§ãƒ«ãƒ¼ãƒ—
 		addr &= 0x07;
 		addr >>= 1;
 
-		// ƒEƒFƒCƒg
+		// ã‚¦ã‚§ã‚¤ãƒˆ
 		scheduler->Wait(1);
 
 		switch (addr) {
-			// ƒf[ƒ^‘‚«‚İ
+			// ãƒ‡ãƒ¼ã‚¿æ›¸ãè¾¼ã¿
 			case 0:
 				WriteData(data);
 				return;
 
-			// SEL‚Â‚«ƒf[ƒ^‘‚«‚İ
+			// SELã¤ããƒ‡ãƒ¼ã‚¿æ›¸ãè¾¼ã¿
 			case 1:
 				sasi.sel = FALSE;
 				WriteData(data);
 				return;
 
-			// ƒoƒXƒŠƒZƒbƒg
+			// ãƒã‚¹ãƒªã‚»ãƒƒãƒˆ
 			case 2:
 #if defined(SASI_LOG)
-				LOG0(Log::Normal, "ƒoƒXƒŠƒZƒbƒg");
+				LOG0(Log::Normal, "ãƒã‚¹ãƒªã‚»ãƒƒãƒˆ");
 #endif	// SASI_LOG
 				BusFree();
 				return;
 
-			// SEL‚Â‚«ƒf[ƒ^‘‚«‚İ
+			// SELã¤ããƒ‡ãƒ¼ã‚¿æ›¸ãè¾¼ã¿
 			case 3:
 				sasi.sel = TRUE;
 				WriteData(data);
 				return;
 		}
 
-		// ‚±‚±‚É‚Í—ˆ‚È‚¢
+		// ã“ã“ã«ã¯æ¥ãªã„
 		ASSERT(FALSE);
 		return;
 	}
 
-	// ‹ô”ƒAƒhƒŒƒX‚ÍƒfƒR[ƒh‚³‚ê‚Ä‚¢‚È‚¢
+	// å¶æ•°ã‚¢ãƒ‰ãƒ¬ã‚¹ã¯ãƒ‡ã‚³ãƒ¼ãƒ‰ã•ã‚Œã¦ã„ãªã„
 }
 
 //---------------------------------------------------------------------------
 //
-//	ƒ[ƒh‘‚«‚İ
+//	ãƒ¯ãƒ¼ãƒ‰æ›¸ãè¾¼ã¿
 //
 //---------------------------------------------------------------------------
 void FASTCALL SASI::WriteWord(DWORD addr, DWORD data)
@@ -577,7 +599,7 @@ void FASTCALL SASI::WriteWord(DWORD addr, DWORD data)
 
 //---------------------------------------------------------------------------
 //
-//	“Ç‚İ‚İ‚Ì‚İ
+//	èª­ã¿è¾¼ã¿ã®ã¿
 //
 //---------------------------------------------------------------------------
 DWORD FASTCALL SASI::ReadOnly(DWORD addr) const
@@ -587,18 +609,18 @@ DWORD FASTCALL SASI::ReadOnly(DWORD addr) const
 	ASSERT(this);
 	ASSERT((addr >= memdev.first) && (addr <= memdev.last));
 
-	// SCSI“à‘ ‚©
+	// SCSIå†…è”µã‹
 	if (sasi.scsi_type >= 2) {
-		// 0x40’PˆÊ‚Åƒ‹[ƒv
+		// 0x40å˜ä½ã§ãƒ«ãƒ¼ãƒ—
 		addr &= 0x3f;
 
-		// —Ìˆæƒ`ƒFƒbƒN
+		// é ˜åŸŸãƒã‚§ãƒƒã‚¯
 		if (addr >= 0x20) {
-			// SCSI—Ìˆæ
+			// SCSIé ˜åŸŸ
 			return scsi->ReadOnly(addr - 0x20);
 		}
 		if ((addr & 1) == 0) {
-			// ‹ô”ƒoƒCƒg‚ÍƒfƒR[ƒh‚³‚ê‚Ä‚¢‚È‚¢
+			// å¶æ•°ãƒã‚¤ãƒˆã¯ãƒ‡ã‚³ãƒ¼ãƒ‰ã•ã‚Œã¦ã„ãªã„
 			return 0xff;
 		}
 		addr &= 0x07;
@@ -608,18 +630,18 @@ DWORD FASTCALL SASI::ReadOnly(DWORD addr) const
 		return 0;
 	}
 
-	// Šï”ƒAƒhƒŒƒX‚Ì‚İ
+	// å¥‡æ•°ã‚¢ãƒ‰ãƒ¬ã‚¹ã®ã¿
 	if (addr & 1) {
-		// 8ƒoƒCƒg’PˆÊ‚Åƒ‹[ƒv
+		// 8ãƒã‚¤ãƒˆå˜ä½ã§ãƒ«ãƒ¼ãƒ—
 		addr &= 0x07;
 		addr >>= 1;
 
 		switch (addr) {
-			// ƒf[ƒ^ƒŒƒWƒXƒ^
+			// ãƒ‡ãƒ¼ã‚¿ãƒ¬ã‚¸ã‚¹ã‚¿
 			case 0:
 				return 0;
 
-			// ƒXƒe[ƒ^ƒXƒŒƒWƒXƒ^
+			// ã‚¹ãƒ†ãƒ¼ã‚¿ã‚¹ãƒ¬ã‚¸ã‚¹ã‚¿
 			case 1:
 				data = 0;
 				if (sasi.msg) {
@@ -640,17 +662,17 @@ DWORD FASTCALL SASI::ReadOnly(DWORD addr) const
 				return data;
 		}
 
-		// ‚»‚êˆÈŠO‚ÌƒŒƒWƒXƒ^‚ÍWrite Only
+		// ãã‚Œä»¥å¤–ã®ãƒ¬ã‚¸ã‚¹ã‚¿ã¯Write Only
 		return 0xff;
 	}
 
-	// ‹ô”ƒAƒhƒŒƒX‚ÍƒfƒR[ƒh‚³‚ê‚Ä‚¢‚È‚¢
+	// å¶æ•°ã‚¢ãƒ‰ãƒ¬ã‚¹ã¯ãƒ‡ã‚³ãƒ¼ãƒ‰ã•ã‚Œã¦ã„ãªã„
 	return 0xff;
 }
 
 //---------------------------------------------------------------------------
 //
-//	ƒCƒxƒ“ƒgƒR[ƒ‹ƒoƒbƒN
+//	ã‚¤ãƒ™ãƒ³ãƒˆã‚³ãƒ¼ãƒ«ãƒãƒƒã‚¯
 //
 //---------------------------------------------------------------------------
 BOOL FASTCALL SASI::Callback(Event *ev)
@@ -661,67 +683,67 @@ BOOL FASTCALL SASI::Callback(Event *ev)
 	ASSERT(ev);
 
 	switch (ev->GetUser()) {
-		// ’Êíƒf[ƒ^ ƒzƒXƒg©¨ƒRƒ“ƒgƒ[ƒ‰
+		// é€šå¸¸ãƒ‡ãƒ¼ã‚¿ ãƒ›ã‚¹ãƒˆâ†â†’ã‚³ãƒ³ãƒˆãƒ­ãƒ¼ãƒ©
 		case 0:
-			// ŠÔ’²®
+			// æ™‚é–“èª¿æ•´
 			if (ev->GetTime() != 32) {
 				ev->SetTime(32);
 			}
 
-			// ƒŠƒNƒGƒXƒg
+			// ãƒªã‚¯ã‚¨ã‚¹ãƒˆ
 			sasi.req = TRUE;
 			dmac->ReqDMA(1);
 
-			// DMA“]‘—‚ÌŒ‹‰Ê‚É‚æ‚Á‚Ä‚Í‘±‚­
+			// DMAè»¢é€ã®çµæœã«ã‚ˆã£ã¦ã¯ç¶šã
 			return TRUE;
 
-		// ƒuƒƒbƒNƒf[ƒ^ ƒRƒ“ƒgƒ[ƒ‰©¨ƒzƒXƒg
+		// ãƒ–ãƒ­ãƒƒã‚¯ãƒ‡ãƒ¼ã‚¿ ã‚³ãƒ³ãƒˆãƒ­ãƒ¼ãƒ©â†â†’ãƒ›ã‚¹ãƒˆ
 		case 1:
-			// ŠÔ‚ğÄİ’è
+			// æ™‚é–“ã‚’å†è¨­å®š
 			if (ev->GetTime() != 48) {
 				ev->SetTime(48);
 			}
 
-			// DMA‚ªƒAƒNƒeƒBƒu‚Å‚È‚¯‚ê‚ÎAƒŠƒNƒGƒXƒgİ’è‚Ì‚İ
+			// DMAãŒã‚¢ã‚¯ãƒ†ã‚£ãƒ–ã§ãªã‘ã‚Œã°ã€ãƒªã‚¯ã‚¨ã‚¹ãƒˆè¨­å®šã®ã¿
 			if (!dmac->IsAct(1)) {
 				if ((sasi.phase == read) || (sasi.phase == write)) {
 					sasi.req = TRUE;
 				}
 
-				// ƒCƒxƒ“ƒgŒp‘±
+				// ã‚¤ãƒ™ãƒ³ãƒˆç¶™ç¶š
 				return TRUE;
 			}
 
-			// 1‰ñ‚ÌƒCƒxƒ“ƒg‚ÅA—]èCPUƒpƒ[‚Ì2/3‚¾‚¯“]‘—‚·‚é
+			// 1å›ã®ã‚¤ãƒ™ãƒ³ãƒˆã§ã€ä½™å‰°CPUãƒ‘ãƒ¯ãƒ¼ã®2/3ã ã‘è»¢é€ã™ã‚‹
 			thres = (int)scheduler->GetCPUSpeed();
 			thres = (thres * 2) / 3;
 			while ((sasi.phase == read) || (sasi.phase == write)) {
-				// CPUƒpƒ[‚ğŒ©‚È‚ª‚ç“r’†‚Å‘Å‚¿Ø‚é
+				// CPUãƒ‘ãƒ¯ãƒ¼ã‚’è¦‹ãªãŒã‚‰é€”ä¸­ã§æ‰“ã¡åˆ‡ã‚‹
 				if (scheduler->GetCPUCycle() > thres) {
 					break;
 				}
 
-				// ƒŠƒNƒGƒXƒgİ’è
+				// ãƒªã‚¯ã‚¨ã‚¹ãƒˆè¨­å®š
 				sasi.req = TRUE;
 
-				// SxSI CPUƒtƒ‰ƒO‚ªİ’è‚³‚ê‚Ä‚¢‚ê‚ÎA‚±‚±‚Ü‚Å(CPU“]‘—‚³‚¹‚é)
+				// SxSI CPUãƒ•ãƒ©ã‚°ãŒè¨­å®šã•ã‚Œã¦ã„ã‚Œã°ã€ã“ã“ã¾ã§(CPUè»¢é€ã•ã›ã‚‹)
 				if (sxsicpu) {
-					LOG0(Log::Warning, "SxSI CPU“]‘—‚ğŒŸo");
+					LOG0(Log::Warning, "SxSI CPUè»¢é€ã‚’æ¤œå‡º");
 					break;
 				}
 
-				// DMAƒŠƒNƒGƒXƒg
+				// DMAãƒªã‚¯ã‚¨ã‚¹ãƒˆ
 				dmac->ReqDMA(1);
 				if (sasi.req) {
 #if defined(SASI_LOG)
-					LOG0(Log::Normal, "DMA or CPU“]‘—‘Ò‚¿");
+					LOG0(Log::Normal, "DMA or CPUè»¢é€å¾…ã¡");
 #endif
 					break;
 				}
 			}
 			return TRUE;
 
-		// ‚»‚êˆÈŠO‚Í‚ ‚è‚¦‚È‚¢
+		// ãã‚Œä»¥å¤–ã¯ã‚ã‚Šãˆãªã„
 		default:
 			ASSERT(FALSE);
 	}
@@ -731,7 +753,7 @@ BOOL FASTCALL SASI::Callback(Event *ev)
 
 //---------------------------------------------------------------------------
 //
-//	“à•”ƒf[ƒ^æ“¾
+//	å†…éƒ¨ãƒ‡ãƒ¼ã‚¿å–å¾—
 //
 //---------------------------------------------------------------------------
 void FASTCALL SASI::GetSASI(sasi_t *buffer) const
@@ -739,13 +761,13 @@ void FASTCALL SASI::GetSASI(sasi_t *buffer) const
 	ASSERT(this);
 	ASSERT(buffer);
 
-	// “à•”ƒ[ƒN‚ğƒRƒs[
+	// å†…éƒ¨ãƒ¯ãƒ¼ã‚¯ã‚’ã‚³ãƒ”ãƒ¼
 	*buffer = sasi;
 }
 
 //---------------------------------------------------------------------------
 //
-//	ƒfƒBƒXƒNÄ\’z
+//	ãƒ‡ã‚£ã‚¹ã‚¯å†æ§‹ç¯‰
 //
 //---------------------------------------------------------------------------
 void FASTCALL SASI::Construct()
@@ -767,7 +789,7 @@ void FASTCALL SASI::Construct()
 	ASSERT((sasi.sasi_drives >= 0) && (sasi.sasi_drives <= SASIMax));
 	ASSERT((sasi.sxsi_drives >= 0) && (sasi.sxsi_drives <= 7));
 
-	// MOƒhƒ‰ƒCƒu‚Ìó‘Ô‚ğ•Û‘¶‚µAˆê’U‹Ö~
+	// MOãƒ‰ãƒ©ã‚¤ãƒ–ã®çŠ¶æ…‹ã‚’ä¿å­˜ã—ã€ä¸€æ—¦ç¦æ­¢
 	moready = FALSE;
 	moattn = FALSE;
 	mowritep = FALSE;
@@ -781,144 +803,144 @@ void FASTCALL SASI::Construct()
 	}
 	sasi.mo = NULL;
 
-	// —LŒø‚ÈSCSI-MO, SCSI-HD”‚ğZo
+	// æœ‰åŠ¹ãªSCSI-MO, SCSI-HDæ•°ã‚’ç®—å‡º
 	i = (sasi.sasi_drives + 1) >> 1;
 	schd = 7 - i;
 
-	// SASI§ŒÀ‚©‚ç‰Â”\‚ÈÅ‘åSCSIƒhƒ‰ƒCƒu”
+	// SASIåˆ¶é™ã‹ã‚‰å¯èƒ½ãªæœ€å¤§SCSIãƒ‰ãƒ©ã‚¤ãƒ–æ•°
 	if (schd > 0) {
-		// İ’è‚ÌSCSIƒhƒ‰ƒCƒu”‚É§ŒÀ‚³‚ê‚é
+		// è¨­å®šã®SCSIãƒ‰ãƒ©ã‚¤ãƒ–æ•°ã«åˆ¶é™ã•ã‚Œã‚‹
 		if (sasi.sxsi_drives < schd) {
-			// SCSIƒhƒ‰ƒCƒu”Šm’è
+			// SCSIãƒ‰ãƒ©ã‚¤ãƒ–æ•°ç¢ºå®š
 			schd = sasi.sxsi_drives;
 		}
 	}
 
-	// MO‚ÌŠ„‚è“–‚Ä
+	// MOã®å‰²ã‚Šå½“ã¦
 	if (schd > 0) {
-		// ƒhƒ‰ƒCƒu‚ª1‘äˆÈã‚ ‚ê‚ÎA•K‚¸MO‚ğŠ„‚è“–‚Ä‚é
+		// ãƒ‰ãƒ©ã‚¤ãƒ–ãŒ1å°ä»¥ä¸Šã‚ã‚Œã°ã€å¿…ãšMOã‚’å‰²ã‚Šå½“ã¦ã‚‹
 		scmo = 1;
 		schd--;
 	}
 	else {
-		// ƒhƒ‰ƒCƒu‚ª‚È‚¢‚Ì‚ÅAMO,HD‚Æ‚à0
+		// ãƒ‰ãƒ©ã‚¤ãƒ–ãŒãªã„ã®ã§ã€MO,HDã¨ã‚‚0
 		scmo = 0;
 		schd = 0;
 	}
 
-	// ƒpƒŠƒeƒB‚ª‚È‚¯‚ê‚ÎSxSIg—p•s‰Â
+	// ãƒ‘ãƒªãƒ†ã‚£ãŒãªã‘ã‚Œã°SxSIä½¿ç”¨ä¸å¯
 	if (!sasi.parity) {
 		scmo = 0;
 		schd = 0;
 	}
 #if defined(SASI_LOG)
-	LOG3(Log::Normal, "ÄŠ„‚è“–‚Ä SASI-HD:%d‘ä SCSI-HD:%d‘ä SCSI-MO:%d‘ä",
+	LOG3(Log::Normal, "å†å‰²ã‚Šå½“ã¦ SASI-HD:%då° SCSI-HD:%då° SCSI-MO:%då°",
 					sasi.sasi_drives, schd, scmo);
 #endif	// SASI_LOG
 
-	// ƒ}ƒbƒv‚ğì¬(0:NULL 1:SASI-HD 2:SCSI-HD 3:SCSI-MO)
+	// ãƒãƒƒãƒ—ã‚’ä½œæˆ(0:NULL 1:SASI-HD 2:SCSI-HD 3:SCSI-MO)
 	for (i=0; i<SASIMax; i++) {
-		// ‚·‚×‚ÄNULL
+		// ã™ã¹ã¦NULL
 		map[i] = 0;
 	}
 	for (i=0; i<sasi.sasi_drives; i++) {
-		// æ‚ÉSASI
+		// å…ˆã«SASI
 		map[i] = 1;
 	}
 	if (scmo > 0) {
-		// SCSI‚ ‚è
+		// SCSIã‚ã‚Š
 		index = ((sasi.sasi_drives + 1) >> 1) << 1;
 		if (sasi.mo_first) {
-			// MO—Dæ
+			// MOå„ªå…ˆ
 			map[index] = 3;
 			index += 2;
 
-			// SCSI-HDƒ‹[ƒv
+			// SCSI-HDãƒ«ãƒ¼ãƒ—
 			for (i=0; i<schd; i++) {
 				map[index] = 2;
 				index += 2;
 			}
 		}
 		else {
-			// HD—Dæ
+			// HDå„ªå…ˆ
 			for (i=0; i<schd; i++) {
 				map[index] = 2;
 				index += 2;
 			}
 
-			// ÅŒã‚ÉMO
+			// æœ€å¾Œã«MO
 			map[index] = 3;
 		}
 		ASSERT(index <= 16);
 	}
 
-	// SCSIƒn[ƒhƒfƒBƒXƒN‚Ì˜A”ÔƒCƒ“ƒfƒbƒNƒX‚ğƒNƒŠƒA
+	// SCSIãƒãƒ¼ãƒ‰ãƒ‡ã‚£ã‚¹ã‚¯ã®é€£ç•ªã‚¤ãƒ³ãƒ‡ãƒƒã‚¯ã‚¹ã‚’ã‚¯ãƒªã‚¢
 	index = 0;
 
-	// ƒ‹[ƒv
+	// ãƒ«ãƒ¼ãƒ—
 	for (i=0; i<SASIMax; i++) {
 		switch (map[i]) {
-			// ƒkƒ‹ƒfƒBƒXƒN
+			// ãƒŒãƒ«ãƒ‡ã‚£ã‚¹ã‚¯
 			case 0:
-				// ƒkƒ‹ƒfƒBƒXƒN‚©
+				// ãƒŒãƒ«ãƒ‡ã‚£ã‚¹ã‚¯ã‹
 				if (!sasi.disk[i]->IsNULL()) {
-					// ƒkƒ‹ƒfƒBƒXƒN‚É·‚µ‘Ö‚¦‚é
+					// ãƒŒãƒ«ãƒ‡ã‚£ã‚¹ã‚¯ã«å·®ã—æ›¿ãˆã‚‹
 					delete sasi.disk[i];
 					sasi.disk[i] = new Disk(this);
 				}
 				break;
 
-			// SASIƒn[ƒhƒfƒBƒXƒN
+			// SASIãƒãƒ¼ãƒ‰ãƒ‡ã‚£ã‚¹ã‚¯
 			case 1:
-				// SASIƒn[ƒhƒfƒBƒXƒN‚©
+				// SASIãƒãƒ¼ãƒ‰ãƒ‡ã‚£ã‚¹ã‚¯ã‹
 				if (sasi.disk[i]->IsSASI()) {
-					// ƒpƒX‚ğæ“¾‚µAˆê’v‚·‚ê‚Îok
+					// ãƒ‘ã‚¹ã‚’å–å¾—ã—ã€ä¸€è‡´ã™ã‚Œã°ok
 					sasi.disk[i]->GetPath(path);
 					if (path.CmpPath(sasihd[i])) {
-						// ƒpƒX‚ªˆê’v‚µ‚Ä‚¢‚é
+						// ãƒ‘ã‚¹ãŒä¸€è‡´ã—ã¦ã„ã‚‹
 						break;
 					}
 				}
 
-				// SASIƒn[ƒhƒfƒBƒXƒN‚ğì¬‚µ‚ÄƒI[ƒvƒ“‚ğ‚İ‚é
+				// SASIãƒãƒ¼ãƒ‰ãƒ‡ã‚£ã‚¹ã‚¯ã‚’ä½œæˆã—ã¦ã‚ªãƒ¼ãƒ—ãƒ³ã‚’è©¦ã¿ã‚‹
 				sasitmp = new SASIHD(this);
 				if (sasitmp->Open(sasihd[i])) {
-					// LUNİ’è
+					// LUNè¨­å®š
 					sasitmp->SetLUN(i & 1);
-					// “ü‚ê‘Ö‚¦
+					// å…¥ã‚Œæ›¿ãˆ
 					delete sasi.disk[i];
 					sasi.disk[i] = sasitmp;
 				}
 				else {
-					// ƒGƒ‰[
+					// ã‚¨ãƒ©ãƒ¼
 					delete sasitmp;
 					delete sasi.disk[i];
 					sasi.disk[i] = new Disk(this);
 				}
 				break;
 
-			// SCSIƒn[ƒhƒfƒBƒXƒN
+			// SCSIãƒãƒ¼ãƒ‰ãƒ‡ã‚£ã‚¹ã‚¯
 			case 2:
-				// SCSIƒn[ƒhƒfƒBƒXƒN‚©
+				// SCSIãƒãƒ¼ãƒ‰ãƒ‡ã‚£ã‚¹ã‚¯ã‹
 				if (sasi.disk[i]->GetID() == MAKEID('S', 'C', 'H', 'D')) {
-					// ƒpƒX‚ğæ“¾‚µAˆê’v‚·‚ê‚Îok
+					// ãƒ‘ã‚¹ã‚’å–å¾—ã—ã€ä¸€è‡´ã™ã‚Œã°ok
 					sasi.disk[i]->GetPath(path);
 					if (path.CmpPath(scsihd[index])) {
-						// ƒpƒX‚ªˆê’v‚µ‚Ä‚¢‚é
+						// ãƒ‘ã‚¹ãŒä¸€è‡´ã—ã¦ã„ã‚‹
 						index++;
 						break;
 					}
 				}
 
-				// SCSIƒn[ƒhƒfƒBƒXƒN‚ğì¬‚µ‚ÄƒI[ƒvƒ“‚ğ‚İ‚é
+				// SCSIãƒãƒ¼ãƒ‰ãƒ‡ã‚£ã‚¹ã‚¯ã‚’ä½œæˆã—ã¦ã‚ªãƒ¼ãƒ—ãƒ³ã‚’è©¦ã¿ã‚‹
 				scsitmp = new SCSIHD(this);
 				if (scsitmp->Open(scsihd[index])) {
-					// “ü‚ê‘Ö‚¦
+					// å…¥ã‚Œæ›¿ãˆ
 					delete sasi.disk[i];
 					sasi.disk[i] = scsitmp;
 				}
 				else {
-					// ƒGƒ‰[
+					// ã‚¨ãƒ©ãƒ¼
 					delete scsitmp;
 					delete sasi.disk[i];
 					sasi.disk[i] = new Disk(this);
@@ -926,21 +948,21 @@ void FASTCALL SASI::Construct()
 				index++;
 				break;
 
-			// SCSIŒõ¥‹CƒfƒBƒXƒN
+			// SCSIå…‰ç£æ°—ãƒ‡ã‚£ã‚¹ã‚¯
 			case 3:
-				// SCSIŒõ¥‹CƒfƒBƒXƒN‚©
+				// SCSIå…‰ç£æ°—ãƒ‡ã‚£ã‚¹ã‚¯ã‹
 				if (sasi.disk[i]->GetID() == MAKEID('S', 'C', 'M', 'O')) {
-					// ‹L‰¯
+					// è¨˜æ†¶
 					sasi.mo = (SCSIMO*)sasi.disk[i];
 				}
 				else {
-					// SCSIŒõ¥‹CƒfƒBƒXƒN‚ğì¬‚µ‚Ä‹L‰¯
+					// SCSIå…‰ç£æ°—ãƒ‡ã‚£ã‚¹ã‚¯ã‚’ä½œæˆã—ã¦è¨˜æ†¶
 					delete sasi.disk[i];
 					sasi.disk[i] = new SCSIMO(this);
 					sasi.mo = (SCSIMO*)sasi.disk[i];
 				}
 
-				// ˆø‚«Œp‚ª‚ê‚Ä‚¢‚È‚¯‚ê‚ÎAÄƒI[ƒvƒ“
+				// å¼•ãç¶™ãŒã‚Œã¦ã„ãªã‘ã‚Œã°ã€å†ã‚ªãƒ¼ãƒ—ãƒ³
 				if (moready) {
 					if (!sasi.mo->IsReady()) {
 						if (sasi.mo->Open(mopath, moattn)) {
@@ -950,23 +972,23 @@ void FASTCALL SASI::Construct()
 				}
 				break;
 
-			// ‚»‚Ì‘¼(‚ ‚è“¾‚È‚¢)
+			// ãã®ä»–(ã‚ã‚Šå¾—ãªã„)
 			default:
 				ASSERT(FALSE);
 				break;
 		}
 	}
 
-	// BUSY’†‚È‚çAsasi.current‚ğXV
+	// BUSYä¸­ãªã‚‰ã€sasi.currentã‚’æ›´æ–°
 	if (sasi.bsy) {
-		// ƒhƒ‰ƒCƒuì¬
+		// ãƒ‰ãƒ©ã‚¤ãƒ–ä½œæˆ
 		ASSERT(sasi.ctrl < 8);
 		index = sasi.ctrl << 1;
 		if (sasi.cmd[1] & 0x20) {
 			index++;
 		}
 
-		// ƒJƒŒƒ“ƒgİ’è
+		// ã‚«ãƒ¬ãƒ³ãƒˆè¨­å®š
 		sasi.current = sasi.disk[index];
 		ASSERT(sasi.current);
 	}
@@ -974,7 +996,7 @@ void FASTCALL SASI::Construct()
 
 //---------------------------------------------------------------------------
 //
-//	HD BUSYƒ`ƒFƒbƒN
+//	HD BUSYãƒã‚§ãƒƒã‚¯
 //
 //---------------------------------------------------------------------------
 BOOL FASTCALL SASI::IsBusy() const
@@ -991,13 +1013,13 @@ BOOL FASTCALL SASI::IsBusy() const
 		return TRUE;
 	}
 
-	// ‚Ç‚¿‚ç‚àFALSE
+	// ã©ã¡ã‚‰ã‚‚FALSE
 	return FALSE;
 }
 
 //---------------------------------------------------------------------------
 //
-//	BUSYƒfƒoƒCƒXæ“¾
+//	BUSYãƒ‡ãƒã‚¤ã‚¹å–å¾—
 //
 //---------------------------------------------------------------------------
 DWORD FASTCALL SASI::GetBusyDevice() const
@@ -1006,8 +1028,8 @@ DWORD FASTCALL SASI::GetBusyDevice() const
 
 	// SASI
 	if (sasi.bsy) {
-		// ƒZƒŒƒNƒVƒ‡ƒ“ƒtƒF[ƒYI—¹‚©‚çÀsƒtƒF[ƒYŠJn‚Ü‚Å‚ÌŠÔ‚Í
-		// ƒAƒNƒZƒX‘ÎÛƒfƒoƒCƒX‚ªŠm’è‚µ‚È‚¢
+		// ã‚»ãƒ¬ã‚¯ã‚·ãƒ§ãƒ³ãƒ•ã‚§ãƒ¼ã‚ºçµ‚äº†ã‹ã‚‰å®Ÿè¡Œãƒ•ã‚§ãƒ¼ã‚ºé–‹å§‹ã¾ã§ã®é–“ã¯
+		// ã‚¢ã‚¯ã‚»ã‚¹å¯¾è±¡ãƒ‡ãƒã‚¤ã‚¹ãŒç¢ºå®šã—ãªã„
 		if (!sasi.current) {
 			return 0;
 		}
@@ -1024,7 +1046,7 @@ DWORD FASTCALL SASI::GetBusyDevice() const
 
 //---------------------------------------------------------------------------
 //
-//	ƒf[ƒ^“Ç‚İ‚İ
+//	ãƒ‡ãƒ¼ã‚¿èª­ã¿è¾¼ã¿
 //
 //---------------------------------------------------------------------------
 DWORD FASTCALL SASI::ReadData()
@@ -1034,35 +1056,35 @@ DWORD FASTCALL SASI::ReadData()
 	ASSERT(this);
 
 	switch (sasi.phase) {
-		// ƒXƒe[ƒ^ƒXƒtƒF[ƒY‚È‚çAƒXƒe[ƒ^ƒX‚ğ“n‚µ‚ÄƒƒbƒZ[ƒWƒtƒF[ƒY‚Ö
+		// ã‚¹ãƒ†ãƒ¼ã‚¿ã‚¹ãƒ•ã‚§ãƒ¼ã‚ºãªã‚‰ã€ã‚¹ãƒ†ãƒ¼ã‚¿ã‚¹ã‚’æ¸¡ã—ã¦ãƒ¡ãƒƒã‚»ãƒ¼ã‚¸ãƒ•ã‚§ãƒ¼ã‚ºã¸
 		case status:
 			data = sasi.status;
 			sasi.req = FALSE;
 
-			// Š„‚è‚İƒŠƒZƒbƒg‚ğŒ“‚Ë‚é
+			// å‰²ã‚Šè¾¼ã¿ãƒªã‚»ãƒƒãƒˆã‚’å…¼ã­ã‚‹
 			iosc->IntHDC(FALSE);
 			Message();
 
-			// ƒCƒxƒ“ƒg’â~
+			// ã‚¤ãƒ™ãƒ³ãƒˆåœæ­¢
 			event.SetTime(0);
 			return data;
 
-		// ƒƒbƒZ[ƒWƒtƒF[ƒY‚È‚çAƒƒbƒZ[ƒW‚ğ“n‚µ‚ÄƒoƒXƒtƒŠ[‚Ö
+		// ãƒ¡ãƒƒã‚»ãƒ¼ã‚¸ãƒ•ã‚§ãƒ¼ã‚ºãªã‚‰ã€ãƒ¡ãƒƒã‚»ãƒ¼ã‚¸ã‚’æ¸¡ã—ã¦ãƒã‚¹ãƒ•ãƒªãƒ¼ã¸
 		case message:
 			data = sasi.message;
 			sasi.req = FALSE;
 			BusFree();
 
-			// ƒCƒxƒ“ƒg’â~
+			// ã‚¤ãƒ™ãƒ³ãƒˆåœæ­¢
 			event.SetTime(0);
 			return data;
 
-		// “Ç‚İ‚İƒtƒF[ƒY‚È‚çA“]‘—ŒãƒXƒe[ƒ^ƒXƒtƒF[ƒY‚Ö
+		// èª­ã¿è¾¼ã¿ãƒ•ã‚§ãƒ¼ã‚ºãªã‚‰ã€è»¢é€å¾Œã‚¹ãƒ†ãƒ¼ã‚¿ã‚¹ãƒ•ã‚§ãƒ¼ã‚ºã¸
 		case read:
-			// Non-DMA“]‘—‚È‚çASxSI CPUƒtƒ‰ƒO‚ğƒgƒOƒ‹•Ï‰»‚³‚¹‚é
+			// Non-DMAè»¢é€ãªã‚‰ã€SxSI CPUãƒ•ãƒ©ã‚°ã‚’ãƒˆã‚°ãƒ«å¤‰åŒ–ã•ã›ã‚‹
 			if (!dmac->IsDMA()) {
 #if defined(SASI_LOG)
-				LOG1(Log::Normal, "ƒf[ƒ^INƒtƒF[ƒY CPU“]‘— ƒIƒtƒZƒbƒg=%d", sasi.offset);
+				LOG1(Log::Normal, "ãƒ‡ãƒ¼ã‚¿INãƒ•ã‚§ãƒ¼ã‚º CPUè»¢é€ ã‚ªãƒ•ã‚»ãƒƒãƒˆ=%d", sasi.offset);
 #endif	// SASI_LOG
 				sxsicpu = !sxsicpu;
 			}
@@ -1072,55 +1094,55 @@ DWORD FASTCALL SASI::ReadData()
 			sasi.length--;
 			sasi.req = FALSE;
 
-			// ƒŒƒ“ƒOƒXƒ`ƒFƒbƒN
+			// ãƒ¬ãƒ³ã‚°ã‚¹ãƒã‚§ãƒƒã‚¯
 			if (sasi.length == 0) {
-				// “]‘—‚·‚×‚«ƒuƒƒbƒN”‚ğ‰º‚°‚é
+				// è»¢é€ã™ã¹ããƒ–ãƒ­ãƒƒã‚¯æ•°ã‚’ä¸‹ã’ã‚‹
 				sasi.blocks--;
 
-				// ¡‰ñ‚ÅI—¹‚©
+				// ä»Šå›ã§çµ‚äº†ã‹
 				if (sasi.blocks == 0) {
-					// ƒCƒxƒ“ƒg’â~AƒXƒe[ƒ^ƒXƒtƒF[ƒY
+					// ã‚¤ãƒ™ãƒ³ãƒˆåœæ­¢ã€ã‚¹ãƒ†ãƒ¼ã‚¿ã‚¹ãƒ•ã‚§ãƒ¼ã‚º
 					event.SetTime(0);
 					Status();
 					return data;
 				}
 
-				// Ÿ‚ÌƒuƒƒbƒN‚ğ“Ç‚Ş
+				// æ¬¡ã®ãƒ–ãƒ­ãƒƒã‚¯ã‚’èª­ã‚€
 				sasi.length = sasi.current->Read(sasi.buffer, sasi.next);
 				if (sasi.length <= 0) {
-					// ƒGƒ‰[
+					// ã‚¨ãƒ©ãƒ¼
 					Error();
 					return data;
 				}
 
-				// Ÿ‚ÌƒuƒƒbƒNokAƒ[ƒNİ’è
+				// æ¬¡ã®ãƒ–ãƒ­ãƒƒã‚¯okã€ãƒ¯ãƒ¼ã‚¯è¨­å®š
 				sasi.offset = 0;
 				sasi.next++;
 			}
 
-			// “Ç‚İ‚İŒp‘±
+			// èª­ã¿è¾¼ã¿ç¶™ç¶š
 			return data;
 	}
 
-	// ƒCƒxƒ“ƒg’â~
+	// ã‚¤ãƒ™ãƒ³ãƒˆåœæ­¢
 	event.SetTime(0);
 
-	// ‚»‚êˆÈŠO‚ÌƒIƒyƒŒ[ƒVƒ‡ƒ“‚Í‘z’è‚¹‚¸
+	// ãã‚Œä»¥å¤–ã®ã‚ªãƒšãƒ¬ãƒ¼ã‚·ãƒ§ãƒ³ã¯æƒ³å®šã›ãš
 	if (sasi.phase == busfree) {
 #if defined(SASI_LOG)
-		LOG0(Log::Normal, "ƒoƒXƒtƒŠ[ó‘Ô‚Å‚Ì“Ç‚İ‚İB0‚ğ•Ô‚·");
+		LOG0(Log::Normal, "ãƒã‚¹ãƒ•ãƒªãƒ¼çŠ¶æ…‹ã§ã®èª­ã¿è¾¼ã¿ã€‚0ã‚’è¿”ã™");
 #endif	// SASI_LOG
 		return 0;
 	}
 
-	LOG0(Log::Warning, "‘z’è‚µ‚Ä‚¢‚È‚¢ƒf[ƒ^“Ç‚İ‚İ");
+	LOG0(Log::Warning, "æƒ³å®šã—ã¦ã„ãªã„ãƒ‡ãƒ¼ã‚¿èª­ã¿è¾¼ã¿");
 	BusFree();
 	return 0;
 }
 
 //---------------------------------------------------------------------------
 //
-//	ƒf[ƒ^‘‚«‚İ
+//	ãƒ‡ãƒ¼ã‚¿æ›¸ãè¾¼ã¿
 //
 //---------------------------------------------------------------------------
 void FASTCALL SASI::WriteData(DWORD data)
@@ -1129,20 +1151,20 @@ void FASTCALL SASI::WriteData(DWORD data)
 	ASSERT(data < 0x100);
 
 	switch (sasi.phase) {
-		// ƒoƒXƒtƒŠ[ƒtƒF[ƒY‚È‚çAŸ‚É‹–‚³‚ê‚é‚Ì‚ÍƒZƒŒƒNƒVƒ‡ƒ“ƒtƒF[ƒY
+		// ãƒã‚¹ãƒ•ãƒªãƒ¼ãƒ•ã‚§ãƒ¼ã‚ºãªã‚‰ã€æ¬¡ã«è¨±ã•ã‚Œã‚‹ã®ã¯ã‚»ãƒ¬ã‚¯ã‚·ãƒ§ãƒ³ãƒ•ã‚§ãƒ¼ã‚º
 		case busfree:
 			if (sasi.sel) {
 				Selection(data);
 			}
 #if defined(SASI_LOG)
 			else {
-				LOG0(Log::Normal, "ƒoƒXƒtƒŠ[ó‘ÔASEL–³‚µ‚Å‚Ì‘‚«‚İB–³‹");
+				LOG0(Log::Normal, "ãƒã‚¹ãƒ•ãƒªãƒ¼çŠ¶æ…‹ã€SELç„¡ã—ã§ã®æ›¸ãè¾¼ã¿ã€‚ç„¡è¦–");
 			}
 #endif	// SASI_LOG
 			event.SetTime(0);
 			return;
 
-		// ƒZƒŒƒNƒVƒ‡ƒ“ƒtƒF[ƒY‚È‚çASEL‚ğ–ß‚µ‚ÄƒRƒ}ƒ“ƒhƒtƒF[ƒY‚Ö
+		// ã‚»ãƒ¬ã‚¯ã‚·ãƒ§ãƒ³ãƒ•ã‚§ãƒ¼ã‚ºãªã‚‰ã€SELã‚’æˆ»ã—ã¦ã‚³ãƒãƒ³ãƒ‰ãƒ•ã‚§ãƒ¼ã‚ºã¸
 		case selection:
 			if (!sasi.sel) {
 				Command();
@@ -1151,13 +1173,13 @@ void FASTCALL SASI::WriteData(DWORD data)
 			event.SetTime(0);
 			break;
 
-		// ƒRƒ}ƒ“ƒhƒtƒF[ƒY‚È‚çA6/10ƒoƒCƒgóM
+		// ã‚³ãƒãƒ³ãƒ‰ãƒ•ã‚§ãƒ¼ã‚ºãªã‚‰ã€6/10ãƒã‚¤ãƒˆå—ä¿¡
 		case command:
-			// Å‰‚Ìƒf[ƒ^(ƒIƒtƒZƒbƒg0)‚É‚æ‚èƒŒƒ“ƒOƒX‚ğÄİ’è
+			// æœ€åˆã®ãƒ‡ãƒ¼ã‚¿(ã‚ªãƒ•ã‚»ãƒƒãƒˆ0)ã«ã‚ˆã‚Šãƒ¬ãƒ³ã‚°ã‚¹ã‚’å†è¨­å®š
 			sasi.cmd[sasi.offset] = data;
 			if (sasi.offset == 0) {
 				if ((data >= 0x20) && (data <= 0x3f)) {
-					// 10ƒoƒCƒgCDB
+					// 10ãƒã‚¤ãƒˆCDB
 					sasi.length = 10;
 				}
 			}
@@ -1165,22 +1187,22 @@ void FASTCALL SASI::WriteData(DWORD data)
 			sasi.length--;
 			sasi.req = FALSE;
 
-			// I‚í‚è‚©
+			// çµ‚ã‚ã‚Šã‹
 			if (sasi.length == 0) {
-				// ƒCƒxƒ“ƒg’â~‚µ‚ÄÀsƒtƒF[ƒY‚Ö
+				// ã‚¤ãƒ™ãƒ³ãƒˆåœæ­¢ã—ã¦å®Ÿè¡Œãƒ•ã‚§ãƒ¼ã‚ºã¸
 				event.SetTime(0);
 				Execute();
 				return;
 			}
-			// ƒCƒxƒ“ƒgŒp‘±
+			// ã‚¤ãƒ™ãƒ³ãƒˆç¶™ç¶š
 			return;
 
-		// ‘‚«‚İƒtƒF[ƒY‚È‚çA“]‘—ŒãƒXƒe[ƒ^ƒXƒtƒF[ƒY‚Ö
+		// æ›¸ãè¾¼ã¿ãƒ•ã‚§ãƒ¼ã‚ºãªã‚‰ã€è»¢é€å¾Œã‚¹ãƒ†ãƒ¼ã‚¿ã‚¹ãƒ•ã‚§ãƒ¼ã‚ºã¸
 		case write:
-			// Non-DMA“]‘—‚È‚çASxSI CPUƒtƒ‰ƒO‚ğƒgƒOƒ‹•Ï‰»‚³‚¹‚é
+			// Non-DMAè»¢é€ãªã‚‰ã€SxSI CPUãƒ•ãƒ©ã‚°ã‚’ãƒˆã‚°ãƒ«å¤‰åŒ–ã•ã›ã‚‹
 			if (!dmac->IsDMA()) {
 #if defined(SASI_LOG)
-				LOG1(Log::Normal, "ƒf[ƒ^OUTƒtƒF[ƒY CPU“]‘— ƒIƒtƒZƒbƒg=%d", sasi.offset);
+				LOG1(Log::Normal, "ãƒ‡ãƒ¼ã‚¿OUTãƒ•ã‚§ãƒ¼ã‚º CPUè»¢é€ ã‚ªãƒ•ã‚»ãƒƒãƒˆ=%d", sasi.offset);
 #endif	// SASI_LOG
 				sxsicpu = !sxsicpu;
 			}
@@ -1190,69 +1212,69 @@ void FASTCALL SASI::WriteData(DWORD data)
 			sasi.length--;
 			sasi.req = FALSE;
 
-			// I‚í‚è‚©
+			// çµ‚ã‚ã‚Šã‹
 			if (sasi.length > 0) {
 				return;
 			}
 
-			// WRITE(6)EWRITE(10)EWRITE&VERIFY‚Í•Êˆ—
+			// WRITE(6)ãƒ»WRITE(10)ãƒ»WRITE&VERIFYã¯åˆ¥å‡¦ç†
 			switch (sasi.cmd[0]) {
 				case 0x0a:
 				case 0x2a:
 				case 0x2e:
 					break;
-				// WRITE DATAˆÈŠO‚ÌƒRƒ}ƒ“ƒh‚Í‚±‚±‚ÅI—¹
+				// WRITE DATAä»¥å¤–ã®ã‚³ãƒãƒ³ãƒ‰ã¯ã“ã“ã§çµ‚äº†
 				default:
 					event.SetTime(0);
 					Status();
 					return;
 			}
 
-			// WRITEƒRƒ}ƒ“ƒh‚È‚çAŒ»İ‚Ìƒoƒbƒtƒ@‚Å‘‚«‚İ
+			// WRITEã‚³ãƒãƒ³ãƒ‰ãªã‚‰ã€ç¾åœ¨ã®ãƒãƒƒãƒ•ã‚¡ã§æ›¸ãè¾¼ã¿
 			if (!sasi.current->Write(sasi.buffer, sasi.next - 1)) {
-				// ƒGƒ‰[
+				// ã‚¨ãƒ©ãƒ¼
 				Error();
 				return;
 			}
 
-			// “]‘—ƒuƒƒbƒN”‚ğ‰º‚°‚é
+			// è»¢é€ãƒ–ãƒ­ãƒƒã‚¯æ•°ã‚’ä¸‹ã’ã‚‹
 			sasi.blocks--;
 
-			// ÅŒã‚ÌƒuƒƒbƒN‚©
+			// æœ€å¾Œã®ãƒ–ãƒ­ãƒƒã‚¯ã‹
 			if (sasi.blocks == 0) {
-				// ƒCƒxƒ“ƒg’â~‚µ‚ÄƒXƒe[ƒ^ƒXƒtƒF[ƒY‚Ö
+				// ã‚¤ãƒ™ãƒ³ãƒˆåœæ­¢ã—ã¦ã‚¹ãƒ†ãƒ¼ã‚¿ã‚¹ãƒ•ã‚§ãƒ¼ã‚ºã¸
 				event.SetTime(0);
 				Status();
 				return;
 			}
 
-			// Ÿ‚ÌƒuƒƒbƒN€”õ
+			// æ¬¡ã®ãƒ–ãƒ­ãƒƒã‚¯æº–å‚™
 			sasi.length = sasi.current->WriteCheck(sasi.next);
 			if (sasi.length <= 0) {
-				// ƒGƒ‰[
+				// ã‚¨ãƒ©ãƒ¼
 				Error();
 				return;
 			}
 
-			// Ÿ‚ÌƒuƒƒbƒN‚ğ“]‘—
+			// æ¬¡ã®ãƒ–ãƒ­ãƒƒã‚¯ã‚’è»¢é€
 			sasi.next++;
 			sasi.offset = 0;
 
-			// ƒCƒxƒ“ƒgŒp‘±
+			// ã‚¤ãƒ™ãƒ³ãƒˆç¶™ç¶š
 			return;
 	}
 
-	// ƒCƒxƒ“ƒg’â~
+	// ã‚¤ãƒ™ãƒ³ãƒˆåœæ­¢
 	event.SetTime(0);
 
-	// ‚»‚êˆÈŠO‚ÌƒIƒyƒŒ[ƒVƒ‡ƒ“‚Í‘z’è‚¹‚¸
-	LOG1(Log::Warning, "‘z’è‚µ‚Ä‚¢‚È‚¢ƒf[ƒ^‘‚«‚İ $%02X", data);
+	// ãã‚Œä»¥å¤–ã®ã‚ªãƒšãƒ¬ãƒ¼ã‚·ãƒ§ãƒ³ã¯æƒ³å®šã›ãš
+	LOG1(Log::Warning, "æƒ³å®šã—ã¦ã„ãªã„ãƒ‡ãƒ¼ã‚¿æ›¸ãè¾¼ã¿ $%02X", data);
 	BusFree();
 }
 
 //---------------------------------------------------------------------------
 //
-//	ƒoƒXƒtƒŠ[ƒtƒF[ƒY
+//	ãƒã‚¹ãƒ•ãƒªãƒ¼ãƒ•ã‚§ãƒ¼ã‚º
 //
 //---------------------------------------------------------------------------
 void FASTCALL SASI::BusFree()
@@ -1260,32 +1282,32 @@ void FASTCALL SASI::BusFree()
 	ASSERT(this);
 
 #if defined(SASI_LOG)
-	LOG0(Log::Normal, "ƒoƒXƒtƒŠ[ƒtƒF[ƒY");
+	LOG0(Log::Normal, "ãƒã‚¹ãƒ•ãƒªãƒ¼ãƒ•ã‚§ãƒ¼ã‚º");
 #endif	// SASI_LOG
 
-	// ƒoƒXƒŠƒZƒbƒg
+	// ãƒã‚¹ãƒªã‚»ãƒƒãƒˆ
 	sasi.msg = FALSE;
 	sasi.cd = FALSE;
 	sasi.io = FALSE;
 	sasi.bsy = FALSE;
 	sasi.req = FALSE;
 
-	// ƒoƒXƒtƒŠ[ƒtƒF[ƒY
+	// ãƒã‚¹ãƒ•ãƒªãƒ¼ãƒ•ã‚§ãƒ¼ã‚º
 	sasi.phase = busfree;
 
-	// ƒCƒxƒ“ƒg‚ğ’â~
+	// ã‚¤ãƒ™ãƒ³ãƒˆã‚’åœæ­¢
 	event.SetTime(0);
 
-	// Š„‚è‚İƒŠƒZƒbƒg
+	// å‰²ã‚Šè¾¼ã¿ãƒªã‚»ãƒƒãƒˆ
 	iosc->IntHDC(FALSE);
 
-	// SxSI CPU“]‘—ƒtƒ‰ƒO
+	// SxSI CPUè»¢é€ãƒ•ãƒ©ã‚°
 	sxsicpu = FALSE;
 }
 
 //---------------------------------------------------------------------------
 //
-//	ƒZƒŒƒNƒVƒ‡ƒ“ƒtƒF[ƒY
+//	ã‚»ãƒ¬ã‚¯ã‚·ãƒ§ãƒ³ãƒ•ã‚§ãƒ¼ã‚º
 //
 //---------------------------------------------------------------------------
 void FASTCALL SASI::Selection(DWORD data)
@@ -1295,7 +1317,7 @@ void FASTCALL SASI::Selection(DWORD data)
 
 	ASSERT(this);
 
-	// ƒZƒŒƒNƒg‚³‚ê‚½ƒRƒ“ƒgƒ[ƒ‰‚ğ’m‚é
+	// ã‚»ãƒ¬ã‚¯ãƒˆã•ã‚ŒãŸã‚³ãƒ³ãƒˆãƒ­ãƒ¼ãƒ©ã‚’çŸ¥ã‚‹
 	c = 8;
 	for (i=0; i<8; i++) {
 		if (data & 1) {
@@ -1305,17 +1327,17 @@ void FASTCALL SASI::Selection(DWORD data)
 		data >>= 1;
 	}
 
-	// ƒrƒbƒg‚ª‚È‚¯‚ê‚ÎƒoƒXƒtƒŠ[ƒtƒF[ƒY
+	// ãƒ“ãƒƒãƒˆãŒãªã‘ã‚Œã°ãƒã‚¹ãƒ•ãƒªãƒ¼ãƒ•ã‚§ãƒ¼ã‚º
 	if (c >= 8) {
 		BusFree();
 		return;
 	}
 
 #if defined(SASI_LOG)
-	LOG1(Log::Normal, "ƒZƒŒƒNƒVƒ‡ƒ“ƒtƒF[ƒY ƒRƒ“ƒgƒ[ƒ‰%d", c);
+	LOG1(Log::Normal, "ã‚»ãƒ¬ã‚¯ã‚·ãƒ§ãƒ³ãƒ•ã‚§ãƒ¼ã‚º ã‚³ãƒ³ãƒˆãƒ­ãƒ¼ãƒ©%d", c);
 #endif	// SASI_LOG
 
-	// ƒhƒ‰ƒCƒu‚ª‘¶İ‚µ‚È‚¯‚ê‚ÎƒoƒXƒtƒŠ[ƒtƒF[ƒY
+	// ãƒ‰ãƒ©ã‚¤ãƒ–ãŒå­˜åœ¨ã—ãªã‘ã‚Œã°ãƒã‚¹ãƒ•ãƒªãƒ¼ãƒ•ã‚§ãƒ¼ã‚º
 	if (sasi.disk[(c << 1) + 0]->IsNULL()) {
 		if (sasi.disk[(c << 1) + 1]->IsNULL()) {
 			BusFree();
@@ -1323,7 +1345,7 @@ void FASTCALL SASI::Selection(DWORD data)
 		}
 	}
 
-	// BSY‚ğã‚°‚ÄƒZƒŒƒNƒVƒ‡ƒ“ƒtƒF[ƒY
+	// BSYã‚’ä¸Šã’ã¦ã‚»ãƒ¬ã‚¯ã‚·ãƒ§ãƒ³ãƒ•ã‚§ãƒ¼ã‚º
 	sasi.ctrl = (DWORD)c;
 	sasi.phase = selection;
 	sasi.bsy = TRUE;
@@ -1331,7 +1353,7 @@ void FASTCALL SASI::Selection(DWORD data)
 
 //---------------------------------------------------------------------------
 //
-//	ƒRƒ}ƒ“ƒhƒtƒF[ƒY
+//	ã‚³ãƒãƒ³ãƒ‰ãƒ•ã‚§ãƒ¼ã‚º
 //
 //---------------------------------------------------------------------------
 void FASTCALL SASI::Command()
@@ -1339,10 +1361,10 @@ void FASTCALL SASI::Command()
 	ASSERT(this);
 
 #if defined(SASI_LOG)
-	LOG0(Log::Normal, "ƒRƒ}ƒ“ƒhƒtƒF[ƒY");
+	LOG0(Log::Normal, "ã‚³ãƒãƒ³ãƒ‰ãƒ•ã‚§ãƒ¼ã‚º");
 #endif	// SASI_LOG
 
-	// ƒRƒ}ƒ“ƒhƒtƒF[ƒY
+	// ã‚³ãƒãƒ³ãƒ‰ãƒ•ã‚§ãƒ¼ã‚º
 	sasi.phase = command;
 
 	// I/O=0, C/D=1, MSG=0
@@ -1350,18 +1372,18 @@ void FASTCALL SASI::Command()
 	sasi.cd = TRUE;
 	sasi.msg = FALSE;
 
-	// ƒRƒ}ƒ“ƒhc‚è’·‚³‚Í6ƒoƒCƒg(ˆê•”ƒRƒ}ƒ“ƒh‚Í10ƒoƒCƒgBWriteByte‚ÅÄİ’è)
+	// ã‚³ãƒãƒ³ãƒ‰æ®‹ã‚Šé•·ã•ã¯6ãƒã‚¤ãƒˆ(ä¸€éƒ¨ã‚³ãƒãƒ³ãƒ‰ã¯10ãƒã‚¤ãƒˆã€‚WriteByteã§å†è¨­å®š)
 	sasi.offset = 0;
 	sasi.length = 6;
 
-	// ƒRƒ}ƒ“ƒhƒf[ƒ^‚ğ—v‹
+	// ã‚³ãƒãƒ³ãƒ‰ãƒ‡ãƒ¼ã‚¿ã‚’è¦æ±‚
 	event.SetUser(0);
 	event.SetTime(32);
 }
 
 //---------------------------------------------------------------------------
 //
-//	ÀsƒtƒF[ƒY
+//	å®Ÿè¡Œãƒ•ã‚§ãƒ¼ã‚º
 //
 //---------------------------------------------------------------------------
 void FASTCALL SASI::Execute()
@@ -1370,52 +1392,52 @@ void FASTCALL SASI::Execute()
 
 	ASSERT(this);
 
-	// ÀsƒtƒF[ƒY
+	// å®Ÿè¡Œãƒ•ã‚§ãƒ¼ã‚º
 	sasi.phase = execute;
 
-	// ƒhƒ‰ƒCƒuì¬
+	// ãƒ‰ãƒ©ã‚¤ãƒ–ä½œæˆ
 	ASSERT(sasi.ctrl < 8);
 	drive = sasi.ctrl << 1;
 	if (sasi.cmd[1] & 0x20) {
 		drive++;
 	}
 
-	// ƒJƒŒƒ“ƒgİ’è
+	// ã‚«ãƒ¬ãƒ³ãƒˆè¨­å®š
 	sasi.current = sasi.disk[drive];
 	ASSERT(sasi.current);
 
 #if defined(SASI_LOG)
-	LOG2(Log::Normal, "ÀsƒtƒF[ƒY ƒRƒ}ƒ“ƒh$%02X ƒhƒ‰ƒCƒu%d", sasi.cmd[0], drive);
+	LOG2(Log::Normal, "å®Ÿè¡Œãƒ•ã‚§ãƒ¼ã‚º ã‚³ãƒãƒ³ãƒ‰$%02X ãƒ‰ãƒ©ã‚¤ãƒ–%d", sasi.cmd[0], drive);
 #endif	// SASI_LOG
 
 #if 0
-	// ƒAƒeƒ“ƒVƒ‡ƒ“‚È‚çƒGƒ‰[‚ğo‚·(MO‚ÌƒƒfƒBƒA“ü‚ê‘Ö‚¦‚ğ’Ê’m)
+	// ã‚¢ãƒ†ãƒ³ã‚·ãƒ§ãƒ³ãªã‚‰ã‚¨ãƒ©ãƒ¼ã‚’å‡ºã™(MOã®ãƒ¡ãƒ‡ã‚£ã‚¢å…¥ã‚Œæ›¿ãˆã‚’é€šçŸ¥)
 	if (sasi.current->IsAttn()) {
 #if defined(SASI_LOG)
-	LOG0(Log::Normal, "ƒƒfƒBƒAŒğŠ·’Ê’m‚Ì‚½‚ß‚ÌƒAƒeƒ“ƒVƒ‡ƒ“ƒGƒ‰[");
+	LOG0(Log::Normal, "ãƒ¡ãƒ‡ã‚£ã‚¢äº¤æ›é€šçŸ¥ã®ãŸã‚ã®ã‚¢ãƒ†ãƒ³ã‚·ãƒ§ãƒ³ã‚¨ãƒ©ãƒ¼");
 #endif	// SASI_LOG
 
-		// ƒAƒeƒ“ƒVƒ‡ƒ“‚ğƒNƒŠƒA
+		// ã‚¢ãƒ†ãƒ³ã‚·ãƒ§ãƒ³ã‚’ã‚¯ãƒªã‚¢
 		sasi.current->ClrAttn();
 
-		// ƒGƒ‰[(ƒŠƒNƒGƒXƒgƒZƒ“ƒX‚ğ—v‹)
+		// ã‚¨ãƒ©ãƒ¼(ãƒªã‚¯ã‚¨ã‚¹ãƒˆã‚»ãƒ³ã‚¹ã‚’è¦æ±‚)
 		Error();
 		return;
 	}
 #endif
 
-	// 0x12ˆÈã0x2fˆÈ‰º‚ÌƒRƒ}ƒ“ƒh‚ÍASCSIê—p
+	// 0x12ä»¥ä¸Š0x2fä»¥ä¸‹ã®ã‚³ãƒãƒ³ãƒ‰ã¯ã€SCSIå°‚ç”¨
 	if ((sasi.cmd[0] >= 0x12) && (sasi.cmd[0] <= 0x2f)) {
 		ASSERT(sasi.current);
 		if (sasi.current->IsSASI()) {
-			// SASI‚È‚Ì‚ÅA–¢À‘•ƒRƒ}ƒ“ƒhƒGƒ‰[
+			// SASIãªã®ã§ã€æœªå®Ÿè£…ã‚³ãƒãƒ³ãƒ‰ã‚¨ãƒ©ãƒ¼
 			sasi.current->InvalidCmd();
 			Error();
 			return;
 		}
 	}
 
-	// ƒRƒ}ƒ“ƒh•Êˆ—
+	// ã‚³ãƒãƒ³ãƒ‰åˆ¥å‡¦ç†
 	switch (sasi.cmd[0]) {
 		// TEST UNIT READY
 		case 0x00:
@@ -1462,78 +1484,78 @@ void FASTCALL SASI::Execute()
 			Seek6();
 			return;
 
-		// ASSIGN(SASI‚Ì‚İ)
+		// ASSIGN(SASIã®ã¿)
 		case 0x0e:
 			Assign();
 			return;
 
-		// INQUIRY(SCSI‚Ì‚İ)
+		// INQUIRY(SCSIã®ã¿)
 		case 0x12:
 			Inquiry();
 			return;
 
-		// MODE SENSE(SCSI‚Ì‚İ)
+		// MODE SENSE(SCSIã®ã¿)
 		case 0x1a:
 			ModeSense();
 			return;
 
-		// START STOP UNIT(SCSI‚Ì‚İ)
+		// START STOP UNIT(SCSIã®ã¿)
 		case 0x1b:
 			StartStop();
 			return;
 
-		// PREVENT/ALLOW MEDIUM REMOVAL(SCSI‚Ì‚İ)
+		// PREVENT/ALLOW MEDIUM REMOVAL(SCSIã®ã¿)
 		case 0x1e:
 			Removal();
 			return;
 
-		// READ CAPACITY(SCSI‚Ì‚İ)
+		// READ CAPACITY(SCSIã®ã¿)
 		case 0x25:
 			ReadCapacity();
 			return;
 
-		// READ(10)(SCSI‚Ì‚İ)
+		// READ(10)(SCSIã®ã¿)
 		case 0x28:
 			Read10();
 			return;
 
-		// WRITE(10)(SCSI‚Ì‚İ)
+		// WRITE(10)(SCSIã®ã¿)
 		case 0x2a:
 			Write10();
 			return;
 
-		// SEEK(10)(SCSI‚Ì‚İ)
+		// SEEK(10)(SCSIã®ã¿)
 		case 0x2b:
 			Seek10();
 			return;
 
-		// WRITE and VERIFY(SCSI‚Ì‚İ)
+		// WRITE and VERIFY(SCSIã®ã¿)
 		case 0x2e:
 			Write10();
 			return;
 
-		// VERIFY(SCSI‚Ì‚İ)
+		// VERIFY(SCSIã®ã¿)
 		case 0x2f:
 			Verify();
 			return;
 
-		// SPECIFY(SASI‚Ì‚İ)
+		// SPECIFY(SASIã®ã¿)
 		case 0xc2:
 			Specify();
 			return;
 	}
 
-	// ‚»‚êˆÈŠO‚Í‘Î‰‚µ‚Ä‚¢‚È‚¢
-	LOG1(Log::Warning, "–¢‘Î‰ƒRƒ}ƒ“ƒh $%02X", sasi.cmd[0]);
+	// ãã‚Œä»¥å¤–ã¯å¯¾å¿œã—ã¦ã„ãªã„
+	LOG1(Log::Warning, "æœªå¯¾å¿œã‚³ãƒãƒ³ãƒ‰ $%02X", sasi.cmd[0]);
 	sasi.current->InvalidCmd();
 
-	// ƒGƒ‰[
+	// ã‚¨ãƒ©ãƒ¼
 	Error();
 }
 
 //---------------------------------------------------------------------------
 //
-//	ƒXƒe[ƒ^ƒXƒtƒF[ƒY
+//	ã‚¹ãƒ†ãƒ¼ã‚¿ã‚¹ãƒ•ã‚§ãƒ¼ã‚º
 //
 //---------------------------------------------------------------------------
 void FASTCALL SASI::Status()
@@ -1541,10 +1563,10 @@ void FASTCALL SASI::Status()
 	ASSERT(this);
 
 #if defined(SASI_LOG)
-	LOG1(Log::Normal, "ƒXƒe[ƒ^ƒXƒtƒF[ƒY ƒXƒe[ƒ^ƒX$%02X", sasi.status);
+	LOG1(Log::Normal, "ã‚¹ãƒ†ãƒ¼ã‚¿ã‚¹ãƒ•ã‚§ãƒ¼ã‚º ã‚¹ãƒ†ãƒ¼ã‚¿ã‚¹$%02X", sasi.status);
 #endif	// SASI_LOG
 
-	// ƒXƒe[ƒ^ƒXƒtƒF[ƒY
+	// ã‚¹ãƒ†ãƒ¼ã‚¿ã‚¹ãƒ•ã‚§ãƒ¼ã‚º
 	sasi.phase = status;
 
 	// I/O=1 C/D=1 MSG=0
@@ -1552,16 +1574,16 @@ void FASTCALL SASI::Status()
 	sasi.cd = TRUE;
 	ASSERT(!sasi.msg);
 
-	// ƒXƒe[ƒ^ƒXƒf[ƒ^‚Ìˆø‚«æ‚è‚ğ—v‹
+	// ã‚¹ãƒ†ãƒ¼ã‚¿ã‚¹ãƒ‡ãƒ¼ã‚¿ã®å¼•ãå–ã‚Šã‚’è¦æ±‚
 	sasi.req = TRUE;
 
-	// Š„‚è‚İƒŠƒNƒGƒXƒg
+	// å‰²ã‚Šè¾¼ã¿ãƒªã‚¯ã‚¨ã‚¹ãƒˆ
 	iosc->IntHDC(TRUE);
 }
 
 //---------------------------------------------------------------------------
 //
-//	ƒƒbƒZ[ƒWƒtƒF[ƒY
+//	ãƒ¡ãƒƒã‚»ãƒ¼ã‚¸ãƒ•ã‚§ãƒ¼ã‚º
 //
 //---------------------------------------------------------------------------
 void FASTCALL SASI::Message()
@@ -1569,10 +1591,10 @@ void FASTCALL SASI::Message()
 	ASSERT(this);
 
 #if defined(SASI_LOG)
-	LOG1(Log::Normal, "ƒƒbƒZ[ƒWƒtƒF[ƒY ƒƒbƒZ[ƒW$%02X", sasi.message);
+	LOG1(Log::Normal, "ãƒ¡ãƒƒã‚»ãƒ¼ã‚¸ãƒ•ã‚§ãƒ¼ã‚º ãƒ¡ãƒƒã‚»ãƒ¼ã‚¸$%02X", sasi.message);
 #endif	// SASI_LOG
 
-	// ƒƒbƒZ[ƒWƒtƒF[ƒY
+	// ãƒ¡ãƒƒã‚»ãƒ¼ã‚¸ãƒ•ã‚§ãƒ¼ã‚º
 	sasi.phase = message;
 
 	// I/O=1 C/D=1 MSG=1
@@ -1580,13 +1602,13 @@ void FASTCALL SASI::Message()
 	ASSERT(sasi.cd);
 	sasi.msg = 1;
 
-	// ƒXƒe[ƒ^ƒXƒf[ƒ^‚Ìˆø‚«æ‚è‚ğ—v‹
+	// ã‚¹ãƒ†ãƒ¼ã‚¿ã‚¹ãƒ‡ãƒ¼ã‚¿ã®å¼•ãå–ã‚Šã‚’è¦æ±‚
 	sasi.req = TRUE;
 }
 
 //---------------------------------------------------------------------------
 //
-//	‹¤’ÊƒGƒ‰[
+//	å…±é€šã‚¨ãƒ©ãƒ¼
 //
 //---------------------------------------------------------------------------
 void FASTCALL SASI::Error()
@@ -1594,17 +1616,17 @@ void FASTCALL SASI::Error()
 	ASSERT(this);
 
 #if defined(SASI_LOG)
-	LOG0(Log::Normal, "ƒGƒ‰[(ƒXƒe[ƒ^ƒXƒtƒF[ƒY‚Ö)");
+	LOG0(Log::Normal, "ã‚¨ãƒ©ãƒ¼(ã‚¹ãƒ†ãƒ¼ã‚¿ã‚¹ãƒ•ã‚§ãƒ¼ã‚ºã¸)");
 #endif	// SASI_LOG
 
-	// ƒXƒe[ƒ^ƒX‚ÆƒƒbƒZ[ƒW‚ğİ’è(CHECK CONDITION)
+	// ã‚¹ãƒ†ãƒ¼ã‚¿ã‚¹ã¨ãƒ¡ãƒƒã‚»ãƒ¼ã‚¸ã‚’è¨­å®š(CHECK CONDITION)
 	sasi.status = (sasi.current->GetLUN() << 5) | 0x02;
 	sasi.message = 0x00;
 
-	// ƒCƒxƒ“ƒg’â~
+	// ã‚¤ãƒ™ãƒ³ãƒˆåœæ­¢
 	event.SetTime(0);
 
-	// ƒXƒe[ƒ^ƒXƒtƒF[ƒY
+	// ã‚¹ãƒ†ãƒ¼ã‚¿ã‚¹ãƒ•ã‚§ãƒ¼ã‚º
 	Status();
 }
 
@@ -1621,22 +1643,22 @@ void FASTCALL SASI::TestUnitReady()
 	ASSERT(sasi.current);
 
 #if defined(SASI_LOG)
-	LOG0(Log::Normal, "TEST UNIT READYƒRƒ}ƒ“ƒh");
+	LOG0(Log::Normal, "TEST UNIT READYã‚³ãƒãƒ³ãƒ‰");
 #endif	// SASI_LOG
 
-	// ƒhƒ‰ƒCƒu‚ÅƒRƒ}ƒ“ƒhˆ—
+	// ãƒ‰ãƒ©ã‚¤ãƒ–ã§ã‚³ãƒãƒ³ãƒ‰å‡¦ç†
 	status = sasi.current->TestUnitReady(sasi.cmd);
 	if (!status) {
-		// ¸”s(ƒGƒ‰[)
+		// å¤±æ•—(ã‚¨ãƒ©ãƒ¼)
 		Error();
 		return;
 	}
 
-	// ¬Œ÷
+	// æˆåŠŸ
 	sasi.status = 0x00;
 	sasi.message = 0x00;
 
-	// ƒXƒe[ƒ^ƒXƒtƒF[ƒY
+	// ã‚¹ãƒ†ãƒ¼ã‚¿ã‚¹ãƒ•ã‚§ãƒ¼ã‚º
 	Status();
 }
 
@@ -1653,22 +1675,22 @@ void FASTCALL SASI::Rezero()
 	ASSERT(sasi.current);
 
 #if defined(SASI_LOG)
-	LOG0(Log::Normal, "REZEROƒRƒ}ƒ“ƒh");
+	LOG0(Log::Normal, "REZEROã‚³ãƒãƒ³ãƒ‰");
 #endif	// SASI_LOG
 
-	// ƒhƒ‰ƒCƒu‚ÅƒRƒ}ƒ“ƒhˆ—
+	// ãƒ‰ãƒ©ã‚¤ãƒ–ã§ã‚³ãƒãƒ³ãƒ‰å‡¦ç†
 	status = sasi.current->Rezero(sasi.cmd);
 	if (!status) {
-		// ¸”s(ƒGƒ‰[)
+		// å¤±æ•—(ã‚¨ãƒ©ãƒ¼)
 		Error();
 		return;
 	}
 
-	// ¬Œ÷
+	// æˆåŠŸ
 	sasi.status = 0x00;
 	sasi.message = 0x00;
 
-	// ƒXƒe[ƒ^ƒXƒtƒF[ƒY
+	// ã‚¹ãƒ†ãƒ¼ã‚¿ã‚¹ãƒ•ã‚§ãƒ¼ã‚º
 	Status();
 }
 
@@ -1683,33 +1705,33 @@ void FASTCALL SASI::RequestSense()
 	ASSERT(sasi.current);
 
 #if defined(SASI_LOG)
-	LOG0(Log::Normal, "REQUEST SENSEƒRƒ}ƒ“ƒh");
+	LOG0(Log::Normal, "REQUEST SENSEã‚³ãƒãƒ³ãƒ‰");
 #endif	// SASI_LOG
 
-	// ƒhƒ‰ƒCƒu‚ÅƒRƒ}ƒ“ƒhˆ—
+	// ãƒ‰ãƒ©ã‚¤ãƒ–ã§ã‚³ãƒãƒ³ãƒ‰å‡¦ç†
 	sasi.length = sasi.current->RequestSense(sasi.cmd, sasi.buffer);
 	if (sasi.length <= 0) {
-		// ¸”s(ƒGƒ‰[)
+		// å¤±æ•—(ã‚¨ãƒ©ãƒ¼)
 		Error();
 		return;
 	}
 
 #if defined(SASI_LOG)
-	LOG1(Log::Normal, "ƒZƒ“ƒXƒL[ $%02X", sasi.buffer[2]);
+	LOG1(Log::Normal, "ã‚»ãƒ³ã‚¹ã‚­ãƒ¼ $%02X", sasi.buffer[2]);
 #endif
 
-	// ƒhƒ‰ƒCƒu‚©‚ç•Ô‹p‚³‚ê‚½ƒf[ƒ^‚ğ•ÔMBI/O=1, C/D=0
+	// ãƒ‰ãƒ©ã‚¤ãƒ–ã‹ã‚‰è¿”å´ã•ã‚ŒãŸãƒ‡ãƒ¼ã‚¿ã‚’è¿”ä¿¡ã€‚I/O=1, C/D=0
 	sasi.offset = 0;
 	sasi.blocks = 1;
 	sasi.phase = read;
 	sasi.io = TRUE;
 	sasi.cd = FALSE;
 
-	// ƒGƒ‰[ƒXƒe[ƒ^ƒX‚ğƒNƒŠƒA
+	// ã‚¨ãƒ©ãƒ¼ã‚¹ãƒ†ãƒ¼ã‚¿ã‚¹ã‚’ã‚¯ãƒªã‚¢
 	sasi.status = 0x00;
 	sasi.message = 0x00;
 
-	// ƒCƒxƒ“ƒgİ’èAƒf[ƒ^‚Ìˆø‚«æ‚è‚ğ—v‹
+	// ã‚¤ãƒ™ãƒ³ãƒˆè¨­å®šã€ãƒ‡ãƒ¼ã‚¿ã®å¼•ãå–ã‚Šã‚’è¦æ±‚
 	event.SetUser(0);
 	event.SetTime(48);
 }
@@ -1727,29 +1749,29 @@ void FASTCALL SASI::Format()
 	ASSERT(sasi.current);
 
 #if defined(SASI_LOG)
-	LOG0(Log::Normal, "FORMAT UNITƒRƒ}ƒ“ƒh");
+	LOG0(Log::Normal, "FORMAT UNITã‚³ãƒãƒ³ãƒ‰");
 #endif	// SASI_LOG
 
-	// ƒhƒ‰ƒCƒu‚ÅƒRƒ}ƒ“ƒhˆ—
+	// ãƒ‰ãƒ©ã‚¤ãƒ–ã§ã‚³ãƒãƒ³ãƒ‰å‡¦ç†
 	status = sasi.current->Format(sasi.cmd);
 	if (!status) {
-		// ¸”s(ƒGƒ‰[)
+		// å¤±æ•—(ã‚¨ãƒ©ãƒ¼)
 		Error();
 		return;
 	}
 
-	// ¬Œ÷
+	// æˆåŠŸ
 	sasi.status = 0x00;
 	sasi.message = 0x00;
 
-	// ƒXƒe[ƒ^ƒXƒtƒF[ƒY
+	// ã‚¹ãƒ†ãƒ¼ã‚¿ã‚¹ãƒ•ã‚§ãƒ¼ã‚º
 	Status();
 }
 
 //---------------------------------------------------------------------------
 //
 //	REASSIGN BLOCKS
-//	¦SASI‚Ì‚İ(‹KŠiã‚ÍSCSI‚à‚ ‚è)
+//	â€»SASIã®ã¿(è¦æ ¼ä¸Šã¯SCSIã‚‚ã‚ã‚Š)
 //
 //---------------------------------------------------------------------------
 void FASTCALL SASI::Reassign()
@@ -1760,29 +1782,29 @@ void FASTCALL SASI::Reassign()
 	ASSERT(sasi.current);
 
 #if defined(SASI_LOG)
-	LOG0(Log::Normal, "REASSIGN BLOCKSƒRƒ}ƒ“ƒh");
+	LOG0(Log::Normal, "REASSIGN BLOCKSã‚³ãƒãƒ³ãƒ‰");
 #endif	// SASI_LOG
 
-	// SASIˆÈŠO‚ÍƒGƒ‰[‚Æ‚·‚é(Œ‡Š×ƒŠƒXƒg‚ğ‘—M‚µ‚È‚¢‚½‚ß)
+	// SASIä»¥å¤–ã¯ã‚¨ãƒ©ãƒ¼ã¨ã™ã‚‹(æ¬ é™¥ãƒªã‚¹ãƒˆã‚’é€ä¿¡ã—ãªã„ãŸã‚)
 	if (!sasi.current->IsSASI()) {
 		sasi.current->InvalidCmd();
 		Error();
 		return;
 	}
 
-	// ƒhƒ‰ƒCƒu‚ÅƒRƒ}ƒ“ƒhˆ—
+	// ãƒ‰ãƒ©ã‚¤ãƒ–ã§ã‚³ãƒãƒ³ãƒ‰å‡¦ç†
 	status = sasi.current->Reassign(sasi.cmd);
 	if (!status) {
-		// ¸”s(ƒGƒ‰[)
+		// å¤±æ•—(ã‚¨ãƒ©ãƒ¼)
 		Error();
 		return;
 	}
 
-	// ¬Œ÷
+	// æˆåŠŸ
 	sasi.status = 0x00;
 	sasi.message = 0x00;
 
-	// ƒXƒe[ƒ^ƒXƒtƒF[ƒY
+	// ã‚¹ãƒ†ãƒ¼ã‚¿ã‚¹ãƒ•ã‚§ãƒ¼ã‚º
 	Status();
 }
 
@@ -1798,7 +1820,7 @@ void FASTCALL SASI::Read6()
 	ASSERT(this);
 	ASSERT(sasi.current);
 
-	// ƒŒƒR[ƒh”Ô†‚ÆƒuƒƒbƒN”‚ğæ“¾
+	// ãƒ¬ã‚³ãƒ¼ãƒ‰ç•ªå·ã¨ãƒ–ãƒ­ãƒƒã‚¯æ•°ã‚’å–å¾—
 	record = sasi.cmd[1] & 0x1f;
 	record <<= 8;
 	record |= sasi.cmd[2];
@@ -1810,31 +1832,31 @@ void FASTCALL SASI::Read6()
 	}
 
 #if defined(SASI_LOG)
-	LOG2(Log::Normal, "READ(6)ƒRƒ}ƒ“ƒh ƒŒƒR[ƒh=%06X ƒuƒƒbƒN=%d", record, sasi.blocks);
+	LOG2(Log::Normal, "READ(6)ã‚³ãƒãƒ³ãƒ‰ ãƒ¬ã‚³ãƒ¼ãƒ‰=%06X ãƒ–ãƒ­ãƒƒã‚¯=%d", record, sasi.blocks);
 #endif	// SASI_LOG
 
-	// ƒhƒ‰ƒCƒu‚ÅƒRƒ}ƒ“ƒhˆ—
+	// ãƒ‰ãƒ©ã‚¤ãƒ–ã§ã‚³ãƒãƒ³ãƒ‰å‡¦ç†
 	sasi.length = sasi.current->Read(sasi.buffer, record);
 	if (sasi.length <= 0) {
-		// ¸”s(ƒGƒ‰[)
+		// å¤±æ•—(ã‚¨ãƒ©ãƒ¼)
 		Error();
 		return;
 	}
 
-	// ƒXƒe[ƒ^ƒX‚ğOK‚É
+	// ã‚¹ãƒ†ãƒ¼ã‚¿ã‚¹ã‚’OKã«
 	sasi.status = 0x00;
 	sasi.message = 0x00;
 
-	// Ÿ‚ÌƒuƒƒbƒNokAƒ[ƒNİ’è
+	// æ¬¡ã®ãƒ–ãƒ­ãƒƒã‚¯okã€ãƒ¯ãƒ¼ã‚¯è¨­å®š
 	sasi.offset = 0;
 	sasi.next = record + 1;
 
-	// “Ç‚İ‚İƒtƒF[ƒY, I/O=1, C/D=0
+	// èª­ã¿è¾¼ã¿ãƒ•ã‚§ãƒ¼ã‚º, I/O=1, C/D=0
 	sasi.phase = read;
 	sasi.io = TRUE;
 	sasi.cd = FALSE;
 
-	// ƒCƒxƒ“ƒg‚ğİ’èAƒf[ƒ^‚Ìˆø‚«æ‚è‚ğ—v‹
+	// ã‚¤ãƒ™ãƒ³ãƒˆã‚’è¨­å®šã€ãƒ‡ãƒ¼ã‚¿ã®å¼•ãå–ã‚Šã‚’è¦æ±‚
 	event.SetUser(1);
 	event.SetTime(48);
 }
@@ -1851,7 +1873,7 @@ void FASTCALL SASI::Write6()
 	ASSERT(this);
 	ASSERT(sasi.current);
 
-	// ƒŒƒR[ƒh”Ô†‚ÆƒuƒƒbƒN”‚ğæ“¾
+	// ãƒ¬ã‚³ãƒ¼ãƒ‰ç•ªå·ã¨ãƒ–ãƒ­ãƒƒã‚¯æ•°ã‚’å–å¾—
 	record = sasi.cmd[1] & 0x1f;
 	record <<= 8;
 	record |= sasi.cmd[2];
@@ -1863,30 +1885,30 @@ void FASTCALL SASI::Write6()
 	}
 
 #if defined(SASI_LOG)
-	LOG2(Log::Normal, "WRITE(6)ƒRƒ}ƒ“ƒh ƒŒƒR[ƒh=%06X ƒuƒƒbƒN=%d", record, sasi.blocks);
+	LOG2(Log::Normal, "WRITE(6)ã‚³ãƒãƒ³ãƒ‰ ãƒ¬ã‚³ãƒ¼ãƒ‰=%06X ãƒ–ãƒ­ãƒƒã‚¯=%d", record, sasi.blocks);
 #endif	// SASI_LOG
 
-	// ƒhƒ‰ƒCƒu‚ÅƒRƒ}ƒ“ƒhˆ—
+	// ãƒ‰ãƒ©ã‚¤ãƒ–ã§ã‚³ãƒãƒ³ãƒ‰å‡¦ç†
 	sasi.length = sasi.current->WriteCheck(record);
 	if (sasi.length <= 0) {
-		// ¸”s(ƒGƒ‰[)
+		// å¤±æ•—(ã‚¨ãƒ©ãƒ¼)
 		Error();
 		return;
 	}
 
-	// ƒXƒe[ƒ^ƒX‚ğOK‚É
+	// ã‚¹ãƒ†ãƒ¼ã‚¿ã‚¹ã‚’OKã«
 	sasi.status = 0x00;
 	sasi.message = 0x00;
 
-	// “]‘—ƒ[ƒN
+	// è»¢é€ãƒ¯ãƒ¼ã‚¯
 	sasi.next = record + 1;
 	sasi.offset = 0;
 
-	// ‘‚«‚İƒtƒF[ƒY, C/D=0
+	// æ›¸ãè¾¼ã¿ãƒ•ã‚§ãƒ¼ã‚º, C/D=0
 	sasi.phase = write;
 	sasi.cd = FALSE;
 
-	// ƒCƒxƒ“ƒg‚ğİ’èAƒf[ƒ^‚Ì‘‚«‚İ‚ğ—v‹
+	// ã‚¤ãƒ™ãƒ³ãƒˆã‚’è¨­å®šã€ãƒ‡ãƒ¼ã‚¿ã®æ›¸ãè¾¼ã¿ã‚’è¦æ±‚
 	event.SetUser(1);
 	event.SetTime(48);
 }
@@ -1904,29 +1926,29 @@ void FASTCALL SASI::Seek6()
 	ASSERT(sasi.current);
 
 #if defined(SASI_LOG)
-	LOG0(Log::Normal, "SEEK(6)ƒRƒ}ƒ“ƒh");
+	LOG0(Log::Normal, "SEEK(6)ã‚³ãƒãƒ³ãƒ‰");
 #endif	// SASI_LOG
 
-	// ƒhƒ‰ƒCƒu‚ÅƒRƒ}ƒ“ƒhˆ—
+	// ãƒ‰ãƒ©ã‚¤ãƒ–ã§ã‚³ãƒãƒ³ãƒ‰å‡¦ç†
 	status = sasi.current->Seek(sasi.cmd);
 	if (!status) {
-		// ¸”s(ƒGƒ‰[)
+		// å¤±æ•—(ã‚¨ãƒ©ãƒ¼)
 		Error();
 		return;
 	}
 
-	// ¬Œ÷
+	// æˆåŠŸ
 	sasi.status = 0x00;
 	sasi.message = 0x00;
 
-	// ƒXƒe[ƒ^ƒXƒtƒF[ƒY
+	// ã‚¹ãƒ†ãƒ¼ã‚¿ã‚¹ãƒ•ã‚§ãƒ¼ã‚º
 	Status();
 }
 
 //---------------------------------------------------------------------------
 //
 //	ASSIGN
-//	¦SASI‚Ì‚İ
+//	â€»SASIã®ã¿
 //
 //---------------------------------------------------------------------------
 void FASTCALL SASI::Assign()
@@ -1935,29 +1957,29 @@ void FASTCALL SASI::Assign()
 	ASSERT(sasi.current);
 
 #if defined(SASI_LOG)
-	LOG0(Log::Normal, "ASSIGNƒRƒ}ƒ“ƒh");
+	LOG0(Log::Normal, "ASSIGNã‚³ãƒãƒ³ãƒ‰");
 #endif	// SASI_LOG
 
-	// SASIˆÈŠO‚ÍƒGƒ‰[(ƒxƒ“ƒ_ƒ†ƒj[ƒNƒRƒ}ƒ“ƒh)
+	// SASIä»¥å¤–ã¯ã‚¨ãƒ©ãƒ¼(ãƒ™ãƒ³ãƒ€ãƒ¦ãƒ‹ãƒ¼ã‚¯ã‚³ãƒãƒ³ãƒ‰)
 	if (!sasi.current->IsSASI()) {
 		sasi.current->InvalidCmd();
 		Error();
 		return;
 	}
 
-	// ƒXƒe[ƒ^ƒX‚ğOK‚É
+	// ã‚¹ãƒ†ãƒ¼ã‚¿ã‚¹ã‚’OKã«
 	sasi.status = 0x00;
 	sasi.message = 0x00;
 
-	// 4ƒoƒCƒg‚Ìƒf[ƒ^‚ğƒŠƒNƒGƒXƒg
+	// 4ãƒã‚¤ãƒˆã®ãƒ‡ãƒ¼ã‚¿ã‚’ãƒªã‚¯ã‚¨ã‚¹ãƒˆ
 	sasi.phase = write;
 	sasi.length = 4;
 	sasi.offset = 0;
 
-	// C/D‚Í0(ƒf[ƒ^‘‚«‚İ)
+	// C/Dã¯0(ãƒ‡ãƒ¼ã‚¿æ›¸ãè¾¼ã¿)
 	sasi.cd = FALSE;
 
-	// ƒCƒxƒ“ƒgİ’èAƒf[ƒ^‚Ì‘‚«‚İ‚ğ—v‹
+	// ã‚¤ãƒ™ãƒ³ãƒˆè¨­å®šã€ãƒ‡ãƒ¼ã‚¿ã®æ›¸ãè¾¼ã¿ã‚’è¦æ±‚
 	event.SetUser(0);
 	event.SetTime(48);
 }
@@ -1965,7 +1987,7 @@ void FASTCALL SASI::Assign()
 //---------------------------------------------------------------------------
 //
 //	INQUIRY
-//	¦SCSI‚Ì‚İ
+//	â€»SCSIã®ã¿
 //
 //---------------------------------------------------------------------------
 void FASTCALL SASI::Inquiry()
@@ -1974,29 +1996,29 @@ void FASTCALL SASI::Inquiry()
 	ASSERT(sasi.current);
 
 #if defined(SASI_LOG)
-	LOG0(Log::Normal, "INQUIRYƒRƒ}ƒ“ƒh");
+	LOG0(Log::Normal, "INQUIRYã‚³ãƒãƒ³ãƒ‰");
 #endif	// SASI_LOG
 
-	// ƒhƒ‰ƒCƒu‚ÅƒRƒ}ƒ“ƒhˆ—
+	// ãƒ‰ãƒ©ã‚¤ãƒ–ã§ã‚³ãƒãƒ³ãƒ‰å‡¦ç†
 	sasi.length = sasi.current->Inquiry(sasi.cmd, sasi.buffer);
 	if (sasi.length <= 0) {
-		// ¸”s(ƒGƒ‰[)
+		// å¤±æ•—(ã‚¨ãƒ©ãƒ¼)
 		Error();
 		return;
 	}
 
-	// ƒXƒe[ƒ^ƒX‚ğOK‚É
+	// ã‚¹ãƒ†ãƒ¼ã‚¿ã‚¹ã‚’OKã«
 	sasi.status = 0x00;
 	sasi.message = 0x00;
 
-	// ƒhƒ‰ƒCƒu‚©‚ç•Ô‹p‚³‚ê‚½ƒf[ƒ^‚ğ•ÔMBI/O=1, C/D=0
+	// ãƒ‰ãƒ©ã‚¤ãƒ–ã‹ã‚‰è¿”å´ã•ã‚ŒãŸãƒ‡ãƒ¼ã‚¿ã‚’è¿”ä¿¡ã€‚I/O=1, C/D=0
 	sasi.offset = 0;
 	sasi.blocks = 1;
 	sasi.phase = read;
 	sasi.io = TRUE;
 	sasi.cd = FALSE;
 
-	// ƒCƒxƒ“ƒgİ’èAƒf[ƒ^‚Ìˆø‚«æ‚è‚ğ—v‹
+	// ã‚¤ãƒ™ãƒ³ãƒˆè¨­å®šã€ãƒ‡ãƒ¼ã‚¿ã®å¼•ãå–ã‚Šã‚’è¦æ±‚
 	event.SetUser(0);
 	event.SetTime(48);
 }
@@ -2004,7 +2026,7 @@ void FASTCALL SASI::Inquiry()
 //---------------------------------------------------------------------------
 //
 //	MODE SENSE
-//	¦SCSI‚Ì‚İ
+//	â€»SCSIã®ã¿
 //
 //---------------------------------------------------------------------------
 void FASTCALL SASI::ModeSense()
@@ -2015,15 +2037,15 @@ void FASTCALL SASI::ModeSense()
 	ASSERT(sasi.current);
 
 #if defined(SASI_LOG)
-	LOG0(Log::Normal, "MODE SENSEƒRƒ}ƒ“ƒh");
+	LOG0(Log::Normal, "MODE SENSEã‚³ãƒãƒ³ãƒ‰");
 #endif	// SASI_LOG
 
-	// ƒhƒ‰ƒCƒu‚ÅƒRƒ}ƒ“ƒhˆ—
+	// ãƒ‰ãƒ©ã‚¤ãƒ–ã§ã‚³ãƒãƒ³ãƒ‰å‡¦ç†
 	length = sasi.current->ModeSense(sasi.cmd, sasi.buffer);
 
-	// Œ‹‰Ê•]‰¿
+	// çµæœè©•ä¾¡
 	if (length > 0) {
-		// ƒXƒe[ƒ^ƒX‚ğOK‚É
+		// ã‚¹ãƒ†ãƒ¼ã‚¿ã‚¹ã‚’OKã«
 		sasi.status = 0x00;
 		sasi.message = 0x00;
 		sasi.length = length;
@@ -2033,21 +2055,21 @@ void FASTCALL SASI::ModeSense()
 		Error();
 		return;
 #else
-		// ƒXƒe[ƒ^ƒX‚ğƒGƒ‰[‚É
+		// ã‚¹ãƒ†ãƒ¼ã‚¿ã‚¹ã‚’ã‚¨ãƒ©ãƒ¼ã«
 		sasi.status = (sasi.current->GetLUN() << 5) | 0x02;
 		sasi.message = 0;
 		sasi.length = -length;
 #endif
 	}
 
-	// ƒhƒ‰ƒCƒu‚©‚ç•Ô‹p‚³‚ê‚½ƒf[ƒ^‚ğ•ÔMBI/O=1, C/D=0
+	// ãƒ‰ãƒ©ã‚¤ãƒ–ã‹ã‚‰è¿”å´ã•ã‚ŒãŸãƒ‡ãƒ¼ã‚¿ã‚’è¿”ä¿¡ã€‚I/O=1, C/D=0
 	sasi.offset = 0;
 	sasi.blocks = 1;
 	sasi.phase = read;
 	sasi.io = TRUE;
 	sasi.cd = FALSE;
 
-	// ƒCƒxƒ“ƒgİ’èAƒf[ƒ^‚Ìˆø‚«æ‚è‚ğ—v‹
+	// ã‚¤ãƒ™ãƒ³ãƒˆè¨­å®šã€ãƒ‡ãƒ¼ã‚¿ã®å¼•ãå–ã‚Šã‚’è¦æ±‚
 	event.SetUser(0);
 	event.SetTime(48);
 }
@@ -2055,7 +2077,7 @@ void FASTCALL SASI::ModeSense()
 //---------------------------------------------------------------------------
 //
 //	START STOP UNIT
-//	¦SCSI‚Ì‚İ
+//	â€»SCSIã®ã¿
 //
 //---------------------------------------------------------------------------
 void FASTCALL SASI::StartStop()
@@ -2066,29 +2088,29 @@ void FASTCALL SASI::StartStop()
 	ASSERT(sasi.current);
 
 #if defined(SASI_LOG)
-	LOG0(Log::Normal, "START STOP UNITƒRƒ}ƒ“ƒh");
+	LOG0(Log::Normal, "START STOP UNITã‚³ãƒãƒ³ãƒ‰");
 #endif	// SASI_LOG
 
-	// ƒhƒ‰ƒCƒu‚ÅƒRƒ}ƒ“ƒhˆ—
+	// ãƒ‰ãƒ©ã‚¤ãƒ–ã§ã‚³ãƒãƒ³ãƒ‰å‡¦ç†
 	status = sasi.current->StartStop(sasi.cmd);
 	if (!status) {
-		// ¸”s(ƒGƒ‰[)
+		// å¤±æ•—(ã‚¨ãƒ©ãƒ¼)
 		Error();
 		return;
 	}
 
-	// ¬Œ÷
+	// æˆåŠŸ
 	sasi.status = 0x00;
 	sasi.message = 0x00;
 
-	// ƒXƒe[ƒ^ƒXƒtƒF[ƒY
+	// ã‚¹ãƒ†ãƒ¼ã‚¿ã‚¹ãƒ•ã‚§ãƒ¼ã‚º
 	Status();
 }
 
 //---------------------------------------------------------------------------
 //
 //	PREVENT/ALLOW MEDIUM REMOVAL
-//	¦SCSI‚Ì‚İ
+//	â€»SCSIã®ã¿
 //
 //---------------------------------------------------------------------------
 void FASTCALL SASI::Removal()
@@ -2099,29 +2121,29 @@ void FASTCALL SASI::Removal()
 	ASSERT(sasi.current);
 
 #if defined(SASI_LOG)
-	LOG0(Log::Normal, "PREVENT/ALLOW MEDIUM REMOVALƒRƒ}ƒ“ƒh");
+	LOG0(Log::Normal, "PREVENT/ALLOW MEDIUM REMOVALã‚³ãƒãƒ³ãƒ‰");
 #endif	// SASI_LOG
 
-	// ƒhƒ‰ƒCƒu‚ÅƒRƒ}ƒ“ƒhˆ—
+	// ãƒ‰ãƒ©ã‚¤ãƒ–ã§ã‚³ãƒãƒ³ãƒ‰å‡¦ç†
 	status = sasi.current->Removal(sasi.cmd);
 	if (!status) {
-		// ¸”s(ƒGƒ‰[)
+		// å¤±æ•—(ã‚¨ãƒ©ãƒ¼)
 		Error();
 		return;
 	}
 
-	// ¬Œ÷
+	// æˆåŠŸ
 	sasi.status = 0x00;
 	sasi.message = 0x00;
 
-	// ƒXƒe[ƒ^ƒXƒtƒF[ƒY
+	// ã‚¹ãƒ†ãƒ¼ã‚¿ã‚¹ãƒ•ã‚§ãƒ¼ã‚º
 	Status();
 }
 
 //---------------------------------------------------------------------------
 //
 //	READ CAPACITY
-//	¦SCSI‚Ì‚İ
+//	â€»SCSIã®ã¿
 //
 //---------------------------------------------------------------------------
 void FASTCALL SASI::ReadCapacity()
@@ -2132,40 +2154,40 @@ void FASTCALL SASI::ReadCapacity()
 	ASSERT(sasi.current);
 
 #if defined(SASI_LOG)
-	LOG0(Log::Normal, "READ CAPACITYƒRƒ}ƒ“ƒh");
+	LOG0(Log::Normal, "READ CAPACITYã‚³ãƒãƒ³ãƒ‰");
 #endif	// SASI_LOG
 
-	// ƒhƒ‰ƒCƒu‚ÅƒRƒ}ƒ“ƒhˆ—
+	// ãƒ‰ãƒ©ã‚¤ãƒ–ã§ã‚³ãƒãƒ³ãƒ‰å‡¦ç†
 	length = sasi.current->ReadCapacity(sasi.cmd, sasi.buffer);
 
-	// Œ‹‰Ê•]‰¿
+	// çµæœè©•ä¾¡
 	if (length > 0) {
-		// ƒXƒe[ƒ^ƒX‚ğOK‚É
+		// ã‚¹ãƒ†ãƒ¼ã‚¿ã‚¹ã‚’OKã«
 		sasi.status = 0x00;
 		sasi.message = 0x00;
 		sasi.length = length;
 	}
 	else {
 #if 1
-		// ¸”s(ƒGƒ‰[)
+		// å¤±æ•—(ã‚¨ãƒ©ãƒ¼)
 		Error();
 		return;
 #else
-		// ƒXƒe[ƒ^ƒX‚ğƒGƒ‰[‚É
+		// ã‚¹ãƒ†ãƒ¼ã‚¿ã‚¹ã‚’ã‚¨ãƒ©ãƒ¼ã«
 		sasi.status = (sasi.current->GetLUN() << 5) | 0x02;
 		sasi.message = 0x00;
 		sasi.length = -length;
 #endif
 	}
 
-	// ƒhƒ‰ƒCƒu‚©‚ç•Ô‹p‚³‚ê‚½ƒf[ƒ^‚ğ•ÔMBI/O=1, C/D=0
+	// ãƒ‰ãƒ©ã‚¤ãƒ–ã‹ã‚‰è¿”å´ã•ã‚ŒãŸãƒ‡ãƒ¼ã‚¿ã‚’è¿”ä¿¡ã€‚I/O=1, C/D=0
 	sasi.offset = 0;
 	sasi.blocks = 1;
 	sasi.phase = read;
 	sasi.io = TRUE;
 	sasi.cd = FALSE;
 
-	// ƒCƒxƒ“ƒgİ’èAƒf[ƒ^‚Ìˆø‚«æ‚è‚ğ—v‹
+	// ã‚¤ãƒ™ãƒ³ãƒˆè¨­å®šã€ãƒ‡ãƒ¼ã‚¿ã®å¼•ãå–ã‚Šã‚’è¦æ±‚
 	event.SetUser(0);
 	event.SetTime(48);
 }
@@ -2173,7 +2195,7 @@ void FASTCALL SASI::ReadCapacity()
 //---------------------------------------------------------------------------
 //
 //	READ(10)
-//	¦SCSI‚Ì‚İ
+//	â€»SCSIã®ã¿
 //
 //---------------------------------------------------------------------------
 void FASTCALL SASI::Read10()
@@ -2183,7 +2205,7 @@ void FASTCALL SASI::Read10()
 	ASSERT(this);
 	ASSERT(sasi.current);
 
-	// ƒŒƒR[ƒh”Ô†‚ÆƒuƒƒbƒN”‚ğæ“¾
+	// ãƒ¬ã‚³ãƒ¼ãƒ‰ç•ªå·ã¨ãƒ–ãƒ­ãƒƒã‚¯æ•°ã‚’å–å¾—
 	record = sasi.cmd[2];
 	record <<= 8;
 	record |= sasi.cmd[3];
@@ -2196,10 +2218,10 @@ void FASTCALL SASI::Read10()
 	sasi.blocks |= sasi.cmd[8];
 
 #if defined(SASI_LOG)
-	LOG2(Log::Normal, "READ(10)ƒRƒ}ƒ“ƒh ƒŒƒR[ƒh=%08X ƒuƒƒbƒN=%d", record, sasi.blocks);
+	LOG2(Log::Normal, "READ(10)ã‚³ãƒãƒ³ãƒ‰ ãƒ¬ã‚³ãƒ¼ãƒ‰=%08X ãƒ–ãƒ­ãƒƒã‚¯=%d", record, sasi.blocks);
 #endif	// SASI_LOG
 
-	// ƒuƒƒbƒN”0‚Íˆ—‚µ‚È‚¢
+	// ãƒ–ãƒ­ãƒƒã‚¯æ•°0ã¯å‡¦ç†ã—ãªã„
 	if (sasi.blocks == 0) {
 		sasi.status = 0x00;
 		sasi.message = 0x00;
@@ -2207,28 +2229,28 @@ void FASTCALL SASI::Read10()
 		return;
 	}
 
-	// ƒhƒ‰ƒCƒu‚ÅƒRƒ}ƒ“ƒhˆ—
+	// ãƒ‰ãƒ©ã‚¤ãƒ–ã§ã‚³ãƒãƒ³ãƒ‰å‡¦ç†
 	sasi.length = sasi.current->Read(sasi.buffer, record);
 	if (sasi.length <= 0) {
-		// ¸”s(ƒGƒ‰[)
+		// å¤±æ•—(ã‚¨ãƒ©ãƒ¼)
 		Error();
 		return;
 	}
 
-	// ƒXƒe[ƒ^ƒX‚ğOK‚É
+	// ã‚¹ãƒ†ãƒ¼ã‚¿ã‚¹ã‚’OKã«
 	sasi.status = 0x00;
 	sasi.message = 0x00;
 
-	// Ÿ‚ÌƒuƒƒbƒNokAƒ[ƒNİ’è
+	// æ¬¡ã®ãƒ–ãƒ­ãƒƒã‚¯okã€ãƒ¯ãƒ¼ã‚¯è¨­å®š
 	sasi.offset = 0;
 	sasi.next = record + 1;
 
-	// “Ç‚İ‚İƒtƒF[ƒY, I/O=1, C/D=0
+	// èª­ã¿è¾¼ã¿ãƒ•ã‚§ãƒ¼ã‚º, I/O=1, C/D=0
 	sasi.phase = read;
 	sasi.io = TRUE;
 	sasi.cd = FALSE;
 
-	// ƒCƒxƒ“ƒg‚ğİ’èAƒf[ƒ^‚Ìˆø‚«æ‚è‚ğ—v‹
+	// ã‚¤ãƒ™ãƒ³ãƒˆã‚’è¨­å®šã€ãƒ‡ãƒ¼ã‚¿ã®å¼•ãå–ã‚Šã‚’è¦æ±‚
 	event.SetUser(1);
 	event.SetTime(48);
 }
@@ -2236,7 +2258,7 @@ void FASTCALL SASI::Read10()
 //---------------------------------------------------------------------------
 //
 //	WRITE(10)
-//	¦SCSI‚Ì‚İ
+//	â€»SCSIã®ã¿
 //
 //---------------------------------------------------------------------------
 void FASTCALL SASI::Write10()
@@ -2246,7 +2268,7 @@ void FASTCALL SASI::Write10()
 	ASSERT(this);
 	ASSERT(sasi.current);
 
-	// ƒŒƒR[ƒh”Ô†‚ÆƒuƒƒbƒN”‚ğæ“¾
+	// ãƒ¬ã‚³ãƒ¼ãƒ‰ç•ªå·ã¨ãƒ–ãƒ­ãƒƒã‚¯æ•°ã‚’å–å¾—
 	record = sasi.cmd[2];
 	record <<= 8;
 	record |= sasi.cmd[3];
@@ -2259,10 +2281,10 @@ void FASTCALL SASI::Write10()
 	sasi.blocks |= sasi.cmd[8];
 
 #if defined(SASI_LOG)
-	LOG2(Log::Normal, "WRITE(10)ƒRƒ}ƒ“ƒh ƒŒƒR[ƒh=%08X ƒuƒƒbƒN=%d", record, sasi.blocks);
+	LOG2(Log::Normal, "WRITE(10)ã‚³ãƒãƒ³ãƒ‰ ãƒ¬ã‚³ãƒ¼ãƒ‰=%08X ãƒ–ãƒ­ãƒƒã‚¯=%d", record, sasi.blocks);
 #endif	// SASI_LOG
 
-	// ƒuƒƒbƒN”0‚Íˆ—‚µ‚È‚¢
+	// ãƒ–ãƒ­ãƒƒã‚¯æ•°0ã¯å‡¦ç†ã—ãªã„
 	if (sasi.blocks == 0) {
 		sasi.status = 0x00;
 		sasi.message = 0x00;
@@ -2270,27 +2292,27 @@ void FASTCALL SASI::Write10()
 		return;
 	}
 
-	// ƒhƒ‰ƒCƒu‚ÅƒRƒ}ƒ“ƒhˆ—
+	// ãƒ‰ãƒ©ã‚¤ãƒ–ã§ã‚³ãƒãƒ³ãƒ‰å‡¦ç†
 	sasi.length = sasi.current->WriteCheck(record);
 	if (sasi.length <= 0) {
-		// ¸”s(ƒGƒ‰[)
+		// å¤±æ•—(ã‚¨ãƒ©ãƒ¼)
 		Error();
 		return;
 	}
 
-	// ƒXƒe[ƒ^ƒX‚ğOK‚É
+	// ã‚¹ãƒ†ãƒ¼ã‚¿ã‚¹ã‚’OKã«
 	sasi.status = 0x00;
 	sasi.message = 0x00;
 
-	// “]‘—ƒ[ƒN
+	// è»¢é€ãƒ¯ãƒ¼ã‚¯
 	sasi.next = record + 1;
 	sasi.offset = 0;
 
-	// ‘‚«‚İƒtƒF[ƒY, C/D=0
+	// æ›¸ãè¾¼ã¿ãƒ•ã‚§ãƒ¼ã‚º, C/D=0
 	sasi.phase = write;
 	sasi.cd = FALSE;
 
-	// ƒCƒxƒ“ƒg‚ğİ’èAƒf[ƒ^‚Ì‘‚«‚İ‚ğ—v‹
+	// ã‚¤ãƒ™ãƒ³ãƒˆã‚’è¨­å®šã€ãƒ‡ãƒ¼ã‚¿ã®æ›¸ãè¾¼ã¿ã‚’è¦æ±‚
 	event.SetUser(1);
 	event.SetTime(48);
 }
@@ -2298,7 +2320,7 @@ void FASTCALL SASI::Write10()
 //---------------------------------------------------------------------------
 //
 //	SEEK(10)
-//	¦SCSI‚Ì‚İ
+//	â€»SCSIã®ã¿
 //
 //---------------------------------------------------------------------------
 void FASTCALL SASI::Seek10()
@@ -2309,29 +2331,29 @@ void FASTCALL SASI::Seek10()
 	ASSERT(sasi.current);
 
 #if defined(SASI_LOG)
-	LOG0(Log::Normal, "SEEK(10)ƒRƒ}ƒ“ƒh");
+	LOG0(Log::Normal, "SEEK(10)ã‚³ãƒãƒ³ãƒ‰");
 #endif	// SASI_LOG
 
-	// ƒhƒ‰ƒCƒu‚ÅƒRƒ}ƒ“ƒhˆ—(˜_—ƒuƒƒbƒN‚ÍŠÖŒW‚È‚¢‚Ì‚ÅSeek‚ğŒÄ‚Ô)
+	// ãƒ‰ãƒ©ã‚¤ãƒ–ã§ã‚³ãƒãƒ³ãƒ‰å‡¦ç†(è«–ç†ãƒ–ãƒ­ãƒƒã‚¯ã¯é–¢ä¿‚ãªã„ã®ã§Seekã‚’å‘¼ã¶)
 	status = sasi.current->Seek(sasi.cmd);
 	if (!status) {
-		// ¸”s(ƒGƒ‰[)
+		// å¤±æ•—(ã‚¨ãƒ©ãƒ¼)
 		Error();
 		return;
 	}
 
-	// ¬Œ÷
+	// æˆåŠŸ
 	sasi.status = 0x00;
 	sasi.message = 0x00;
 
-	// ƒXƒe[ƒ^ƒXƒtƒF[ƒY
+	// ã‚¹ãƒ†ãƒ¼ã‚¿ã‚¹ãƒ•ã‚§ãƒ¼ã‚º
 	Status();
 }
 
 //---------------------------------------------------------------------------
 //
 //	VERIFY
-//	¦SCSI‚Ì‚İ
+//	â€»SCSIã®ã¿
 //
 //---------------------------------------------------------------------------
 void FASTCALL SASI::Verify()
@@ -2342,29 +2364,29 @@ void FASTCALL SASI::Verify()
 	ASSERT(sasi.current);
 
 #if defined(SASI_LOG)
-	LOG0(Log::Normal, "VERIFYƒRƒ}ƒ“ƒh");
+	LOG0(Log::Normal, "VERIFYã‚³ãƒãƒ³ãƒ‰");
 #endif	// SASI_LOG
 
-	// ƒhƒ‰ƒCƒu‚ÅƒRƒ}ƒ“ƒhˆ—
+	// ãƒ‰ãƒ©ã‚¤ãƒ–ã§ã‚³ãƒãƒ³ãƒ‰å‡¦ç†
 	status = sasi.current->Verify(sasi.cmd);
 	if (!status) {
-		// ¸”s(ƒGƒ‰[)
+		// å¤±æ•—(ã‚¨ãƒ©ãƒ¼)
 		Error();
 		return;
 	}
 
-	// ¬Œ÷
+	// æˆåŠŸ
 	sasi.status = 0x00;
 	sasi.message = 0x00;
 
-	// ƒXƒe[ƒ^ƒXƒtƒF[ƒY
+	// ã‚¹ãƒ†ãƒ¼ã‚¿ã‚¹ãƒ•ã‚§ãƒ¼ã‚º
 	Status();
 }
 
 //---------------------------------------------------------------------------
 //
 //	SPECIFY
-//	¦SASI‚Ì‚İ
+//	â€»SASIã®ã¿
 //
 //---------------------------------------------------------------------------
 void FASTCALL SASI::Specify()
@@ -2373,235 +2395,235 @@ void FASTCALL SASI::Specify()
 	ASSERT(sasi.current);
 
 #if defined(SASI_LOG)
-	LOG0(Log::Normal, "SPECIFYƒRƒ}ƒ“ƒh");
+	LOG0(Log::Normal, "SPECIFYã‚³ãƒãƒ³ãƒ‰");
 #endif	// SASI_LOG
 
-	// SASIˆÈŠO‚ÍƒGƒ‰[(ƒxƒ“ƒ_ƒ†ƒj[ƒNƒRƒ}ƒ“ƒh)
+	// SASIä»¥å¤–ã¯ã‚¨ãƒ©ãƒ¼(ãƒ™ãƒ³ãƒ€ãƒ¦ãƒ‹ãƒ¼ã‚¯ã‚³ãƒãƒ³ãƒ‰)
 	if (!sasi.current->IsSASI()) {
 		sasi.current->InvalidCmd();
 		Error();
 		return;
 	}
 
-	// ƒXƒe[ƒ^ƒXOK
+	// ã‚¹ãƒ†ãƒ¼ã‚¿ã‚¹OK
 	sasi.status = 0x00;
 	sasi.message = 0x00;
 
-	// 10ƒoƒCƒg‚Ìƒf[ƒ^‚ğƒŠƒNƒGƒXƒg
+	// 10ãƒã‚¤ãƒˆã®ãƒ‡ãƒ¼ã‚¿ã‚’ãƒªã‚¯ã‚¨ã‚¹ãƒˆ
 	sasi.phase = write;
 	sasi.length = 10;
 	sasi.offset = 0;
 
-	// C/D‚Í0(ƒf[ƒ^‘‚«‚İ)
+	// C/Dã¯0(ãƒ‡ãƒ¼ã‚¿æ›¸ãè¾¼ã¿)
 	sasi.cd = FALSE;
 
-	// ƒCƒxƒ“ƒgİ’èAƒf[ƒ^‚Ì‘‚«‚İ‚ğ—v‹
+	// ã‚¤ãƒ™ãƒ³ãƒˆè¨­å®šã€ãƒ‡ãƒ¼ã‚¿ã®æ›¸ãè¾¼ã¿ã‚’è¦æ±‚
 	event.SetUser(0);
 	event.SetTime(48);
 }
 
 //---------------------------------------------------------------------------
 //
-//	MO ƒI[ƒvƒ“
+//	MO ã‚ªãƒ¼ãƒ—ãƒ³
 //
 //---------------------------------------------------------------------------
 BOOL FASTCALL SASI::Open(const Filepath& path)
 {
 	ASSERT(this);
 
-	// SCSI‚ª—LŒø‚Å‚ ‚ê‚ÎASCSI‚É‚Ü‚©‚¹‚é
+	// SCSIãŒæœ‰åŠ¹ã§ã‚ã‚Œã°ã€SCSIã«ã¾ã‹ã›ã‚‹
 	if (sasi.scsi_type != 0) {
 		return scsi->Open(path);
 	}
 
-	// —LŒø‚Å‚È‚¯‚ê‚ÎƒGƒ‰[
+	// æœ‰åŠ¹ã§ãªã‘ã‚Œã°ã‚¨ãƒ©ãƒ¼
 	if (!IsValid()) {
 		return FALSE;
 	}
 
-	// ƒCƒWƒFƒNƒg
+	// ã‚¤ã‚¸ã‚§ã‚¯ãƒˆ
 	Eject(FALSE);
 
-	// ƒmƒbƒgƒŒƒfƒB‚Å‚È‚¯‚ê‚ÎƒGƒ‰[
+	// ãƒãƒƒãƒˆãƒ¬ãƒ‡ã‚£ã§ãªã‘ã‚Œã°ã‚¨ãƒ©ãƒ¼
 	if (IsReady()) {
 		return FALSE;
 	}
 
-	// ƒhƒ‰ƒCƒu‚É”C‚¹‚é
+	// ãƒ‰ãƒ©ã‚¤ãƒ–ã«ä»»ã›ã‚‹
 	ASSERT(sasi.mo);
 	if (sasi.mo->Open(path, TRUE)) {
-		// ¬Œ÷‚Å‚ ‚ê‚ÎAƒtƒ@ƒCƒ‹ƒpƒX‚Æ‘‚«‚İ‹Ö~ó‘Ô‚ğ‹L‰¯
+		// æˆåŠŸã§ã‚ã‚Œã°ã€ãƒ•ã‚¡ã‚¤ãƒ«ãƒ‘ã‚¹ã¨æ›¸ãè¾¼ã¿ç¦æ­¢çŠ¶æ…‹ã‚’è¨˜æ†¶
 		sasi.writep = sasi.mo->IsWriteP();
 		sasi.mo->GetPath(scsimo);
 		return TRUE;
 	}
 
-	// ¸”s
+	// å¤±æ•—
 	return FALSE;
 }
 
 //---------------------------------------------------------------------------
 //
-//	MO ƒCƒWƒFƒNƒg
+//	MO ã‚¤ã‚¸ã‚§ã‚¯ãƒˆ
 //
 //---------------------------------------------------------------------------
 void FASTCALL SASI::Eject(BOOL force)
 {
 	ASSERT(this);
 
-	// SCSI‚ª—LŒø‚Å‚ ‚ê‚ÎASCSI‚É‚Ü‚©‚¹‚é
+	// SCSIãŒæœ‰åŠ¹ã§ã‚ã‚Œã°ã€SCSIã«ã¾ã‹ã›ã‚‹
 	if (sasi.scsi_type != 0) {
 		scsi->Eject(force);
 		return;
 	}
 
-	// ƒŒƒfƒB‚Å‚È‚¯‚ê‚Î‰½‚à‚µ‚È‚¢
+	// ãƒ¬ãƒ‡ã‚£ã§ãªã‘ã‚Œã°ä½•ã‚‚ã—ãªã„
 	if (!IsReady()) {
 		return;
 	}
 
-	// ƒhƒ‰ƒCƒu‚É’Ê’m
+	// ãƒ‰ãƒ©ã‚¤ãƒ–ã«é€šçŸ¥
 	ASSERT(sasi.mo);
 	sasi.mo->Eject(force);
 }
 
 //---------------------------------------------------------------------------
 //
-//	MO ‘‚«‚İ‹Ö~
+//	MO æ›¸ãè¾¼ã¿ç¦æ­¢
 //
 //---------------------------------------------------------------------------
 void FASTCALL SASI::WriteP(BOOL flag)
 {
 	ASSERT(this);
 
-	// SCSI‚ª—LŒø‚Å‚ ‚ê‚ÎASCSI‚É‚Ü‚©‚¹‚é
+	// SCSIãŒæœ‰åŠ¹ã§ã‚ã‚Œã°ã€SCSIã«ã¾ã‹ã›ã‚‹
 	if (sasi.scsi_type != 0) {
 		scsi->WriteP(flag);
 		return;
 	}
 
-	// ƒŒƒfƒB‚Å‚È‚¯‚ê‚Î‰½‚à‚µ‚È‚¢
+	// ãƒ¬ãƒ‡ã‚£ã§ãªã‘ã‚Œã°ä½•ã‚‚ã—ãªã„
 	if (!IsReady()) {
 		return;
 	}
 
-	// ƒ‰ƒCƒgƒvƒƒeƒNƒgİ’è‚ğ‚İ‚é
+	// ãƒ©ã‚¤ãƒˆãƒ—ãƒ­ãƒ†ã‚¯ãƒˆè¨­å®šã‚’è©¦ã¿ã‚‹
 	ASSERT(sasi.mo);
 	sasi.mo->WriteP(flag);
 
-	// Œ»ó‚ğ•Û‘¶
+	// ç¾çŠ¶ã‚’ä¿å­˜
 	sasi.writep = sasi.mo->IsWriteP();
 }
 
 //---------------------------------------------------------------------------
 //
-//	MO ‘‚«‚İ‹Ö~æ“¾
+//	MO æ›¸ãè¾¼ã¿ç¦æ­¢å–å¾—
 //
 //---------------------------------------------------------------------------
 BOOL FASTCALL SASI::IsWriteP() const
 {
 	ASSERT(this);
 
-	// SCSI‚ª—LŒø‚Å‚ ‚ê‚ÎASCSI‚É‚Ü‚©‚¹‚é
+	// SCSIãŒæœ‰åŠ¹ã§ã‚ã‚Œã°ã€SCSIã«ã¾ã‹ã›ã‚‹
 	if (sasi.scsi_type != 0) {
 		return scsi->IsWriteP();
 	}
 
-	// ƒŒƒfƒB‚Å‚È‚¯‚ê‚Îƒ‰ƒCƒgƒvƒƒeƒNƒg‚Å‚È‚¢
+	// ãƒ¬ãƒ‡ã‚£ã§ãªã‘ã‚Œã°ãƒ©ã‚¤ãƒˆãƒ—ãƒ­ãƒ†ã‚¯ãƒˆã§ãªã„
 	if (!IsReady()) {
 		return FALSE;
 	}
 
-	// ƒhƒ‰ƒCƒu‚É•·‚­
+	// ãƒ‰ãƒ©ã‚¤ãƒ–ã«èã
 	ASSERT(sasi.mo);
 	return sasi.mo->IsWriteP();
 }
 
 //---------------------------------------------------------------------------
 //
-//	MO Read Onlyƒ`ƒFƒbƒN
+//	MO Read Onlyãƒã‚§ãƒƒã‚¯
 //
 //---------------------------------------------------------------------------
 BOOL FASTCALL SASI::IsReadOnly() const
 {
 	ASSERT(this);
 
-	// SCSI‚ª—LŒø‚Å‚ ‚ê‚ÎASCSI‚É‚Ü‚©‚¹‚é
+	// SCSIãŒæœ‰åŠ¹ã§ã‚ã‚Œã°ã€SCSIã«ã¾ã‹ã›ã‚‹
 	if (sasi.scsi_type != 0) {
 		return scsi->IsReadOnly();
 	}
 
-	// ƒŒƒfƒB‚Å‚È‚¯‚ê‚ÎƒŠ[ƒhƒIƒ“ƒŠ[‚Å‚È‚¢
+	// ãƒ¬ãƒ‡ã‚£ã§ãªã‘ã‚Œã°ãƒªãƒ¼ãƒ‰ã‚ªãƒ³ãƒªãƒ¼ã§ãªã„
 	if (!IsReady()) {
 		return FALSE;
 	}
 
-	// ƒhƒ‰ƒCƒu‚É•·‚­
+	// ãƒ‰ãƒ©ã‚¤ãƒ–ã«èã
 	ASSERT(sasi.mo);
 	return sasi.mo->IsReadOnly();
 }
 
 //---------------------------------------------------------------------------
 //
-//	MO Lockedƒ`ƒFƒbƒN
+//	MO Lockedãƒã‚§ãƒƒã‚¯
 //
 //---------------------------------------------------------------------------
 BOOL FASTCALL SASI::IsLocked() const
 {
 	ASSERT(this);
 
-	// SCSI‚ª—LŒø‚Å‚ ‚ê‚ÎASCSI‚É‚Ü‚©‚¹‚é
+	// SCSIãŒæœ‰åŠ¹ã§ã‚ã‚Œã°ã€SCSIã«ã¾ã‹ã›ã‚‹
 	if (sasi.scsi_type != 0) {
 		return scsi->IsLocked();
 	}
 
-	// ƒhƒ‰ƒCƒu‚ª‘¶İ‚·‚é‚©
+	// ãƒ‰ãƒ©ã‚¤ãƒ–ãŒå­˜åœ¨ã™ã‚‹ã‹
 	if (!sasi.mo) {
 		return FALSE;
 	}
 
-	// ƒhƒ‰ƒCƒu‚É•·‚­
+	// ãƒ‰ãƒ©ã‚¤ãƒ–ã«èã
 	return sasi.mo->IsLocked();
 }
 
 //---------------------------------------------------------------------------
 //
-//	MO Readyƒ`ƒFƒbƒN
+//	MO Readyãƒã‚§ãƒƒã‚¯
 //
 //---------------------------------------------------------------------------
 BOOL FASTCALL SASI::IsReady() const
 {
 	ASSERT(this);
 
-	// SCSI‚ª—LŒø‚Å‚ ‚ê‚ÎASCSI‚É‚Ü‚©‚¹‚é
+	// SCSIãŒæœ‰åŠ¹ã§ã‚ã‚Œã°ã€SCSIã«ã¾ã‹ã›ã‚‹
 	if (sasi.scsi_type != 0) {
 		return scsi->IsReady();
 	}
 
-	// ƒhƒ‰ƒCƒu‚ª‘¶İ‚·‚é‚©
+	// ãƒ‰ãƒ©ã‚¤ãƒ–ãŒå­˜åœ¨ã™ã‚‹ã‹
 	if (!sasi.mo) {
 		return FALSE;
 	}
 
-	// ƒhƒ‰ƒCƒu‚É•·‚­
+	// ãƒ‰ãƒ©ã‚¤ãƒ–ã«èã
 	return sasi.mo->IsReady();
 }
 
 //---------------------------------------------------------------------------
 //
-//	MO —LŒøƒ`ƒFƒbƒN
+//	MO æœ‰åŠ¹ãƒã‚§ãƒƒã‚¯
 //
 //---------------------------------------------------------------------------
 BOOL FASTCALL SASI::IsValid() const
 {
 	ASSERT(this);
 
-	// SCSI‚ª—LŒø‚Å‚ ‚ê‚ÎASCSI‚É‚Ü‚©‚¹‚é
+	// SCSIãŒæœ‰åŠ¹ã§ã‚ã‚Œã°ã€SCSIã«ã¾ã‹ã›ã‚‹
 	if (sasi.scsi_type != 0) {
 		return scsi->IsValid();
 	}
 
-	// ƒ|ƒCƒ“ƒ^‚Å”»•Ê
+	// ãƒã‚¤ãƒ³ã‚¿ã§åˆ¤åˆ¥
 	if (sasi.mo) {
 		return TRUE;
 	}
@@ -2612,14 +2634,14 @@ BOOL FASTCALL SASI::IsValid() const
 
 //---------------------------------------------------------------------------
 //
-//	MO ƒpƒXæ“¾
+//	MO ãƒ‘ã‚¹å–å¾—
 //
 //---------------------------------------------------------------------------
 void FASTCALL SASI::GetPath(Filepath& path) const
 {
 	ASSERT(this);
 
-	// SCSI‚ª—LŒø‚Å‚ ‚ê‚ÎASCSI‚É‚Ü‚©‚¹‚é
+	// SCSIãŒæœ‰åŠ¹ã§ã‚ã‚Œã°ã€SCSIã«ã¾ã‹ã›ã‚‹
 	if (sasi.scsi_type != 0) {
 		scsi->GetPath(path);
 		return;
@@ -2627,12 +2649,12 @@ void FASTCALL SASI::GetPath(Filepath& path) const
 
 	if (sasi.mo) {
 		if (sasi.mo->IsReady()) {
-			// MOƒfƒBƒXƒN‚©‚ç
+			// MOãƒ‡ã‚£ã‚¹ã‚¯ã‹ã‚‰
 			sasi.mo->GetPath(path);
 			return;
 		}
 	}
 
-	// —LŒø‚ÈƒpƒX‚Å‚È‚¢‚Ì‚ÅAƒNƒŠƒA
+	// æœ‰åŠ¹ãªãƒ‘ã‚¹ã§ãªã„ã®ã§ã€ã‚¯ãƒªã‚¢
 	path.Clear();
 }

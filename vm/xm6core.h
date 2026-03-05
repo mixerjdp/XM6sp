@@ -51,8 +51,10 @@ XM6CORE_API XM6Handle XM6CORE_CALL xm6_create(void);
 XM6CORE_API void XM6CORE_CALL xm6_destroy(XM6Handle handle);
 
 XM6CORE_API int XM6CORE_CALL xm6_set_message_callback(XM6Handle handle, xm6_message_callback_t callback, void* user);
+XM6CORE_API int XM6CORE_CALL xm6_set_system_dir(const char* system_dir);
 
 XM6CORE_API int XM6CORE_CALL xm6_exec(XM6Handle handle, unsigned int hus);
+XM6CORE_API int XM6CORE_CALL xm6_exec_to_frame(XM6Handle handle);
 XM6CORE_API int XM6CORE_CALL xm6_reset(XM6Handle handle);
 XM6CORE_API int XM6CORE_CALL xm6_set_power(XM6Handle handle, int enabled);
 XM6CORE_API int XM6CORE_CALL xm6_get_power(XM6Handle handle);
@@ -83,12 +85,20 @@ XM6CORE_API int XM6CORE_CALL xm6_input_joy(
 
 XM6CORE_API int XM6CORE_CALL xm6_mount_fdd(XM6Handle handle, int drive, const char* image_path, int media_hint);
 XM6CORE_API int XM6CORE_CALL xm6_eject_fdd(XM6Handle handle, int drive, int force);
+XM6CORE_API int XM6CORE_CALL xm6_fdd_is_inserted(XM6Handle handle, int drive);
+XM6CORE_API int XM6CORE_CALL xm6_fdd_get_name(
+  XM6Handle handle, int drive, char* out_name, unsigned int max_len);
 
 XM6CORE_API int XM6CORE_CALL xm6_mount_sasi_hdd(XM6Handle handle, int slot, const char* image_path);
 XM6CORE_API int XM6CORE_CALL xm6_mount_scsi_hdd(XM6Handle handle, int slot, const char* image_path);
 
 XM6CORE_API int XM6CORE_CALL xm6_save_state(XM6Handle handle, const char* state_path);
 XM6CORE_API int XM6CORE_CALL xm6_load_state(XM6Handle handle, const char* state_path);
+XM6CORE_API int XM6CORE_CALL xm6_state_size(XM6Handle handle, unsigned int* out_size);
+XM6CORE_API int XM6CORE_CALL xm6_save_state_mem(XM6Handle handle, void* buffer, unsigned int size);
+XM6CORE_API int XM6CORE_CALL xm6_load_state_mem(XM6Handle handle, const void* buffer, unsigned int size);
+
+XM6CORE_API void* XM6CORE_CALL xm6_get_main_ram(XM6Handle handle, unsigned int* out_size);
 
 XM6CORE_API void XM6CORE_CALL xm6_get_vm_version(XM6Handle handle, unsigned int* out_major, unsigned int* out_minor);
 

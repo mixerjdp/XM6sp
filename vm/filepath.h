@@ -85,6 +85,9 @@ public:
 	static void FASTCALL SetDefaultDir(const TCHAR* lpszPath);
 										// デフォルトディレクトリに設定
 	static const TCHAR* FASTCALL GetDefaultDir();
+	static void FASTCALL ClearSystemDir();
+	static void FASTCALL SetSystemDir(const TCHAR* lpszPath);
+	static const TCHAR* FASTCALL GetSystemDir();
 										// デフォルトディレクトリ取得
 
 	BOOL FASTCALL Save(Fileio *fio, int ver);
@@ -126,6 +129,7 @@ private:
 	static TCHAR FileExt[_MAX_FNAME + _MAX_DIR];
 										// ショート名(TCHAR)
 	static TCHAR DefaultDir[_MAX_PATH];
+	static TCHAR SystemDir[_MAX_PATH];
 										// デフォルトディレクトリ
 };
 

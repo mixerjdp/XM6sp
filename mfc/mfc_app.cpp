@@ -393,6 +393,11 @@ BOOL CApp::InitInstance()
 
 	// Borrar el directorio por defecto
 	Filepath::ClearDefaultDir();
+	Filepath::ClearSystemDir();
+	LPCTSTR lpszSystemDir = _tgetenv(_T("XM6_SYSTEM_DIR"));
+	if (lpszSystemDir && lpszSystemDir[0] != _T('\0')) {
+		Filepath::SetSystemDir(lpszSystemDir);
+	}
 
 	// Evaluacion de ambiente
 	if (!CheckEnvironment()) {

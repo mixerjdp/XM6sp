@@ -105,6 +105,9 @@ public:
 	memtype FASTCALL GetMemType() const { return mem.now; }
 										// ��������ʎ擾
 
+	BYTE* FASTCALL GetRAM() const { return mem.ram; }
+	DWORD FASTCALL GetRAMSize() const { return mem.length; }
+
 private:
 	BOOL FASTCALL LoadROM(memtype target);
 										// ROM���[�h

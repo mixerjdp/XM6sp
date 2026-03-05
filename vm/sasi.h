@@ -2,7 +2,7 @@
 //
 //	X68000 EMULATOR "XM6"
 //
-//	Copyright (C) 2001-2006 ‚o‚hD(ytanaka@ipc-tokai.or.jp)
+//	Copyright (C) 2001-2006 ï¼°ï¼©ï¼Ž(ytanaka@ipc-tokai.or.jp)
 //	[ SASI ]
 //
 //---------------------------------------------------------------------------
@@ -22,195 +22,199 @@
 class SASI : public MemDevice
 {
 public:
-	// Å‘å”
+	// æœ€å¤§æ•°
 	enum {
-		SASIMax = 16,					// Å‘åSASIƒfƒBƒXƒN”(LUNŠÜ‚Þ)
-		SCSIMax = 6						// Å‘åSCSIƒn[ƒhƒfƒBƒXƒN”
+		SASIMax = 16,					// æœ€å¤§SASIãƒ‡ã‚£ã‚¹ã‚¯æ•°(LUNå«ã‚€)
+		SCSIMax = 6						// æœ€å¤§SCSIãƒãƒ¼ãƒ‰ãƒ‡ã‚£ã‚¹ã‚¯æ•°
 	};
 
-	// ƒtƒF[ƒY’è‹`
+	// ãƒ•ã‚§ãƒ¼ã‚ºå®šç¾©
 	enum phase_t {
-		busfree,						// ƒoƒXƒtƒŠ[ƒtƒF[ƒY
-		selection,						// ƒZƒŒƒNƒVƒ‡ƒ“ƒtƒF[ƒY
-		command,						// ƒRƒ}ƒ“ƒhƒtƒF[ƒY
-		execute,						// ŽÀsƒtƒF[ƒY
-		read,							// “Ç‚Ýž‚ÝƒtƒF[ƒY
-		write,							// ‘‚«ž‚ÝƒtƒF[ƒY
-		status,							// ƒXƒe[ƒ^ƒXƒtƒF[ƒY
-		message							// ƒƒbƒZ[ƒWƒtƒF[ƒY
+		busfree,						// ãƒã‚¹ãƒ•ãƒªãƒ¼ãƒ•ã‚§ãƒ¼ã‚º
+		selection,						// ã‚»ãƒ¬ã‚¯ã‚·ãƒ§ãƒ³ãƒ•ã‚§ãƒ¼ã‚º
+		command,						// ã‚³ãƒžãƒ³ãƒ‰ãƒ•ã‚§ãƒ¼ã‚º
+		execute,						// å®Ÿè¡Œãƒ•ã‚§ãƒ¼ã‚º
+		read,							// èª­ã¿è¾¼ã¿ãƒ•ã‚§ãƒ¼ã‚º
+		write,							// æ›¸ãè¾¼ã¿ãƒ•ã‚§ãƒ¼ã‚º
+		status,							// ã‚¹ãƒ†ãƒ¼ã‚¿ã‚¹ãƒ•ã‚§ãƒ¼ã‚º
+		message							// ãƒ¡ãƒƒã‚»ãƒ¼ã‚¸ãƒ•ã‚§ãƒ¼ã‚º
 	};
 
-	// “à•”ƒf[ƒ^’è‹`
+	// å†…éƒ¨ãƒ‡ãƒ¼ã‚¿å®šç¾©
 	typedef struct {
-		// SASIƒRƒ“ƒgƒ[ƒ‰
-		phase_t phase;					// ƒtƒF[ƒY
-		BOOL sel;						// SelectM†
-		BOOL msg;						// MessageM†
-		BOOL cd;						// Command/DataM†
-		BOOL io;						// Input/OutputM†
-		BOOL bsy;						// BusyM†
-		BOOL req;						// RequestM†
-		DWORD ctrl;						// ƒZƒŒƒNƒg‚³‚ê‚½ƒRƒ“ƒgƒ[ƒ‰
-		DWORD cmd[10];					// ƒRƒ}ƒ“ƒhƒf[ƒ^
-		DWORD status;					// ƒXƒe[ƒ^ƒXƒf[ƒ^
-		DWORD message;					// ƒƒbƒZ[ƒWƒf[ƒ^
-		BYTE buffer[0x800];				// “]‘—ƒoƒbƒtƒ@
-		DWORD blocks;					// “]‘—ƒuƒƒbƒN”
-		DWORD next;						// ŽŸ‚ÌƒŒƒR[ƒh
-		DWORD offset;					// “]‘—ƒIƒtƒZƒbƒg
-		DWORD length;					// “]‘—Žc‚è’·‚³
+		// SASIã‚³ãƒ³ãƒˆãƒ­ãƒ¼ãƒ©
+		phase_t phase;					// ãƒ•ã‚§ãƒ¼ã‚º
+		BOOL sel;						// Selectä¿¡å·
+		BOOL msg;						// Messageä¿¡å·
+		BOOL cd;						// Command/Dataä¿¡å·
+		BOOL io;						// Input/Outputä¿¡å·
+		BOOL bsy;						// Busyä¿¡å·
+		BOOL req;						// Requestä¿¡å·
+		DWORD ctrl;						// ã‚»ãƒ¬ã‚¯ãƒˆã•ã‚ŒãŸã‚³ãƒ³ãƒˆãƒ­ãƒ¼ãƒ©
+		DWORD cmd[10];					// ã‚³ãƒžãƒ³ãƒ‰ãƒ‡ãƒ¼ã‚¿
+		DWORD status;					// ã‚¹ãƒ†ãƒ¼ã‚¿ã‚¹ãƒ‡ãƒ¼ã‚¿
+		DWORD message;					// ãƒ¡ãƒƒã‚»ãƒ¼ã‚¸ãƒ‡ãƒ¼ã‚¿
+		BYTE buffer[0x800];				// è»¢é€ãƒãƒƒãƒ•ã‚¡
+		DWORD blocks;					// è»¢é€ãƒ–ãƒ­ãƒƒã‚¯æ•°
+		DWORD next;						// æ¬¡ã®ãƒ¬ã‚³ãƒ¼ãƒ‰
+		DWORD offset;					// è»¢é€ã‚ªãƒ•ã‚»ãƒƒãƒˆ
+		DWORD length;					// è»¢é€æ®‹ã‚Šé•·ã•
 
-		// ƒfƒBƒXƒN
-		Disk *disk[SASIMax];			// ƒfƒBƒXƒN
-		Disk *current;					// ƒfƒBƒXƒN(ƒJƒŒƒ“ƒg)
-		SCSIMO *mo;						// ƒfƒBƒXƒN(MO)
+		// ãƒ‡ã‚£ã‚¹ã‚¯
+		Disk *disk[SASIMax];			// ãƒ‡ã‚£ã‚¹ã‚¯
+		Disk *current;					// ãƒ‡ã‚£ã‚¹ã‚¯(ã‚«ãƒ¬ãƒ³ãƒˆ)
+		SCSIMO *mo;						// ãƒ‡ã‚£ã‚¹ã‚¯(MO)
 
-		// ƒRƒ“ƒtƒBƒO
-		int sasi_drives;				// ƒhƒ‰ƒCƒu”(SASI)
-		BOOL memsw;						// ƒƒ‚ƒŠƒXƒCƒbƒ`XV
-		BOOL parity;					// ƒpƒŠƒeƒB•t‰Á
-		int sxsi_drives;				// ƒhƒ‰ƒCƒu”(SxSI)
-		BOOL mo_first;					// MO—Dæƒtƒ‰ƒO(SxSI)
-		int scsi_type;					// SCSIƒ^ƒCƒv
+		// ã‚³ãƒ³ãƒ•ã‚£ã‚°
+		int sasi_drives;				// ãƒ‰ãƒ©ã‚¤ãƒ–æ•°(SASI)
+		BOOL memsw;						// ãƒ¡ãƒ¢ãƒªã‚¹ã‚¤ãƒƒãƒæ›´æ–°
+		BOOL parity;					// ãƒ‘ãƒªãƒ†ã‚£ä»˜åŠ 
+		int sxsi_drives;				// ãƒ‰ãƒ©ã‚¤ãƒ–æ•°(SxSI)
+		BOOL mo_first;					// MOå„ªå…ˆãƒ•ãƒ©ã‚°(SxSI)
+		int scsi_type;					// SCSIã‚¿ã‚¤ãƒ—
 
-		// MOƒpƒ‰ƒ[ƒ^
-		BOOL writep;					// MO‘‚«ž‚Ý‹ÖŽ~ƒtƒ‰ƒO
+		// MOãƒ‘ãƒ©ãƒ¡ãƒ¼ã‚¿
+		BOOL writep;					// MOæ›¸ãè¾¼ã¿ç¦æ­¢ãƒ•ãƒ©ã‚°
 	} sasi_t;
 
 public:
-	// Šî–{ƒtƒ@ƒ“ƒNƒVƒ‡ƒ“
+	// åŸºæœ¬ãƒ•ã‚¡ãƒ³ã‚¯ã‚·ãƒ§ãƒ³
 	SASI(VM *p);
-										// ƒRƒ“ƒXƒgƒ‰ƒNƒ^
+										// ã‚³ãƒ³ã‚¹ãƒˆãƒ©ã‚¯ã‚¿
 	BOOL FASTCALL Init();
-										// ‰Šú‰»
+										// åˆæœŸåŒ–
 	void FASTCALL Cleanup();
-										// ƒNƒŠ[ƒ“ƒAƒbƒv
+										// ã‚¯ãƒªãƒ¼ãƒ³ã‚¢ãƒƒãƒ—
 	void FASTCALL Reset();
-										// ƒŠƒZƒbƒg
+										// ãƒªã‚»ãƒƒãƒˆ
 	BOOL FASTCALL Save(Fileio *fio, int ver);
-										// ƒZ[ƒu
+										// ã‚»ãƒ¼ãƒ–
 	BOOL FASTCALL Load(Fileio *fio, int ver);
-										// ƒ[ƒh
+										// ãƒ­ãƒ¼ãƒ‰
 	void FASTCALL ApplyCfg(const Config *config);
-										// Ý’è“K—p
+										// è¨­å®šé©ç”¨
 
-	// ƒƒ‚ƒŠƒfƒoƒCƒX
+	// ãƒ¡ãƒ¢ãƒªãƒ‡ãƒã‚¤ã‚¹
 	DWORD FASTCALL ReadByte(DWORD addr);
-										// ƒoƒCƒg“Ç‚Ýž‚Ý
+										// ãƒã‚¤ãƒˆèª­ã¿è¾¼ã¿
 	DWORD FASTCALL ReadWord(DWORD addr);
-										// ƒ[ƒh“Ç‚Ýž‚Ý
+										// ãƒ¯ãƒ¼ãƒ‰èª­ã¿è¾¼ã¿
 	void FASTCALL WriteByte(DWORD addr, DWORD data);
-										// ƒoƒCƒg‘‚«ž‚Ý
+										// ãƒã‚¤ãƒˆæ›¸ãè¾¼ã¿
 	void FASTCALL WriteWord(DWORD addr, DWORD data);
-										// ƒ[ƒh‘‚«ž‚Ý
+										// ãƒ¯ãƒ¼ãƒ‰æ›¸ãè¾¼ã¿
 	DWORD FASTCALL ReadOnly(DWORD addr) const;
-										// “Ç‚Ýž‚Ý‚Ì‚Ý
+										// èª­ã¿è¾¼ã¿ã®ã¿
 
-	// MOƒAƒNƒZƒX
+	// MOã‚¢ã‚¯ã‚»ã‚¹
 	BOOL FASTCALL Open(const Filepath& path);
-										// MO ƒI[ƒvƒ“
+										// MO ã‚ªãƒ¼ãƒ—ãƒ³
 	void FASTCALL Eject(BOOL force);
-										// MO ƒCƒWƒFƒNƒg
+										// MO ã‚¤ã‚¸ã‚§ã‚¯ãƒˆ
 	void FASTCALL WriteP(BOOL writep);
-										// MO ‘‚«ž‚Ý‹ÖŽ~
+										// MO æ›¸ãè¾¼ã¿ç¦æ­¢
 	BOOL FASTCALL IsWriteP() const;
-										// MO ‘‚«ž‚Ý‹ÖŽ~ƒ`ƒFƒbƒN
+										// MO æ›¸ãè¾¼ã¿ç¦æ­¢ãƒã‚§ãƒƒã‚¯
 	BOOL FASTCALL IsReadOnly() const;
-										// MO ReadOnlyƒ`ƒFƒbƒN
+										// MO ReadOnlyãƒã‚§ãƒƒã‚¯
 	BOOL FASTCALL IsLocked() const;
-										// MO Lockƒ`ƒFƒbƒN
+										// MO Lockãƒã‚§ãƒƒã‚¯
 	BOOL FASTCALL IsReady() const;
-										// MO Readyƒ`ƒFƒbƒN
+										// MO Readyãƒã‚§ãƒƒã‚¯
 	BOOL FASTCALL IsValid() const;
-										// MO —LŒøƒ`ƒFƒbƒN
+										// MO æœ‰åŠ¹ãƒã‚§ãƒƒã‚¯
 	void FASTCALL GetPath(Filepath &path) const;
-										// MO ƒpƒXŽæ“¾
+										// MO ãƒ‘ã‚¹å–å¾—
 
-	// ŠO•”API
+	// å¤–éƒ¨API
 	void FASTCALL GetSASI(sasi_t *buffer) const;
-										// “à•”ƒf[ƒ^Žæ“¾
+										// å†…éƒ¨ãƒ‡ãƒ¼ã‚¿å–å¾—
 	BOOL FASTCALL Callback(Event *ev);
-										// ƒCƒxƒ“ƒgƒR[ƒ‹ƒoƒbƒN
+										// ã‚¤ãƒ™ãƒ³ãƒˆã‚³ãƒ¼ãƒ«ãƒãƒƒã‚¯
 	void FASTCALL Construct();
-										// ƒfƒBƒXƒNÄ\’z
+										// ãƒ‡ã‚£ã‚¹ã‚¯å†æ§‹ç¯‰
 	BOOL FASTCALL IsBusy() const;
-										// HD BUSYŽæ“¾
+										// HD BUSYå–å¾—
 	DWORD FASTCALL GetBusyDevice() const;
-										// BUSYƒfƒoƒCƒXŽæ“¾
+										// BUSYãƒ‡ãƒã‚¤ã‚¹å–å¾—
+	void FASTCALL SetSASIPath(int slot, const Filepath& path);
+										// Set SASI HDD path
+	void FASTCALL SetSCSIPath(int slot, const Filepath& path);
+										// Set SCSI HDD path
 
 private:
 	DWORD FASTCALL ReadData();
-										// ƒf[ƒ^“Ç‚Ýo‚µ
+										// ãƒ‡ãƒ¼ã‚¿èª­ã¿å‡ºã—
 	void FASTCALL WriteData(DWORD data);
-										// ƒf[ƒ^‘‚«ž‚Ý
+										// ãƒ‡ãƒ¼ã‚¿æ›¸ãè¾¼ã¿
 
-	// ƒtƒF[ƒYˆ—
+	// ãƒ•ã‚§ãƒ¼ã‚ºå‡¦ç†
 	void FASTCALL BusFree();
-										// ƒoƒXƒtƒŠ[ƒtƒF[ƒY
+										// ãƒã‚¹ãƒ•ãƒªãƒ¼ãƒ•ã‚§ãƒ¼ã‚º
 	void FASTCALL Selection(DWORD data);
-										// ƒZƒŒƒNƒVƒ‡ƒ“ƒtƒF[ƒY
+										// ã‚»ãƒ¬ã‚¯ã‚·ãƒ§ãƒ³ãƒ•ã‚§ãƒ¼ã‚º
 	void FASTCALL Command();
-										// ƒRƒ}ƒ“ƒhƒtƒF[ƒY
+										// ã‚³ãƒžãƒ³ãƒ‰ãƒ•ã‚§ãƒ¼ã‚º
 	void FASTCALL Execute();
-										// ŽÀsƒtƒF[ƒY
+										// å®Ÿè¡Œãƒ•ã‚§ãƒ¼ã‚º
 	void FASTCALL Status();
-										// ƒXƒe[ƒ^ƒXƒtƒF[ƒY
+										// ã‚¹ãƒ†ãƒ¼ã‚¿ã‚¹ãƒ•ã‚§ãƒ¼ã‚º
 	void FASTCALL Message();
-										// ƒƒbƒZ[ƒWƒtƒF[ƒY
+										// ãƒ¡ãƒƒã‚»ãƒ¼ã‚¸ãƒ•ã‚§ãƒ¼ã‚º
 	void FASTCALL Error();
-										// ‹¤’ÊƒGƒ‰[ˆ—
+										// å…±é€šã‚¨ãƒ©ãƒ¼å‡¦ç†
 
-	// ƒRƒ}ƒ“ƒh
+	// ã‚³ãƒžãƒ³ãƒ‰
 	void FASTCALL TestUnitReady();
-										// TEST UNIT READYƒRƒ}ƒ“ƒh
+										// TEST UNIT READYã‚³ãƒžãƒ³ãƒ‰
 	void FASTCALL Rezero();
-										// REZERO UNITƒRƒ}ƒ“ƒh
+										// REZERO UNITã‚³ãƒžãƒ³ãƒ‰
 	void FASTCALL RequestSense();
-										// REQUEST SENSEƒRƒ}ƒ“ƒh
+										// REQUEST SENSEã‚³ãƒžãƒ³ãƒ‰
 	void FASTCALL Format();
-										// FORMATƒRƒ}ƒ“ƒh
+										// FORMATã‚³ãƒžãƒ³ãƒ‰
 	void FASTCALL Reassign();
-										// REASSIGN BLOCKSƒRƒ}ƒ“ƒh
+										// REASSIGN BLOCKSã‚³ãƒžãƒ³ãƒ‰
 	void FASTCALL Read6();
-										// READ(6)ƒRƒ}ƒ“ƒh
+										// READ(6)ã‚³ãƒžãƒ³ãƒ‰
 	void FASTCALL Write6();
-										// WRITE(6)ƒRƒ}ƒ“ƒh
+										// WRITE(6)ã‚³ãƒžãƒ³ãƒ‰
 	void FASTCALL Seek6();
-										// SEEK(6)ƒRƒ}ƒ“ƒh
+										// SEEK(6)ã‚³ãƒžãƒ³ãƒ‰
 	void FASTCALL Assign();
-										// ASSIGNƒRƒ}ƒ“ƒh
+										// ASSIGNã‚³ãƒžãƒ³ãƒ‰
 	void FASTCALL Inquiry();
-										// INQUIRYƒRƒ}ƒ“ƒh
+										// INQUIRYã‚³ãƒžãƒ³ãƒ‰
 	void FASTCALL ModeSense();
-										// MODE SENSEƒRƒ}ƒ“ƒh
+										// MODE SENSEã‚³ãƒžãƒ³ãƒ‰
 	void FASTCALL StartStop();
-										// START STOP UNITƒRƒ}ƒ“ƒh
+										// START STOP UNITã‚³ãƒžãƒ³ãƒ‰
 	void FASTCALL Removal();
-										// PREVENT/ALLOW MEDIUM REMOVALƒRƒ}ƒ“ƒh
+										// PREVENT/ALLOW MEDIUM REMOVALã‚³ãƒžãƒ³ãƒ‰
 	void FASTCALL ReadCapacity();
-										// READ CAPACITYƒRƒ}ƒ“ƒh
+										// READ CAPACITYã‚³ãƒžãƒ³ãƒ‰
 	void FASTCALL Read10();
-										// READ(10)ƒRƒ}ƒ“ƒh
+										// READ(10)ã‚³ãƒžãƒ³ãƒ‰
 	void FASTCALL Write10();
-										// WRITE(10)ƒRƒ}ƒ“ƒh
+										// WRITE(10)ã‚³ãƒžãƒ³ãƒ‰
 	void FASTCALL Seek10();
-										// SEEK(10)ƒRƒ}ƒ“ƒh
+										// SEEK(10)ã‚³ãƒžãƒ³ãƒ‰
 	void FASTCALL Verify();
-										// VERIFYƒRƒ}ƒ“ƒh
+										// VERIFYã‚³ãƒžãƒ³ãƒ‰
 	void FASTCALL Specify();
-										// SPECIFYƒRƒ}ƒ“ƒh
+										// SPECIFYã‚³ãƒžãƒ³ãƒ‰
 
-	// ƒ[ƒNƒGƒŠƒA
+	// ãƒ¯ãƒ¼ã‚¯ã‚¨ãƒªã‚¢
 	sasi_t sasi;
-										// “à•”ƒf[ƒ^
+										// å†…éƒ¨ãƒ‡ãƒ¼ã‚¿
 	Event event;
-										// ƒCƒxƒ“ƒg
+										// ã‚¤ãƒ™ãƒ³ãƒˆ
 	Filepath sasihd[SASIMax];
-										// SASI-HDƒtƒ@ƒCƒ‹ƒpƒX
+										// SASI-HDãƒ•ã‚¡ã‚¤ãƒ«ãƒ‘ã‚¹
 	Filepath scsihd[SCSIMax];
-										// SCSI-HDƒtƒ@ƒCƒ‹ƒpƒX
+										// SCSI-HDãƒ•ã‚¡ã‚¤ãƒ«ãƒ‘ã‚¹
 	Filepath scsimo;
-										// SCSI-MOƒtƒ@ƒCƒ‹ƒpƒX
+										// SCSI-MOãƒ•ã‚¡ã‚¤ãƒ«ãƒ‘ã‚¹
 	DMAC *dmac;
 										// DMAC
 	IOSC *iosc;
@@ -220,7 +224,7 @@ private:
 	SCSI *scsi;
 										// SCSI
 	BOOL sxsicpu;
-										// SxSI CPU“]‘—ƒtƒ‰ƒO
+										// SxSI CPUè»¢é€ãƒ•ãƒ©ã‚°
 };
 
 #endif	// sasi_h

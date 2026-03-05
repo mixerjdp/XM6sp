@@ -102,7 +102,13 @@ void FASTCALL Filepath::SysFile(SysFileType sys)
 	Split();
 
 	// ベースディレクトリ設定
-	SetBaseDir();
+	if (SystemDir[0] != _T('\0')) {
+		_tsplitpath(SystemDir, m_szDrive, m_szDir, NULL, NULL);
+		Make();
+	}
+	else {
+		SetBaseDir();
+	}
 }
 
 //---------------------------------------------------------------------------
@@ -360,6 +366,42 @@ const TCHAR* FASTCALL Filepath::GetDefaultDir()
 
 //---------------------------------------------------------------------------
 //
+//	?V?X?e???f?B???N?g????????
+//
+//---------------------------------------------------------------------------
+void FASTCALL Filepath::ClearSystemDir()
+{
+	SystemDir[0] = _T('\0');
+}
+//---------------------------------------------------------------------------
+//
+//	?V?X?e???f?B???N?g??????
+//
+//---------------------------------------------------------------------------
+void FASTCALL Filepath::SetSystemDir(const TCHAR* lpszPath)
+{
+	TCHAR szDrive[_MAX_DRIVE];
+	TCHAR szDir[_MAX_DIR];
+	if (!lpszPath) {
+		ClearSystemDir();
+		return;
+	}
+	_tsplitpath(lpszPath, szDrive, szDir, NULL, NULL);
+	_tcscpy(SystemDir, szDrive);
+	_tcscat(SystemDir, szDir);
+}
+//---------------------------------------------------------------------------
+//
+//	?V?X?e???f?B???N?g??????
+//
+//---------------------------------------------------------------------------
+const TCHAR* FASTCALL Filepath::GetSystemDir()
+{
+	return (const TCHAR*)SystemDir;
+}
+
+//---------------------------------------------------------------------------
+//
 //	セーブ
 //
 //---------------------------------------------------------------------------
@@ -514,5 +556,12 @@ TCHAR Filepath::FileExt[_MAX_FNAME + _MAX_DIR];
 //
 //---------------------------------------------------------------------------
 TCHAR Filepath::DefaultDir[_MAX_PATH];
+
+//---------------------------------------------------------------------------
+//
+//	?V?X?e???f?B???N?g??
+//
+//---------------------------------------------------------------------------
+TCHAR Filepath::SystemDir[_MAX_PATH];
 
 #endif	// WIN32

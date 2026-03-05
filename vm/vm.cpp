@@ -295,32 +295,11 @@ void FASTCALL VM::NotifyHostMessage(const TCHAR* message) const
 	::OutputDebugString(_T("\n"));
 }
 
-DWORD FASTCALL VM::Save(const Filepath& googlePath) {
+DWORD FASTCALL VM::Save(const Filepath& path)
+{
 	ASSERT(this);
-
-	Filepath tempPath;
-	tempPath.SetPath(_T("C:\\Temp\\xm6_temp.sav"));  // Crea C:\Temp manualmente si no existe
-	DWORD pos = OriginalSave(tempPath);  // Llama original Save (renombra tu vieja VM::Save a OriginalSave)
-	if (pos == 0) {
-		// Log error o MessageBox para debug
-		NotifyHostMessage(_T("Fallo al guardar a temp"));
-		return 0;
-	}
-
-	// Copia temp a google
-	if (!::CopyFile(tempPath.GetPath(), googlePath.GetPath(), FALSE)) {
-		NotifyHostMessage(_T("Fallo copia a google - posible corrupción por sync"));
-		_tunlink(tempPath.GetPath());
-		return 0;
-	}
-
-	// Borra temp
-	_tunlink(tempPath.GetPath());
-	current = googlePath;
-	return pos;
+	return OriginalSave(path);
 }
-
-
 
 DWORD FASTCALL VM::OriginalSave(const Filepath& path)
 {

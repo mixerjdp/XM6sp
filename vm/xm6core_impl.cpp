@@ -18,6 +18,7 @@
 #include "device.h"
 #include "schedule.h"
 #include "cpu.h"
+#include "memory.h"
 #include "render.h"
 #include "keyboard.h"
 #include "mouse.h"
@@ -34,14 +35,14 @@
 
 //---------------------------------------------------------------------------
 //
-//	バージョン文字列
+//	バ�Eジョン斁E���E
 //
 //---------------------------------------------------------------------------
 static const char XM6CORE_VERSION[] = "XM6 Core 2.06";
 
 //---------------------------------------------------------------------------
 //
-//	内部コンテキスト
+//	冁E��コンチE��スチE
 //	Handle opaco que mantiene el estado de una instancia del emulador.
 //
 //---------------------------------------------------------------------------
@@ -73,7 +74,7 @@ struct XM6Context {
 
 //---------------------------------------------------------------------------
 //
-//	ヘルパー: コンテキスト検証
+//	ヘルパ�E: コンチE��スト検証
 //
 //---------------------------------------------------------------------------
 static inline XM6Context* ctx_from_handle(XM6Handle handle)
@@ -86,6 +87,36 @@ static inline bool ctx_valid(XM6Context *ctx)
 	return (ctx != NULL && ctx->vm != NULL);
 }
 
+static bool create_temp_state_filepath(Filepath *out_path)
+{
+	TCHAR temp_dir[_MAX_PATH];
+	TCHAR temp_file[_MAX_PATH];
+	UINT len;
+
+	if (!out_path) {
+		return false;
+	}
+
+	len = ::GetTempPath(_MAX_PATH, temp_dir);
+	if (len == 0 || len > (_MAX_PATH - 1)) {
+		return false;
+	}
+
+	if (::GetTempFileName(temp_dir, _T("xm6"), 0, temp_file) == 0) {
+		return false;
+	}
+
+	out_path->SetPath(temp_file);
+	return true;
+}
+
+static void delete_temp_state_file(const Filepath& path)
+{
+	if (!path.IsClear()) {
+		::DeleteFile(path.GetPath());
+	}
+}
+
 //===========================================================================
 //
 //	Paso 1: Version + Lifecycle
@@ -93,7 +124,7 @@ static inline bool ctx_valid(XM6Context *ctx)
 //===========================================================================
 
 //---------------------------------------------------------------------------
-//	xm6_get_version — Devuelve la cadena de versión del core.
+//	xm6_get_version  EDevuelve la cadena de versión del core.
 //---------------------------------------------------------------------------
 XM6CORE_API const char* XM6CORE_CALL xm6_get_version(void)
 {
@@ -101,7 +132,7 @@ XM6CORE_API const char* XM6CORE_CALL xm6_get_version(void)
 }
 
 //---------------------------------------------------------------------------
-//	xm6_create — Crea una nueva instancia del emulador.
+//	xm6_create  ECrea una nueva instancia del emulador.
 //
 //	Instancia internamente la VM y todos sus dispositivos, luego cachea
 //	los punteros a los subsistemas que el API necesita exponer.
@@ -145,7 +176,7 @@ XM6CORE_API XM6Handle XM6CORE_CALL xm6_create(void)
 }
 
 //---------------------------------------------------------------------------
-//	xm6_destroy — Destruye una instancia del emulador.
+//	xm6_destroy  EDestruye una instancia del emulador.
 //
 //	Libera todos los recursos asociados (VM, dispositivos, buffers de
 //	audio). Acepta handle NULL sin efecto.
@@ -189,7 +220,7 @@ static void FASTCALL xm6_msg_trampoline(const TCHAR* message, void *user)
 }
 
 //---------------------------------------------------------------------------
-//	xm6_set_message_callback — Registra un callback para mensajes del core.
+//	xm6_set_message_callback  ERegistra un callback para mensajes del core.
 //---------------------------------------------------------------------------
 XM6CORE_API int XM6CORE_CALL xm6_set_message_callback(
 	XM6Handle handle, xm6_message_callback_t callback, void* user)
@@ -209,7 +240,21 @@ XM6CORE_API int XM6CORE_CALL xm6_set_message_callback(
 }
 
 //---------------------------------------------------------------------------
-//	xm6_exec — Ejecuta la VM por 'hus' unidades de tiempo (0.5µs cada una).
+//	xm6_set_system_dir - Configura el directorio base para BIOS/ROM.
+//---------------------------------------------------------------------------
+XM6CORE_API int XM6CORE_CALL xm6_set_system_dir(const char* system_dir)
+{
+	if (!system_dir || system_dir[0] == '\0') {
+		Filepath::ClearSystemDir();
+		return XM6CORE_OK;
+	}
+
+	Filepath::SetSystemDir(system_dir);
+	return XM6CORE_OK;
+}
+
+//---------------------------------------------------------------------------
+//	xm6_exec  EEjecuta la VM por 'hus' unidades de tiempo (0.5µs cada una).
 //---------------------------------------------------------------------------
 XM6CORE_API int XM6CORE_CALL xm6_exec(XM6Handle handle, unsigned int hus)
 {
@@ -223,7 +268,43 @@ XM6CORE_API int XM6CORE_CALL xm6_exec(XM6Handle handle, unsigned int hus)
 }
 
 //---------------------------------------------------------------------------
-//	xm6_reset — Resetea la VM (equivalente a pulsar el botón de reset).
+//	xm6_exec_to_frame  EEjecuta la VM hasta que haya un frame de video listo.
+//
+//	Avanza el tiempo (hus) en chunks pequeños hasta que Render::IsReady()
+//	sea true. Sirve como base para el retro_run() de libretro.
+//---------------------------------------------------------------------------
+XM6CORE_API int XM6CORE_CALL xm6_exec_to_frame(XM6Handle handle)
+{
+	XM6Context *ctx = ctx_from_handle(handle);
+	if (!ctx_valid(ctx)) {
+		return XM6CORE_ERR_INVALID_HANDLE;
+	}
+
+	if (!ctx->render) {
+		return XM6CORE_ERR_NOT_READY;
+	}
+
+	// Un frame a 55Hz son ~36000 hus. Ejecutar en pasos de 1000 hus.
+	// Poner un límite de seguridad (e.g. 10 frames ≁E360000 hus) para
+	// evitar loops infinitos si el VBlank está deshabilitado.
+	const DWORD CHUNK = 1000;
+	const DWORD MAX_HUS = 360000;
+	DWORD total = 0;
+
+	while (total < MAX_HUS) {
+		ctx->vm->Exec(CHUNK);
+		total += CHUNK;
+
+		if (ctx->render->IsReady()) {
+			break;
+		}
+	}
+
+	return XM6CORE_OK;
+}
+
+//---------------------------------------------------------------------------
+//	xm6_reset  EResetea la VM (equivalente a pulsar el botón de reset).
 //---------------------------------------------------------------------------
 XM6CORE_API int XM6CORE_CALL xm6_reset(XM6Handle handle)
 {
@@ -237,7 +318,7 @@ XM6CORE_API int XM6CORE_CALL xm6_reset(XM6Handle handle)
 }
 
 //---------------------------------------------------------------------------
-//	xm6_set_power — Enciende o apaga la VM.
+//	xm6_set_power  EEnciende o apaga la VM.
 //---------------------------------------------------------------------------
 XM6CORE_API int XM6CORE_CALL xm6_set_power(XM6Handle handle, int enabled)
 {
@@ -251,7 +332,7 @@ XM6CORE_API int XM6CORE_CALL xm6_set_power(XM6Handle handle, int enabled)
 }
 
 //---------------------------------------------------------------------------
-//	xm6_get_power — Consulta el estado de alimentación de la VM.
+//	xm6_get_power  EConsulta el estado de alimentación de la VM.
 //---------------------------------------------------------------------------
 XM6CORE_API int XM6CORE_CALL xm6_get_power(XM6Handle handle)
 {
@@ -264,7 +345,7 @@ XM6CORE_API int XM6CORE_CALL xm6_get_power(XM6Handle handle)
 }
 
 //---------------------------------------------------------------------------
-//	xm6_set_power_switch — Controla el interruptor de encendido.
+//	xm6_set_power_switch  EControla el interruptor de encendido.
 //---------------------------------------------------------------------------
 XM6CORE_API int XM6CORE_CALL xm6_set_power_switch(XM6Handle handle, int enabled)
 {
@@ -278,7 +359,7 @@ XM6CORE_API int XM6CORE_CALL xm6_set_power_switch(XM6Handle handle, int enabled)
 }
 
 //---------------------------------------------------------------------------
-//	xm6_get_power_switch — Consulta el estado del interruptor de encendido.
+//	xm6_get_power_switch  EConsulta el estado del interruptor de encendido.
 //---------------------------------------------------------------------------
 XM6CORE_API int XM6CORE_CALL xm6_get_power_switch(XM6Handle handle)
 {
@@ -291,7 +372,7 @@ XM6CORE_API int XM6CORE_CALL xm6_get_power_switch(XM6Handle handle)
 }
 
 //---------------------------------------------------------------------------
-//	xm6_get_vm_version — Obtiene la versión interna de la VM (major.minor).
+//	xm6_get_vm_version  EObtiene la versión interna de la VM (major.minor).
 //---------------------------------------------------------------------------
 XM6CORE_API void XM6CORE_CALL xm6_get_vm_version(
 	XM6Handle handle, unsigned int* out_major, unsigned int* out_minor)
@@ -316,7 +397,7 @@ XM6CORE_API void XM6CORE_CALL xm6_get_vm_version(
 //===========================================================================
 
 //---------------------------------------------------------------------------
-//	xm6_mount_fdd — Monta una imagen de disquete en un drive (0-3).
+//	xm6_mount_fdd  EMonta una imagen de disquete en un drive (0-3).
 //
 //	media_hint: tipo de medio (0 = auto-detect, ver FDD::Open).
 //---------------------------------------------------------------------------
@@ -343,7 +424,7 @@ XM6CORE_API int XM6CORE_CALL xm6_mount_fdd(
 }
 
 //---------------------------------------------------------------------------
-//	xm6_eject_fdd — Expulsa la imagen de un drive FDD.
+//	xm6_eject_fdd  EExpulsa la imagen de un drive FDD.
 //
 //	force: si != 0, fuerza la expulsión aunque el motor esté activo.
 //---------------------------------------------------------------------------
@@ -364,12 +445,60 @@ XM6CORE_API int XM6CORE_CALL xm6_eject_fdd(
 }
 
 //---------------------------------------------------------------------------
-//	xm6_mount_sasi_hdd — Monta una imagen de disco duro SASI.
-//
-//	NOTA: La clase SASI mantiene los paths de HD en arrays privados que
-//	solo se pueblan vía ApplyCfg(Config*). Se requiere refactorizar SASI
-//	para exponer un setter público. Por ahora se retorna NOT_READY.
-//	TODO: Añadir SASI::SetHDPath(int slot, const Filepath& path) público.
+//	xm6_fdd_is_inserted  EVerifica si hay un disco insertado en el drive.
+//---------------------------------------------------------------------------
+XM6CORE_API int XM6CORE_CALL xm6_fdd_is_inserted(XM6Handle handle, int drive)
+{
+	XM6Context *ctx = ctx_from_handle(handle);
+	if (!ctx_valid(ctx)) {
+		return 0; // Invalid = false
+	}
+
+	if (!ctx->fdd || drive < 0 || drive > 3) {
+		return 0;
+	}
+
+	// Si GetFDI devuelve un puntero no nulo, hay un disco (o al menos un objeto de imagen)
+	// También podríamos verificar drv_t::insert, pero GetFDI es la forma más directa
+	return ctx->fdd->GetFDI(drive) != NULL ? 1 : 0;
+}
+
+//---------------------------------------------------------------------------
+//	xm6_fdd_get_name  EObtiene la ruta del archivo del disco montado.
+//---------------------------------------------------------------------------
+XM6CORE_API int XM6CORE_CALL xm6_fdd_get_name(
+	XM6Handle handle, int drive, char* out_name, unsigned int max_len)
+{
+	XM6Context *ctx = ctx_from_handle(handle);
+	if (!ctx_valid(ctx)) {
+		return XM6CORE_ERR_INVALID_HANDLE;
+	}
+
+	if (!ctx->fdd || drive < 0 || drive > 3 || !out_name || max_len == 0) {
+		return XM6CORE_ERR_INVALID_ARGUMENT;
+	}
+
+	out_name[0] = '\0';
+
+	if (ctx->fdd->GetFDI(drive) == NULL) {
+		return XM6CORE_ERR_NOT_READY; // Empty drive
+	}
+
+	Filepath path;
+	ctx->fdd->GetPath(drive, path);
+
+	const char* path_str = path.GetPath(); // assuming TCHAR == char, validated before
+	if (path_str) {
+		strncpy(out_name, path_str, max_len - 1);
+		out_name[max_len - 1] = '\0';
+		return XM6CORE_OK;
+	}
+
+	return XM6CORE_ERR_IO;
+}
+
+//---------------------------------------------------------------------------
+//	xm6_mount_sasi_hdd  EMonta una imagen de disco duro SASI.
 //---------------------------------------------------------------------------
 XM6CORE_API int XM6CORE_CALL xm6_mount_sasi_hdd(
 	XM6Handle handle, int slot, const char* image_path)
@@ -383,16 +512,15 @@ XM6CORE_API int XM6CORE_CALL xm6_mount_sasi_hdd(
 		return XM6CORE_ERR_INVALID_ARGUMENT;
 	}
 
-	// TODO: Implementar cuando SASI exponga setter público para paths
-	(void)image_path;
-	return XM6CORE_ERR_NOT_READY;
+	Filepath path;
+	path.SetPath(image_path);
+	ctx->sasi->SetSASIPath(slot, path);
+
+	return XM6CORE_OK;
 }
 
 //---------------------------------------------------------------------------
-//	xm6_mount_scsi_hdd — Monta una imagen de disco duro SCSI.
-//
-//	Mismo caso que SASI: los paths de SCSI-HD son privados en SASI.
-//	TODO: Añadir SASI::SetSCSIPath(int slot, const Filepath& path) público.
+//	xm6_mount_scsi_hdd  EMonta una imagen de disco duro SCSI.
 //---------------------------------------------------------------------------
 XM6CORE_API int XM6CORE_CALL xm6_mount_scsi_hdd(
 	XM6Handle handle, int slot, const char* image_path)
@@ -406,9 +534,11 @@ XM6CORE_API int XM6CORE_CALL xm6_mount_scsi_hdd(
 		return XM6CORE_ERR_INVALID_ARGUMENT;
 	}
 
-	// TODO: Implementar cuando SASI exponga setter público para paths
-	(void)image_path;
-	return XM6CORE_ERR_NOT_READY;
+	Filepath path;
+	path.SetPath(image_path);
+	ctx->sasi->SetSCSIPath(slot, path);
+
+	return XM6CORE_OK;
 }
 
 //===========================================================================
@@ -418,7 +548,7 @@ XM6CORE_API int XM6CORE_CALL xm6_mount_scsi_hdd(
 //===========================================================================
 
 //---------------------------------------------------------------------------
-//	xm6_input_key — Envía un evento de tecla al emulador.
+//	xm6_input_key  EEnvía un evento de tecla al emulador.
 //
 //	xm6_keycode: código de tecla del X68000 (0x00-0x7F).
 //	pressed: 1 = key down, 0 = key up.
@@ -445,7 +575,7 @@ XM6CORE_API int XM6CORE_CALL xm6_input_key(
 }
 
 //---------------------------------------------------------------------------
-//	xm6_input_mouse — Establece el estado del ratón.
+//	xm6_input_mouse  EEstablece el estado del ratón.
 //
 //	x, y: posición absoluta o relativa (según la convención del emulador).
 //	left, right: 1 = botón pulsado, 0 = suelto.
@@ -467,7 +597,7 @@ XM6CORE_API int XM6CORE_CALL xm6_input_mouse(
 }
 
 //---------------------------------------------------------------------------
-//	xm6_input_mouse_reset — Reinicia los datos acumulados del ratón.
+//	xm6_input_mouse_reset  EReinicia los datos acumulados del ratón.
 //---------------------------------------------------------------------------
 XM6CORE_API int XM6CORE_CALL xm6_input_mouse_reset(XM6Handle handle)
 {
@@ -485,7 +615,7 @@ XM6CORE_API int XM6CORE_CALL xm6_input_mouse_reset(XM6Handle handle)
 }
 
 //---------------------------------------------------------------------------
-//	xm6_input_joy — Establece el estado de un joystick/gamepad.
+//	xm6_input_joy  EEstablece el estado de un joystick/gamepad.
 //
 //	port: puerto del joystick (0 o 1).
 //	axes[4]: estado de cada eje (0=centro, 1=positivo, 2=negativo).
@@ -525,7 +655,7 @@ XM6CORE_API int XM6CORE_CALL xm6_input_joy(
 //===========================================================================
 
 //---------------------------------------------------------------------------
-//	xm6_video_poll — Consulta si hay un frame de video disponible.
+//	xm6_video_poll  EConsulta si hay un frame de video disponible.
 //
 //	Si hay un frame listo, rellena out_frame con el puntero al buffer
 //	ARGB32 interno (no copia), las dimensiones y el stride.
@@ -564,7 +694,7 @@ XM6CORE_API int XM6CORE_CALL xm6_video_poll(
 }
 
 //---------------------------------------------------------------------------
-//	xm6_video_consume — Marca el frame actual como consumido.
+//	xm6_video_consume  EMarca el frame actual como consumido.
 //
 //	Debe llamarse después de xm6_video_poll exitoso, cuando el frontend
 //	haya terminado de copiar o mostrar el buffer de video.
@@ -591,7 +721,7 @@ XM6CORE_API int XM6CORE_CALL xm6_video_consume(XM6Handle handle)
 //===========================================================================
 
 //---------------------------------------------------------------------------
-//	Helper: saturación int32 → int16 (replica SoundMMXPortable)
+//	Helper: saturación int32 ↁEint16 (replica SoundMMXPortable)
 //---------------------------------------------------------------------------
 static inline short saturate_s16(int value)
 {
@@ -601,7 +731,7 @@ static inline short saturate_s16(int value)
 }
 
 //---------------------------------------------------------------------------
-//	xm6_audio_configure — Configura el sistema de audio.
+//	xm6_audio_configure  EConfigura el sistema de audio.
 //
 //	sample_rate: frecuencia en Hz (ej: 44100, 48000).
 //	Inicializa los buffers internos de OPM y ADPCM.
@@ -643,14 +773,14 @@ XM6CORE_API int XM6CORE_CALL xm6_audio_configure(
 }
 
 //---------------------------------------------------------------------------
-//	xm6_audio_mix — Mezcla audio OPM + ADPCM + SCSI CD-DA.
+//	xm6_audio_mix  EMezcla audio OPM + ADPCM + SCSI CD-DA.
 //
 //	Replica la lógica de CSound::Process de mfc_snd.cpp:
-//	1. OPMIF::ProcessBuf()  → frames disponibles
-//	2. OPMIF::GetBuf()      → escribe al buffer temporal (DWORD stereo)
-//	3. ADPCM::GetBuf()      → suma al mismo buffer
-//	4. SCSI::GetBuf()       → suma CD-DA al mismo buffer
-//	5. Clamp int32 → int16  → salida interleaved stereo (L,R,L,R,...)
+//	1. OPMIF::ProcessBuf()  ↁEframes disponibles
+//	2. OPMIF::GetBuf()      ↁEescribe al buffer temporal (DWORD stereo)
+//	3. ADPCM::GetBuf()      ↁEsuma al mismo buffer
+//	4. SCSI::GetBuf()       ↁEsuma CD-DA al mismo buffer
+//	5. Clamp int32 ↁEint16  ↁEsalida interleaved stereo (L,R,L,R,...)
 //
 //	out_interleaved_stereo: buffer del cliente (short, L/R interleaved)
 //	frames: número máximo de frames solicitados
@@ -708,7 +838,7 @@ XM6CORE_API int XM6CORE_CALL xm6_audio_mix(
 		ctx->scsi->GetBuf(ctx->opm_buf, (int)ready, (DWORD)ctx->audio_rate);
 	}
 
-	// Convertir int32 stereo → int16 stereo interleaved
+	// Convertir int32 stereo ↁEint16 stereo interleaved
 	const int *src = (const int*)ctx->opm_buf;
 	unsigned int total_samples = ready * 2;  // L + R
 	for (unsigned int i = 0; i < total_samples; i++) {
@@ -726,9 +856,7 @@ XM6CORE_API int XM6CORE_CALL xm6_audio_mix(
 //===========================================================================
 
 //---------------------------------------------------------------------------
-//	xm6_save_state — Guarda el estado completo de la VM a un archivo.
-//
-//	Retorna XM6CORE_OK si el guardado fue exitoso, XM6CORE_ERR_IO si no.
+//	xm6_save_state - Guarda el estado completo de la VM a un archivo.
 //---------------------------------------------------------------------------
 XM6CORE_API int XM6CORE_CALL xm6_save_state(
 	XM6Handle handle, const char* state_path)
@@ -746,13 +874,11 @@ XM6CORE_API int XM6CORE_CALL xm6_save_state(
 	path.SetPath(state_path);
 
 	DWORD result = ctx->vm->Save(path);
-	return (result == 0) ? XM6CORE_OK : XM6CORE_ERR_IO;
+	return (result != 0) ? XM6CORE_OK : XM6CORE_ERR_IO;
 }
 
 //---------------------------------------------------------------------------
-//	xm6_load_state — Carga el estado completo de la VM desde un archivo.
-//
-//	Retorna XM6CORE_OK si la carga fue exitosa, XM6CORE_ERR_IO si no.
+//	xm6_load_state - Carga el estado completo de la VM desde un archivo.
 //---------------------------------------------------------------------------
 XM6CORE_API int XM6CORE_CALL xm6_load_state(
 	XM6Handle handle, const char* state_path)
@@ -770,5 +896,157 @@ XM6CORE_API int XM6CORE_CALL xm6_load_state(
 	path.SetPath(state_path);
 
 	DWORD result = ctx->vm->Load(path);
-	return (result == 0) ? XM6CORE_OK : XM6CORE_ERR_IO;
+	return (result != 0) ? XM6CORE_OK : XM6CORE_ERR_IO;
+}
+
+//---------------------------------------------------------------------------
+//	xm6_state_size - Calcula el tamano necesario para guardar el estado.
+//---------------------------------------------------------------------------
+XM6CORE_API int XM6CORE_CALL xm6_state_size(XM6Handle handle, unsigned int *out_size)
+{
+	XM6Context *ctx = ctx_from_handle(handle);
+	if (!ctx_valid(ctx)) {
+		return XM6CORE_ERR_INVALID_HANDLE;
+	}
+	if (!out_size) {
+		return XM6CORE_ERR_INVALID_ARGUMENT;
+	}
+
+	*out_size = 0;
+
+	Filepath temp;
+	if (!create_temp_state_filepath(&temp)) {
+		return XM6CORE_ERR_IO;
+	}
+
+	DWORD res = ctx->vm->Save(temp);
+	if (res == 0) {
+		delete_temp_state_file(temp);
+		return XM6CORE_ERR_IO;
+	}
+
+	Fileio fio;
+	if (!fio.Open(temp, Fileio::ReadOnly)) {
+		delete_temp_state_file(temp);
+		return XM6CORE_ERR_IO;
+	}
+
+	DWORD file_size = fio.GetFileSize();
+	fio.Close();
+	delete_temp_state_file(temp);
+
+	if (file_size == 0) {
+		return XM6CORE_ERR_IO;
+	}
+
+	*out_size = (unsigned int)file_size;
+	return XM6CORE_OK;
+}
+
+//---------------------------------------------------------------------------
+//	xm6_save_state_mem - Guarda el estado a un buffer en memoria.
+//---------------------------------------------------------------------------
+XM6CORE_API int XM6CORE_CALL xm6_save_state_mem(XM6Handle handle, void *buffer, unsigned int size)
+{
+	XM6Context *ctx = ctx_from_handle(handle);
+	if (!ctx_valid(ctx)) {
+		return XM6CORE_ERR_INVALID_HANDLE;
+	}
+	if (!buffer || size == 0) {
+		return XM6CORE_ERR_INVALID_ARGUMENT;
+	}
+
+	Filepath temp;
+	if (!create_temp_state_filepath(&temp)) {
+		return XM6CORE_ERR_IO;
+	}
+
+	DWORD res = ctx->vm->Save(temp);
+	if (res == 0) {
+		delete_temp_state_file(temp);
+		return XM6CORE_ERR_IO;
+	}
+
+	Fileio fio;
+	if (!fio.Open(temp, Fileio::ReadOnly)) {
+		delete_temp_state_file(temp);
+		return XM6CORE_ERR_IO;
+	}
+
+	DWORD file_size = fio.GetFileSize();
+	if (file_size == 0 || file_size > size) {
+		fio.Close();
+		delete_temp_state_file(temp);
+		return XM6CORE_ERR_INVALID_ARGUMENT;
+	}
+
+	int ret = XM6CORE_ERR_IO;
+	if (fio.Read(buffer, (int)file_size)) {
+		ret = XM6CORE_OK;
+	}
+	fio.Close();
+	delete_temp_state_file(temp);
+
+	return ret;
+}
+
+//---------------------------------------------------------------------------
+//	xm6_load_state_mem - Carga el estado desde un buffer en memoria.
+//---------------------------------------------------------------------------
+XM6CORE_API int XM6CORE_CALL xm6_load_state_mem(XM6Handle handle, const void *buffer, unsigned int size)
+{
+	XM6Context *ctx = ctx_from_handle(handle);
+	if (!ctx_valid(ctx)) {
+		return XM6CORE_ERR_INVALID_HANDLE;
+	}
+	if (!buffer || size == 0) {
+		return XM6CORE_ERR_INVALID_ARGUMENT;
+	}
+
+	Filepath temp;
+	if (!create_temp_state_filepath(&temp)) {
+		return XM6CORE_ERR_IO;
+	}
+
+	Fileio fio;
+	if (!fio.Open(temp, Fileio::WriteOnly)) {
+		delete_temp_state_file(temp);
+		return XM6CORE_ERR_IO;
+	}
+
+	if (!fio.Write(buffer, (int)size)) {
+		fio.Close();
+		delete_temp_state_file(temp);
+		return XM6CORE_ERR_IO;
+	}
+	fio.Close();
+
+	DWORD res = ctx->vm->Load(temp);
+	delete_temp_state_file(temp);
+
+	return (res != 0) ? XM6CORE_OK : XM6CORE_ERR_IO;
+}
+
+//---------------------------------------------------------------------------
+//	xm6_get_main_ram - Expone la RAM principal para cheats/achievements.
+//---------------------------------------------------------------------------
+XM6CORE_API void* XM6CORE_CALL xm6_get_main_ram(XM6Handle handle, unsigned int* out_size)
+{
+	XM6Context *ctx = ctx_from_handle(handle);
+	if (out_size) {
+		*out_size = 0;
+	}
+	if (!ctx_valid(ctx)) {
+		return NULL;
+	}
+
+	Memory *memory = (Memory*)ctx->vm->SearchDevice(MAKEID('M', 'E', 'M', ' '));
+	if (!memory) {
+		return NULL;
+	}
+
+	if (out_size) {
+		*out_size = (unsigned int)memory->GetRAMSize();
+	}
+	return (void*)memory->GetRAM();
 }
