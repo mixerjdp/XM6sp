@@ -241,6 +241,12 @@ void FASTCALL VM::SetHostMessageCallback(HostMessageCallback callback, void *use
 	host_message_user = user;
 }
 
+void FASTCALL VM::SetHostSyncCallbacks(HostSyncCallback lock_vm_cb, HostSyncCallback unlock_vm_cb, void *user)
+{
+	ASSERT(this);
+	::WindrvSetHostSyncCallbacks((windrv_host_sync_callback_t)lock_vm_cb, (windrv_host_sync_callback_t)unlock_vm_cb, user);
+}
+
 void FASTCALL VM::NotifyHostMessage(const TCHAR* message) const
 {
 	ASSERT(this);

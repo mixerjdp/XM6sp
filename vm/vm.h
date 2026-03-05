@@ -22,6 +22,7 @@ class VM
 {
 public:
 	typedef void (FASTCALL *HostMessageCallback)(const TCHAR* message, void *user);
+	typedef void (FASTCALL *HostSyncCallback)(void *user);
 
 	// 基本ファンクション
 	VM();
@@ -83,6 +84,7 @@ public:
 	void FASTCALL Interrupt() const;
 										// NMI割り込み
 	void FASTCALL SetHostMessageCallback(HostMessageCallback callback, void *user);
+	void FASTCALL SetHostSyncCallbacks(HostSyncCallback lock_vm_cb, HostSyncCallback unlock_vm_cb, void *user);
 						// Host callback for non-fatal messages
 
 	Log log;

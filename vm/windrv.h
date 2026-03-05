@@ -27,8 +27,10 @@
 
 class FileSys;
 
-void FASTCALL LockVM(void);
-void FASTCALL UnlockVM(void);
+typedef void (FASTCALL *windrv_host_sync_callback_t)(void *user);
+void FASTCALL WindrvSetHostSyncCallbacks(windrv_host_sync_callback_t lock_vm_cb, windrv_host_sync_callback_t unlock_vm_cb, void *user);
+void FASTCALL WindrvHostLockVM(void);
+void FASTCALL WindrvHostUnlockVM(void);
 
 //---------------------------------------------------------------------------
 //
@@ -248,9 +250,9 @@ public:
 										// ユニット番号取得
 	Memory* FASTCALL GetMemory() const { ASSERT(this); return memory; }
 										// ユニット番号取得
-	void FASTCALL LockXM() { ASSERT(this); if (m_bReady) ::LockVM(); }
+	void FASTCALL LockXM() { ASSERT(this); if (m_bReady) ::WindrvHostLockVM(); }
 										// VMへのアクセス開始
-	void FASTCALL UnlockXM() { ASSERT(this); if (m_bReady) ::UnlockVM(); }
+	void FASTCALL UnlockXM() { ASSERT(this); if (m_bReady) ::WindrvHostUnlockVM(); }
 										// VMへのアクセス終了
 	void FASTCALL Ready();
 										// コマンド完了を待たずにVMスレッド実行再開

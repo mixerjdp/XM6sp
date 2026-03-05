@@ -652,3 +652,4 @@ BOOL CALLBACK CApp::EnumXM6Proc(HWND hWnd, LPARAM lParam)
 }
 
 #endif	// _WIN32
+

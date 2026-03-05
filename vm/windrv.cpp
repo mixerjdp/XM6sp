@@ -8,6 +8,7 @@
 //
 //---------------------------------------------------------------------------
 
+#include <windows.h>
 #include "os.h"
 #include "xm6.h"
 #include "vm.h"
@@ -17,8 +18,30 @@
 #include "cpu.h"
 #include "config.h"
 #include "windrv.h"
-#include "mfc_com.h"
-#include "mfc_cfg.h"
+static windrv_host_sync_callback_t g_windrv_lock_vm_cb = NULL;
+static windrv_host_sync_callback_t g_windrv_unlock_vm_cb = NULL;
+static void *g_windrv_sync_user = NULL;
+
+void FASTCALL WindrvSetHostSyncCallbacks(windrv_host_sync_callback_t lock_vm_cb, windrv_host_sync_callback_t unlock_vm_cb, void *user)
+{
+	g_windrv_lock_vm_cb = lock_vm_cb;
+	g_windrv_unlock_vm_cb = unlock_vm_cb;
+	g_windrv_sync_user = user;
+}
+
+void FASTCALL WindrvHostLockVM(void)
+{
+	if (g_windrv_lock_vm_cb) {
+		g_windrv_lock_vm_cb(g_windrv_sync_user);
+	}
+}
+
+void FASTCALL WindrvHostUnlockVM(void)
+{
+	if (g_windrv_unlock_vm_cb) {
+		g_windrv_unlock_vm_cb(g_windrv_sync_user);
+	}
+}
 
 //===========================================================================
 //

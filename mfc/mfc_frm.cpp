@@ -74,7 +74,25 @@ static void XM6BootTrace(LPCTSTR format, ...)
 		::CloseHandle(h);
 	}
 }
+static void FASTCALL VMHostSyncLockCallback(void *user)
+{
+	(void)user;
+	::LockVM();
+}
 
+static void FASTCALL VMHostSyncUnlockCallback(void *user)
+{
+	(void)user;
+	::UnlockVM();
+}
+
+static void FASTCALL VMHostMessageCallback(const TCHAR* message, void *user)
+{
+	(void)user;
+	if (message) {
+		XM6BootTrace(_T("VM: %s"), message);
+	}
+}
 //===========================================================================
 //
 //	Ventana del marco
@@ -773,6 +791,8 @@ void FASTCALL CFrmWnd::InitShell()
 BOOL FASTCALL CFrmWnd::InitVM()
 {
 	::pVM = new VM;
+	::GetVM()->SetHostSyncCallbacks(VMHostSyncLockCallback, VMHostSyncUnlockCallback, NULL);
+	::GetVM()->SetHostMessageCallback(VMHostMessageCallback, NULL);
 	if (!::GetVM()->Init()) {
 		return FALSE;
 	}
