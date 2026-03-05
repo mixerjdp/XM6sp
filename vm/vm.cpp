@@ -268,6 +268,19 @@ void FASTCALL VM::SetHostServices(const host_services_t *services)
 	SetHostMessageCallback(services->message, services->user);
 	SetHostSyncCallbacks(services->lock_vm, services->unlock_vm, services->user);
 }
+
+void FASTCALL VM::SetHostFileSystem(FileSys *fs)
+{
+	ASSERT(this);
+
+	Windrv* pWindrv = (Windrv*)SearchDevice(MAKEID('W', 'D', 'R', 'V'));
+	ASSERT(pWindrv);
+	if (!pWindrv) {
+		return;
+	}
+
+	pWindrv->SetFileSys(fs);
+}
 void FASTCALL VM::NotifyHostMessage(const TCHAR* message) const
 {
 	ASSERT(this);
@@ -761,4 +774,5 @@ void FASTCALL VM::GetVersion(DWORD& major, DWORD& minor)
 	major = major_ver;
 	minor = minor_ver;
 }
+
 

@@ -85,6 +85,7 @@ public:
 	void FASTCALL SetHostMessageCallback(host_message_callback_t callback, void *user);
 	void FASTCALL SetHostSyncCallbacks(host_sync_callback_t lock_vm_cb, host_sync_callback_t unlock_vm_cb, void *user);
 	void FASTCALL SetHostServices(const host_services_t *services);
+	void FASTCALL SetHostFileSystem(FileSys *fs);
 						// Host callback for non-fatal messages
 
 	Log log;
@@ -122,5 +123,8 @@ private:
 };
 
 #endif	// vm_h
+
+
+
 
 

@@ -16,7 +16,7 @@
 #include "mfc.h"
 
 #include "device.h"
-#include "windrv.h"
+#include "host_fs.h"
 
 //■ファイルネーム検索後のチェックをシフトJISで行なわない(英語OS用)
 //#define XM6_HOST_NO_JAPANESE_NAME
@@ -598,14 +598,14 @@ public:
 										// 該当するパス名がキャッシュされているか検索する
 	CHostPath* FASTCALL CopyCache(DWORD nUnit, const BYTE* szHuman, TCHAR* szWin32Buffer = NULL);
 										// キャッシュ情報を元に、Win32名を獲得する
-	CHostPath* FASTCALL MakeCache(CWindrv* ps, DWORD nUnit, const BYTE* szHuman, TCHAR* szWin32Buffer = NULL);
+	CHostPath* FASTCALL MakeCache(WindrvContext* ps, DWORD nUnit, const BYTE* szHuman, TCHAR* szWin32Buffer = NULL);
 										// Win32名の検索に必要な情報をすべて取得する
 
 	TCHAR* FASTCALL GetBase(DWORD nUnit) const;
 										// ベースパス名を取得する
-	BOOL FASTCALL isWriteProtect(CWindrv* ps) const;
+	BOOL FASTCALL isWriteProtect(WindrvContext* ps) const;
 										// 書き込み禁止かどうか確認する
-	BOOL FASTCALL isMediaOffline(CWindrv* ps, BOOL bMedia = TRUE);
+	BOOL FASTCALL isMediaOffline(WindrvContext* ps, BOOL bMedia = TRUE);
 										// 低速メディアチェックとオフライン状態チェック
 	BYTE FASTCALL GetMediaByte(DWORD nUnit) const;
 										// メディアバイトの取得
@@ -614,10 +614,10 @@ public:
 	void FASTCALL CheckTimeout();
 										// 全ドライブのタイムアウトチェック
 #ifdef XM6_HOST_UPDATE_BY_SEQUENCE
-	void FASTCALL SetMediaUpdate(CWindrv* ps, BOOL bDisable);
+	void FASTCALL SetMediaUpdate(WindrvContext* ps, BOOL bDisable);
 										// リムーバブルメディアの状態更新を有効にする
 #endif // XM6_HOST_UPDATE_BY_SEQUENCE
-	BOOL FASTCALL CheckMediaUpdate(CWindrv* ps);
+	BOOL FASTCALL CheckMediaUpdate(WindrvContext* ps);
 										// リムーバブルメディアの状態更新チェック
 	BOOL FASTCALL CheckMediaAccess(DWORD nUnit, BOOL bErase);
 										// リムーバブルメディアのアクセス事前チェック
@@ -692,7 +692,7 @@ public:
 										// パス名のみを有効化
 	void FASTCALL SetAttribute(DWORD nHumanAttribute) { m_nHumanAttribute = nHumanAttribute; }
 										// 検索属性を設定
-	BOOL FASTCALL Find(CWindrv* ps, CHostEntry* pEntry, BOOL bRemove = FALSE);
+	BOOL FASTCALL Find(WindrvContext* ps, CHostEntry* pEntry, BOOL bRemove = FALSE);
 										// Win32名を検索 (パス名 + ファイル名(省略可) + 属性)
 	void FASTCALL AddFilename();
 										// Win32名にファイル名を追加
@@ -853,59 +853,59 @@ public:
 										// 設定適用
 
 	// 初期化・終了
-	DWORD FASTCALL Init(CWindrv* ps, DWORD nDriveMax, const BYTE* pOption);
+	DWORD FASTCALL Init(WindrvContext* ps, DWORD nDriveMax, const BYTE* pOption);
 										// $40 - 初期化
 	void FASTCALL Reset();
 										// リセット(全クローズ)
 
 	// コマンドハンドラ
-	int FASTCALL CheckDir(CWindrv* ps, const Human68k::namests_t* pNamests);
+	int FASTCALL CheckDir(WindrvContext* ps, const Human68k::namests_t* pNamests);
 										// $41 - ディレクトリチェック
-	int FASTCALL MakeDir(CWindrv* ps, const Human68k::namests_t* pNamests);
+	int FASTCALL MakeDir(WindrvContext* ps, const Human68k::namests_t* pNamests);
 										// $42 - ディレクトリ作成
-	int FASTCALL RemoveDir(CWindrv* ps, const Human68k::namests_t* pNamests);
+	int FASTCALL RemoveDir(WindrvContext* ps, const Human68k::namests_t* pNamests);
 										// $43 - ディレクトリ削除
-	int FASTCALL Rename(CWindrv* ps, const Human68k::namests_t* pNamests, const Human68k::namests_t* pNamestsNew);
+	int FASTCALL Rename(WindrvContext* ps, const Human68k::namests_t* pNamests, const Human68k::namests_t* pNamestsNew);
 										// $44 - ファイル名変更
-	int FASTCALL Delete(CWindrv* ps, const Human68k::namests_t* pNamests);
+	int FASTCALL Delete(WindrvContext* ps, const Human68k::namests_t* pNamests);
 										// $45 - ファイル削除
-	int FASTCALL Attribute(CWindrv* ps, const Human68k::namests_t* pNamests, DWORD nHumanAttribute);
+	int FASTCALL Attribute(WindrvContext* ps, const Human68k::namests_t* pNamests, DWORD nHumanAttribute);
 										// $46 - ファイル属性取得/設定
-	int FASTCALL Files(CWindrv* ps, const Human68k::namests_t* pNamests, DWORD nKey, Human68k::files_t* pFiles);
+	int FASTCALL Files(WindrvContext* ps, const Human68k::namests_t* pNamests, DWORD nKey, Human68k::files_t* pFiles);
 										// $47 - ファイル検索(First)
-	int FASTCALL NFiles(CWindrv* ps, DWORD nKey, Human68k::files_t* pFiles);
+	int FASTCALL NFiles(WindrvContext* ps, DWORD nKey, Human68k::files_t* pFiles);
 										// $48 - ファイル検索(Next)
-	int FASTCALL Create(CWindrv* ps, const Human68k::namests_t* pNamests, DWORD nKey, Human68k::fcb_t* pFcb, DWORD nHumanAttribute, BOOL bForce);
+	int FASTCALL Create(WindrvContext* ps, const Human68k::namests_t* pNamests, DWORD nKey, Human68k::fcb_t* pFcb, DWORD nHumanAttribute, BOOL bForce);
 										// $49 - ファイル作成
-	int FASTCALL Open(CWindrv* ps, const Human68k::namests_t* pNamests, DWORD nKey, Human68k::fcb_t* pFcb);
+	int FASTCALL Open(WindrvContext* ps, const Human68k::namests_t* pNamests, DWORD nKey, Human68k::fcb_t* pFcb);
 										// $4A - ファイルオープン
-	int FASTCALL Close(CWindrv* ps, DWORD nKey, Human68k::fcb_t* pFcb);
+	int FASTCALL Close(WindrvContext* ps, DWORD nKey, Human68k::fcb_t* pFcb);
 										// $4B - ファイルクローズ
-	int FASTCALL Read(CWindrv* ps, DWORD nKey, Human68k::fcb_t* pFcb, DWORD nAddress, DWORD nSize);
+	int FASTCALL Read(WindrvContext* ps, DWORD nKey, Human68k::fcb_t* pFcb, DWORD nAddress, DWORD nSize);
 										// $4C - ファイル読み込み
-	int FASTCALL Write(CWindrv* ps, DWORD nKey, Human68k::fcb_t* pFcb, DWORD nAddress, DWORD nSize);
+	int FASTCALL Write(WindrvContext* ps, DWORD nKey, Human68k::fcb_t* pFcb, DWORD nAddress, DWORD nSize);
 										// $4D - ファイル書き込み
-	int FASTCALL Seek(CWindrv* ps, DWORD nKey, Human68k::fcb_t* pFcb, DWORD nMode, int nOffset);
+	int FASTCALL Seek(WindrvContext* ps, DWORD nKey, Human68k::fcb_t* pFcb, DWORD nMode, int nOffset);
 										// $4E - ファイルシーク
-	DWORD FASTCALL TimeStamp(CWindrv* ps, DWORD nKey, Human68k::fcb_t* pFcb, WORD nFatDate, WORD nFatTime);
+	DWORD FASTCALL TimeStamp(WindrvContext* ps, DWORD nKey, Human68k::fcb_t* pFcb, WORD nFatDate, WORD nFatTime);
 										// $4F - ファイル時刻取得/設定
-	int FASTCALL GetCapacity(CWindrv* ps, Human68k::capacity_t *pCapacity);
+	int FASTCALL GetCapacity(WindrvContext* ps, Human68k::capacity_t *pCapacity);
 										// $50 - 容量取得
-	int FASTCALL CtrlDrive(CWindrv* ps, Human68k::ctrldrive_t* pCtrlDrive);
+	int FASTCALL CtrlDrive(WindrvContext* ps, Human68k::ctrldrive_t* pCtrlDrive);
 										// $51 - ドライブ状態検査/制御
-	int FASTCALL GetDPB(CWindrv* ps, Human68k::dpb_t* pDpb);
+	int FASTCALL GetDPB(WindrvContext* ps, Human68k::dpb_t* pDpb);
 										// $52 - DPB取得
-	int FASTCALL DiskRead(CWindrv* ps, DWORD nAddress, DWORD nSector, DWORD nSize);
+	int FASTCALL DiskRead(WindrvContext* ps, DWORD nAddress, DWORD nSector, DWORD nSize);
 										// $53 - セクタ読み込み
-	int FASTCALL DiskWrite(CWindrv* ps, DWORD nAddress, DWORD nSector, DWORD nSize);
+	int FASTCALL DiskWrite(WindrvContext* ps, DWORD nAddress, DWORD nSector, DWORD nSize);
 										// $54 - セクタ書き込み
-	int FASTCALL IoControl(CWindrv* ps, Human68k::ioctrl_t* pIoctrl, DWORD nFunction);
+	int FASTCALL IoControl(WindrvContext* ps, Human68k::ioctrl_t* pIoctrl, DWORD nFunction);
 										// $55 - IOCTRL
-	int FASTCALL Flush(CWindrv* ps);
+	int FASTCALL Flush(WindrvContext* ps);
 										// $56 - フラッシュ
-	int FASTCALL CheckMedia(CWindrv* ps);
+	int FASTCALL CheckMedia(WindrvContext* ps);
 										// $57 - メディア交換チェック
-	int FASTCALL Lock(CWindrv* ps);
+	int FASTCALL Lock(WindrvContext* ps);
 										// $58 - 排他制御
 
 	// ファイルシステム状態通知用 外部API
@@ -928,9 +928,9 @@ private:
 										// オプション設定
 	void FASTCALL InitOption(const BYTE* pOption);
 										// オプション初期化
-	inline BOOL FASTCALL FilesVolume(CWindrv* ps, Human68k::files_t* pFiles);
+	inline BOOL FASTCALL FilesVolume(WindrvContext* ps, Human68k::files_t* pFiles);
 										// ボリュームラベル取得
-	void FASTCALL CheckKernel(CWindrv* ps);
+	void FASTCALL CheckKernel(WindrvContext* ps);
 										// TwentyOneオプション監視
 
 	DWORD m_bResume;
@@ -994,9 +994,10 @@ public:
 private:
 	CWinFileSys m_WinFileSys;
 										// ファイルシステム
-	Windrv *m_pWindrv;
-										// Windrv
 };
 
 #endif // mfc_host_h
 #endif // _WIN32
+
+
+
