@@ -4,6 +4,7 @@
 #include "vm.h"
 #include "opm.h"
 #include "ppi.h"
+#include "config.h"
 
 struct XM6ContextRuntimeShim {
 	VM *vm;
@@ -18,6 +19,11 @@ struct XM6ContextRuntimeShim {
 	SASI *sasi;
 	SCSI *scsi;
 	PPI *ppi;
+	DWORD *opm_buf;
+	DWORD *adpcm_buf;
+	unsigned int audio_rate;
+	unsigned int audio_buf_frames;
+	Config runtime_config;
 };
 
 extern "C" XM6CORE_API int XM6CORE_CALL xm6_set_joy_type(XM6Handle handle, int port, int type)
@@ -44,5 +50,43 @@ extern "C" XM6CORE_API int XM6CORE_CALL xm6_set_joy_type(XM6Handle handle, int p
 	}
 
 	ppi->SetJoyType(port, type);
+	return XM6CORE_OK;
+}
+
+extern "C" XM6CORE_API int XM6CORE_CALL xm6_set_system_clock(XM6Handle handle, int system_clock)
+{
+	if (!handle) {
+		return XM6CORE_ERR_INVALID_HANDLE;
+	}
+	if (system_clock < 0 || system_clock > 5) {
+		return XM6CORE_ERR_INVALID_ARGUMENT;
+	}
+
+	XM6ContextRuntimeShim *ctx = reinterpret_cast<XM6ContextRuntimeShim*>(handle);
+	if (!ctx->vm) {
+		return XM6CORE_ERR_INVALID_HANDLE;
+	}
+
+	ctx->runtime_config.system_clock = system_clock;
+	ctx->vm->ApplyCfg(&ctx->runtime_config);
+	return XM6CORE_OK;
+}
+
+extern "C" XM6CORE_API int XM6CORE_CALL xm6_set_ram_size(XM6Handle handle, int ram_size)
+{
+	if (!handle) {
+		return XM6CORE_ERR_INVALID_HANDLE;
+	}
+	if (ram_size < 0 || ram_size > 5) {
+		return XM6CORE_ERR_INVALID_ARGUMENT;
+	}
+
+	XM6ContextRuntimeShim *ctx = reinterpret_cast<XM6ContextRuntimeShim*>(handle);
+	if (!ctx->vm) {
+		return XM6CORE_ERR_INVALID_HANDLE;
+	}
+
+	ctx->runtime_config.ram_size = ram_size;
+	ctx->vm->ApplyCfg(&ctx->runtime_config);
 	return XM6CORE_OK;
 }

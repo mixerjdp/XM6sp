@@ -49,6 +49,8 @@ static bool g_use_exec_to_frame = true;
 static bool g_pad_start_select_as_xf = true;
 static unsigned g_video_not_ready_count = 0;
 static int g_joy_type[2] = { 1, 0 };
+static int g_system_clock = 0;
+static int g_ram_size = 5;
 static unsigned g_hdd_boot_reset_countdown = 0;
 
 static bool g_prev_start = false;
@@ -85,6 +87,8 @@ struct xm6_api_t {
   int (XM6CORE_CALL *mount_scsi_hdd)(XM6Handle handle, int slot, const char *image_path) = nullptr;
   int (XM6CORE_CALL *eject_fdd)(XM6Handle handle, int drive, int force) = nullptr;
   int (XM6CORE_CALL *set_joy_type)(XM6Handle handle, int port, int type) = nullptr;
+  int (XM6CORE_CALL *set_system_clock)(XM6Handle handle, int system_clock) = nullptr;
+  int (XM6CORE_CALL *set_ram_size)(XM6Handle handle, int ram_size) = nullptr;
 
   int (XM6CORE_CALL *state_size)(XM6Handle handle, unsigned int *out_size) = nullptr;
   int (XM6CORE_CALL *save_state_mem)(XM6Handle handle, void *buffer, unsigned int size) = nullptr;
@@ -263,6 +267,8 @@ static bool load_xm6_api()
   load_optional_symbol(&g_xm6.mount_sasi_hdd, "xm6_mount_sasi_hdd");
   load_optional_symbol(&g_xm6.mount_scsi_hdd, "xm6_mount_scsi_hdd");
   load_optional_symbol(&g_xm6.set_joy_type, "xm6_set_joy_type");
+  load_optional_symbol(&g_xm6.set_system_clock, "xm6_set_system_clock");
+  load_optional_symbol(&g_xm6.set_ram_size, "xm6_set_ram_size");
 
   core_log(RETRO_LOG_INFO, "[xm6-libretro] Loaded xm6core.dll");
   return true;
@@ -773,6 +779,20 @@ static void apply_joy_type_options()
   }
 }
 
+static void apply_runtime_core_options()
+{
+  if (!g_xm6_handle) {
+    return;
+  }
+
+  if (g_xm6.set_system_clock) {
+    g_xm6.set_system_clock(g_xm6_handle, g_system_clock);
+  }
+  if (g_xm6.set_ram_size) {
+    g_xm6.set_ram_size(g_xm6_handle, g_ram_size);
+  }
+}
+
 static void apply_core_option_values()
 {
   if (!g_environ_cb) {
@@ -802,10 +822,27 @@ static void apply_core_option_values()
     g_pad_start_select_as_xf = true;
   }
 
+  var.key = "xm6_cpu_clock";
+  if (g_environ_cb(RETRO_ENVIRONMENT_GET_VARIABLE, &var) && var.value) {
+    if (std::strcmp(var.value, "12mhz") == 0) {
+      g_system_clock = 1;
+    } else if (std::strcmp(var.value, "16mhz") == 0) {
+      g_system_clock = 3;
+    } else if (std::strcmp(var.value, "22mhz") == 0) {
+      g_system_clock = 5;
+    } else {
+      g_system_clock = 0;
+    }
+  } else {
+    g_system_clock = 0;
+  }
+
   var.key = "xm6_joy1_type";
   if (g_environ_cb(RETRO_ENVIRONMENT_GET_VARIABLE, &var) && var.value) {
     if (std::strcmp(var.value, "cpsf_sfc") == 0) {
       g_joy_type[0] = 7;
+    } else if (std::strcmp(var.value, "cpsf_md") == 0) {
+      g_joy_type[0] = 8;
     } else if (std::strcmp(var.value, "atari_ss") == 0) {
       g_joy_type[0] = 2;
     } else if (std::strcmp(var.value, "disabled") == 0) {
@@ -821,6 +858,8 @@ static void apply_core_option_values()
   if (g_environ_cb(RETRO_ENVIRONMENT_GET_VARIABLE, &var) && var.value) {
     if (std::strcmp(var.value, "cpsf_sfc") == 0) {
       g_joy_type[1] = 7;
+    } else if (std::strcmp(var.value, "cpsf_md") == 0) {
+      g_joy_type[1] = 8;
     } else if (std::strcmp(var.value, "atari_ss") == 0) {
       g_joy_type[1] = 2;
     } else if (std::strcmp(var.value, "atari") == 0) {
@@ -830,6 +869,25 @@ static void apply_core_option_values()
     }
   } else {
     g_joy_type[1] = 0;
+  }
+
+  var.key = "xm6_ram_size";
+  if (g_environ_cb(RETRO_ENVIRONMENT_GET_VARIABLE, &var) && var.value) {
+    if (std::strcmp(var.value, "2mb") == 0) {
+      g_ram_size = 0;
+    } else if (std::strcmp(var.value, "4mb") == 0) {
+      g_ram_size = 1;
+    } else if (std::strcmp(var.value, "6mb") == 0) {
+      g_ram_size = 2;
+    } else if (std::strcmp(var.value, "8mb") == 0) {
+      g_ram_size = 3;
+    } else if (std::strcmp(var.value, "10mb") == 0) {
+      g_ram_size = 4;
+    } else {
+      g_ram_size = 5;
+    }
+  } else {
+    g_ram_size = 5;
   }
 
   var.key = "xm6_hdd_target";
@@ -861,11 +919,14 @@ static void apply_core_option_values()
     g_hdd_slot = 0;
   }
 
-  core_log(RETRO_LOG_INFO, "[xm6-libretro] options: drive=FDD%d exec_mode=%s start_select=%s joy1=%d joy2=%d hdd=%s",
+  core_log(RETRO_LOG_INFO, "[xm6-libretro] options: drive=FDD%d exec_mode=%s start_select=%s clock=%s joy1=%d joy2=%d ram=%dmb hdd=%s",
            g_disk_drive,
            g_use_exec_to_frame ? "exec_to_frame" : "legacy_exec",
            g_pad_start_select_as_xf ? "xf_keys" : "disabled",
-           g_joy_type[0], g_joy_type[1],
+           (g_system_clock == 1) ? "12mhz" :
+           (g_system_clock == 3) ? "16mhz" :
+           (g_system_clock == 5) ? "22mhz" : "10mhz",
+           g_joy_type[0], g_joy_type[1], (g_ram_size + 1) * 2,
            g_hdd_target_auto ? "AUTO" : (g_hdd_is_scsi ? (g_hdd_slot ? "SCSI1" : "SCSI0")
                                                         : (g_hdd_slot ? "SASI1" : "SASI0")));
 }
@@ -883,10 +944,14 @@ static void register_core_options()
       "Frame execution mode; exec_to_frame|legacy_exec" },
     { "xm6_pad_start_select",
       "Map Start/Select to XF keys; xf_keys|disabled" },
+    { "xm6_cpu_clock",
+      "System clock; 10mhz|12mhz|16mhz|22mhz" },
     { "xm6_joy1_type",
-      "Joystick Port 1 Type; atari|atari_ss|cpsf_sfc|disabled" },
+      "Joystick Port 1 Type; atari|atari_ss|cpsf_sfc|cpsf_md|disabled" },
     { "xm6_joy2_type",
-      "Joystick Port 2 Type; disabled|atari|atari_ss|cpsf_sfc" },
+      "Joystick Port 2 Type; disabled|atari|atari_ss|cpsf_sfc|cpsf_md" },
+    { "xm6_ram_size",
+      "Main RAM size; 12mb|10mb|8mb|6mb|4mb|2mb" },
     { "xm6_hdd_target",
       "HDF mount target; auto|sasi0|sasi1|scsi0|scsi1" },
     { nullptr, nullptr }
@@ -1318,6 +1383,8 @@ void retro_init(void)
   g_prev_start = false;
   g_prev_select = false;
   g_video_not_ready_count = 0;
+  g_system_clock = 0;
+  g_ram_size = 5;
   g_audio_buffer.clear();
 
   load_xm6_api();
@@ -1399,6 +1466,7 @@ bool retro_load_game(const struct retro_game_info *info)
   }
 
   apply_core_option_values();
+  apply_runtime_core_options();
   apply_joy_type_options();
 
   enum retro_pixel_format fmt = RETRO_PIXEL_FORMAT_XRGB8888;
@@ -1457,19 +1525,7 @@ void retro_unload_game(void)
   if (g_xm6_handle && g_xm6.eject_fdd && !g_content_is_hdd) {
     g_xm6.eject_fdd(g_xm6_handle, g_disk_drive, 1);
   }
-  g_game_loaded = false;
-  g_disk_paths.clear();
-  g_disk_labels.clear();
-  g_disk_index = 0;
-  g_disk_ejected = false;
-  g_content_is_hdd = false;
-  g_hdd_is_scsi = false;
-  g_hdd_slot = 0;
-  g_hdd_target_auto = true;
-  g_hdd_boot_reset_countdown = 0;
-  g_prev_start = false;
-  g_prev_select = false;
-  g_video_not_ready_count = 0;
+  destroy_xm6_handle();
 }
 
 unsigned retro_get_region(void)
@@ -1495,7 +1551,21 @@ void retro_run(void)
       const int old_hdd_slot = g_hdd_slot;
       const int old_joy0 = g_joy_type[0];
       const int old_joy1 = g_joy_type[1];
+      const int old_system_clock = g_system_clock;
+      const int old_ram_size = g_ram_size;
       apply_core_option_values();
+      if (old_system_clock != g_system_clock || old_ram_size != g_ram_size) {
+        apply_runtime_core_options();
+        core_log(RETRO_LOG_INFO, "[xm6-libretro] Runtime config changed (clock=%s, ram=%dMB), resetting VM",
+                 (g_system_clock == 1) ? "12mhz" :
+                 (g_system_clock == 3) ? "16mhz" :
+                 (g_system_clock == 5) ? "22mhz" : "10mhz",
+                 (g_ram_size + 1) * 2);
+        if (g_xm6.reset) {
+          g_xm6.reset(g_xm6_handle);
+        }
+        g_video_not_ready_count = 0;
+      }
       if (old_joy0 != g_joy_type[0] || old_joy1 != g_joy_type[1]) {
         apply_joy_type_options();
       }
