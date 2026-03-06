@@ -156,6 +156,9 @@ static void apply_default_runtime_config(XM6Context *ctx)
 	config->mem_type = Memory::SASI;
 
 	config->sample_rate = 5;
+	config->master_volume = 100;
+	config->fm_volume = 54;
+	config->adpcm_volume = 52;
 	config->fm_enable = TRUE;
 	config->adpcm_enable = TRUE;
 	config->kbd_connect = TRUE;
@@ -917,14 +920,14 @@ XM6CORE_API int XM6CORE_CALL xm6_audio_configure(
 	}
 	ctx->opm_engine->Init(4000000, sample_rate, true);
 	ctx->opm_engine->Reset();
-	ctx->opm_engine->SetVolume(54);
+	ctx->opm_engine->SetVolume(ctx->runtime_config.fm_volume);
 
 	ctx->opmif->InitBuf((DWORD)sample_rate);
 	ctx->opmif->SetEngine(ctx->opm_engine);
 	ctx->opmif->EnableFM(TRUE);
 	ctx->adpcm->InitBuf((DWORD)sample_rate);
 	ctx->adpcm->EnableADPCM(TRUE);
-	ctx->adpcm->SetVolume(52);
+	ctx->adpcm->SetVolume(ctx->runtime_config.adpcm_volume);
 
 	// Realocar buffer temporal de mezcla (stereo: 2 DWORDs por frame)
 	// Tamaño máximo razonable: 1 segundo de audio
@@ -1015,8 +1018,14 @@ XM6CORE_API int XM6CORE_CALL xm6_audio_mix(
 	// Convertir int32 stereo -> int16 stereo interleaved
 	const int *src = (const int*)ctx->opm_buf;
 	unsigned int total_samples = frames * 2;  // L + R
+	const int master = (ctx->runtime_config.master_volume < 0) ? 0 :
+		(ctx->runtime_config.master_volume > 100 ? 100 : ctx->runtime_config.master_volume);
 	for (unsigned int i = 0; i < total_samples; i++) {
-		out_interleaved_stereo[i] = saturate_s16(src[i]);
+		int mixed = src[i];
+		if (master != 100) {
+			mixed = (mixed * master) / 100;
+		}
+		out_interleaved_stereo[i] = saturate_s16(mixed);
 	}
 
 	*out_frames = frames;

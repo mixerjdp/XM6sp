@@ -46,12 +46,20 @@ static int g_hdd_slot = 0;
 static bool g_hdd_target_auto = true;
 
 static bool g_use_exec_to_frame = true;
-static bool g_pad_start_select_as_xf = true;
+enum start_select_mode_t {
+  START_SELECT_DISABLED = 0,
+  START_SELECT_XF_KEYS = 1,
+  START_SELECT_F_KEYS = 2
+};
+static int g_pad_start_select_mode = START_SELECT_XF_KEYS;
 static unsigned g_video_not_ready_count = 0;
 static int g_joy_type[2] = { 1, 0 };
 static int g_system_clock = 0;
 static int g_ram_size = 5;
 static bool g_fast_floppy = false;
+static int g_master_volume = 100;
+static int g_fm_volume = 54;
+static int g_adpcm_volume = 52;
 static unsigned g_hdd_boot_reset_countdown = 0;
 
 static bool g_prev_start = false;
@@ -91,6 +99,9 @@ struct xm6_api_t {
   int (XM6CORE_CALL *set_system_clock)(XM6Handle handle, int system_clock) = nullptr;
   int (XM6CORE_CALL *set_ram_size)(XM6Handle handle, int ram_size) = nullptr;
   int (XM6CORE_CALL *set_fast_floppy)(XM6Handle handle, int enabled) = nullptr;
+  int (XM6CORE_CALL *set_master_volume)(XM6Handle handle, int volume) = nullptr;
+  int (XM6CORE_CALL *set_fm_volume)(XM6Handle handle, int volume) = nullptr;
+  int (XM6CORE_CALL *set_adpcm_volume)(XM6Handle handle, int volume) = nullptr;
 
   int (XM6CORE_CALL *state_size)(XM6Handle handle, unsigned int *out_size) = nullptr;
   int (XM6CORE_CALL *save_state_mem)(XM6Handle handle, void *buffer, unsigned int size) = nullptr;
@@ -272,6 +283,9 @@ static bool load_xm6_api()
   load_optional_symbol(&g_xm6.set_system_clock, "xm6_set_system_clock");
   load_optional_symbol(&g_xm6.set_ram_size, "xm6_set_ram_size");
   load_optional_symbol(&g_xm6.set_fast_floppy, "xm6_set_fast_floppy");
+  load_optional_symbol(&g_xm6.set_master_volume, "xm6_set_master_volume");
+  load_optional_symbol(&g_xm6.set_fm_volume, "xm6_set_fm_volume");
+  load_optional_symbol(&g_xm6.set_adpcm_volume, "xm6_set_adpcm_volume");
 
   core_log(RETRO_LOG_INFO, "[xm6-libretro] Loaded xm6core.dll");
   return true;
@@ -797,6 +811,15 @@ static void apply_runtime_core_options()
   if (g_xm6.set_fast_floppy) {
     g_xm6.set_fast_floppy(g_xm6_handle, g_fast_floppy ? 1 : 0);
   }
+  if (g_xm6.set_master_volume) {
+    g_xm6.set_master_volume(g_xm6_handle, g_master_volume);
+  }
+  if (g_xm6.set_fm_volume) {
+    g_xm6.set_fm_volume(g_xm6_handle, g_fm_volume);
+  }
+  if (g_xm6.set_adpcm_volume) {
+    g_xm6.set_adpcm_volume(g_xm6_handle, g_adpcm_volume);
+  }
 }
 
 static void apply_core_option_values()
@@ -823,9 +846,15 @@ static void apply_core_option_values()
 
   var.key = "xm6_pad_start_select";
   if (g_environ_cb(RETRO_ENVIRONMENT_GET_VARIABLE, &var) && var.value) {
-    g_pad_start_select_as_xf = std::strcmp(var.value, "xf_keys") == 0;
+    if (std::strcmp(var.value, "f_keys") == 0) {
+      g_pad_start_select_mode = START_SELECT_F_KEYS;
+    } else if (std::strcmp(var.value, "disabled") == 0) {
+      g_pad_start_select_mode = START_SELECT_DISABLED;
+    } else {
+      g_pad_start_select_mode = START_SELECT_XF_KEYS;
+    }
   } else {
-    g_pad_start_select_as_xf = true;
+    g_pad_start_select_mode = START_SELECT_XF_KEYS;
   }
 
   var.key = "xm6_cpu_clock";
@@ -903,6 +932,27 @@ static void apply_core_option_values()
     g_fast_floppy = false;
   }
 
+  var.key = "xm6_master_volume";
+  if (g_environ_cb(RETRO_ENVIRONMENT_GET_VARIABLE, &var) && var.value) {
+    g_master_volume = std::atoi(var.value);
+  } else {
+    g_master_volume = 100;
+  }
+
+  var.key = "xm6_fm_volume";
+  if (g_environ_cb(RETRO_ENVIRONMENT_GET_VARIABLE, &var) && var.value) {
+    g_fm_volume = std::atoi(var.value);
+  } else {
+    g_fm_volume = 54;
+  }
+
+  var.key = "xm6_adpcm_volume";
+  if (g_environ_cb(RETRO_ENVIRONMENT_GET_VARIABLE, &var) && var.value) {
+    g_adpcm_volume = std::atoi(var.value);
+  } else {
+    g_adpcm_volume = 52;
+  }
+
   var.key = "xm6_hdd_target";
   if (g_environ_cb(RETRO_ENVIRONMENT_GET_VARIABLE, &var) && var.value) {
     if (std::strcmp(var.value, "auto") == 0) {
@@ -932,15 +982,17 @@ static void apply_core_option_values()
     g_hdd_slot = 0;
   }
 
-  core_log(RETRO_LOG_INFO, "[xm6-libretro] options: drive=FDD%d exec_mode=%s start_select=%s clock=%s joy1=%d joy2=%d ram=%dmb fast_floppy=%s hdd=%s",
+  core_log(RETRO_LOG_INFO, "[xm6-libretro] options: drive=FDD%d exec_mode=%s start_select=%s clock=%s joy1=%d joy2=%d ram=%dmb fast_floppy=%s vol(master=%d fm=%d adpcm=%d) hdd=%s",
            g_disk_drive,
            g_use_exec_to_frame ? "exec_to_frame" : "legacy_exec",
-           g_pad_start_select_as_xf ? "xf_keys" : "disabled",
+           (g_pad_start_select_mode == START_SELECT_F_KEYS) ? "f_keys" :
+           (g_pad_start_select_mode == START_SELECT_XF_KEYS) ? "xf_keys" : "disabled",
            (g_system_clock == 1) ? "12mhz" :
            (g_system_clock == 3) ? "16mhz" :
            (g_system_clock == 5) ? "22mhz" : "10mhz",
            g_joy_type[0], g_joy_type[1], (g_ram_size + 1) * 2,
            g_fast_floppy ? "enabled" : "disabled",
+           g_master_volume, g_fm_volume, g_adpcm_volume,
            g_hdd_target_auto ? "AUTO" : (g_hdd_is_scsi ? (g_hdd_slot ? "SCSI1" : "SCSI0")
                                                         : (g_hdd_slot ? "SASI1" : "SASI0")));
 }
@@ -957,7 +1009,7 @@ static void register_core_options()
     { "xm6_exec_mode",
       "Frame execution mode; exec_to_frame|legacy_exec" },
     { "xm6_pad_start_select",
-      "Map Start/Select to XF keys; xf_keys|disabled" },
+      "Map Start/Select to keys; xf_keys|f_keys|disabled" },
     { "xm6_cpu_clock",
       "System clock; 10mhz|12mhz|16mhz|22mhz" },
     { "xm6_joy1_type",
@@ -965,9 +1017,15 @@ static void register_core_options()
     { "xm6_joy2_type",
       "Joystick Port 2 Type; disabled|atari|atari_ss|cpsf_sfc|cpsf_md" },
     { "xm6_ram_size",
-      "Main RAM size; 12mb|10mb|8mb|6mb|4mb|2mb" },
+      "Main RAM size (Reset); 12mb|10mb|8mb|6mb|4mb|2mb" },
     { "xm6_fast_floppy",
       "Fast floppy; disabled|enabled" },
+    { "xm6_master_volume",
+      "Master volume; 100|90|80|70|60|50|40|30|20|10|0" },
+    { "xm6_fm_volume",
+      "FM volume; 54|100|90|80|70|60|50|40|30|20|10|0" },
+    { "xm6_adpcm_volume",
+      "ADPCM volume; 52|100|90|80|70|60|50|40|30|20|10|0" },
     { "xm6_hdd_target",
       "HDF mount target; auto|sasi0|sasi1|scsi0|scsi1" },
     { nullptr, nullptr }
@@ -1183,13 +1241,15 @@ static void poll_and_push_input()
   g_xm6.input_joy(g_xm6_handle, 0, axes, buttons);
   g_xm6.input_joy(g_xm6_handle, 1, axes, buttons);
 
-  if (g_pad_start_select_as_xf && g_xm6.input_key) {
+  if (g_pad_start_select_mode != START_SELECT_DISABLED && g_xm6.input_key) {
+    const unsigned start_key = (g_pad_start_select_mode == START_SELECT_F_KEYS) ? 0x63 : 0x55;
+    const unsigned select_key = (g_pad_start_select_mode == START_SELECT_F_KEYS) ? 0x64 : 0x57;
     if (start_pressed != g_prev_start) {
-      g_xm6.input_key(g_xm6_handle, 0x55, start_pressed ? 1 : 0);  // XF1
+      g_xm6.input_key(g_xm6_handle, start_key, start_pressed ? 1 : 0);
       g_prev_start = start_pressed;
     }
     if (select_pressed != g_prev_select) {
-      g_xm6.input_key(g_xm6_handle, 0x57, select_pressed ? 1 : 0); // XF3
+      g_xm6.input_key(g_xm6_handle, select_key, select_pressed ? 1 : 0);
       g_prev_select = select_pressed;
     }
   } else {
@@ -1398,10 +1458,14 @@ void retro_init(void)
   g_hdd_boot_reset_countdown = 0;
   g_prev_start = false;
   g_prev_select = false;
+  g_pad_start_select_mode = START_SELECT_XF_KEYS;
   g_video_not_ready_count = 0;
   g_system_clock = 0;
   g_ram_size = 5;
   g_fast_floppy = false;
+  g_master_volume = 100;
+  g_fm_volume = 54;
+  g_adpcm_volume = 52;
   g_audio_buffer.clear();
 
   load_xm6_api();
@@ -1571,24 +1635,44 @@ void retro_run(void)
       const int old_system_clock = g_system_clock;
       const int old_ram_size = g_ram_size;
       const bool old_fast_floppy = g_fast_floppy;
+      const int old_master_volume = g_master_volume;
+      const int old_fm_volume = g_fm_volume;
+      const int old_adpcm_volume = g_adpcm_volume;
       apply_core_option_values();
       if (old_system_clock != g_system_clock || old_ram_size != g_ram_size) {
         apply_runtime_core_options();
-        core_log(RETRO_LOG_INFO, "[xm6-libretro] Runtime config changed (clock=%s, ram=%dMB), resetting VM",
-                 (g_system_clock == 1) ? "12mhz" :
-                 (g_system_clock == 3) ? "16mhz" :
-                 (g_system_clock == 5) ? "22mhz" : "10mhz",
-                 (g_ram_size + 1) * 2);
-        if (g_xm6.reset) {
-          g_xm6.reset(g_xm6_handle);
+        if (old_system_clock != g_system_clock && old_ram_size != g_ram_size) {
+          core_log(RETRO_LOG_INFO,
+                   "[xm6-libretro] Clock changed to %s. RAM changed to %dMB and will apply after manual reset.",
+                   (g_system_clock == 1) ? "12mhz" :
+                   (g_system_clock == 3) ? "16mhz" :
+                   (g_system_clock == 5) ? "22mhz" : "10mhz",
+                   (g_ram_size + 1) * 2);
+        } else if (old_system_clock != g_system_clock) {
+          core_log(RETRO_LOG_INFO,
+                   "[xm6-libretro] System clock changed to %s.",
+                   (g_system_clock == 1) ? "12mhz" :
+                   (g_system_clock == 3) ? "16mhz" :
+                   (g_system_clock == 5) ? "22mhz" : "10mhz");
+        } else {
+          core_log(RETRO_LOG_INFO,
+                   "[xm6-libretro] RAM size changed to %dMB and will apply after manual reset.",
+                   (g_ram_size + 1) * 2);
         }
-        g_video_not_ready_count = 0;
       }
       if (old_fast_floppy != g_fast_floppy &&
           !(old_system_clock != g_system_clock || old_ram_size != g_ram_size)) {
         apply_runtime_core_options();
         core_log(RETRO_LOG_INFO, "[xm6-libretro] Fast floppy %s",
                  g_fast_floppy ? "enabled" : "disabled");
+      }
+      if (old_master_volume != g_master_volume ||
+          old_fm_volume != g_fm_volume ||
+          old_adpcm_volume != g_adpcm_volume) {
+        apply_runtime_core_options();
+        core_log(RETRO_LOG_INFO,
+                 "[xm6-libretro] Audio volumes changed (master=%d fm=%d adpcm=%d)",
+                 g_master_volume, g_fm_volume, g_adpcm_volume);
       }
       if (old_joy0 != g_joy_type[0] || old_joy1 != g_joy_type[1]) {
         apply_joy_type_options();

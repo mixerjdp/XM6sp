@@ -3,6 +3,7 @@
 #include "xm6core.h"
 #include "vm.h"
 #include "opm.h"
+#include "adpcm.h"
 #include "ppi.h"
 #include "config.h"
 
@@ -104,5 +105,65 @@ extern "C" XM6CORE_API int XM6CORE_CALL xm6_set_fast_floppy(XM6Handle handle, in
 
 	ctx->runtime_config.floppy_speed = enabled ? TRUE : FALSE;
 	ctx->vm->ApplyCfg(&ctx->runtime_config);
+	return XM6CORE_OK;
+}
+
+static int clamp_volume(int volume)
+{
+	if (volume < 0) return 0;
+	if (volume > 100) return 100;
+	return volume;
+}
+
+extern "C" XM6CORE_API int XM6CORE_CALL xm6_set_master_volume(XM6Handle handle, int volume)
+{
+	if (!handle) {
+		return XM6CORE_ERR_INVALID_HANDLE;
+	}
+
+	XM6ContextRuntimeShim *ctx = reinterpret_cast<XM6ContextRuntimeShim*>(handle);
+	if (!ctx->vm) {
+		return XM6CORE_ERR_INVALID_HANDLE;
+	}
+
+	ctx->runtime_config.master_volume = clamp_volume(volume);
+	return XM6CORE_OK;
+}
+
+extern "C" XM6CORE_API int XM6CORE_CALL xm6_set_fm_volume(XM6Handle handle, int volume)
+{
+	if (!handle) {
+		return XM6CORE_ERR_INVALID_HANDLE;
+	}
+
+	XM6ContextRuntimeShim *ctx = reinterpret_cast<XM6ContextRuntimeShim*>(handle);
+	if (!ctx->vm) {
+		return XM6CORE_ERR_INVALID_HANDLE;
+	}
+
+	volume = clamp_volume(volume);
+	ctx->runtime_config.fm_volume = volume;
+	if (ctx->opm_engine) {
+		ctx->opm_engine->SetVolume(volume);
+	}
+	return XM6CORE_OK;
+}
+
+extern "C" XM6CORE_API int XM6CORE_CALL xm6_set_adpcm_volume(XM6Handle handle, int volume)
+{
+	if (!handle) {
+		return XM6CORE_ERR_INVALID_HANDLE;
+	}
+
+	XM6ContextRuntimeShim *ctx = reinterpret_cast<XM6ContextRuntimeShim*>(handle);
+	if (!ctx->vm) {
+		return XM6CORE_ERR_INVALID_HANDLE;
+	}
+
+	volume = clamp_volume(volume);
+	ctx->runtime_config.adpcm_volume = volume;
+	if (ctx->adpcm) {
+		ctx->adpcm->SetVolume(volume);
+	}
 	return XM6CORE_OK;
 }

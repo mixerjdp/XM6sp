@@ -87,6 +87,9 @@ XM6CORE_API int XM6CORE_CALL xm6_set_joy_type(XM6Handle handle, int port, int ty
 XM6CORE_API int XM6CORE_CALL xm6_set_system_clock(XM6Handle handle, int system_clock);
 XM6CORE_API int XM6CORE_CALL xm6_set_ram_size(XM6Handle handle, int ram_size);
 XM6CORE_API int XM6CORE_CALL xm6_set_fast_floppy(XM6Handle handle, int enabled);
+XM6CORE_API int XM6CORE_CALL xm6_set_master_volume(XM6Handle handle, int volume);
+XM6CORE_API int XM6CORE_CALL xm6_set_fm_volume(XM6Handle handle, int volume);
+XM6CORE_API int XM6CORE_CALL xm6_set_adpcm_volume(XM6Handle handle, int volume);
 
 XM6CORE_API int XM6CORE_CALL xm6_mount_fdd(XM6Handle handle, int drive, const char* image_path, int media_hint);
 XM6CORE_API int XM6CORE_CALL xm6_eject_fdd(XM6Handle handle, int drive, int force);
