@@ -297,7 +297,6 @@ void FASTCALL CRTC::ApplyCfg(const Config *config)
 {
 	ASSERT(this);
 	ASSERT(config);
-	printf("%d", config);
 	LOG0(Log::Normal, "ê›íËìKóp");
 }
 

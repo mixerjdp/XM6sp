@@ -1,0 +1,48 @@
+#include "os.h"
+#include "xm6.h"
+#include "xm6core.h"
+#include "vm.h"
+#include "opm.h"
+#include "ppi.h"
+
+struct XM6ContextRuntimeShim {
+	VM *vm;
+	Scheduler *scheduler;
+	Render *render;
+	Keyboard *keyboard;
+	Mouse *mouse;
+	FDD *fdd;
+	OPMIF *opmif;
+	FM::OPM *opm_engine;
+	ADPCM *adpcm;
+	SASI *sasi;
+	SCSI *scsi;
+	PPI *ppi;
+};
+
+extern "C" XM6CORE_API int XM6CORE_CALL xm6_set_joy_type(XM6Handle handle, int port, int type)
+{
+	if (!handle) {
+		return XM6CORE_ERR_INVALID_HANDLE;
+	}
+	if (port < 0 || port >= PPI::PortMax) {
+		return XM6CORE_ERR_INVALID_ARGUMENT;
+	}
+
+	XM6ContextRuntimeShim *ctx = reinterpret_cast<XM6ContextRuntimeShim*>(handle);
+	if (!ctx->vm) {
+		return XM6CORE_ERR_INVALID_HANDLE;
+	}
+
+	PPI *ppi = ctx->ppi;
+	if (!ppi) {
+		ppi = (PPI*)ctx->vm->SearchDevice(MAKEID('P', 'P', 'I', ' '));
+		if (!ppi) {
+			return XM6CORE_ERR_NOT_READY;
+		}
+		ctx->ppi = ppi;
+	}
+
+	ppi->SetJoyType(port, type);
+	return XM6CORE_OK;
+}

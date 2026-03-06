@@ -29,6 +29,7 @@
 #include "adpcm.h"
 #include "sasi.h"
 #include "scsi.h"
+#include "config.h"
 #include "filepath.h"
 #include "fileio.h"
 #include <cstring>
@@ -69,6 +70,9 @@ struct XM6Context {
 	unsigned int audio_rate;
 	unsigned int audio_buf_frames;
 
+	// Runtime config applied to the VM devices
+	Config runtime_config;
+
 	// Message callback (client-side)
 	xm6_message_callback_t msg_callback;
 	void *msg_user;
@@ -87,6 +91,43 @@ static inline XM6Context* ctx_from_handle(XM6Handle handle)
 static inline bool ctx_valid(XM6Context *ctx)
 {
 	return (ctx != NULL && ctx->vm != NULL);
+}
+
+static void apply_runtime_config(XM6Context *ctx)
+{
+	ctx->vm->ApplyCfg(&ctx->runtime_config);
+}
+
+static void apply_default_runtime_config(XM6Context *ctx)
+{
+	Config *config = &ctx->runtime_config;
+	std::memset(config, 0, sizeof(*config));
+
+	config->system_clock = 0;
+	config->mpu_fullspeed = FALSE;
+	config->vm_fullspeed = FALSE;
+	config->ram_size = 5;
+	config->ram_sramsync = TRUE;
+	config->mem_type = Memory::SASI;
+
+	config->sample_rate = 5;
+	config->fm_enable = TRUE;
+	config->adpcm_enable = TRUE;
+	config->kbd_connect = TRUE;
+	config->mouse_mid = TRUE;
+
+	config->joy_type[0] = 1;
+	config->joy_type[1] = 0;
+
+	config->sasi_drives = 0;
+	config->sasi_sramsync = TRUE;
+	config->sxsi_drives = 0;
+	config->scsi_ilevel = 1;
+	config->scsi_drives = 0;
+	config->scsi_sramsync = TRUE;
+	config->sasi_parity = TRUE;
+
+	apply_runtime_config(ctx);
 }
 
 static bool create_temp_state_filepath(Filepath *out_path)
@@ -173,6 +214,8 @@ XM6CORE_API XM6Handle XM6CORE_CALL xm6_create(void)
 	ctx->sasi      = (SASI*)ctx->vm->SearchDevice(MAKEID('S', 'A', 'S', 'I'));
 	ctx->scsi      = (SCSI*)ctx->vm->SearchDevice(MAKEID('S', 'C', 'S', 'I'));
 	ctx->ppi       = (PPI*)ctx->vm->SearchDevice(MAKEID('P', 'P', 'I', ' '));
+
+	apply_default_runtime_config(ctx);
 
 	return reinterpret_cast<XM6Handle>(ctx);
 }
@@ -522,7 +565,20 @@ XM6CORE_API int XM6CORE_CALL xm6_mount_sasi_hdd(
 
 	Filepath path;
 	path.SetPath(image_path);
-	ctx->sasi->SetSASIPath(slot, path);
+
+	int i;
+
+	ctx->runtime_config.mem_type = Memory::SASI;
+	ctx->runtime_config.scsi_drives = 0;
+	ctx->runtime_config.sxsi_drives = 0;
+	for (i=0; i<5; i++) {
+		ctx->runtime_config.scsi_file[i][0] = _T('\0');
+	}
+	if (ctx->runtime_config.sasi_drives <= slot) {
+		ctx->runtime_config.sasi_drives = slot + 1;
+	}
+	::lstrcpyn(ctx->runtime_config.sasi_file[slot], path.GetPath(), FILEPATH_MAX);
+	apply_runtime_config(ctx);
 
 	return XM6CORE_OK;
 }
@@ -538,13 +594,27 @@ XM6CORE_API int XM6CORE_CALL xm6_mount_scsi_hdd(
 		return XM6CORE_ERR_INVALID_HANDLE;
 	}
 
-	if (!ctx->sasi || slot < 0 || slot >= 6 || !image_path) {
+	if (!ctx->scsi || slot < 0 || slot >= 5 || !image_path) {
 		return XM6CORE_ERR_INVALID_ARGUMENT;
 	}
 
 	Filepath path;
+	int required_drives;
 	path.SetPath(image_path);
-	ctx->sasi->SetSCSIPath(slot, path);
+
+	int i;
+
+	ctx->runtime_config.mem_type = Memory::SCSIExt;
+	ctx->runtime_config.sasi_drives = 0;
+	for (i=0; i<16; i++) {
+		ctx->runtime_config.sasi_file[i][0] = _T('\0');
+	}
+	required_drives = (slot == 0) ? 1 : (slot + 3);
+	if (ctx->runtime_config.scsi_drives < required_drives) {
+		ctx->runtime_config.scsi_drives = required_drives;
+	}
+	::lstrcpyn(ctx->runtime_config.scsi_file[slot], path.GetPath(), FILEPATH_MAX);
+	apply_runtime_config(ctx);
 
 	return XM6CORE_OK;
 }

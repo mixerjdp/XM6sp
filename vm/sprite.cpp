@@ -264,7 +264,6 @@ void FASTCALL Sprite::ApplyCfg(const Config *config)
 {
 	ASSERT(config);
 	LOG0(Log::Normal, "ê›íËìKóp");
-	printf("%d", config);
 }
 
 //---------------------------------------------------------------------------

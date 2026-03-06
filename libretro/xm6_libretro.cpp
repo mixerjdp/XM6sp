@@ -40,10 +40,16 @@ static std::vector<std::string> g_disk_labels;
 static unsigned g_disk_index = 0;
 static int g_disk_drive = 0;
 static bool g_disk_ejected = false;
+static bool g_content_is_hdd = false;
+static bool g_hdd_is_scsi = false;
+static int g_hdd_slot = 0;
+static bool g_hdd_target_auto = true;
 
 static bool g_use_exec_to_frame = true;
 static bool g_pad_start_select_as_xf = true;
 static unsigned g_video_not_ready_count = 0;
+static int g_joy_type[2] = { 1, 0 };
+static unsigned g_hdd_boot_reset_countdown = 0;
 
 static bool g_prev_start = false;
 static bool g_prev_select = false;
@@ -74,7 +80,10 @@ struct xm6_api_t {
   int (XM6CORE_CALL *input_key)(XM6Handle handle, unsigned int xm6_keycode, int pressed) = nullptr;
 
   int (XM6CORE_CALL *mount_fdd)(XM6Handle handle, int drive, const char *image_path, int media_hint) = nullptr;
+  int (XM6CORE_CALL *mount_sasi_hdd)(XM6Handle handle, int slot, const char *image_path) = nullptr;
+  int (XM6CORE_CALL *mount_scsi_hdd)(XM6Handle handle, int slot, const char *image_path) = nullptr;
   int (XM6CORE_CALL *eject_fdd)(XM6Handle handle, int drive, int force) = nullptr;
+  int (XM6CORE_CALL *set_joy_type)(XM6Handle handle, int port, int type) = nullptr;
 
   int (XM6CORE_CALL *state_size)(XM6Handle handle, unsigned int *out_size) = nullptr;
   int (XM6CORE_CALL *save_state_mem)(XM6Handle handle, void *buffer, unsigned int size) = nullptr;
@@ -240,6 +249,9 @@ static bool load_xm6_api()
   load_optional_symbol(&g_xm6.video_attach_default_buffer, "xm6_video_attach_default_buffer");
   load_optional_symbol(&g_xm6.exec_to_frame, "xm6_exec_to_frame");
   load_optional_symbol(&g_xm6.set_system_dir, "xm6_set_system_dir");
+  load_optional_symbol(&g_xm6.mount_sasi_hdd, "xm6_mount_sasi_hdd");
+  load_optional_symbol(&g_xm6.mount_scsi_hdd, "xm6_mount_scsi_hdd");
+  load_optional_symbol(&g_xm6.set_joy_type, "xm6_set_joy_type");
 
   core_log(RETRO_LOG_INFO, "[xm6-libretro] Loaded xm6core.dll");
   return true;
@@ -281,6 +293,31 @@ static bool ensure_xm6_handle()
   return true;
 }
 
+static void run_hdd_boot_warmup_and_reset()
+{
+  if (!g_xm6_handle) {
+    return;
+  }
+
+  // HDF boot is sensitive to when the first reset happens. A short bounded
+  // warm-up reproduces the "mount, begin boot, then reset" pattern that the
+  // user observed to be stable, without waiting long enough for RetroArch to
+  // hang on problematic images.
+  const unsigned warmup_frames = 8;
+  core_log(RETRO_LOG_INFO,
+           "[xm6-libretro] Performing immediate HDD boot stabilization (%u warm-up frames)",
+           warmup_frames);
+
+  for (unsigned i = 0; i < warmup_frames; ++i) {
+    if (g_xm6.exec) {
+      g_xm6.exec(g_xm6_handle, 36000);
+    }
+  }
+
+  g_xm6.reset(g_xm6_handle);
+  g_video_not_ready_count = 0;
+}
+
 static void destroy_xm6_handle()
 {
   if (g_xm6_handle && g_xm6.destroy) {
@@ -292,6 +329,11 @@ static void destroy_xm6_handle()
   g_disk_labels.clear();
   g_disk_index = 0;
   g_disk_ejected = false;
+  g_content_is_hdd = false;
+  g_hdd_is_scsi = false;
+  g_hdd_slot = 0;
+  g_hdd_target_auto = true;
+  g_hdd_boot_reset_countdown = 0;
   g_prev_start = false;
   g_prev_select = false;
 }
@@ -384,6 +426,64 @@ static std::string join_path(const std::string &dir, const char *name)
   return dir + "\\" + name;
 }
 
+static bool system_file_exists(const char *name, unsigned long long *out_size = nullptr)
+{
+  std::string sys_dir;
+  if (!get_frontend_system_directory(&sys_dir)) {
+    if (out_size) {
+      *out_size = 0;
+    }
+    return false;
+  }
+
+  return get_file_size_bytes(join_path(sys_dir, name), out_size);
+}
+
+static bool have_scsi_ext_rom()
+{
+  unsigned long long size = 0;
+  return system_file_exists("SCSIEXROM.DAT", &size) &&
+         (size == 8192ull || size == 8160ull || size == 131072ull);
+}
+
+static bool is_classic_sasi_hdf_size(unsigned long long size)
+{
+  return size == 0x9f5400ull || size == 0x13c9800ull || size == 0x2793000ull;
+}
+
+static void resolve_hdd_target_for_path(const std::string &path, bool *out_is_scsi,
+                                        int *out_slot, const char **out_reason)
+{
+  bool is_scsi = g_hdd_is_scsi;
+  int slot = g_hdd_slot;
+  const char *reason = g_hdd_target_auto ? "auto fallback" : "manual override";
+
+  if (g_hdd_target_auto) {
+    unsigned long long size = 0;
+    if (get_file_size_bytes(path, &size)) {
+      if (is_classic_sasi_hdf_size(size)) {
+        is_scsi = false;
+        slot = 0;
+        reason = "classic SASI size";
+      } else if ((size & 0x1ffull) == 0 && size >= 0x9f5400ull && size <= 0xfff00000ull) {
+        is_scsi = true;
+        slot = 0;
+        reason = "512-byte aligned HDD size";
+      }
+    }
+  }
+
+  if (out_is_scsi) {
+    *out_is_scsi = is_scsi;
+  }
+  if (out_slot) {
+    *out_slot = slot;
+  }
+  if (out_reason) {
+    *out_reason = reason;
+  }
+}
+
 static void log_system_bios_probe()
 {
   std::string sys_dir;
@@ -395,15 +495,23 @@ static void log_system_bios_probe()
   const std::string ipl = join_path(sys_dir, "IPLROM.DAT");
   const std::string cg = join_path(sys_dir, "CGROM.DAT");
   const std::string cgtmp = join_path(sys_dir, "CGROM.TMP");
+  const std::string scsiint = join_path(sys_dir, "SCSIINROM.DAT");
+  const std::string scsiext = join_path(sys_dir, "SCSIEXROM.DAT");
 
   const bool have_ipl = file_exists(ipl);
   const bool have_cg = file_exists(cg) || file_exists(cgtmp);
+  const bool have_scsiint = file_exists(scsiint);
+  const bool have_scsiext = file_exists(scsiext);
   unsigned long long ipl_size = 0;
   unsigned long long cg_size = 0;
   unsigned long long cgtmp_size = 0;
+  unsigned long long scsiint_size = 0;
+  unsigned long long scsiext_size = 0;
   const bool have_ipl_size = get_file_size_bytes(ipl, &ipl_size);
   const bool have_cg_size = get_file_size_bytes(cg, &cg_size);
   const bool have_cgtmp_size = get_file_size_bytes(cgtmp, &cgtmp_size);
+  const bool have_scsiint_size = get_file_size_bytes(scsiint, &scsiint_size);
+  const bool have_scsiext_size = get_file_size_bytes(scsiext, &scsiext_size);
 
   core_log(RETRO_LOG_INFO, "[xm6-libretro] system dir: %s", sys_dir.c_str());
   if (!have_ipl) {
@@ -412,6 +520,18 @@ static void log_system_bios_probe()
   if (!have_cg) {
     core_log(RETRO_LOG_ERROR,
              "[xm6-libretro] Missing BIOS file: %s (or %s)", cg.c_str(), cgtmp.c_str());
+  }
+  if (have_scsiint_size) {
+    core_log(RETRO_LOG_INFO, "[xm6-libretro] SCSIINROM.DAT size=%llu bytes",
+             scsiint_size);
+  } else if (have_scsiint) {
+    core_log(RETRO_LOG_WARN, "[xm6-libretro] SCSIINROM.DAT exists but size probe failed");
+  }
+  if (have_scsiext_size) {
+    core_log(RETRO_LOG_INFO, "[xm6-libretro] SCSIEXROM.DAT size=%llu bytes",
+             scsiext_size);
+  } else if (have_scsiext) {
+    core_log(RETRO_LOG_WARN, "[xm6-libretro] SCSIEXROM.DAT exists but size probe failed");
   }
   if (have_ipl_size) {
     core_log(RETRO_LOG_INFO, "[xm6-libretro] IPLROM.DAT size=%llu bytes (expected 131072)",
@@ -433,6 +553,18 @@ static void log_system_bios_probe()
     if (cgtmp_size != 786432ull) {
       core_log(RETRO_LOG_ERROR, "[xm6-libretro] CGROM.TMP invalid size: %llu", cgtmp_size);
     }
+  }
+  if (have_scsiext_size &&
+      scsiext_size != 8192ull &&
+      scsiext_size != 8160ull &&
+      scsiext_size != 131072ull) {
+    core_log(RETRO_LOG_ERROR, "[xm6-libretro] SCSIEXROM.DAT unexpected size: %llu", scsiext_size);
+  }
+  if (have_scsiint_size &&
+      scsiint_size != 8192ull &&
+      scsiint_size != 8160ull &&
+      scsiint_size != 131072ull) {
+    core_log(RETRO_LOG_ERROR, "[xm6-libretro] SCSIINROM.DAT unexpected size: %llu", scsiint_size);
   }
 }
 
@@ -570,15 +702,60 @@ static bool mount_current_disk()
   if (path.empty()) {
     return false;
   }
-  const int rc = g_xm6.mount_fdd(g_xm6_handle, g_disk_drive, path.c_str(), 0);
+  int rc = XM6CORE_ERR_INVALID_ARGUMENT;
+  bool mount_as_scsi = g_hdd_is_scsi;
+  int mount_slot = g_hdd_slot;
+  if (g_content_is_hdd) {
+    const char *reason = nullptr;
+    resolve_hdd_target_for_path(path, &mount_as_scsi, &mount_slot, &reason);
+    if (mount_as_scsi && !have_scsi_ext_rom()) {
+      core_log(RETRO_LOG_ERROR,
+               "[xm6-libretro] HDF resolved to SCSI%d (%s) but SCSIEXROM.DAT is missing/invalid",
+               mount_slot, reason ? reason : "unknown");
+      return false;
+    }
+    core_log(RETRO_LOG_INFO, "[xm6-libretro] HDF target resolved to %s%d (%s)",
+             mount_as_scsi ? "SCSI" : "SASI", mount_slot, reason ? reason : "unknown");
+    if (mount_as_scsi) {
+      if (!g_xm6.mount_scsi_hdd) {
+        core_log(RETRO_LOG_ERROR, "[xm6-libretro] Backend does not export xm6_mount_scsi_hdd");
+        return false;
+      }
+      rc = g_xm6.mount_scsi_hdd(g_xm6_handle, mount_slot, path.c_str());
+    } else {
+      if (!g_xm6.mount_sasi_hdd) {
+        core_log(RETRO_LOG_ERROR, "[xm6-libretro] Backend does not export xm6_mount_sasi_hdd");
+        return false;
+      }
+      rc = g_xm6.mount_sasi_hdd(g_xm6_handle, mount_slot, path.c_str());
+    }
+  } else {
+    rc = g_xm6.mount_fdd(g_xm6_handle, g_disk_drive, path.c_str(), 0);
+  }
   if (rc != XM6CORE_OK) {
     core_log(RETRO_LOG_ERROR, "[xm6-libretro] Failed to mount disk[%u]: %s",
              g_disk_index, path.c_str());
     return false;
   }
-  core_log(RETRO_LOG_INFO, "[xm6-libretro] Mounted disk[%u] on FDD%d: %s",
-           g_disk_index, g_disk_drive, path.c_str());
+  if (g_content_is_hdd) {
+    core_log(RETRO_LOG_INFO, "[xm6-libretro] Mounted HDD[%u] on %s%d: %s",
+             g_disk_index, mount_as_scsi ? "SCSI" : "SASI", mount_slot, path.c_str());
+  } else {
+    core_log(RETRO_LOG_INFO, "[xm6-libretro] Mounted disk[%u] on FDD%d: %s",
+             g_disk_index, g_disk_drive, path.c_str());
+  }
   return true;
+}
+
+static void apply_joy_type_options()
+{
+  if (!g_xm6_handle || !g_xm6.set_joy_type) {
+    return;
+  }
+
+  for (unsigned port = 0; port < 2; ++port) {
+    g_xm6.set_joy_type(g_xm6_handle, static_cast<int>(port), g_joy_type[port]);
+  }
 }
 
 static void apply_core_option_values()
@@ -610,10 +787,72 @@ static void apply_core_option_values()
     g_pad_start_select_as_xf = true;
   }
 
-  core_log(RETRO_LOG_INFO, "[xm6-libretro] options: drive=FDD%d exec_mode=%s start_select=%s",
+  var.key = "xm6_joy1_type";
+  if (g_environ_cb(RETRO_ENVIRONMENT_GET_VARIABLE, &var) && var.value) {
+    if (std::strcmp(var.value, "cpsf_sfc") == 0) {
+      g_joy_type[0] = 7;
+    } else if (std::strcmp(var.value, "atari_ss") == 0) {
+      g_joy_type[0] = 2;
+    } else if (std::strcmp(var.value, "disabled") == 0) {
+      g_joy_type[0] = 0;
+    } else {
+      g_joy_type[0] = 1;
+    }
+  } else {
+    g_joy_type[0] = 1;
+  }
+
+  var.key = "xm6_joy2_type";
+  if (g_environ_cb(RETRO_ENVIRONMENT_GET_VARIABLE, &var) && var.value) {
+    if (std::strcmp(var.value, "cpsf_sfc") == 0) {
+      g_joy_type[1] = 7;
+    } else if (std::strcmp(var.value, "atari_ss") == 0) {
+      g_joy_type[1] = 2;
+    } else if (std::strcmp(var.value, "atari") == 0) {
+      g_joy_type[1] = 1;
+    } else {
+      g_joy_type[1] = 0;
+    }
+  } else {
+    g_joy_type[1] = 0;
+  }
+
+  var.key = "xm6_hdd_target";
+  if (g_environ_cb(RETRO_ENVIRONMENT_GET_VARIABLE, &var) && var.value) {
+    if (std::strcmp(var.value, "auto") == 0) {
+      g_hdd_target_auto = true;
+      g_hdd_is_scsi = false;
+      g_hdd_slot = 0;
+    } else if (std::strcmp(var.value, "scsi0") == 0) {
+      g_hdd_target_auto = false;
+      g_hdd_is_scsi = true;
+      g_hdd_slot = 0;
+    } else if (std::strcmp(var.value, "scsi1") == 0) {
+      g_hdd_target_auto = false;
+      g_hdd_is_scsi = true;
+      g_hdd_slot = 1;
+    } else if (std::strcmp(var.value, "sasi1") == 0) {
+      g_hdd_target_auto = false;
+      g_hdd_is_scsi = false;
+      g_hdd_slot = 1;
+    } else {
+      g_hdd_target_auto = false;
+      g_hdd_is_scsi = false;
+      g_hdd_slot = 0;
+    }
+  } else {
+    g_hdd_target_auto = true;
+    g_hdd_is_scsi = false;
+    g_hdd_slot = 0;
+  }
+
+  core_log(RETRO_LOG_INFO, "[xm6-libretro] options: drive=FDD%d exec_mode=%s start_select=%s joy1=%d joy2=%d hdd=%s",
            g_disk_drive,
            g_use_exec_to_frame ? "exec_to_frame" : "legacy_exec",
-           g_pad_start_select_as_xf ? "xf_keys" : "disabled");
+           g_pad_start_select_as_xf ? "xf_keys" : "disabled",
+           g_joy_type[0], g_joy_type[1],
+           g_hdd_target_auto ? "AUTO" : (g_hdd_is_scsi ? (g_hdd_slot ? "SCSI1" : "SCSI0")
+                                                        : (g_hdd_slot ? "SASI1" : "SASI0")));
 }
 
 static void register_core_options()
@@ -629,6 +868,12 @@ static void register_core_options()
       "Frame execution mode; exec_to_frame|legacy_exec" },
     { "xm6_pad_start_select",
       "Map Start/Select to XF keys; xf_keys|disabled" },
+    { "xm6_joy1_type",
+      "Joystick Port 1 Type; atari|atari_ss|cpsf_sfc|disabled" },
+    { "xm6_joy2_type",
+      "Joystick Port 2 Type; disabled|atari|atari_ss|cpsf_sfc" },
+    { "xm6_hdd_target",
+      "HDF mount target; auto|sasi0|sasi1|scsi0|scsi1" },
     { nullptr, nullptr }
   };
   g_environ_cb(RETRO_ENVIRONMENT_SET_VARIABLES, const_cast<retro_variable *>(vars));
@@ -818,10 +1063,12 @@ static void poll_and_push_input()
   const bool right = joy_pressed(RETRO_DEVICE_ID_JOYPAD_RIGHT);
   const bool up    = joy_pressed(RETRO_DEVICE_ID_JOYPAD_UP);
   const bool down  = joy_pressed(RETRO_DEVICE_ID_JOYPAD_DOWN);
+  const unsigned int axis_neg = static_cast<unsigned int>(-2048);
+  const unsigned int axis_pos = 2047u;
 
   unsigned int axes[4] = {};
-  axes[0] = left ? 0xFFFFFA00u : (right ? 0x00000600u : 0);
-  axes[1] = up   ? 0xFFFFFA00u : (down  ? 0x00000600u : 0);
+  axes[0] = left ? axis_neg : (right ? axis_pos : 0);
+  axes[1] = up   ? axis_neg : (down  ? axis_pos : 0);
   axes[2] = 0;
   axes[3] = 0;
 
@@ -838,6 +1085,7 @@ static void poll_and_push_input()
   buttons[7] = start_pressed ? 1 : 0;
 
   g_xm6.input_joy(g_xm6_handle, 0, axes, buttons);
+  g_xm6.input_joy(g_xm6_handle, 1, axes, buttons);
 
   if (g_pad_start_select_as_xf && g_xm6.input_key) {
     if (start_pressed != g_prev_start) {
@@ -1047,6 +1295,11 @@ void retro_init(void)
   g_disk_labels.clear();
   g_disk_index = 0;
   g_disk_ejected = false;
+  g_content_is_hdd = false;
+  g_hdd_is_scsi = false;
+  g_hdd_slot = 0;
+  g_hdd_target_auto = true;
+  g_hdd_boot_reset_countdown = 0;
   g_prev_start = false;
   g_prev_select = false;
   g_video_not_ready_count = 0;
@@ -1101,6 +1354,7 @@ void retro_set_controller_port_device(unsigned, unsigned) {}
 void retro_reset(void)
 {
   if (g_xm6_handle && g_xm6.reset) {
+    g_hdd_boot_reset_countdown = 0;
     g_xm6.reset(g_xm6_handle);
   }
 }
@@ -1119,6 +1373,10 @@ bool retro_load_game(const struct retro_game_info *info)
   }
   log_system_bios_probe();
 
+  // Recreate the VM per content load so HDD boot always starts from a clean
+  // device topology, matching the standalone frontend more closely.
+  destroy_xm6_handle();
+
   if (!ensure_xm6_handle()) {
     // If VM init failed, this probe makes missing BIOS/path issues explicit.
     log_system_bios_probe();
@@ -1126,6 +1384,7 @@ bool retro_load_game(const struct retro_game_info *info)
   }
 
   apply_core_option_values();
+  apply_joy_type_options();
 
   enum retro_pixel_format fmt = RETRO_PIXEL_FORMAT_XRGB8888;
   if (!g_environ_cb || !g_environ_cb(RETRO_ENVIRONMENT_SET_PIXEL_FORMAT, &fmt)) {
@@ -1136,6 +1395,7 @@ bool retro_load_game(const struct retro_game_info *info)
   g_disk_paths.clear();
   g_disk_labels.clear();
   g_disk_index = 0;
+  g_content_is_hdd = path_has_extension(info->path, ".hdf");
 
   if (path_has_extension(info->path, ".m3u")) {
     if (!parse_m3u_playlist(info->path, &g_disk_paths)) {
@@ -1151,10 +1411,21 @@ bool retro_load_game(const struct retro_game_info *info)
     return false;
   }
   g_disk_ejected = false;
-  register_disk_interface();
+  if (!g_content_is_hdd) {
+    register_disk_interface();
+  }
 
-  g_xm6.set_power(g_xm6_handle, 1);
-  g_xm6.reset(g_xm6_handle);
+  if (g_content_is_hdd) {
+    // HDF boot is more reliable with a full power cycle, not just a soft reset.
+    g_xm6.set_power(g_xm6_handle, 0);
+    g_xm6.set_power(g_xm6_handle, 1);
+    g_hdd_boot_reset_countdown = 0;
+    run_hdd_boot_warmup_and_reset();
+  } else {
+    g_xm6.set_power(g_xm6_handle, 1);
+    g_xm6.reset(g_xm6_handle);
+    g_hdd_boot_reset_countdown = 0;
+  }
 
   g_game_loaded = true;
   return true;
@@ -1167,7 +1438,7 @@ bool retro_load_game_special(unsigned, const struct retro_game_info *, size_t)
 
 void retro_unload_game(void)
 {
-  if (g_xm6_handle && g_xm6.eject_fdd) {
+  if (g_xm6_handle && g_xm6.eject_fdd && !g_content_is_hdd) {
     g_xm6.eject_fdd(g_xm6_handle, g_disk_drive, 1);
   }
   g_game_loaded = false;
@@ -1175,6 +1446,11 @@ void retro_unload_game(void)
   g_disk_labels.clear();
   g_disk_index = 0;
   g_disk_ejected = false;
+  g_content_is_hdd = false;
+  g_hdd_is_scsi = false;
+  g_hdd_slot = 0;
+  g_hdd_target_auto = true;
+  g_hdd_boot_reset_countdown = 0;
   g_prev_start = false;
   g_prev_select = false;
   g_video_not_ready_count = 0;
@@ -1198,9 +1474,24 @@ void retro_run(void)
     bool updated = false;
     if (g_environ_cb(RETRO_ENVIRONMENT_GET_VARIABLE_UPDATE, &updated) && updated) {
       const int old_drive = g_disk_drive;
+      const bool old_hdd_auto = g_hdd_target_auto;
+      const bool old_hdd_is_scsi = g_hdd_is_scsi;
+      const int old_hdd_slot = g_hdd_slot;
+      const int old_joy0 = g_joy_type[0];
+      const int old_joy1 = g_joy_type[1];
       apply_core_option_values();
-      if (old_drive != g_disk_drive && !g_disk_ejected) {
+      if (old_joy0 != g_joy_type[0] || old_joy1 != g_joy_type[1]) {
+        apply_joy_type_options();
+      }
+      if (((old_drive != g_disk_drive) && !g_content_is_hdd && !g_disk_ejected) ||
+          ((old_hdd_auto != g_hdd_target_auto ||
+            old_hdd_is_scsi != g_hdd_is_scsi ||
+            old_hdd_slot != g_hdd_slot) && g_content_is_hdd)) {
         mount_current_disk();
+        if (g_content_is_hdd) {
+          g_hdd_boot_reset_countdown = 0;
+          run_hdd_boot_warmup_and_reset();
+        }
       }
     }
   }

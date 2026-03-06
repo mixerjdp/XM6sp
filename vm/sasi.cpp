@@ -409,6 +409,9 @@ void FASTCALL SASI::SetSASIPath(int slot, const Filepath& path)
 {
 	if (slot >= 0 && slot < SASIMax) {
 		sasihd[slot].SetPath(path.GetPath());
+		if (!path.IsClear() && sasi.sasi_drives <= slot) {
+			sasi.sasi_drives = slot + 1;
+		}
 		Construct();
 	}
 }
@@ -420,6 +423,12 @@ void FASTCALL SASI::SetSCSIPath(int slot, const Filepath& path)
 {
 	if (slot >= 0 && slot < SCSIMax) {
 		scsihd[slot].SetPath(path.GetPath());
+		if (!path.IsClear()) {
+			if (sasi.sxsi_drives <= slot) {
+				sasi.sxsi_drives = slot + 1;
+			}
+			sasi.parity = TRUE;
+		}
 		Construct();
 	}
 }
