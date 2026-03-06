@@ -41,7 +41,9 @@ static bool g_game_loaded = false;
 
 static std::vector<std::string> g_disk_paths;
 static std::vector<std::string> g_disk_labels;
+static std::vector<int> g_disk_target_drives;
 static unsigned g_disk_index = 0;
+static int g_inserted_disk_index[2] = { -1, -1 };
 static int g_disk_drive = 0;
 static bool g_disk_ejected = false;
 static bool g_content_is_hdd = false;
@@ -443,7 +445,10 @@ static void destroy_xm6_handle()
   g_game_loaded = false;
   g_disk_paths.clear();
   g_disk_labels.clear();
+  g_disk_target_drives.clear();
   g_disk_index = 0;
+  g_inserted_disk_index[0] = -1;
+  g_inserted_disk_index[1] = -1;
   g_disk_ejected = false;
   g_content_is_hdd = false;
   g_hdd_is_scsi = false;
@@ -762,9 +767,20 @@ static bool path_has_extension(const std::string &path, const char *ext)
   return lower.compare(lower.size() - wanted.size(), wanted.size(), wanted) == 0;
 }
 
-static bool parse_m3u_playlist(const char *m3u_path, std::vector<std::string> *out_paths)
+static std::string strip_wrapping_quotes(std::string s)
 {
-  if (!m3u_path || !out_paths) {
+  if (s.size() >= 2 && s.front() == '"' && s.back() == '"') {
+    return s.substr(1, s.size() - 2);
+  }
+  return s;
+}
+
+static bool parse_m3u_playlist(const char *m3u_path,
+                               std::vector<std::string> *out_paths,
+                               std::vector<std::string> *out_labels,
+                               std::vector<int> *out_drives)
+{
+  if (!m3u_path || !out_paths || !out_labels || !out_drives) {
     return false;
   }
 
@@ -774,6 +790,9 @@ static bool parse_m3u_playlist(const char *m3u_path, std::vector<std::string> *o
   }
 
   std::vector<std::string> entries;
+  std::vector<std::string> labels;
+  std::vector<int> drives;
+  bool have_explicit_drive = false;
   const std::string base_dir = path_dirname(m3u_path);
 
   std::string line;
@@ -785,18 +804,90 @@ static bool parse_m3u_playlist(const char *m3u_path, std::vector<std::string> *o
     if (line.empty() || line[0] == '#') {
       continue;
     }
-    entries.push_back(path_join(base_dir, line));
+
+    line = strip_wrapping_quotes(line);
+
+    std::string custom_label;
+    int target_drive = -1;
+    const size_t first_sep = line.find('|');
+    if (first_sep != std::string::npos) {
+      std::string field1 = trim_copy(line.substr(first_sep + 1));
+      line = trim_copy(line.substr(0, first_sep));
+
+      const size_t second_sep = field1.find('|');
+      std::string field2;
+      if (second_sep != std::string::npos) {
+        field2 = trim_copy(field1.substr(second_sep + 1));
+        field1 = trim_copy(field1.substr(0, second_sep));
+      }
+
+      const std::string lower1 = lower_copy(field1);
+      const std::string lower2 = lower_copy(field2);
+      if (lower1 == "fdd0") {
+        target_drive = 0;
+        have_explicit_drive = true;
+        custom_label = field2;
+      } else if (lower1 == "fdd1") {
+        target_drive = 1;
+        have_explicit_drive = true;
+        custom_label = field2;
+      } else if (lower2 == "fdd0") {
+        target_drive = 0;
+        have_explicit_drive = true;
+        custom_label = field1;
+      } else if (lower2 == "fdd1") {
+        target_drive = 1;
+        have_explicit_drive = true;
+        custom_label = field1;
+      } else {
+        custom_label = field1;
+      }
+    }
+
+    if (line.empty()) {
+      continue;
+    }
+
+    std::string full_path = path_join(base_dir, line);
+    entries.push_back(full_path);
+    if (!custom_label.empty()) {
+      labels.push_back(custom_label);
+    } else {
+      labels.push_back(path_basename_no_ext(full_path));
+    }
+    drives.push_back(target_drive);
   }
 
   if (entries.empty()) {
     return false;
   }
+
+  if (!have_explicit_drive && entries.size() == 2 && drives.size() == 2) {
+    drives[0] = 0;
+    drives[1] = 1;
+  }
+
   *out_paths = entries;
+  *out_labels = labels;
+  *out_drives = drives;
   return true;
 }
 
 static void build_disk_labels()
 {
+  if (g_disk_labels.size() == g_disk_paths.size()) {
+    bool all_filled = true;
+    for (size_t i = 0; i < g_disk_labels.size(); ++i) {
+      if (g_disk_labels[i].empty()) {
+        all_filled = false;
+        break;
+      }
+    }
+    if (all_filled) {
+      return;
+    }
+  }
+
   g_disk_labels.clear();
   g_disk_labels.reserve(g_disk_paths.size());
   for (size_t i = 0; i < g_disk_paths.size(); ++i) {
@@ -810,18 +901,33 @@ static void build_disk_labels()
   }
 }
 
-static bool mount_current_disk()
+static int get_disk_target_drive(unsigned index)
 {
-  if (!g_xm6_handle || g_disk_paths.empty() || g_disk_index >= g_disk_paths.size()) {
+  if (index < g_disk_target_drives.size()) {
+    const int drive = g_disk_target_drives[index];
+    if (drive == 0 || drive == 1) {
+      return drive;
+    }
+  }
+  return g_disk_drive;
+}
+
+static bool mount_disk_index(unsigned index, bool update_selected = true)
+{
+  if (!g_xm6_handle || g_disk_paths.empty() || index >= g_disk_paths.size()) {
     return false;
   }
-  const std::string &path = g_disk_paths[g_disk_index];
+
+  const std::string &path = g_disk_paths[index];
   if (path.empty()) {
     return false;
   }
+
   int rc = XM6CORE_ERR_INVALID_ARGUMENT;
   bool mount_as_scsi = g_hdd_is_scsi;
   int mount_slot = g_hdd_slot;
+  int target_drive = g_disk_drive;
+
   if (g_content_is_hdd) {
     const char *reason = nullptr;
     resolve_hdd_target_for_path(path, &mount_as_scsi, &mount_slot, &reason);
@@ -847,21 +953,64 @@ static bool mount_current_disk()
       rc = g_xm6.mount_sasi_hdd(g_xm6_handle, mount_slot, path.c_str());
     }
   } else {
-    rc = g_xm6.mount_fdd(g_xm6_handle, g_disk_drive, path.c_str(), 0);
+    target_drive = get_disk_target_drive(index);
+    rc = g_xm6.mount_fdd(g_xm6_handle, target_drive, path.c_str(), 0);
   }
+
   if (rc != XM6CORE_OK) {
     core_log(RETRO_LOG_ERROR, "[xm6-libretro] Failed to mount disk[%u]: %s",
-             g_disk_index, path.c_str());
+             index, path.c_str());
     return false;
   }
+
+  if (update_selected) {
+    g_disk_index = index;
+  }
+
   if (g_content_is_hdd) {
     core_log(RETRO_LOG_INFO, "[xm6-libretro] Mounted HDD[%u] on %s%d: %s",
-             g_disk_index, mount_as_scsi ? "SCSI" : "SASI", mount_slot, path.c_str());
+             index, mount_as_scsi ? "SCSI" : "SASI", mount_slot, path.c_str());
   } else {
+    g_inserted_disk_index[target_drive] = static_cast<int>(index);
     core_log(RETRO_LOG_INFO, "[xm6-libretro] Mounted disk[%u] on FDD%d: %s",
-             g_disk_index, g_disk_drive, path.c_str());
+             index, target_drive, path.c_str());
   }
+
   return true;
+}
+
+static bool mount_initial_playlist_disks()
+{
+  if (g_content_is_hdd) {
+    return mount_disk_index(g_disk_index);
+  }
+  if (!g_xm6_handle || g_disk_paths.empty()) {
+    return false;
+  }
+
+  g_inserted_disk_index[0] = -1;
+  g_inserted_disk_index[1] = -1;
+
+  bool mounted_any = false;
+  bool drive_done[2] = { false, false };
+  for (unsigned i = 0; i < g_disk_paths.size(); ++i) {
+    const int drive = get_disk_target_drive(i);
+    if (drive < 0 || drive > 1 || drive_done[drive]) {
+      continue;
+    }
+    if (!mount_disk_index(i, !mounted_any)) {
+      return false;
+    }
+    drive_done[drive] = true;
+    mounted_any = true;
+  }
+
+  return mounted_any;
+}
+
+static bool mount_current_disk()
+{
+  return mount_disk_index(g_disk_index);
 }
 
 static void apply_joy_type_options()
@@ -1393,7 +1542,11 @@ static bool disk_set_eject_state(bool ejected)
   }
 
   if (ejected) {
-    g_xm6.eject_fdd(g_xm6_handle, g_disk_drive, 1);
+    const int target_drive = get_disk_target_drive(g_disk_index);
+    g_xm6.eject_fdd(g_xm6_handle, target_drive, 1);
+    if (target_drive >= 0 && target_drive < 2) {
+      g_inserted_disk_index[target_drive] = -1;
+    }
     g_disk_ejected = true;
     return true;
   }
@@ -1448,6 +1601,9 @@ static bool disk_replace_image_index(unsigned index, const struct retro_game_inf
       if (index < g_disk_labels.size()) {
         g_disk_labels[index].clear();
       }
+      if (index < g_disk_target_drives.size()) {
+        g_disk_target_drives[index] = -1;
+      }
     }
     return true;
   }
@@ -1455,9 +1611,13 @@ static bool disk_replace_image_index(unsigned index, const struct retro_game_inf
   if (g_disk_paths.empty()) {
     g_disk_paths.resize(1);
     g_disk_labels.resize(1);
+    g_disk_target_drives.resize(1, -1);
   }
   g_disk_paths[index] = info->path;
   g_disk_labels[index] = path_basename_no_ext(g_disk_paths[index]);
+  if (index >= g_disk_target_drives.size()) {
+    g_disk_target_drives.resize(index + 1, -1);
+  }
   if (!g_disk_ejected && g_xm6_handle) {
     g_disk_index = index;
     return mount_current_disk();
@@ -1469,6 +1629,7 @@ static bool disk_add_image_index()
 {
   g_disk_paths.push_back(std::string());
   g_disk_labels.push_back(std::string());
+  g_disk_target_drives.push_back(-1);
   return true;
 }
 
@@ -1698,20 +1859,25 @@ bool retro_load_game(const struct retro_game_info *info)
 
   g_disk_paths.clear();
   g_disk_labels.clear();
+  g_disk_target_drives.clear();
   g_disk_index = 0;
+  g_inserted_disk_index[0] = -1;
+  g_inserted_disk_index[1] = -1;
   g_content_is_hdd = path_has_extension(info->path, ".hdf");
 
   if (path_has_extension(info->path, ".m3u")) {
-    if (!parse_m3u_playlist(info->path, &g_disk_paths)) {
+    if (!parse_m3u_playlist(info->path, &g_disk_paths, &g_disk_labels, &g_disk_target_drives)) {
       core_log(RETRO_LOG_ERROR, "[xm6-libretro] Failed to parse M3U: %s", info->path);
       return false;
     }
+    core_log(RETRO_LOG_INFO, "[xm6-libretro] Parsed M3U with %u entries",
+             static_cast<unsigned>(g_disk_paths.size()));
   } else {
     g_disk_paths.push_back(info->path);
   }
   build_disk_labels();
 
-  if (!mount_current_disk()) {
+  if (!(g_content_is_hdd ? mount_current_disk() : mount_initial_playlist_disks())) {
     return false;
   }
   arm_savestate_guard_frames(

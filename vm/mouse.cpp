@@ -16,9 +16,6 @@
 #include "fileio.h"
 #include "config.h"
 #include "mouse.h"
-#include <cstdarg>
-extern void xm6_debug_message(const char *format, ...);
-static unsigned g_mouse_debug_budget = 48;
 
 //===========================================================================
 //
@@ -74,7 +71,6 @@ BOOL FASTCALL Mouse::Init()
 	mouse.mul = 205;
 	mouse.rev = FALSE;
 	mouse.port = 1;
-    g_mouse_debug_budget = 48;
 
 	return TRUE;
 }
@@ -192,7 +188,6 @@ void FASTCALL Mouse::ApplyCfg(const Config *config)
 
 	// ポート
 	mouse.port = config->mouse_port;
-    if (g_mouse_debug_budget > 0) { --g_mouse_debug_budget; xm6_debug_message("[xm6core][mouse] apply cfg port=%d speed=%d swap=%d", mouse.port, mouse.mul, mouse.rev ? 1 : 0); }
 	if (mouse.port == 0) {
 		// 接続なしなので、イベントを止める
 		mouse.reset = TRUE;
@@ -267,13 +262,11 @@ BOOL FASTCALL Mouse::Callback(Event* /*ev*/)
 
 	// SCCが受信していなければ何もしない
 	if (!scc->IsRxEnable(1)) {
-        if (g_mouse_debug_budget > 0) { --g_mouse_debug_budget; xm6_debug_message("[xm6core][mouse] drop packet: SCC Rx disabled"); }
 		return FALSE;
 	}
 
 	// 受信bpsが4800でなければ、フレーミングエラー
 	if (!scc->IsBaudRate(1, 4800)) {
-        if (g_mouse_debug_budget > 0) { --g_mouse_debug_budget; xm6_debug_message("[xm6core][mouse] drop packet: baud mismatch"); }
 #if defined(MOUSE_LOG)
 		LOG0(Log::Normal, "SCCボーレートエラー");
 #endif	// MOUSE_LOG
@@ -283,7 +276,6 @@ BOOL FASTCALL Mouse::Callback(Event* /*ev*/)
 
 	// データが8bitでなければ、フレーミングエラー
 	if (scc->GetRxBit(1) != 8) {
-        if (g_mouse_debug_budget > 0) { --g_mouse_debug_budget; xm6_debug_message("[xm6core][mouse] drop packet: rx bits=%d", scc->GetRxBit(1)); }
 #if defined(MOUSE_LOG)
 		LOG0(Log::Normal, "SCCデータビット長エラー");
 #endif	// MOUSE_LOG
@@ -293,7 +285,6 @@ BOOL FASTCALL Mouse::Callback(Event* /*ev*/)
 
 	// ストップビットが2bitでなければ、フレーミングエラー
 	if (scc->GetStopBit(1) != 3) {
-        if (g_mouse_debug_budget > 0) { --g_mouse_debug_budget; xm6_debug_message("[xm6core][mouse] drop packet: stop bits=%d", scc->GetStopBit(1)); }
 #if defined(MOUSE_LOG)
 		LOG0(Log::Normal, "SCCストップビットエラー");
 #endif	// MOUSE_LOG
@@ -303,7 +294,6 @@ BOOL FASTCALL Mouse::Callback(Event* /*ev*/)
 
 	// パリティなしでなければ、パリティエラー
 	if (scc->GetParity(1) != 0) {
-        if (g_mouse_debug_budget > 0) { --g_mouse_debug_budget; xm6_debug_message("[xm6core][mouse] drop packet: parity=%d", scc->GetParity(1)); }
 #if defined(MOUSE_LOG)
 		LOG0(Log::Normal, "SCCパリティエラー");
 #endif	// MOUSE_LOG
@@ -313,7 +303,6 @@ BOOL FASTCALL Mouse::Callback(Event* /*ev*/)
 
 	// SCCの受信バッファにデータがあるなら送信しない
 	if (!scc->IsRxBufEmpty(1)) {
-        if (g_mouse_debug_budget > 0) { --g_mouse_debug_budget; xm6_debug_message("[xm6core][mouse] drop packet: SCC rx buffer busy"); }
 #if defined(MOUSE_LOG)
 		LOG0(Log::Normal, "SCC受信バッファにデータあり");
 #endif	// MOUSE_LOG
@@ -324,7 +313,6 @@ BOOL FASTCALL Mouse::Callback(Event* /*ev*/)
 #if defined(MOUSE_LOG)
 	LOG3(Log::Normal, "データ送出 St:$%02X X:$%02X Y:$%02X", status, dx & 0xff, dy & 0xff);
 #endif	// MOUSE_LOG
-	    if (g_mouse_debug_budget > 0) { --g_mouse_debug_budget; xm6_debug_message("[xm6core][mouse] send packet st=%02X dx=%d dy=%d", (unsigned int)(status & 0xff), dx, dy); }
     scc->Send(1, status);
 	scc->Send(1, dx);
 	scc->Send(1, dy);
@@ -375,7 +363,6 @@ void FASTCALL Mouse::MSCtrl(BOOL flag, int port)
 	}
 
 	// イベント発生(725us)
-	    if (g_mouse_debug_budget > 0) { --g_mouse_debug_budget; xm6_debug_message("[xm6core][mouse] MSCtrl falling edge port=%d schedule mouse packet", port); }
     event.SetTime(725 * 2);
 }
 
