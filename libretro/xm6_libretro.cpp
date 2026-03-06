@@ -51,6 +51,7 @@ static unsigned g_video_not_ready_count = 0;
 static int g_joy_type[2] = { 1, 0 };
 static int g_system_clock = 0;
 static int g_ram_size = 5;
+static bool g_fast_floppy = false;
 static unsigned g_hdd_boot_reset_countdown = 0;
 
 static bool g_prev_start = false;
@@ -89,6 +90,7 @@ struct xm6_api_t {
   int (XM6CORE_CALL *set_joy_type)(XM6Handle handle, int port, int type) = nullptr;
   int (XM6CORE_CALL *set_system_clock)(XM6Handle handle, int system_clock) = nullptr;
   int (XM6CORE_CALL *set_ram_size)(XM6Handle handle, int ram_size) = nullptr;
+  int (XM6CORE_CALL *set_fast_floppy)(XM6Handle handle, int enabled) = nullptr;
 
   int (XM6CORE_CALL *state_size)(XM6Handle handle, unsigned int *out_size) = nullptr;
   int (XM6CORE_CALL *save_state_mem)(XM6Handle handle, void *buffer, unsigned int size) = nullptr;
@@ -269,6 +271,7 @@ static bool load_xm6_api()
   load_optional_symbol(&g_xm6.set_joy_type, "xm6_set_joy_type");
   load_optional_symbol(&g_xm6.set_system_clock, "xm6_set_system_clock");
   load_optional_symbol(&g_xm6.set_ram_size, "xm6_set_ram_size");
+  load_optional_symbol(&g_xm6.set_fast_floppy, "xm6_set_fast_floppy");
 
   core_log(RETRO_LOG_INFO, "[xm6-libretro] Loaded xm6core.dll");
   return true;
@@ -791,6 +794,9 @@ static void apply_runtime_core_options()
   if (g_xm6.set_ram_size) {
     g_xm6.set_ram_size(g_xm6_handle, g_ram_size);
   }
+  if (g_xm6.set_fast_floppy) {
+    g_xm6.set_fast_floppy(g_xm6_handle, g_fast_floppy ? 1 : 0);
+  }
 }
 
 static void apply_core_option_values()
@@ -890,6 +896,13 @@ static void apply_core_option_values()
     g_ram_size = 5;
   }
 
+  var.key = "xm6_fast_floppy";
+  if (g_environ_cb(RETRO_ENVIRONMENT_GET_VARIABLE, &var) && var.value) {
+    g_fast_floppy = (std::strcmp(var.value, "enabled") == 0);
+  } else {
+    g_fast_floppy = false;
+  }
+
   var.key = "xm6_hdd_target";
   if (g_environ_cb(RETRO_ENVIRONMENT_GET_VARIABLE, &var) && var.value) {
     if (std::strcmp(var.value, "auto") == 0) {
@@ -919,7 +932,7 @@ static void apply_core_option_values()
     g_hdd_slot = 0;
   }
 
-  core_log(RETRO_LOG_INFO, "[xm6-libretro] options: drive=FDD%d exec_mode=%s start_select=%s clock=%s joy1=%d joy2=%d ram=%dmb hdd=%s",
+  core_log(RETRO_LOG_INFO, "[xm6-libretro] options: drive=FDD%d exec_mode=%s start_select=%s clock=%s joy1=%d joy2=%d ram=%dmb fast_floppy=%s hdd=%s",
            g_disk_drive,
            g_use_exec_to_frame ? "exec_to_frame" : "legacy_exec",
            g_pad_start_select_as_xf ? "xf_keys" : "disabled",
@@ -927,6 +940,7 @@ static void apply_core_option_values()
            (g_system_clock == 3) ? "16mhz" :
            (g_system_clock == 5) ? "22mhz" : "10mhz",
            g_joy_type[0], g_joy_type[1], (g_ram_size + 1) * 2,
+           g_fast_floppy ? "enabled" : "disabled",
            g_hdd_target_auto ? "AUTO" : (g_hdd_is_scsi ? (g_hdd_slot ? "SCSI1" : "SCSI0")
                                                         : (g_hdd_slot ? "SASI1" : "SASI0")));
 }
@@ -952,6 +966,8 @@ static void register_core_options()
       "Joystick Port 2 Type; disabled|atari|atari_ss|cpsf_sfc|cpsf_md" },
     { "xm6_ram_size",
       "Main RAM size; 12mb|10mb|8mb|6mb|4mb|2mb" },
+    { "xm6_fast_floppy",
+      "Fast floppy; disabled|enabled" },
     { "xm6_hdd_target",
       "HDF mount target; auto|sasi0|sasi1|scsi0|scsi1" },
     { nullptr, nullptr }
@@ -1385,6 +1401,7 @@ void retro_init(void)
   g_video_not_ready_count = 0;
   g_system_clock = 0;
   g_ram_size = 5;
+  g_fast_floppy = false;
   g_audio_buffer.clear();
 
   load_xm6_api();
@@ -1553,6 +1570,7 @@ void retro_run(void)
       const int old_joy1 = g_joy_type[1];
       const int old_system_clock = g_system_clock;
       const int old_ram_size = g_ram_size;
+      const bool old_fast_floppy = g_fast_floppy;
       apply_core_option_values();
       if (old_system_clock != g_system_clock || old_ram_size != g_ram_size) {
         apply_runtime_core_options();
@@ -1565,6 +1583,12 @@ void retro_run(void)
           g_xm6.reset(g_xm6_handle);
         }
         g_video_not_ready_count = 0;
+      }
+      if (old_fast_floppy != g_fast_floppy &&
+          !(old_system_clock != g_system_clock || old_ram_size != g_ram_size)) {
+        apply_runtime_core_options();
+        core_log(RETRO_LOG_INFO, "[xm6-libretro] Fast floppy %s",
+                 g_fast_floppy ? "enabled" : "disabled");
       }
       if (old_joy0 != g_joy_type[0] || old_joy1 != g_joy_type[1]) {
         apply_joy_type_options();

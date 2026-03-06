@@ -90,3 +90,19 @@ extern "C" XM6CORE_API int XM6CORE_CALL xm6_set_ram_size(XM6Handle handle, int r
 	ctx->vm->ApplyCfg(&ctx->runtime_config);
 	return XM6CORE_OK;
 }
+
+extern "C" XM6CORE_API int XM6CORE_CALL xm6_set_fast_floppy(XM6Handle handle, int enabled)
+{
+	if (!handle) {
+		return XM6CORE_ERR_INVALID_HANDLE;
+	}
+
+	XM6ContextRuntimeShim *ctx = reinterpret_cast<XM6ContextRuntimeShim*>(handle);
+	if (!ctx->vm) {
+		return XM6CORE_ERR_INVALID_HANDLE;
+	}
+
+	ctx->runtime_config.floppy_speed = enabled ? TRUE : FALSE;
+	ctx->vm->ApplyCfg(&ctx->runtime_config);
+	return XM6CORE_OK;
+}
