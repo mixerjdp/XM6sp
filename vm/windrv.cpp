@@ -690,7 +690,6 @@ BOOL FASTCALL Windrv::Save(Fileio *fio, int ver)
 	ASSERT(this);
 	LOG(Log::Normal, "ƒZ[ƒu");
 	
-	printf("%d %d", fio, ver);
 	return TRUE;
 }
 
@@ -703,7 +702,6 @@ BOOL FASTCALL Windrv::Load(Fileio *fio, int ver)
 {
 	ASSERT(this);
 	LOG(Log::Normal, "ƒ[ƒh");
-	printf("%d %d", fio, ver);
 	return TRUE;
 }
 
@@ -745,7 +743,7 @@ DWORD FASTCALL Windrv::ReadByte(DWORD addr)
 		LOG(Log::Normal, "Windrvƒ|[ƒg –¢ƒTƒ|[ƒg");
 		break;
 	case 'Y':
-		LOG(Log::Normal, "Windrvƒ|[ƒg —˜—p‰Â”");
+		LOG(Log::Normal, "Windrvƒ|[ƒg —˜—p‰ÂE);
 		break;
 #ifdef WINDRV_SUPPORT_COMPATIBLE
 	case 'W':
@@ -2195,7 +2193,7 @@ void FASTCALL CWindrv::IoControl()
 	UnlockXM();
 
 #ifdef WINDRV_LOG
-	Log(Log::Normal, "$55 %d IOCTRL ƒpƒ‰ƒ[ƒ^:%X ‹@”:%X", unit, nParameter, nFunction);
+	Log(Log::Normal, "$55 %d IOCTRL ƒpƒ‰ƒ[ƒ^:%X ‹@E%X", unit, nParameter, nFunction);
 #endif // WINDRV_LOG
 
 	// ƒtƒ@ƒCƒ‹ƒVƒXƒeƒ€ŒÄ‚Ño‚µ

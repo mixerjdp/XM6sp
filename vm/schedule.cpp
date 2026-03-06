@@ -260,11 +260,10 @@ BOOL FASTCALL Scheduler::Load(Fileio *fio, int ver)
 	// 繧､繝吶Φ繝医�昴う繝ｳ繧ｿ繧貞ｾｩ蟶ｰ
 	sch.first = first;
 
-	// 繝舌�ｼ繧ｸ繝ｧ繝ｳ2.01莉･荳翫↑繧峨‥ma_active繧偵Ο繝ｼ繝�
-	if (ver >= 0x0201) {
-		if (!fio->Read(&dma_active, sizeof(dma_active))) {
-			return FALSE;
-		}
+	// Scheduler::Save siempre escribe dma_active. Leerlo siempre mantiene
+	// la simetria del stream de savestate.
+	if (!fio->Read(&dma_active, sizeof(dma_active))) {
+		return FALSE;
 	}
 
 	return TRUE;

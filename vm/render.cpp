@@ -487,7 +487,6 @@ BOOL FASTCALL Render::Save(Fileio *fio, int ver)
 	ASSERT(this);
 	LOG0(Log::Normal, "ÉZÅ[Éu");
 
-	printf("%d %d", ver, fio);
 
 	return TRUE;
 }
@@ -501,7 +500,6 @@ BOOL FASTCALL Render::Load(Fileio *fio, int ver)
 {
 	ASSERT(this);
 	LOG0(Log::Normal, "ÉçÅ[Éh");
-	printf("%d %d", ver, fio);
 
 	return TRUE;
 }
@@ -1630,7 +1628,7 @@ void FASTCALL Render::Grp(int block, int raster)
 					render.grpflag[(y << 5) + (block << 14) + i] = FALSE;
 				}
 				switch (block) {
-					// è„îºï™ÇÕÉuÉçÉbÉN0Ç≈ë„ï
+					// è„îºï™ÇÕÉuÉçÉbÉN0Ç≈ë„ÅE
 					case 0:
 						if (Rend1024A(render.grpgv + (y << 10),
 									render.grpbuf[0] + (offset << 11),
@@ -1639,7 +1637,7 @@ void FASTCALL Render::Grp(int block, int raster)
 						}
 					case 1:
 						break;
-					// â∫îºï™ÇÕÉuÉçÉbÉN2Ç≈ë„ï
+					// â∫îºï™ÇÕÉuÉçÉbÉN2Ç≈ë„ÅE
 					case 2:
 						if (Rend1024B(render.grpgv + (y << 10),
 									render.grpbuf[0] + (offset << 11),

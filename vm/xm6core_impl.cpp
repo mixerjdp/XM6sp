@@ -178,6 +178,36 @@ static void apply_default_runtime_config(XM6Context *ctx)
 	apply_runtime_config(ctx);
 }
 
+static void post_state_load_sync(XM6Context *ctx)
+{
+	if (!ctx_valid(ctx)) {
+		return;
+	}
+
+	apply_runtime_config(ctx);
+
+	if (ctx->opmif) {
+		ctx->opmif->SetEngine(ctx->opm_engine);
+		ctx->opmif->EnableFM(ctx->runtime_config.fm_enable);
+		if (ctx->audio_rate != 0) {
+			ctx->opmif->InitBuf((DWORD)ctx->audio_rate);
+		}
+	}
+	if (ctx->opm_engine) {
+		ctx->opm_engine->SetVolume(ctx->runtime_config.fm_volume);
+	}
+	if (ctx->adpcm) {
+		ctx->adpcm->EnableADPCM(ctx->runtime_config.adpcm_enable);
+		ctx->adpcm->SetVolume(ctx->runtime_config.adpcm_volume);
+		if (ctx->audio_rate != 0) {
+			ctx->adpcm->InitBuf((DWORD)ctx->audio_rate);
+		}
+	}
+	if (ctx->render) {
+		ctx->render->Complete();
+	}
+}
+
 static bool create_temp_state_filepath(Filepath *out_path)
 {
 	TCHAR temp_dir[_MAX_PATH];
@@ -251,6 +281,9 @@ XM6CORE_API XM6Handle XM6CORE_CALL xm6_create(void)
 		return NULL;
 	}
 
+	// Mantener el formato de savestate alineado con la version moderna del core.
+	ctx->vm->SetVersion(0x02, 0x06);
+
 	// Cachear punteros a dispositivos vía SearchDevice
 	ctx->scheduler = (Scheduler*)ctx->vm->SearchDevice(MAKEID('S', 'C', 'H', 'E'));
 	ctx->render    = (Render*)ctx->vm->SearchDevice(MAKEID('R', 'E', 'N', 'D'));
@@ -316,6 +349,33 @@ static void FASTCALL xm6_msg_trampoline(const TCHAR* message, void *user)
 	if (ctx && ctx->msg_callback) {
 		ctx->msg_callback(message, ctx->msg_user);
 	}
+}
+
+static void xm6_log_state_probe(XM6Context *ctx, const char *tag, const void *buffer, unsigned int size)
+{
+	char msg[160];
+	unsigned long first_id = 0;
+
+	if (!ctx || !ctx->msg_callback) {
+		return;
+	}
+
+	if (buffer && size >= 20) {
+		const unsigned char *bytes = reinterpret_cast<const unsigned char*>(buffer);
+		first_id =
+			((unsigned long)bytes[16]) |
+			((unsigned long)bytes[17] << 8) |
+			((unsigned long)bytes[18] << 16) |
+			((unsigned long)bytes[19] << 24);
+	}
+
+	wsprintfA(
+		msg,
+		"[xm6core] %s size=%u first_id=%08lX",
+		tag,
+		(unsigned int)size,
+		first_id);
+	ctx->msg_callback(msg, ctx->msg_user);
 }
 
 //---------------------------------------------------------------------------
@@ -1079,6 +1139,9 @@ XM6CORE_API int XM6CORE_CALL xm6_load_state(
 	path.SetPath(state_path);
 
 	DWORD result = ctx->vm->Load(path);
+	if (result != 0) {
+		post_state_load_sync(ctx);
+	}
 	return (result != 0) ? XM6CORE_OK : XM6CORE_ERR_IO;
 }
 
@@ -1097,32 +1160,18 @@ XM6CORE_API int XM6CORE_CALL xm6_state_size(XM6Handle handle, unsigned int *out_
 
 	*out_size = 0;
 
-	Filepath temp;
-	if (!create_temp_state_filepath(&temp)) {
-		return XM6CORE_ERR_IO;
-	}
-
-	DWORD res = ctx->vm->Save(temp);
-	if (res == 0) {
-		delete_temp_state_file(temp);
-		return XM6CORE_ERR_IO;
-	}
-
 	Fileio fio;
-	if (!fio.Open(temp, Fileio::ReadOnly)) {
-		delete_temp_state_file(temp);
+	if (!fio.OpenMemoryWriteDynamic()) {
 		return XM6CORE_ERR_IO;
 	}
 
-	DWORD file_size = fio.GetFileSize();
+	DWORD res = ctx->vm->Save(fio);
 	fio.Close();
-	delete_temp_state_file(temp);
-
-	if (file_size == 0) {
+	if (res == 0) {
 		return XM6CORE_ERR_IO;
 	}
 
-	*out_size = (unsigned int)file_size;
+	*out_size = (unsigned int)res;
 	return XM6CORE_OK;
 }
 
@@ -1139,38 +1188,26 @@ XM6CORE_API int XM6CORE_CALL xm6_save_state_mem(XM6Handle handle, void *buffer, 
 		return XM6CORE_ERR_INVALID_ARGUMENT;
 	}
 
-	Filepath temp;
-	if (!create_temp_state_filepath(&temp)) {
-		return XM6CORE_ERR_IO;
-	}
-
-	DWORD res = ctx->vm->Save(temp);
-	if (res == 0) {
-		delete_temp_state_file(temp);
-		return XM6CORE_ERR_IO;
-	}
-
 	Fileio fio;
-	if (!fio.Open(temp, Fileio::ReadOnly)) {
-		delete_temp_state_file(temp);
+	if (!fio.OpenMemoryWriteDynamic()) {
 		return XM6CORE_ERR_IO;
 	}
 
-	DWORD file_size = fio.GetFileSize();
-	if (file_size == 0 || file_size > size) {
+	DWORD res = ctx->vm->Save(fio);
+	if (res == 0) {
 		fio.Close();
-		delete_temp_state_file(temp);
+		return XM6CORE_ERR_IO;
+	}
+	if (res > size) {
+		fio.Close();
 		return XM6CORE_ERR_INVALID_ARGUMENT;
 	}
 
-	int ret = XM6CORE_ERR_IO;
-	if (fio.Read(buffer, (int)file_size)) {
-		ret = XM6CORE_OK;
-	}
+	xm6_log_state_probe(ctx, "save_state_mem before copy", fio.GetMemoryData(), (unsigned int)res);
+	::memcpy(buffer, fio.GetMemoryData(), res);
+	xm6_log_state_probe(ctx, "save_state_mem after copy", buffer, (unsigned int)res);
 	fio.Close();
-	delete_temp_state_file(temp);
-
-	return ret;
+	return XM6CORE_OK;
 }
 
 //---------------------------------------------------------------------------
@@ -1186,27 +1223,17 @@ XM6CORE_API int XM6CORE_CALL xm6_load_state_mem(XM6Handle handle, const void *bu
 		return XM6CORE_ERR_INVALID_ARGUMENT;
 	}
 
-	Filepath temp;
-	if (!create_temp_state_filepath(&temp)) {
-		return XM6CORE_ERR_IO;
-	}
-
 	Fileio fio;
-	if (!fio.Open(temp, Fileio::WriteOnly)) {
-		delete_temp_state_file(temp);
+	if (!fio.OpenMemoryRead(buffer, size)) {
 		return XM6CORE_ERR_IO;
 	}
 
-	if (!fio.Write(buffer, (int)size)) {
-		fio.Close();
-		delete_temp_state_file(temp);
-		return XM6CORE_ERR_IO;
-	}
+	xm6_log_state_probe(ctx, "load_state_mem input", buffer, size);
+	DWORD res = ctx->vm->Load(fio);
 	fio.Close();
-
-	DWORD res = ctx->vm->Load(temp);
-	delete_temp_state_file(temp);
-
+	if (res != 0) {
+		post_state_load_sync(ctx);
+	}
 	return (res != 0) ? XM6CORE_OK : XM6CORE_ERR_IO;
 }
 

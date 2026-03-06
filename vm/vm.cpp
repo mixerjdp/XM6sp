@@ -297,80 +297,84 @@ void FASTCALL VM::NotifyHostMessage(const TCHAR* message) const
 
 DWORD FASTCALL VM::Save(const Filepath& path)
 {
-	ASSERT(this);
-	return OriginalSave(path);
+    Fileio fio;
+    DWORD pos;
+
+    ASSERT(this);
+    current.Clear();
+
+    if (!fio.Open(path, Fileio::WriteOnly)) {
+        return 0;
+    }
+    pos = OriginalSave(fio);
+    fio.Close();
+    if (pos != 0) {
+        current = path;
+    }
+    return pos;
+}
+
+DWORD FASTCALL VM::Save(Fileio& fio)
+{
+    ASSERT(this);
+    return OriginalSave(fio);
 }
 
 DWORD FASTCALL VM::OriginalSave(const Filepath& path)
 {
-	Fileio fio;
-	char header[0x10];
-	int ver;
-	Device *device;
-	DWORD id;
-	DWORD pos;
+    return Save(path);
+}
 
-	ASSERT(this);
+DWORD FASTCALL VM::OriginalSave(Fileio& fio)
+{
+    char header[0x10];
+    char msg[128];
+    int ver;
+    int index;
+    Device *device;
+    DWORD id;
+    DWORD pos;
 
-	// デバイスポインタ初期化
-	device = first_device;
+    ASSERT(this);
+    ASSERT(fio.IsValid());
 
-	// バージョン作成
-	ver = (int)((major_ver << 8) | minor_ver);
+    device = first_device;
+    ver = (int)((major_ver << 8) | minor_ver);
 
-	// ヘッダ作成
-	sprintf(header, "XM6 DATA %1X.%02X", major_ver, minor_ver);
-	header[0x0d] = 0x0d;
-	header[0x0e] = 0x0a;
-	header[0x0f] = 0x1a;
+    sprintf(header, "XM6 DATA %1X.%02X", major_ver, minor_ver);
+    header[0x0d] = 0x0d;
+    header[0x0e] = 0x0a;
+    header[0x0f] = 0x1a;
 
-	// ファイル作成、ヘッダ書き込み
-	if (!fio.Open(path, Fileio::WriteOnly)) {
-		return 0;
-	}
-	if (!fio.Write(header, 0x10)) {
-		fio.Close();
-		return 0;
-	}
+    if (!fio.Write(header, 0x10)) {
+        return 0;
+    }
 
-	// 順番に回る(バージョンはBCDが渡される)
-	while (device) {
-		// ID書き込み
-		id = device->GetID();
-		if (!fio.Write(&id, sizeof(id))) {
-			fio.Close();
-			return 0;
-		}
+    index = 0;
+    while (device) {
+        pos = fio.GetFilePos();
+        id = device->GetID();
+        if (index < 3) {
+            wsprintfA(msg, "savestate save record[%d] id=%08lX offset=%08lX", index, (unsigned long)id, (unsigned long)pos);
+            NotifyHostMessage(msg);
+        }
+        if (!fio.Write(&id, sizeof(id))) {
+            return 0;
+        }
+        if (!device->Save(&fio, ver)) {
+            return 0;
+        }
+        device = device->GetNextDevice();
+        index++;
+    }
 
-		// デバイス別
-		if (!device->Save(&fio, ver)) {
-			// デバイスが失敗した
-			fio.Close();
-			return 0;
-		}
+    id = MAKEID('E', 'N', 'D', ' ');
+    if (!fio.Write(&id, sizeof(id))) {
+        return 0;
+    }
 
-		// 次のデバイスへ
-		device = device->GetNextDevice();
-	}
-
-	// 識別用として、デバイス名ENDを与える
-	id = MAKEID('E', 'N', 'D', ' ');
-	if (!fio.Write(&id, sizeof(id))) {
-		fio.Close();
-		return 0;
-	}
-
-	// 位置を保存
-	pos = fio.GetFilePos();
-
-	// ファイルクローズ
-	fio.Close();
-
-	// カレントに設定
-	current = path;
-
-	// 成功
-	return pos;
+    pos = fio.GetFilePos();
+    return pos;
 }
 
 //---------------------------------------------------------------------------
@@ -380,99 +384,124 @@ DWORD FASTCALL VM::OriginalSave(const Filepath& path)
 //---------------------------------------------------------------------------
 DWORD FASTCALL VM::Load(const Filepath& path)
 {
-	Fileio fio;
-	char buf[0x10];
-	int rec;
-	int ver;
-	Device *device;
-	DWORD id;
-	DWORD pos;
+    Fileio fio;
+    DWORD pos;
 
-	ASSERT(this);
+    ASSERT(this);
+    current.Clear();
 
-	// カレントパスをクリア
-	current.Clear();
-
-	// ファイルオープン、ヘッダ読み込み
-	if (!fio.Open(path, Fileio::ReadOnly)) {		
-		return 0;
-	}
-	if (!fio.Read(buf, 0x10)) {
-		fio.Close();
-		return 0;
-	}
-
-	// 記録バージョン取得
-	buf[0x0a] = '\0';
-	rec = ::strtoul(&buf[0x09], NULL, 16);
-	rec <<= 8;
-	buf[0x0d] = '\0';
-	rec |= ::strtoul(&buf[0x0b], NULL, 16);
-
-	// 現行バージョン作成
-	ver = (int)((major_ver << 8) | minor_ver);
-
-	// ヘッダチェック
-	buf[0x09] = '\0';
-	if (strcmp(buf, "XM6 DATA ") != 0) {
-		fio.Close();
-		return 0;
-	}
-
-	// バージョンチェック
-	if (ver < rec) {
-		// 記録されているバージョンのほうが新しい(知らない形式)
-		fio.Close();
-		return 0;
-	}
-
-	// デバイス名を検索しながら回る(バージョンはBCDが渡される)
-	for (;;) {
-		// ID読み込み
-		if (!fio.Read(&id, sizeof(id))) {
-			fio.Close();
-			return 0;
-		}
-
-		// 終端チェック
-		if (id == MAKEID('E', 'N', 'D', ' ')) {
-			break;
-		}
-
-		// デバイスサーチ
-		device = SearchDevice(id);
-		if (!device) {
-			// セーブ時に存在したデバイスが、今はない。ロードできない
-			fio.Close();
-			return 0;
-		}
-
-		// デバイス別
-		if (!device->Load(&fio, rec)) {
-			// デバイスが失敗した
-			fio.Close();
-			return 0;
-		}
-	}
-
-	// 位置を保存
-	pos = fio.GetFilePos();
-
-	// ファイルクローズ
-	fio.Close();
-
-	// カレントに設定
-	current = path;
-
-	// 成功
-	return pos;
+    if (!fio.Open(path, Fileio::ReadOnly)) {
+        return 0;
+    }
+    pos = Load(fio);
+    fio.Close();
+    if (pos != 0) {
+        current = path;
+    }
+    return pos;
 }
 
-//---------------------------------------------------------------------------
-//
-//	パス取得
-//
-//---------------------------------------------------------------------------
+DWORD FASTCALL VM::Load(Fileio& fio)
+{
+    char buf[0x10];
+    char idtxt[5];
+    char msg[160];
+    int rec;
+    int ver;
+    int index;
+    Device *device;
+    DWORD id;
+    DWORD id_pos;
+    DWORD pos;
+
+    ASSERT(this);
+    ASSERT(fio.IsValid());
+    current.Clear();
+
+    if (!fio.Read(buf, 0x10)) {
+        NotifyHostMessage(_T("savestate load failed: short header"));
+        return 0;
+    }
+
+    buf[0x0a] = '\0';
+    rec = ::strtoul(&buf[0x09], NULL, 16);
+    rec <<= 8;
+    buf[0x0d] = '\0';
+    rec |= ::strtoul(&buf[0x0b], NULL, 16);
+
+    ver = (int)((major_ver << 8) | minor_ver);
+
+    buf[0x09] = '\0';
+    if (strcmp(buf, "XM6 DATA ") != 0) {
+        NotifyHostMessage(_T("savestate load failed: invalid header"));
+        return 0;
+    }
+    if (ver < rec) {
+        NotifyHostMessage(_T("savestate load failed: unsupported version"));
+        return 0;
+    }
+
+    index = 0;
+    for (;;) {
+        id_pos = fio.GetFilePos();
+        if (!fio.Read(&id, sizeof(id))) {
+            wsprintfA(
+                msg,
+                "savestate load failed: truncated device list at index=%d offset=%08lX",
+                index,
+                (unsigned long)id_pos);
+            NotifyHostMessage(msg);
+            return 0;
+        }
+        if (index == 0) {
+            wsprintfA(
+                msg,
+                "savestate first record id=%08lX offset=%08lX",
+                (unsigned long)id,
+                (unsigned long)id_pos);
+            NotifyHostMessage(msg);
+        }
+        if (id == MAKEID('E', 'N', 'D', ' ')) {
+            break;
+        }
+        device = SearchDevice(id);
+        if (!device) {
+            idtxt[0] = (char)((id >> 24) & 0xff);
+            idtxt[1] = (char)((id >> 16) & 0xff);
+            idtxt[2] = (char)((id >> 8) & 0xff);
+            idtxt[3] = (char)(id & 0xff);
+            idtxt[4] = '\0';
+            wsprintfA(
+                msg,
+                "savestate load failed: unknown device %.4s (%08lX) index=%d offset=%08lX",
+                idtxt,
+                (unsigned long)id,
+                index,
+                (unsigned long)id_pos);
+            NotifyHostMessage(msg);
+            return 0;
+        }
+        if (!device->Load(&fio, rec)) {
+            idtxt[0] = (char)((id >> 24) & 0xff);
+            idtxt[1] = (char)((id >> 16) & 0xff);
+            idtxt[2] = (char)((id >> 8) & 0xff);
+            idtxt[3] = (char)(id & 0xff);
+            idtxt[4] = '\0';
+            wsprintfA(
+                msg,
+                "savestate load failed: device %.4s (%08lX) index=%d offset=%08lX",
+                idtxt,
+                (unsigned long)id,
+                index,
+                (unsigned long)id_pos);
+            NotifyHostMessage(msg);
+            return 0;
+        }
+        index++;
+    }
+    pos = fio.GetFilePos();
+    return pos;
+}
 void FASTCALL VM::GetPath(Filepath& path) const
 {
 	ASSERT(this);

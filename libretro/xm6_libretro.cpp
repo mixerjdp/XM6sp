@@ -29,6 +29,7 @@ static const double k_fps = 55.0;
 static const unsigned k_sample_rate = 44100;
 static const unsigned k_default_width = 768;
 static const unsigned k_default_height = 512;
+static const unsigned k_savestate_guard_frames = 300;
 
 static unsigned g_frame_width = k_default_width;
 static unsigned g_frame_height = k_default_height;
@@ -61,6 +62,7 @@ static int g_master_volume = 100;
 static int g_fm_volume = 54;
 static int g_adpcm_volume = 52;
 static unsigned g_hdd_boot_reset_countdown = 0;
+static unsigned g_savestate_guard_countdown = 0;
 
 static bool g_prev_start = false;
 static bool g_prev_select = false;
@@ -354,6 +356,15 @@ static void run_boot_warmup_and_reset(const char *kind)
 
   g_xm6.reset(g_xm6_handle);
   g_video_not_ready_count = 0;
+}
+
+static void arm_savestate_guard(const char *reason)
+{
+  g_savestate_guard_countdown = k_savestate_guard_frames;
+  core_log(RETRO_LOG_INFO,
+           "[xm6-libretro] Savestate guard armed for %u frames (%s)",
+           g_savestate_guard_countdown,
+           reason ? reason : "unspecified");
 }
 
 static void destroy_xm6_handle()
@@ -1466,6 +1477,7 @@ void retro_init(void)
   g_master_volume = 100;
   g_fm_volume = 54;
   g_adpcm_volume = 52;
+  g_savestate_guard_countdown = 0;
   g_audio_buffer.clear();
 
   load_xm6_api();
@@ -1519,6 +1531,7 @@ void retro_reset(void)
   if (g_xm6_handle && g_xm6.reset) {
     g_hdd_boot_reset_countdown = 0;
     g_xm6.reset(g_xm6_handle);
+    arm_savestate_guard("manual reset");
   }
 }
 
@@ -1574,6 +1587,7 @@ bool retro_load_game(const struct retro_game_info *info)
   if (!mount_current_disk()) {
     return false;
   }
+  arm_savestate_guard(g_content_is_hdd ? "content load (HDD)" : "content load (floppy)");
   g_disk_ejected = false;
   if (!g_content_is_hdd) {
     register_disk_interface();
@@ -1682,6 +1696,7 @@ void retro_run(void)
             old_hdd_is_scsi != g_hdd_is_scsi ||
             old_hdd_slot != g_hdd_slot) && g_content_is_hdd)) {
         mount_current_disk();
+        arm_savestate_guard(g_content_is_hdd ? "disk remount (HDD)" : "disk remount (floppy)");
         if (g_content_is_hdd) {
           g_hdd_boot_reset_countdown = 0;
           run_boot_warmup_and_reset("HDD");
@@ -1692,6 +1707,10 @@ void retro_run(void)
         }
       }
     }
+  }
+
+  if (g_savestate_guard_countdown > 0) {
+    --g_savestate_guard_countdown;
   }
 
   poll_and_push_input();
@@ -1761,6 +1780,12 @@ bool retro_serialize(void *data, size_t size)
   if (!g_xm6_handle || !data) {
     return false;
   }
+  if (g_savestate_guard_countdown > 0) {
+    core_log(RETRO_LOG_WARN,
+             "[xm6-libretro] Savestate denied during boot/disk stabilization (%u frames remaining)",
+             g_savestate_guard_countdown);
+    return false;
+  }
   return g_xm6.save_state_mem(g_xm6_handle, data, static_cast<unsigned int>(size)) == XM6CORE_OK;
 }
 
@@ -1769,7 +1794,12 @@ bool retro_unserialize(const void *data, size_t size)
   if (!g_xm6_handle || !data) {
     return false;
   }
-  return g_xm6.load_state_mem(g_xm6_handle, data, static_cast<unsigned int>(size)) == XM6CORE_OK;
+  bool ok = g_xm6.load_state_mem(g_xm6_handle, data, static_cast<unsigned int>(size)) == XM6CORE_OK;
+  if (ok) {
+    g_video_not_ready_count = 0;
+    core_log(RETRO_LOG_INFO, "[xm6-libretro] Savestate loaded");
+  }
+  return ok;
 }
 
 void retro_cheat_reset(void) {}

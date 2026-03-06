@@ -14,6 +14,8 @@
 #include "filepath.h"
 #include "host_services.h"
 
+class Fileio;
+
 //===========================================================================
 //
 //	仮想マシン
@@ -37,10 +39,13 @@ public:
 
 	// ステート保存
 	DWORD FASTCALL OriginalSave(const Filepath& path);
+	DWORD FASTCALL OriginalSave(Fileio& fio);
 	
 	DWORD FASTCALL Save(const Filepath& path);
+	DWORD FASTCALL Save(Fileio& fio);
 										// セーブ
 	DWORD FASTCALL Load(const Filepath& path);
+	DWORD FASTCALL Load(Fileio& fio);
 										// ロード
 	void FASTCALL GetPath(Filepath& path) const;
 										// パス取得
