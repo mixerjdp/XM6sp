@@ -4795,7 +4795,7 @@ BOOL FASTCALL FDIDisk2HD::Open(const Filepath& path, DWORD offset)
 			return FALSE;
 		}
 
-		// “Ç‚İ‚İ‚Í‰Â”
+		// “Ç‚İ‚İ‚Í‰ÂE
 		disk.writep = TRUE;
 		disk.readonly = TRUE;
 	}
@@ -5244,7 +5244,7 @@ BOOL FASTCALL FDIDiskDIM::Open(const Filepath& path, DWORD offset)
 			return FALSE;
 		}
 
-		// “Ç‚İ‚İ‚Í‰Â”
+		// “Ç‚İ‚İ‚Í‰ÂE
 		disk.writep = TRUE;
 		disk.readonly = TRUE;
 	}
@@ -6137,7 +6137,7 @@ BOOL FASTCALL FDIDiskD68::Open(const Filepath& path, DWORD offset)
 			return FALSE;
 		}
 
-		// “Ç‚İ‚İ‚Í‰Â”
+		// “Ç‚İ‚İ‚Í‰ÂE
 		disk.writep = TRUE;
 		disk.readonly = TRUE;
 	}
@@ -6994,7 +6994,7 @@ BOOL FASTCALL FDIDiskBAD::Open(const Filepath& path, DWORD offset)
 			return FALSE;
 		}
 
-		// “Ç‚İ‚İ‚Í‰Â”
+		// “Ç‚İ‚İ‚Í‰ÂE
 		disk.writep = TRUE;
 		disk.readonly = TRUE;
 	}
@@ -7280,7 +7280,7 @@ BOOL FASTCALL FDIDisk2DD::Open(const Filepath& path, DWORD offset)
 			return FALSE;
 		}
 
-		// “Ç‚İ‚İ‚Í‰Â”
+		// “Ç‚İ‚İ‚Í‰ÂE
 		disk.writep = TRUE;
 		disk.readonly = TRUE;
 	}
@@ -7631,7 +7631,7 @@ BOOL FASTCALL FDIDisk2HQ::Open(const Filepath& path, DWORD offset)
 			return FALSE;
 		}
 
-		// “Ç‚İ‚İ‚Í‰Â”
+		// “Ç‚İ‚İ‚Í‰ÂE
 		disk.writep = TRUE;
 		disk.readonly = TRUE;
 	}

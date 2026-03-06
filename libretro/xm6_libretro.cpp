@@ -61,6 +61,7 @@ struct xm6_api_t {
 
   XM6Handle (XM6CORE_CALL *create)(void) = nullptr;
   void (XM6CORE_CALL *destroy)(XM6Handle) = nullptr;
+  int (XM6CORE_CALL *set_message_callback)(XM6Handle handle, xm6_message_callback_t callback, void *user) = nullptr;
   int (XM6CORE_CALL *set_system_dir)(const char *system_dir) = nullptr;
 
   int (XM6CORE_CALL *exec)(XM6Handle handle, unsigned int hus) = nullptr;
@@ -97,6 +98,15 @@ struct xm6_api_t {
 
 static xm6_api_t g_xm6;
 static XM6Handle g_xm6_handle = nullptr;
+
+static void core_log(enum retro_log_level level, const char *fmt, ...);
+
+static void XM6CORE_CALL xm6_host_message_cb(const char *message, void * /*user*/)
+{
+  if (message && *message) {
+    core_log(RETRO_LOG_INFO, "%s", message);
+  }
+}
 
 static void core_log(enum retro_log_level level, const char *fmt, ...)
 {
@@ -222,6 +232,7 @@ static bool load_xm6_api()
 
   if (!load_required_symbol(&g_xm6.create, "xm6_create") ||
       !load_required_symbol(&g_xm6.destroy, "xm6_destroy") ||
+      !load_required_symbol(&g_xm6.set_message_callback, "xm6_set_message_callback") ||
       !load_required_symbol(&g_xm6.exec, "xm6_exec") ||
       !load_required_symbol(&g_xm6.reset, "xm6_reset") ||
       !load_required_symbol(&g_xm6.set_power, "xm6_set_power") ||
@@ -290,10 +301,14 @@ static bool ensure_xm6_handle()
     core_log(RETRO_LOG_WARN, "[xm6-libretro] audio configure failed");
   }
 
+  if (g_xm6.set_message_callback) {
+    g_xm6.set_message_callback(g_xm6_handle, xm6_host_message_cb, nullptr);
+  }
+
   return true;
 }
 
-static void run_hdd_boot_warmup_and_reset()
+static void run_boot_warmup_and_reset(const char *kind)
 {
   if (!g_xm6_handle) {
     return;
@@ -305,8 +320,8 @@ static void run_hdd_boot_warmup_and_reset()
   // hang on problematic images.
   const unsigned warmup_frames = 8;
   core_log(RETRO_LOG_INFO,
-           "[xm6-libretro] Performing immediate HDD boot stabilization (%u warm-up frames)",
-           warmup_frames);
+           "[xm6-libretro] Performing immediate %s boot stabilization (%u warm-up frames)",
+           kind ? kind : "content", warmup_frames);
 
   for (unsigned i = 0; i < warmup_frames; ++i) {
     if (g_xm6.exec) {
@@ -1420,11 +1435,12 @@ bool retro_load_game(const struct retro_game_info *info)
     g_xm6.set_power(g_xm6_handle, 0);
     g_xm6.set_power(g_xm6_handle, 1);
     g_hdd_boot_reset_countdown = 0;
-    run_hdd_boot_warmup_and_reset();
+    run_boot_warmup_and_reset("HDD");
   } else {
     g_xm6.set_power(g_xm6_handle, 1);
+    g_video_not_ready_count = 0;
+    core_log(RETRO_LOG_INFO, "[xm6-libretro] Performing floppy post-mount reset");
     g_xm6.reset(g_xm6_handle);
-    g_hdd_boot_reset_countdown = 0;
   }
 
   g_game_loaded = true;
@@ -1490,7 +1506,11 @@ void retro_run(void)
         mount_current_disk();
         if (g_content_is_hdd) {
           g_hdd_boot_reset_countdown = 0;
-          run_hdd_boot_warmup_and_reset();
+          run_boot_warmup_and_reset("HDD");
+        } else {
+          g_video_not_ready_count = 0;
+          core_log(RETRO_LOG_INFO, "[xm6-libretro] Performing floppy post-mount reset");
+          g_xm6.reset(g_xm6_handle);
         }
       }
     }

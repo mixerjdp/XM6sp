@@ -23,6 +23,7 @@
 #include "keyboard.h"
 #include "mouse.h"
 #include "fdd.h"
+#include "fdi.h"
 #include "ppi.h"
 #include "opmif.h"
 #include "opm.h"
@@ -33,6 +34,7 @@
 #include "filepath.h"
 #include "fileio.h"
 #include <cstring>
+#include <cstdarg>
 #include <new>
 
 //---------------------------------------------------------------------------
@@ -91,6 +93,49 @@ static inline XM6Context* ctx_from_handle(XM6Handle handle)
 static inline bool ctx_valid(XM6Context *ctx)
 {
 	return (ctx != NULL && ctx->vm != NULL);
+}
+
+static void emit_messagef(XM6Context *ctx, const char *format, ...)
+{
+	if (!ctx || !ctx->msg_callback || !format) {
+		return;
+	}
+
+	char buffer[512];
+	va_list args;
+	va_start(args, format);
+#if defined(_MSC_VER)
+	_vsnprintf_s(buffer, sizeof(buffer), _TRUNCATE, format, args);
+#else
+	vsnprintf(buffer, sizeof(buffer), format, args);
+#endif
+	va_end(args);
+	buffer[sizeof(buffer) - 1] = '\0';
+	ctx->msg_callback(buffer, ctx->msg_user);
+}
+
+static unsigned long long query_file_size_bytes(const char *path)
+{
+	WIN32_FILE_ATTRIBUTE_DATA data;
+	if (!path || !GetFileAttributesExA(path, GetFileExInfoStandard, &data)) {
+		return 0;
+	}
+	return (static_cast<unsigned long long>(data.nFileSizeHigh) << 32) |
+		static_cast<unsigned long long>(data.nFileSizeLow);
+}
+
+static const char* fdi_id_name(DWORD id)
+{
+	switch (id) {
+	case MAKEID('D', 'I', 'M', ' '): return "DIM";
+	case MAKEID('D', '6', '8', ' '): return "D68";
+	case MAKEID('2', 'H', 'D', ' '): return "2HD";
+	case MAKEID('2', 'D', 'D', ' '): return "2DD";
+	case MAKEID('2', 'H', 'Q', ' '): return "2HQ";
+	case MAKEID('B', 'A', 'D', ' '): return "BAD";
+	case MAKEID('N', 'U', 'L', 'L'): return "NULL";
+	default: return "UNKNOWN";
+	}
 }
 
 static void apply_runtime_config(XM6Context *ctx)
@@ -467,9 +512,25 @@ XM6CORE_API int XM6CORE_CALL xm6_mount_fdd(
 	Filepath path;
 	path.SetPath(image_path);
 
+	emit_messagef(ctx,
+		"[xm6core] mount_fdd drive=%d media_hint=%d size=%llu path=%s",
+		drive, media_hint, query_file_size_bytes(image_path), image_path);
+
 	if (!ctx->fdd->Open(drive, path, media_hint)) {
+		emit_messagef(ctx,
+			"[xm6core] mount_fdd open failed drive=%d media_hint=%d path=%s",
+			drive, media_hint, image_path);
 		return XM6CORE_ERR_IO;
 	}
+
+	FDI *fdi = ctx->fdd->GetFDI(drive);
+	emit_messagef(ctx,
+		"[xm6core] mount_fdd open ok drive=%d media=%d inserted=%d fdi_id=0x%08lx parser=%s",
+		drive,
+		fdi ? fdi->GetMedia() : -1,
+		fdi ? 1 : 0,
+		(unsigned long)(fdi ? fdi->GetID() : MAKEID('N', 'U', 'L', 'L')),
+		fdi ? fdi_id_name(fdi->GetID()) : "NULL");
 
 	return XM6CORE_OK;
 }
