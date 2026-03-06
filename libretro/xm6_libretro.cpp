@@ -29,7 +29,10 @@ static const double k_fps = 55.0;
 static const unsigned k_sample_rate = 44100;
 static const unsigned k_default_width = 768;
 static const unsigned k_default_height = 512;
-static const unsigned k_savestate_guard_frames = 300;
+static const unsigned k_savestate_guard_frames_default = 300;
+static const unsigned k_savestate_guard_frames_floppy_load = 420;
+static const unsigned k_savestate_guard_frames_hdd_load = 720;
+static const unsigned k_savestate_guard_frames_post_load = 180;
 
 static unsigned g_frame_width = k_default_width;
 static unsigned g_frame_height = k_default_height;
@@ -61,6 +64,19 @@ static bool g_fast_floppy = false;
 static int g_master_volume = 100;
 static int g_fm_volume = 54;
 static int g_adpcm_volume = 52;
+enum pointer_device_mode_t {
+  POINTER_DEVICE_DISABLED = 0,
+  POINTER_DEVICE_MOUSE = 1,
+  POINTER_DEVICE_JOYPAD_MOUSE = 2
+};
+static int g_pointer_device_mode = POINTER_DEVICE_DISABLED;
+static int g_mouse_port = 0;
+static int g_mouse_speed = 205;
+static bool g_mouse_swap = false;
+static int g_mouse_x = 0;
+static int g_mouse_y = 0;
+static bool g_mouse_left = false;
+static bool g_mouse_right = false;
 static unsigned g_hdd_boot_reset_countdown = 0;
 static unsigned g_savestate_guard_countdown = 0;
 
@@ -92,6 +108,8 @@ struct xm6_api_t {
   int (XM6CORE_CALL *input_joy)(XM6Handle handle, int port,
                                 const unsigned int axes[4], const int buttons[8]) = nullptr;
   int (XM6CORE_CALL *input_key)(XM6Handle handle, unsigned int xm6_keycode, int pressed) = nullptr;
+  int (XM6CORE_CALL *input_mouse)(XM6Handle handle, int x, int y, int left, int right) = nullptr;
+  int (XM6CORE_CALL *input_mouse_reset)(XM6Handle handle) = nullptr;
 
   int (XM6CORE_CALL *mount_fdd)(XM6Handle handle, int drive, const char *image_path, int media_hint) = nullptr;
   int (XM6CORE_CALL *mount_sasi_hdd)(XM6Handle handle, int slot, const char *image_path) = nullptr;
@@ -104,6 +122,9 @@ struct xm6_api_t {
   int (XM6CORE_CALL *set_master_volume)(XM6Handle handle, int volume) = nullptr;
   int (XM6CORE_CALL *set_fm_volume)(XM6Handle handle, int volume) = nullptr;
   int (XM6CORE_CALL *set_adpcm_volume)(XM6Handle handle, int volume) = nullptr;
+  int (XM6CORE_CALL *set_mouse_speed)(XM6Handle handle, int speed) = nullptr;
+  int (XM6CORE_CALL *set_mouse_port)(XM6Handle handle, int port) = nullptr;
+  int (XM6CORE_CALL *set_mouse_swap)(XM6Handle handle, int enabled) = nullptr;
 
   int (XM6CORE_CALL *state_size)(XM6Handle handle, unsigned int *out_size) = nullptr;
   int (XM6CORE_CALL *save_state_mem)(XM6Handle handle, void *buffer, unsigned int size) = nullptr;
@@ -261,6 +282,8 @@ static bool load_xm6_api()
       !load_required_symbol(&g_xm6.audio_mix, "xm6_audio_mix") ||
       !load_required_symbol(&g_xm6.input_joy, "xm6_input_joy") ||
       !load_required_symbol(&g_xm6.input_key, "xm6_input_key") ||
+      !load_required_symbol(&g_xm6.input_mouse, "xm6_input_mouse") ||
+      !load_required_symbol(&g_xm6.input_mouse_reset, "xm6_input_mouse_reset") ||
       !load_required_symbol(&g_xm6.mount_fdd, "xm6_mount_fdd") ||
       !load_required_symbol(&g_xm6.eject_fdd, "xm6_eject_fdd") ||
       !load_required_symbol(&g_xm6.state_size, "xm6_state_size") ||
@@ -288,6 +311,9 @@ static bool load_xm6_api()
   load_optional_symbol(&g_xm6.set_master_volume, "xm6_set_master_volume");
   load_optional_symbol(&g_xm6.set_fm_volume, "xm6_set_fm_volume");
   load_optional_symbol(&g_xm6.set_adpcm_volume, "xm6_set_adpcm_volume");
+  load_optional_symbol(&g_xm6.set_mouse_speed, "xm6_set_mouse_speed");
+  load_optional_symbol(&g_xm6.set_mouse_port, "xm6_set_mouse_port");
+  load_optional_symbol(&g_xm6.set_mouse_swap, "xm6_set_mouse_swap");
 
   core_log(RETRO_LOG_INFO, "[xm6-libretro] Loaded xm6core.dll");
   return true;
@@ -333,6 +359,31 @@ static bool ensure_xm6_handle()
   return true;
 }
 
+static void log_memory_exposure_status()
+{
+  if (!g_xm6_handle) {
+    return;
+  }
+
+  if (!g_xm6.get_main_ram) {
+    core_log(RETRO_LOG_INFO,
+             "[xm6-libretro] Memory exposure: SYSTEM_RAM unavailable");
+    return;
+  }
+
+  unsigned int ram_size = 0;
+  void *ram = g_xm6.get_main_ram(g_xm6_handle, &ram_size);
+  if (!ram || ram_size == 0) {
+    core_log(RETRO_LOG_WARN,
+             "[xm6-libretro] Memory exposure: SYSTEM_RAM returned null/empty");
+    return;
+  }
+
+  core_log(RETRO_LOG_INFO,
+           "[xm6-libretro] Memory exposure: SYSTEM_RAM ptr=%p size=%u bytes",
+           ram, ram_size);
+}
+
 static void run_boot_warmup_and_reset(const char *kind)
 {
   if (!g_xm6_handle) {
@@ -358,13 +409,29 @@ static void run_boot_warmup_and_reset(const char *kind)
   g_video_not_ready_count = 0;
 }
 
-static void arm_savestate_guard(const char *reason)
+static void arm_savestate_guard_frames(const char *reason, unsigned frames)
 {
-  g_savestate_guard_countdown = k_savestate_guard_frames;
+  g_savestate_guard_countdown = frames;
   core_log(RETRO_LOG_INFO,
            "[xm6-libretro] Savestate guard armed for %u frames (%s)",
            g_savestate_guard_countdown,
            reason ? reason : "unspecified");
+}
+
+static void arm_savestate_guard(const char *reason)
+{
+  arm_savestate_guard_frames(reason, k_savestate_guard_frames_default);
+}
+
+static void reset_mouse_state()
+{
+  g_mouse_x = 0;
+  g_mouse_y = 0;
+  g_mouse_left = false;
+  g_mouse_right = false;
+  if (g_xm6_handle && g_xm6.input_mouse_reset) {
+    g_xm6.input_mouse_reset(g_xm6_handle);
+  }
 }
 
 static void destroy_xm6_handle()
@@ -385,6 +452,7 @@ static void destroy_xm6_handle()
   g_hdd_boot_reset_countdown = 0;
   g_prev_start = false;
   g_prev_select = false;
+  reset_mouse_state();
 }
 
 static bool set_system_directory_from_frontend()
@@ -831,6 +899,15 @@ static void apply_runtime_core_options()
   if (g_xm6.set_adpcm_volume) {
     g_xm6.set_adpcm_volume(g_xm6_handle, g_adpcm_volume);
   }
+  if (g_xm6.set_mouse_speed) {
+    g_xm6.set_mouse_speed(g_xm6_handle, g_mouse_speed);
+  }
+  if (g_xm6.set_mouse_port) {
+    g_xm6.set_mouse_port(g_xm6_handle, g_mouse_port);
+  }
+  if (g_xm6.set_mouse_swap) {
+    g_xm6.set_mouse_swap(g_xm6_handle, g_mouse_swap ? 1 : 0);
+  }
 }
 
 static void apply_core_option_values()
@@ -844,15 +921,11 @@ static void apply_core_option_values()
   var.key = "xm6_disk_drive";
   if (g_environ_cb(RETRO_ENVIRONMENT_GET_VARIABLE, &var) && var.value) {
     g_disk_drive = (std::strcmp(var.value, "FDD1") == 0) ? 1 : 0;
-  } else {
-    g_disk_drive = 0;
   }
 
   var.key = "xm6_exec_mode";
   if (g_environ_cb(RETRO_ENVIRONMENT_GET_VARIABLE, &var) && var.value) {
     g_use_exec_to_frame = std::strcmp(var.value, "legacy_exec") != 0;
-  } else {
-    g_use_exec_to_frame = true;
   }
 
   var.key = "xm6_pad_start_select";
@@ -864,8 +937,6 @@ static void apply_core_option_values()
     } else {
       g_pad_start_select_mode = START_SELECT_XF_KEYS;
     }
-  } else {
-    g_pad_start_select_mode = START_SELECT_XF_KEYS;
   }
 
   var.key = "xm6_cpu_clock";
@@ -879,8 +950,6 @@ static void apply_core_option_values()
     } else {
       g_system_clock = 0;
     }
-  } else {
-    g_system_clock = 0;
   }
 
   var.key = "xm6_joy1_type";
@@ -896,8 +965,6 @@ static void apply_core_option_values()
     } else {
       g_joy_type[0] = 1;
     }
-  } else {
-    g_joy_type[0] = 1;
   }
 
   var.key = "xm6_joy2_type";
@@ -913,8 +980,6 @@ static void apply_core_option_values()
     } else {
       g_joy_type[1] = 0;
     }
-  } else {
-    g_joy_type[1] = 0;
   }
 
   var.key = "xm6_ram_size";
@@ -932,36 +997,58 @@ static void apply_core_option_values()
     } else {
       g_ram_size = 5;
     }
-  } else {
-    g_ram_size = 5;
   }
 
   var.key = "xm6_fast_floppy";
   if (g_environ_cb(RETRO_ENVIRONMENT_GET_VARIABLE, &var) && var.value) {
     g_fast_floppy = (std::strcmp(var.value, "enabled") == 0);
-  } else {
-    g_fast_floppy = false;
   }
 
   var.key = "xm6_master_volume";
   if (g_environ_cb(RETRO_ENVIRONMENT_GET_VARIABLE, &var) && var.value) {
     g_master_volume = std::atoi(var.value);
-  } else {
-    g_master_volume = 100;
   }
 
   var.key = "xm6_fm_volume";
   if (g_environ_cb(RETRO_ENVIRONMENT_GET_VARIABLE, &var) && var.value) {
     g_fm_volume = std::atoi(var.value);
-  } else {
-    g_fm_volume = 54;
   }
 
   var.key = "xm6_adpcm_volume";
   if (g_environ_cb(RETRO_ENVIRONMENT_GET_VARIABLE, &var) && var.value) {
     g_adpcm_volume = std::atoi(var.value);
-  } else {
-    g_adpcm_volume = 52;
+  }
+
+  var.key = "xm6_pointer_device";
+  if (g_environ_cb(RETRO_ENVIRONMENT_GET_VARIABLE, &var) && var.value) {
+    if (std::strcmp(var.value, "mouse") == 0) {
+      g_pointer_device_mode = POINTER_DEVICE_MOUSE;
+    } else {
+      g_pointer_device_mode = POINTER_DEVICE_DISABLED;
+    }
+  }
+
+  var.key = "xm6_mouse_port";
+  if (g_environ_cb(RETRO_ENVIRONMENT_GET_VARIABLE, &var) && var.value) {
+    if (std::strcmp(var.value, "scc") == 0) {
+      g_mouse_port = 1;
+    } else if (std::strcmp(var.value, "keyboard") == 0) {
+      g_mouse_port = 2;
+    } else {
+      g_mouse_port = 0;
+    }
+  }
+
+  var.key = "xm6_mouse_speed";
+  if (g_environ_cb(RETRO_ENVIRONMENT_GET_VARIABLE, &var) && var.value) {
+    g_mouse_speed = std::atoi(var.value);
+    if (g_mouse_speed < 0) g_mouse_speed = 0;
+    if (g_mouse_speed > 512) g_mouse_speed = 512;
+  }
+
+  var.key = "xm6_mouse_swap";
+  if (g_environ_cb(RETRO_ENVIRONMENT_GET_VARIABLE, &var) && var.value) {
+    g_mouse_swap = (std::strcmp(var.value, "enabled") == 0);
   }
 
   var.key = "xm6_hdd_target";
@@ -987,13 +1074,9 @@ static void apply_core_option_values()
       g_hdd_is_scsi = false;
       g_hdd_slot = 0;
     }
-  } else {
-    g_hdd_target_auto = true;
-    g_hdd_is_scsi = false;
-    g_hdd_slot = 0;
   }
 
-  core_log(RETRO_LOG_INFO, "[xm6-libretro] options: drive=FDD%d exec_mode=%s start_select=%s clock=%s joy1=%d joy2=%d ram=%dmb fast_floppy=%s vol(master=%d fm=%d adpcm=%d) hdd=%s",
+  core_log(RETRO_LOG_INFO, "[xm6-libretro] options: drive=FDD%d exec_mode=%s start_select=%s clock=%s joy1=%d joy2=%d ram=%dmb fast_floppy=%s vol(master=%d fm=%d adpcm=%d) mouse=%s port=%d speed=%d swap=%s hdd=%s",
            g_disk_drive,
            g_use_exec_to_frame ? "exec_to_frame" : "legacy_exec",
            (g_pad_start_select_mode == START_SELECT_F_KEYS) ? "f_keys" :
@@ -1004,6 +1087,8 @@ static void apply_core_option_values()
            g_joy_type[0], g_joy_type[1], (g_ram_size + 1) * 2,
            g_fast_floppy ? "enabled" : "disabled",
            g_master_volume, g_fm_volume, g_adpcm_volume,
+           (g_pointer_device_mode == POINTER_DEVICE_MOUSE) ? "mouse" : "disabled",
+           g_mouse_port, g_mouse_speed, g_mouse_swap ? "enabled" : "disabled",
            g_hdd_target_auto ? "AUTO" : (g_hdd_is_scsi ? (g_hdd_slot ? "SCSI1" : "SCSI0")
                                                         : (g_hdd_slot ? "SASI1" : "SASI0")));
 }
@@ -1037,6 +1122,14 @@ static void register_core_options()
       "FM volume; 54|100|90|80|70|60|50|40|30|20|10|0" },
     { "xm6_adpcm_volume",
       "ADPCM volume; 52|100|90|80|70|60|50|40|30|20|10|0" },
+    { "xm6_pointer_device",
+      "Pointer device; disabled|mouse" },
+    { "xm6_mouse_port",
+      "Mouse port; off|scc|keyboard" },
+    { "xm6_mouse_speed",
+      "Mouse speed; 205|256|128|384|512|64|0" },
+    { "xm6_mouse_swap",
+      "Swap mouse buttons; disabled|enabled" },
     { "xm6_hdd_target",
       "HDF mount target; auto|sasi0|sasi1|scsi0|scsi1" },
     { nullptr, nullptr }
@@ -1267,6 +1360,30 @@ static void poll_and_push_input()
     g_prev_start = start_pressed;
     g_prev_select = select_pressed;
   }
+
+  if (g_pointer_device_mode == POINTER_DEVICE_MOUSE &&
+      g_mouse_port != 0 &&
+      g_xm6.input_mouse &&
+      g_input_state_cb) {
+    const int dx = static_cast<int>(
+      g_input_state_cb(0, RETRO_DEVICE_MOUSE, 0, RETRO_DEVICE_ID_MOUSE_X));
+    const int dy = static_cast<int>(
+      g_input_state_cb(0, RETRO_DEVICE_MOUSE, 0, RETRO_DEVICE_ID_MOUSE_Y));
+    const bool left_button =
+      g_input_state_cb(0, RETRO_DEVICE_MOUSE, 0, RETRO_DEVICE_ID_MOUSE_LEFT) != 0;
+    const bool right_button =
+      g_input_state_cb(0, RETRO_DEVICE_MOUSE, 0, RETRO_DEVICE_ID_MOUSE_RIGHT) != 0;
+
+    g_mouse_x += dx;
+    g_mouse_y += dy;
+    g_mouse_left = left_button;
+    g_mouse_right = right_button;
+    g_xm6.input_mouse(g_xm6_handle,
+                      g_mouse_x,
+                      g_mouse_y,
+                      g_mouse_left ? 1 : 0,
+                      g_mouse_right ? 1 : 0);
+  }
 }
 
 static bool disk_set_eject_state(bool ejected)
@@ -1477,6 +1594,14 @@ void retro_init(void)
   g_master_volume = 100;
   g_fm_volume = 54;
   g_adpcm_volume = 52;
+  g_pointer_device_mode = POINTER_DEVICE_DISABLED;
+  g_mouse_port = 0;
+  g_mouse_speed = 205;
+  g_mouse_swap = false;
+  g_mouse_x = 0;
+  g_mouse_y = 0;
+  g_mouse_left = false;
+  g_mouse_right = false;
   g_savestate_guard_countdown = 0;
   g_audio_buffer.clear();
 
@@ -1530,6 +1655,7 @@ void retro_reset(void)
 {
   if (g_xm6_handle && g_xm6.reset) {
     g_hdd_boot_reset_countdown = 0;
+    reset_mouse_state();
     g_xm6.reset(g_xm6_handle);
     arm_savestate_guard("manual reset");
   }
@@ -1562,6 +1688,7 @@ bool retro_load_game(const struct retro_game_info *info)
   apply_core_option_values();
   apply_runtime_core_options();
   apply_joy_type_options();
+  reset_mouse_state();
 
   enum retro_pixel_format fmt = RETRO_PIXEL_FORMAT_XRGB8888;
   if (!g_environ_cb || !g_environ_cb(RETRO_ENVIRONMENT_SET_PIXEL_FORMAT, &fmt)) {
@@ -1587,7 +1714,9 @@ bool retro_load_game(const struct retro_game_info *info)
   if (!mount_current_disk()) {
     return false;
   }
-  arm_savestate_guard(g_content_is_hdd ? "content load (HDD)" : "content load (floppy)");
+  arm_savestate_guard_frames(
+    g_content_is_hdd ? "content load (HDD)" : "content load (floppy)",
+    g_content_is_hdd ? k_savestate_guard_frames_hdd_load : k_savestate_guard_frames_floppy_load);
   g_disk_ejected = false;
   if (!g_content_is_hdd) {
     register_disk_interface();
@@ -1606,6 +1735,7 @@ bool retro_load_game(const struct retro_game_info *info)
     g_xm6.reset(g_xm6_handle);
   }
 
+  log_memory_exposure_status();
   g_game_loaded = true;
   return true;
 }
@@ -1652,6 +1782,10 @@ void retro_run(void)
       const int old_master_volume = g_master_volume;
       const int old_fm_volume = g_fm_volume;
       const int old_adpcm_volume = g_adpcm_volume;
+      const int old_pointer_device_mode = g_pointer_device_mode;
+      const int old_mouse_port = g_mouse_port;
+      const int old_mouse_speed = g_mouse_speed;
+      const bool old_mouse_swap = g_mouse_swap;
       apply_core_option_values();
       if (old_system_clock != g_system_clock || old_ram_size != g_ram_size) {
         apply_runtime_core_options();
@@ -1688,6 +1822,19 @@ void retro_run(void)
                  "[xm6-libretro] Audio volumes changed (master=%d fm=%d adpcm=%d)",
                  g_master_volume, g_fm_volume, g_adpcm_volume);
       }
+      if (old_pointer_device_mode != g_pointer_device_mode ||
+          old_mouse_port != g_mouse_port ||
+          old_mouse_speed != g_mouse_speed ||
+          old_mouse_swap != g_mouse_swap) {
+        apply_runtime_core_options();
+        reset_mouse_state();
+        core_log(RETRO_LOG_INFO,
+                 "[xm6-libretro] Mouse config changed (device=%s port=%d speed=%d swap=%s)",
+                 (g_pointer_device_mode == POINTER_DEVICE_MOUSE) ? "mouse" : "disabled",
+                 g_mouse_port,
+                 g_mouse_speed,
+                 g_mouse_swap ? "enabled" : "disabled");
+      }
       if (old_joy0 != g_joy_type[0] || old_joy1 != g_joy_type[1]) {
         apply_joy_type_options();
       }
@@ -1696,7 +1843,9 @@ void retro_run(void)
             old_hdd_is_scsi != g_hdd_is_scsi ||
             old_hdd_slot != g_hdd_slot) && g_content_is_hdd)) {
         mount_current_disk();
-        arm_savestate_guard(g_content_is_hdd ? "disk remount (HDD)" : "disk remount (floppy)");
+        arm_savestate_guard_frames(
+          g_content_is_hdd ? "disk remount (HDD)" : "disk remount (floppy)",
+          g_content_is_hdd ? k_savestate_guard_frames_hdd_load : k_savestate_guard_frames_floppy_load);
         if (g_content_is_hdd) {
           g_hdd_boot_reset_countdown = 0;
           run_boot_warmup_and_reset("HDD");
@@ -1797,6 +1946,7 @@ bool retro_unserialize(const void *data, size_t size)
   bool ok = g_xm6.load_state_mem(g_xm6_handle, data, static_cast<unsigned int>(size)) == XM6CORE_OK;
   if (ok) {
     g_video_not_ready_count = 0;
+    arm_savestate_guard_frames("post state load", k_savestate_guard_frames_post_load);
     core_log(RETRO_LOG_INFO, "[xm6-libretro] Savestate loaded");
   }
   return ok;

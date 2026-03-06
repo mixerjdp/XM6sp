@@ -114,6 +114,27 @@ static void emit_messagef(XM6Context *ctx, const char *format, ...)
 	ctx->msg_callback(buffer, ctx->msg_user);
 }
 
+static XM6Context *g_message_ctx = NULL;
+
+void xm6_debug_message(const char *format, ...)
+{
+	if (!g_message_ctx || !g_message_ctx->msg_callback || !format) {
+		return;
+	}
+
+	char buffer[512];
+	va_list args;
+	va_start(args, format);
+#if defined(_MSC_VER)
+	_vsnprintf_s(buffer, sizeof(buffer), _TRUNCATE, format, args);
+#else
+	vsnprintf(buffer, sizeof(buffer), format, args);
+#endif
+	va_end(args);
+	buffer[sizeof(buffer) - 1] = '\0';
+	g_message_ctx->msg_callback(buffer, g_message_ctx->msg_user);
+}
+
 static unsigned long long query_file_size_bytes(const char *path)
 {
 	WIN32_FILE_ATTRIBUTE_DATA data;
@@ -162,6 +183,9 @@ static void apply_default_runtime_config(XM6Context *ctx)
 	config->fm_enable = TRUE;
 	config->adpcm_enable = TRUE;
 	config->kbd_connect = TRUE;
+	config->mouse_speed = 205;
+	config->mouse_port = 0;
+	config->mouse_swap = FALSE;
 	config->mouse_mid = TRUE;
 
 	config->joy_type[0] = 1;
@@ -297,6 +321,7 @@ XM6CORE_API XM6Handle XM6CORE_CALL xm6_create(void)
 	ctx->ppi       = (PPI*)ctx->vm->SearchDevice(MAKEID('P', 'P', 'I', ' '));
 
 	apply_default_runtime_config(ctx);
+	g_message_ctx = ctx;
 
 	return reinterpret_cast<XM6Handle>(ctx);
 }
@@ -329,6 +354,9 @@ XM6CORE_API void XM6CORE_CALL xm6_destroy(XM6Handle handle)
 	delete[] ctx->opm_buf;
 	delete[] ctx->adpcm_buf;
 
+	if (g_message_ctx == ctx) {
+		 g_message_ctx = NULL;
+	}
 	delete ctx;
 }
 
@@ -1203,9 +1231,7 @@ XM6CORE_API int XM6CORE_CALL xm6_save_state_mem(XM6Handle handle, void *buffer, 
 		return XM6CORE_ERR_INVALID_ARGUMENT;
 	}
 
-	xm6_log_state_probe(ctx, "save_state_mem before copy", fio.GetMemoryData(), (unsigned int)res);
 	::memcpy(buffer, fio.GetMemoryData(), res);
-	xm6_log_state_probe(ctx, "save_state_mem after copy", buffer, (unsigned int)res);
 	fio.Close();
 	return XM6CORE_OK;
 }
@@ -1228,7 +1254,6 @@ XM6CORE_API int XM6CORE_CALL xm6_load_state_mem(XM6Handle handle, const void *bu
 		return XM6CORE_ERR_IO;
 	}
 
-	xm6_log_state_probe(ctx, "load_state_mem input", buffer, size);
 	DWORD res = ctx->vm->Load(fio);
 	fio.Close();
 	if (res != 0) {

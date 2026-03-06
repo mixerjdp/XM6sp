@@ -297,6 +297,16 @@ void FASTCALL VM::NotifyHostMessage(const TCHAR* message) const
 
 DWORD FASTCALL VM::Save(const Filepath& path)
 {
+    return OriginalSave(path);
+}
+
+DWORD FASTCALL VM::Save(Fileio& fio)
+{
+    return OriginalSave(fio);
+}
+
+DWORD FASTCALL VM::OriginalSave(const Filepath& path)
+{
     Fileio fio;
     DWORD pos;
 
@@ -314,23 +324,10 @@ DWORD FASTCALL VM::Save(const Filepath& path)
     return pos;
 }
 
-DWORD FASTCALL VM::Save(Fileio& fio)
-{
-    ASSERT(this);
-    return OriginalSave(fio);
-}
-
-DWORD FASTCALL VM::OriginalSave(const Filepath& path)
-{
-    return Save(path);
-}
-
 DWORD FASTCALL VM::OriginalSave(Fileio& fio)
 {
     char header[0x10];
-    char msg[128];
     int ver;
-    int index;
     Device *device;
     DWORD id;
     DWORD pos;
@@ -350,14 +347,8 @@ DWORD FASTCALL VM::OriginalSave(Fileio& fio)
         return 0;
     }
 
-    index = 0;
     while (device) {
-        pos = fio.GetFilePos();
         id = device->GetID();
-        if (index < 3) {
-            wsprintfA(msg, "savestate save record[%d] id=%08lX offset=%08lX", index, (unsigned long)id, (unsigned long)pos);
-            NotifyHostMessage(msg);
-        }
         if (!fio.Write(&id, sizeof(id))) {
             return 0;
         }
@@ -365,7 +356,6 @@ DWORD FASTCALL VM::OriginalSave(Fileio& fio)
             return 0;
         }
         device = device->GetNextDevice();
-        index++;
     }
 
     id = MAKEID('E', 'N', 'D', ' ');
@@ -404,14 +394,10 @@ DWORD FASTCALL VM::Load(const Filepath& path)
 DWORD FASTCALL VM::Load(Fileio& fio)
 {
     char buf[0x10];
-    char idtxt[5];
-    char msg[160];
     int rec;
     int ver;
-    int index;
     Device *device;
     DWORD id;
-    DWORD id_pos;
     DWORD pos;
 
     ASSERT(this);
@@ -441,63 +427,23 @@ DWORD FASTCALL VM::Load(Fileio& fio)
         return 0;
     }
 
-    index = 0;
     for (;;) {
-        id_pos = fio.GetFilePos();
         if (!fio.Read(&id, sizeof(id))) {
-            wsprintfA(
-                msg,
-                "savestate load failed: truncated device list at index=%d offset=%08lX",
-                index,
-                (unsigned long)id_pos);
-            NotifyHostMessage(msg);
+            NotifyHostMessage(_T("savestate load failed: truncated device list"));
             return 0;
-        }
-        if (index == 0) {
-            wsprintfA(
-                msg,
-                "savestate first record id=%08lX offset=%08lX",
-                (unsigned long)id,
-                (unsigned long)id_pos);
-            NotifyHostMessage(msg);
         }
         if (id == MAKEID('E', 'N', 'D', ' ')) {
             break;
         }
         device = SearchDevice(id);
         if (!device) {
-            idtxt[0] = (char)((id >> 24) & 0xff);
-            idtxt[1] = (char)((id >> 16) & 0xff);
-            idtxt[2] = (char)((id >> 8) & 0xff);
-            idtxt[3] = (char)(id & 0xff);
-            idtxt[4] = '\0';
-            wsprintfA(
-                msg,
-                "savestate load failed: unknown device %.4s (%08lX) index=%d offset=%08lX",
-                idtxt,
-                (unsigned long)id,
-                index,
-                (unsigned long)id_pos);
-            NotifyHostMessage(msg);
+            NotifyHostMessage(_T("savestate load failed: unknown device"));
             return 0;
         }
         if (!device->Load(&fio, rec)) {
-            idtxt[0] = (char)((id >> 24) & 0xff);
-            idtxt[1] = (char)((id >> 16) & 0xff);
-            idtxt[2] = (char)((id >> 8) & 0xff);
-            idtxt[3] = (char)(id & 0xff);
-            idtxt[4] = '\0';
-            wsprintfA(
-                msg,
-                "savestate load failed: device %.4s (%08lX) index=%d offset=%08lX",
-                idtxt,
-                (unsigned long)id,
-                index,
-                (unsigned long)id_pos);
-            NotifyHostMessage(msg);
+            NotifyHostMessage(_T("savestate load failed: device load error"));
             return 0;
         }
-        index++;
     }
     pos = fio.GetFilePos();
     return pos;

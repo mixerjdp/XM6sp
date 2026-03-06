@@ -90,6 +90,9 @@ XM6CORE_API int XM6CORE_CALL xm6_set_fast_floppy(XM6Handle handle, int enabled);
 XM6CORE_API int XM6CORE_CALL xm6_set_master_volume(XM6Handle handle, int volume);
 XM6CORE_API int XM6CORE_CALL xm6_set_fm_volume(XM6Handle handle, int volume);
 XM6CORE_API int XM6CORE_CALL xm6_set_adpcm_volume(XM6Handle handle, int volume);
+XM6CORE_API int XM6CORE_CALL xm6_set_mouse_speed(XM6Handle handle, int speed);
+XM6CORE_API int XM6CORE_CALL xm6_set_mouse_port(XM6Handle handle, int port);
+XM6CORE_API int XM6CORE_CALL xm6_set_mouse_swap(XM6Handle handle, int enabled);
 
 XM6CORE_API int XM6CORE_CALL xm6_mount_fdd(XM6Handle handle, int drive, const char* image_path, int media_hint);
 XM6CORE_API int XM6CORE_CALL xm6_eject_fdd(XM6Handle handle, int drive, int force);
