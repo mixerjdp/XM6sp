@@ -131,6 +131,7 @@ void FASTCALL SASI::Reset()
 {
 	Memory *memory;
 	Memory::memtype type;
+	int i;
 
 	ASSERT(this);
 	LOG0(Log::Normal, "リセット");
@@ -189,6 +190,14 @@ void FASTCALL SASI::Reset()
 	}
 
 	// イベントリセット
+	// Rebuild and reset mounted SASI disks so controller and media state match.
+	Construct();
+	for (i=0; i<SASIMax; i++) {
+		if (sasi.disk[i] && !sasi.disk[i]->IsNULL()) {
+			sasi.disk[i]->Reset();
+		}
+	}
+
 	event.SetUser(0);
 	event.SetTime(0);
 

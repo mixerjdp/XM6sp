@@ -475,6 +475,24 @@ XM6CORE_API int XM6CORE_CALL xm6_exec(XM6Handle handle, unsigned int hus)
 //	Avanza el tiempo (hus) en chunks pequeños hasta que Render::IsReady()
 //	sea true. Sirve como base para el retro_run() de libretro.
 //---------------------------------------------------------------------------
+//---------------------------------------------------------------------------
+//	xm6_exec_events_only  EAvanza eventos/scheduler sin ejecutar CPU.
+//---------------------------------------------------------------------------
+XM6CORE_API int XM6CORE_CALL xm6_exec_events_only(XM6Handle handle, unsigned int hus)
+{
+	XM6Context *ctx = ctx_from_handle(handle);
+	if (!ctx_valid(ctx)) {
+		return XM6CORE_ERR_INVALID_HANDLE;
+	}
+
+	if (!ctx->scheduler) {
+		return XM6CORE_ERR_NOT_READY;
+	}
+
+	ctx->scheduler->ExecEventsOnly((DWORD)hus);
+	return XM6CORE_OK;
+}
+
 XM6CORE_API int XM6CORE_CALL xm6_exec_to_frame(XM6Handle handle)
 {
 	XM6Context *ctx = ctx_from_handle(handle);

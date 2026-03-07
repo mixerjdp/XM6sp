@@ -99,6 +99,7 @@ struct xm6_api_t {
   int (XM6CORE_CALL *set_system_dir)(const char *system_dir) = nullptr;
 
   int (XM6CORE_CALL *exec)(XM6Handle handle, unsigned int hus) = nullptr;
+  int (XM6CORE_CALL *exec_events_only)(XM6Handle handle, unsigned int hus) = nullptr;
   int (XM6CORE_CALL *exec_to_frame)(XM6Handle handle) = nullptr;
   int (XM6CORE_CALL *reset)(XM6Handle handle) = nullptr;
   int (XM6CORE_CALL *set_power)(XM6Handle handle, int enabled) = nullptr;
@@ -280,6 +281,7 @@ static bool load_xm6_api()
   g_xm6.set_message_callback = xm6_set_message_callback;
   g_xm6.set_system_dir = xm6_set_system_dir;
   g_xm6.exec = xm6_exec;
+  g_xm6.exec_events_only = xm6_exec_events_only;
   g_xm6.exec_to_frame = xm6_exec_to_frame;
   g_xm6.reset = xm6_reset;
   g_xm6.set_power = xm6_set_power;
@@ -389,6 +391,7 @@ static bool load_xm6_api()
   load_optional_symbol(&g_xm6.diag_init_probe, "xm6_diag_init_probe");
   load_optional_symbol(&g_xm6.video_attach_default_buffer, "xm6_video_attach_default_buffer");
   load_optional_symbol(&g_xm6.exec_to_frame, "xm6_exec_to_frame");
+  load_optional_symbol(&g_xm6.exec_events_only, "xm6_exec_events_only");
   load_optional_symbol(&g_xm6.set_system_dir, "xm6_set_system_dir");
   load_optional_symbol(&g_xm6.mount_sasi_hdd, "xm6_mount_sasi_hdd");
   load_optional_symbol(&g_xm6.mount_scsi_hdd, "xm6_mount_scsi_hdd");
@@ -480,7 +483,7 @@ static void begin_hdd_boot_warmup(const char *kind)
   }
 
   core_log(RETRO_LOG_INFO,
-           "[xm6-libretro] Starting deferred %s boot stabilization (%u warm-up frames)",
+           "[xm6-libretro] Starting deferred %s boot stabilization before CPU boot (%u warm-up frames)",
            kind ? kind : "content", k_hdd_boot_warmup_frames);
   g_hdd_boot_reset_countdown = k_hdd_boot_warmup_frames;
   g_video_not_ready_count = 0;
@@ -492,7 +495,9 @@ static bool run_pending_hdd_boot_warmup_step()
     return false;
   }
 
-  if (g_xm6.exec) {
+  if (g_xm6.exec_events_only) {
+    g_xm6.exec_events_only(g_xm6_handle, 36000);
+  } else if (g_xm6.exec) {
     g_xm6.exec(g_xm6_handle, 36000);
   }
 

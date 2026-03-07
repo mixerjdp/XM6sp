@@ -55,6 +55,7 @@ XM6CORE_API int XM6CORE_CALL xm6_set_message_callback(XM6Handle handle, xm6_mess
 XM6CORE_API int XM6CORE_CALL xm6_set_system_dir(const char* system_dir);
 
 XM6CORE_API int XM6CORE_CALL xm6_exec(XM6Handle handle, unsigned int hus);
+XM6CORE_API int XM6CORE_CALL xm6_exec_events_only(XM6Handle handle, unsigned int hus);
 XM6CORE_API int XM6CORE_CALL xm6_exec_to_frame(XM6Handle handle);
 XM6CORE_API int XM6CORE_CALL xm6_reset(XM6Handle handle);
 XM6CORE_API int XM6CORE_CALL xm6_set_power(XM6Handle handle, int enabled);

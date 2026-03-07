@@ -87,6 +87,8 @@ public:
 										// 陞ｳ貅ｯ・｡・ｽ
 	DWORD FASTCALL Trace(DWORD hus);
 										// 郢晏現ﾎ樒ｹ晢ｽｼ郢ｧ・ｹ
+	void FASTCALL ExecEventsOnly(DWORD hus) { ExecEvent(hus); }
+										// 郢ｧ・､郢晏生ﾎｦ郢昜ｺ･・ｮ貅ｯ・｡・ｽ(CPUなし)
 	void FASTCALL Break()				{ sch.brk = TRUE; }
 										// 陞ｳ貅ｯ・｡蠕｡・ｸ・ｭ雎・ｽ｢
 #ifdef SCHEDULER_FASTWAIT
