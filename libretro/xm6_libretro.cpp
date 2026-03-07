@@ -1936,6 +1936,14 @@ bool retro_load_game(const struct retro_game_info *info)
   apply_runtime_core_options();
   apply_joy_type_options();
   reset_mouse_state();
+  g_content_is_hdd = path_has_extension(info->path, ".hdf");
+
+  if (!g_content_is_hdd) {
+    core_log(RETRO_LOG_INFO,
+             "[xm6-libretro] Powering off before floppy mount for cold boot");
+    g_xm6.set_power(g_xm6_handle, 0);
+    g_video_not_ready_count = 0;
+  }
 
   enum retro_pixel_format fmt = RETRO_PIXEL_FORMAT_XRGB8888;
   if (!g_environ_cb || !g_environ_cb(RETRO_ENVIRONMENT_SET_PIXEL_FORMAT, &fmt)) {
@@ -1949,7 +1957,6 @@ bool retro_load_game(const struct retro_game_info *info)
   g_disk_index = 0;
   g_inserted_disk_index[0] = -1;
   g_inserted_disk_index[1] = -1;
-  g_content_is_hdd = path_has_extension(info->path, ".hdf");
 
   if (path_has_extension(info->path, ".m3u")) {
     if (!parse_m3u_playlist(info->path, &g_disk_paths, &g_disk_labels, &g_disk_target_drives)) {
