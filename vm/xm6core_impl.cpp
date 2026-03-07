@@ -339,20 +339,35 @@ XM6CORE_API void XM6CORE_CALL xm6_destroy(XM6Handle handle)
 		return;
 	}
 
+	// Detach the external OPM engine before VM cleanup destroys cached devices.
+	if (ctx->opmif) {
+		ctx->opmif->SetEngine(NULL);
+	}
+
 	if (ctx->vm) {
 		ctx->vm->Cleanup();
 		delete ctx->vm;
 		ctx->vm = NULL;
 	}
 
-	if (ctx->opmif) {
-		ctx->opmif->SetEngine(NULL);
-	}
+	ctx->scheduler = NULL;
+	ctx->render = NULL;
+	ctx->keyboard = NULL;
+	ctx->mouse = NULL;
+	ctx->fdd = NULL;
+	ctx->opmif = NULL;
+	ctx->adpcm = NULL;
+	ctx->sasi = NULL;
+	ctx->scsi = NULL;
+	ctx->ppi = NULL;
+
 	delete ctx->opm_engine;
 	ctx->opm_engine = NULL;
 
 	delete[] ctx->opm_buf;
+	ctx->opm_buf = NULL;
 	delete[] ctx->adpcm_buf;
+	ctx->adpcm_buf = NULL;
 
 	if (g_message_ctx == ctx) {
 		 g_message_ctx = NULL;
