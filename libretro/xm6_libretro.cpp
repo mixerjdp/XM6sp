@@ -10,7 +10,9 @@
 
 #include "libretro.h"
 
+#ifndef XM6CORE_STATIC
 #define XM6CORE_STATIC
+#endif
 #include "../vm/xm6core.h"
 
 namespace {
@@ -228,30 +230,113 @@ static bool get_core_module_dir(char *out_dir, size_t out_dir_size)
 template <typename FnType>
 static bool load_required_symbol(FnType *fn, const char *symbol)
 {
+#ifdef XM6CORE_MONOLITHIC
+  (void)symbol;
+  if (!*fn) {
+    core_log(RETRO_LOG_ERROR, "[xm6-libretro] Missing required built-in symbol: %s", symbol);
+    return false;
+  }
+  return true;
+#else
   *fn = reinterpret_cast<FnType>(GetProcAddress(g_xm6.module, symbol));
   if (!*fn) {
     core_log(RETRO_LOG_ERROR, "[xm6-libretro] Missing required symbol: %s", symbol);
     return false;
   }
   return true;
+#endif
 }
 
 template <typename FnType>
 static void load_optional_symbol(FnType *fn, const char *symbol)
 {
+#ifdef XM6CORE_MONOLITHIC
+  (void)symbol;
+#else
   *fn = reinterpret_cast<FnType>(GetProcAddress(g_xm6.module, symbol));
+#endif
 }
 
 static void unload_xm6_api()
 {
+#ifndef XM6CORE_MONOLITHIC
   if (g_xm6.module) {
     FreeLibrary(g_xm6.module);
   }
+#endif
   g_xm6 = xm6_api_t();
 }
 
 static bool load_xm6_api()
 {
+#ifdef XM6CORE_MONOLITHIC
+  if (g_xm6.create) {
+    return true;
+  }
+
+  g_xm6.create = xm6_create;
+  g_xm6.destroy = xm6_destroy;
+  g_xm6.set_message_callback = xm6_set_message_callback;
+  g_xm6.set_system_dir = xm6_set_system_dir;
+  g_xm6.exec = xm6_exec;
+  g_xm6.exec_to_frame = xm6_exec_to_frame;
+  g_xm6.reset = xm6_reset;
+  g_xm6.set_power = xm6_set_power;
+  g_xm6.video_poll = xm6_video_poll;
+  g_xm6.video_consume = xm6_video_consume;
+  g_xm6.audio_configure = xm6_audio_configure;
+  g_xm6.audio_mix = xm6_audio_mix;
+  g_xm6.input_joy = xm6_input_joy;
+  g_xm6.input_key = xm6_input_key;
+  g_xm6.input_mouse = xm6_input_mouse;
+  g_xm6.input_mouse_reset = xm6_input_mouse_reset;
+  g_xm6.mount_fdd = xm6_mount_fdd;
+  g_xm6.mount_sasi_hdd = xm6_mount_sasi_hdd;
+  g_xm6.mount_scsi_hdd = xm6_mount_scsi_hdd;
+  g_xm6.eject_fdd = xm6_eject_fdd;
+  g_xm6.set_joy_type = xm6_set_joy_type;
+  g_xm6.set_system_clock = xm6_set_system_clock;
+  g_xm6.set_ram_size = xm6_set_ram_size;
+  g_xm6.set_fast_floppy = xm6_set_fast_floppy;
+  g_xm6.set_master_volume = xm6_set_master_volume;
+  g_xm6.set_fm_volume = xm6_set_fm_volume;
+  g_xm6.set_adpcm_volume = xm6_set_adpcm_volume;
+  g_xm6.set_mouse_speed = xm6_set_mouse_speed;
+  g_xm6.set_mouse_port = xm6_set_mouse_port;
+  g_xm6.set_mouse_swap = xm6_set_mouse_swap;
+  g_xm6.state_size = xm6_state_size;
+  g_xm6.save_state_mem = xm6_save_state_mem;
+  g_xm6.load_state_mem = xm6_load_state_mem;
+  g_xm6.get_main_ram = xm6_get_main_ram;
+  g_xm6.diag_init_probe = xm6_diag_init_probe;
+  g_xm6.video_attach_default_buffer = xm6_video_attach_default_buffer;
+
+  if (!load_required_symbol(&g_xm6.create, "xm6_create") ||
+      !load_required_symbol(&g_xm6.destroy, "xm6_destroy") ||
+      !load_required_symbol(&g_xm6.set_message_callback, "xm6_set_message_callback") ||
+      !load_required_symbol(&g_xm6.exec, "xm6_exec") ||
+      !load_required_symbol(&g_xm6.reset, "xm6_reset") ||
+      !load_required_symbol(&g_xm6.set_power, "xm6_set_power") ||
+      !load_required_symbol(&g_xm6.video_poll, "xm6_video_poll") ||
+      !load_required_symbol(&g_xm6.video_consume, "xm6_video_consume") ||
+      !load_required_symbol(&g_xm6.audio_configure, "xm6_audio_configure") ||
+      !load_required_symbol(&g_xm6.audio_mix, "xm6_audio_mix") ||
+      !load_required_symbol(&g_xm6.input_joy, "xm6_input_joy") ||
+      !load_required_symbol(&g_xm6.input_key, "xm6_input_key") ||
+      !load_required_symbol(&g_xm6.input_mouse, "xm6_input_mouse") ||
+      !load_required_symbol(&g_xm6.input_mouse_reset, "xm6_input_mouse_reset") ||
+      !load_required_symbol(&g_xm6.mount_fdd, "xm6_mount_fdd") ||
+      !load_required_symbol(&g_xm6.eject_fdd, "xm6_eject_fdd") ||
+      !load_required_symbol(&g_xm6.state_size, "xm6_state_size") ||
+      !load_required_symbol(&g_xm6.save_state_mem, "xm6_save_state_mem") ||
+      !load_required_symbol(&g_xm6.load_state_mem, "xm6_load_state_mem")) {
+    unload_xm6_api();
+    return false;
+  }
+
+  core_log(RETRO_LOG_INFO, "[xm6-libretro] Loaded built-in xm6 core");
+  return true;
+#else
   if (g_xm6.module) {
     return true;
   }
@@ -319,6 +404,7 @@ static bool load_xm6_api()
 
   core_log(RETRO_LOG_INFO, "[xm6-libretro] Loaded xm6core.dll");
   return true;
+#endif
 }
 
 static bool ensure_xm6_handle()
@@ -1787,8 +1873,8 @@ void retro_get_system_info(struct retro_system_info *info)
   }
 
   std::memset(info, 0, sizeof(*info));
-  info->library_name = "XM6 (DLL Bridge)";
-  info->library_version = "Phase2";
+  info->library_name = "XM6";
+  info->library_version = "2.06 Libretro";
   info->need_fullpath = true;
   info->block_extract = false;
   info->valid_extensions = "dim|xdf|d88|88d|hdm|dup|2hd|img|hdf|m3u";

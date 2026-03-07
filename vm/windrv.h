@@ -313,10 +313,8 @@ public:
 										// 現在のユニット番号上限設定
 	BOOL FASTCALL isInvalidUnit(DWORD unit) const;
 										// ユニット番号チェック
-#ifdef _DEBUG
 	BOOL FASTCALL isValidUnit(DWORD unit) const { ASSERT(this); return unit < windrv.drives; }
 										// ユニット番号チェック (ASSERT専用)
-#endif // _DEBUG
 	FileSys* FASTCALL GetFilesystem() const { ASSERT(this); return windrv.fs; }
 										// ファイルシステムの獲得
 

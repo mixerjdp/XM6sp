@@ -10,7 +10,7 @@
 #include <windows.h>
 #include "os.h"
 #include "xm6.h"
-#if !defined(XM6CORE_EXPORTS)
+#if !defined(XM6CORE_EXPORTS) && !defined(XM6CORE_STATIC)
 #define XM6CORE_STATIC
 #endif
 #include "xm6core.h"
@@ -1285,3 +1285,4 @@ XM6CORE_API void* XM6CORE_CALL xm6_get_main_ram(XM6Handle handle, unsigned int* 
 	}
 	return (void*)memory->GetRAM();
 }
+

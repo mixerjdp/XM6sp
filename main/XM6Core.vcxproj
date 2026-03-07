@@ -46,8 +46,7 @@
     <CharacterSet>MultiByte</CharacterSet>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
-  <ImportGroup Label="ExtensionSettings">
-  </ImportGroup>
+  <ImportGroup Label="ExtensionSettings"></ImportGroup>
   <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="PropertySheets">
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
   </ImportGroup>
@@ -87,7 +86,7 @@
       <Optimization>Full</Optimization>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <OmitFramePointers>true</OmitFramePointers>
-      <AdditionalIncludeDirectories>..\vm;..\cpu;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>..\vm;..\mfc;..\cpu;..\cpu\musashi;..\cpu\musashi\softfloat;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>WIN32;_WINDOWS;_CRT_SECURE_NO_WARNINGS;_DEBUG;XM6CORE_EXPORTS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <MinimalRebuild>false</MinimalRebuild>
       <BasicRuntimeChecks>Default</BasicRuntimeChecks>
@@ -112,7 +111,7 @@
     <ClCompile>
       <Optimization>Full</Optimization>
       <IntrinsicFunctions>true</IntrinsicFunctions>
-      <AdditionalIncludeDirectories>..\vm;..\cpu;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>..\vm;..\mfc;..\cpu;..\cpu\musashi;..\cpu\musashi\softfloat;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>_WIN64;_WINDOWS;_CRT_SECURE_NO_WARNINGS;_DEBUG;XM6CORE_EXPORTS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <MinimalRebuild>false</MinimalRebuild>
       <BasicRuntimeChecks>Default</BasicRuntimeChecks>
@@ -138,7 +137,7 @@
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <FavorSizeOrSpeed>Speed</FavorSizeOrSpeed>
       <OmitFramePointers>true</OmitFramePointers>
-      <AdditionalIncludeDirectories>..\vm;..\cpu;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>..\vm;..\mfc;..\cpu;..\cpu\musashi;..\cpu\musashi\softfloat;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>WIN32;_WINDOWS;NDEBUG;_CRT_SECURE_NO_WARNINGS;XM6CORE_EXPORTS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <MinimalRebuild>false</MinimalRebuild>
       <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
@@ -169,7 +168,7 @@
       <InlineFunctionExpansion>AnySuitable</InlineFunctionExpansion>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <FavorSizeOrSpeed>Speed</FavorSizeOrSpeed>
-      <AdditionalIncludeDirectories>..\vm;..\cpu;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>..\vm;..\mfc;..\cpu;..\cpu\musashi;..\cpu\musashi\softfloat;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>_WIN64;_WINDOWS;NDEBUG;_CRT_SECURE_NO_WARNINGS;XM6CORE_EXPORTS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <MinimalRebuild>false</MinimalRebuild>
       <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
@@ -284,11 +283,97 @@
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">NotUsing</PrecompiledHeader>
     </ClCompile>
   </ItemGroup>
-  <!-- Public API header -->
+  <!-- Public API and browse headers -->
   <ItemGroup>
+    <ClInclude Include="..\mfc\mfc.h" />
+    <ClInclude Include="..\mfc\mfc_app.h" />
+    <ClInclude Include="..\mfc\mfc_asm.h" />
+    <ClInclude Include="..\mfc\mfc_cfg.h" />
+    <ClInclude Include="..\mfc\mfc_com.h" />
+    <ClInclude Include="..\mfc\mfc_cpu.h" />
+    <ClInclude Include="..\mfc\mfc_dev.h" />
+    <ClInclude Include="..\mfc\mfc_draw.h" />
+    <ClInclude Include="..\mfc\mfc_dx9.h" />
+    <ClInclude Include="..\mfc\mfc_frm.h" />
+    <ClInclude Include="..\mfc\mfc_host.h" />
+    <ClInclude Include="..\mfc\mfc_info.h" />
+    <ClInclude Include="..\mfc\mfc_inp.h" />
+    <ClInclude Include="..\mfc\mfc_midi.h" />
+    <ClInclude Include="..\mfc\mfc_port.h" />
+    <ClInclude Include="..\mfc\mfc_que.h" />
+    <ClInclude Include="..\mfc\mfc_rend.h" />
+    <ClInclude Include="..\mfc\mfc_res.h" />
+    <ClInclude Include="..\mfc\mfc_sch.h" />
+    <ClInclude Include="..\mfc\mfc_snd.h" />
+    <ClInclude Include="..\mfc\mfc_stat.h" />
+    <ClInclude Include="..\mfc\mfc_sub.h" />
+    <ClInclude Include="..\mfc\mfc_sys.h" />
+    <ClInclude Include="..\mfc\mfc_tkey.h" />
+    <ClInclude Include="..\mfc\mfc_tool.h" />
+    <ClInclude Include="..\mfc\mfc_ver.h" />
+    <ClInclude Include="..\mfc\mfc_vid.h" />
+    <ClInclude Include="..\mfc\mfc_w32.h" />
+    <ClInclude Include="..\mfc\resource.h" />
+    <ClInclude Include="..\vm\adpcm.h" />
+    <ClInclude Include="..\vm\areaset.h" />
+    <ClInclude Include="..\vm\cisc.h" />
+    <ClInclude Include="..\vm\config.h" />
+    <ClInclude Include="..\vm\core_asm.h" />
+    <ClInclude Include="..\vm\core_soft.h" />
+    <ClInclude Include="..\vm\cpu.h" />
+    <ClInclude Include="..\vm\cpudebug.h" />
+    <ClInclude Include="..\vm\crtc.h" />
+    <ClInclude Include="..\vm\device.h" />
+    <ClInclude Include="..\vm\disk.h" />
+    <ClInclude Include="..\vm\dmac.h" />
+    <ClInclude Include="..\vm\event.h" />
+    <ClInclude Include="..\vm\fdc.h" />
+    <ClInclude Include="..\vm\fdd.h" />
+    <ClInclude Include="..\vm\fdi.h" />
+    <ClInclude Include="..\vm\fileio.h" />
+    <ClInclude Include="..\vm\filepath.h" />
+    <ClInclude Include="..\vm\fmgen.h" />
+    <ClInclude Include="..\vm\fmgeninl.h" />
+    <ClInclude Include="..\vm\fmtimer.h" />
+    <ClInclude Include="..\vm\gvram.h" />
+    <ClInclude Include="..\vm\host_fs.h" />
+    <ClInclude Include="..\vm\host_services.h" />
+    <ClInclude Include="..\vm\iosc.h" />
+    <ClInclude Include="..\vm\keyboard.h" />
+    <ClInclude Include="..\vm\log.h" />
+    <ClInclude Include="..\vm\memory.h" />
+    <ClInclude Include="..\vm\mercury.h" />
+    <ClInclude Include="..\vm\mfp.h" />
+    <ClInclude Include="..\vm\midi.h" />
+    <ClInclude Include="..\vm\mouse.h" />
+    <ClInclude Include="..\vm\musashi_adapter.h" />
+    <ClInclude Include="..\vm\neptune.h" />
+    <ClInclude Include="..\vm\opm.h" />
+    <ClInclude Include="..\vm\opmif.h" />
+    <ClInclude Include="..\vm\os.h" />
+    <ClInclude Include="..\vm\ppi.h" />
+    <ClInclude Include="..\vm\printer.h" />
+    <ClInclude Include="..\vm\render.h" />
+    <ClInclude Include="..\vm\renderin.h" />
+    <ClInclude Include="..\vm\rend_asm.h" />
+    <ClInclude Include="..\vm\rend_soft.h" />
+    <ClInclude Include="..\vm\rtc.h" />
+    <ClInclude Include="..\vm\sasi.h" />
+    <ClInclude Include="..\vm\scc.h" />
+    <ClInclude Include="..\vm\schedule.h" />
+    <ClInclude Include="..\vm\scsi.h" />
+    <ClInclude Include="..\vm\sprite.h" />
+    <ClInclude Include="..\vm\sram.h" />
+    <ClInclude Include="..\vm\starcpu.h" />
+    <ClInclude Include="..\vm\sync.h" />
+    <ClInclude Include="..\vm\sysport.h" />
+    <ClInclude Include="..\vm\tvram.h" />
+    <ClInclude Include="..\vm\vc.h" />
+    <ClInclude Include="..\vm\vm.h" />
+    <ClInclude Include="..\vm\windrv.h" />
+    <ClInclude Include="..\vm\xm6.h" />
     <ClInclude Include="..\vm\xm6core.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
-  <ImportGroup Label="ExtensionTargets">
-  </ImportGroup>
+  <ImportGroup Label="ExtensionTargets"></ImportGroup>
 </Project>
