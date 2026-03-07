@@ -1561,6 +1561,15 @@ static bool joy_pressed(unsigned id)
   return g_input_state_cb(0, RETRO_DEVICE_JOYPAD, 0, id) != 0;
 }
 
+static int16_t joy_analog_axis(unsigned index, unsigned id)
+{
+  if (!g_input_state_cb) {
+    return 0;
+  }
+
+  return g_input_state_cb(0, RETRO_DEVICE_ANALOG, index, id);
+}
+
 static void poll_and_push_input()
 {
   if (!g_xm6_handle || !g_xm6.input_joy || !g_input_poll_cb) {
@@ -1569,10 +1578,16 @@ static void poll_and_push_input()
 
   g_input_poll_cb();
 
-  const bool left  = joy_pressed(RETRO_DEVICE_ID_JOYPAD_LEFT);
-  const bool right = joy_pressed(RETRO_DEVICE_ID_JOYPAD_RIGHT);
-  const bool up    = joy_pressed(RETRO_DEVICE_ID_JOYPAD_UP);
-  const bool down  = joy_pressed(RETRO_DEVICE_ID_JOYPAD_DOWN);
+  const int16_t analog_x = joy_analog_axis(RETRO_DEVICE_INDEX_ANALOG_LEFT,
+                                           RETRO_DEVICE_ID_ANALOG_X);
+  const int16_t analog_y = joy_analog_axis(RETRO_DEVICE_INDEX_ANALOG_LEFT,
+                                           RETRO_DEVICE_ID_ANALOG_Y);
+  const int16_t analog_threshold = 0x4000;
+
+  const bool left  = joy_pressed(RETRO_DEVICE_ID_JOYPAD_LEFT)  || analog_x <= -analog_threshold;
+  const bool right = joy_pressed(RETRO_DEVICE_ID_JOYPAD_RIGHT) || analog_x >=  analog_threshold;
+  const bool up    = joy_pressed(RETRO_DEVICE_ID_JOYPAD_UP)    || analog_y <= -analog_threshold;
+  const bool down  = joy_pressed(RETRO_DEVICE_ID_JOYPAD_DOWN)  || analog_y >=  analog_threshold;
   const unsigned int axis_neg = static_cast<unsigned int>(-2048);
   const unsigned int axis_pos = 2047u;
 
