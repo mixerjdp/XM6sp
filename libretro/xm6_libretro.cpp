@@ -83,6 +83,7 @@ static bool g_mouse_left = false;
 static bool g_mouse_right = false;
 static unsigned g_hdd_boot_reset_countdown = 0;
 static unsigned g_savestate_guard_countdown = 0;
+static const unsigned k_hdd_boot_warmup_frames = 8;
 
 static bool g_prev_start = false;
 static bool g_prev_select = false;
@@ -472,29 +473,45 @@ static void log_memory_exposure_status()
            ram, ram_size);
 }
 
-static void run_boot_warmup_and_reset(const char *kind)
+static void begin_hdd_boot_warmup(const char *kind)
 {
   if (!g_xm6_handle) {
     return;
   }
 
-  // HDF boot is sensitive to when the first reset happens. A short bounded
-  // warm-up reproduces the "mount, begin boot, then reset" pattern that the
-  // user observed to be stable, without waiting long enough for RetroArch to
-  // hang on problematic images.
-  const unsigned warmup_frames = 8;
   core_log(RETRO_LOG_INFO,
-           "[xm6-libretro] Performing immediate %s boot stabilization (%u warm-up frames)",
-           kind ? kind : "content", warmup_frames);
+           "[xm6-libretro] Starting deferred %s boot stabilization (%u warm-up frames)",
+           kind ? kind : "content", k_hdd_boot_warmup_frames);
+  g_hdd_boot_reset_countdown = k_hdd_boot_warmup_frames;
+  g_video_not_ready_count = 0;
+}
 
-  for (unsigned i = 0; i < warmup_frames; ++i) {
-    if (g_xm6.exec) {
-      g_xm6.exec(g_xm6_handle, 36000);
+static bool run_pending_hdd_boot_warmup_step()
+{
+  if (!g_xm6_handle || g_hdd_boot_reset_countdown == 0) {
+    return false;
+  }
+
+  if (g_xm6.exec) {
+    g_xm6.exec(g_xm6_handle, 36000);
+  }
+
+  if (g_xm6.video_poll && g_xm6.video_consume) {
+    xm6_video_frame_t frame = {};
+    if (g_xm6.video_poll(g_xm6_handle, &frame) == XM6CORE_OK) {
+      g_xm6.video_consume(g_xm6_handle);
     }
   }
 
-  g_xm6.reset(g_xm6_handle);
-  g_video_not_ready_count = 0;
+  --g_hdd_boot_reset_countdown;
+  if (g_hdd_boot_reset_countdown == 0) {
+    core_log(RETRO_LOG_INFO,
+             "[xm6-libretro] Completing deferred HDD boot stabilization with reset");
+    g_xm6.reset(g_xm6_handle);
+    g_video_not_ready_count = 0;
+  }
+
+  return true;
 }
 
 static void arm_savestate_guard_frames(const char *reason, unsigned frames)
@@ -1985,8 +2002,7 @@ bool retro_load_game(const struct retro_game_info *info)
     // HDF boot is more reliable with a full power cycle, not just a soft reset.
     g_xm6.set_power(g_xm6_handle, 0);
     g_xm6.set_power(g_xm6_handle, 1);
-    g_hdd_boot_reset_countdown = 0;
-    run_boot_warmup_and_reset("HDD");
+    begin_hdd_boot_warmup("HDD");
   } else {
     g_xm6.set_power(g_xm6_handle, 1);
     g_video_not_ready_count = 0;
@@ -2106,8 +2122,7 @@ void retro_run(void)
           g_content_is_hdd ? "disk remount (HDD)" : "disk remount (floppy)",
           g_content_is_hdd ? k_savestate_guard_frames_hdd_load : k_savestate_guard_frames_floppy_load);
         if (g_content_is_hdd) {
-          g_hdd_boot_reset_countdown = 0;
-          run_boot_warmup_and_reset("HDD");
+          begin_hdd_boot_warmup("HDD");
         } else {
           g_video_not_ready_count = 0;
           core_log(RETRO_LOG_INFO, "[xm6-libretro] Performing floppy post-mount reset");
@@ -2122,6 +2137,24 @@ void retro_run(void)
   }
 
   poll_and_push_input();
+
+  if (run_pending_hdd_boot_warmup_step()) {
+    if (g_video_cb) {
+      g_video_cb(nullptr, g_frame_width, g_frame_height, g_frame_width * sizeof(uint32_t));
+    }
+
+    if (g_audio_batch_cb) {
+      const unsigned want_frames = calc_audio_frames_for_run();
+      g_audio_buffer.resize(want_frames * 2);
+      if (want_frames > 0) {
+        std::memset(g_audio_buffer.data(), 0, want_frames * 2 * sizeof(int16_t));
+      }
+      g_audio_batch_cb(g_audio_buffer.data(), want_frames);
+    } else if (g_audio_cb) {
+      g_audio_cb(0, 0);
+    }
+    return;
+  }
 
   if (g_use_exec_to_frame && g_xm6.exec_to_frame) {
     g_xm6.exec_to_frame(g_xm6_handle);
