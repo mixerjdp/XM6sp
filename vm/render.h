@@ -252,6 +252,9 @@ private:
 										// BG(横ブロック)
 	void FASTCALL Mix(int offset);
 										// 合成
+	void FASTCALL MixFast(int y);
+	void FASTCALL FastMixGrp(int y, DWORD *grp, DWORD *grp_sp, DWORD *grp_sp2,
+		BOOL *gon, BOOL *tron, BOOL *pron);
 	void FASTCALL MixGrp(int y, DWORD *buf);
 										// 合成(グラフィック)
 	CRTC *crtc;

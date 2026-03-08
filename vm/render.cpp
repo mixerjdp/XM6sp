@@ -3010,6 +3010,455 @@ void FASTCALL Render::BGBlock(int page, int y)
 //	合成
 //
 //---------------------------------------------------------------------------
+
+static BOOL FastVisiblePixel(DWORD pixel)
+{
+	return (BOOL)(((pixel & 0x80000000) == 0) && ((pixel & 0x00FFFFFF) != 0));
+}
+
+static DWORD FastBlendPixel(DWORD top, DWORD base)
+{
+	DWORD a;
+	DWORD b;
+
+	a = top & 0x00FEFEFE;
+	b = base & 0x00FEFEFE;
+	return (DWORD)((a >> 1) + (b >> 1));
+}
+
+static DWORD FastDimPixel(DWORD pixel)
+{
+	return (DWORD)((pixel & 0x00FEFEFE) >> 1);
+}
+
+static int FastNormalizePriority(int pri)
+{
+	if (pri == 3) {
+		return 2;
+	}
+	return pri;
+}
+
+static void FastClearLine(DWORD *buf, int len)
+{
+	int i;
+	for (i=0; i<len; i++) {
+		buf[i] = REND_COLOR0;
+	}
+}
+
+static const DWORD *FastGrpLine512(const Render::render_t *work, int page, int y)
+{
+	int line;
+	line = (y + (int)work->grpy[page]) & 0x1ff;
+	return &work->grpbuf[page][(line << 10) + (work->grpx[page] & 0x1ff)];
+}
+
+static const DWORD *FastGrpLine1024(const Render::render_t *work, int y)
+{
+	int line;
+	line = (y + (int)work->grpy[0]) & 0x3ff;
+	return &work->grpbuf[0][(line << 11) + (work->grpx[0] & 0x3ff)];
+}
+
+static void FastOverlayLine(DWORD *dst, const DWORD *src, int len, BOOL *active)
+{
+	int i;
+	for (i=0; i<len; i++) {
+		if (FastVisiblePixel(src[i])) {
+			dst[i] = src[i];
+			*active = TRUE;
+		}
+	}
+}
+
+static void FastOverlayLineTR(DWORD *dst, const DWORD *src, const DWORD *sp, int len, BOOL *active)
+{
+	int i;
+	for (i=0; i<len; i++) {
+		if (FastVisiblePixel(src[i])) {
+			if (FastVisiblePixel(sp[i])) {
+				dst[i] = FastBlendPixel(src[i], sp[i]);
+			}
+			else {
+				dst[i] = src[i];
+			}
+			*active = TRUE;
+		}
+	}
+}
+
+static void FastOverlayLineGate(DWORD *dst, const DWORD *src, const DWORD *sp, int len, BOOL *active)
+{
+	int i;
+	for (i=0; i<len; i++) {
+		if (!FastVisiblePixel(sp[i]) && FastVisiblePixel(src[i])) {
+			dst[i] = src[i];
+			*active = TRUE;
+		}
+	}
+}
+
+static void FastBuildSpecial4(const Render::render_t *work, int page, int y, int len,
+	DWORD *grp_sp, DWORD *grp_sp2, BOOL *active)
+{
+	DWORD off;
+	DWORD x;
+	int i;
+	BYTE data;
+	int index;
+
+	x = work->grpx[page] & 0x1ff;
+	off = ((DWORD)((y + (int)work->grpy[page]) & 0x1ff) << 10) + (x << 1);
+	if (page >= 2) {
+		off++;
+	}
+	for (i=0; i<len; i++) {
+		data = work->grpgv[off];
+		index = (page & 1) ? ((data >> 4) & 0x0f) : (data & 0x0f);
+		if (index & 1) {
+			grp_sp[i] = work->paldata[index & 0x0e];
+			grp_sp2[i] = REND_COLOR0;
+			if (FastVisiblePixel(grp_sp[i])) {
+				*active = TRUE;
+			}
+		}
+		else {
+			grp_sp[i] = REND_COLOR0;
+			grp_sp2[i] = work->paldata[index & 0x0e];
+			if (FastVisiblePixel(grp_sp2[i])) {
+				*active = TRUE;
+			}
+		}
+		off += 2;
+		x = (x + 1) & 0x1ff;
+		if (x == 0) {
+			off -= 0x400;
+		}
+	}
+}
+
+static void FastBuildSpecial8(const Render::render_t *work, int pair, int y, int len,
+	DWORD *grp_sp, DWORD *grp_sp2, BOOL *active)
+{
+	DWORD x0;
+	DWORD x1;
+	DWORD off0;
+	DWORD off1;
+	int i;
+	int index;
+
+	x0 = work->grpx[pair * 2 + 0] & 0x1ff;
+	x1 = work->grpx[pair * 2 + 1] & 0x1ff;
+	off0 = ((DWORD)((y + (int)work->grpy[pair * 2 + 0]) & 0x1ff) << 10) + (x0 << 1) + pair;
+	off1 = ((DWORD)((y + (int)work->grpy[pair * 2 + 1]) & 0x1ff) << 10) + (x1 << 1) + pair;
+	for (i=0; i<len; i++) {
+		index = (work->grpgv[off0] & 0x0f) | (work->grpgv[off1] & 0xf0);
+		if (index & 1) {
+			grp_sp[i] = work->paldata[index & 0xfe];
+			grp_sp2[i] = REND_COLOR0;
+			if (FastVisiblePixel(grp_sp[i])) {
+				*active = TRUE;
+			}
+		}
+		else {
+			grp_sp[i] = REND_COLOR0;
+			grp_sp2[i] = work->paldata[index & 0xfe];
+			if (FastVisiblePixel(grp_sp2[i])) {
+				*active = TRUE;
+			}
+		}
+		off0 += 2;
+		off1 += 2;
+		x0 = (x0 + 1) & 0x1ff;
+		x1 = (x1 + 1) & 0x1ff;
+		if (x0 == 0) {
+			off0 -= 0x400;
+		}
+		if (x1 == 0) {
+			off1 -= 0x400;
+		}
+	}
+}
+
+static void FastBuildSpecial64K(const Render::render_t *work, int y, int len,
+	DWORD *grp_sp, DWORD *grp_sp2, BOOL *active)
+{
+	DWORD x;
+	DWORD off;
+	int i;
+	WORD raw;
+	DWORD pixel;
+
+	x = work->grpx[0] & 0x1ff;
+	off = ((DWORD)((y + (int)work->grpy[0]) & 0x1ff) << 10) + (x << 1);
+	for (i=0; i<len; i++) {
+		raw = *(WORD *)(&work->grpgv[off]);
+		pixel = work->palptr[(DWORD)(raw & 0xfffe)];
+		if ((raw & 0xfffe) == 0) {
+			pixel |= REND_COLOR0;
+		}
+		if (raw & 1) {
+			grp_sp[i] = pixel;
+			grp_sp2[i] = REND_COLOR0;
+			if (FastVisiblePixel(grp_sp[i])) {
+				*active = TRUE;
+			}
+		}
+		else {
+			grp_sp[i] = REND_COLOR0;
+			grp_sp2[i] = pixel;
+			if (FastVisiblePixel(grp_sp2[i])) {
+				*active = TRUE;
+			}
+		}
+		off += 2;
+		x = (x + 1) & 0x1ff;
+		if (x == 0) {
+			off -= 0x400;
+		}
+	}
+}
+
+static void FastBuildSpecial1024(const Render::render_t *work, int y, int len,
+	DWORD *grp_sp, DWORD *grp_sp2, BOOL *active)
+{
+	const WORD *src;
+	DWORD line;
+	DWORD x;
+	int bits;
+	int remain;
+	int i;
+	WORD raw;
+	int index;
+
+	line = (DWORD)((y + (int)work->grpy[0]) & 0x3ff);
+	if ((line & 0x200) == 0) {
+		line <<= 10;
+		bits = (work->grpx[0] & 0x200) ? 4 : 0;
+	}
+	else {
+		line = (line & 0x1ff) << 10;
+		bits = (work->grpx[0] & 0x200) ? 12 : 8;
+	}
+	x = work->grpx[0] & 0x1ff;
+	src = (const WORD *)(&work->grpgv[line + (x << 1)]);
+	remain = ((int)(x ^ 0x1ff) + 1);
+	for (i=0; i<len; i++) {
+		raw = *src++;
+		index = (raw >> bits) & 0x0f;
+		if (index & 1) {
+			grp_sp[i] = work->paldata[index & 0x0e];
+			grp_sp2[i] = REND_COLOR0;
+			if (FastVisiblePixel(grp_sp[i])) {
+				*active = TRUE;
+			}
+		}
+		else {
+			grp_sp[i] = REND_COLOR0;
+			grp_sp2[i] = work->paldata[index & 0x0e];
+			if (FastVisiblePixel(grp_sp2[i])) {
+				*active = TRUE;
+			}
+		}
+		if (--remain == 0) {
+			src -= 0x200;
+			bits ^= 4;
+			remain = 512;
+		}
+	}
+}
+
+void FASTCALL Render::FastMixGrp(int y, DWORD *grp, DWORD *grp_sp, DWORD *grp_sp2,
+	BOOL *gon, BOOL *tron, BOOL *pron)
+{
+	const VC::vc_t *p;
+	BOOL active;
+	int slot;
+	int page;
+	int top_pair;
+	BOOL top_enabled;
+
+	ASSERT(grp);
+	ASSERT(grp_sp);
+	ASSERT(grp_sp2);
+	ASSERT(gon);
+	ASSERT(tron);
+	ASSERT(pron);
+
+	p = vc->GetWorkAddr();
+	MixGrp(y, grp);
+	FastClearLine(grp_sp, render.mixlen);
+	FastClearLine(grp_sp2, render.mixlen);
+	*gon = FALSE;
+	*tron = FALSE;
+	*pron = FALSE;
+
+	for (slot=0; slot<render.mixlen; slot++) {
+		if (FastVisiblePixel(grp[slot])) {
+			*gon = TRUE;
+			break;
+		}
+	}
+
+	switch (render.grptype) {
+		case 0:
+			if (render.grpen[0] && p->exon && p->gon) {
+				active = FALSE;
+				FastBuildSpecial1024(&render, y, render.mixlen, grp_sp, grp_sp2, &active);
+				*tron = active;
+				*pron = active;
+				if (active) {
+					*gon = TRUE;
+				}
+			}
+			return;
+
+		case 1:
+			if (p->exon && p->gs[0]) {
+				page = (int)p->gp[0];
+				if ((page >= 0) && (page < 4) && render.grpen[page]) {
+					active = FALSE;
+					FastBuildSpecial4(&render, page, y, render.mixlen, grp_sp, grp_sp2, &active);
+					*tron = active;
+					*pron = active;
+					if (active) {
+						*gon = TRUE;
+					}
+				}
+			}
+			return;
+
+		case 2:
+			top_pair = (((int)p->gp[0]) < 2) ? 0 : 1;
+			top_enabled = (BOOL)((top_pair == 0) ? render.grpen[0] : render.grpen[2]);
+			if (p->exon && top_enabled) {
+				active = FALSE;
+				FastBuildSpecial8(&render, top_pair, y, render.mixlen, grp_sp, grp_sp2, &active);
+				*tron = active;
+				*pron = active;
+				if (active) {
+					*gon = TRUE;
+				}
+			}
+			return;
+
+		case 4:
+			if (render.grpen[0] && p->exon && (render.mixpage > 0)) {
+				active = FALSE;
+				FastBuildSpecial64K(&render, y, render.mixlen, grp_sp, grp_sp2, &active);
+				*tron = active;
+				*pron = active;
+				if (active) {
+					*gon = TRUE;
+				}
+			}
+			return;
+
+		default:
+			return;
+	}
+}
+
+void FASTCALL Render::MixFast(int y)
+{
+	DWORD *dst;
+	DWORD grp[1024];
+	DWORD grp_sp[1024];
+	DWORD grp_sp2[1024];
+	DWORD out[1024];
+	const VC::vc_t *p;
+	DWORD text_pixel;
+	DWORD bg_pixel;
+	DWORD grp_pixel;
+	DWORD final_pixel;
+	int tx_pri;
+	int sp_pri;
+	int gr_pri;
+	BOOL gon;
+	BOOL tron;
+	BOOL pron;
+	BOOL text_visible;
+	BOOL bg_visible;
+	BOOL grp_visible;
+	BOOL sp_visible;
+	int chosen;
+	int i;
+
+	if ((!render.mix[y]) || (!render.mixbuf)) {
+		return;
+	}
+	if (render.mixheight <= y) {
+		return;
+	}
+	ASSERT(render.mixlen > 0);
+
+	render.mix[y] = FALSE;
+	dst = &render.mixbuf[render.mixwidth * y];
+	p = vc->GetWorkAddr();
+	tx_pri = FastNormalizePriority((int)p->tx);
+	sp_pri = FastNormalizePriority((int)p->sp);
+	gr_pri = FastNormalizePriority((int)p->gr);
+
+	FastMixGrp(y, grp, grp_sp, grp_sp2, &gon, &tron, &pron);
+	for (i=0; i<render.mixlen; i++) {
+		text_pixel = REND_COLOR0;
+		bg_pixel = REND_COLOR0;
+		if (render.texten) {
+			text_pixel = render.textout[(((y + (int)render.texty) & 0x3ff) << 10) + (((int)render.textx + i) & 0x3ff)];
+		}
+		if (render.bgspflag) {
+			bg_pixel = render.bgspbuf[(y << 9) + i];
+		}
+		grp_pixel = FastVisiblePixel(grp_sp2[i]) ? grp_sp2[i] : grp[i];
+		text_visible = FastVisiblePixel(text_pixel);
+		bg_visible = FastVisiblePixel(bg_pixel);
+		grp_visible = FastVisiblePixel(grp_pixel);
+		if ((!gon) && FastVisiblePixel(grp_sp2[i])) {
+			grp_visible = TRUE;
+		}
+		sp_visible = FastVisiblePixel(grp_sp[i]);
+		final_pixel = 0;
+		chosen = -1;
+
+		if (grp_visible) {
+			chosen = 0;
+			final_pixel = grp_pixel;
+		}
+		if (bg_visible) {
+			if ((chosen < 0) || (sp_pri < gr_pri) || ((chosen == 0) && (sp_pri <= gr_pri))) {
+				chosen = 1;
+				final_pixel = bg_pixel;
+			}
+		}
+		if (text_visible) {
+			if ((chosen < 0) || (tx_pri < ((chosen == 1) ? sp_pri : gr_pri)) ||
+				((chosen == 1) && (tx_pri <= sp_pri)) || ((chosen == 0) && (tx_pri <= gr_pri))) {
+				chosen = 2;
+				final_pixel = text_pixel;
+			}
+		}
+
+		if (pron && sp_visible && ((p->vr2h & 0x5c) == 0x14)) {
+			final_pixel = grp_sp[i];
+		}
+		else if (tron && sp_visible && ((p->vr2h & 0x5d) == 0x1d)) {
+			if ((chosen == 2) && (tx_pri <= gr_pri)) {
+				final_pixel = FastBlendPixel(text_pixel, grp_sp[i]);
+			}
+			else if ((chosen == 1) && (sp_pri <= gr_pri)) {
+				final_pixel = FastBlendPixel(bg_pixel, grp_sp[i]);
+			}
+		}
+		else if (tron && (final_pixel == 0) && sp_visible && ((p->vr2h & 0x5d) == 0x1c)) {
+			final_pixel = FastDimPixel(grp_sp[i]);
+		}
+		out[i] = final_pixel;
+	}
+
+	RendMix01(dst, out, render.drawflag + (y << 6), render.mixlen);
+}
+
 void FASTCALL Render::Mix(int y)
 {
 	DWORD *p;
@@ -3018,6 +3467,11 @@ void FASTCALL Render::Mix(int y)
 	DWORD *ptr[3];
 	int offset;
 	DWORD buf[1024];
+
+	if (compositor_mode == compositor_fast) {
+		MixFast(y);
+		return;
+	}
 
 	// 合成指示が無い場合、合成バッファが無い場合、yオーバーの場合return
 	if ((!render.mix[y]) || (!render.mixbuf)) {
