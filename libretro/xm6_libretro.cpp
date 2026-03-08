@@ -1696,10 +1696,8 @@ static bool disk_set_eject_state(bool ejected)
     return true;
   }
 
-  /* Libretro contract: closing tray with "no disk selected" is valid. */
-  if (g_disk_index >= g_disk_paths.size() || g_disk_paths.empty()) {
-    g_disk_ejected = false;
-    return true;
+  if (g_disk_paths.empty() || g_disk_index >= g_disk_paths.size()) {
+    return false;
   }
 
   if (!mount_current_disk()) {
@@ -1711,38 +1709,23 @@ static bool disk_set_eject_state(bool ejected)
 
 static bool disk_get_eject_state()
 {
-  if (!g_content_is_hdd && g_disk_drive >= 0 && g_disk_drive < 2) {
-    g_disk_ejected = (g_inserted_disk_index[g_disk_drive] < 0);
-  }
   return g_disk_ejected;
 }
 
 static unsigned disk_get_image_index()
 {
-  if (!g_content_is_hdd && g_disk_drive >= 0 && g_disk_drive < 2) {
-    const int inserted = g_inserted_disk_index[g_disk_drive];
-    if (inserted >= 0) {
-      return static_cast<unsigned>(inserted);
-    }
-    return static_cast<unsigned>(g_disk_paths.size());
-  }
   return g_disk_index;
 }
 
 static bool disk_set_image_index(unsigned index)
 {
-  /* Must only be changed while tray is ejected. */
-  if (!g_disk_ejected) {
+  if (index >= g_disk_paths.size()) {
     return false;
   }
-
-  /* >= num_images means "no disk inserted". */
-  if (index >= g_disk_paths.size()) {
-    g_disk_index = index;
-    return true;
-  }
-
   g_disk_index = index;
+  if (!g_disk_ejected && g_xm6_handle) {
+    return mount_current_disk();
+  }
   return true;
 }
 
@@ -2122,9 +2105,6 @@ void retro_run(void)
       const int old_mouse_speed = g_mouse_speed;
       const bool old_mouse_swap = g_mouse_swap;
       apply_core_option_values();
-      if (!g_content_is_hdd && g_disk_drive >= 0 && g_disk_drive < 2) {
-        g_disk_ejected = (g_inserted_disk_index[g_disk_drive] < 0);
-      }
       if (old_system_clock != g_system_clock || old_ram_size != g_ram_size) {
         apply_runtime_core_options();
         if (old_system_clock != g_system_clock && old_ram_size != g_ram_size) {
