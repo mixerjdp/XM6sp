@@ -65,6 +65,7 @@ static int g_joy_type[2] = { 1, 0 };
 static int g_system_clock = 0;
 static int g_ram_size = 5;
 static bool g_fast_floppy = false;
+static int g_render_mode = XM6CORE_RENDER_MODE_ORIGINAL;
 static int g_master_volume = 100;
 static int g_fm_volume = 54;
 static int g_adpcm_volume = 52;
@@ -131,6 +132,8 @@ struct xm6_api_t {
   int (XM6CORE_CALL *set_mouse_speed)(XM6Handle handle, int speed) = nullptr;
   int (XM6CORE_CALL *set_mouse_port)(XM6Handle handle, int port) = nullptr;
   int (XM6CORE_CALL *set_mouse_swap)(XM6Handle handle, int enabled) = nullptr;
+  int (XM6CORE_CALL *set_render_mode)(XM6Handle handle, int mode) = nullptr;
+  int (XM6CORE_CALL *get_render_mode)(XM6Handle handle) = nullptr;
 
   int (XM6CORE_CALL *state_size)(XM6Handle handle, unsigned int *out_size) = nullptr;
   int (XM6CORE_CALL *save_state_mem)(XM6Handle handle, void *buffer, unsigned int size) = nullptr;
@@ -307,6 +310,8 @@ static bool load_xm6_api()
   g_xm6.set_mouse_speed = xm6_set_mouse_speed;
   g_xm6.set_mouse_port = xm6_set_mouse_port;
   g_xm6.set_mouse_swap = xm6_set_mouse_swap;
+  g_xm6.set_render_mode = xm6_set_render_mode;
+  g_xm6.get_render_mode = xm6_get_render_mode;
   g_xm6.state_size = xm6_state_size;
   g_xm6.save_state_mem = xm6_save_state_mem;
   g_xm6.load_state_mem = xm6_load_state_mem;
@@ -405,6 +410,8 @@ static bool load_xm6_api()
   load_optional_symbol(&g_xm6.set_mouse_speed, "xm6_set_mouse_speed");
   load_optional_symbol(&g_xm6.set_mouse_port, "xm6_set_mouse_port");
   load_optional_symbol(&g_xm6.set_mouse_swap, "xm6_set_mouse_swap");
+  load_optional_symbol(&g_xm6.set_render_mode, "xm6_set_render_mode");
+  load_optional_symbol(&g_xm6.get_render_mode, "xm6_get_render_mode");
 
   core_log(RETRO_LOG_INFO, "[xm6-libretro] Loaded xm6core.dll");
   return true;
@@ -1147,6 +1154,9 @@ static void apply_runtime_core_options()
   if (g_xm6.set_fast_floppy) {
     g_xm6.set_fast_floppy(g_xm6_handle, g_fast_floppy ? 1 : 0);
   }
+  if (g_xm6.set_render_mode) {
+    g_xm6.set_render_mode(g_xm6_handle, g_render_mode);
+  }
   if (g_xm6.set_master_volume) {
     g_xm6.set_master_volume(g_xm6_handle, g_master_volume);
   }
@@ -1261,6 +1271,15 @@ static void apply_core_option_values()
     g_fast_floppy = (std::strcmp(var.value, "enabled") == 0);
   }
 
+  var.key = "xm6_render_mode";
+  if (g_environ_cb(RETRO_ENVIRONMENT_GET_VARIABLE, &var) && var.value) {
+    if (std::strcmp(var.value, "fast") == 0) {
+      g_render_mode = XM6CORE_RENDER_MODE_FAST;
+    } else {
+      g_render_mode = XM6CORE_RENDER_MODE_ORIGINAL;
+    }
+  }
+
   var.key = "xm6_master_volume";
   if (g_environ_cb(RETRO_ENVIRONMENT_GET_VARIABLE, &var) && var.value) {
     g_master_volume = std::atoi(var.value);
@@ -1333,7 +1352,7 @@ static void apply_core_option_values()
     }
   }
 
-  core_log(RETRO_LOG_INFO, "[xm6-libretro] options: drive=FDD%d exec_mode=%s start_select=%s clock=%s joy1=%d joy2=%d ram=%dmb fast_floppy=%s vol(master=%d fm=%d adpcm=%d) mouse=%s port=%d speed=%d swap=%s hdd=%s",
+  core_log(RETRO_LOG_INFO, "[xm6-libretro] options: drive=FDD%d exec_mode=%s start_select=%s clock=%s joy1=%d joy2=%d ram=%dmb fast_floppy=%s render=%s vol(master=%d fm=%d adpcm=%d) mouse=%s port=%d speed=%d swap=%s hdd=%s",
            g_disk_drive,
            g_use_exec_to_frame ? "exec_to_frame" : "legacy_exec",
            (g_pad_start_select_mode == START_SELECT_F_KEYS) ? "f_keys" :
@@ -1343,6 +1362,7 @@ static void apply_core_option_values()
            (g_system_clock == 5) ? "22mhz" : "10mhz",
            g_joy_type[0], g_joy_type[1], (g_ram_size + 1) * 2,
            g_fast_floppy ? "enabled" : "disabled",
+           (g_render_mode == XM6CORE_RENDER_MODE_FAST) ? "fast" : "original",
            g_master_volume, g_fm_volume, g_adpcm_volume,
            (g_pointer_device_mode == POINTER_DEVICE_MOUSE) ? "mouse" : "disabled",
            g_mouse_port, g_mouse_speed, g_mouse_swap ? "enabled" : "disabled",
@@ -1373,6 +1393,8 @@ static void register_core_options()
       "Main RAM size (Reset); 12mb|10mb|8mb|6mb|4mb|2mb" },
     { "xm6_fast_floppy",
       "Fast floppy; disabled|enabled" },
+    { "xm6_render_mode",
+      "Video compositor; original|fast" },
     { "xm6_master_volume",
       "Master volume; 100|90|80|70|60|50|40|30|20|10|0" },
     { "xm6_fm_volume",
@@ -2074,6 +2096,7 @@ void retro_run(void)
       const int old_system_clock = g_system_clock;
       const int old_ram_size = g_ram_size;
       const bool old_fast_floppy = g_fast_floppy;
+      const int old_render_mode = g_render_mode;
       const int old_master_volume = g_master_volume;
       const int old_fm_volume = g_fm_volume;
       const int old_adpcm_volume = g_adpcm_volume;
@@ -2108,6 +2131,11 @@ void retro_run(void)
         apply_runtime_core_options();
         core_log(RETRO_LOG_INFO, "[xm6-libretro] Fast floppy %s",
                  g_fast_floppy ? "enabled" : "disabled");
+      }
+      if (old_render_mode != g_render_mode) {
+        apply_runtime_core_options();
+        core_log(RETRO_LOG_INFO, "[xm6-libretro] Video compositor changed to %s",
+                 (g_render_mode == XM6CORE_RENDER_MODE_FAST) ? "fast" : "original");
       }
       if (old_master_volume != g_master_volume ||
           old_fm_volume != g_fm_volume ||
@@ -2288,3 +2316,16 @@ size_t retro_get_memory_size(unsigned id)
 }
 
 } // extern "C"
+
+
+
+
+
+
+
+
+
+
+
+
+

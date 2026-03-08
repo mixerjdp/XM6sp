@@ -83,6 +83,8 @@ public:
 
 	void EnterBorderlessFullscreen();
 	void ExitBorderlessFullscreen();
+	void OnRenderFast();
+	void OnRenderFastUI(CCmdUI *pCmdUI);
 	void OnToggleRenderer();
 	void OnToggleVSync();
 	void OnToggleIntegerScaling();

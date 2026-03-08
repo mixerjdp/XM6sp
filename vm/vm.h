@@ -35,6 +35,8 @@ public:
 	void FASTCALL Reset();
 										// リセット
 	void FASTCALL ApplyCfg(const Config *config);
+	BOOL FASTCALL SetRenderMode(int mode);
+	int FASTCALL GetRenderMode() const;
 										// 設定適用
 
 	// ステート保存
@@ -128,6 +130,7 @@ private:
 };
 
 #endif	// vm_h
+
 
 
 

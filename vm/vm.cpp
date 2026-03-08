@@ -472,6 +472,7 @@ void FASTCALL VM::Clear()
 //	設定適用
 //
 //---------------------------------------------------------------------------
+
 void FASTCALL VM::ApplyCfg(const Config *config)
 {
 	Device *device;
@@ -479,16 +480,35 @@ void FASTCALL VM::ApplyCfg(const Config *config)
 	ASSERT(this);
 	ASSERT(config);
 
-	// デバイスポインタ初期化
 	device = first_device;
-
-	// 適用(順番に回る)
 	while (device) {
 		device->ApplyCfg(config);
 		device = device->GetNextDevice();
 	}
 }
+BOOL FASTCALL VM::SetRenderMode(int mode)
+{
+	Render *render;
 
+	ASSERT(this);
+	render = (Render*)SearchDevice(MAKEID('R', 'E', 'N', 'D'));
+	if (!render) {
+		return FALSE;
+	}
+	return render->SetCompositorMode(mode);
+}
+
+int FASTCALL VM::GetRenderMode() const
+{
+	Render *render;
+
+	ASSERT(this);
+	render = (Render*)SearchDevice(MAKEID('R', 'E', 'N', 'D'));
+	if (!render) {
+		return Render::compositor_original;
+	}
+	return render->GetCompositorMode();
+}
 //---------------------------------------------------------------------------
 //
 //	デバイス追加
@@ -728,5 +748,7 @@ void FASTCALL VM::GetVersion(DWORD& major, DWORD& minor)
 	major = major_ver;
 	minor = minor_ver;
 }
+
+
 
 

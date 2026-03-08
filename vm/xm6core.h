@@ -36,6 +36,11 @@ enum {
   XM6CORE_ERR_NOT_READY = -5
 };
 
+enum {
+  XM6CORE_RENDER_MODE_ORIGINAL = 0,
+  XM6CORE_RENDER_MODE_FAST = 1
+};
+
 typedef struct xm6_video_frame_t {
   const unsigned int* pixels_argb32;
   unsigned int width;
@@ -94,6 +99,8 @@ XM6CORE_API int XM6CORE_CALL xm6_set_adpcm_volume(XM6Handle handle, int volume);
 XM6CORE_API int XM6CORE_CALL xm6_set_mouse_speed(XM6Handle handle, int speed);
 XM6CORE_API int XM6CORE_CALL xm6_set_mouse_port(XM6Handle handle, int port);
 XM6CORE_API int XM6CORE_CALL xm6_set_mouse_swap(XM6Handle handle, int enabled);
+XM6CORE_API int XM6CORE_CALL xm6_set_render_mode(XM6Handle handle, int mode);
+XM6CORE_API int XM6CORE_CALL xm6_get_render_mode(XM6Handle handle);
 
 XM6CORE_API int XM6CORE_CALL xm6_mount_fdd(XM6Handle handle, int drive, const char* image_path, int media_hint);
 XM6CORE_API int XM6CORE_CALL xm6_eject_fdd(XM6Handle handle, int drive, int force);
@@ -122,3 +129,4 @@ XM6CORE_API void XM6CORE_CALL xm6_get_vm_version(XM6Handle handle, unsigned int*
 #endif
 
 #endif  // XM6CORE_H
+

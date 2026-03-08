@@ -368,6 +368,8 @@ BEGIN_MESSAGE_MAP(CFrmWnd, CFrameWnd)
 	ON_UPDATE_COMMAND_UI(IDM_STRETCH, OnStretchUI)
 	ON_COMMAND(IDM_FULLSCREEN, OnFullScreen)
 	ON_UPDATE_COMMAND_UI(IDM_FULLSCREEN, OnFullScreenUI)
+	ON_COMMAND(IDM_RENDER_FAST, OnRenderFast)
+	ON_UPDATE_COMMAND_UI(IDM_RENDER_FAST, OnRenderFastUI)
 	ON_COMMAND(IDM_TOGGLE_RENDERER, OnToggleRenderer)
 	ON_COMMAND(IDM_TOGGLE_OSD, OnToggleOSD)
 	ON_COMMAND(IDM_TOGGLE_VSYNC, OnToggleVSync)
@@ -3341,6 +3343,52 @@ void CFrmWnd::OnToggleRenderer()
 	if (m_pDrawView) {
 		m_pDrawView->ToggleRenderer();
 	}
+}
+
+void CFrmWnd::OnRenderFast()
+{
+	Render *pRender;
+	int nMode;
+	CString info;
+
+	pRender = (Render*)::GetVM()->SearchDevice(MAKEID('R', 'E', 'N', 'D'));
+	if (!pRender) {
+		return;
+	}
+
+	nMode = (pRender->GetCompositorMode() == Render::compositor_fast) ?
+		Render::compositor_original : Render::compositor_fast;
+	if (!pRender->SetCompositorMode(nMode)) {
+		return;
+	}
+
+	pRender->Complete();
+	if (m_pDrawView) {
+		m_pDrawView->Refresh();
+	}
+
+	info.Format(_T("Render Fast: %s"),
+		(nMode == Render::compositor_fast) ? _T("ON") : _T("OFF"));
+	SetInfo(info);
+}
+
+void CFrmWnd::OnRenderFastUI(CCmdUI *pCmdUI)
+{
+	Render *pRender;
+
+	if (!pCmdUI) {
+		return;
+	}
+
+	pRender = (Render*)::GetVM()->SearchDevice(MAKEID('R', 'E', 'N', 'D'));
+	if (!pRender) {
+		pCmdUI->Enable(FALSE);
+		pCmdUI->SetCheck(0);
+		return;
+	}
+
+	pCmdUI->Enable(TRUE);
+	pCmdUI->SetCheck((pRender->GetCompositorMode() == Render::compositor_fast) ? 1 : 0);
 }
 
 //---------------------------------------------------------------------------

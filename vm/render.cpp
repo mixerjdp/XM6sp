@@ -34,6 +34,53 @@ BOOL FASTCALL IsCMOV(void);
 //---------------------------------------------------------------------------
 #define REND_COLOR0		0x80000000		// カラー0フラグ(rend_asm.asmで使用)
 
+
+class Render::Backend
+{
+public:
+	explicit Backend(int m) : mode(m)
+	{
+	}
+
+	void Activate(Render *owner)
+	{
+		if ((mode == Render::compositor_fast) && owner) {
+			owner->InvalidateAll();
+		}
+	}
+
+	void StartFrame(Render *owner)
+	{
+		if ((mode == Render::compositor_fast) && owner) {
+			owner->StartFrameFast();
+			return;
+		}
+		owner->StartFrameOriginal();
+	}
+
+	void EndFrame(Render *owner)
+	{
+		owner->EndFrameOriginal();
+	}
+
+	void HSync(Render *owner, int raster)
+	{
+		owner->HSyncOriginal(raster);
+	}
+
+	void SetCRTC(Render *owner)
+	{
+		owner->SetCRTCOriginal();
+	}
+
+	void SetVC(Render *owner)
+	{
+		owner->SetVCOriginal();
+	}
+
+private:
+	int mode;
+};
 //---------------------------------------------------------------------------
 //
 //	コンストラクタ
@@ -49,6 +96,10 @@ Render::Render(VM *p) : Device(p)
 	crtc = NULL;
 	vc = NULL;
 	sprite = NULL;
+	backend = NULL;
+	backend_original = NULL;
+	backend_fast = NULL;
+	compositor_mode = compositor_original;
 
 	// ワークエリア初期化(CRTC)
 	render.crtc = FALSE;
@@ -258,6 +309,19 @@ BOOL FASTCALL Render::Init()
 	render.contlevel = 0;
 	cmov = ::IsCMOV();
 
+	try {
+		backend_original = new Backend(compositor_original);
+		backend_fast = new Backend(compositor_fast);
+	}
+	catch (...) {
+		return FALSE;
+	}
+	if (!backend_original || !backend_fast) {
+		return FALSE;
+	}
+	backend = backend_original;
+	compositor_mode = compositor_original;
+
 	return TRUE;
 }
 
@@ -271,6 +335,17 @@ void FASTCALL Render::Cleanup()
 	int i;
 
 	ASSERT(this);
+
+	if (backend_original) {
+		delete backend_original;
+		backend_original = NULL;
+	}
+	if (backend_fast) {
+		delete backend_fast;
+		backend_fast = NULL;
+	}
+	backend = NULL;
+	compositor_mode = compositor_original;
 
 	// 描画フラグ
 	if (render.drawflag) {
@@ -475,6 +550,9 @@ void FASTCALL Render::Reset()
 
 	// ワークエリア初期化(合成)
 	render.mixtype = 0;
+	if (backend) {
+		backend->Activate(this);
+	}
 }
 
 //---------------------------------------------------------------------------
@@ -520,7 +598,115 @@ void FASTCALL Render::ApplyCfg(const Config *config)
 //	フレーム開始
 //
 //---------------------------------------------------------------------------
+BOOL FASTCALL Render::SetCompositorMode(int mode)
+{
+	Backend *next = NULL;
+
+	switch (mode) {
+	case compositor_original:
+		next = backend_original;
+		break;
+	case compositor_fast:
+		next = backend_fast;
+		break;
+	default:
+		return FALSE;
+	}
+
+	compositor_mode = mode;
+	if (!next) {
+		return TRUE;
+	}
+
+	backend = next;
+	backend->Activate(this);
+	return TRUE;
+}
+
 void FASTCALL Render::StartFrame()
+{
+	if (backend) {
+		backend->StartFrame(this);
+		return;
+	}
+	StartFrameOriginal();
+}
+
+void FASTCALL Render::EndFrame()
+{
+	if (backend) {
+		backend->EndFrame(this);
+		return;
+	}
+	EndFrameOriginal();
+}
+
+void FASTCALL Render::HSync(int raster)
+{
+	if (backend) {
+		backend->HSync(this, raster);
+		return;
+	}
+	HSyncOriginal(raster);
+}
+
+void FASTCALL Render::SetCRTC()
+{
+	if (backend) {
+		backend->SetCRTC(this);
+		return;
+	}
+	SetCRTCOriginal();
+}
+
+void FASTCALL Render::SetVC()
+{
+	if (backend) {
+		backend->SetVC(this);
+		return;
+	}
+	SetVCOriginal();
+}
+
+void FASTCALL Render::InvalidateFrame()
+{
+	render.vc = TRUE;
+	render.palette = TRUE;
+
+	memset(render.palmod, 1, sizeof(render.palmod));
+	memset(render.mix, 1, sizeof(render.mix));
+	memset(render.textmod, 1, sizeof(render.textmod));
+	memset(render.textpal, 1, sizeof(render.textpal));
+	memset(render.grpmod, 1, sizeof(render.grpmod));
+	memset(render.grppal, 1, sizeof(render.grppal));
+	memset(render.bgspmod, 1, sizeof(render.bgspmod));
+	if (render.drawflag) {
+		memset(render.drawflag, 1, sizeof(BOOL) * (64 * 1024));
+	}
+}
+
+void FASTCALL Render::InvalidateAll()
+{
+	render.crtc = TRUE;
+	InvalidateFrame();
+}
+
+void FASTCALL Render::HSyncOriginal(int raster)
+{
+	render.last = raster;
+	if (render.act) {
+		Process();
+	}
+}
+
+void FASTCALL Render::StartFrameFast()
+{
+	StartFrameOriginal();
+	if (render.act) {
+		InvalidateFrame();
+	}
+}
+void FASTCALL Render::StartFrameOriginal()
 {
 	CRTC::crtc_t crtcdata;
 	int i;
@@ -588,7 +774,7 @@ void FASTCALL Render::StartFrame()
 //	フレーム終了
 //
 //---------------------------------------------------------------------------
-void FASTCALL Render::EndFrame()
+void FASTCALL Render::EndFrameOriginal()
 {
 	ASSERT(this);
 
@@ -645,7 +831,7 @@ void FASTCALL Render::SetMixBuf(DWORD *buf, int width, int height)
 //	CRTCセット
 //
 //---------------------------------------------------------------------------
-void FASTCALL Render::SetCRTC()
+void FASTCALL Render::SetCRTCOriginal()
 {
 	ASSERT(this);
 
@@ -659,7 +845,7 @@ void FASTCALL Render::SetCRTC()
 //	VCセット
 //
 //---------------------------------------------------------------------------
-void FASTCALL Render::SetVC()
+void FASTCALL Render::SetVCOriginal()
 {
 	ASSERT(this);
 
@@ -3238,5 +3424,12 @@ void FASTCALL Render::Process()
 	// 更新
 	render.first = render.last;
 }
+
+
+
+
+
+
+
 
 

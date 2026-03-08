@@ -2,6 +2,7 @@
 #include "xm6.h"
 #include "xm6core.h"
 #include "vm.h"
+#include "render.h"
 #include "opm.h"
 #include "adpcm.h"
 #include "ppi.h"
@@ -221,3 +222,41 @@ extern "C" XM6CORE_API int XM6CORE_CALL xm6_set_mouse_swap(XM6Handle handle, int
 	ctx->vm->ApplyCfg(&ctx->runtime_config);
 	return XM6CORE_OK;
 }
+
+extern "C" XM6CORE_API int XM6CORE_CALL xm6_set_render_mode(XM6Handle handle, int mode)
+{
+	if (!handle) {
+		return XM6CORE_ERR_INVALID_HANDLE;
+	}
+	if (mode != XM6CORE_RENDER_MODE_ORIGINAL && mode != XM6CORE_RENDER_MODE_FAST) {
+		return XM6CORE_ERR_INVALID_ARGUMENT;
+	}
+
+	XM6ContextRuntimeShim *ctx = reinterpret_cast<XM6ContextRuntimeShim*>(handle);
+	if (!ctx->vm) {
+		return XM6CORE_ERR_INVALID_HANDLE;
+	}
+
+	if (!ctx->vm->SetRenderMode(mode)) {
+		return XM6CORE_ERR_INVALID_ARGUMENT;
+	}
+	if (ctx->render) {
+		ctx->render->Complete();
+	}
+	return XM6CORE_OK;
+}
+
+extern "C" XM6CORE_API int XM6CORE_CALL xm6_get_render_mode(XM6Handle handle)
+{
+	if (!handle) {
+		return XM6CORE_ERR_INVALID_HANDLE;
+	}
+
+	XM6ContextRuntimeShim *ctx = reinterpret_cast<XM6ContextRuntimeShim*>(handle);
+	if (!ctx->vm) {
+		return XM6CORE_ERR_INVALID_HANDLE;
+	}
+
+	return ctx->vm->GetRenderMode();
+}
+
