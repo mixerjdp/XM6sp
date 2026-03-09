@@ -9,6 +9,7 @@
 
 #if defined(_WIN32)
 
+#include <windows.h>
 #include "os.h"
 #include "xm6.h"
 #include "filepath.h"
@@ -190,11 +191,11 @@ void FASTCALL Filepath::SetBaseDir()
 //	Establecer nombre base para el archivo de configuraci
 //
 //---------------------------------------------------------------------------
-void FASTCALL Filepath::SetBaseFile(CString Nombre)
+void FASTCALL Filepath::SetBaseFile(const TCHAR* lpszName)
 {
 	TCHAR szModule[_MAX_PATH];
-
 	ASSERT(this);
+	ASSERT(lpszName);
 	ASSERT(_tcslen(m_szPath) > 0);
 
 	// モジュールのパス名を得る
@@ -202,7 +203,7 @@ void FASTCALL Filepath::SetBaseFile(CString Nombre)
 	
 	// En este lugar se determina el nombre del archivo de configuracion *-*
 	_tsplitpath(szModule, m_szDrive, m_szDir, m_szFile, NULL);
-	_tcscpy(m_szFile, Nombre);
+	_tcscpy(m_szFile, lpszName);
 
 
 	// 合成
@@ -217,7 +218,6 @@ void FASTCALL Filepath::SetBaseFile(CString Nombre)
 void FASTCALL Filepath::SetCurDir()
 {
 	TCHAR szCurDir[_MAX_PATH];
-
 	ASSERT(this);
 	ASSERT(_tcslen(m_szPath) > 0);
 
@@ -261,23 +261,25 @@ BOOL FASTCALL Filepath::IsClear() const
 //---------------------------------------------------------------------------
 const char* FASTCALL Filepath::GetShort() const
 {
-	char *lpszFile;
-	char *lpszExt;
-
 	ASSERT(this);
 
-	// TCHAR文字列からchar文字列へ変換
-	lpszFile = T2A((LPTSTR)&m_szFile[0]);
-	lpszExt = T2A((LPTSTR)&m_szExt[0]);
+#if defined(UNICODE)
+	char file[_MAX_FNAME];
+	char ext[_MAX_EXT];
+	if (::WideCharToMultiByte(CP_ACP, 0, m_szFile, -1, file, sizeof(file), NULL, NULL) <= 0) {
+		file[0] = '\0';
+	}
+	if (::WideCharToMultiByte(CP_ACP, 0, m_szExt, -1, ext, sizeof(ext), NULL, NULL) <= 0) {
+		ext[0] = '\0';
+	}
+	strcpy(ShortName, file);
+	strcat(ShortName, ext);
+#else
+	strcpy(ShortName, m_szFile);
+	strcat(ShortName, m_szExt);
+#endif
 
-	// 固定バッファへ合成
-	strcpy(ShortName, lpszFile);
-	strcat(ShortName, lpszExt);
-
-	// strlenで調べたとき、最大59になるように細工
 	ShortName[59] = '\0';
-
-	// const charとして返す
 	return (const char*)ShortName;
 }
 
@@ -362,29 +364,29 @@ LPCTSTR FASTCALL Filepath::GetDefaultDir()
 BOOL FASTCALL Filepath::Save(Fileio *fio, int /*ver*/)
 {
 	TCHAR szPath[_MAX_PATH];
-	CFile file;
 	FILETIME ft;
 
 	ASSERT(this);
 	ASSERT(fio);
 
-	// ゼロクリアして、ゴミを消したものを作る
+	// Zero-init local path buffer
 	memset(szPath, 0, sizeof(szPath));
 	_tcscpy(szPath, m_szPath);
 
-	// ファイルパスを保存
+	// Save full path
 	if (!fio->Write(szPath, sizeof(szPath))) {
 		return FALSE;
 	}
 
-	// ファイル日付を取得(2038年問題を避けるため、Win32より取得)
+	// Read file timestamp via Win32
 	memset(&ft, 0, sizeof(ft));
-	if (file.Open(szPath, CFile::modeRead)) {
-		::GetFileTime((HANDLE)file.m_hFile, NULL, NULL, &ft);
-		file.Close();
+	HANDLE hFile = ::CreateFile(szPath, GENERIC_READ, FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
+	if (hFile != INVALID_HANDLE_VALUE) {
+		::GetFileTime(hFile, NULL, NULL, &ft);
+		::CloseHandle(hFile);
 	}
 
-	// 最終書き込み日付を保存
+	// Save last-write timestamp
 	if (!fio->Write(&ft, sizeof(ft))) {
 		return FALSE;
 	}
@@ -400,35 +402,37 @@ BOOL FASTCALL Filepath::Save(Fileio *fio, int /*ver*/)
 BOOL FASTCALL Filepath::Load(Fileio *fio, int /*ver*/)
 {
 	TCHAR szPath[_MAX_PATH];
-	CFile file;
+	HANDLE hFile;
 
 	ASSERT(this);
 	ASSERT(fio);
 
-	// フルパスを読み込み
+	// Read full path
 	if (!fio->Read(szPath, sizeof(szPath))) {
 		return FALSE;
 	}
 
-	// セット
+	// Apply loaded path
 	SetPath(szPath);
 
-	// 最終書き込み日付を読み込む
+	// Load saved last-write timestamp
 	if (!fio->Read(&m_SavedTime, sizeof(m_SavedTime))) {
 		return FALSE;
 	}
 
-	// ファイル日付を取得(2038年問題を避けるため、Win32より取得)
-	if (!file.Open(szPath, CFile::modeRead)) {
-		// ファイルが存在しなくても、エラーとはしない
+	// Read current file timestamp via Win32
+	hFile = ::CreateFile(szPath, GENERIC_READ, FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
+	if (hFile == INVALID_HANDLE_VALUE) {
+		// Missing file is not a hard load error
 		return TRUE;
 	}
-	if (!::GetFileTime((HANDLE)file.m_hFile, NULL, NULL, &m_CurrentTime)) {
+	if (!::GetFileTime(hFile, NULL, NULL, &m_CurrentTime)) {
+		::CloseHandle(hFile);
 		return FALSE;
 	}
-	file.Close();
+	::CloseHandle(hFile);
 
-	// ftの方が新しかった場合、更新フラグUp
+	// Set update flag when current file is newer
 	if (::CompareFileTime(&m_CurrentTime, &m_SavedTime) <= 0) {
 		m_bUpdate = FALSE;
 	}

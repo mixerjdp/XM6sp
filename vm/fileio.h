@@ -10,6 +10,9 @@
 #if !defined(fileio_h)
 #define fileio_h
 
+#include "os.h"
+#include "xm6.h"
+
 //===========================================================================
 //
 //	ファイルI/O
@@ -36,7 +39,7 @@ public:
 										// RAMセーブ
 
 #if defined(_WIN32)
-	BOOL FASTCALL Open(LPCTSTR fname, OpenMode mode);
+	BOOL FASTCALL Open(const TCHAR* fname, OpenMode mode);
 										// オープン
 #endif	// _WIN32
 	BOOL FASTCALL Open(const Filepath& path, OpenMode mode);

@@ -16,7 +16,8 @@
 //	MFCクラス定義
 //
 //---------------------------------------------------------------------------
-class CCriticalSection;
+struct _RTL_CRITICAL_SECTION;
+typedef struct _RTL_CRITICAL_SECTION CRITICAL_SECTION;
 
 //===========================================================================
 //
@@ -36,7 +37,7 @@ public:
 										// アンロック
 
 private:
-	CCriticalSection *csect;
+	CRITICAL_SECTION *csect;
 										// クリティカルセクション
 };
 

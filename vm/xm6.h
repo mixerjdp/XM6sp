@@ -10,6 +10,16 @@
 #if !defined(xm6_h)
 #define xm6_h
 
+#include <assert.h>
+
+#if !defined(FASTCALL)
+#if defined(_MSC_VER) && defined(_M_IX86)
+#define FASTCALL __fastcall
+#else
+#define FASTCALL
+#endif
+#endif
+
 //---------------------------------------------------------------------------
 //
 //	äÓñ{íËêî

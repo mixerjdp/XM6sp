@@ -18,6 +18,8 @@
 #include "rend_soft.h"
 #include "render.h"
 
+BOOL FASTCALL IsCMOV(void);
+
 //===========================================================================
 //
 //	レンダラ

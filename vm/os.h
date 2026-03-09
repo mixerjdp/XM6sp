@@ -2,8 +2,8 @@
 //
 //	X68000 EMULATOR "XM6"
 //
-//	Copyright (C) 2001-2004 ÇoÇhÅD(ytanaka@ipc-tokai.or.jp)
-//	[ OSå≈óL ]
+//	Copyright (C) 2001-2004 PI.(ytanaka@ipc-tokai.or.jp)
+//	[ OS ]
 //
 //---------------------------------------------------------------------------
 
@@ -16,7 +16,15 @@
 //
 //---------------------------------------------------------------------------
 #if defined(_WIN32)
-#include "mfc.h"
+#include <tchar.h>
+#include <time.h>
+#include <string.h>
+#include <stdlib.h>
+#include <stdio.h>
+#include <math.h>
+#include <io.h>
+#include <fcntl.h>
+#include <sys/stat.h>
 #endif	// _WIN32
 
 #endif	// os_h

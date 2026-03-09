@@ -11,6 +11,7 @@
 #define filepath_h
 
 #if defined(_WIN32)
+#include <windows.h>
 
 //---------------------------------------------------------------------------
 //
@@ -58,7 +59,7 @@ public:
 										// ファイル設定(ユーザ)
 	void FASTCALL SetBaseDir();
 										// ベースディレクトリ設定
-	void FASTCALL SetBaseFile(CString Nombre);
+	void FASTCALL SetBaseFile(const TCHAR* lpszName);
 										// ベースディレクトリ＋ファイル名設定
 
 	BOOL FASTCALL IsClear() const;

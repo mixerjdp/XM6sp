@@ -1,4 +1,5 @@
 #include "os.h"
+#include "mfc.h"
 #include "mfc_dx9.h"
 
 // Compilación moderna de shaders HLSL con D3DCompiler (no legacy D3DX9)

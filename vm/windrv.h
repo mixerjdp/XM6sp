@@ -11,6 +11,7 @@
 #if !defined(windrv_h)
 #define windrv_h
 
+#include <windows.h>
 #include "device.h"
 
 //Å°ç≈ëÂÉXÉåÉbÉhêî
@@ -25,6 +26,9 @@
 #endif // _DEBUG
 
 class FileSys;
+
+void FASTCALL LockVM(void);
+void FASTCALL UnlockVM(void);
 
 //---------------------------------------------------------------------------
 //

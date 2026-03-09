@@ -10,6 +10,7 @@
 #if defined(_WIN32)
 
 #include "os.h"
+#include "mfc.h"
 #include "xm6.h"
 #include "render.h"
 #include "mfc_frm.h"

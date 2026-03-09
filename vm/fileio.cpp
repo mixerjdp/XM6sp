@@ -107,7 +107,7 @@ BOOL FASTCALL Fileio::Save(const Filepath& path, void *buffer, int size)
 //	ÉIÅ[ÉvÉì
 //
 //---------------------------------------------------------------------------
-BOOL FASTCALL Fileio::Open(LPCTSTR fname, OpenMode mode)
+BOOL FASTCALL Fileio::Open(const TCHAR* fname, OpenMode mode)
 {
 	ASSERT(this);
 	ASSERT(fname);

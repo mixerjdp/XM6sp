@@ -6,7 +6,7 @@
 //	[ 同期オブジェクト ]
 //
 //---------------------------------------------------------------------------
-
+#include <windows.h>
 #include "os.h"
 #include "xm6.h"
 #include "sync.h"
@@ -27,7 +27,8 @@
 Sync::Sync()
 {
 	// クリティカルセクション作成
-	csect = new CCriticalSection;
+	csect = new CRITICAL_SECTION;
+	::InitializeCriticalSection(csect);
 }
 
 //---------------------------------------------------------------------------
@@ -37,11 +38,8 @@ Sync::Sync()
 //---------------------------------------------------------------------------
 Sync::~Sync()
 {
-	// ロックして
-	Lock();
-
-	// クリティカルセクション削除
 	ASSERT(csect);
+	::DeleteCriticalSection(csect);
 	delete csect;
 	csect = NULL;
 }
@@ -55,7 +53,7 @@ void FASTCALL Sync::Lock()
 {
 	ASSERT(csect);
 
-	csect->Lock();
+	::EnterCriticalSection(csect);
 }
 
 //---------------------------------------------------------------------------
@@ -67,7 +65,7 @@ void FASTCALL Sync::Unlock()
 {
 	ASSERT(csect);
 
-	csect->Unlock();
+	::LeaveCriticalSection(csect);
 }
 
 #endif	// _WIN32

@@ -21,6 +21,8 @@ class MFP;
 class RTC;
 class SRAM;
 
+typedef void (*host_message_callback_t)(const TCHAR* message, void *user);
+
 //===========================================================================
 //
 //	仮想マシン
@@ -87,6 +89,7 @@ public:
 	BOOL FASTCALL IsPower() const		{ return power; }
 										// 電源状態取得
 	void FASTCALL Interrupt() const;
+	void FASTCALL SetHostMessageCallback(host_message_callback_t callback, void *user);
 										// NMI割り込み
 	Log log;
 										// ログ
@@ -114,6 +117,10 @@ private:
 										// メジャーバージョン
 	DWORD minor_ver;
 										// マイナーバージョン
+	void FASTCALL NotifyHostMessage(const TCHAR* message) const;
+	host_message_callback_t host_message_callback;
+	void *host_message_user;
+
 	Filepath current;
 										// カレントデータ
 };
