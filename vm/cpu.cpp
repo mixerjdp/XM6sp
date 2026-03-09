@@ -20,6 +20,7 @@
 #include "scsi.h"
 #include "fileio.h"
 #include "cpu.h"
+#include "m68k.h"
 
 //---------------------------------------------------------------------------
 //
@@ -37,6 +38,20 @@ extern "C" {
 //---------------------------------------------------------------------------
 static CPU *cpu;
 										// CPU
+
+// Pending interrupt vectors by level (1..7). -1 means autovector.
+static int g_pending_vector[8] = {0, -1, -1, -1, -1, -1, -1, -1};
+static DWORD g_pending_mask = 0;
+
+static int GetHighestPendingIRQ(void)
+{
+	for (int level = 7; level >= 1; level--) {
+		if (g_pending_mask & (1u << level)) {
+			return level;
+		}
+	}
+	return 0;
+}
 
 //---------------------------------------------------------------------------
 //
@@ -63,6 +78,28 @@ static void cpu_resethandler(void)
 //	割り込みACK
 //
 //---------------------------------------------------------------------------
+int musashi_int_ack(int level)
+{
+	int vector;
+
+	vector = g_pending_vector[level];
+	g_pending_vector[level] = -1;
+	g_pending_mask &= ~(1u << level);
+
+	::m68k_set_irq(GetHighestPendingIRQ());
+	cpu->IntAck(level);
+
+	if (vector < 0) {
+		return M68K_INT_ACK_AUTOVECTOR;
+	}
+	return vector;
+}
+
+int musashi_int_ack_callback(int int_level)
+{
+	return musashi_int_ack(int_level);
+}
+
 void s68000intack(int level)
 {
 	cpu->IntAck(level);
@@ -172,6 +209,10 @@ BOOL FASTCALL CPU::Init()
 
 	// CPUコアのジャンプテーブルを作成
 	::s68000init();
+	for (int i=1; i<=7; i++) {
+		g_pending_vector[i] = -1;
+	}
+	g_pending_mask = 0;
 
 	return TRUE;
 }
@@ -197,8 +238,6 @@ void FASTCALL CPU::Cleanup()
 void FASTCALL CPU::Reset()
 {
 	int i;
-	S68000CONTEXT context;
-	DWORD bit;
 
 	ASSERT(this);
 	LOG0(Log::Normal, "リセット");
@@ -221,16 +260,11 @@ void FASTCALL CPU::Reset()
 	::s68000context.resethandler = cpu_resethandler;
 	::s68000context.odometer = 0;
 
-	// 割り込みをすべて取り消す
-	::s68000GetContext(&context);
+	::m68k_set_irq(0);
 	for (i=1; i<=7; i++) {
-		bit = (1 << i);
-		if (context.interrupts[0] & bit) {
-			context.interrupts[0] &= (BYTE)(~bit);
-			context.interrupts[i] = 0;
-		}
+		g_pending_vector[i] = -1;
 	}
-	::s68000SetContext(&context);
+	g_pending_mask = 0;
 
 	// メモリコンテキスト作成(通常)
 	memory->MakeContext(FALSE);
@@ -361,7 +395,12 @@ void FASTCALL CPU::GetCPU(cpu_t *buffer) const
 
 	// 割り込み
 	for (i=0; i<8; i++) {
-		buffer->intr[i] = (DWORD)::s68000context.interrupts[i];
+		if (i == 0) {
+			buffer->intr[i] = g_pending_mask;
+		}
+		else {
+			buffer->intr[i] = (g_pending_vector[i] < 0) ? 0xFF : (DWORD)(g_pending_vector[i] & 0xFF);
+		}
 		buffer->intreq[i] = sub.intreq[i];
 		buffer->intack[i] = sub.intack[i];
 	}
@@ -397,7 +436,13 @@ void FASTCALL CPU::SetCPU(const cpu_t *buffer)
 
 	// 割り込み
 	for (i=0; i<8; i++) {
-		context.interrupts[i] = (BYTE)buffer->intr[i];
+		if (i == 0) {
+			g_pending_mask = buffer->intr[i];
+		}
+		else {
+			DWORD v = buffer->intr[i] & 0xFF;
+			g_pending_vector[i] = (v == 0xFF) ? -1 : (int)v;
+		}
 		sub.intreq[i] = buffer->intreq[i];
 		sub.intack[i] = buffer->intack[i];
 	}
@@ -410,6 +455,7 @@ void FASTCALL CPU::SetCPU(const cpu_t *buffer)
 
 	// コンテキスト設定
 	::s68000SetContext(&context);
+	::m68k_set_irq(GetHighestPendingIRQ());
 }
 
 //---------------------------------------------------------------------------
@@ -419,31 +465,29 @@ void FASTCALL CPU::SetCPU(const cpu_t *buffer)
 //---------------------------------------------------------------------------
 BOOL FASTCALL CPU::Interrupt(int level, int vector)
 {
-	int ret;
-
-	// INTERRUPT SWITCHによるNMI割り込みはベクタ-1
 	ASSERT(this);
 	ASSERT((level >= 1) && (level <= 7));
 	ASSERT(vector >= -1);
 
-	// リクエスト
-	ret = ::s68000interrupt(level, vector);
-
-	// 結果評価
-	if (ret == 0) {
-#if defined(CPU_LOG)
-		LOG2(Log::Normal, "割り込み要求受理 レベル%d ベクタ$%02X", level, vector);
-#endif	// CPU_LOG
-		sub.intreq[level]++;
-		return TRUE;
+	if (g_pending_mask & (1u << level)) {
+		return FALSE;
 	}
 
-	return FALSE;
+	g_pending_vector[level] = vector;
+	g_pending_mask |= (1u << level);
+	::m68k_set_irq(GetHighestPendingIRQ());
+	::s68000releaseTimeslice();
+
+#if defined(CPU_LOG)
+	LOG2(Log::Normal, "IRQ request accepted level%d vector$%02X", level, vector);
+#endif	// CPU_LOG
+	sub.intreq[level]++;
+	return TRUE;
 }
 
 //---------------------------------------------------------------------------
 //
-//	割り込みACK
+//	Interrupt ACK
 //
 //---------------------------------------------------------------------------
 void FASTCALL CPU::IntAck(int level)
@@ -506,39 +550,27 @@ void FASTCALL CPU::IntAck(int level)
 //---------------------------------------------------------------------------
 void FASTCALL CPU::IntCancel(int level)
 {
-	S68000CONTEXT context;
-	DWORD bit;
-
 	ASSERT(this);
 	ASSERT((level >= 1) && (level <= 7));
 
-	// コンテキストを直接書き換える
-	::s68000GetContext(&context);
-
-	// 該当ビットがオンなら
-	bit = (1 << level);
-	if (context.interrupts[0] & bit) {
+	if (g_pending_mask & (1u << level)) {
 #if defined(CPU_LOG)
-		LOG1(Log::Normal, "割り込みキャンセル レベル%d", level);
+		LOG1(Log::Normal, "Interrupt cancel level%d", level);
 #endif	// CPU_LOG
 
-		// ビットを降ろす
-		context.interrupts[0] &= (BYTE)(~bit);
-
-		// ベクタは0
-		context.interrupts[level] = 0;
-
-		// リクエストを下げる
-		sub.intreq[level]--;
+		g_pending_mask &= ~(1u << level);
+		g_pending_vector[level] = -1;
+		if (sub.intreq[level] > 0) {
+			sub.intreq[level]--;
+		}
 	}
 
-	// コンテキストを書き込む
-	::s68000SetContext(&context);
+	::m68k_set_irq(GetHighestPendingIRQ());
 }
 
 //---------------------------------------------------------------------------
 //
-//	RESET命令
+//	RESET instruction
 //
 //---------------------------------------------------------------------------
 void FASTCALL CPU::ResetInst()

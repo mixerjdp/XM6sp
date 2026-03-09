@@ -70,11 +70,16 @@ unsigned int musashi_current_fc = 0;
 // Flag to bypass function code during CPU reset vector fetch
 bool musashi_is_resetting = false;
 
-// Interrupt vector table for pending interrupts
-static int musashi_int_vectors[8] = { 0, -1, -1, -1, -1, -1, -1, -1 };
-
-// Cycles at start of execution (for odometer)
-static int musashi_exec_cycles = 0;
+static int GetHighestPendingLegacyIRQ(void)
+{
+	unsigned char mask = s68000context.interrupts[0];
+	for (int level = 7; level >= 1; level--) {
+		if (mask & (1u << level)) {
+			return level;
+		}
+	}
+	return 0;
+}
 
 // Flag to track if we're inside m68k_execute
 static int musashi_executing = 0;
@@ -149,11 +154,6 @@ int s68000init(void)
 	// Clear the context
 	memset(&s68000context, 0, sizeof(s68000context));
 
-	// Initialize interrupt vectors to autovector
-	for (int i = 0; i < 8; i++) {
-		musashi_int_vectors[i] = -1;
-	}
-
 	return 0;
 }
 
@@ -184,7 +184,6 @@ unsigned s68000exec(int n)
 
 	// Track that we're executing
 	musashi_executing = 1;
-	musashi_exec_cycles = n;
 	musashi_wait_cycles = 0;
 
 	// Set up I/O cycle counter for Scheduler::Wait
@@ -220,19 +219,31 @@ unsigned s68000exec(int n)
 int s68000interrupt(int level, int vector)
 {
 	if (level < 1 || level > 7) {
-		return -1;
+		return 2; // bad input (Starscream contract)
+	}
+	if (vector > 255 || vector < -2) {
+		return 2; // bad input (Starscream contract)
 	}
 
-	// Store the vector for the int ack callback
-	musashi_int_vectors[level] = vector;
+	{
+		unsigned char bit = (unsigned char)(1u << level);
+		if (s68000context.interrupts[0] & bit) {
+			return 1; // duplicate level request rejected
+		}
 
-	// Record in the context's interrupts array
-	s68000context.interrupts[0] |= (1 << level);
-	s68000context.interrupts[level] = (unsigned char)((vector < 0) ? 0xFF : (vector & 0xFF));
+		s68000context.interrupts[0] |= bit;
+		if (vector == -2) {
+			s68000context.interrupts[level] = 0x18; // spurious
+		}
+		else if (vector < 0) {
+			s68000context.interrupts[level] = (unsigned char)(0x18 + level); // autovector
+		}
+		else {
+			s68000context.interrupts[level] = (unsigned char)(vector & 0xFF);
+		}
+	}
 
-	// Set the IRQ level in Musashi using virtual IRQ lines
-	m68k_set_virq((unsigned)level, 1);
-
+	m68k_set_irq(GetHighestPendingLegacyIRQ());
 	return 0;
 }
 
@@ -267,19 +278,6 @@ void s68000SetContext(void *context)
 {
 	memcpy(&s68000context, context, sizeof(struct S68000CONTEXT));
 	SyncContextToMusashi();
-
-	// Restore interrupt state
-	for (int i = 1; i <= 7; i++) {
-		if (s68000context.interrupts[0] & (1 << i)) {
-			int vec = (int)s68000context.interrupts[i];
-			if (vec == 0xFF) vec = -1;
-			musashi_int_vectors[i] = vec;
-			m68k_set_virq((unsigned)i, 1);
-		} else {
-			musashi_int_vectors[i] = -1;
-			m68k_set_virq((unsigned)i, 0);
-		}
-	}
 }
 
 //---------------------------------------------------------------------------
@@ -357,6 +355,7 @@ unsigned s68000wait(unsigned cycle)
 {
 	if (musashi_executing) {
 		m68k_modify_timeslice(-(int)cycle);
+		musashi_wait_cycles += (int)cycle;
 	}
 	return 0;
 }
@@ -436,34 +435,6 @@ void s68000buserr(unsigned int addr, unsigned int param)
 //	Musashi Callbacks
 //
 //---------------------------------------------------------------------------
-
-// Interrupt acknowledge callback
-// Called by Musashi when servicing an interrupt
-int musashi_int_ack_callback(int int_level)
-{
-	int vector;
-
-	// Call XM6's interrupt acknowledge handler
-	// This dispatches to the appropriate device (MFP, DMAC, SCC, etc.)
-	s68000intack(int_level);
-
-	// Clear the virtual IRQ line
-	m68k_set_virq((unsigned)int_level, 0);
-
-	// Clear from context
-	s68000context.interrupts[0] &= ~(1 << int_level);
-
-	// Get the stored vector
-	vector = musashi_int_vectors[int_level];
-	musashi_int_vectors[int_level] = -1;
-
-	if (vector < 0) {
-		// Autovector
-		return M68K_INT_ACK_AUTOVECTOR;
-	}
-
-	return vector;
-}
 
 // RESET instruction callback
 void musashi_reset_callback(void)
