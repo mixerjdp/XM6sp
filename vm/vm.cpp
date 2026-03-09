@@ -1,13 +1,16 @@
-//---------------------------------------------------------------------------
+ï»¿//---------------------------------------------------------------------------
 //
 //	X68000 EMULATOR "XM6"
 //
-//	Copyright (C) 2001-2006 ‚o‚hD(ytanaka@ipc-tokai.or.jp)
-//	[ ‰¼‘zƒ}ƒVƒ“ ]
+//	Copyright (C) 2001-2006 ï¿½oï¿½hï¿½D(ytanaka@ipc-tokai.or.jp)
+//	[ ï¿½ï¿½ï¿½zï¿½}ï¿½Vï¿½ï¿½ ]
 //
 //---------------------------------------------------------------------------
+
+#include <windows.h>
 #include "os.h"
 #include "xm6.h"
+#include "vm.h"
 #include "device.h"
 #include "schedule.h"
 #include "cpu.h"
@@ -42,29 +45,28 @@
 #include "neptune.h"
 #include "filepath.h"
 #include "fileio.h"
-#include "vm.h"
 #include <vector>
 #include <algorithm>
 
 //===========================================================================
 //
-//	‰¼‘zƒ}ƒVƒ“
+//	ï¿½ï¿½ï¿½zï¿½}ï¿½Vï¿½ï¿½
 //
 //===========================================================================
 
 //---------------------------------------------------------------------------
 //
-//	ƒRƒ“ƒXƒgƒ‰ƒNƒ^
+//	ï¿½Rï¿½ï¿½ï¿½Xï¿½gï¿½ï¿½ï¿½Nï¿½^
 //
 //---------------------------------------------------------------------------
 VM::VM()
 {
-	// ƒ[ƒN‰Šú‰»
+	// ï¿½ï¿½ï¿½[ï¿½Nï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 	status = FALSE;
 	first_device = NULL;
 	scheduler = NULL;
 
-	// ƒfƒoƒCƒXNULL
+	// ï¿½fï¿½oï¿½Cï¿½XNULL
 	scheduler = NULL;
 	cpu = NULL;
 	mfp = NULL;
@@ -73,17 +75,17 @@ VM::VM()
 	host_message_callback = NULL;
 	host_message_user = NULL;
 
-	// ƒo[ƒWƒ‡ƒ“(ÀÛ‚Íƒvƒ‰ƒbƒgƒtƒH[ƒ€‚©‚çÄİ’è‚³‚ê‚é)
+	// ï¿½oï¿½[ï¿½Wï¿½ï¿½ï¿½ï¿½(ï¿½ï¿½ï¿½Û‚Íƒvï¿½ï¿½ï¿½bï¿½gï¿½tï¿½Hï¿½[ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Äİ’è‚³ï¿½ï¿½ï¿½)
 	major_ver = 0x01;
 	minor_ver = 0x00;
 
-	// ƒJƒŒƒ“ƒgƒpƒX‚ğƒNƒŠƒA
+	// ï¿½Jï¿½ï¿½ï¿½ï¿½ï¿½gï¿½pï¿½Xï¿½ï¿½Nï¿½ï¿½ï¿½A
 	Clear();
 }
 
 //---------------------------------------------------------------------------
 //
-//	‰Šú‰»
+//	ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 //
 //---------------------------------------------------------------------------
 BOOL FASTCALL VM::Init()
@@ -94,11 +96,11 @@ BOOL FASTCALL VM::Init()
 	ASSERT(!first_device);
 	ASSERT(!status);
 
-	// “dŒ¹A“dŒ¹ƒXƒCƒbƒ`on
+	// ï¿½dï¿½ï¿½ï¿½Aï¿½dï¿½ï¿½ï¿½Xï¿½Cï¿½bï¿½`on
 	power = TRUE;
 	power_sw = TRUE;
 
-	// ƒfƒoƒCƒX‚ğì¬(‡˜‚É’ˆÓ)
+	// ï¿½fï¿½oï¿½Cï¿½Xï¿½ï¿½ì¬(ï¿½ï¿½ï¿½ï¿½ï¿½É’ï¿½ï¿½ï¿½)
 	scheduler = new Scheduler(this);
 	cpu = new CPU(this);
 	new Keyboard(this);
@@ -131,15 +133,15 @@ BOOL FASTCALL VM::Init()
 	new Neptune(this);
 	sram = new SRAM(this);
 
-	// ƒƒO‚ğ‰Šú‰»
+	// ï¿½ï¿½ï¿½Oï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 	if (!log.Init(this)) {
 		return FALSE;
 	}
 
-	// ƒfƒoƒCƒXƒ|ƒCƒ“ƒ^‰Šú‰»
+	// ï¿½fï¿½oï¿½Cï¿½Xï¿½|ï¿½Cï¿½ï¿½ï¿½^ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 	device = first_device;
 
-	// ‰Šú‰»(‡”Ô‚É‰ñ‚é)
+	// ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½(ï¿½ï¿½ï¿½Ô‚É‰ï¿½ï¿½)
 	status = TRUE;
 	while (device) {
 		if (!device->Init()) {
@@ -153,34 +155,34 @@ BOOL FASTCALL VM::Init()
 
 //---------------------------------------------------------------------------
 //
-//	ƒNƒŠ[ƒ“ƒAƒbƒv
+//	ï¿½Nï¿½ï¿½ï¿½[ï¿½ï¿½ï¿½Aï¿½bï¿½v
 //
 //---------------------------------------------------------------------------
 void FASTCALL VM::Cleanup()
 {
 	ASSERT(this);
 
-	// “dŒ¹‚ªON‚Ìó‘Ô‚Å‹­§I—¹‚µ‚½ê‡ASRAM‚Ì‹N“®ƒJƒEƒ“ƒ^‚ğXV‚·‚é
+	// ï¿½dï¿½ï¿½ï¿½ï¿½ONï¿½Ìï¿½Ô‚Å‹ï¿½ï¿½ï¿½ï¿½Iï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ê‡ï¿½ASRAMï¿½Ì‹Nï¿½ï¿½ï¿½Jï¿½Eï¿½ï¿½ï¿½^ï¿½ï¿½Xï¿½Vï¿½ï¿½ï¿½ï¿½
 	if (status) {
 		if (power) {
-			// SRAMXV
+			// SRAMï¿½Xï¿½V
 			ASSERT(sram);
 			sram->UpdateBoot();
 		}
 	}
 
-	// ƒ|ƒCƒ“ƒ^‚Í•ÏX‚³‚ê‚é‚Ì‚ÅAæ“ª‚¾‚¯Œ©‚é
+	// ï¿½|ï¿½Cï¿½ï¿½ï¿½^ï¿½Í•ÏXï¿½ï¿½ï¿½ï¿½ï¿½Ì‚ÅAï¿½æ“ªï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 	while (first_device) {
 		first_device->Cleanup();
 	}
 
-	// ƒƒO‚ğƒNƒŠ[ƒ“ƒAƒbƒv
+	// ï¿½ï¿½ï¿½Oï¿½ï¿½Nï¿½ï¿½ï¿½[ï¿½ï¿½ï¿½Aï¿½bï¿½v
 	log.Cleanup();
 }
 
 //---------------------------------------------------------------------------
 //
-//	ƒŠƒZƒbƒg
+//	ï¿½ï¿½ï¿½Zï¿½bï¿½g
 //
 //---------------------------------------------------------------------------
 void FASTCALL VM::Reset()
@@ -189,419 +191,26 @@ void FASTCALL VM::Reset()
 
 	ASSERT(this);
 
-	// ƒƒO‚ğƒŠƒZƒbƒg
+	// ï¿½ï¿½ï¿½Oï¿½ï¿½ï¿½ï¿½Zï¿½bï¿½g
 	log.Reset();
 
-	// ƒfƒoƒCƒXƒ|ƒCƒ“ƒ^‰Šú‰»
+	// ï¿½fï¿½oï¿½Cï¿½Xï¿½|ï¿½Cï¿½ï¿½ï¿½^ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 	device = first_device;
 
-	// ƒŠƒZƒbƒg(‡”Ô‚É‰ñ‚é)
+	// ï¿½ï¿½ï¿½Zï¿½bï¿½g(ï¿½ï¿½ï¿½Ô‚É‰ï¿½ï¿½)
 	while (device) {
 		device->Reset();
 		device = device->GetNextDevice();
 	}
 
-	// ƒJƒŒƒ“ƒgƒpƒX‚ğƒNƒŠƒA
+	// ï¿½Jï¿½ï¿½ï¿½ï¿½ï¿½gï¿½pï¿½Xï¿½ï¿½Nï¿½ï¿½ï¿½A
 	Clear();
 }
 
 
-DWORD FASTCALL VM::Save(const Filepath& googlePath) {
-	ASSERT(this);
-
-	Filepath tempPath;
-	tempPath.SetPath(_T("C:\\Temp\\xm6_temp.sav"));  // Crea C:\Temp manualmente si no existe
-	DWORD pos = OriginalSave(tempPath);  // Llama original Save (renombra tu vieja VM::Save a OriginalSave)
-	if (pos == 0) {
-		// Log error o MessageBox para debug
-		NotifyHostMessage(_T("Fallo al guardar a temp"));
-		return 0;
-	}
-
-	// Copia temp a google
-	if (!::CopyFile(tempPath.GetPath(), googlePath.GetPath(), FALSE)) {
-		NotifyHostMessage(_T("Fallo copia a google - posible corrupcion por sync"));
-		_tunlink(tempPath.GetPath());
-		return 0;
-	}
-
-	// Borra temp
-	_tunlink(tempPath.GetPath());
-	current = googlePath;
-	return pos;
-}
-
-
-
-DWORD FASTCALL VM::OriginalSave(const Filepath& path)
-{
-	Fileio fio;
-	char header[0x10];
-	int ver;
-	Device *device;
-	DWORD id;
-	DWORD pos;
-
-	ASSERT(this);
-
-	// ƒfƒoƒCƒXƒ|ƒCƒ“ƒ^‰Šú‰»
-	device = first_device;
-
-	// ƒo[ƒWƒ‡ƒ“ì¬
-	ver = (int)((major_ver << 8) | minor_ver);
-
-	// ƒwƒbƒ_ì¬
-	sprintf(header, "XM6 DATA %1X.%02X", major_ver, minor_ver);
-	header[0x0d] = 0x0d;
-	header[0x0e] = 0x0a;
-	header[0x0f] = 0x1a;
-
-	// ƒtƒ@ƒCƒ‹ì¬Aƒwƒbƒ_‘‚«‚İ
-	if (!fio.Open(path, Fileio::WriteOnly)) {
-		return 0;
-	}
-	if (!fio.Write(header, 0x10)) {
-		fio.Close();
-		return 0;
-	}
-
-	// ‡”Ô‚É‰ñ‚é(ƒo[ƒWƒ‡ƒ“‚ÍBCD‚ª“n‚³‚ê‚é)
-	while (device) {
-		// ID‘‚«‚İ
-		id = device->GetID();
-		if (!fio.Write(&id, sizeof(id))) {
-			fio.Close();
-			return 0;
-		}
-
-		// ƒfƒoƒCƒX•Ê
-		if (!device->Save(&fio, ver)) {
-			// ƒfƒoƒCƒX‚ª¸”s‚µ‚½
-			fio.Close();
-			return 0;
-		}
-
-		// Ÿ‚ÌƒfƒoƒCƒX‚Ö
-		device = device->GetNextDevice();
-	}
-
-	// ¯•Ê—p‚Æ‚µ‚ÄAƒfƒoƒCƒX–¼END‚ğ—^‚¦‚é
-	id = MAKEID('E', 'N', 'D', ' ');
-	if (!fio.Write(&id, sizeof(id))) {
-		fio.Close();
-		return 0;
-	}
-
-	// ˆÊ’u‚ğ•Û‘¶
-	pos = fio.GetFilePos();
-
-	// ƒtƒ@ƒCƒ‹ƒNƒ[ƒY
-	fio.Close();
-
-	// ƒJƒŒƒ“ƒg‚Éİ’è
-	current = path;
-
-	// ¬Œ÷
-	return pos;
-}
-
 //---------------------------------------------------------------------------
 //
-//	ƒ[ƒh
-//
-//---------------------------------------------------------------------------
-DWORD FASTCALL VM::Load(const Filepath& path)
-{
-	Fileio fio;
-	char buf[0x10];
-	int rec;
-	int ver;
-	Device *device;
-	DWORD id;
-	DWORD pos;
-
-	ASSERT(this);
-
-	// ƒJƒŒƒ“ƒgƒpƒX‚ğƒNƒŠƒA
-	current.Clear();
-
-	// ƒtƒ@ƒCƒ‹ƒI[ƒvƒ“Aƒwƒbƒ_“Ç‚İ‚İ
-	if (!fio.Open(path, Fileio::ReadOnly)) {		
-		return 0;
-	}
-	if (!fio.Read(buf, 0x10)) {
-		fio.Close();
-		return 0;
-	}
-
-	// ‹L˜^ƒo[ƒWƒ‡ƒ“æ“¾
-	buf[0x0a] = '\0';
-	rec = ::strtoul(&buf[0x09], NULL, 16);
-	rec <<= 8;
-	buf[0x0d] = '\0';
-	rec |= ::strtoul(&buf[0x0b], NULL, 16);
-
-	// Œ»sƒo[ƒWƒ‡ƒ“ì¬
-	ver = (int)((major_ver << 8) | minor_ver);
-
-	// ƒwƒbƒ_ƒ`ƒFƒbƒN
-	buf[0x09] = '\0';
-	if (strcmp(buf, "XM6 DATA ") != 0) {
-		fio.Close();
-		return 0;
-	}
-
-	// ƒo[ƒWƒ‡ƒ“ƒ`ƒFƒbƒN
-	if (ver < rec) {
-		// ‹L˜^‚³‚ê‚Ä‚¢‚éƒo[ƒWƒ‡ƒ“‚Ì‚Ù‚¤‚ªV‚µ‚¢(’m‚ç‚È‚¢Œ`®)
-		fio.Close();
-		return 0;
-	}
-
-	// ƒfƒoƒCƒX–¼‚ğŒŸõ‚µ‚È‚ª‚ç‰ñ‚é(ƒo[ƒWƒ‡ƒ“‚ÍBCD‚ª“n‚³‚ê‚é)
-	for (;;) {
-		// ID“Ç‚İ‚İ
-		if (!fio.Read(&id, sizeof(id))) {
-			fio.Close();
-			return 0;
-		}
-
-		// I’[ƒ`ƒFƒbƒN
-		if (id == MAKEID('E', 'N', 'D', ' ')) {
-			break;
-		}
-
-		// ƒfƒoƒCƒXƒT[ƒ`
-		device = SearchDevice(id);
-		if (!device) {
-			// ƒZ[ƒu‚É‘¶İ‚µ‚½ƒfƒoƒCƒX‚ªA¡‚Í‚È‚¢Bƒ[ƒh‚Å‚«‚È‚¢
-			fio.Close();
-			return 0;
-		}
-
-		// ƒfƒoƒCƒX•Ê
-		if (!device->Load(&fio, rec)) {
-			// ƒfƒoƒCƒX‚ª¸”s‚µ‚½
-			fio.Close();
-			return 0;
-		}
-	}
-
-	// ˆÊ’u‚ğ•Û‘¶
-	pos = fio.GetFilePos();
-
-	// ƒtƒ@ƒCƒ‹ƒNƒ[ƒY
-	fio.Close();
-
-	// ƒJƒŒƒ“ƒg‚Éİ’è
-	current = path;
-
-	// ¬Œ÷
-	return pos;
-}
-
-//---------------------------------------------------------------------------
-//
-//	ƒpƒXæ“¾
-//
-//---------------------------------------------------------------------------
-void FASTCALL VM::GetPath(Filepath& path) const
-{
-	ASSERT(this);
-
-	path = current;
-}
-
-//---------------------------------------------------------------------------
-//
-//	ƒpƒXƒNƒŠƒA
-//
-//---------------------------------------------------------------------------
-void FASTCALL VM::Clear()
-{
-	ASSERT(this);
-
-	current.Clear();
-}
-
-//---------------------------------------------------------------------------
-//
-//	İ’è“K—p
-//
-//---------------------------------------------------------------------------
-void FASTCALL VM::ApplyCfg(const Config *config)
-{
-	Device *device;
-
-	ASSERT(this);
-	ASSERT(config);
-
-	// ƒfƒoƒCƒXƒ|ƒCƒ“ƒ^‰Šú‰»
-	device = first_device;
-
-	// “K—p(‡”Ô‚É‰ñ‚é)
-	while (device) {
-		device->ApplyCfg(config);
-		device = device->GetNextDevice();
-	}
-}
-
-//---------------------------------------------------------------------------
-//
-//	ƒfƒoƒCƒX’Ç‰Á
-//	¦’Ç‰Á‚µ‚½‚¢Device‚©‚çŒÄ‚Ño‚·
-//
-//---------------------------------------------------------------------------
-void FASTCALL VM::AddDevice(Device *device)
-{
-	Device *dev;
-
-	ASSERT(this);
-	ASSERT(device);
-
-	// Å‰‚ÌƒfƒoƒCƒX‚©
-	if (!first_device) {
-		// ‚±‚ÌƒfƒoƒCƒX‚ªÅ‰B“o˜^‚·‚é
-		first_device = device;
-		ASSERT(!device->GetNextDevice());
-		return;
-	}
-
-	// I’[‚ğ’T‚·
-	dev = first_device;
-	while (dev->GetNextDevice()) {
-		dev = dev->GetNextDevice();
-	}
-
-	// dev‚ÌŒã‚ë‚É’Ç‰Á
-	dev->SetNextDevice(device);
-	ASSERT(!device->GetNextDevice());
-}
-
-//---------------------------------------------------------------------------
-//
-//	ƒfƒoƒCƒXíœ
-//	¦íœ‚µ‚½‚¢Device‚©‚çŒÄ‚Ño‚·
-//
-//---------------------------------------------------------------------------
-void FASTCALL VM::DelDevice(const Device *device)
-{
-	Device *dev;
-
-	ASSERT(this);
-	ASSERT(device);
-
-	// Å‰‚ÌƒfƒoƒCƒX‚©
-	if (first_device == device) {
-		// Ÿ‚ª‚ ‚é‚È‚çAŸ‚ğ“o˜^B‚È‚¯‚ê‚ÎNULL
-		if (device->GetNextDevice()) {
-			first_device = device->GetNextDevice();
-		}
-		else {
-			first_device = NULL;
-		}
-		return;
-	}
-
-	// device‚ğ‹L‰¯‚µ‚Ä‚¢‚éƒTƒuƒEƒBƒ“ƒhƒE‚ğ’T‚·
-	dev = first_device;
-	while (dev->GetNextDevice() != device) {
-		ASSERT(dev->GetNextDevice());
-		dev = dev->GetNextDevice();
-	}
-
-	// device->next_device‚ğAdev‚ÉŒ‹‚Ñ‚Â‚¯ƒXƒLƒbƒv‚³‚¹‚é
-	dev->SetNextDevice(device->GetNextDevice());
-}
-
-//---------------------------------------------------------------------------
-//
-//	ƒfƒoƒCƒXŒŸõ
-//	¦Œ©‚Â‚©‚ç‚È‚¯‚ê‚ÎNULL‚ğ•Ô‚·
-//
-//---------------------------------------------------------------------------
-Device* FASTCALL VM::SearchDevice(DWORD id) const
-{
-	Device *dev;
-
-	ASSERT(this);
-
-	// ƒfƒoƒCƒX‚ğ‰Šú‰»
-	dev = first_device;
-
-	// ŒŸõƒ‹[ƒv
-	while (dev) {
-		// ID‚ªˆê’v‚·‚é‚©ƒ`ƒFƒbƒN
-		if (dev->GetID() == id) {
-			return dev;
-		}
-
-		// Ÿ‚Ö
-		dev = dev->GetNextDevice();
-	}
-
-	// Œ©‚Â‚©‚ç‚È‚©‚Á‚½
-	return NULL;
-}
-
-//---------------------------------------------------------------------------
-//
-//	Às
-//
-//---------------------------------------------------------------------------
-BOOL FASTCALL VM::Exec(DWORD hus)
-{
-	DWORD ret;
-
-	ASSERT(this);
-	ASSERT(scheduler);
-
-	// “dŒ¹ƒ`ƒFƒbƒN
-	if (power) {
-		// Àsƒ‹[ƒv
-		while (hus > 0) {
-			ret = scheduler->Exec(hus);
-
-			// ³í‚È‚çAc‚èƒ^ƒCƒ€‚ğŒ¸‚ç‚·
-			if (ret < 0x80000000) {
-				hus -= ret;
-				continue;
-			}
-
-			// ƒuƒŒ[ƒN‚µ‚½‚çAFALSE‚ÅI—¹
-			return FALSE;
-		}
-	}
-
-	return TRUE;
-}
-
-//---------------------------------------------------------------------------
-//
-//	ƒgƒŒ[ƒX
-//
-//---------------------------------------------------------------------------
-void FASTCALL VM::Trace()
-{
-	ASSERT(this);
-	ASSERT(scheduler);
-
-	// “dŒ¹ƒ`ƒFƒbƒN
-	if (!power) {
-		return;
-	}
-
-	// 0ˆÈŠO‚ªo‚é‚Ü‚ÅÀs
-	for (;;) {
-		if (scheduler->Trace(100) != 0) {
-			return;
-		}
-	}
-}
-
-//---------------------------------------------------------------------------
-//
-//	Execution break
+//  Execution stop
 //
 //---------------------------------------------------------------------------
 void FASTCALL VM::Break()
@@ -614,7 +223,7 @@ void FASTCALL VM::Break()
 
 //---------------------------------------------------------------------------
 //
-//	NMI interrupt
+//  NMI interrupt
 //
 //---------------------------------------------------------------------------
 void FASTCALL VM::Interrupt() const
@@ -624,16 +233,10 @@ void FASTCALL VM::Interrupt() const
 
 	cpu->Interrupt(7, -1);
 }
-
-//---------------------------------------------------------------------------
-//
-//	“dŒ¹ƒXƒCƒbƒ`§Œä
-//
-//---------------------------------------------------------------------------
-
 void FASTCALL VM::SetHostMessageCallback(host_message_callback_t callback, void *user)
 {
 	ASSERT(this);
+
 	host_message_callback = callback;
 	host_message_user = user;
 }
@@ -641,35 +244,43 @@ void FASTCALL VM::SetHostMessageCallback(host_message_callback_t callback, void 
 void FASTCALL VM::SetHostSyncCallbacks(host_sync_callback_t lock_vm_cb, host_sync_callback_t unlock_vm_cb, void *user)
 {
 	ASSERT(this);
+
 	Windrv* pWindrv = (Windrv*)SearchDevice(MAKEID('W', 'D', 'R', 'V'));
 	ASSERT(pWindrv);
 	if (!pWindrv) {
 		return;
 	}
+
 	pWindrv->SetHostSyncCallbacks(lock_vm_cb, unlock_vm_cb, user);
 }
+
+
 void FASTCALL VM::SetHostServices(const host_services_t *services)
 {
 	ASSERT(this);
+
 	if (!services) {
 		SetHostMessageCallback(NULL, NULL);
 		SetHostSyncCallbacks(NULL, NULL, NULL);
 		return;
 	}
+
 	SetHostMessageCallback(services->message, services->user);
 	SetHostSyncCallbacks(services->lock_vm, services->unlock_vm, services->user);
 }
+
 void FASTCALL VM::SetHostFileSystem(FileSys *fs)
 {
 	ASSERT(this);
+
 	Windrv* pWindrv = (Windrv*)SearchDevice(MAKEID('W', 'D', 'R', 'V'));
 	ASSERT(pWindrv);
 	if (!pWindrv) {
 		return;
 	}
+
 	pWindrv->SetFileSys(fs);
 }
-
 void FASTCALL VM::NotifyHostMessage(const TCHAR* message) const
 {
 	ASSERT(this);
@@ -683,24 +294,389 @@ void FASTCALL VM::NotifyHostMessage(const TCHAR* message) const
 	::OutputDebugString(message);
 	::OutputDebugString(_T("\n"));
 }
+
+DWORD FASTCALL VM::Save(const Filepath& path)
+{
+    return OriginalSave(path);
+}
+
+DWORD FASTCALL VM::Save(Fileio& fio)
+{
+    return OriginalSave(fio);
+}
+
+DWORD FASTCALL VM::OriginalSave(const Filepath& path)
+{
+    Fileio fio;
+    DWORD pos;
+
+    ASSERT(this);
+    current.Clear();
+
+    if (!fio.Open(path, Fileio::WriteOnly)) {
+        return 0;
+    }
+    pos = OriginalSave(fio);
+    fio.Close();
+    if (pos != 0) {
+        current = path;
+    }
+    return pos;
+}
+
+DWORD FASTCALL VM::OriginalSave(Fileio& fio)
+{
+    char header[0x10];
+    int ver;
+    Device *device;
+    DWORD id;
+    DWORD pos;
+
+    ASSERT(this);
+    ASSERT(fio.IsValid());
+
+    device = first_device;
+    ver = (int)((major_ver << 8) | minor_ver);
+
+    sprintf(header, "XM6 DATA %1X.%02X", major_ver, minor_ver);
+    header[0x0d] = 0x0d;
+    header[0x0e] = 0x0a;
+    header[0x0f] = 0x1a;
+
+    if (!fio.Write(header, 0x10)) {
+        return 0;
+    }
+
+    while (device) {
+        id = device->GetID();
+        if (!fio.Write(&id, sizeof(id))) {
+            return 0;
+        }
+        if (!device->Save(&fio, ver)) {
+            return 0;
+        }
+        device = device->GetNextDevice();
+    }
+
+    id = MAKEID('E', 'N', 'D', ' ');
+    if (!fio.Write(&id, sizeof(id))) {
+        return 0;
+    }
+
+    pos = fio.GetFilePos();
+    return pos;
+}
+
+//---------------------------------------------------------------------------
+//
+//	ï¿½ï¿½ï¿½[ï¿½h
+//
+//---------------------------------------------------------------------------
+DWORD FASTCALL VM::Load(const Filepath& path)
+{
+    Fileio fio;
+    DWORD pos;
+
+    ASSERT(this);
+    current.Clear();
+
+    if (!fio.Open(path, Fileio::ReadOnly)) {
+        return 0;
+    }
+    pos = Load(fio);
+    fio.Close();
+    if (pos != 0) {
+        current = path;
+    }
+    return pos;
+}
+
+DWORD FASTCALL VM::Load(Fileio& fio)
+{
+    char buf[0x10];
+    int rec;
+    int ver;
+    Device *device;
+    DWORD id;
+    DWORD pos;
+
+    ASSERT(this);
+    ASSERT(fio.IsValid());
+    current.Clear();
+
+    if (!fio.Read(buf, 0x10)) {
+        NotifyHostMessage(_T("savestate load failed: short header"));
+        return 0;
+    }
+
+    buf[0x0a] = '\0';
+    rec = ::strtoul(&buf[0x09], NULL, 16);
+    rec <<= 8;
+    buf[0x0d] = '\0';
+    rec |= ::strtoul(&buf[0x0b], NULL, 16);
+
+    ver = (int)((major_ver << 8) | minor_ver);
+
+    buf[0x09] = '\0';
+    if (strcmp(buf, "XM6 DATA ") != 0) {
+        NotifyHostMessage(_T("savestate load failed: invalid header"));
+        return 0;
+    }
+    if (ver < rec) {
+        NotifyHostMessage(_T("savestate load failed: unsupported version"));
+        return 0;
+    }
+
+    for (;;) {
+        if (!fio.Read(&id, sizeof(id))) {
+            NotifyHostMessage(_T("savestate load failed: truncated device list"));
+            return 0;
+        }
+        if (id == MAKEID('E', 'N', 'D', ' ')) {
+            break;
+        }
+        device = SearchDevice(id);
+        if (!device) {
+            NotifyHostMessage(_T("savestate load failed: unknown device"));
+            return 0;
+        }
+        if (!device->Load(&fio, rec)) {
+            NotifyHostMessage(_T("savestate load failed: device load error"));
+            return 0;
+        }
+    }
+    pos = fio.GetFilePos();
+    return pos;
+}
+void FASTCALL VM::GetPath(Filepath& path) const
+{
+	ASSERT(this);
+
+	path = current;
+}
+
+//---------------------------------------------------------------------------
+//
+//	ï¿½pï¿½Xï¿½Nï¿½ï¿½ï¿½A
+//
+//---------------------------------------------------------------------------
+void FASTCALL VM::Clear()
+{
+	ASSERT(this);
+
+	current.Clear();
+}
+
+//---------------------------------------------------------------------------
+//
+//	ï¿½İ’ï¿½Kï¿½p
+//
+//---------------------------------------------------------------------------
+
+void FASTCALL VM::ApplyCfg(const Config *config)
+{
+	Device *device;
+
+	ASSERT(this);
+	ASSERT(config);
+
+	device = first_device;
+	while (device) {
+		device->ApplyCfg(config);
+		device = device->GetNextDevice();
+	}
+}
+BOOL FASTCALL VM::SetRenderMode(int mode)
+{
+	ASSERT(this);
+
+	if (mode == 0 || mode == 1) {
+		return TRUE;
+	}
+	return FALSE;
+}
+
+int FASTCALL VM::GetRenderMode() const
+{
+	ASSERT(this);
+	return 0;
+}
+//---------------------------------------------------------------------------
+//
+//	ï¿½fï¿½oï¿½Cï¿½Xï¿½Ç‰ï¿½
+//	ï¿½ï¿½ï¿½Ç‰ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Deviceï¿½ï¿½ï¿½ï¿½Ä‚Ñoï¿½ï¿½
+//
+//---------------------------------------------------------------------------
+void FASTCALL VM::AddDevice(Device *device)
+{
+	Device *dev;
+
+	ASSERT(this);
+	ASSERT(device);
+
+	// ï¿½Åï¿½ï¿½Ìƒfï¿½oï¿½Cï¿½Xï¿½ï¿½
+	if (!first_device) {
+		// ï¿½ï¿½ï¿½Ìƒfï¿½oï¿½Cï¿½Xï¿½ï¿½ï¿½Åï¿½ï¿½Bï¿½oï¿½^ï¿½ï¿½ï¿½ï¿½
+		first_device = device;
+		ASSERT(!device->GetNextDevice());
+		return;
+	}
+
+	// ï¿½Iï¿½[ï¿½ï¿½Tï¿½ï¿½
+	dev = first_device;
+	while (dev->GetNextDevice()) {
+		dev = dev->GetNextDevice();
+	}
+
+	// devï¿½ÌŒï¿½ï¿½É’Ç‰ï¿½
+	dev->SetNextDevice(device);
+	ASSERT(!device->GetNextDevice());
+}
+
+//---------------------------------------------------------------------------
+//
+//	ï¿½fï¿½oï¿½Cï¿½Xï¿½íœ
+//	ï¿½ï¿½ï¿½íœï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Deviceï¿½ï¿½ï¿½ï¿½Ä‚Ñoï¿½ï¿½
+//
+//---------------------------------------------------------------------------
+void FASTCALL VM::DelDevice(const Device *device)
+{
+	Device *dev;
+
+	ASSERT(this);
+	ASSERT(device);
+
+	// ï¿½Åï¿½ï¿½Ìƒfï¿½oï¿½Cï¿½Xï¿½ï¿½
+	if (first_device == device) {
+		// ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½È‚ï¿½Aï¿½ï¿½ï¿½ï¿½oï¿½^ï¿½Bï¿½È‚ï¿½ï¿½ï¿½ï¿½NULL
+		if (device->GetNextDevice()) {
+			first_device = device->GetNextDevice();
+		}
+		else {
+			first_device = NULL;
+		}
+		return;
+	}
+
+	// deviceï¿½ï¿½Lï¿½ï¿½ï¿½ï¿½ï¿½Ä‚ï¿½ï¿½ï¿½Tï¿½uï¿½Eï¿½Bï¿½ï¿½ï¿½hï¿½Eï¿½ï¿½Tï¿½ï¿½
+	dev = first_device;
+	while (dev->GetNextDevice() != device) {
+		ASSERT(dev->GetNextDevice());
+		dev = dev->GetNextDevice();
+	}
+
+	// device->next_deviceï¿½ï¿½Adevï¿½ÉŒï¿½ï¿½Ñ‚Â‚ï¿½ï¿½Xï¿½Lï¿½bï¿½vï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
+	dev->SetNextDevice(device->GetNextDevice());
+}
+
+//---------------------------------------------------------------------------
+//
+//	ï¿½fï¿½oï¿½Cï¿½Xï¿½ï¿½ï¿½ï¿½
+//	ï¿½ï¿½ï¿½ï¿½ï¿½Â‚ï¿½ï¿½ï¿½È‚ï¿½ï¿½ï¿½ï¿½NULLï¿½ï¿½Ô‚ï¿½
+//
+//---------------------------------------------------------------------------
+Device* FASTCALL VM::SearchDevice(DWORD id) const
+{
+	Device *dev;
+
+	ASSERT(this);
+
+	// ï¿½fï¿½oï¿½Cï¿½Xï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
+	dev = first_device;
+
+	// ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½[ï¿½v
+	while (dev) {
+		// IDï¿½ï¿½ï¿½ï¿½vï¿½ï¿½ï¿½é‚©ï¿½`ï¿½Fï¿½bï¿½N
+		if (dev->GetID() == id) {
+			return dev;
+		}
+
+		// ï¿½ï¿½ï¿½ï¿½
+		dev = dev->GetNextDevice();
+	}
+
+	// ï¿½ï¿½ï¿½Â‚ï¿½ï¿½ï¿½È‚ï¿½ï¿½ï¿½ï¿½ï¿½
+	return NULL;
+}
+
+//---------------------------------------------------------------------------
+//
+//	ï¿½ï¿½ï¿½s
+//
+//---------------------------------------------------------------------------
+BOOL FASTCALL VM::Exec(DWORD hus)
+{
+	DWORD ret;
+
+	ASSERT(this);
+	ASSERT(scheduler);
+
+	// ï¿½dï¿½ï¿½ï¿½`ï¿½Fï¿½bï¿½N
+	if (power) {
+		// ï¿½ï¿½ï¿½sï¿½ï¿½ï¿½[ï¿½v
+		while (hus > 0) {
+			ret = scheduler->Exec(hus);
+
+			// ï¿½ï¿½ï¿½ï¿½È‚ï¿½Aï¿½cï¿½ï¿½^ï¿½Cï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ç‚·
+			if (ret < 0x80000000) {
+				hus -= ret;
+				continue;
+			}
+
+			// ï¿½uï¿½ï¿½ï¿½[ï¿½Nï¿½ï¿½ï¿½ï¿½ï¿½ï¿½AFALSEï¿½ÅIï¿½ï¿½
+			return FALSE;
+		}
+	}
+
+	return TRUE;
+}
+
+//---------------------------------------------------------------------------
+//
+//	ï¿½gï¿½ï¿½ï¿½[ï¿½X
+//
+//---------------------------------------------------------------------------
+void FASTCALL VM::Trace()
+{
+	ASSERT(this);
+	ASSERT(scheduler);
+
+	// ï¿½dï¿½ï¿½ï¿½`ï¿½Fï¿½bï¿½N
+	if (!power) {
+		return;
+	}
+
+	// 0ï¿½ÈŠOï¿½ï¿½ï¿½oï¿½ï¿½Ü‚Åï¿½ï¿½s
+	for (;;) {
+		if (scheduler->Trace(100) != 0) {
+			return;
+		}
+	}
+}
+
+//---------------------------------------------------------------------------
+//
+//	ï¿½dï¿½ï¿½ï¿½Xï¿½Cï¿½bï¿½`ï¿½ï¿½ï¿½ï¿½
+//
+//---------------------------------------------------------------------------
 void FASTCALL VM::PowerSW(BOOL sw)
 {
 	ASSERT(this);
 
-	// Œ»İ‚Ìó‘Ô‚Æ“¯‚¶‚È‚ç‰½‚à‚µ‚È‚¢
+	// ï¿½ï¿½ï¿½İ‚Ìï¿½Ô‚Æ“ï¿½ï¿½ï¿½ï¿½È‚ç‰½ï¿½ï¿½ï¿½ï¿½È‚ï¿½
 	if (power_sw == sw) {
 		return;
 	}
 
-	// ‹L‰¯‚µ‚Ä
+	// ï¿½Lï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 	power_sw = sw;
 
-	// “dŒ¹ƒIƒt‚È‚çA“dŒ¹ƒIƒ“‚ÅƒŠƒZƒbƒg
+	// ï¿½dï¿½ï¿½ï¿½Iï¿½tï¿½È‚ï¿½Aï¿½dï¿½ï¿½ï¿½Iï¿½ï¿½ï¿½Åƒï¿½ï¿½Zï¿½bï¿½g
 	if (sw) {
 		SetPower(TRUE);
 	}
 
-	// MFP‚É‘Î‚µA“dŒ¹î•ñ‚ğ“`‚¦‚é
+	// MFPï¿½É‘Î‚ï¿½ï¿½Aï¿½dï¿½ï¿½ï¿½ï¿½ï¿½ï¿½`ï¿½ï¿½ï¿½ï¿½
 	ASSERT(mfp);
 	if (sw) {
 		mfp->SetGPIP(2, 0);
@@ -712,23 +688,23 @@ void FASTCALL VM::PowerSW(BOOL sw)
 
 //---------------------------------------------------------------------------
 //
-//	“dŒ¹‚Ìó‘Ô‚ğİ’è
+//	ï¿½dï¿½ï¿½ï¿½Ìï¿½Ô‚ï¿½İ’ï¿½
 //
 //---------------------------------------------------------------------------
 void FASTCALL VM::SetPower(BOOL flag)
 {
 	ASSERT(this);
 
-	// ˆê’v‚µ‚Ä‚¢‚ê‚Î‰½‚à‚µ‚È‚¢
+	// ï¿½ï¿½vï¿½ï¿½ï¿½Ä‚ï¿½ï¿½ï¿½Î‰ï¿½ï¿½ï¿½ï¿½ï¿½È‚ï¿½
 	if (flag == power) {
 		return;
 	}
 
-	// ˆê’v
+	// ï¿½ï¿½v
 	power = flag;
 
 	if (flag) {
-		// “dŒ¹ON(ƒAƒWƒƒƒXƒg‚ğs‚¤)
+		// ï¿½dï¿½ï¿½ON(ï¿½ï¿½ï¿½ï¿½ï¿½Aï¿½Wï¿½ï¿½ï¿½Xï¿½gï¿½ï¿½sï¿½ï¿½)
 		Reset();
 		ASSERT(rtc);
 		rtc->Adjust(FALSE);
@@ -737,7 +713,7 @@ void FASTCALL VM::SetPower(BOOL flag)
 
 //---------------------------------------------------------------------------
 //
-//	ƒo[ƒWƒ‡ƒ“İ’è
+//	ï¿½oï¿½[ï¿½Wï¿½ï¿½ï¿½ï¿½ï¿½İ’ï¿½
 //
 //---------------------------------------------------------------------------
 void FASTCALL VM::SetVersion(DWORD major, DWORD minor)
@@ -752,7 +728,7 @@ void FASTCALL VM::SetVersion(DWORD major, DWORD minor)
 
 //---------------------------------------------------------------------------
 //
-//	ƒo[ƒWƒ‡ƒ“æ“¾
+//	ï¿½oï¿½[ï¿½Wï¿½ï¿½ï¿½ï¿½ï¿½æ“¾
 //
 //---------------------------------------------------------------------------
 void FASTCALL VM::GetVersion(DWORD& major, DWORD& minor)
@@ -764,3 +740,7 @@ void FASTCALL VM::GetVersion(DWORD& major, DWORD& minor)
 	major = major_ver;
 	minor = minor_ver;
 }
+
+
+
+

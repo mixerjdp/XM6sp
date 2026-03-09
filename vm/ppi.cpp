@@ -606,6 +606,30 @@ const PPI::joyinfo_t* FASTCALL PPI::GetJoyInfo(int port) const
 //	ジョイスティックデバイス作成
 //
 //---------------------------------------------------------------------------
+void FASTCALL PPI::SetJoyType(int port, int type)
+{
+	ASSERT(this);
+	ASSERT((port >= 0) && (port < PortMax));
+	ASSERT(type >= 0);
+	ASSERT(PortMax >= 2);
+
+	if (ppi.type[port] == type) {
+		return;
+	}
+
+	ASSERT(joy[port]);
+	delete joy[port];
+	joy[port] = NULL;
+
+	ppi.type[port] = type;
+	joy[port] = CreateJoy(port, type);
+}
+
+//---------------------------------------------------------------------------
+//
+//	Set joystick type
+//
+//---------------------------------------------------------------------------
 JoyDevice* FASTCALL PPI::CreateJoy(int port, int type)
 {
 	ASSERT(this);

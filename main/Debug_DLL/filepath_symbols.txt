@@ -1,0 +1,172 @@
+Microsoft (R) COFF/PE Dumper Version 11.00.50727.1
+Copyright (C) Microsoft Corporation.  All rights reserved.
+
+
+Dump of file main\Debug_DLL\filepath.obj
+
+File Type: COFF OBJECT
+
+COFF SYMBOL TABLE
+000 00CFC627 ABS    notype       Static       | @comp.id
+001 80000191 ABS    notype       Static       | @feat.00
+002 00000000 SECT1  notype       Static       | .drectve
+    Section length   5E, #relocs    0, #linenums    0, checksum        0
+004 00000000 SECT2  notype       Static       | .debug$S
+    Section length 8874, #relocs   DE, #linenums    0, checksum        0
+006 00000000 SECT3  notype       Static       | .debug$T
+    Section length   48, #relocs    0, #linenums    0, checksum        0
+008 00000000 SECT4  notype       Static       | .data
+    Section length   28, #relocs    A, #linenums    0, checksum        0
+00A 00000000 SECT4  notype       External     | ?SystemFile@Filepath@@0PAPBDA (private: static char const * * Filepath::SystemFile)
+00B 00000000 SECT5  notype       Static       | .bss
+    Section length  504, #relocs    0, #linenums    0, checksum        0
+00D 00000000 SECT5  notype       External     | ?ShortName@Filepath@@0PADA (private: static char * Filepath::ShortName)
+00E 00000200 SECT5  notype       External     | ?FileExt@Filepath@@0PADA (private: static char * Filepath::FileExt)
+00F 00000400 SECT5  notype       External     | ?DefaultDir@Filepath@@0PADA (private: static char * Filepath::DefaultDir)
+010 00000000 SECT6  notype       Static       | .rdata
+    Section length  5B1, #relocs    0, #linenums    0, checksum 89F48843
+012 00000000 SECT6  notype       Static       | $SG74114
+013 00000028 SECT6  notype       Static       | $SG74115
+014 00000034 SECT6  notype       Static       | $SG74122
+015 0000005C SECT6  notype       Static       | $SG74123
+016 00000068 SECT6  notype       Static       | $SG74130
+017 00000090 SECT6  notype       Static       | $SG74131
+018 0000009C SECT6  notype       Static       | $SG74133
+019 000000C4 SECT6  notype       Static       | $SG74134
+01A 000000D8 SECT6  notype       Static       | $SG74136
+01B 00000100 SECT6  notype       Static       | $SG74137
+01C 00000130 SECT6  notype       Static       | $SG74145
+01D 00000158 SECT6  notype       Static       | $SG74146
+01E 00000164 SECT6  notype       Static       | $SG74151
+01F 0000018C SECT6  notype       Static       | $SG74152
+020 00000198 SECT6  notype       Static       | $SG74158
+021 000001C0 SECT6  notype       Static       | $SG74159
+022 000001CC SECT6  notype       Static       | $SG74166
+023 000001F4 SECT6  notype       Static       | $SG74167
+024 00000200 SECT6  notype       Static       | $SG74169
+025 00000228 SECT6  notype       Static       | $SG74170
+026 0000023C SECT6  notype       Static       | $SG74172
+027 00000264 SECT6  notype       Static       | $SG74173
+028 00000290 SECT6  notype       Static       | $SG74179
+029 000002B8 SECT6  notype       Static       | $SG74180
+02A 000002C4 SECT6  notype       Static       | $SG74182
+02B 000002EC SECT6  notype       Static       | $SG74183
+02C 00000318 SECT6  notype       Static       | $SG74192
+02D 00000340 SECT6  notype       Static       | $SG74193
+02E 0000034C SECT6  notype       Static       | $SG74200
+02F 00000374 SECT6  notype       Static       | $SG74201
+030 00000380 SECT6  notype       Static       | $SG74217
+031 000003A8 SECT6  notype       Static       | $SG74218
+032 000003BC SECT6  notype       Static       | $SG74230
+033 000003E4 SECT6  notype       Static       | $SG74231
+034 000003F0 SECT6  notype       Static       | $SG74233
+035 00000418 SECT6  notype       Static       | $SG74234
+036 00000420 SECT6  notype       Static       | $SG74249
+037 00000448 SECT6  notype       Static       | $SG74250
+038 00000454 SECT6  notype       Static       | $SG74252
+039 0000047C SECT6  notype       Static       | $SG74253
+03A 00000484 SECT6  notype       Static       | $SG74266
+03B 000004AC SECT6  notype       Static       | $SG74267
+03C 000004B8 SECT6  notype       Static       | $SG74274
+03D 000004E0 SECT6  notype       Static       | $SG74275
+03E 000004EC SECT6  notype       Static       | $SG74277
+03F 00000514 SECT6  notype       Static       | $SG74278
+040 00000528 SECT6  notype       Static       | $SG74279
+041 00000534 SECT6  notype       Static       | $SG74280
+042 00000544 SECT6  notype       Static       | $SG74281
+043 00000554 SECT6  notype       Static       | $SG74282
+044 00000564 SECT6  notype       Static       | $SG74283
+045 00000570 SECT6  notype       Static       | $SG74284
+046 0000057C SECT6  notype       Static       | $SG74285
+047 00000588 SECT6  notype       Static       | $SG74286
+048 00000598 SECT6  notype       Static       | $SG74287
+049 000005A8 SECT6  notype       Static       | $SG74288
+04A 00000000 SECT7  notype       Static       | .text
+    Section length  B0E, #relocs   87, #linenums    0, checksum 407A381D
+04C 00000000 SECT8  notype       Static       | .text
+    Section length   1F, #relocs    2, #linenums    0, checksum 9AF348BB, selection    2 (pick any)
+04E 00000000 SECT9  notype       Static       | .debug$S
+    Section length   D8, #relocs    3, #linenums    0, checksum        0, selection    5 (pick associative Section 0x8)
+050 00000000 SECTA  notype       Static       | .text
+    Section length    4, #relocs    0, #linenums    0, checksum  86ADF1F, selection    2 (pick any)
+052 00000000 SECTB  notype       Static       | .debug$S
+    Section length   CC, #relocs    5, #linenums    0, checksum        0, selection    5 (pick associative Section 0xA)
+054 00000000 SECTC  notype       Static       | .text
+    Section length    6, #relocs    1, #linenums    0, checksum EDE50BB8, selection    2 (pick any)
+056 00000000 SECTD  notype       Static       | .debug$S
+    Section length   E4, #relocs    7, #linenums    0, checksum        0, selection    5 (pick associative Section 0xC)
+058 00000000 UNDEF  notype ()    External     | ??3@YAXPAX@Z (void __cdecl operator delete(void *))
+059 00000000 UNDEF  notype       External     | __imp__GetCurrentDirectoryA@8
+05A 00000000 UNDEF  notype       External     | __imp__CompareFileTime@8
+05B 00000000 UNDEF  notype       External     | __imp__CreateFileA@28
+05C 00000000 UNDEF  notype       External     | __imp__GetFileTime@16
+05D 00000000 UNDEF  notype       External     | __imp__CloseHandle@4
+05E 00000000 UNDEF  notype       External     | __imp__GetModuleFileNameA@12
+05F 00000000 UNDEF  notype       External     | __imp___makepath
+060 00000000 UNDEF  notype       External     | __imp___splitpath
+061 00000000 UNDEF  notype       External     | __imp___mbscmp
+062 00000000 SECTC  notype ()    External     | __tcscmp
+063 00000000 UNDEF  notype       External     | __imp___wassert
+064 00000000 SECT7  notype ()    External     | ??0Filepath@@QAE@XZ (public: __thiscall Filepath::Filepath(void))
+065 00000040 SECT7  notype ()    External     | ??1Filepath@@UAE@XZ (public: virtual __thiscall Filepath::~Filepath(void))
+066 00000050 SECT7  notype ()    External     | ??4Filepath@@QAEAAV0@ABV0@@Z (public: class Filepath & __thiscall Filepath::operator=(class Filepath const &))
+067 000000C0 SECT7  notype ()    External     | ?Clear@Filepath@@QAIXXZ (public: void __fastcall Filepath::Clear(void))
+068 00000100 SECT7  notype ()    External     | ?SysFile@Filepath@@QAIXW4SysFileType@1@@Z (public: void __fastcall Filepath::SysFile(enum Filepath::SysFileType))
+069 000001A0 SECT7  notype ()    External     | ?SetPath@Filepath@@QAIXPBD@Z (public: void __fastcall Filepath::SetPath(char const *))
+06A 000002B0 SECT7  notype ()    External     | ?SetBaseDir@Filepath@@QAIXXZ (public: void __fastcall Filepath::SetBaseDir(void))
+06B 00000370 SECT7  notype ()    External     | ?SetBaseFile@Filepath@@QAIXPBD@Z (public: void __fastcall Filepath::SetBaseFile(char const *))
+06C 00000490 SECT7  notype ()    External     | ?IsClear@Filepath@@QBIHXZ (public: int __fastcall Filepath::IsClear(void)const )
+06D 00000000 SECTA  notype ()    External     | ?GetPath@Filepath@@QBIPBDXZ (public: char const * __fastcall Filepath::GetPath(void)const )
+06E 000004D0 SECT7  notype ()    External     | ?GetShort@Filepath@@QBIPBDXZ (public: char const * __fastcall Filepath::GetShort(void)const )
+06F 00000550 SECT7  notype ()    External     | ?GetFileExt@Filepath@@QBIPBDXZ (public: char const * __fastcall Filepath::GetFileExt(void)const )
+070 000005D0 SECT7  notype ()    External     | ?CmpPath@Filepath@@QBIHABV1@@Z (public: int __fastcall Filepath::CmpPath(class Filepath const &)const )
+071 000005F0 SECT7  notype ()    External     | ?ClearDefaultDir@Filepath@@SIXXZ (public: static void __fastcall Filepath::ClearDefaultDir(void))
+072 00000600 SECT7  notype ()    External     | ?SetDefaultDir@Filepath@@SIXPBD@Z (public: static void __fastcall Filepath::SetDefaultDir(char const *))
+073 000006B0 SECT7  notype ()    External     | ?GetDefaultDir@Filepath@@SIPBDXZ (public: static char const * __fastcall Filepath::GetDefaultDir(void))
+074 000006C0 SECT7  notype ()    External     | ?Save@Filepath@@QAIHPAVFileio@@H@Z (public: int __fastcall Filepath::Save(class Fileio *,int))
+075 000007D0 SECT7  notype ()    External     | ?Load@Filepath@@QAIHPAVFileio@@H@Z (public: int __fastcall Filepath::Load(class Fileio *,int))
+076 000008E0 SECT7  notype ()    External     | ?Split@Filepath@@AAIXXZ (private: void __fastcall Filepath::Split(void))
+077 00000940 SECT7  notype ()    External     | ?Make@Filepath@@AAIXXZ (private: void __fastcall Filepath::Make(void))
+078 00000990 SECT7  notype ()    External     | ?SetCurDir@Filepath@@AAIXXZ (private: void __fastcall Filepath::SetCurDir(void))
+079 00000A70 SECT7  notype ()    External     | ?IsUpdate@Filepath@@ABIHXZ (private: int __fastcall Filepath::IsUpdate(void)const )
+07A 00000AA0 SECT7  notype ()    External     | ?GetUpdateTime@Filepath@@ABIXPAU_FILETIME@@0@Z (private: void __fastcall Filepath::GetUpdateTime(struct _FILETIME *,struct _FILETIME *)const )
+07B 00000000 SECT8  notype ()    External     | ??_GFilepath@@UAEPAXI@Z (public: virtual void * __thiscall Filepath::`scalar deleting destructor'(unsigned int))
+07C 00000000 UNDEF  notype ()    WeakExternal | ??_EFilepath@@UAEPAXI@Z (public: virtual void * __thiscall Filepath::`vector deleting destructor'(unsigned int))
+    Default index       7B library search
+07E 00000000 UNDEF  notype ()    External     | ?Read@Fileio@@QAIHPAXH@Z (public: int __fastcall Fileio::Read(void *,int))
+07F 00000000 UNDEF  notype ()    External     | ?Write@Fileio@@QAIHPBXH@Z (public: int __fastcall Fileio::Write(void const *,int))
+080 00000000 UNDEF  notype ()    External     | @__security_check_cookie@4
+081 00000000 UNDEF  notype ()    External     | _memset
+082 00000000 SECTE  notype       Static       | .rdata
+    Section length    8, #relocs    2, #linenums    0, checksum        0, selection    6 (pick largest)
+084 00000004 SECTE  notype       External     | ??_7Filepath@@6B@ (const Filepath::`vftable')
+085 00000000 SECTF  notype       Static       | .rdata$r
+    Section length   14, #relocs    2, #linenums    0, checksum        0, selection    2 (pick any)
+087 00000000 SECTF  notype       External     | ??_R4Filepath@@6B@ (const Filepath::`RTTI Complete Object Locator')
+088 00000000 SECT10 notype       Static       | .data
+    Section length   17, #relocs    1, #linenums    0, checksum 471916E0, selection    2 (pick any)
+08A 00000000 SECT10 notype       External     | ??_R0?AVFilepath@@@8 (class Filepath `RTTI Type Descriptor')
+08B 00000000 SECT11 notype       Static       | .rdata$r
+    Section length   10, #relocs    1, #linenums    0, checksum CCAA009E, selection    2 (pick any)
+08D 00000000 SECT11 notype       External     | ??_R3Filepath@@8 (Filepath::`RTTI Class Hierarchy Descriptor')
+08E 00000000 SECT12 notype       Static       | .rdata$r
+    Section length    5, #relocs    1, #linenums    0, checksum        0, selection    2 (pick any)
+090 00000000 SECT12 notype       External     | ??_R2Filepath@@8 (Filepath::`RTTI Base Class Array')
+091 00000000 SECT13 notype       Static       | .rdata$r
+    Section length   1C, #relocs    2, #linenums    0, checksum 3AD97647, selection    2 (pick any)
+093 00000000 SECT13 notype       External     | ??_R1A@?0A@EA@Filepath@@8 (Filepath::`RTTI Base Class Descriptor at (0,-1,0,64)')
+094 00000000 UNDEF  notype       External     | ??_7type_info@@6B@ (const type_info::`vftable')
+095 00000000 UNDEF  notype       External     | ___security_cookie
+
+String Table Size = 0x522 bytes
+
+  Summary
+
+         504 .bss
+          3F .data
+        8AFC .debug$S
+          48 .debug$T
+          5E .drectve
+         5B9 .rdata
+          45 .rdata$r
+         B37 .text

@@ -1,9 +1,9 @@
-//---------------------------------------------------------------------------
+﻿//---------------------------------------------------------------------------
 //
 //	X68000 EMULATOR "XM6"
 //
-//	Copyright (C) 2001-2006 �ｼｰ�ｼｩ�ｼ�(ytanaka@ipc-tokai.or.jp)
-//	[ 繧ｹ繧ｱ繧ｸ繝･繝ｼ繝ｩ ]
+//	Copyright (C) 2001-2006 ・ｽ・ｼ・ｰ・ｽ・ｼ・ｩ・ｽ・ｼ・ｽ(ytanaka@ipc-tokai.or.jp)
+//	[ 郢ｧ・ｹ郢ｧ・ｱ郢ｧ・ｸ郢晢ｽ･郢晢ｽｼ郢晢ｽｩ ]
 //
 //---------------------------------------------------------------------------
 
@@ -13,176 +13,169 @@
 #include "device.h"
 #include "musashi_adapter.h"
 
-//---------------------------------------------------------------------------
-//
-//	鬮倬溘え繧ｧ繧､繝(Starscream蟆ら畑)
-//
-//---------------------------------------------------------------------------
-// s68000iocycle is declared in musashi_adapter.h
 #define SCHEDULER_FASTWAIT
-
 
 //===========================================================================
 //
-//	繧ｹ繧ｱ繧ｸ繝･繝ｼ繝ｩ
+//	郢ｧ・ｹ郢ｧ・ｱ郢ｧ・ｸ郢晢ｽ･郢晢ｽｼ郢晢ｽｩ
 //
 //===========================================================================
 class Scheduler : public Device
 {
 public:
-	// 繝悶Ξ繝ｼ繧ｯ繝昴う繝ｳ繝亥ｮ夂ｾｩ
+	// 郢晄じﾎ樒ｹ晢ｽｼ郢ｧ・ｯ郢晄亢縺・ｹ晢ｽｳ郢昜ｺ･・ｮ螟ゑｽｾ・ｩ
 	typedef struct{
-		BOOL use;						// 菴ｿ逕ｨ繝輔Λ繧ｰ
-		DWORD addr;						// 繧｢繝峨Ξ繧ｹ
-		BOOL enable;					// 譛牙柑繝輔Λ繧ｰ
-		DWORD time;						// 蛛懈ｭ｢譎ゅ�ｮ譎る俣
-		DWORD count;					// 蛛懈ｭ｢蝗樊焚
+		BOOL use;						// 闖ｴ・ｿ騾包ｽｨ郢晁ｼ釆帷ｹｧ・ｰ
+		DWORD addr;						// 郢ｧ・｢郢晏ｳｨﾎ樒ｹｧ・ｹ
+		BOOL enable;					// 隴帷甥譟醍ｹ晁ｼ釆帷ｹｧ・ｰ
+		DWORD time;						// 陋帶㊧・ｭ・｢隴弱ｅ・ｽ・ｮ隴弱ｋ菫｣
+		DWORD count;					// 陋帶㊧・ｭ・｢陜玲ｨ顔・
 	} breakpoint_t;
 
-	// 繧ｹ繧ｱ繧ｸ繝･繝ｼ繝ｩ螳夂ｾｩ
+	// 郢ｧ・ｹ郢ｧ・ｱ郢ｧ・ｸ郢晢ｽ･郢晢ｽｼ郢晢ｽｩ陞ｳ螟ゑｽｾ・ｩ
 	typedef struct {
-		// 譎る俣
-		DWORD total;					// 繝医�ｼ繧ｿ繝ｫ螳溯｡梧凾髢�
-		DWORD one;						// 1蝗槭�ｮ螳溯｡梧凾髢�
-		DWORD sound;					// 繧ｵ繧ｦ繝ｳ繝画峩譁ｰ譎る俣
+		// 隴弱ｋ菫｣
+		DWORD total;					// 郢晏現・ｽ・ｼ郢ｧ・ｿ郢晢ｽｫ陞ｳ貅ｯ・｡譴ｧ蜃ｾ鬮｢・ｽ
+		DWORD one;						// 1陜玲ｧｭ・ｽ・ｮ陞ｳ貅ｯ・｡譴ｧ蜃ｾ鬮｢・ｽ
+		DWORD sound;					// 郢ｧ・ｵ郢ｧ・ｦ郢晢ｽｳ郢晉判蟲ｩ隴・ｽｰ隴弱ｋ菫｣
 
 		// CPU
-		int clock;						// CPU繧ｯ繝ｭ繝�繧ｯ(0�ｽ�5)
-		DWORD speed;					// CPU騾溷ｺｦ(clock縺ｫ繧医ｊ豎ｺ縺ｾ繧�)
-		int cycle;						// CPU繧ｵ繧､繧ｯ繝ｫ謨ｰ
-		DWORD time;						// CPU繧ｵ繧､繧ｯ繝ｫ隱ｿ謨ｴ逕ｨ譎る俣
+		int clock;						// CPU郢ｧ・ｯ郢晢ｽｭ郢晢ｿｽ郢ｧ・ｯ(0・ｽ・ｽ・ｽ5)
+		DWORD speed;					// CPU鬨ｾ貅ｷ・ｺ・ｦ(clock邵ｺ・ｫ郢ｧ蛹ｻ・願ｱ趣ｽｺ邵ｺ・ｾ郢ｧ・ｽ)
+		int cycle;						// CPU郢ｧ・ｵ郢ｧ・､郢ｧ・ｯ郢晢ｽｫ隰ｨ・ｰ
+		DWORD time;						// CPU郢ｧ・ｵ郢ｧ・､郢ｧ・ｯ郢晢ｽｫ髫ｱ・ｿ隰ｨ・ｴ騾包ｽｨ隴弱ｋ菫｣
 
-		// 繝悶Ξ繝ｼ繧ｯ繝昴う繝ｳ繝�
-		BOOL brk;						// 繝悶Ξ繝ｼ繧ｯ縺励◆
-		BOOL check;						// 譛牙柑縺ｪ繝悶Ξ繝ｼ繧ｯ繝昴う繝ｳ繝医≠繧�
+		// 郢晄じﾎ樒ｹ晢ｽｼ郢ｧ・ｯ郢晄亢縺・ｹ晢ｽｳ郢晢ｿｽ
+		BOOL brk;						// 郢晄じﾎ樒ｹ晢ｽｼ郢ｧ・ｯ邵ｺ蜉ｱ笳・
+		BOOL check;						// 隴帷甥譟醍ｸｺ・ｪ郢晄じﾎ樒ｹ晢ｽｼ郢ｧ・ｯ郢晄亢縺・ｹ晢ｽｳ郢晏現竕郢ｧ・ｽ
 
-		// 繧､繝吶Φ繝�
-		Event *first;					// 譛蛻昴�ｮ繧､繝吶Φ繝�
-		BOOL exec;						// 繧､繝吶Φ繝亥ｮ溯｡御ｸｭ
+		// 郢ｧ・､郢晏生ﾎｦ郢晢ｿｽ
+		Event *first;					// 隴崢陋ｻ譏ｴ・ｽ・ｮ郢ｧ・､郢晏生ﾎｦ郢晢ｿｽ
+		BOOL exec;						// 郢ｧ・､郢晏生ﾎｦ郢昜ｺ･・ｮ貅ｯ・｡蠕｡・ｸ・ｭ
 	} scheduler_t;
 
-	// 蛟区焚螳夂ｾｩ
+	// 陋溷玄辟夊楜螟ゑｽｾ・ｩ
 	enum {
-		BreakMax = 8					// 繝悶Ξ繝ｼ繧ｯ繝昴う繝ｳ繝育ｷ乗焚
+		BreakMax = 8					// 郢晄じﾎ樒ｹ晢ｽｼ郢ｧ・ｯ郢晄亢縺・ｹ晢ｽｳ郢晁ご・ｷ荵礼・
 	};
 
 public:
-	// 蝓ｺ譛ｬ繝輔ぃ繝ｳ繧ｯ繧ｷ繝ｧ繝ｳ
+	// 陜難ｽｺ隴幢ｽｬ郢晁ｼ斐＜郢晢ｽｳ郢ｧ・ｯ郢ｧ・ｷ郢晢ｽｧ郢晢ｽｳ
 	Scheduler(VM *p);
-										// 繧ｳ繝ｳ繧ｹ繝医Λ繧ｯ繧ｿ
+										// 郢ｧ・ｳ郢晢ｽｳ郢ｧ・ｹ郢晏現ﾎ帷ｹｧ・ｯ郢ｧ・ｿ
 	BOOL FASTCALL Init();
-										// 蛻晄悄蛹�
+										// 陋ｻ譎・ｄ陋ｹ・ｽ
 	void FASTCALL Cleanup();
-										// 繧ｯ繝ｪ繝ｼ繝ｳ繧｢繝�繝�
+										// 郢ｧ・ｯ郢晢ｽｪ郢晢ｽｼ郢晢ｽｳ郢ｧ・｢郢晢ｿｽ郢晢ｿｽ
 	void FASTCALL Reset();
-										// 繝ｪ繧ｻ繝�繝�
+										// 郢晢ｽｪ郢ｧ・ｻ郢晢ｿｽ郢晢ｿｽ
 	BOOL FASTCALL Save(Fileio *fio, int ver);
-										// 繧ｻ繝ｼ繝�
+										// 郢ｧ・ｻ郢晢ｽｼ郢晢ｿｽ
 	BOOL FASTCALL Load(Fileio *fio, int ver);
-										// 繝ｭ繝ｼ繝�
+										// 郢晢ｽｭ郢晢ｽｼ郢晢ｿｽ
 	void FASTCALL ApplyCfg(const Config *config);
-										// 險ｭ螳夐←逕ｨ
+										// 髫ｪ・ｭ陞ｳ螟絶・騾包ｽｨ
 #if defined(_DEBUG)
 	void FASTCALL AssertDiag() const;
-										// 險ｺ譁ｭ
+										// 髫ｪ・ｺ隴・ｽｭ
 #endif	// _DEBUG
 
-	// 螟夜ΚAPI
+	// 陞溷､慚哂PI
 	void FASTCALL GetScheduler(scheduler_t *buffer) const;
-										// 蜀�驛ｨ繝�繝ｼ繧ｿ蜿門ｾ�
+										// 陷・ｽ鬩幢ｽｨ郢晢ｿｽ郢晢ｽｼ郢ｧ・ｿ陷ｿ髢・ｾ・ｽ
 	DWORD FASTCALL Exec(DWORD hus);
-										// 螳溯｡�
+										// 陞ｳ貅ｯ・｡・ｽ
 	DWORD FASTCALL Trace(DWORD hus);
-										// 繝医Ξ繝ｼ繧ｹ
+										// 郢晏現ﾎ樒ｹ晢ｽｼ郢ｧ・ｹ
+	void FASTCALL ExecEventsOnly(DWORD hus) { ExecEvent(hus); }
+										// 郢ｧ・､郢晏生ﾎｦ郢昜ｺ･・ｮ貅ｯ・｡・ｽ(CPUなし)
 	void FASTCALL Break()				{ sch.brk = TRUE; }
-										// 螳溯｡御ｸｭ豁｢
+										// 陞ｳ貅ｯ・｡蠕｡・ｸ・ｭ雎・ｽ｢
 #ifdef SCHEDULER_FASTWAIT
 	void FASTCALL Wait(DWORD cycle)		{ sch.cycle += cycle; if (::s68000iocycle != (DWORD)-1) { ::s68000iocycle -= cycle; ::musashi_adjust_timeslice(-(int)cycle); } }
-										// CPU繧ｦ繧ｧ繧､繝�(縺吶∋縺ｦ繧､繝ｳ繝ｩ繧､繝ｳ)
 #else
 	void FASTCALL Wait(DWORD cycle)		{ ::s68000wait(cycle); sch.cycle += cycle; }
-										// CPU繧ｦ繧ｧ繧､繝�
-#endif	// SCHEDULER_FASTWAIT
+#endif
 
-	// 迚ｹ谿頑桃菴�(DMAC蜷代￠)
+	// 霑夲ｽｹ隹ｿ鬆第｡・抄・ｽ(DMAC陷ｷ莉｣・)
 	int FASTCALL GetCPUCycle() const	{ return sch.cycle; }
-										// 繧ｦ繧ｧ繧､繝域焚蜿門ｾ�
+										// 郢ｧ・ｦ郢ｧ・ｧ郢ｧ・､郢晏沺辟夊愾髢・ｾ・ｽ
 	void FASTCALL SetCPUCycle(int cycle) { sch.cycle = cycle; }
-										// 繧ｦ繧ｧ繧､繝域焚險ｭ螳�
+										// 郢ｧ・ｦ郢ｧ・ｧ郢ｧ・､郢晏沺辟夐坎・ｭ陞ｳ・ｽ
 
-	// 譎る俣諠�蝣ｱ
+	// 隴弱ｋ菫｣隲・ｽ陜｣・ｱ
 	DWORD FASTCALL GetTotalTime() const	{ return (GetPassedTime() + sch.total); }
-										// 繝医�ｼ繧ｿ繝ｫ螳溯｡梧凾髢薙ｒ蜿門ｾ�
+										// 郢晏現・ｽ・ｼ郢ｧ・ｿ郢晢ｽｫ陞ｳ貅ｯ・｡譴ｧ蜃ｾ鬮｢阮呻ｽ定愾髢・ｾ・ｽ
 	DWORD FASTCALL GetOneTime() const	{ return sch.one; }
-										// 蠕ｮ蟆大ｮ溯｡梧凾髢薙ｒ蜿門ｾ�
+										// 陟包ｽｮ陝・､ｧ・ｮ貅ｯ・｡譴ｧ蜃ｾ鬮｢阮呻ｽ定愾髢・ｾ・ｽ
 	DWORD FASTCALL GetPassedTime() const;
-										// 邨碁℃譎る俣繧貞叙蠕�
+										// 驍ｨ遒≫с隴弱ｋ菫｣郢ｧ雋槫徐陟包ｿｽ
 	DWORD FASTCALL GetCPUSpeed() const	{ return sch.speed; }
-										// CPU騾溷ｺｦ蜿門ｾ�
+										// CPU鬨ｾ貅ｷ・ｺ・ｦ陷ｿ髢・ｾ・ｽ
 	void FASTCALL SetCPUSpeed(DWORD speed);
-										// CPU騾溷ｺｦ險ｭ螳�
+										// CPU鬨ｾ貅ｷ・ｺ・ｦ髫ｪ・ｭ陞ｳ・ｽ
 	DWORD FASTCALL GetSoundTime() const	{ return sch.sound; }
-										// 繧ｵ繧ｦ繝ｳ繝画凾髢薙ｒ蜿門ｾ�
+										// 郢ｧ・ｵ郢ｧ・ｦ郢晢ｽｳ郢晉判蜃ｾ鬮｢阮呻ｽ定愾髢・ｾ・ｽ
 	void FASTCALL SetSoundTime(DWORD hus) { sch.sound = hus; }
-										// 繧ｵ繧ｦ繝ｳ繝画凾髢薙ｒ險ｭ螳�
+										// 郢ｧ・ｵ郢ｧ・ｦ郢晢ｽｳ郢晉判蜃ｾ鬮｢阮呻ｽ帝坎・ｭ陞ｳ・ｽ
 
-	// 繝悶Ξ繝ｼ繧ｯ繝昴う繝ｳ繝�
+	// 郢晄じﾎ樒ｹ晢ｽｼ郢ｧ・ｯ郢晄亢縺・ｹ晢ｽｳ郢晢ｿｽ
 	void FASTCALL SetBreak(DWORD addr, BOOL enable = TRUE);
-										// 繝悶Ξ繝ｼ繧ｯ繝昴う繝ｳ繝郁ｨｭ螳�
+										// 郢晄じﾎ樒ｹ晢ｽｼ郢ｧ・ｯ郢晄亢縺・ｹ晢ｽｳ郢晞メ・ｨ・ｭ陞ｳ・ｽ
 	void FASTCALL DelBreak(DWORD addr);
-										// 繝悶Ξ繝ｼ繧ｯ繝昴う繝ｳ繝亥炎髯､
+										// 郢晄じﾎ樒ｹ晢ｽｼ郢ｧ・ｯ郢晄亢縺・ｹ晢ｽｳ郢昜ｺ･轤朱ｫｯ・､
 	void FASTCALL GetBreak(int index, breakpoint_t *buf) const;
-										// 繝悶Ξ繝ｼ繧ｯ繝昴う繝ｳ繝亥叙蠕�
+										// 郢晄じﾎ樒ｹ晢ｽｼ郢ｧ・ｯ郢晄亢縺・ｹ晢ｽｳ郢昜ｺ･蜿呵包ｿｽ
 	void FASTCALL EnableBreak(int index, BOOL enable = TRUE);
-										// 繝悶Ξ繝ｼ繧ｯ繝昴う繝ｳ繝域怏蜉ｹ繝ｻ辟｡蜉ｹ
+										// 郢晄じﾎ樒ｹ晢ｽｼ郢ｧ・ｯ郢晄亢縺・ｹ晢ｽｳ郢晏沺諤剰怏・ｹ郢晢ｽｻ霎滂ｽ｡陷会ｽｹ
 	void FASTCALL ClearBreak(int index);
-										// 繝悶Ξ繝ｼ繧ｯ蝗樊焚繧ｯ繝ｪ繧｢
+										// 郢晄じﾎ樒ｹ晢ｽｼ郢ｧ・ｯ陜玲ｨ顔・郢ｧ・ｯ郢晢ｽｪ郢ｧ・｢
 	void FASTCALL AddrBreak(int index, DWORD addr);
-										// 繝悶Ξ繝ｼ繧ｯ繧｢繝峨Ξ繧ｹ螟画峩
+										// 郢晄じﾎ樒ｹ晢ｽｼ郢ｧ・ｯ郢ｧ・｢郢晏ｳｨﾎ樒ｹｧ・ｹ陞溽判蟲ｩ
 	int FASTCALL IsBreak(DWORD addr, BOOL any = FALSE) const;
-										// 繝悶Ξ繝ｼ繧ｯ繧｢繝峨Ξ繧ｹ繝√ぉ繝�繧ｯ
+										// 郢晄じﾎ樒ｹ晢ｽｼ郢ｧ・ｯ郢ｧ・｢郢晏ｳｨﾎ樒ｹｧ・ｹ郢昶・縺臥ｹ晢ｿｽ郢ｧ・ｯ
 
-	// 繧､繝吶Φ繝�
+	// 郢ｧ・､郢晏生ﾎｦ郢晢ｿｽ
 	void FASTCALL AddEvent(Event *event);
-										// 繧､繝吶Φ繝郁ｿｽ蜉
+										// 郢ｧ・､郢晏生ﾎｦ郢晞メ・ｿ・ｽ陷会｣ｰ
 	void FASTCALL DelEvent(Event *event);
-										// 繧､繝吶Φ繝亥炎髯､
+										// 郢ｧ・､郢晏生ﾎｦ郢昜ｺ･轤朱ｫｯ・､
 	BOOL FASTCALL HasEvent(Event *event) const;
-										// 繧､繝吶Φ繝域園譛峨メ繧ｧ繝�繧ｯ
+										// 郢ｧ・､郢晏生ﾎｦ郢晏沺蝨定ｭ帛ｳｨ繝｡郢ｧ・ｧ郢晢ｿｽ郢ｧ・ｯ
 	Event* FASTCALL GetFirstEvent()	const { return sch.first; }
-										// 譛蛻昴�ｮ繧､繝吶Φ繝医ｒ蜿門ｾ�
+										// 隴崢陋ｻ譏ｴ・ｽ・ｮ郢ｧ・､郢晏生ﾎｦ郢晏現・定愾髢・ｾ・ｽ
 	int FASTCALL GetEventNum() const;
-										// 繧､繝吶Φ繝医�ｮ蛟区焚繧貞叙蠕�
+										// 郢ｧ・､郢晏生ﾎｦ郢晏現・ｽ・ｮ陋溷玄辟夂ｹｧ雋槫徐陟包ｿｽ
 
-	// 螟夜Κ謫堺ｽ懊ヵ繝ｩ繧ｰ
+	// 陞溷､慚夊ｬｫ蝣ｺ・ｽ諛翫Ψ郢晢ｽｩ郢ｧ・ｰ
 	BOOL dma_active;
-										// DMAC繧ｪ繝ｼ繝医Μ繧ｯ繧ｨ繧ｹ繝域怏蜉ｹ
+										// DMAC郢ｧ・ｪ郢晢ｽｼ郢晏現ﾎ懃ｹｧ・ｯ郢ｧ・ｨ郢ｧ・ｹ郢晏沺諤剰怏・ｹ
 
 private:
 	DWORD FASTCALL GetMinRemain(DWORD hus);
-										// 譛遏ｭ縺ｮ繧､繝吶Φ繝医ｒ蠕励ｋ
+										// 隴崢驕擾ｽｭ邵ｺ・ｮ郢ｧ・､郢晏生ﾎｦ郢晏現・定募干・・
 	void FASTCALL ExecEvent(DWORD hus);
-										// 繧､繝吶Φ繝亥ｮ溯｡�
+										// 郢ｧ・､郢晏生ﾎｦ郢昜ｺ･・ｮ貅ｯ・｡・ｽ
 	void FASTCALL OnBreak(DWORD addr);
-										// 繝悶Ξ繝ｼ繧ｯ繝昴う繝ｳ繝磯←逕ｨ
+										// 郢晄じﾎ樒ｹ晢ｽｼ郢ｧ・ｯ郢晄亢縺・ｹ晢ｽｳ郢晉｣ｯ竊宣包ｽｨ
 
-	// 蜀�驛ｨ繝�繝ｼ繧ｿ
+	// 陷・ｽ鬩幢ｽｨ郢晢ｿｽ郢晢ｽｼ郢ｧ・ｿ
 	breakpoint_t breakp[BreakMax];
-										// 繝悶Ξ繝ｼ繧ｯ繝昴う繝ｳ繝�
+										// 郢晄じﾎ樒ｹ晢ｽｼ郢ｧ・ｯ郢晄亢縺・ｹ晢ｽｳ郢晢ｿｽ
 	scheduler_t sch;
-										// 繧ｹ繧ｱ繧ｸ繝･繝ｼ繝ｩ
+										// 郢ｧ・ｹ郢ｧ・ｱ郢ｧ・ｸ郢晢ｽ･郢晢ｽｼ郢晢ｽｩ
 
-	// 繝�繝舌う繧ｹ
+	// 郢晢ｿｽ郢晁・縺・ｹｧ・ｹ
 	CPU *cpu;
 										// CPU
 	DMAC *dmac;
 										// DMAC
 
-	// 繝�繝ｼ繝悶Ν
+	// 郢晢ｿｽ郢晢ｽｼ郢晄じﾎ・
 	static const DWORD ClockTable[];
-										// 繧ｯ繝ｭ繝�繧ｯ繝�繝ｼ繝悶Ν
+										// 郢ｧ・ｯ郢晢ｽｭ郢晢ｿｽ郢ｧ・ｯ郢晢ｿｽ郢晢ｽｼ郢晄じﾎ・
 	static int CycleTable[0x1000];
-										// 譎る俣(hus)竊偵し繧､繧ｯ繝ｫ謨ｰ
+										// 隴弱ｋ菫｣(hus)遶雁・縺礼ｹｧ・､郢ｧ・ｯ郢晢ｽｫ隰ｨ・ｰ
 };
 
 #endif	// scheduler_h

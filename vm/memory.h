@@ -105,6 +105,8 @@ public:
 										// SCSI取得
 	memtype FASTCALL GetMemType() const { return mem.now; }
 										// メモリ種別取得
+	BYTE* FASTCALL GetRAM() const { return mem.ram; }
+	DWORD FASTCALL GetRAMSize() const { return mem.length; }
 
 private:
 	BOOL FASTCALL LoadROM(memtype target);

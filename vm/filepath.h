@@ -10,8 +10,15 @@
 #if !defined(filepath_h)
 #define filepath_h
 
+#include "os.h"
+#include "xm6.h"
+
 #if defined(_WIN32)
-#include <windows.h>
+
+typedef struct {
+	DWORD low;
+	DWORD high;
+} filepath_time_t;
 
 //---------------------------------------------------------------------------
 //
@@ -55,7 +62,7 @@ public:
 										// クリア
 	void FASTCALL SysFile(SysFileType sys);
 										// ファイル設定(システム)
-	void FASTCALL SetPath(LPCTSTR lpszPath);
+	void FASTCALL SetPath(const TCHAR* lpszPath);
 										// ファイル設定(ユーザ)
 	void FASTCALL SetBaseDir();
 										// ベースディレクトリ設定
@@ -64,20 +71,23 @@ public:
 
 	BOOL FASTCALL IsClear() const;
 										// クリアされているか
-	LPCTSTR FASTCALL GetPath() const	{ return m_szPath; }
+	const TCHAR* FASTCALL GetPath() const	{ return m_szPath; }
 										// パス名取得
 	const char* FASTCALL GetShort() const;
 										// ショート名取得(const char*)
-	LPCTSTR FASTCALL GetFileExt() const;
+	const TCHAR* FASTCALL GetFileExt() const;
 										// ショート名取得(LPCTSTR)
 	BOOL FASTCALL CmpPath(const Filepath& path) const;
 										// パス比較
 
 	static void FASTCALL ClearDefaultDir();
 										// デフォルディレクトリを初期化
-	static void FASTCALL SetDefaultDir(LPCTSTR lpszPath);
+	static void FASTCALL SetDefaultDir(const TCHAR* lpszPath);
 										// デフォルトディレクトリに設定
-	static LPCTSTR FASTCALL GetDefaultDir();
+	static const TCHAR* FASTCALL GetDefaultDir();
+	static void FASTCALL ClearSystemDir();
+	static void FASTCALL SetSystemDir(const TCHAR* lpszPath);
+	static const TCHAR* FASTCALL GetSystemDir();
 										// デフォルトディレクトリ取得
 
 	BOOL FASTCALL Save(Fileio *fio, int ver);
@@ -94,7 +104,7 @@ private:
 										// カレントディレクトリ設定
 	BOOL FASTCALL IsUpdate() const;
 										// セーブ後の更新ありか
-	void FASTCALL GetUpdateTime(FILETIME *pSaved, FILETIME *pCurrent ) const;
+	void FASTCALL GetUpdateTime(filepath_time_t *pSaved, filepath_time_t *pCurrent ) const;
 										// セーブ後の時間情報を取得
 	TCHAR m_szPath[_MAX_PATH];
 										// ファイルパス
@@ -108,17 +118,18 @@ private:
 										// 拡張子
 	BOOL m_bUpdate;
 										// セーブ後の更新あり
-	FILETIME m_SavedTime;
+	filepath_time_t m_SavedTime;
 										// セーブ時の日付
-	FILETIME m_CurrentTime;
+	filepath_time_t m_CurrentTime;
 										// 現在の日付
-	static LPCTSTR SystemFile[];
+	static const TCHAR* SystemFile[];
 										// システムファイル
 	static char ShortName[_MAX_FNAME + _MAX_DIR];
 										// ショート名(char)
 	static TCHAR FileExt[_MAX_FNAME + _MAX_DIR];
 										// ショート名(TCHAR)
 	static TCHAR DefaultDir[_MAX_PATH];
+	static TCHAR SystemDir[_MAX_PATH];
 										// デフォルトディレクトリ
 };
 

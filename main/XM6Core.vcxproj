@@ -1,0 +1,435 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup Label="ProjectConfigurations">
+    <ProjectConfiguration Include="Debug|Win32">
+      <Configuration>Debug</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Debug|x64">
+      <Configuration>Debug</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|Win32">
+      <Configuration>Release</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|x64">
+      <Configuration>Release</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+  </ItemGroup>
+  <PropertyGroup Label="Globals">
+    <ProjectGuid>{A1B2C3D4-E5F6-7890-ABCD-EF1234567890}</ProjectGuid>
+    <Keyword>Win32Proj</Keyword>
+    <WindowsTargetPlatformVersion>10.0</WindowsTargetPlatformVersion>
+    <ProjectName>XM6Core</ProjectName>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
+    <ConfigurationType>DynamicLibrary</ConfigurationType>
+    <PlatformToolset>v110</PlatformToolset>
+    <CharacterSet>MultiByte</CharacterSet>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
+    <ConfigurationType>DynamicLibrary</ConfigurationType>
+    <PlatformToolset>v110</PlatformToolset>
+    <CharacterSet>MultiByte</CharacterSet>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
+    <ConfigurationType>DynamicLibrary</ConfigurationType>
+    <PlatformToolset>v110</PlatformToolset>
+    <CharacterSet>MultiByte</CharacterSet>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
+    <ConfigurationType>DynamicLibrary</ConfigurationType>
+    <PlatformToolset>v110</PlatformToolset>
+    <CharacterSet>MultiByte</CharacterSet>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
+  <ImportGroup Label="ExtensionSettings"></ImportGroup>
+  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <PropertyGroup Label="UserMacros" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <OutDir>Debug_DLL\</OutDir>
+    <IntDir>Debug_DLL\</IntDir>
+    <TargetName>xm6core</TargetName>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <OutDir>Debug_DLL_x64\</OutDir>
+    <IntDir>Debug_DLL_x64\</IntDir>
+    <TargetName>xm6core</TargetName>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <OutDir>Release_DLL\</OutDir>
+    <IntDir>Release_DLL\</IntDir>
+    <TargetName>xm6core</TargetName>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <OutDir>Release_DLL_x64\</OutDir>
+    <IntDir>Release_DLL_x64\</IntDir>
+    <TargetName>xm6core</TargetName>
+  </PropertyGroup>
+  <!-- Debug Configuration -->
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <ClCompile>
+      <Optimization>Full</Optimization>
+      <IntrinsicFunctions>true</IntrinsicFunctions>
+      <OmitFramePointers>true</OmitFramePointers>
+      <AdditionalIncludeDirectories>..\vm;..\mfc;..\cpu;..\cpu\musashi;..\cpu\musashi\softfloat;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>WIN32;_WINDOWS;_CRT_SECURE_NO_WARNINGS;_DEBUG;XM6CORE_EXPORTS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <MinimalRebuild>false</MinimalRebuild>
+      <BasicRuntimeChecks>Default</BasicRuntimeChecks>
+      <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
+      <EnableEnhancedInstructionSet>StreamingSIMDExtensions2</EnableEnhancedInstructionSet>
+      <TreatWChar_tAsBuiltInType>true</TreatWChar_tAsBuiltInType>
+      <PrecompiledHeader />
+      <WarningLevel>Level4</WarningLevel>
+      <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
+      <FavorSizeOrSpeed>Speed</FavorSizeOrSpeed>
+      <MultiProcessorCompilation>true</MultiProcessorCompilation>
+    </ClCompile>
+    <Link>
+      <AdditionalDependencies>winmm.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <SubSystem>Windows</SubSystem>
+      <TargetMachine>MachineX86</TargetMachine>
+      <ImageHasSafeExceptionHandlers>false</ImageHasSafeExceptionHandlers>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <ClCompile>
+      <Optimization>Full</Optimization>
+      <IntrinsicFunctions>true</IntrinsicFunctions>
+      <AdditionalIncludeDirectories>..\vm;..\mfc;..\cpu;..\cpu\musashi;..\cpu\musashi\softfloat;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>_WIN64;_WINDOWS;_CRT_SECURE_NO_WARNINGS;_DEBUG;XM6CORE_EXPORTS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <MinimalRebuild>false</MinimalRebuild>
+      <BasicRuntimeChecks>Default</BasicRuntimeChecks>
+      <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
+      <TreatWChar_tAsBuiltInType>true</TreatWChar_tAsBuiltInType>
+      <PrecompiledHeader />
+      <WarningLevel>Level4</WarningLevel>
+      <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
+      <FavorSizeOrSpeed>Speed</FavorSizeOrSpeed>
+      <MultiProcessorCompilation>true</MultiProcessorCompilation>
+    </ClCompile>
+    <Link>
+      <AdditionalDependencies>winmm.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <SubSystem>Windows</SubSystem>
+      <TargetMachine>MachineX64</TargetMachine>
+    </Link>
+  </ItemDefinitionGroup>
+  <!-- Release Configuration -->
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <ClCompile>
+      <InlineFunctionExpansion>AnySuitable</InlineFunctionExpansion>
+      <IntrinsicFunctions>true</IntrinsicFunctions>
+      <FavorSizeOrSpeed>Speed</FavorSizeOrSpeed>
+      <OmitFramePointers>true</OmitFramePointers>
+      <AdditionalIncludeDirectories>..\vm;..\mfc;..\cpu;..\cpu\musashi;..\cpu\musashi\softfloat;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>WIN32;_WINDOWS;NDEBUG;_CRT_SECURE_NO_WARNINGS;XM6CORE_EXPORTS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <MinimalRebuild>false</MinimalRebuild>
+      <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
+      <BufferSecurityCheck>false</BufferSecurityCheck>
+      <EnableEnhancedInstructionSet>StreamingSIMDExtensions2</EnableEnhancedInstructionSet>
+      <TreatWChar_tAsBuiltInType>true</TreatWChar_tAsBuiltInType>
+      <PrecompiledHeader />
+      <WarningLevel>Level4</WarningLevel>
+      <DebugInformationFormat>OldStyle</DebugInformationFormat>
+      <Optimization>Full</Optimization>
+      <MultiProcessorCompilation>true</MultiProcessorCompilation>
+      <FloatingPointModel>Fast</FloatingPointModel>
+      <WholeProgramOptimization>true</WholeProgramOptimization>
+    </ClCompile>
+    <Link>
+      <AdditionalDependencies>winmm.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <SubSystem>Windows</SubSystem>
+      <OptimizeReferences>true</OptimizeReferences>
+      <EnableCOMDATFolding>true</EnableCOMDATFolding>
+      <TargetMachine>MachineX86</TargetMachine>
+      <ImageHasSafeExceptionHandlers>false</ImageHasSafeExceptionHandlers>
+      <LinkTimeCodeGeneration>UseLinkTimeCodeGeneration</LinkTimeCodeGeneration>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <ClCompile>
+      <InlineFunctionExpansion>AnySuitable</InlineFunctionExpansion>
+      <IntrinsicFunctions>true</IntrinsicFunctions>
+      <FavorSizeOrSpeed>Speed</FavorSizeOrSpeed>
+      <AdditionalIncludeDirectories>..\vm;..\mfc;..\cpu;..\cpu\musashi;..\cpu\musashi\softfloat;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>_WIN64;_WINDOWS;NDEBUG;_CRT_SECURE_NO_WARNINGS;XM6CORE_EXPORTS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <MinimalRebuild>false</MinimalRebuild>
+      <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
+      <BufferSecurityCheck>false</BufferSecurityCheck>
+      <TreatWChar_tAsBuiltInType>true</TreatWChar_tAsBuiltInType>
+      <PrecompiledHeader />
+      <WarningLevel>Level4</WarningLevel>
+      <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
+      <Optimization>Full</Optimization>
+      <MultiProcessorCompilation>true</MultiProcessorCompilation>
+      <FloatingPointModel>Fast</FloatingPointModel>
+      <WholeProgramOptimization>true</WholeProgramOptimization>
+    </ClCompile>
+    <Link>
+      <AdditionalDependencies>winmm.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <SubSystem>Windows</SubSystem>
+      <OptimizeReferences>true</OptimizeReferences>
+      <EnableCOMDATFolding>true</EnableCOMDATFolding>
+      <TargetMachine>MachineX64</TargetMachine>
+      <LinkTimeCodeGeneration>UseLinkTimeCodeGeneration</LinkTimeCodeGeneration>
+    </Link>
+  </ItemDefinitionGroup>
+  <!-- VM source files -->
+  <ItemGroup>
+    <ClCompile Include="..\vm\adpcm.cpp" />
+    <ClCompile Include="..\vm\areaset.cpp" />
+    <ClCompile Include="..\vm\cpu.cpp" />
+    <ClCompile Include="..\vm\cpudebug.c">
+      <ObjectFileName Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(IntDir)%(Filename)1.obj</ObjectFileName>
+      <ObjectFileName Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(IntDir)%(Filename)1.obj</ObjectFileName>
+      <ObjectFileName Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(IntDir)%(Filename)1.obj</ObjectFileName>
+      <ObjectFileName Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(IntDir)%(Filename)1.obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\vm\crtc.cpp" />
+    <ClCompile Include="..\vm\device.cpp" />
+    <ClCompile Include="..\vm\disk.cpp" />
+    <ClCompile Include="..\vm\dmac.cpp" />
+    <ClCompile Include="..\vm\event.cpp" />
+    <ClCompile Include="..\vm\fdc.cpp" />
+    <ClCompile Include="..\vm\fdd.cpp" />
+    <ClCompile Include="..\vm\fdi.cpp" />
+    <ClCompile Include="..\vm\fileio.cpp" />
+    <ClCompile Include="..\vm\filepath.cpp" />
+    <ClCompile Include="..\vm\fmgen.cpp" />
+    <ClCompile Include="..\vm\fmtimer.cpp" />
+    <ClCompile Include="..\vm\gvram.cpp" />
+    <ClCompile Include="..\vm\iosc.cpp" />
+    <ClCompile Include="..\vm\keyboard.cpp" />
+    <ClCompile Include="..\vm\log.cpp" />
+    <ClCompile Include="..\vm\memory.cpp" />
+    <ClCompile Include="..\vm\mercury.cpp" />
+    <ClCompile Include="..\vm\mfp.cpp" />
+    <ClCompile Include="..\vm\midi.cpp" />
+    <ClCompile Include="..\vm\mouse.cpp" />
+    <ClCompile Include="..\vm\neptune.cpp" />
+    <ClCompile Include="..\vm\opm.cpp" />
+    <ClCompile Include="..\vm\opmif.cpp" />
+    <ClCompile Include="..\vm\ppi.cpp" />
+    <ClCompile Include="..\vm\printer.cpp" />
+    <ClCompile Include="..\vm\render.cpp" />
+    <ClCompile Include="..\vm\rend_soft.cpp" />
+    <ClCompile Include="..\vm\rtc.cpp" />
+    <ClCompile Include="..\vm\sasi.cpp" />
+    <ClCompile Include="..\vm\scc.cpp" />
+    <ClCompile Include="..\vm\schedule.cpp" />
+    <ClCompile Include="..\vm\scsi.cpp" />
+    <ClCompile Include="..\vm\sprite.cpp" />
+    <ClCompile Include="..\vm\sram.cpp" />
+    <ClCompile Include="..\vm\sync.cpp" />
+    <ClCompile Include="..\vm\sysport.cpp" />
+    <ClCompile Include="..\vm\tvram.cpp" />
+    <ClCompile Include="..\vm\vc.cpp" />
+    <ClCompile Include="..\vm\vm.cpp" />
+    <ClCompile Include="..\vm\windrv.cpp" />
+    <ClCompile Include="..\vm\core_soft.cpp" />
+    <ClCompile Include="..\vm\xm6core_diag.cpp" />
+    <ClCompile Include="..\vm\xm6core_impl.cpp" />
+    <ClCompile Include="..\vm\xm6core_runtime.cpp" />
+    <ClCompile Include="..\vm\xm6core_stubs.cpp" />
+    <ClCompile Include="..\vm\musashi_adapter.cpp">
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">NotUsing</PrecompiledHeader>
+      <PreprocessorDefinitions Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">MUSASHI_CNF="m68kconf_xm6.h";%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">MUSASHI_CNF="m68kconf_xm6.h";%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">MUSASHI_CNF="m68kconf_xm6.h";%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions Condition="'$(Configuration)|$(Platform)'=='Release|x64'">MUSASHI_CNF="m68kconf_xm6.h";%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ClCompile>
+    <ClCompile Include="..\vm\musashi_mem.cpp">
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">NotUsing</PrecompiledHeader>
+      <PreprocessorDefinitions Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">MUSASHI_CNF="m68kconf_xm6.h";%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">MUSASHI_CNF="m68kconf_xm6.h";%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">MUSASHI_CNF="m68kconf_xm6.h";%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions Condition="'$(Configuration)|$(Platform)'=='Release|x64'">MUSASHI_CNF="m68kconf_xm6.h";%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ClCompile>
+    <!-- Musashi CPU core (legacy C sources, compiled as C++) -->
+    <ClCompile Include="..\cpu\Musashi\softfloat\softfloat.c">
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">NotUsing</PrecompiledHeader>
+      <PreprocessorDefinitions Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">MUSASHI_CNF="m68kconf_xm6.h";%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">MUSASHI_CNF="m68kconf_xm6.h";%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">MUSASHI_CNF="m68kconf_xm6.h";%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions Condition="'$(Configuration)|$(Platform)'=='Release|x64'">MUSASHI_CNF="m68kconf_xm6.h";%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <CompileAs Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">CompileAsCpp</CompileAs>
+      <CompileAs Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">CompileAsCpp</CompileAs>
+      <CompileAs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">CompileAsCpp</CompileAs>
+      <CompileAs Condition="'$(Configuration)|$(Platform)'=='Release|x64'">CompileAsCpp</CompileAs>
+    </ClCompile>
+    <ClCompile Include="..\cpu\Musashi\m68kcpu.c">
+      <ObjectFileName Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(IntDir)m68kcpu.obj</ObjectFileName>
+      <ObjectFileName Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(IntDir)m68kcpu.obj</ObjectFileName>
+      <ObjectFileName Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(IntDir)m68kcpu.obj</ObjectFileName>
+      <ObjectFileName Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(IntDir)m68kcpu.obj</ObjectFileName>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">NotUsing</PrecompiledHeader>
+      <PreprocessorDefinitions Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">MUSASHI_CNF="m68kconf_xm6.h";%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">MUSASHI_CNF="m68kconf_xm6.h";%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">MUSASHI_CNF="m68kconf_xm6.h";%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions Condition="'$(Configuration)|$(Platform)'=='Release|x64'">MUSASHI_CNF="m68kconf_xm6.h";%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <CompileAs Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">CompileAsCpp</CompileAs>
+      <CompileAs Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">CompileAsCpp</CompileAs>
+      <CompileAs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">CompileAsCpp</CompileAs>
+      <CompileAs Condition="'$(Configuration)|$(Platform)'=='Release|x64'">CompileAsCpp</CompileAs>
+    </ClCompile>
+    <ClCompile Include="..\cpu\Musashi\m68kops.c">
+      <ObjectFileName Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(IntDir)m68kops.obj</ObjectFileName>
+      <ObjectFileName Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(IntDir)m68kops.obj</ObjectFileName>
+      <ObjectFileName Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(IntDir)m68kops.obj</ObjectFileName>
+      <ObjectFileName Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(IntDir)m68kops.obj</ObjectFileName>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">NotUsing</PrecompiledHeader>
+      <PreprocessorDefinitions Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">MUSASHI_CNF="m68kconf_xm6.h";%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">MUSASHI_CNF="m68kconf_xm6.h";%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">MUSASHI_CNF="m68kconf_xm6.h";%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions Condition="'$(Configuration)|$(Platform)'=='Release|x64'">MUSASHI_CNF="m68kconf_xm6.h";%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <CompileAs Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">CompileAsCpp</CompileAs>
+      <CompileAs Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">CompileAsCpp</CompileAs>
+      <CompileAs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">CompileAsCpp</CompileAs>
+      <CompileAs Condition="'$(Configuration)|$(Platform)'=='Release|x64'">CompileAsCpp</CompileAs>
+    </ClCompile>
+    <ClCompile Include="..\cpu\Musashi\m68kdasm.c">
+      <ObjectFileName Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(IntDir)m68kdasm.obj</ObjectFileName>
+      <ObjectFileName Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(IntDir)m68kdasm.obj</ObjectFileName>
+      <ObjectFileName Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(IntDir)m68kdasm.obj</ObjectFileName>
+      <ObjectFileName Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(IntDir)m68kdasm.obj</ObjectFileName>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">NotUsing</PrecompiledHeader>
+      <PreprocessorDefinitions Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">MUSASHI_CNF="m68kconf_xm6.h";%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">MUSASHI_CNF="m68kconf_xm6.h";%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">MUSASHI_CNF="m68kconf_xm6.h";%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions Condition="'$(Configuration)|$(Platform)'=='Release|x64'">MUSASHI_CNF="m68kconf_xm6.h";%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <CompileAs Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">CompileAsCpp</CompileAs>
+      <CompileAs Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">CompileAsCpp</CompileAs>
+      <CompileAs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">CompileAsCpp</CompileAs>
+      <CompileAs Condition="'$(Configuration)|$(Platform)'=='Release|x64'">CompileAsCpp</CompileAs>
+    </ClCompile>
+  </ItemGroup>
+  <!-- Public API and browse headers -->
+  <ItemGroup>
+    <ClInclude Include="..\mfc\mfc.h" />
+    <ClInclude Include="..\mfc\mfc_app.h" />
+    <ClInclude Include="..\mfc\mfc_asm.h" />
+    <ClInclude Include="..\mfc\mfc_cfg.h" />
+    <ClInclude Include="..\mfc\mfc_com.h" />
+    <ClInclude Include="..\mfc\mfc_cpu.h" />
+    <ClInclude Include="..\mfc\mfc_dev.h" />
+    <ClInclude Include="..\mfc\mfc_draw.h" />
+    <ClInclude Include="..\mfc\mfc_dx9.h" />
+    <ClInclude Include="..\mfc\mfc_frm.h" />
+    <ClInclude Include="..\mfc\mfc_host.h" />
+    <ClInclude Include="..\mfc\mfc_info.h" />
+    <ClInclude Include="..\mfc\mfc_inp.h" />
+    <ClInclude Include="..\mfc\mfc_midi.h" />
+    <ClInclude Include="..\mfc\mfc_port.h" />
+    <ClInclude Include="..\mfc\mfc_que.h" />
+    <ClInclude Include="..\mfc\mfc_rend.h" />
+    <ClInclude Include="..\mfc\mfc_res.h" />
+    <ClInclude Include="..\mfc\mfc_sch.h" />
+    <ClInclude Include="..\mfc\mfc_snd.h" />
+    <ClInclude Include="..\mfc\mfc_stat.h" />
+    <ClInclude Include="..\mfc\mfc_sub.h" />
+    <ClInclude Include="..\mfc\mfc_sys.h" />
+    <ClInclude Include="..\mfc\mfc_tkey.h" />
+    <ClInclude Include="..\mfc\mfc_tool.h" />
+    <ClInclude Include="..\mfc\mfc_ver.h" />
+    <ClInclude Include="..\mfc\mfc_vid.h" />
+    <ClInclude Include="..\mfc\mfc_w32.h" />
+    <ClInclude Include="..\mfc\resource.h" />
+    <ClInclude Include="..\vm\adpcm.h" />
+    <ClInclude Include="..\vm\areaset.h" />
+    <ClInclude Include="..\vm\cisc.h" />
+    <ClInclude Include="..\vm\config.h" />
+    <ClInclude Include="..\vm\core_asm.h" />
+    <ClInclude Include="..\vm\core_soft.h" />
+    <ClInclude Include="..\vm\cpu.h" />
+    <ClInclude Include="..\vm\cpudebug.h" />
+    <ClInclude Include="..\vm\crtc.h" />
+    <ClInclude Include="..\vm\device.h" />
+    <ClInclude Include="..\vm\disk.h" />
+    <ClInclude Include="..\vm\dmac.h" />
+    <ClInclude Include="..\vm\event.h" />
+    <ClInclude Include="..\vm\fdc.h" />
+    <ClInclude Include="..\vm\fdd.h" />
+    <ClInclude Include="..\vm\fdi.h" />
+    <ClInclude Include="..\vm\fileio.h" />
+    <ClInclude Include="..\vm\filepath.h" />
+    <ClInclude Include="..\vm\fmgen.h" />
+    <ClInclude Include="..\vm\fmgeninl.h" />
+    <ClInclude Include="..\vm\fmtimer.h" />
+    <ClInclude Include="..\vm\gvram.h" />
+    <ClInclude Include="..\vm\host_fs.h" />
+    <ClInclude Include="..\vm\host_services.h" />
+    <ClInclude Include="..\vm\iosc.h" />
+    <ClInclude Include="..\vm\keyboard.h" />
+    <ClInclude Include="..\vm\log.h" />
+    <ClInclude Include="..\vm\memory.h" />
+    <ClInclude Include="..\vm\mercury.h" />
+    <ClInclude Include="..\vm\mfp.h" />
+    <ClInclude Include="..\vm\midi.h" />
+    <ClInclude Include="..\vm\mouse.h" />
+    <ClInclude Include="..\vm\musashi_adapter.h" />
+    <ClInclude Include="..\vm\neptune.h" />
+    <ClInclude Include="..\vm\opm.h" />
+    <ClInclude Include="..\vm\opmif.h" />
+    <ClInclude Include="..\vm\os.h" />
+    <ClInclude Include="..\vm\ppi.h" />
+    <ClInclude Include="..\vm\printer.h" />
+    <ClInclude Include="..\vm\render.h" />
+    <ClInclude Include="..\vm\renderin.h" />
+    <ClInclude Include="..\vm\rend_asm.h" />
+    <ClInclude Include="..\vm\rend_soft.h" />
+    <ClInclude Include="..\vm\rtc.h" />
+    <ClInclude Include="..\vm\sasi.h" />
+    <ClInclude Include="..\vm\scc.h" />
+    <ClInclude Include="..\vm\schedule.h" />
+    <ClInclude Include="..\vm\scsi.h" />
+    <ClInclude Include="..\vm\sprite.h" />
+    <ClInclude Include="..\vm\sram.h" />
+    <ClInclude Include="..\vm\starcpu.h" />
+    <ClInclude Include="..\vm\sync.h" />
+    <ClInclude Include="..\vm\sysport.h" />
+    <ClInclude Include="..\vm\tvram.h" />
+    <ClInclude Include="..\vm\vc.h" />
+    <ClInclude Include="..\vm\vm.h" />
+    <ClInclude Include="..\vm\windrv.h" />
+    <ClInclude Include="..\vm\xm6.h" />
+    <ClInclude Include="..\vm\xm6core.h" />
+  </ItemGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
+  <ImportGroup Label="ExtensionTargets"></ImportGroup>
+</Project>

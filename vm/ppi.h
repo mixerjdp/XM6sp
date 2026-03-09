@@ -81,6 +81,8 @@ public:
 										// ジョイスティック情報設定
 	const joyinfo_t* FASTCALL GetJoyInfo(int port) const;
 										// ジョイスティック情報取得
+	void FASTCALL SetJoyType(int port, int type);
+								// set joystick type
 	JoyDevice* FASTCALL CreateJoy(int port, int type);
 										// ジョイスティックデバイス作成
 

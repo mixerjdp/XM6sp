@@ -1,9 +1,9 @@
-//---------------------------------------------------------------------------
+ï»¿//---------------------------------------------------------------------------
 //
 //	X68000 EMULATOR "XM6"
 //
-//	Copyright (C) 2001-2006 ‚o‚hD(ytanaka@ipc-tokai.or.jp)
-//	[ ‰¼‘zƒ}ƒVƒ“ ]
+//	Copyright (C) 2001-2006 ï¿½oï¿½hï¿½D(ytanaka@ipc-tokai.or.jp)
+//	[ ï¿½ï¿½ï¿½zï¿½}ï¿½Vï¿½ï¿½ ]
 //
 //---------------------------------------------------------------------------
 
@@ -15,96 +15,98 @@
 #include "cpu.h"
 #include "filepath.h"
 #include "host_services.h"
-class Device;
-class Scheduler;
-class CPU;
-class MFP;
-class RTC;
-class SRAM;
-class FileSys;
 
+class Fileio;
 
 //===========================================================================
 //
-//	‰¼‘zƒ}ƒVƒ“
+//	ï¿½ï¿½ï¿½zï¿½}ï¿½Vï¿½ï¿½
 //
 //===========================================================================
 class VM
 {
 public:
-	// Šî–{ƒtƒ@ƒ“ƒNƒVƒ‡ƒ“
+
+	// ï¿½ï¿½{ï¿½tï¿½@ï¿½ï¿½ï¿½Nï¿½Vï¿½ï¿½ï¿½ï¿½
 	VM();
-										// ƒRƒ“ƒXƒgƒ‰ƒNƒ^
+										// ï¿½Rï¿½ï¿½ï¿½Xï¿½gï¿½ï¿½ï¿½Nï¿½^
 	BOOL FASTCALL Init();
-										// ‰Šú‰»
+										// ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 	void FASTCALL Cleanup();
-										// ƒNƒŠ[ƒ“ƒAƒbƒv
+										// ï¿½Nï¿½ï¿½ï¿½[ï¿½ï¿½ï¿½Aï¿½bï¿½v
 	void FASTCALL Reset();
-										// ƒŠƒZƒbƒg
+										// ï¿½ï¿½ï¿½Zï¿½bï¿½g
 	void FASTCALL ApplyCfg(const Config *config);
-										// İ’è“K—p
+	BOOL FASTCALL SetRenderMode(int mode);
+	int FASTCALL GetRenderMode() const;
+										// ï¿½İ’ï¿½Kï¿½p
 
-	// ƒXƒe[ƒg•Û‘¶
+	// ï¿½Xï¿½eï¿½[ï¿½gï¿½Û‘ï¿½
 	DWORD FASTCALL OriginalSave(const Filepath& path);
+	DWORD FASTCALL OriginalSave(Fileio& fio);
 	
-	DWORD FASTCALL Save(const Filepath& googlePath);
-										// ƒZ[ƒu
+	DWORD FASTCALL Save(const Filepath& path);
+	DWORD FASTCALL Save(Fileio& fio);
+										// ï¿½Zï¿½[ï¿½u
 	DWORD FASTCALL Load(const Filepath& path);
-										// ƒ[ƒh
+	DWORD FASTCALL Load(Fileio& fio);
+										// ï¿½ï¿½ï¿½[ï¿½h
 	void FASTCALL GetPath(Filepath& path) const;
-										// ƒpƒXæ“¾
+										// ï¿½pï¿½Xï¿½æ“¾
 	void FASTCALL Clear();
-										// ƒpƒX‚ğƒNƒŠƒA
+										// ï¿½pï¿½Xï¿½ï¿½Nï¿½ï¿½ï¿½A
 
-	// ƒfƒoƒCƒXŠÇ—
+	// ï¿½fï¿½oï¿½Cï¿½Xï¿½Ç—ï¿½
 	void FASTCALL AddDevice(Device *device);
-										// ƒfƒoƒCƒX’Ç‰Á(q‚©‚çŒÄ‚Î‚ê‚é)
+										// ï¿½fï¿½oï¿½Cï¿½Xï¿½Ç‰ï¿½(ï¿½qï¿½ï¿½ï¿½ï¿½Ä‚Î‚ï¿½ï¿½)
 	void FASTCALL DelDevice(const Device *device);
-										// ƒfƒoƒCƒXíœ(q‚©‚çŒÄ‚Î‚ê‚é)
+										// ï¿½fï¿½oï¿½Cï¿½Xï¿½íœ(ï¿½qï¿½ï¿½ï¿½ï¿½Ä‚Î‚ï¿½ï¿½)
 	Device* FASTCALL GetFirstDevice() const	{ return first_device; }
-										// Å‰‚ÌƒfƒoƒCƒX‚ğæ“¾
+										// ï¿½Åï¿½ï¿½Ìƒfï¿½oï¿½Cï¿½Xï¿½ï¿½æ“¾
 	Device* FASTCALL SearchDevice(DWORD id) const;
-										// ”CˆÓID‚ÌƒfƒoƒCƒX‚ğæ“¾
+										// ï¿½Cï¿½ï¿½IDï¿½Ìƒfï¿½oï¿½Cï¿½Xï¿½ï¿½æ“¾
 
-	// Às
+	// ï¿½ï¿½ï¿½s
 	BOOL FASTCALL Exec(DWORD hus);
-										// Às
+										// ï¿½ï¿½ï¿½s
 	void FASTCALL Trace();
-										// ƒgƒŒ[ƒX
+										// ï¿½gï¿½ï¿½ï¿½[ï¿½X
 	void FASTCALL Break();
-										// Às’†~
+										// ï¿½ï¿½ï¿½sï¿½ï¿½ï¿½~
 
-	// ƒo[ƒWƒ‡ƒ“
+	// ï¿½oï¿½[ï¿½Wï¿½ï¿½ï¿½ï¿½
 	void FASTCALL SetVersion(DWORD major, DWORD minor);
-										// ƒo[ƒWƒ‡ƒ“İ’è
+										// ï¿½oï¿½[ï¿½Wï¿½ï¿½ï¿½ï¿½ï¿½İ’ï¿½
 	void FASTCALL GetVersion(DWORD& major, DWORD& minor);
-										// ƒo[ƒWƒ‡ƒ“æ“¾
+										// ï¿½oï¿½[ï¿½Wï¿½ï¿½ï¿½ï¿½ï¿½æ“¾
 
-	// ƒVƒXƒeƒ€§Œä
+	// ï¿½Vï¿½Xï¿½eï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 	void FASTCALL PowerSW(BOOL sw);
-										// “dŒ¹ƒXƒCƒbƒ`§Œä
+										// ï¿½dï¿½ï¿½ï¿½Xï¿½Cï¿½bï¿½`ï¿½ï¿½ï¿½ï¿½
 	BOOL FASTCALL IsPowerSW() const		{ return power_sw; }
-										// “dŒ¹ƒXƒCƒbƒ`ó‘Ôæ“¾
+										// ï¿½dï¿½ï¿½ï¿½Xï¿½Cï¿½bï¿½`ï¿½ï¿½Ôæ“¾
 	void FASTCALL SetPower(BOOL flag);
-										// “dŒ¹§Œä
+										// ï¿½dï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 	BOOL FASTCALL IsPower() const		{ return power; }
-										// “dŒ¹ó‘Ôæ“¾
+										// ï¿½dï¿½ï¿½ï¿½ï¿½Ôæ“¾
 	void FASTCALL Interrupt() const;
+										// NMIï¿½ï¿½ï¿½èï¿½ï¿½
 	void FASTCALL SetHostMessageCallback(host_message_callback_t callback, void *user);
 	void FASTCALL SetHostSyncCallbacks(host_sync_callback_t lock_vm_cb, host_sync_callback_t unlock_vm_cb, void *user);
 	void FASTCALL SetHostServices(const host_services_t *services);
 	void FASTCALL SetHostFileSystem(FileSys *fs);
-										// NMIŠ„‚è‚İ
+						// Host callback for non-fatal messages
+
 	Log log;
-										// ƒƒO
+										// ï¿½ï¿½ï¿½O
 
 private:
 	BOOL status;
-										// ‰Šú‰»ƒXƒe[ƒ^ƒX
+										// ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Xï¿½eï¿½[ï¿½^ï¿½X
 	Device *first_device;
-										// Å‰‚ÌƒfƒoƒCƒX
+										// ï¿½Åï¿½ï¿½Ìƒfï¿½oï¿½Cï¿½X
 	Scheduler *scheduler;
-										// ƒXƒPƒWƒ…[ƒ‰
+										// ï¿½Xï¿½Pï¿½Wï¿½ï¿½ï¿½[ï¿½ï¿½
 	CPU *cpu;
 										// CPU
 	MFP *mfp;
@@ -114,19 +116,25 @@ private:
 	SRAM *sram;
 										// SRAM
 	BOOL power_sw;
-										// “dŒ¹ƒXƒCƒbƒ`
+										// ï¿½dï¿½ï¿½ï¿½Xï¿½Cï¿½bï¿½`
 	BOOL power;
-										// “dŒ¹
+										// ï¿½dï¿½ï¿½
 	DWORD major_ver;
-										// ƒƒWƒƒ[ƒo[ƒWƒ‡ƒ“
+										// ï¿½ï¿½ï¿½Wï¿½ï¿½ï¿½[ï¿½oï¿½[ï¿½Wï¿½ï¿½ï¿½ï¿½
 	DWORD minor_ver;
-										// ƒ}ƒCƒi[ƒo[ƒWƒ‡ƒ“
+										// ï¿½}ï¿½Cï¿½iï¿½[ï¿½oï¿½[ï¿½Wï¿½ï¿½ï¿½ï¿½
 	void FASTCALL NotifyHostMessage(const TCHAR* message) const;
 	host_message_callback_t host_message_callback;
 	void *host_message_user;
 
 	Filepath current;
-										// ƒJƒŒƒ“ƒgƒf[ƒ^
+										// ï¿½Jï¿½ï¿½ï¿½ï¿½ï¿½gï¿½fï¿½[ï¿½^
 };
 
 #endif	// vm_h
+
+
+
+
+
+
