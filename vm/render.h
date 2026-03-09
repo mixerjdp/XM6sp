@@ -11,7 +11,10 @@
 #define render_h
 
 #include "device.h"
-#include "vc.h"
+
+class CRTC;
+class VC;
+class Sprite;
 
 //===========================================================================
 //

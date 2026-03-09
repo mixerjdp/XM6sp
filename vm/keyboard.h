@@ -12,8 +12,10 @@
 
 #include "device.h"
 #include "event.h"
-#include "sync.h"
 
+class MFP;
+class Mouse;
+class Sync;
 //===========================================================================
 //
 //	キーボード

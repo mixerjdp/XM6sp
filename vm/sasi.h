@@ -12,8 +12,10 @@
 
 #include "device.h"
 #include "event.h"
-#include "disk.h"
 
+class Disk;
+class SCSIMO;
+class SCSI;
 //===========================================================================
 //
 //	SASI

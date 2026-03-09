@@ -471,14 +471,6 @@
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <CustomBuild Include="..\cpu\star.asm">
-      <Filter>??? ????\VM</Filter>
-    </CustomBuild>
-    <CustomBuild Include="..\mfc\mfc_asm.asm">
-      <Filter>??? ????\MFC</Filter>
-    </CustomBuild>
-  </ItemGroup>
-  <ItemGroup>
     <Image Include="..\mfc\res\x68000.ico">
       <Filter>???? ????</Filter>
     </Image>

@@ -44,7 +44,6 @@
 #include "filepath.h"
 #include "fileio.h"
 #include "vm.h"
-#include "vm.h"
 #include <vector>
 #include <algorithm>
 
@@ -597,6 +596,32 @@ void FASTCALL VM::Trace()
 			return;
 		}
 	}
+}
+
+//---------------------------------------------------------------------------
+//
+//	Execution break
+//
+//---------------------------------------------------------------------------
+void FASTCALL VM::Break()
+{
+	ASSERT(this);
+	ASSERT(scheduler);
+
+	scheduler->Break();
+}
+
+//---------------------------------------------------------------------------
+//
+//	NMI interrupt
+//
+//---------------------------------------------------------------------------
+void FASTCALL VM::Interrupt() const
+{
+	ASSERT(this);
+	ASSERT(cpu);
+
+	cpu->Interrupt(7, -1);
 }
 
 //---------------------------------------------------------------------------
