@@ -1,0 +1,17 @@
+TARGET_NAME := xm6
+TARGET := $(TARGET_NAME)_libretro.dll
+
+CXX ?= g++
+CXXFLAGS ?= -O2 -std=gnu++14 -Wall -Wextra -Wno-cast-function-type -D__LIBRETRO__
+LDFLAGS ?= -shared -static -static-libgcc -static-libstdc++
+
+SOURCES := xm6_libretro.cpp
+INCLUDES := -I. -I../vm
+
+all: $(TARGET)
+
+$(TARGET): $(SOURCES)
+	$(CXX) $(CXXFLAGS) $(INCLUDES) -o $@ $^ $(LDFLAGS)
+
+clean:
+	rm -f $(TARGET)
