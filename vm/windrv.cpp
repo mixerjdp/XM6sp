@@ -8,6 +8,7 @@
 //
 //---------------------------------------------------------------------------
 
+#include <windows.h>
 #include "os.h"
 #include "xm6.h"
 #include "vm.h"
@@ -397,6 +398,20 @@ DWORD FASTCALL CWindrv::ExecuteCompatible(DWORD nA5)
 //	コマンド完了を待たずにVMスレッド実行再開
 //
 //---------------------------------------------------------------------------
+void FASTCALL CWindrv::LockXM()
+{
+	ASSERT(this);
+	if (m_bReady && windrv) {
+		windrv->HostLockVM();
+	}
+}
+void FASTCALL CWindrv::UnlockXM()
+{
+	ASSERT(this);
+	if (m_bReady && windrv) {
+		windrv->HostUnlockVM();
+	}
+}
 void FASTCALL CWindrv::Ready()
 {
 	ASSERT(this);
@@ -411,7 +426,7 @@ void FASTCALL CWindrv::Ready()
 //	スレッド実行開始ポイント
 //
 //---------------------------------------------------------------------------
-DWORD WINAPI CWindrv::Run(VOID* pThis)
+DWORD __stdcall CWindrv::Run(void* pThis)
 {
 	ASSERT(pThis);
 
@@ -607,6 +622,9 @@ BOOL FASTCALL Windrv::Init()
 	// ドライブ0、ファイルシステム無し
 	windrv.drives = 0;
 	windrv.fs = NULL;
+	windrv.lock_vm_cb = NULL;
+	windrv.unlock_vm_cb = NULL;
+	windrv.sync_user = NULL;
 
 	// スレッド初期化
 	Memory* memory = (Memory*)vm->SearchDevice(MAKEID('M', 'E', 'M', ' '));
@@ -669,8 +687,9 @@ BOOL FASTCALL Windrv::Save(Fileio *fio, int ver)
 {
 	ASSERT(this);
 	LOG(Log::Normal, "セーブ");
+	(void)fio;
+	(void)ver;
 	
-	printf("%d %d", fio, ver);
 	return TRUE;
 }
 
@@ -683,7 +702,8 @@ BOOL FASTCALL Windrv::Load(Fileio *fio, int ver)
 {
 	ASSERT(this);
 	LOG(Log::Normal, "ロード");
-	printf("%d %d", fio, ver);
+	(void)fio;
+	(void)ver;
 	return TRUE;
 }
 
@@ -1037,6 +1057,27 @@ void FASTCALL CWindrv::ExecuteCommand()
 //	ファイルシステム設定
 //
 //---------------------------------------------------------------------------
+void FASTCALL Windrv::SetHostSyncCallbacks(host_sync_callback_t lock_vm_cb, host_sync_callback_t unlock_vm_cb, void *user)
+{
+	ASSERT(this);
+	windrv.lock_vm_cb = lock_vm_cb;
+	windrv.unlock_vm_cb = unlock_vm_cb;
+	windrv.sync_user = user;
+}
+void FASTCALL Windrv::HostLockVM() const
+{
+	ASSERT(this);
+	if (windrv.lock_vm_cb) {
+		windrv.lock_vm_cb(windrv.sync_user);
+	}
+}
+void FASTCALL Windrv::HostUnlockVM() const
+{
+	ASSERT(this);
+	if (windrv.unlock_vm_cb) {
+		windrv.unlock_vm_cb(windrv.sync_user);
+	}
+}
 void FASTCALL Windrv::SetFileSys(FileSys *fs)
 {
 	ASSERT(this);

@@ -14,14 +14,15 @@
 #include "schedule.h"
 #include "cpu.h"
 #include "filepath.h"
+#include "host_services.h"
 class Device;
 class Scheduler;
 class CPU;
 class MFP;
 class RTC;
 class SRAM;
+class FileSys;
 
-typedef void (*host_message_callback_t)(const TCHAR* message, void *user);
 
 //===========================================================================
 //
@@ -90,6 +91,9 @@ public:
 										// ìdåπèÛë‘éÊìæ
 	void FASTCALL Interrupt() const;
 	void FASTCALL SetHostMessageCallback(host_message_callback_t callback, void *user);
+	void FASTCALL SetHostSyncCallbacks(host_sync_callback_t lock_vm_cb, host_sync_callback_t unlock_vm_cb, void *user);
+	void FASTCALL SetHostServices(const host_services_t *services);
+	void FASTCALL SetHostFileSystem(FileSys *fs);
 										// NMIäÑÇËçûÇ›
 	Log log;
 										// ÉçÉO

@@ -37,6 +37,27 @@
 #include "mfc_info.h"
 #include "mfc_cfg.h"
 #include "mfc_stat.h"
+static void FASTCALL VMHostSyncLockCallback(void *user)
+{
+	(void)user;
+	::LockVM();
+}
+
+static void FASTCALL VMHostSyncUnlockCallback(void *user)
+{
+	(void)user;
+	::UnlockVM();
+}
+
+static void FASTCALL VMHostMessageCallback(const TCHAR* message, void *user)
+{
+	(void)user;
+	if (message) {
+		::OutputDebugString(message);
+		::OutputDebugString(_T("\n"));
+	}
+}
+
 
 //===========================================================================
 //
@@ -732,7 +753,14 @@ void FASTCALL CFrmWnd::InitShell()
 //---------------------------------------------------------------------------
 BOOL FASTCALL CFrmWnd::InitVM()
 {
+	host_services_t host_services;
+	host_services.lock_vm = VMHostSyncLockCallback;
+	host_services.unlock_vm = VMHostSyncUnlockCallback;
+	host_services.message = VMHostMessageCallback;
+	host_services.user = NULL;
+
 	::pVM = new VM;
+	::GetVM()->SetHostServices(&host_services);
 	if (!::GetVM()->Init()) {
 		return FALSE;
 	}

@@ -10,11 +10,12 @@
 
 #if defined(_WIN32)
 
-#include "os.h"
 #include "mfc.h"
+
+#include "os.h"
 #include "xm6.h"
 #include "vm.h"
-#include "windrv.h"
+#include "host_fs.h"
 #include "memory.h"
 #include "mfc_com.h"
 #include "mfc_cfg.h"
@@ -2027,7 +2028,7 @@ CHostPath* FASTCALL CHostEntry::CopyCache(DWORD nUnit, const BYTE* szHuman, TCHA
 //	エラーが発生した場合はNULLとなる。
 //
 //---------------------------------------------------------------------------
-CHostPath* FASTCALL CHostEntry::MakeCache(CWindrv* ps, DWORD nUnit, const BYTE* szHuman, TCHAR* szWin32Buffer)
+CHostPath* FASTCALL CHostEntry::MakeCache(WindrvContext* ps, DWORD nUnit, const BYTE* szHuman, TCHAR* szWin32Buffer)
 {
 	ASSERT(this);
 	ASSERT(szHuman);
@@ -2160,7 +2161,7 @@ TCHAR* FASTCALL CHostEntry::GetBase(DWORD nUnit) const
 //	書き込み禁止かどうか確認する
 //
 //---------------------------------------------------------------------------
-BOOL FASTCALL CHostEntry::isWriteProtect(CWindrv* ps) const
+BOOL FASTCALL CHostEntry::isWriteProtect(WindrvContext* ps) const
 {
 	ASSERT(this);
 	ASSERT(ps);
@@ -2178,7 +2179,7 @@ BOOL FASTCALL CHostEntry::isWriteProtect(CWindrv* ps) const
 //	低速メディアチェックとオフライン状態チェック
 //
 //---------------------------------------------------------------------------
-BOOL FASTCALL CHostEntry::isMediaOffline(CWindrv* ps, BOOL bMedia)
+BOOL FASTCALL CHostEntry::isMediaOffline(WindrvContext* ps, BOOL bMedia)
 {
 	ASSERT(this);
 	ASSERT(ps);
@@ -2276,7 +2277,7 @@ void FASTCALL CHostEntry::CheckTimeout()
 //	リムーバブルメディアの状態更新を有効にする
 //
 //---------------------------------------------------------------------------
-void FASTCALL CHostEntry::SetMediaUpdate(CWindrv* ps, BOOL bDisable)
+void FASTCALL CHostEntry::SetMediaUpdate(WindrvContext* ps, BOOL bDisable)
 {
 	ASSERT(this);
 	ASSERT(ps);
@@ -2295,7 +2296,7 @@ void FASTCALL CHostEntry::SetMediaUpdate(CWindrv* ps, BOOL bDisable)
 //	リムーバブルメディアの状態更新チェック
 //
 //---------------------------------------------------------------------------
-BOOL FASTCALL CHostEntry::CheckMediaUpdate(CWindrv* ps)
+BOOL FASTCALL CHostEntry::CheckMediaUpdate(WindrvContext* ps)
 {
 	ASSERT(this);
 	ASSERT(ps);
@@ -2639,7 +2640,7 @@ void FASTCALL CHostFiles::SetPath(DWORD nUnit, const Human68k::namests_t* pNames
 //	あらかじめ全てのHuman68k用パラメータを設定しておくこと。
 //
 //---------------------------------------------------------------------------
-BOOL FASTCALL CHostFiles::Find(CWindrv* ps, CHostEntry* pEntry, BOOL bRemove)
+BOOL FASTCALL CHostFiles::Find(WindrvContext* ps, CHostEntry* pEntry, BOOL bRemove)
 {
 	ASSERT(this);
 	ASSERT(pEntry);
@@ -3280,7 +3281,7 @@ void FASTCALL CWinFileSys::ApplyCfg(const Config* pConfig)
 //	$40 - 初期化
 //
 //---------------------------------------------------------------------------
-DWORD FASTCALL CWinFileSys::Init(CWindrv* ps, DWORD nDriveMax, const BYTE* pOption)
+DWORD FASTCALL CWinFileSys::Init(WindrvContext* ps, DWORD nDriveMax, const BYTE* pOption)
 {
 	ASSERT(this);
 	ASSERT(nDriveMax < 26);
@@ -3403,7 +3404,7 @@ void FASTCALL CWinFileSys::Reset()
 //	$41 - ディレクトリチェック
 //
 //---------------------------------------------------------------------------
-int FASTCALL CWinFileSys::CheckDir(CWindrv* ps, const Human68k::namests_t* pNamests)
+int FASTCALL CWinFileSys::CheckDir(WindrvContext* ps, const Human68k::namests_t* pNamests)
 {
 	ASSERT(this);
 	ASSERT(pNamests);
@@ -3433,7 +3434,7 @@ int FASTCALL CWinFileSys::CheckDir(CWindrv* ps, const Human68k::namests_t* pName
 //	$42 - ディレクトリ作成
 //
 //---------------------------------------------------------------------------
-int FASTCALL CWinFileSys::MakeDir(CWindrv* ps, const Human68k::namests_t* pNamests)
+int FASTCALL CWinFileSys::MakeDir(WindrvContext* ps, const Human68k::namests_t* pNamests)
 {
 	ASSERT(this);
 	ASSERT(pNamests);
@@ -3464,7 +3465,7 @@ int FASTCALL CWinFileSys::MakeDir(CWindrv* ps, const Human68k::namests_t* pNames
 //	$43 - ディレクトリ削除
 //
 //---------------------------------------------------------------------------
-int FASTCALL CWinFileSys::RemoveDir(CWindrv* ps, const Human68k::namests_t* pNamests)
+int FASTCALL CWinFileSys::RemoveDir(WindrvContext* ps, const Human68k::namests_t* pNamests)
 {
 	ASSERT(this);
 	ASSERT(pNamests);
@@ -3538,7 +3539,7 @@ int FASTCALL CWinFileSys::RemoveDir(CWindrv* ps, const Human68k::namests_t* pNam
 //	$44 - ファイル名変更
 //
 //---------------------------------------------------------------------------
-int FASTCALL CWinFileSys::Rename(CWindrv* ps, const Human68k::namests_t* pNamests, const Human68k::namests_t* pNamestsNew)
+int FASTCALL CWinFileSys::Rename(WindrvContext* ps, const Human68k::namests_t* pNamests, const Human68k::namests_t* pNamestsNew)
 {
 	ASSERT(this);
 	ASSERT(pNamests);
@@ -3574,7 +3575,7 @@ int FASTCALL CWinFileSys::Rename(CWindrv* ps, const Human68k::namests_t* pNamest
 //	$45 - ファイル削除
 //
 //---------------------------------------------------------------------------
-int FASTCALL CWinFileSys::Delete(CWindrv* ps, const Human68k::namests_t* pNamests)
+int FASTCALL CWinFileSys::Delete(WindrvContext* ps, const Human68k::namests_t* pNamests)
 {
 	ASSERT(this);
 	ASSERT(pNamests);
@@ -3625,7 +3626,7 @@ int FASTCALL CWinFileSys::Delete(CWindrv* ps, const Human68k::namests_t* pNamest
 //	$46 - ファイル属性取得/設定
 //
 //---------------------------------------------------------------------------
-int FASTCALL CWinFileSys::Attribute(CWindrv* ps, const Human68k::namests_t* pNamests, DWORD nHumanAttribute)
+int FASTCALL CWinFileSys::Attribute(WindrvContext* ps, const Human68k::namests_t* pNamests, DWORD nHumanAttribute)
 {
 	ASSERT(this);
 	ASSERT(pNamests);
@@ -3683,7 +3684,7 @@ int FASTCALL CWinFileSys::Attribute(CWindrv* ps, const Human68k::namests_t* pNam
 //	$47 - ファイル検索(First)
 //
 //---------------------------------------------------------------------------
-int FASTCALL CWinFileSys::Files(CWindrv* ps, const Human68k::namests_t* pNamests, DWORD nKey, Human68k::files_t* pFiles)
+int FASTCALL CWinFileSys::Files(WindrvContext* ps, const Human68k::namests_t* pNamests, DWORD nKey, Human68k::files_t* pFiles)
 {
 	ASSERT(this);
 	ASSERT(pNamests);
@@ -3760,7 +3761,7 @@ int FASTCALL CWinFileSys::Files(CWindrv* ps, const Human68k::namests_t* pNamests
 //	$48 - ファイル検索(Next)
 //
 //---------------------------------------------------------------------------
-int FASTCALL CWinFileSys::NFiles(CWindrv* ps, DWORD nKey, Human68k::files_t* pFiles)
+int FASTCALL CWinFileSys::NFiles(WindrvContext* ps, DWORD nKey, Human68k::files_t* pFiles)
 {
 	ASSERT(this);
 	ASSERT(nKey);
@@ -3796,7 +3797,7 @@ int FASTCALL CWinFileSys::NFiles(CWindrv* ps, DWORD nKey, Human68k::files_t* pFi
 //	$49 - ファイル新規作成
 //
 //---------------------------------------------------------------------------
-int FASTCALL CWinFileSys::Create(CWindrv* ps, const Human68k::namests_t* pNamests, DWORD nKey, Human68k::fcb_t* pFcb, DWORD nHumanAttribute, BOOL bForce)
+int FASTCALL CWinFileSys::Create(WindrvContext* ps, const Human68k::namests_t* pNamests, DWORD nKey, Human68k::fcb_t* pFcb, DWORD nHumanAttribute, BOOL bForce)
 {
 	ASSERT(this);
 	ASSERT(pNamests);
@@ -3855,7 +3856,7 @@ int FASTCALL CWinFileSys::Create(CWindrv* ps, const Human68k::namests_t* pNamest
 //	$4A - ファイルオープン
 //
 //---------------------------------------------------------------------------
-int FASTCALL CWinFileSys::Open(CWindrv* ps, const Human68k::namests_t* pNamests, DWORD nKey, Human68k::fcb_t* pFcb)
+int FASTCALL CWinFileSys::Open(WindrvContext* ps, const Human68k::namests_t* pNamests, DWORD nKey, Human68k::fcb_t* pFcb)
 {
 	ASSERT(this);
 	ASSERT(pNamests);
@@ -3922,7 +3923,7 @@ int FASTCALL CWinFileSys::Open(CWindrv* ps, const Human68k::namests_t* pNamests,
 //	$4B - ファイルクローズ
 //
 //---------------------------------------------------------------------------
-int FASTCALL CWinFileSys::Close(CWindrv* ps, DWORD nKey, Human68k::fcb_t* pFcb)
+int FASTCALL CWinFileSys::Close(WindrvContext* ps, DWORD nKey, Human68k::fcb_t* pFcb)
 {
 	ASSERT(this);
 	ASSERT(nKey);
@@ -3951,7 +3952,7 @@ int FASTCALL CWinFileSys::Close(CWindrv* ps, DWORD nKey, Human68k::fcb_t* pFcb)
 //	0バイト読み込みでも正常終了する。
 //
 //---------------------------------------------------------------------------
-int FASTCALL CWinFileSys::Read(CWindrv* ps, DWORD nKey, Human68k::fcb_t* pFcb, DWORD nAddress, DWORD nSize)
+int FASTCALL CWinFileSys::Read(WindrvContext* ps, DWORD nKey, Human68k::fcb_t* pFcb, DWORD nAddress, DWORD nSize)
 {
 	ASSERT(this);
 	ASSERT(nKey);
@@ -4056,7 +4057,7 @@ int FASTCALL CWinFileSys::Read(CWindrv* ps, DWORD nKey, Human68k::fcb_t* pFcb, D
 //	WARNING: バスエラーが発生するアドレスを指定した場合、実機と動作が異なる可能性あり
 //
 //---------------------------------------------------------------------------
-int FASTCALL CWinFileSys::Write(CWindrv* ps, DWORD nKey, Human68k::fcb_t* pFcb, DWORD nAddress, DWORD nSize)
+int FASTCALL CWinFileSys::Write(WindrvContext* ps, DWORD nKey, Human68k::fcb_t* pFcb, DWORD nAddress, DWORD nSize)
 {
 	ASSERT(this);
 	ASSERT(nKey);
@@ -4161,7 +4162,7 @@ int FASTCALL CWinFileSys::Write(CWindrv* ps, DWORD nKey, Human68k::fcb_t* pFcb, 
 //	$4E - ファイルシーク
 //
 //---------------------------------------------------------------------------
-int FASTCALL CWinFileSys::Seek(CWindrv* ps, DWORD nKey, Human68k::fcb_t* pFcb, DWORD nMode, int nOffset)
+int FASTCALL CWinFileSys::Seek(WindrvContext* ps, DWORD nKey, Human68k::fcb_t* pFcb, DWORD nMode, int nOffset)
 {
 	ASSERT(this);
 	ASSERT(pFcb);
@@ -4227,7 +4228,7 @@ int FASTCALL CWinFileSys::Seek(CWindrv* ps, DWORD nKey, Human68k::fcb_t* pFcb, D
 //	結果の上位16Bitが$FFFFだとエラー。
 //
 //---------------------------------------------------------------------------
-DWORD FASTCALL CWinFileSys::TimeStamp(CWindrv* ps, DWORD nKey, Human68k::fcb_t* pFcb, WORD nFatDate, WORD nFatTime)
+DWORD FASTCALL CWinFileSys::TimeStamp(WindrvContext* ps, DWORD nKey, Human68k::fcb_t* pFcb, WORD nFatDate, WORD nFatTime)
 {
 	ASSERT(this);
 	ASSERT(nKey);
@@ -4303,7 +4304,7 @@ DWORD FASTCALL CWinFileSys::TimeStamp(CWindrv* ps, DWORD nKey, Human68k::fcb_t* 
 //	$50 - 容量取得
 //
 //---------------------------------------------------------------------------
-int FASTCALL CWinFileSys::GetCapacity(CWindrv* ps, Human68k::capacity_t* pCapacity)
+int FASTCALL CWinFileSys::GetCapacity(WindrvContext* ps, Human68k::capacity_t* pCapacity)
 {
 	ASSERT(this);
 	ASSERT(pCapacity);
@@ -4321,7 +4322,7 @@ int FASTCALL CWinFileSys::GetCapacity(CWindrv* ps, Human68k::capacity_t* pCapaci
 //	$51 - ドライブ状態検査/制御
 //
 //---------------------------------------------------------------------------
-int FASTCALL CWinFileSys::CtrlDrive(CWindrv* ps, Human68k::ctrldrive_t* pCtrlDrive)
+int FASTCALL CWinFileSys::CtrlDrive(WindrvContext* ps, Human68k::ctrldrive_t* pCtrlDrive)
 {
 	ASSERT(this);
 	ASSERT(pCtrlDrive);
@@ -4359,7 +4360,7 @@ int FASTCALL CWinFileSys::CtrlDrive(CWindrv* ps, Human68k::ctrldrive_t* pCtrlDri
 //	$52 - DPB取得
 //
 //---------------------------------------------------------------------------
-int FASTCALL CWinFileSys::GetDPB(CWindrv* ps, Human68k::dpb_t* pDpb)
+int FASTCALL CWinFileSys::GetDPB(WindrvContext* ps, Human68k::dpb_t* pDpb)
 {
 	ASSERT(this);
 	ASSERT(pDpb);
@@ -4424,7 +4425,7 @@ int FASTCALL CWinFileSys::GetDPB(CWindrv* ps, Human68k::dpb_t* pDpb)
 //	$53 - セクタ読み込み
 //
 //---------------------------------------------------------------------------
-int FASTCALL CWinFileSys::DiskRead(CWindrv* ps, DWORD nAddress, DWORD nSector, DWORD nSize)
+int FASTCALL CWinFileSys::DiskRead(WindrvContext* ps, DWORD nAddress, DWORD nSector, DWORD nSize)
 {
 	ASSERT(this);
 	ASSERT(nAddress);
@@ -4523,7 +4524,7 @@ int FASTCALL CWinFileSys::DiskRead(CWindrv* ps, DWORD nAddress, DWORD nSector, D
 //	$54 - セクタ書き込み
 //
 //---------------------------------------------------------------------------
-int FASTCALL CWinFileSys::DiskWrite(CWindrv* ps, DWORD nAddress, DWORD nSector, DWORD nSize)
+int FASTCALL CWinFileSys::DiskWrite(WindrvContext* ps, DWORD nAddress, DWORD nSector, DWORD nSize)
 {
 	ASSERT(this);
 	ASSERT(nAddress);
@@ -4544,7 +4545,7 @@ int FASTCALL CWinFileSys::DiskWrite(CWindrv* ps, DWORD nAddress, DWORD nSector, 
 //	$55 - IOCTRL
 //
 //---------------------------------------------------------------------------
-int FASTCALL CWinFileSys::IoControl(CWindrv* ps, Human68k::ioctrl_t* pIoctrl, DWORD nFunction)
+int FASTCALL CWinFileSys::IoControl(WindrvContext* ps, Human68k::ioctrl_t* pIoctrl, DWORD nFunction)
 {
 	ASSERT(this);
 
@@ -4601,7 +4602,7 @@ int FASTCALL CWinFileSys::IoControl(CWindrv* ps, Human68k::ioctrl_t* pIoctrl, DW
 //	$56 - フラッシュ
 //
 //---------------------------------------------------------------------------
-int FASTCALL CWinFileSys::Flush(CWindrv* ps)
+int FASTCALL CWinFileSys::Flush(WindrvContext* ps)
 {
 	ASSERT(this);
 
@@ -4621,7 +4622,7 @@ int FASTCALL CWinFileSys::Flush(CWindrv* ps)
 //	$57 - メディア交換チェック
 //
 //---------------------------------------------------------------------------
-int FASTCALL CWinFileSys::CheckMedia(CWindrv* ps)
+int FASTCALL CWinFileSys::CheckMedia(WindrvContext* ps)
 {
 	ASSERT(this);
 
@@ -4654,7 +4655,7 @@ int FASTCALL CWinFileSys::CheckMedia(CWindrv* ps)
 //	$58 - 排他制御
 //
 //---------------------------------------------------------------------------
-int FASTCALL CWinFileSys::Lock(CWindrv* ps)
+int FASTCALL CWinFileSys::Lock(WindrvContext* ps)
 {
 	ASSERT(this);
 
@@ -4778,7 +4779,7 @@ void FASTCALL CWinFileSys::InitOption(const BYTE* pOption)
 //	ボリュームラベル取得
 //
 //---------------------------------------------------------------------------
-BOOL FASTCALL CWinFileSys::FilesVolume(CWindrv* ps, Human68k::files_t* pFiles)
+BOOL FASTCALL CWinFileSys::FilesVolume(WindrvContext* ps, Human68k::files_t* pFiles)
 {
 	ASSERT(this);
 	ASSERT(pFiles);
@@ -4820,7 +4821,7 @@ BOOL FASTCALL CWinFileSys::FilesVolume(CWindrv* ps, Human68k::files_t* pFiles)
 //	TODO: いつかカーネル・ドライバを修正してこの処理そのものをなくしたい
 //
 //---------------------------------------------------------------------------
-void FASTCALL CWinFileSys::CheckKernel(CWindrv* ps)
+void FASTCALL CWinFileSys::CheckKernel(WindrvContext* ps)
 {
 	ASSERT(this);
 
@@ -4945,8 +4946,6 @@ CHost::CHost(CFrmWnd *pWnd) : CComponent(pWnd)
 	m_dwID = MAKEID('H', 'O', 'S', 'T');
 	m_strDesc = _T("Host FileSystem");
 
-	// オブジェクト
-	m_pWindrv = NULL;
 }
 
 //---------------------------------------------------------------------------
@@ -4963,13 +4962,8 @@ BOOL FASTCALL CHost::Init()
 		return FALSE;
 	}
 
-	// Windrv取得
-	ASSERT(!m_pWindrv);
-	m_pWindrv = (Windrv*)::GetVM()->SearchDevice(MAKEID('W', 'D', 'R', 'V'));
-	ASSERT(m_pWindrv);
-
-	// ファイルシステム設定
-	m_pWindrv->SetFileSys(&m_WinFileSys);
+	// Associate VM with host filesystem adapter
+	::GetVM()->SetHostFileSystem(&m_WinFileSys);
 
 	return TRUE;
 }
@@ -4983,10 +4977,8 @@ void FASTCALL CHost::Cleanup()
 {
 	ASSERT(this);
 
-	// ファイルシステムを切り離す
-	if (m_pWindrv) {
-		m_pWindrv->SetFileSys(NULL);
-	}
+	// Detach host filesystem adapter
+	::GetVM()->SetHostFileSystem(NULL);
 
 	// リセット(全クローズ)
 	m_WinFileSys.Reset();

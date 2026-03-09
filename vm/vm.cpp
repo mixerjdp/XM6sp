@@ -634,9 +634,40 @@ void FASTCALL VM::Interrupt() const
 void FASTCALL VM::SetHostMessageCallback(host_message_callback_t callback, void *user)
 {
 	ASSERT(this);
-
 	host_message_callback = callback;
 	host_message_user = user;
+}
+
+void FASTCALL VM::SetHostSyncCallbacks(host_sync_callback_t lock_vm_cb, host_sync_callback_t unlock_vm_cb, void *user)
+{
+	ASSERT(this);
+	Windrv* pWindrv = (Windrv*)SearchDevice(MAKEID('W', 'D', 'R', 'V'));
+	ASSERT(pWindrv);
+	if (!pWindrv) {
+		return;
+	}
+	pWindrv->SetHostSyncCallbacks(lock_vm_cb, unlock_vm_cb, user);
+}
+void FASTCALL VM::SetHostServices(const host_services_t *services)
+{
+	ASSERT(this);
+	if (!services) {
+		SetHostMessageCallback(NULL, NULL);
+		SetHostSyncCallbacks(NULL, NULL, NULL);
+		return;
+	}
+	SetHostMessageCallback(services->message, services->user);
+	SetHostSyncCallbacks(services->lock_vm, services->unlock_vm, services->user);
+}
+void FASTCALL VM::SetHostFileSystem(FileSys *fs)
+{
+	ASSERT(this);
+	Windrv* pWindrv = (Windrv*)SearchDevice(MAKEID('W', 'D', 'R', 'V'));
+	ASSERT(pWindrv);
+	if (!pWindrv) {
+		return;
+	}
+	pWindrv->SetFileSys(fs);
 }
 
 void FASTCALL VM::NotifyHostMessage(const TCHAR* message) const
