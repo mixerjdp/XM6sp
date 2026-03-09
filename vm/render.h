@@ -12,10 +12,6 @@
 
 #include "device.h"
 
-class CRTC;
-class VC;
-class Sprite;
-
 //===========================================================================
 //
 //	レンダラ
@@ -24,6 +20,11 @@ class Sprite;
 class Render : public Device
 {
 public:
+		enum compositor_mode_t {
+			compositor_original = 0,
+			compositor_fast = 1
+		};
+
 	// 内部データ定義
 	typedef struct {
 		// 全体制御
@@ -130,7 +131,6 @@ public:
 		DWORD zero;						// スクロールダミー(0)
 	} render_t;
 
-public:
 	// 基本ファンクション
 	Render(VM *p);
 										// コンストラクタ
@@ -153,14 +153,14 @@ public:
 	BOOL FASTCALL IsActive() const		{ return render.act; }
 										// アクティブか
 	BOOL FASTCALL IsReady() const		{ return (BOOL)(render.count > 0); }
-										// 描画レディ状況取得
 	void FASTCALL Complete()			{ render.count = 0; }
-										// 描画完了
+	BOOL FASTCALL SetCompositorMode(int mode);
+	int FASTCALL GetCompositorMode() const		{ return compositor_mode; }
 	void FASTCALL StartFrame();
 										// フレーム開始(V-DISP)
 	void FASTCALL EndFrame();
 										// フレーム終了(V-BLANK)
-	void FASTCALL HSync(int raster)		{ render.last = raster; if (render.act) Process(); }
+	void FASTCALL HSync(int raster);
 										// 水平同期(rasterまで終わり)
 	void FASTCALL SetMixBuf(DWORD *buf, int width, int height);
 										// 合成バッファ指定
@@ -215,6 +215,15 @@ public:
 										// 合成バッファ取得
 
 private:
+	class Backend;
+	void FASTCALL StartFrameOriginal();
+	void FASTCALL StartFrameFast();
+	void FASTCALL EndFrameOriginal();
+	void FASTCALL HSyncOriginal(int raster);
+	void FASTCALL SetCRTCOriginal();
+	void FASTCALL SetVCOriginal();
+	void FASTCALL InvalidateFrame();
+	void FASTCALL InvalidateAll();
 	void FASTCALL Process();
 										// レンダリング
 	void FASTCALL Video();
@@ -243,6 +252,9 @@ private:
 										// BG(横ブロック)
 	void FASTCALL Mix(int offset);
 										// 合成
+	void FASTCALL MixFast(int y);
+	void FASTCALL FastMixGrp(int y, DWORD *grp, DWORD *grp_sp, DWORD *grp_sp2,
+		BOOL *grp_sp_tr, BOOL *gon, BOOL *tron, BOOL *pron);
 	void FASTCALL MixGrp(int y, DWORD *buf);
 										// 合成(グラフィック)
 	CRTC *crtc;
@@ -251,6 +263,10 @@ private:
 										// VC
 	Sprite *sprite;
 										// スプライト
+	Backend *backend;
+	Backend *backend_original;
+	Backend *backend_fast;
+	int compositor_mode;
 	render_t render;
 										// 内部データ
 	BOOL cmov;
@@ -258,3 +274,4 @@ private:
 };
 
 #endif	// render_h
+

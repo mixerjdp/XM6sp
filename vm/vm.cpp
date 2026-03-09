@@ -488,18 +488,26 @@ void FASTCALL VM::ApplyCfg(const Config *config)
 }
 BOOL FASTCALL VM::SetRenderMode(int mode)
 {
-	ASSERT(this);
+	Render *render;
 
-	if (mode == 0 || mode == 1) {
-		return TRUE;
+	ASSERT(this);
+	render = (Render*)SearchDevice(MAKEID('R', 'E', 'N', 'D'));
+	if (!render) {
+		return FALSE;
 	}
-	return FALSE;
+	return render->SetCompositorMode(mode);
 }
 
 int FASTCALL VM::GetRenderMode() const
 {
+	Render *render;
+
 	ASSERT(this);
-	return 0;
+	render = (Render*)SearchDevice(MAKEID('R', 'E', 'N', 'D'));
+	if (!render) {
+		return Render::compositor_original;
+	}
+	return render->GetCompositorMode();
 }
 //---------------------------------------------------------------------------
 //
