@@ -1573,7 +1573,7 @@ static void push_geometry_if_changed(unsigned width, unsigned height)
   g_environ_cb(RETRO_ENVIRONMENT_SET_GEOMETRY, &geom);
 }
 
-static bool joy_pressed(unsigned id)
+static bool joy_pressed(unsigned port, unsigned id)
 {
   if (!g_input_state_cb) {
     return false;
@@ -1581,20 +1581,66 @@ static bool joy_pressed(unsigned id)
 
   if (g_supports_input_bitmasks) {
     const unsigned mask = static_cast<unsigned>(
-      g_input_state_cb(0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_MASK));
+      g_input_state_cb(port, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_MASK));
     return (mask & (1u << id)) != 0;
   }
 
-  return g_input_state_cb(0, RETRO_DEVICE_JOYPAD, 0, id) != 0;
+  return g_input_state_cb(port, RETRO_DEVICE_JOYPAD, 0, id) != 0;
 }
 
-static int16_t joy_analog_axis(unsigned index, unsigned id)
+static int16_t joy_analog_axis(unsigned port, unsigned index, unsigned id)
 {
   if (!g_input_state_cb) {
     return 0;
   }
 
-  return g_input_state_cb(0, RETRO_DEVICE_ANALOG, index, id);
+  return g_input_state_cb(port, RETRO_DEVICE_ANALOG, index, id);
+}
+
+static void build_joy_state(unsigned port,
+                            unsigned int axes[4],
+                            int buttons[8],
+                            bool *out_select_pressed,
+                            bool *out_start_pressed)
+{
+  const int16_t analog_x = joy_analog_axis(port,
+                                           RETRO_DEVICE_INDEX_ANALOG_LEFT,
+                                           RETRO_DEVICE_ID_ANALOG_X);
+  const int16_t analog_y = joy_analog_axis(port,
+                                           RETRO_DEVICE_INDEX_ANALOG_LEFT,
+                                           RETRO_DEVICE_ID_ANALOG_Y);
+  const int16_t analog_threshold = 0x4000;
+
+  const bool left  = joy_pressed(port, RETRO_DEVICE_ID_JOYPAD_LEFT)  || analog_x <= -analog_threshold;
+  const bool right = joy_pressed(port, RETRO_DEVICE_ID_JOYPAD_RIGHT) || analog_x >=  analog_threshold;
+  const bool up    = joy_pressed(port, RETRO_DEVICE_ID_JOYPAD_UP)    || analog_y <= -analog_threshold;
+  const bool down  = joy_pressed(port, RETRO_DEVICE_ID_JOYPAD_DOWN)  || analog_y >=  analog_threshold;
+  const unsigned int axis_neg = static_cast<unsigned int>(-2048);
+  const unsigned int axis_pos = 2047u;
+
+  axes[0] = left ? axis_neg : (right ? axis_pos : 0);
+  axes[1] = up   ? axis_neg : (down  ? axis_pos : 0);
+  axes[2] = 0;
+  axes[3] = 0;
+
+  buttons[0] = joy_pressed(port, RETRO_DEVICE_ID_JOYPAD_B) ? 1 : 0;
+  buttons[1] = joy_pressed(port, RETRO_DEVICE_ID_JOYPAD_A) ? 1 : 0;
+  buttons[2] = joy_pressed(port, RETRO_DEVICE_ID_JOYPAD_Y) ? 1 : 0;
+  buttons[3] = joy_pressed(port, RETRO_DEVICE_ID_JOYPAD_X) ? 1 : 0;
+  buttons[4] = joy_pressed(port, RETRO_DEVICE_ID_JOYPAD_L) ? 1 : 0;
+  buttons[5] = joy_pressed(port, RETRO_DEVICE_ID_JOYPAD_R) ? 1 : 0;
+
+  const bool select_pressed = joy_pressed(port, RETRO_DEVICE_ID_JOYPAD_SELECT);
+  const bool start_pressed = joy_pressed(port, RETRO_DEVICE_ID_JOYPAD_START);
+  buttons[6] = select_pressed ? 1 : 0;
+  buttons[7] = start_pressed ? 1 : 0;
+
+  if (out_select_pressed) {
+    *out_select_pressed = select_pressed;
+  }
+  if (out_start_pressed) {
+    *out_start_pressed = start_pressed;
+  }
 }
 
 static void poll_and_push_input()
@@ -1605,54 +1651,33 @@ static void poll_and_push_input()
 
   g_input_poll_cb();
 
-  const int16_t analog_x = joy_analog_axis(RETRO_DEVICE_INDEX_ANALOG_LEFT,
-                                           RETRO_DEVICE_ID_ANALOG_X);
-  const int16_t analog_y = joy_analog_axis(RETRO_DEVICE_INDEX_ANALOG_LEFT,
-                                           RETRO_DEVICE_ID_ANALOG_Y);
-  const int16_t analog_threshold = 0x4000;
+  unsigned int axes_p1[4] = {};
+  unsigned int axes_p2[4] = {};
+  int buttons_p1[8] = {};
+  int buttons_p2[8] = {};
+  bool select_pressed_p1 = false;
+  bool start_pressed_p1 = false;
 
-  const bool left  = joy_pressed(RETRO_DEVICE_ID_JOYPAD_LEFT)  || analog_x <= -analog_threshold;
-  const bool right = joy_pressed(RETRO_DEVICE_ID_JOYPAD_RIGHT) || analog_x >=  analog_threshold;
-  const bool up    = joy_pressed(RETRO_DEVICE_ID_JOYPAD_UP)    || analog_y <= -analog_threshold;
-  const bool down  = joy_pressed(RETRO_DEVICE_ID_JOYPAD_DOWN)  || analog_y >=  analog_threshold;
-  const unsigned int axis_neg = static_cast<unsigned int>(-2048);
-  const unsigned int axis_pos = 2047u;
+  build_joy_state(0, axes_p1, buttons_p1, &select_pressed_p1, &start_pressed_p1);
+  build_joy_state(1, axes_p2, buttons_p2, NULL, NULL);
 
-  unsigned int axes[4] = {};
-  axes[0] = left ? axis_neg : (right ? axis_pos : 0);
-  axes[1] = up   ? axis_neg : (down  ? axis_pos : 0);
-  axes[2] = 0;
-  axes[3] = 0;
-
-  int buttons[8] = {};
-  buttons[0] = joy_pressed(RETRO_DEVICE_ID_JOYPAD_B) ? 1 : 0;
-  buttons[1] = joy_pressed(RETRO_DEVICE_ID_JOYPAD_A) ? 1 : 0;
-  buttons[2] = joy_pressed(RETRO_DEVICE_ID_JOYPAD_Y) ? 1 : 0;
-  buttons[3] = joy_pressed(RETRO_DEVICE_ID_JOYPAD_X) ? 1 : 0;
-  buttons[4] = joy_pressed(RETRO_DEVICE_ID_JOYPAD_L) ? 1 : 0;
-  buttons[5] = joy_pressed(RETRO_DEVICE_ID_JOYPAD_R) ? 1 : 0;
-  const bool select_pressed = joy_pressed(RETRO_DEVICE_ID_JOYPAD_SELECT);
-  const bool start_pressed = joy_pressed(RETRO_DEVICE_ID_JOYPAD_START);
-  buttons[6] = select_pressed ? 1 : 0;
-  buttons[7] = start_pressed ? 1 : 0;
-
-  g_xm6.input_joy(g_xm6_handle, 0, axes, buttons);
-  g_xm6.input_joy(g_xm6_handle, 1, axes, buttons);
+  g_xm6.input_joy(g_xm6_handle, 0, axes_p1, buttons_p1);
+  g_xm6.input_joy(g_xm6_handle, 1, axes_p2, buttons_p2);
 
   if (g_pad_start_select_mode != START_SELECT_DISABLED && g_xm6.input_key) {
     const unsigned start_key = (g_pad_start_select_mode == START_SELECT_F_KEYS) ? 0x63 : 0x55;
     const unsigned select_key = (g_pad_start_select_mode == START_SELECT_F_KEYS) ? 0x64 : 0x57;
-    if (start_pressed != g_prev_start) {
-      g_xm6.input_key(g_xm6_handle, start_key, start_pressed ? 1 : 0);
-      g_prev_start = start_pressed;
+    if (start_pressed_p1 != g_prev_start) {
+      g_xm6.input_key(g_xm6_handle, start_key, start_pressed_p1 ? 1 : 0);
+      g_prev_start = start_pressed_p1;
     }
-    if (select_pressed != g_prev_select) {
-      g_xm6.input_key(g_xm6_handle, select_key, select_pressed ? 1 : 0);
-      g_prev_select = select_pressed;
+    if (select_pressed_p1 != g_prev_select) {
+      g_xm6.input_key(g_xm6_handle, select_key, select_pressed_p1 ? 1 : 0);
+      g_prev_select = select_pressed_p1;
     }
   } else {
-    g_prev_start = start_pressed;
-    g_prev_select = select_pressed;
+    g_prev_start = start_pressed_p1;
+    g_prev_select = select_pressed_p1;
   }
 
   if (g_pointer_device_mode == POINTER_DEVICE_MOUSE &&
