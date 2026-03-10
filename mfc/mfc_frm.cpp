@@ -333,13 +333,13 @@ BEGIN_MESSAGE_MAP(CFrmWnd, CFrameWnd)
 	ON_UPDATE_COMMAND_UI(IDM_STRETCH, OnStretchUI)
 	ON_COMMAND(IDM_FULLSCREEN, OnFullScreen)
 	ON_UPDATE_COMMAND_UI(IDM_FULLSCREEN, OnFullScreenUI)
+	ON_COMMAND(IDM_RENDER_FAST, OnRenderFast)
+	ON_UPDATE_COMMAND_UI(IDM_RENDER_FAST, OnRenderFastUI)
 	ON_COMMAND(IDM_TOGGLE_RENDERER, OnToggleRenderer)
 	ON_COMMAND(IDM_TOGGLE_OSD, OnToggleOSD)
 	ON_COMMAND(IDM_TOGGLE_VSYNC, OnToggleVSync)
 	ON_COMMAND(IDM_TOGGLE_SHADER, OnToggleShader)
 	ON_UPDATE_COMMAND_UI(IDM_TOGGLE_SHADER, OnToggleShaderUI)
-	ON_COMMAND(IDM_TOGGLE_ALT_RASTER, OnToggleAltRaster)
-	ON_UPDATE_COMMAND_UI(IDM_TOGGLE_ALT_RASTER, OnToggleAltRasterUI)
 
 	ON_COMMAND(IDM_EXEC, OnExec)
 	ON_UPDATE_COMMAND_UI(IDM_EXEC, OnExecUI)
@@ -3275,32 +3275,65 @@ CConfig* FASTCALL CFrmWnd::GetConfig() const
 //	Toggle Renderer (DX9/GDI)
 //
 //---------------------------------------------------------------------------
-void CFrmWnd::OnToggleRenderer()
+void CFrmWnd::OnRenderFast()
 {
-	if (m_pDrawView) {
-		m_pDrawView->ToggleRenderer();
-	}
-}
-
-void CFrmWnd::OnToggleAltRaster()
-{
+	Render *pRender;
+	int nMode;
+	CString info;
 	Config config;
+
+	pRender = (Render*)::GetVM()->SearchDevice(MAKEID('R', 'E', 'N', 'D'));
+	if (!pRender) {
+		return;
+	}
+
+	nMode = (pRender->GetCompositorMode() == Render::compositor_fast) ?
+		Render::compositor_original : Render::compositor_fast;
+	if (!pRender->SetCompositorMode(nMode)) {
+		return;
+	}
+
+	pRender->Complete();
+	if (m_pDrawView) {
+		m_pDrawView->Refresh();
+	}
+
 	GetConfig()->GetConfig(&config);
-	config.alt_raster = !config.alt_raster;
+	config.alt_raster = (nMode == Render::compositor_fast) ? TRUE : FALSE;
 	GetConfig()->SetConfig(&config);
 
 	::LockVM();
 	::GetVM()->ApplyCfg(&config);
 	::UnlockVM();
+
+	info.Format(_T("Render Fast: %s"),
+		(nMode == Render::compositor_fast) ? _T("ON") : _T("OFF"));
+	SetInfo(info);
 }
 
-void CFrmWnd::OnToggleAltRasterUI(CCmdUI *pCmdUI)
+void CFrmWnd::OnRenderFastUI(CCmdUI *pCmdUI)
 {
-	if (pCmdUI) {
-		Config config;
-		GetConfig()->GetConfig(&config);
-		pCmdUI->SetCheck(config.alt_raster ? 1 : 0);
-		pCmdUI->Enable(TRUE);
+	Render *pRender;
+
+	if (!pCmdUI) {
+		return;
+	}
+
+	pRender = (Render*)::GetVM()->SearchDevice(MAKEID('R', 'E', 'N', 'D'));
+	if (!pRender) {
+		pCmdUI->Enable(FALSE);
+		pCmdUI->SetCheck(0);
+		return;
+	}
+
+	pCmdUI->Enable(TRUE);
+	pCmdUI->SetCheck((pRender->GetCompositorMode() == Render::compositor_fast) ? 1 : 0);
+}
+
+void CFrmWnd::OnToggleRenderer()
+{
+	if (m_pDrawView) {
+		m_pDrawView->ToggleRenderer();
 	}
 }
 

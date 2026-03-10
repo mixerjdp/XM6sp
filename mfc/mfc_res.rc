@@ -509,8 +509,8 @@ BEGIN
         MENUITEM SEPARATOR
         MENUITEM "Stretch con &Aspect Ratio",   IDM_STRETCH
         MENUITEM "F&ull Screen\tAlt+Enter",     IDM_FULLSCREEN
+        MENUITEM "Render Fast",                 IDM_RENDER_FAST
         MENUITEM "&CRT Shader\tF9",             IDM_TOGGLE_SHADER
-        MENUITEM "Alt &Raster",                 IDM_TOGGLE_ALT_RASTER
     END
     POPUP "&Depurar"
     BEGIN
@@ -690,8 +690,8 @@ BEGIN
             MENUITEM SEPARATOR
             MENUITEM "Stretch with &Aspect Ratio",  IDM_STRETCH
             MENUITEM "F&ull Screen\tAlt+Enter",     IDM_FULLSCREEN
+            MENUITEM "Render Fast",                 IDM_RENDER_FAST
             MENUITEM "&CRT Shader\tF9",             IDM_TOGGLE_SHADER
-            MENUITEM "Alt &Raster",                 IDM_TOGGLE_ALT_RASTER
         END
         POPUP "&Depurar"
         BEGIN

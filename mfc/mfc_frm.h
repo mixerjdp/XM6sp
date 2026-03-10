@@ -80,13 +80,13 @@ public:
 
 	void EnterBorderlessFullscreen();
 	void ExitBorderlessFullscreen();
+	void OnRenderFast();
+	void OnRenderFastUI(CCmdUI *pCmdUI);
 	void OnToggleRenderer();
 	void OnToggleVSync();
 	void OnToggleOSD();
 	void OnToggleShader();
 	void OnToggleShaderUI(CCmdUI *pCmdUI);
-	void OnToggleAltRaster();
-	void OnToggleAltRasterUI(CCmdUI *pCmdUI);
 
 	// Nombre de Archivo XM6   *-*
 	CString NombreArchivoXM6;
