@@ -932,6 +932,7 @@
 #define IDM_TOGGLE_VSYNC         40183
 #define IDM_TOGGLE_RENDERER      40184
 #define IDM_TOGGLE_SHADER        40550
+#define IDM_TOGGLE_ALT_RASTER    40554
 
 // �f�o�b�O���j���[
 #define IDM_EXEC 						40185

@@ -85,6 +85,8 @@ public:
 	void OnToggleOSD();
 	void OnToggleShader();
 	void OnToggleShaderUI(CCmdUI *pCmdUI);
+	void OnToggleAltRaster();
+	void OnToggleAltRasterUI(CCmdUI *pCmdUI);
 
 	// Nombre de Archivo XM6   *-*
 	CString NombreArchivoXM6;

@@ -2,7 +2,7 @@
 //
 //	X68000 EMULATOR "XM6"
 //
-//	Copyright (C) 2001-2005 ‚o‚hD(ytanaka@ipc-tokai.or.jp)
+//	Copyright (C) 2001-2005 ï¿½oï¿½hï¿½D(ytanaka@ipc-tokai.or.jp)
 //	[ CRTC(VICON) ]
 //
 //---------------------------------------------------------------------------
@@ -21,6 +21,7 @@
 #include "printer.h"
 #include "fileio.h"
 #include "crtc.h"
+#include "config.h"
 
 //===========================================================================
 //
@@ -29,22 +30,26 @@
 //===========================================================================
 //#define CRTC_LOG
 
+namespace {
+BOOL g_alt_raster_timing = FALSE;
+}
+
 //---------------------------------------------------------------------------
 //
-//	ƒRƒ“ƒXƒgƒ‰ƒNƒ^
+//	ï¿½Rï¿½ï¿½ï¿½Xï¿½gï¿½ï¿½ï¿½Nï¿½^
 //
 //---------------------------------------------------------------------------
 CRTC::CRTC(VM *p) : MemDevice(p)
 {
-	// ƒfƒoƒCƒXID‚ğ‰Šú‰»
+	// ï¿½fï¿½oï¿½Cï¿½XIDï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 	dev.id = MAKEID('C', 'R', 'T', 'C');
 	dev.desc = "CRTC (VICON)";
 
-	// ŠJnƒAƒhƒŒƒXAI—¹ƒAƒhƒŒƒX
+	// ï¿½Jï¿½nï¿½Aï¿½hï¿½ï¿½ï¿½Xï¿½Aï¿½Iï¿½ï¿½ï¿½Aï¿½hï¿½ï¿½ï¿½X
 	memdev.first = 0xe80000;
 	memdev.last = 0xe81fff;
 
-	// ‚»‚Ì‘¼ƒ[ƒN
+	// ï¿½ï¿½ï¿½Ì‘ï¿½ï¿½ï¿½ï¿½[ï¿½N
 	tvram = NULL;
 	gvram = NULL;
 	sprite = NULL;
@@ -55,43 +60,43 @@ CRTC::CRTC(VM *p) : MemDevice(p)
 
 //---------------------------------------------------------------------------
 //
-//	‰Šú‰»
+//	ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 //
 //---------------------------------------------------------------------------
 BOOL FASTCALL CRTC::Init()
 {
 	ASSERT(this);
 
-	// Šî–{ƒNƒ‰ƒX
+	// ï¿½ï¿½{ï¿½Nï¿½ï¿½ï¿½X
 	if (!MemDevice::Init()) {
 		return FALSE;
 	}
 
-	// ƒeƒLƒXƒgVRAM‚ğæ“¾
+	// ï¿½eï¿½Lï¿½Xï¿½gVRAMï¿½ï¿½ï¿½æ“¾
 	tvram = (TVRAM*)vm->SearchDevice(MAKEID('T', 'V', 'R', 'M'));
 	ASSERT(tvram);
 
-	// ƒOƒ‰ƒtƒBƒbƒNVRAM‚ğæ“¾
+	// ï¿½Oï¿½ï¿½ï¿½tï¿½Bï¿½bï¿½NVRAMï¿½ï¿½ï¿½æ“¾
 	gvram = (GVRAM*)vm->SearchDevice(MAKEID('G', 'V', 'R', 'M'));
 	ASSERT(gvram);
 
-	// ƒXƒvƒ‰ƒCƒgƒRƒ“ƒgƒ[ƒ‰‚ğæ“¾
+	// ï¿½Xï¿½vï¿½ï¿½ï¿½Cï¿½gï¿½Rï¿½ï¿½ï¿½gï¿½ï¿½ï¿½[ï¿½ï¿½ï¿½ï¿½ï¿½æ“¾
 	sprite = (Sprite*)vm->SearchDevice(MAKEID('S', 'P', 'R', ' '));
 	ASSERT(sprite);
 
-	// MFP‚ğæ“¾
+	// MFPï¿½ï¿½ï¿½æ“¾
 	mfp = (MFP*)vm->SearchDevice(MAKEID('M', 'F', 'P', ' '));
 	ASSERT(mfp);
 
-	// ƒŒƒ“ƒ_ƒ‰‚ğæ“¾
+	// ï¿½ï¿½ï¿½ï¿½ï¿½_ï¿½ï¿½ï¿½ï¿½ï¿½æ“¾
 	render = (Render*)vm->SearchDevice(MAKEID('R', 'E', 'N', 'D'));
 	ASSERT(render);
 
-	// ƒvƒŠƒ“ƒ^‚ğæ“¾
+	// ï¿½vï¿½ï¿½ï¿½ï¿½ï¿½^ï¿½ï¿½ï¿½æ“¾
 	printer = (Printer*)vm->SearchDevice(MAKEID('P', 'R', 'N', ' '));
 	ASSERT(printer);
 
-	// ƒCƒxƒ“ƒg‰Šú‰»
+	// ï¿½Cï¿½xï¿½ï¿½ï¿½gï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 	event.SetDevice(this);
 	event.SetDesc("H-Sync");
 	event.SetTime(0);
@@ -102,20 +107,20 @@ BOOL FASTCALL CRTC::Init()
 
 //---------------------------------------------------------------------------
 //
-//	ƒNƒŠ[ƒ“ƒAƒbƒv
+//	ï¿½Nï¿½ï¿½ï¿½[ï¿½ï¿½ï¿½Aï¿½bï¿½v
 //
 //---------------------------------------------------------------------------
 void FASTCALL CRTC::Cleanup()
 {
 	ASSERT(this);
 
-	// Šî–{ƒNƒ‰ƒX‚Ö
+	// ï¿½ï¿½{ï¿½Nï¿½ï¿½ï¿½Xï¿½ï¿½
 	MemDevice::Cleanup();
 }
 
 //---------------------------------------------------------------------------
 //
-//	ƒŠƒZƒbƒg
+//	ï¿½ï¿½ï¿½Zï¿½bï¿½g
 //
 //---------------------------------------------------------------------------
 void FASTCALL CRTC::Reset()
@@ -123,9 +128,9 @@ void FASTCALL CRTC::Reset()
 	int i;
 
 	ASSERT(this);
-	LOG0(Log::Normal, "ƒŠƒZƒbƒg");
+	LOG0(Log::Normal, "ï¿½ï¿½ï¿½Zï¿½bï¿½g");
 
-	// ƒŒƒWƒXƒ^‚ğƒNƒŠƒA
+	// ï¿½ï¿½ï¿½Wï¿½Xï¿½^ï¿½ï¿½ï¿½Nï¿½ï¿½ï¿½A
 	memset(crtc.reg, 0, sizeof(crtc.reg));
 	for (i=0; i<18; i++) {
 		crtc.reg[i] = ResetTable[i];
@@ -134,20 +139,20 @@ void FASTCALL CRTC::Reset()
 		crtc.reg[i + 0x28] = ResetTable[i + 18];
 	}
 
-	// ‰ğ‘œ“x
+	// ï¿½ğ‘œ“x
 	crtc.hrl = FALSE;
 	crtc.lowres = FALSE;
 	crtc.textres = TRUE;
 	crtc.changed = FALSE;
 
-	// “Áê‹@”
+	// ï¿½ï¿½ï¿½ï¿½@ï¿½
 	crtc.raster_count = 0;
 	crtc.raster_int = 0;
 	crtc.raster_copy = FALSE;
 	crtc.raster_exec = FALSE;
 	crtc.fast_clr = 0;
 
-	// …•½
+	// ï¿½ï¿½ï¿½ï¿½
 	crtc.h_sync = 31745;
 	crtc.h_pulse = 3450;
 	crtc.h_back = 4140;
@@ -156,7 +161,7 @@ void FASTCALL CRTC::Reset()
 	crtc.h_mul = 1;
 	crtc.hd = 2;
 
-	// ‚’¼
+	// ï¿½ï¿½ï¿½ï¿½
 	crtc.v_sync = 568;
 	crtc.v_pulse = 6;
 	crtc.v_back = 35;
@@ -165,7 +170,7 @@ void FASTCALL CRTC::Reset()
 	crtc.v_mul = 1;
 	crtc.vd = 1;
 
-	// ƒCƒxƒ“ƒg
+	// ï¿½Cï¿½xï¿½ï¿½ï¿½g
 	crtc.ns = 0;
 	crtc.hus = 0;
 	crtc.v_synccnt = 1;
@@ -176,7 +181,7 @@ void FASTCALL CRTC::Reset()
 	crtc.v_count = 0;
 	crtc.v_scan = 0;
 
-	// ˆÈ‰º‚¢‚ç‚È‚¢
+	// ï¿½È‰ï¿½ï¿½ï¿½ï¿½ï¿½È‚ï¿½
 	crtc.h_disptime = 0;
 	crtc.h_synctime = 0;
 	crtc.v_cycletime = 0;
@@ -184,13 +189,13 @@ void FASTCALL CRTC::Reset()
 	crtc.v_backtime = 0;
 	crtc.v_synctime = 0;
 
-	// ƒƒ‚ƒŠƒ‚[ƒh
+	// ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½[ï¿½h
 	crtc.tmem = FALSE;
 	crtc.gmem = TRUE;
 	crtc.siz = 0;
 	crtc.col = 3;
 
-	// ƒXƒNƒ[ƒ‹
+	// ï¿½Xï¿½Nï¿½ï¿½ï¿½[ï¿½ï¿½
 	crtc.text_scrlx = 0;
 	crtc.text_scrly = 0;
 	for (i=0; i<4; i++) {
@@ -198,13 +203,13 @@ void FASTCALL CRTC::Reset()
 		crtc.grp_scrly[i] = 0;
 	}
 
-	// H-SyncƒCƒxƒ“ƒg‚ğİ’è(31.5us)
+	// H-Syncï¿½Cï¿½xï¿½ï¿½ï¿½gï¿½ï¿½İ’ï¿½(31.5us)
 	event.SetTime(63);
 }
 
 //---------------------------------------------------------------------------
 //
-//	CRTCƒŠƒZƒbƒgƒf[ƒ^
+//	CRTCï¿½ï¿½ï¿½Zï¿½bï¿½gï¿½fï¿½[ï¿½^
 //
 //---------------------------------------------------------------------------
 const BYTE CRTC::ResetTable[] = {
@@ -216,7 +221,7 @@ const BYTE CRTC::ResetTable[] = {
 
 //---------------------------------------------------------------------------
 //
-//	ƒZ[ƒu
+//	ï¿½Zï¿½[ï¿½u
 //
 //---------------------------------------------------------------------------
 BOOL FASTCALL CRTC::Save(Fileio *fio, int ver)
@@ -225,20 +230,20 @@ BOOL FASTCALL CRTC::Save(Fileio *fio, int ver)
 
 	ASSERT(this);
 	ASSERT(fio);
-	LOG0(Log::Normal, "ƒZ[ƒu");
+	LOG0(Log::Normal, "ï¿½Zï¿½[ï¿½u");
 
-	// ƒTƒCƒY‚ğƒZ[ƒu
+	// ï¿½Tï¿½Cï¿½Yï¿½ï¿½ï¿½Zï¿½[ï¿½u
 	sz = sizeof(crtc_t);
 	if (!fio->Write(&sz, sizeof(sz))) {
 		return FALSE;
 	}
 
-	// À‘Ì‚ğƒZ[ƒu
+	// ï¿½ï¿½ï¿½Ì‚ï¿½ï¿½Zï¿½[ï¿½u
 	if (!fio->Write(&crtc, (int)sz)) {
 		return FALSE;
 	}
 
-	// ƒCƒxƒ“ƒg‚ğƒZ[ƒu
+	// ï¿½Cï¿½xï¿½ï¿½ï¿½gï¿½ï¿½ï¿½Zï¿½[ï¿½u
 	if (!event.Save(fio, ver)) {
 		return FALSE;
 	}
@@ -248,7 +253,7 @@ BOOL FASTCALL CRTC::Save(Fileio *fio, int ver)
 
 //---------------------------------------------------------------------------
 //
-//	ƒ[ƒh
+//	ï¿½ï¿½ï¿½[ï¿½h
 //
 //---------------------------------------------------------------------------
 BOOL FASTCALL CRTC::Load(Fileio *fio, int ver)
@@ -257,9 +262,9 @@ BOOL FASTCALL CRTC::Load(Fileio *fio, int ver)
 
 	ASSERT(this);
 	ASSERT(fio);
-	LOG0(Log::Normal, "ƒ[ƒh");
+	LOG0(Log::Normal, "ï¿½ï¿½ï¿½[ï¿½h");
 
-	// ƒTƒCƒY‚ğƒ[ƒh
+	// ï¿½Tï¿½Cï¿½Yï¿½ï¿½ï¿½ï¿½ï¿½[ï¿½h
 	if (!fio->Read(&sz, sizeof(sz))) {
 		return FALSE;
 	}
@@ -267,17 +272,17 @@ BOOL FASTCALL CRTC::Load(Fileio *fio, int ver)
 		return FALSE;
 	}
 
-	// À‘Ì‚ğƒ[ƒh
+	// ï¿½ï¿½ï¿½Ì‚ï¿½ï¿½ï¿½ï¿½[ï¿½h
 	if (!fio->Read(&crtc, (int)sz)) {
 		return FALSE;
 	}
 
-	// ƒCƒxƒ“ƒg‚ğƒ[ƒh
+	// ï¿½Cï¿½xï¿½ï¿½ï¿½gï¿½ï¿½ï¿½ï¿½ï¿½[ï¿½h
 	if (!event.Load(fio, ver)) {
 		return FALSE;
 	}
 
-	// ƒŒƒ“ƒ_ƒ‰‚Ö’Ê’m
+	// ï¿½ï¿½ï¿½ï¿½ï¿½_ï¿½ï¿½ï¿½Ö’Ê’m
 	render->TextScrl(crtc.text_scrlx, crtc.text_scrly);
 	render->GrpScrl(0, crtc.grp_scrlx[0], crtc.grp_scrly[0]);
 	render->GrpScrl(1, crtc.grp_scrlx[1], crtc.grp_scrly[1]);
@@ -290,20 +295,20 @@ BOOL FASTCALL CRTC::Load(Fileio *fio, int ver)
 
 //---------------------------------------------------------------------------
 //
-//	İ’è“K—p
+//	ï¿½İ’ï¿½Kï¿½p
 //
 //---------------------------------------------------------------------------
 void FASTCALL CRTC::ApplyCfg(const Config *config)
 {
 	ASSERT(this);
 	ASSERT(config);
-	printf("%d", config);
-	LOG0(Log::Normal, "İ’è“K—p");
+	g_alt_raster_timing = config->alt_raster;
+	LOG0(Log::Normal, "ï¿½İ’ï¿½Kï¿½p");
 }
 
 //---------------------------------------------------------------------------
 //
-//	ƒoƒCƒg“Ç‚İ‚İ
+//	ï¿½oï¿½Cï¿½gï¿½Ç‚İï¿½ï¿½ï¿½
 //
 //---------------------------------------------------------------------------
 DWORD FASTCALL CRTC::ReadByte(DWORD addr)
@@ -313,37 +318,37 @@ DWORD FASTCALL CRTC::ReadByte(DWORD addr)
 	ASSERT(this);
 	ASSERT((addr >= memdev.first) && (addr <= memdev.last));
 
-	// $800’PˆÊ‚Åƒ‹[ƒv
+	// $800ï¿½Pï¿½Ê‚Åƒï¿½ï¿½[ï¿½v
 	addr &= 0x7ff;
 
-	// ƒEƒFƒCƒg
+	// ï¿½Eï¿½Fï¿½Cï¿½g
 	scheduler->Wait(1);
 
-	// $E80000-$E803FF : ƒŒƒWƒXƒ^ƒGƒŠƒA
+	// $E80000-$E803FF : ï¿½ï¿½ï¿½Wï¿½Xï¿½^ï¿½Gï¿½ï¿½ï¿½A
 	if (addr < 0x400) {
 		addr &= 0x3f;
 		if (addr >= 0x30) {
 			return 0xff;
 		}
 
-		// R20, R21‚Ì‚İ“Ç‚İ‘‚«‰Â”\B‚»‚êˆÈŠO‚Í$00
+		// R20, R21ï¿½Ì‚İ“Ç‚İï¿½ï¿½ï¿½ï¿½Â”\ï¿½Bï¿½ï¿½ï¿½ï¿½ÈŠOï¿½ï¿½$00
 		if ((addr < 40) || (addr > 43)) {
 			return 0;
 		}
 
-		// “Ç‚İ‚İ(ƒGƒ“ƒfƒBƒAƒ“‚ğ”½“]‚³‚¹‚é)
+		// ï¿½Ç‚İï¿½ï¿½ï¿½(ï¿½Gï¿½ï¿½ï¿½fï¿½Bï¿½Aï¿½ï¿½ï¿½ğ”½“]ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½)
 		addr ^= 1;
 		return crtc.reg[addr];
 	}
 
-	// $E80480-$E804FF : “®ìƒ|[ƒg
+	// $E80480-$E804FF : ï¿½ï¿½ï¿½ï¿½|ï¿½[ï¿½g
 	if ((addr >= 0x480) && (addr <= 0x4ff)) {
-		// ãˆÊƒoƒCƒg‚Í 0
+		// ï¿½ï¿½Êƒoï¿½Cï¿½gï¿½ï¿½ 0
 		if ((addr & 1) == 0) {
 			return 0;
 		}
 
-		// ‰ºˆÊƒoƒCƒg‚Íƒ‰ƒXƒ^ƒRƒs[AƒOƒ‰ƒtƒBƒbƒN‚‘¬ƒNƒŠƒA‚Ì‚İ
+		// ï¿½ï¿½ï¿½Êƒoï¿½Cï¿½gï¿½Íƒï¿½ï¿½Xï¿½^ï¿½Rï¿½sï¿½[ï¿½Aï¿½Oï¿½ï¿½ï¿½tï¿½Bï¿½bï¿½Nï¿½ï¿½ï¿½ï¿½ï¿½Nï¿½ï¿½ï¿½Aï¿½Ì‚ï¿½
 		data = 0;
 		if (crtc.raster_copy) {
 			data |= 0x08;
@@ -354,13 +359,13 @@ DWORD FASTCALL CRTC::ReadByte(DWORD addr)
 		return data;
 	}
 
-	LOG1(Log::Warning, "–¢À‘•ƒAƒhƒŒƒX“Ç‚İ‚İ $%06X", memdev.first + addr);
+	LOG1(Log::Warning, "ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Aï¿½hï¿½ï¿½ï¿½Xï¿½Ç‚İï¿½ï¿½ï¿½ $%06X", memdev.first + addr);
 	return 0xff;
 }
 
 //---------------------------------------------------------------------------
 //
-//	ƒoƒCƒg‘‚«‚İ
+//	ï¿½oï¿½Cï¿½gï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 //
 //---------------------------------------------------------------------------
 void FASTCALL CRTC::WriteByte(DWORD addr, DWORD data)
@@ -370,27 +375,27 @@ void FASTCALL CRTC::WriteByte(DWORD addr, DWORD data)
 	ASSERT(this);
 	ASSERT((addr >= memdev.first) && (addr <= memdev.last));
 
-	// $800’PˆÊ‚Åƒ‹[ƒv
+	// $800ï¿½Pï¿½Ê‚Åƒï¿½ï¿½[ï¿½v
 	addr &= 0x7ff;
 
-	// ƒEƒFƒCƒg
+	// ï¿½Eï¿½Fï¿½Cï¿½g
 	scheduler->Wait(1);
 
-	// $E80000-$E803FF : ƒŒƒWƒXƒ^ƒGƒŠƒA
+	// $E80000-$E803FF : ï¿½ï¿½ï¿½Wï¿½Xï¿½^ï¿½Gï¿½ï¿½ï¿½A
 	if (addr < 0x400) {
 		addr &= 0x3f;
 		if (addr >= 0x30) {
 			return;
 		}
 
-		// ‘‚«‚İ(ƒGƒ“ƒfƒBƒAƒ“‚ğ”½“]‚³‚¹‚é)
+		// ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½(ï¿½Gï¿½ï¿½ï¿½fï¿½Bï¿½Aï¿½ï¿½ï¿½ğ”½“]ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½)
 		addr ^= 1;
 		if (crtc.reg[addr] == data) {
 			return;
 		}
 		crtc.reg[addr] = (BYTE)data;
 
-		// GVRAMƒAƒhƒŒƒX\¬
+		// GVRAMï¿½Aï¿½hï¿½ï¿½ï¿½Xï¿½\ï¿½ï¿½
 		if (addr == 0x29) {
 			if (data & 0x10) {
 				crtc.tmem = TRUE;
@@ -407,14 +412,14 @@ void FASTCALL CRTC::WriteByte(DWORD addr, DWORD data)
 			crtc.siz = (data & 4) >> 2;
 			crtc.col = (data & 3);
 
-			// ƒOƒ‰ƒtƒBƒbƒNVRAM‚Ö’Ê’m
+			// ï¿½Oï¿½ï¿½ï¿½tï¿½Bï¿½bï¿½NVRAMï¿½Ö’Ê’m
 			gvram->SetType(data & 0x0f);
 			return;
 		}
 
-		// ‰ğ‘œ“x•ÏX
+		// ï¿½ğ‘œ“xï¿½ÏX
 		if ((addr <= 15) || (addr == 40)) {
-			// ƒXƒvƒ‰ƒCƒgƒƒ‚ƒŠ‚ÌÚ‘±EØ’f‚Íu‚És‚¤(OS-9/68000)
+			// ï¿½Xï¿½vï¿½ï¿½ï¿½Cï¿½gï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ÌÚ‘ï¿½ï¿½Eï¿½Ø’fï¿½Íuï¿½ï¿½ï¿½Ésï¿½ï¿½(OS-9/68000)
 			if (addr == 0x28) {
 				if ((crtc.reg[0x28] & 3) >= 2) {
 					sprite->Connect(FALSE);
@@ -424,20 +429,22 @@ void FASTCALL CRTC::WriteByte(DWORD addr, DWORD data)
 				}
 			}
 
-			// Ÿ‚ÌüŠú‚ÅÄŒvZ
+			// ï¿½ï¿½ï¿½Ìï¿½ï¿½ï¿½ï¿½ÅÄŒvï¿½Z
 			crtc.changed = TRUE;
 			return;
 		}
 
-		// ƒ‰ƒXƒ^Š„‚è‚İ
+		// ï¿½ï¿½ï¿½Xï¿½^ï¿½ï¿½ï¿½èï¿½ï¿½
 		if ((addr == 18) || (addr == 19)) {
 			crtc.raster_int = (crtc.reg[19] << 8) + crtc.reg[18];
 			crtc.raster_int &= 0x3ff;
-			CheckRaster();
+			if (g_alt_raster_timing) {
+				CheckRaster();
+			}
 			return;
 		}
 
-		// ƒeƒLƒXƒgƒXƒNƒ[ƒ‹
+		// ï¿½eï¿½Lï¿½Xï¿½gï¿½Xï¿½Nï¿½ï¿½ï¿½[ï¿½ï¿½
 		if ((addr >= 20) && (addr <= 23)) {
 			crtc.text_scrlx = (crtc.reg[21] << 8) + crtc.reg[20];
 			crtc.text_scrlx &= 0x3ff;
@@ -446,12 +453,12 @@ void FASTCALL CRTC::WriteByte(DWORD addr, DWORD data)
 			render->TextScrl(crtc.text_scrlx, crtc.text_scrly);
 
 #if defined(CRTC_LOG)
-			LOG2(Log::Normal, "ƒeƒLƒXƒgƒXƒNƒ[ƒ‹ x=%d y=%d", crtc.text_scrlx, crtc.text_scrly);
+			LOG2(Log::Normal, "ï¿½eï¿½Lï¿½Xï¿½gï¿½Xï¿½Nï¿½ï¿½ï¿½[ï¿½ï¿½ x=%d y=%d", crtc.text_scrlx, crtc.text_scrly);
 #endif	// CRTC_LOG
 			return;
 		}
 
-		// ƒOƒ‰ƒtƒBƒbƒNƒXƒNƒ[ƒ‹
+		// ï¿½Oï¿½ï¿½ï¿½tï¿½Bï¿½bï¿½Nï¿½Xï¿½Nï¿½ï¿½ï¿½[ï¿½ï¿½
 		if ((addr >= 24) && (addr <= 39)) {
 			reg = addr & ~3;
 			addr -= 24;
@@ -471,21 +478,21 @@ void FASTCALL CRTC::WriteByte(DWORD addr, DWORD data)
 			return;
 		}
 
-		// ƒeƒLƒXƒgVRAM
+		// ï¿½eï¿½Lï¿½Xï¿½gVRAM
 		if ((addr >= 42) && (addr <= 47)) {
 			TextVRAM();
 		}
 		return;
 	}
 
-	// $E80480-$E804FF : “®ìƒ|[ƒg
+	// $E80480-$E804FF : ï¿½ï¿½ï¿½ï¿½|ï¿½[ï¿½g
 	if ((addr >= 0x480) && (addr <= 0x4ff)) {
-		// ãˆÊƒoƒCƒg‚Í‰½‚à‚È‚¢
+		// ï¿½ï¿½Êƒoï¿½Cï¿½gï¿½Í‰ï¿½ï¿½ï¿½ï¿½È‚ï¿½
 		if ((addr & 1) == 0) {
 			return;
 		}
 
-		// ‰ºˆÊƒoƒCƒg‚Íƒ‰ƒXƒ^ƒRƒs[E‚‘¬ƒNƒŠƒA§Œä
+		// ï¿½ï¿½ï¿½Êƒoï¿½Cï¿½gï¿½Íƒï¿½ï¿½Xï¿½^ï¿½Rï¿½sï¿½[ï¿½Eï¿½ï¿½ï¿½ï¿½ï¿½Nï¿½ï¿½ï¿½Aï¿½ï¿½ï¿½ï¿½
 		if (data & 0x08) {
 			crtc.raster_copy = TRUE;
 		}
@@ -493,29 +500,29 @@ void FASTCALL CRTC::WriteByte(DWORD addr, DWORD data)
 			crtc.raster_copy = FALSE;
 		}
 		if (data & 0x02) {
-			// ƒ‰ƒXƒ^ƒRƒs[‚Æ‹¤—pAƒ‰ƒXƒ^ƒRƒs[—Dæ(‘åí—ªIII'90)
+			// ï¿½ï¿½ï¿½Xï¿½^ï¿½Rï¿½sï¿½[ï¿½Æ‹ï¿½ï¿½pï¿½Aï¿½ï¿½ï¿½Xï¿½^ï¿½Rï¿½sï¿½[ï¿½Dï¿½ï¿½(ï¿½ï¿½í—ªIII'90)
 			if ((crtc.fast_clr == 0) && !crtc.raster_copy) {
 #if defined(CRTC_LOG)
-				LOG0(Log::Normal, "ƒOƒ‰ƒtƒBƒbƒN‚‘¬ƒNƒŠƒAw¦");
+				LOG0(Log::Normal, "ï¿½Oï¿½ï¿½ï¿½tï¿½Bï¿½bï¿½Nï¿½ï¿½ï¿½ï¿½ï¿½Nï¿½ï¿½ï¿½Aï¿½wï¿½ï¿½");
 #endif	// CRTC_LOG
 				crtc.fast_clr = 1;
 			}
 #if defined(CRTC_LOG)
 			else {
-				LOG1(Log::Normal, "ƒOƒ‰ƒtƒBƒbƒN‚‘¬ƒNƒŠƒAw¦–³Œø State=%d", crtc.fast_clr);
+				LOG1(Log::Normal, "ï¿½Oï¿½ï¿½ï¿½tï¿½Bï¿½bï¿½Nï¿½ï¿½ï¿½ï¿½ï¿½Nï¿½ï¿½ï¿½Aï¿½wï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ State=%d", crtc.fast_clr);
 			}
 #endif	//CRTC_LOG
 		}
 		return;
 	}
 
-	LOG2(Log::Warning, "–¢À‘•ƒAƒhƒŒƒX‘‚«‚İ $%06X <- $%02X",
+	LOG2(Log::Warning, "ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Aï¿½hï¿½ï¿½ï¿½Xï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ $%06X <- $%02X",
 							memdev.first + addr, data);
 }
 
 //---------------------------------------------------------------------------
 //
-//	“Ç‚İ‚İ‚Ì‚İ
+//	ï¿½Ç‚İï¿½ï¿½İ‚Ì‚ï¿½
 //
 //---------------------------------------------------------------------------
 DWORD FASTCALL CRTC::ReadOnly(DWORD addr) const
@@ -525,29 +532,29 @@ DWORD FASTCALL CRTC::ReadOnly(DWORD addr) const
 	ASSERT(this);
 	ASSERT((addr >= memdev.first) && (addr <= memdev.last));
 
-	// $800’PˆÊ‚Åƒ‹[ƒv
+	// $800ï¿½Pï¿½Ê‚Åƒï¿½ï¿½[ï¿½v
 	addr &= 0x7ff;
 
-	// $E80000-$E803FF : ƒŒƒWƒXƒ^ƒGƒŠƒA
+	// $E80000-$E803FF : ï¿½ï¿½ï¿½Wï¿½Xï¿½^ï¿½Gï¿½ï¿½ï¿½A
 	if (addr < 0x400) {
 		addr &= 0x3f;
 		if (addr >= 0x30) {
 			return 0xff;
 		}
 
-		// “Ç‚İ‚İ(ƒGƒ“ƒfƒBƒAƒ“‚ğ”½“]‚³‚¹‚é)
+		// ï¿½Ç‚İï¿½ï¿½ï¿½(ï¿½Gï¿½ï¿½ï¿½fï¿½Bï¿½Aï¿½ï¿½ï¿½ğ”½“]ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½)
 		addr ^= 1;
 		return crtc.reg[addr];
 	}
 
-	// $E80480-$E804FF : “®ìƒ|[ƒg
+	// $E80480-$E804FF : ï¿½ï¿½ï¿½ï¿½|ï¿½[ï¿½g
 	if ((addr >= 0x480) && (addr <= 0x4ff)) {
-		// ãˆÊƒoƒCƒg‚Í0
+		// ï¿½ï¿½Êƒoï¿½Cï¿½gï¿½ï¿½0
 		if ((addr & 1) == 0) {
 			return 0;
 		}
 
-		// ‰ºˆÊƒoƒCƒg‚ÍƒOƒ‰ƒtƒBƒbƒN‚‘¬ƒNƒŠƒA‚Ì‚İ
+		// ï¿½ï¿½ï¿½Êƒoï¿½Cï¿½gï¿½ÍƒOï¿½ï¿½ï¿½tï¿½Bï¿½bï¿½Nï¿½ï¿½ï¿½ï¿½ï¿½Nï¿½ï¿½ï¿½Aï¿½Ì‚ï¿½
 		data = 0;
 		if (crtc.raster_copy) {
 			data |= 0x08;
@@ -563,27 +570,27 @@ DWORD FASTCALL CRTC::ReadOnly(DWORD addr) const
 
 //---------------------------------------------------------------------------
 //
-//	“à•”ƒf[ƒ^æ“¾
+//	ï¿½ï¿½ï¿½ï¿½ï¿½fï¿½[ï¿½^ï¿½æ“¾
 //
 //---------------------------------------------------------------------------
 void FASTCALL CRTC::GetCRTC(crtc_t *buffer) const
 {
 	ASSERT(buffer);
 
-	// “à•”ƒf[ƒ^‚ğƒRƒs[
+	// ï¿½ï¿½ï¿½ï¿½ï¿½fï¿½[ï¿½^ï¿½ï¿½ï¿½Rï¿½sï¿½[
 	*buffer = crtc;
 }
 
 //---------------------------------------------------------------------------
 //
-//	ƒCƒxƒ“ƒgƒR[ƒ‹ƒoƒbƒN
+//	ï¿½Cï¿½xï¿½ï¿½ï¿½gï¿½Rï¿½[ï¿½ï¿½ï¿½oï¿½bï¿½N
 //
 //---------------------------------------------------------------------------
 BOOL FASTCALL CRTC::Callback(Event* /*ev*/)
 {
 	ASSERT(this);
 
-	// HSync,HDisp‚Ì2‚Â‚ğŒÄ‚Ñ•ª‚¯‚é
+	// HSync,HDispï¿½ï¿½2ï¿½Â‚ï¿½ï¿½Ä‚Ñ•ï¿½ï¿½ï¿½ï¿½ï¿½
 	if (crtc.h_disp) {
 		HSync();
 	}
@@ -596,7 +603,7 @@ BOOL FASTCALL CRTC::Callback(Event* /*ev*/)
 
 //---------------------------------------------------------------------------
 //
-//	H-SYNCŠJn
+//	H-SYNCï¿½Jï¿½n
 //
 //---------------------------------------------------------------------------
 void FASTCALL CRTC::HSync()
@@ -605,70 +612,73 @@ void FASTCALL CRTC::HSync()
 
 	ASSERT(this);
 
-	// ƒvƒŠƒ“ƒ^‚É’Ê’m(’èŠú“I‚ÉBUSY‚ğ—‚Æ‚·‚½‚ß)
+	// ï¿½vï¿½ï¿½ï¿½ï¿½ï¿½^ï¿½É’Ê’m(ï¿½ï¿½ï¿½ï¿½Iï¿½ï¿½BUSYï¿½ğ—‚Æ‚ï¿½ï¿½ï¿½ï¿½ï¿½)
 	ASSERT(printer);
 	printer->HSync();
 
-	// V-SYNCƒJƒEƒ“ƒg
+	// V-SYNCï¿½Jï¿½Eï¿½ï¿½ï¿½g
 	crtc.v_synccnt--;
 	if (crtc.v_synccnt == 0) {
 		VSync();
 	}
 
-	// V-BLANKƒJƒEƒ“ƒg
+	// V-BLANKï¿½Jï¿½Eï¿½ï¿½ï¿½g
 	crtc.v_blankcnt--;
 	if (crtc.v_blankcnt == 0) {
 		VBlank();
 	}
 
-	// Ÿ‚Ìƒ^ƒCƒ~ƒ“ƒO(H-DISPŠJn)‚Ü‚Å‚ÌŠÔ‚ğİ’è
+	// ï¿½ï¿½ï¿½Ìƒ^ï¿½Cï¿½~ï¿½ï¿½ï¿½O(H-DISPï¿½Jï¿½n)ï¿½Ü‚Å‚Ìï¿½ï¿½Ô‚ï¿½İ’ï¿½
 	crtc.ns += crtc.h_pulse;
 	hus = Ns2Hus(crtc.ns);
 	hus -= crtc.hus;
 	event.SetTime(hus);
 	crtc.hus += hus;
 
-	// “¯Šúˆ—(40ms‚²‚Æ)
+	// ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½(40msï¿½ï¿½ï¿½ï¿½)
 	if (crtc.hus >= 80000) {
 		crtc.hus -= 80000;
 		ASSERT(crtc.ns >= 40000000);
 		crtc.ns -= 40000000;
 	}
 
-	// ƒtƒ‰ƒOİ’è
+	// ï¿½tï¿½ï¿½ï¿½Oï¿½İ’ï¿½
 	crtc.h_disp = FALSE;
 
-	// GPIPİ’è
+	// GPIPï¿½İ’ï¿½
 	mfp->SetGPIP(7, 1);
 
-	// •`‰æ
+	// ï¿½ï¿½ï¿½Xï¿½^ï¿½ï¿½ï¿½èï¿½ï¿½ (Alt timing)
+	if (g_alt_raster_timing) {
+		CheckRaster();
+	}
+
+	// ï¿½`ï¿½ï¿½
 	crtc.v_scan++;
 	if (!crtc.v_blank) {
-		// ƒŒƒ“ƒ_ƒŠƒ“ƒO
+		// ï¿½ï¿½ï¿½ï¿½ï¿½_ï¿½ï¿½ï¿½ï¿½ï¿½O
 		render->HSync(crtc.v_scan);
 	}
 
-	// ƒ‰ƒXƒ^Š„‚è‚İ
-#if 0
-	CheckRaster();
-	crtc.raster_count++;
-#endif
-
-	// ƒeƒLƒXƒg‰æ–Êƒ‰ƒXƒ^ƒRƒs[
+	// ï¿½eï¿½Lï¿½Xï¿½gï¿½ï¿½Êƒï¿½ï¿½Xï¿½^ï¿½Rï¿½sï¿½[
 	if (crtc.raster_copy && crtc.raster_exec) {
 		tvram->RasterCopy();
 		crtc.raster_exec = FALSE;
 	}
 
-	// ƒOƒ‰ƒtƒBƒbƒN‰æ–Ê‚‘¬ƒNƒŠƒA
+	// ï¿½Oï¿½ï¿½ï¿½tï¿½Bï¿½bï¿½Nï¿½ï¿½Êï¿½ï¿½ï¿½ï¿½Nï¿½ï¿½ï¿½A
 	if (crtc.fast_clr == 2) {
 		gvram->FastClr(&crtc);
+	}
+
+	if (g_alt_raster_timing) {
+		crtc.raster_count++;
 	}
 }
 
 //---------------------------------------------------------------------------
 //
-//	H-DISPŠJn
+//	H-DISPï¿½Jï¿½n
 //
 //---------------------------------------------------------------------------
 void FASTCALL CRTC::HDisp()
@@ -678,13 +688,16 @@ void FASTCALL CRTC::HDisp()
 
 	ASSERT(this);
 
-#if 1
-	// ƒ‰ƒXƒ^Š„‚è‚İ
-	CheckRaster();
-	crtc.raster_count++;
-#endif
+	// ï¿½ï¿½ï¿½Xï¿½^ï¿½ï¿½ï¿½èï¿½ï¿½ (Original timing)
+	if (!g_alt_raster_timing) {
+		CheckRaster();
+		crtc.raster_count++;
+	}
+	else {
+		CheckRaster();
+	}
 
-	// Ÿ‚Ìƒ^ƒCƒ~ƒ“ƒO(H-SYNCŠJn)‚Ü‚Å‚ÌŠÔ‚ğİ’è
+	// ï¿½ï¿½ï¿½Ìƒ^ï¿½Cï¿½~ï¿½ï¿½ï¿½O(H-SYNCï¿½Jï¿½n)ï¿½Ü‚Å‚Ìï¿½ï¿½Ô‚ï¿½İ’ï¿½
 	ns = crtc.h_sync - crtc.h_pulse;
 	ASSERT(ns > 0);
 	crtc.ns += ns;
@@ -693,65 +706,65 @@ void FASTCALL CRTC::HDisp()
 	event.SetTime(hus);
 	crtc.hus += hus;
 
-	// ƒtƒ‰ƒOİ’è
+	// ï¿½tï¿½ï¿½ï¿½Oï¿½İ’ï¿½
 	crtc.h_disp = TRUE;
 
-	// GPIPİ’è
+	// GPIPï¿½İ’ï¿½
 	mfp->SetGPIP(7,0);
 
-	// ƒ‰ƒXƒ^ƒRƒs[‹–‰Â
+	// ï¿½ï¿½ï¿½Xï¿½^ï¿½Rï¿½sï¿½[ï¿½ï¿½ï¿½ï¿½
 	crtc.raster_exec = TRUE;
 }
 
 //---------------------------------------------------------------------------
 //
-//	V-SYNCŠJn(V-DISPŠJn‚ğŠÜ‚Ş)
+//	V-SYNCï¿½Jï¿½n(V-DISPï¿½Jï¿½nï¿½ï¿½ï¿½Ü‚ï¿½)
 //
 //---------------------------------------------------------------------------
 void FASTCALL CRTC::VSync()
 {
 	ASSERT(this);
 
-	// V-SYNCI—¹‚È‚ç
+	// V-SYNCï¿½Iï¿½ï¿½ï¿½È‚ï¿½
 	if (!crtc.v_disp) {
-		// ƒtƒ‰ƒOİ’è
+		// ï¿½tï¿½ï¿½ï¿½Oï¿½İ’ï¿½
 		crtc.v_disp = TRUE;
 
-		// ŠÔİ’è
+		// ï¿½ï¿½ï¿½Ôİ’ï¿½
 		crtc.v_synccnt = (crtc.v_sync - crtc.v_pulse);
 		return;
 	}
 
-	// ‰ğ‘œ“x•ÏX‚ª‚ ‚ê‚ÎA‚±‚±‚Å•ÏX
+	// ï¿½ğ‘œ“xï¿½ÏXï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ÎAï¿½ï¿½ï¿½ï¿½ï¿½Å•ÏX
 	if (crtc.changed) {
 		ReCalc();
 	}
 
-	// V-SYNCI—¹‚Ü‚Å‚ÌŠÔ‚ğİ’è
+	// V-SYNCï¿½Iï¿½ï¿½ï¿½Ü‚Å‚Ìï¿½ï¿½Ô‚ï¿½İ’ï¿½
 	crtc.v_synccnt = crtc.v_pulse;
 
-	// V-BLANK‚Ìó‘Ô‚ÆAŠÔ‚ğİ’è
+	// V-BLANKï¿½Ìï¿½Ô‚ÆAï¿½ï¿½ï¿½Ô‚ï¿½İ’ï¿½
 	if (crtc.v_front < 0) {
-		// ‚Ü‚¾•\¦’†(“Áê)
+		// ï¿½Ü‚ï¿½ï¿½\ï¿½ï¿½ï¿½ï¿½(ï¿½ï¿½ï¿½ï¿½)
 		crtc.v_blank = FALSE;
 		crtc.v_blankcnt = (-crtc.v_front) + 1;
 	}
 	else {
-		// ‚·‚Å‚Éƒuƒ‰ƒ“ƒN’†(’Êí)
+		// ï¿½ï¿½ï¿½Å‚Éƒuï¿½ï¿½ï¿½ï¿½ï¿½Nï¿½ï¿½(ï¿½Êï¿½)
 		crtc.v_blank = TRUE;
 		crtc.v_blankcnt = (crtc.v_pulse + crtc.v_back + 1);
 	}
 
-	// ƒtƒ‰ƒOİ’è
+	// ï¿½tï¿½ï¿½ï¿½Oï¿½İ’ï¿½
 	crtc.v_disp = FALSE;
 
-	// ƒ‰ƒXƒ^ƒJƒEƒ“ƒg‰Šú‰»
+	// ï¿½ï¿½ï¿½Xï¿½^ï¿½Jï¿½Eï¿½ï¿½ï¿½gï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 	crtc.raster_count = 0;
 }
 
 //---------------------------------------------------------------------------
 //
-//	ÄŒvZ
+//	ï¿½ÄŒvï¿½Z
 //
 //---------------------------------------------------------------------------
 void FASTCALL CRTC::ReCalc()
@@ -763,29 +776,29 @@ void FASTCALL CRTC::ReCalc()
 	ASSERT(this);
 	ASSERT(crtc.changed);
 
-	// CRTCƒŒƒWƒXƒ^0‚ªƒNƒŠƒA‚³‚ê‚Ä‚¢‚ê‚ÎA–³Œø(MacƒGƒ~ƒ…ƒŒ[ƒ^)
+	// CRTCï¿½ï¿½ï¿½Wï¿½Xï¿½^0ï¿½ï¿½ï¿½Nï¿½ï¿½ï¿½Aï¿½ï¿½ï¿½ï¿½Ä‚ï¿½ï¿½ï¿½ÎAï¿½ï¿½ï¿½ï¿½(Macï¿½Gï¿½~ï¿½ï¿½ï¿½ï¿½ï¿½[ï¿½^)
 	if (crtc.reg[0x0] != 0) {
 #if defined(CRTC_LOG)
-		LOG0(Log::Normal, "ÄŒvZ");
+		LOG0(Log::Normal, "ï¿½ÄŒvï¿½Z");
 #endif	// CRTC_LOG
 
-		// ƒhƒbƒgƒNƒƒbƒN‚ğæ“¾
+		// ï¿½hï¿½bï¿½gï¿½Nï¿½ï¿½ï¿½bï¿½Nï¿½ï¿½ï¿½æ“¾
 		dc = Get8DotClock();
 
-		// …•½(‚·‚×‚Äns’PˆÊ)
+		// ï¿½ï¿½ï¿½ï¿½(ï¿½ï¿½ï¿½×‚ï¿½nsï¿½Pï¿½ï¿½)
 		crtc.h_sync = (crtc.reg[0x0] + 1) * dc / 100;
 		crtc.h_pulse = (crtc.reg[0x02] + 1) * dc / 100;
 		crtc.h_back = (crtc.reg[0x04] + 5 - crtc.reg[0x02] - 1) * dc / 100;
 		crtc.h_front = (crtc.reg[0x0] + 1 - crtc.reg[0x06] - 5) * dc / 100;
 
-		// ‚’¼(‚·‚×‚ÄH-Sync’PˆÊ)
+		// ï¿½ï¿½ï¿½ï¿½(ï¿½ï¿½ï¿½×‚ï¿½H-Syncï¿½Pï¿½ï¿½)
 		p = (WORD *)crtc.reg;
 		crtc.v_sync = ((p[4] & 0x3ff) + 1);
 		crtc.v_pulse = ((p[5] & 0x3ff) + 1);
 		crtc.v_back = ((p[6] & 0x3ff) + 1) - crtc.v_pulse;
 		crtc.v_front = crtc.v_sync - ((p[7] & 0x3ff) + 1);
 
-		// V-FRONT‚ªƒ}ƒCƒiƒX‚·‚¬‚éê‡‚ÍA1…•½ŠúŠÔ•ª‚Ì‚İ(ƒwƒ‹ƒnƒEƒ“ƒhAƒRƒbƒgƒ“)
+		// V-FRONTï¿½ï¿½ï¿½}ï¿½Cï¿½iï¿½Xï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ê‡ï¿½ÍA1ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ô•ï¿½ï¿½Ì‚ï¿½(ï¿½wï¿½ï¿½ï¿½nï¿½Eï¿½ï¿½ï¿½hï¿½Aï¿½Rï¿½bï¿½gï¿½ï¿½)
 		if (crtc.v_front < 0) {
 			over = -crtc.v_front;
 			over -= crtc.v_back;
@@ -794,7 +807,7 @@ void FASTCALL CRTC::ReCalc()
 			}
 		}
 
-		// ƒhƒbƒg”‚ğZo
+		// ï¿½hï¿½bï¿½gï¿½ï¿½ï¿½ï¿½ï¿½Zï¿½o
 		crtc.h_dots = (crtc.reg[0x0] + 1);
 		crtc.h_dots -= (crtc.reg[0x02] + 1);
 		crtc.h_dots -= (crtc.reg[0x04] + 5 - crtc.reg[0x02] - 1);
@@ -803,10 +816,10 @@ void FASTCALL CRTC::ReCalc()
 		crtc.v_dots = crtc.v_sync - crtc.v_pulse - crtc.v_back - crtc.v_front;
 	}
 
-	// ”{—¦İ’è(…•½)
+	// ï¿½{ï¿½ï¿½ï¿½İ’ï¿½(ï¿½ï¿½ï¿½ï¿½)
 	crtc.hd = (crtc.reg[0x28] & 3);
 	if (crtc.hd == 3) {
-		LOG0(Log::Warning, "‰¡ƒhƒbƒg”50MHzƒ‚[ƒh(CompactXVI)");
+		LOG0(Log::Warning, "ï¿½ï¿½ï¿½hï¿½bï¿½gï¿½ï¿½50MHzï¿½ï¿½ï¿½[ï¿½h(CompactXVI)");
 	}
 	if (crtc.hd == 0) {
 		crtc.h_mul = 2;
@@ -815,29 +828,29 @@ void FASTCALL CRTC::ReCalc()
 		crtc.h_mul = 1;
 	}
 
-	// crtc.hd‚ª2ˆÈã‚Ìê‡AƒXƒvƒ‰ƒCƒg‚ÍØ‚è—£‚³‚ê‚é
+	// crtc.hdï¿½ï¿½2ï¿½Èï¿½Ìê‡ï¿½Aï¿½Xï¿½vï¿½ï¿½ï¿½Cï¿½gï¿½ÍØ‚è—£ï¿½ï¿½ï¿½ï¿½ï¿½
 	if (crtc.hd >= 2) {
-		// 768x512 or VGAƒ‚[ƒh(ƒXƒvƒ‰ƒCƒg‚È‚µ)
+		// 768x512 or VGAï¿½ï¿½ï¿½[ï¿½h(ï¿½Xï¿½vï¿½ï¿½ï¿½Cï¿½gï¿½È‚ï¿½)
 		sprite->Connect(FALSE);
 		crtc.textres = TRUE;
 	}
 	else {
-		// 256x256 or 512x512ƒ‚[ƒh(ƒXƒvƒ‰ƒCƒg‚ ‚è)
+		// 256x256 or 512x512ï¿½ï¿½ï¿½[ï¿½h(ï¿½Xï¿½vï¿½ï¿½ï¿½Cï¿½gï¿½ï¿½ï¿½ï¿½)
 		sprite->Connect(TRUE);
 		crtc.textres = FALSE;
 	}
 
-	// ”{—¦İ’è(‚’¼)
+	// ï¿½{ï¿½ï¿½ï¿½İ’ï¿½(ï¿½ï¿½ï¿½ï¿½)
 	crtc.vd = (crtc.reg[0x28] >> 2) & 3;
 	if (crtc.reg[0x28] & 0x10) {
 		// 31kHz
 		crtc.lowres = FALSE;
 		if (crtc.vd == 3) {
-			// ƒCƒ“ƒ^ƒŒ[ƒX1024dotƒ‚[ƒh
+			// ï¿½Cï¿½ï¿½ï¿½^ï¿½ï¿½ï¿½[ï¿½X1024dotï¿½ï¿½ï¿½[ï¿½h
 			crtc.v_mul = 0;
 		}
 		else {
-			// ƒCƒ“ƒ^ƒŒ[ƒXA’Êí512ƒ‚[ƒh(x1)A”{256dotƒ‚[ƒh(x2)
+			// ï¿½Cï¿½ï¿½ï¿½^ï¿½ï¿½ï¿½[ï¿½Xï¿½Aï¿½Êï¿½512ï¿½ï¿½ï¿½[ï¿½h(x1)ï¿½Aï¿½{256dotï¿½ï¿½ï¿½[ï¿½h(x2)
 			crtc.v_mul = 2 - crtc.vd;
 		}
 	}
@@ -845,81 +858,81 @@ void FASTCALL CRTC::ReCalc()
 		// 15kHz
 		crtc.lowres = TRUE;
 		if (crtc.vd == 0) {
-			// ’Êí‚Ì256dotƒ‚[ƒh(x2)
+			// ï¿½Êï¿½ï¿½256dotï¿½ï¿½ï¿½[ï¿½h(x2)
 			crtc.v_mul = 2;
 		}
 		else {
-			// ƒCƒ“ƒ^ƒŒ[ƒX512dotƒ‚[ƒh(x1)
+			// ï¿½Cï¿½ï¿½ï¿½^ï¿½ï¿½ï¿½[ï¿½X512dotï¿½ï¿½ï¿½[ï¿½h(x1)
 			crtc.v_mul = 0;
 		}
 	}
 
-	// ƒŒƒ“ƒ_ƒ‰‚Ö’Ê’m
+	// ï¿½ï¿½ï¿½ï¿½ï¿½_ï¿½ï¿½ï¿½Ö’Ê’m
 	render->SetCRTC();
 
-	// ƒtƒ‰ƒO‚¨‚ë‚·
+	// ï¿½tï¿½ï¿½ï¿½Oï¿½ï¿½ï¿½ë‚·
 	crtc.changed = FALSE;
 }
 
 
 //---------------------------------------------------------------------------
 //
-//	V-BLANKŠJn(V-SCREENŠJn‚ğŠÜ‚Ş)
+//	V-BLANKï¿½Jï¿½n(V-SCREENï¿½Jï¿½nï¿½ï¿½ï¿½Ü‚ï¿½)
 //
 //---------------------------------------------------------------------------
 void FASTCALL CRTC::VBlank()
 {
 	ASSERT(this);
 
-	// •\¦’†‚Å‚ ‚ê‚ÎAƒuƒ‰ƒ“ƒNŠJn
+	// ï¿½\ï¿½ï¿½ï¿½ï¿½ï¿½Å‚ï¿½ï¿½ï¿½ÎAï¿½uï¿½ï¿½ï¿½ï¿½ï¿½Nï¿½Jï¿½n
 	if (!crtc.v_blank) {
-		// ƒuƒ‰ƒ“ƒN‹æŠÔ‚ğİ’è
+		// ï¿½uï¿½ï¿½ï¿½ï¿½ï¿½Nï¿½ï¿½Ô‚ï¿½İ’ï¿½
 		crtc.v_blankcnt = crtc.v_pulse + crtc.v_back + crtc.v_front;
 		ASSERT((crtc.v_front < 0) || ((int)crtc.v_synccnt == crtc.v_front));
 
-		// ƒtƒ‰ƒO
+		// ï¿½tï¿½ï¿½ï¿½O
 		crtc.v_blank = TRUE;
 
 		// GPIP
 		mfp->EventCount(0, 0);
 		mfp->SetGPIP(4, 0);
 
-		// ƒOƒ‰ƒtƒBƒbƒN‚‘¬ƒNƒŠƒA
+		// ï¿½Oï¿½ï¿½ï¿½tï¿½Bï¿½bï¿½Nï¿½ï¿½ï¿½ï¿½ï¿½Nï¿½ï¿½ï¿½A
 		if (crtc.fast_clr == 2) {
 #if defined(CRTC_LOG)
-			LOG0(Log::Normal, "ƒOƒ‰ƒtƒBƒbƒN‚‘¬ƒNƒŠƒAI—¹");
+			LOG0(Log::Normal, "ï¿½Oï¿½ï¿½ï¿½tï¿½Bï¿½bï¿½Nï¿½ï¿½ï¿½ï¿½ï¿½Nï¿½ï¿½ï¿½Aï¿½Iï¿½ï¿½");
 #endif	// CRTC_LOG
 			crtc.fast_clr = 0;
 		}
 
-		// ƒŒƒ“ƒ_ƒ‰‡¬I—¹
+		// ï¿½ï¿½ï¿½ï¿½ï¿½_ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Iï¿½ï¿½
 		render->EndFrame();
 		crtc.v_scan = crtc.v_dots + 1;
 		return;
 	}
 
-	// •\¦‹æŠÔ‚ğİ’è
+	// ï¿½\ï¿½ï¿½ï¿½ï¿½Ô‚ï¿½İ’ï¿½
 	crtc.v_blankcnt = crtc.v_sync;
 	crtc.v_blankcnt -= (crtc.v_pulse + crtc.v_back + crtc.v_front);
 
-	// ƒtƒ‰ƒO
+	// ï¿½tï¿½ï¿½ï¿½O
 	crtc.v_blank = FALSE;
 
 	// GPIP
 	mfp->EventCount(0, 1);
 	mfp->SetGPIP(4, 1);
 
-	// ƒOƒ‰ƒtƒBƒbƒN‚‘¬ƒNƒŠƒA
+	// ï¿½Oï¿½ï¿½ï¿½tï¿½Bï¿½bï¿½Nï¿½ï¿½ï¿½ï¿½ï¿½Nï¿½ï¿½ï¿½A
 	if (crtc.fast_clr == 1) {
 #if defined(CRTC_LOG)
-		LOG1(Log::Normal, "ƒOƒ‰ƒtƒBƒbƒN‚‘¬ƒNƒŠƒAŠJn data=%02X", crtc.reg[42]);
+		LOG1(Log::Normal, "ï¿½Oï¿½ï¿½ï¿½tï¿½Bï¿½bï¿½Nï¿½ï¿½ï¿½ï¿½ï¿½Nï¿½ï¿½ï¿½Aï¿½Jï¿½n data=%02X", crtc.reg[42]);
 #endif	// CRTC_LOG
 		crtc.fast_clr = 2;
 		gvram->FastSet((DWORD)crtc.reg[42]);
 		gvram->FastClr(&crtc);
 	}
 
-	// ƒŒƒ“ƒ_ƒ‰‡¬ŠJnAƒJƒEƒ“ƒ^ƒAƒbƒv
+	// ï¿½ï¿½ï¿½ï¿½ï¿½_ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Jï¿½nï¿½Aï¿½Jï¿½Eï¿½ï¿½ï¿½^ï¿½Aï¿½bï¿½v
 	crtc.v_scan = 0;
 	render->StartFrame();
 	crtc.v_count++;
@@ -927,7 +940,7 @@ void FASTCALL CRTC::VBlank()
 
 //---------------------------------------------------------------------------
 //
-//	•\¦ü”g”æ“¾
+//	ï¿½\ï¿½ï¿½ï¿½ï¿½ï¿½gï¿½ï¿½ï¿½æ“¾
 //
 //---------------------------------------------------------------------------
 void FASTCALL CRTC::GetHVHz(DWORD *h, DWORD *v) const
@@ -939,7 +952,7 @@ void FASTCALL CRTC::GetHVHz(DWORD *h, DWORD *v) const
 	ASSERT(h);
 	ASSERT(v);
 
-	// ƒ`ƒFƒbƒN
+	// ï¿½`ï¿½Fï¿½bï¿½N
 	if ((crtc.h_sync == 0) || (crtc.v_sync < 100)) {
 		// NO SIGNAL
 		*h = 0;
@@ -963,7 +976,7 @@ void FASTCALL CRTC::GetHVHz(DWORD *h, DWORD *v) const
 
 //---------------------------------------------------------------------------
 //
-//	8ƒhƒbƒgƒNƒƒbƒN‚ğæ“¾(~100)
+//	8ï¿½hï¿½bï¿½gï¿½Nï¿½ï¿½ï¿½bï¿½Nï¿½ï¿½ï¿½æ“¾(ï¿½~100)
 //
 //---------------------------------------------------------------------------
 int FASTCALL CRTC::Get8DotClock() const
@@ -974,11 +987,11 @@ int FASTCALL CRTC::Get8DotClock() const
 
 	ASSERT(this);
 
-	// HF, HD‚ğCRTC R20‚æ‚èæ“¾
+	// HF, HDï¿½ï¿½CRTC R20ï¿½ï¿½ï¿½æ“¾
 	hf = (crtc.reg[0x28] >> 4) & 1;
 	hd = (crtc.reg[0x28] & 3);
 
-	// ƒCƒ“ƒfƒbƒNƒXì¬
+	// ï¿½Cï¿½ï¿½ï¿½fï¿½bï¿½Nï¿½Xï¿½ì¬
 	index = hf * 4 + hd;
 	if (crtc.hrl) {
 		index += 8;
@@ -989,8 +1002,8 @@ int FASTCALL CRTC::Get8DotClock() const
 
 //---------------------------------------------------------------------------
 //
-//	8ƒhƒbƒgƒNƒƒbƒNƒe[ƒuƒ‹
-//	(HRL,HF,HD‚©‚ç“¾‚ç‚ê‚é’lB0.01ns’PˆÊ)
+//	8ï¿½hï¿½bï¿½gï¿½Nï¿½ï¿½ï¿½bï¿½Nï¿½eï¿½[ï¿½uï¿½ï¿½
+//	(HRL,HF,HDï¿½ï¿½ï¿½ç“¾ï¿½ï¿½ï¿½ï¿½lï¿½B0.01nsï¿½Pï¿½ï¿½)
 //
 //---------------------------------------------------------------------------
 const int CRTC::DotClockTable[16] = {
@@ -1004,13 +1017,13 @@ const int CRTC::DotClockTable[16] = {
 
 //---------------------------------------------------------------------------
 //
-//	HRLİ’è
+//	HRLï¿½İ’ï¿½
 //
 //---------------------------------------------------------------------------
 void FASTCALL CRTC::SetHRL(BOOL flag)
 {
 	if (crtc.hrl != flag) {
-		// Ÿ‚ÌüŠú‚ÅÄŒvZ
+		// ï¿½ï¿½ï¿½Ìï¿½ï¿½ï¿½ï¿½ÅÄŒvï¿½Z
 		crtc.hrl = flag;
 		crtc.changed = TRUE;
 	}
@@ -1018,7 +1031,7 @@ void FASTCALL CRTC::SetHRL(BOOL flag)
 
 //---------------------------------------------------------------------------
 //
-//	HRLæ“¾
+//	HRLï¿½æ“¾
 //
 //---------------------------------------------------------------------------
 BOOL FASTCALL CRTC::GetHRL() const
@@ -1028,32 +1041,37 @@ BOOL FASTCALL CRTC::GetHRL() const
 
 //---------------------------------------------------------------------------
 //
-//	ƒ‰ƒXƒ^Š„‚è‚İƒ`ƒFƒbƒN
-//	¦ƒCƒ“ƒ^ƒŒ[ƒXƒ‚[ƒh‚É‚Í–¢‘Î‰
+//	ï¿½ï¿½ï¿½Xï¿½^ï¿½ï¿½ï¿½èï¿½İƒ`ï¿½Fï¿½bï¿½N
+//	ï¿½ï¿½ï¿½Cï¿½ï¿½ï¿½^ï¿½ï¿½ï¿½[ï¿½Xï¿½ï¿½ï¿½[ï¿½hï¿½É‚Í–ï¿½ï¿½Î‰ï¿½
 //
 //---------------------------------------------------------------------------
 void FASTCALL CRTC::CheckRaster()
 {
-#if 1
-	if (crtc.raster_count == crtc.raster_int) {
-#else
-	if (crtc.raster_count == crtc.raster_int) {
-#endif
-		// —v‹
+	BOOL hit;
+
+	if (g_alt_raster_timing) {
+		hit = (crtc.raster_count == crtc.raster_int);
+	}
+	else {
+		hit = (crtc.raster_count == crtc.raster_int);
+	}
+
+	if (hit) {
+		// ï¿½vï¿½ï¿½
 		mfp->SetGPIP(6, 0);
 #if defined(CRTC_LOG)
-		LOG2(Log::Normal, "ƒ‰ƒXƒ^Š„‚è‚İ—v‹ raster=%d scan=%d", crtc.raster_count, crtc.v_scan);
+		LOG2(Log::Normal, "ï¿½ï¿½ï¿½Xï¿½^ï¿½ï¿½ï¿½èï¿½İ—vï¿½ï¿½ raster=%d scan=%d", crtc.raster_count, crtc.v_scan);
 #endif	// CRTC_LOG
 	}
 	else {
-		// æ‚è‰º‚°
+		// ï¿½ï¿½è‰ºï¿½ï¿½
 		mfp->SetGPIP(6, 1);
 	}
 }
 
 //---------------------------------------------------------------------------
 //
-//	ƒeƒLƒXƒgVRAMŒø‰Ê
+//	ï¿½eï¿½Lï¿½Xï¿½gVRAMï¿½ï¿½ï¿½ï¿½
 //
 //---------------------------------------------------------------------------
 void FASTCALL CRTC::TextVRAM()
@@ -1061,12 +1079,12 @@ void FASTCALL CRTC::TextVRAM()
 	DWORD b;
 	DWORD w;
 
-	// “¯ƒAƒNƒZƒX
+	// ï¿½ï¿½ï¿½ï¿½ï¿½Aï¿½Nï¿½Zï¿½X
 	if (crtc.reg[43] & 1) {
 		b = (DWORD)crtc.reg[42];
 		b >>= 4;
 
-		// b4‚Íƒ}ƒ‹ƒ`ƒtƒ‰ƒO
+		// b4ï¿½Íƒ}ï¿½ï¿½ï¿½`ï¿½tï¿½ï¿½ï¿½O
 		b |= 0x10;
 		tvram->SetMulti(b);
 	}
@@ -1074,7 +1092,7 @@ void FASTCALL CRTC::TextVRAM()
 		tvram->SetMulti(0);
 	}
 
-	// ƒAƒNƒZƒXƒ}ƒXƒN
+	// ï¿½Aï¿½Nï¿½Zï¿½Xï¿½}ï¿½Xï¿½N
 	if (crtc.reg[43] & 2) {
 		w = (DWORD)crtc.reg[47];
 		w <<= 8;
@@ -1085,7 +1103,7 @@ void FASTCALL CRTC::TextVRAM()
 		tvram->SetMask(0);
 	}
 
-	// ƒ‰ƒXƒ^ƒRƒs[
+	// ï¿½ï¿½ï¿½Xï¿½^ï¿½Rï¿½sï¿½[
 	tvram->SetCopyRaster((DWORD)crtc.reg[45], (DWORD)crtc.reg[44],
 						(DWORD)(crtc.reg[42] & 0x0f));
 }
