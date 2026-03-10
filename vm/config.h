@@ -40,6 +40,7 @@ public:
 	BOOL render_vsync;					// VSync (TRUE=ON)
 	int render_mode;					// Renderizador (0=GDI, 1=DirectX 9)
 	BOOL render_shader;					// Mostrar Shader (CRT)
+	BOOL alt_raster;					// Activar correccion pseudo-3D raster timing
 
 	// ����
 	int master_volume;					// �}�X�^����(0�`100)
@@ -176,3 +177,4 @@ public:
 };
 
 #endif	// config_h
+

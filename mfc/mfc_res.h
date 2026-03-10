@@ -934,6 +934,7 @@
 #define IDM_TOGGLE_RENDERER      40184
 #define IDM_RENDER_FAST          40553
 #define IDM_TOGGLE_SHADER        40550
+#define IDM_TOGGLE_ALT_RASTER    40554
 #define IDM_TOGGLE_INTEGER_SCALING 40552
 
 // �f�o�b�O���j���[

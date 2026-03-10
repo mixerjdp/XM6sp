@@ -21,7 +21,6 @@
 #include "printer.h"
 #include "fileio.h"
 #include "crtc.h"
-#include "config.h"
 
 //===========================================================================
 //
@@ -29,10 +28,6 @@
 //
 //===========================================================================
 //#define CRTC_LOG
-
-namespace {
-BOOL g_alt_raster_timing = FALSE;
-}
 
 //---------------------------------------------------------------------------
 //
@@ -302,7 +297,6 @@ void FASTCALL CRTC::ApplyCfg(const Config *config)
 {
 	ASSERT(this);
 	ASSERT(config);
-	g_alt_raster_timing = config->alt_raster;
 	LOG0(Log::Normal, "É¦ÆÞôKùp");
 }
 
@@ -438,9 +432,7 @@ void FASTCALL CRTC::WriteByte(DWORD addr, DWORD data)
 		if ((addr == 18) || (addr == 19)) {
 			crtc.raster_int = (crtc.reg[19] << 8) + crtc.reg[18];
 			crtc.raster_int &= 0x3ff;
-			if (g_alt_raster_timing) {
-				CheckRaster();
-			}
+			CheckRaster();
 			return;
 		}
 
@@ -648,17 +640,18 @@ void FASTCALL CRTC::HSync()
 	// GPIPÉ¦ÆÞ
 	mfp->SetGPIP(7, 1);
 
-	// âëâXâ^èäéÞì×é¦ (Alt timing)
-	if (g_alt_raster_timing) {
-		CheckRaster();
-	}
-
 	// ò`ëµ
 	crtc.v_scan++;
 	if (!crtc.v_blank) {
 		// âîâôâ_âèâôâO
 		render->HSync(crtc.v_scan);
 	}
+
+	// âëâXâ^èäéÞì×é¦
+#if 0
+	CheckRaster();
+	crtc.raster_count++;
+#endif
 
 	// âeâLâXâgëµû╩âëâXâ^âRâsü[
 	if (crtc.raster_copy && crtc.raster_exec) {
@@ -669,10 +662,6 @@ void FASTCALL CRTC::HSync()
 	// âOâëâtâBâbâNëµû╩ìéæ¼âNâèâA
 	if (crtc.fast_clr == 2) {
 		gvram->FastClr(&crtc);
-	}
-
-	if (g_alt_raster_timing) {
-		crtc.raster_count++;
 	}
 }
 
@@ -688,14 +677,11 @@ void FASTCALL CRTC::HDisp()
 
 	ASSERT(this);
 
-	// âëâXâ^èäéÞì×é¦ (Original timing)
-	if (!g_alt_raster_timing) {
-		CheckRaster();
-		crtc.raster_count++;
-	}
-	else {
-		CheckRaster();
-	}
+#if 1
+	// âëâXâ^èäéÞì×é¦
+	CheckRaster();
+	crtc.raster_count++;
+#endif
 
 	// Äƒé╠â^âCâ~âôâO(H-SYNCèJÄn)é▄é┼é╠Ä×èÈé­É¦ÆÞ
 	ns = crtc.h_sync - crtc.h_pulse;
@@ -1047,16 +1033,11 @@ BOOL FASTCALL CRTC::GetHRL() const
 //---------------------------------------------------------------------------
 void FASTCALL CRTC::CheckRaster()
 {
-	BOOL hit;
-
-	if (g_alt_raster_timing) {
-		hit = (crtc.raster_count == crtc.raster_int);
-	}
-	else {
-		hit = (crtc.raster_count == crtc.raster_int);
-	}
-
-	if (hit) {
+#if 1
+	if (crtc.raster_count == crtc.raster_int) {
+#else
+	if (crtc.raster_count == crtc.raster_int) {
+#endif
 		// ùvïü
 		mfp->SetGPIP(6, 0);
 #if defined(CRTC_LOG)
