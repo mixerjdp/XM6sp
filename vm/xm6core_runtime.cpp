@@ -240,6 +240,10 @@ extern "C" XM6CORE_API int XM6CORE_CALL xm6_set_render_mode(XM6Handle handle, in
 	if (!ctx->vm->SetRenderMode(mode)) {
 		return XM6CORE_ERR_INVALID_ARGUMENT;
 	}
+
+	ctx->runtime_config.alt_raster = (mode == XM6CORE_RENDER_MODE_FAST) ? TRUE : FALSE;
+	ctx->vm->ApplyCfg(&ctx->runtime_config);
+
 	if (ctx->render) {
 		ctx->render->Complete();
 	}

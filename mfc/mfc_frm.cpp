@@ -377,8 +377,6 @@ BEGIN_MESSAGE_MAP(CFrmWnd, CFrameWnd)
 	ON_UPDATE_COMMAND_UI(IDM_TOGGLE_INTEGER_SCALING, OnToggleIntegerScalingUI)
 	ON_COMMAND(IDM_TOGGLE_SHADER, OnToggleShader)
 	ON_UPDATE_COMMAND_UI(IDM_TOGGLE_SHADER, OnToggleShaderUI)
-	ON_COMMAND(IDM_TOGGLE_ALT_RASTER, OnToggleAltRaster)
-	ON_UPDATE_COMMAND_UI(IDM_TOGGLE_ALT_RASTER, OnToggleAltRasterUI)
 
 	ON_COMMAND(IDM_EXEC, OnExec)
 	ON_UPDATE_COMMAND_UI(IDM_EXEC, OnExecUI)
@@ -3347,34 +3345,12 @@ void CFrmWnd::OnToggleRenderer()
 	}
 }
 
-void CFrmWnd::OnToggleAltRaster()
-{
-	Config config;
-	GetConfig()->GetConfig(&config);
-	config.alt_raster = !config.alt_raster;
-	GetConfig()->SetConfig(&config);
-
-	// Aplicar a la VM inmediatamente
-	::LockVM();
-	::GetVM()->ApplyCfg(&config);
-	::UnlockVM();
-}
-
-void CFrmWnd::OnToggleAltRasterUI(CCmdUI *pCmdUI)
-{
-	if (pCmdUI) {
-		Config config;
-		GetConfig()->GetConfig(&config);
-		pCmdUI->SetCheck(config.alt_raster ? 1 : 0);
-		pCmdUI->Enable(TRUE);
-	}
-}
-
 void CFrmWnd::OnRenderFast()
 {
 	Render *pRender;
 	int nMode;
 	CString info;
+	Config config;
 
 	pRender = (Render*)::GetVM()->SearchDevice(MAKEID('R', 'E', 'N', 'D'));
 	if (!pRender) {
@@ -3391,6 +3367,14 @@ void CFrmWnd::OnRenderFast()
 	if (m_pDrawView) {
 		m_pDrawView->Refresh();
 	}
+
+	GetConfig()->GetConfig(&config);
+	config.alt_raster = (nMode == Render::compositor_fast) ? TRUE : FALSE;
+	GetConfig()->SetConfig(&config);
+
+	::LockVM();
+	::GetVM()->ApplyCfg(&config);
+	::UnlockVM();
 
 	info.Format(_T("Render Fast: %s"),
 		(nMode == Render::compositor_fast) ? _T("ON") : _T("OFF"));
