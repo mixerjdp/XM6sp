@@ -141,6 +141,9 @@
     <ClCompile Include="..\vm\sram.cpp">
       <Filter>??? ????\VM</Filter>
     </ClCompile>
+    <ClCompile Include="..\vm\sram_default.cpp">
+      <Filter>??? ????\VM</Filter>
+    </ClCompile>
     <ClCompile Include="..\vm\sync.cpp">
       <Filter>??? ????\VM</Filter>
     </ClCompile>

@@ -412,17 +412,6 @@ BOOL CApp::InitInstance()
 	m_pMainWnd = (CWnd*)pFrmWnd;
 
 	pFrmWnd->RutaCompletaArchivoXM6 = m_lpCmdLine;
-	
-	//Borrar archivo SRAM.DAT	
-	try {
-		CFile::Remove("SRAM.dat");
-	}
-	catch (CFileException* e) {
-		// Manejo de excepciones espec�ficas de CFile
-		// Puedes acceder a la informaci�n detallada de la excepci�n utilizando m�todos como GetErrorMessage
-		TRACE(_T("Excepci�n de CFile\n"));
-		e->Delete();  // Importante liberar la memoria de la excepci�n
-	}
 
 	// Inicializacion
 	if (!pFrmWnd->Init()) {

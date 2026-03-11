@@ -2,8 +2,8 @@
 //
 //	X68000 EMULATOR "XM6"
 //
-//	Copyright (C) 2001-2006 ‚o‚hD(ytanaka@ipc-tokai.or.jp)
-//	[ ƒXƒ^ƒeƒBƒbƒNRAM ]
+//	Copyright (C) 2001-2006 ï¿½oï¿½hï¿½D(ytanaka@ipc-tokai.or.jp)
+//	[ ï¿½Xï¿½^ï¿½eï¿½Bï¿½bï¿½NRAM ]
 //
 //---------------------------------------------------------------------------
 
@@ -19,29 +19,31 @@
 #include "config.h"
 #include "sram.h"
 
+#include "sram_default.h"
+
 //===========================================================================
 //
-//	ƒXƒ^ƒeƒBƒbƒNRAM
+//	ï¿½Xï¿½^ï¿½eï¿½Bï¿½bï¿½NRAM
 //
 //===========================================================================
 //#define SRAM_LOG
 
 //---------------------------------------------------------------------------
 //
-//	ƒRƒ“ƒXƒgƒ‰ƒNƒ^
+//	ï¿½Rï¿½ï¿½ï¿½Xï¿½gï¿½ï¿½ï¿½Nï¿½^
 //
 //---------------------------------------------------------------------------
 SRAM::SRAM(VM *p) : MemDevice(p)
 {
-	// ƒfƒoƒCƒXID‚ğ‰Šú‰»
+	// ï¿½fï¿½oï¿½Cï¿½XIDï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 	dev.id = MAKEID('S', 'R', 'A', 'M');
 	dev.desc = "Static RAM";
 
-	// ŠJnƒAƒhƒŒƒXAI—¹ƒAƒhƒŒƒX
+	// ï¿½Jï¿½nï¿½Aï¿½hï¿½ï¿½ï¿½Xï¿½Aï¿½Iï¿½ï¿½ï¿½Aï¿½hï¿½ï¿½ï¿½X
 	memdev.first = 0xed0000;
 	memdev.last = 0xedffff;
 
-	// ‚»‚Ì‘¼‰Šú‰»
+	// ï¿½ï¿½ï¿½Ì‘ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 	sram_size = 16;
 	write_en = FALSE;
 	mem_sync = TRUE;
@@ -50,7 +52,7 @@ SRAM::SRAM(VM *p) : MemDevice(p)
 
 //---------------------------------------------------------------------------
 //
-//	‰Šú‰»
+//	ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 //
 //---------------------------------------------------------------------------
 BOOL FASTCALL SRAM::Init()
@@ -61,26 +63,29 @@ BOOL FASTCALL SRAM::Init()
 
 	ASSERT(this);
 
-	// Šî–{ƒNƒ‰ƒX
+	// ï¿½ï¿½{ï¿½Nï¿½ï¿½ï¿½X
 	if (!MemDevice::Init()) {
 		return FALSE;
 	}
 
-	// ‰Šú‰»
+	// ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 	memset(sram, 0xff, sizeof(sram));
 
-	// ƒpƒXì¬A“Ç‚İ‚İ
-	sram_path.SysFile(Filepath::SRAM);
-	fio.Load(sram_path, sram, sizeof(sram));
+	// SRAM.DATï¿½ï¿½ï¿½Lï¿½ï¿½ï¿½É‚ï¿½ï¿½ï¿½ï¿½ï¿½ç‚¸ï¿½Aï¿½rï¿½ï¿½ï¿½hï¿½ï¿½ï¿½İï¿½ï¿½İ‚Ìƒfï¿½tï¿½Hï¿½ï¿½ï¿½gï¿½ï¿½Kï¿½p
+	memcpy(sram, kDefaultSramFile, sizeof(kDefaultSramFile));
 
-	// ƒGƒ“ƒfƒBƒAƒ“”½“]
+	// ï¿½pï¿½Xï¿½ì¬ï¿½Aï¿½rï¿½ï¿½ï¿½hï¿½ï¿½ï¿½İï¿½ï¿½İ‚Ìƒfï¿½tï¿½Hï¿½ï¿½ï¿½gï¿½ï¿½SRAM.DATï¿½Éã‘ï¿½ï¿½
+	sram_path.SysFile(Filepath::SRAM);
+	fio.Save(sram_path, (void *)kDefaultSramFile, sizeof(kDefaultSramFile));
+
+	// ï¿½Gï¿½ï¿½ï¿½fï¿½Bï¿½Aï¿½ï¿½ï¿½ï¿½ï¿½]
 	for (i=0; i<sizeof(sram); i+=2) {
 		data = sram[i];
 		sram[i] = sram[i + 1];
 		sram[i + 1] = data;
 	}
 
-	// •ÏX‚È‚µ
+	// ï¿½ÏXï¿½È‚ï¿½
 	ASSERT(!changed);
 
 	return TRUE;
@@ -88,7 +93,7 @@ BOOL FASTCALL SRAM::Init()
 
 //---------------------------------------------------------------------------
 //
-//	ƒNƒŠ[ƒ“ƒAƒbƒv
+//	ï¿½Nï¿½ï¿½ï¿½[ï¿½ï¿½ï¿½Aï¿½bï¿½v
 //
 //---------------------------------------------------------------------------
 void FASTCALL SRAM::Cleanup()
@@ -99,26 +104,26 @@ void FASTCALL SRAM::Cleanup()
 
 	ASSERT(this);
 
-	// •ÏX‚ ‚ê‚Î
+	// ï¿½ÏXï¿½ï¿½ï¿½ï¿½ï¿½
 	if (changed) {
-		// ƒGƒ“ƒfƒBƒAƒ“”½“]
+		// ï¿½Gï¿½ï¿½ï¿½fï¿½Bï¿½Aï¿½ï¿½ï¿½ï¿½ï¿½]
 		for (i=0; i<sizeof(sram); i+=2) {
 			data = sram[i];
 			sram[i] = sram[i + 1];
 			sram[i + 1] = data;
 		}
 
-		// ‘‚«‚İ
+		// ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 		fio.Save(sram_path, sram, sram_size << 10);
 	}
 
-	// Šî–{ƒNƒ‰ƒX‚Ö
+	// ï¿½ï¿½{ï¿½Nï¿½ï¿½ï¿½Xï¿½ï¿½
 	MemDevice::Cleanup();
 }
 
 //---------------------------------------------------------------------------
 //
-//	ƒŠƒZƒbƒg
+//	ï¿½ï¿½ï¿½Zï¿½bï¿½g
 //
 //---------------------------------------------------------------------------
 void FASTCALL SRAM::Reset()
@@ -126,15 +131,15 @@ void FASTCALL SRAM::Reset()
 	ASSERT(this);
 	ASSERT_DIAG();
 
-	LOG0(Log::Normal, "ƒŠƒZƒbƒg");
+	LOG0(Log::Normal, "ï¿½ï¿½ï¿½Zï¿½bï¿½g");
 
-	// ‘‚«‚İ‹Ö~‚É‰Šú‰»
+	// ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½İ‹Ö~ï¿½Éï¿½ï¿½ï¿½ï¿½ï¿½
 	write_en = FALSE;
 }
 
 //---------------------------------------------------------------------------
 //
-//	ƒZ[ƒu
+//	ï¿½Zï¿½[ï¿½u
 //
 //---------------------------------------------------------------------------
 BOOL FASTCALL SRAM::Save(Fileio *fio, int /*ver*/)
@@ -143,24 +148,24 @@ BOOL FASTCALL SRAM::Save(Fileio *fio, int /*ver*/)
 	ASSERT(fio);
 	ASSERT_DIAG();
 
-	LOG0(Log::Normal, "ƒ[ƒh");
+	LOG0(Log::Normal, "ï¿½ï¿½ï¿½[ï¿½h");
 
-	// SRAMƒTƒCƒY
+	// SRAMï¿½Tï¿½Cï¿½Y
 	if (!fio->Write(&sram_size, sizeof(sram_size))) {
 		return FALSE;
 	}
 
-	// SRAM–{‘Ì(64KB‚Ü‚Æ‚ß‚Ä)
+	// SRAMï¿½{ï¿½ï¿½(64KBï¿½Ü‚Æ‚ß‚ï¿½)
 	if (!fio->Write(&sram, sizeof(sram))) {
 		return FALSE;
 	}
 
-	// ‘‚«‚İ‹–‰Âƒtƒ‰ƒO
+	// ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½İ‹ï¿½ï¿½Âƒtï¿½ï¿½ï¿½O
 	if (!fio->Write(&write_en, sizeof(write_en))) {
 		return FALSE;
 	}
 
-	// “¯Šúƒtƒ‰ƒO
+	// ï¿½ï¿½ï¿½ï¿½ï¿½tï¿½ï¿½ï¿½O
 	if (!fio->Write(&mem_sync, sizeof(mem_sync))) {
 		return FALSE;
 	}
@@ -170,7 +175,7 @@ BOOL FASTCALL SRAM::Save(Fileio *fio, int /*ver*/)
 
 //---------------------------------------------------------------------------
 //
-//	ƒ[ƒh
+//	ï¿½ï¿½ï¿½[ï¿½h
 //
 //---------------------------------------------------------------------------
 BOOL FASTCALL SRAM::Load(Fileio *fio, int /*ver*/)
@@ -181,9 +186,9 @@ BOOL FASTCALL SRAM::Load(Fileio *fio, int /*ver*/)
 	ASSERT(fio);
 	ASSERT_DIAG();
 
-	LOG0(Log::Normal, "ƒ[ƒh");
+	LOG0(Log::Normal, "ï¿½ï¿½ï¿½[ï¿½h");
 
-	// ƒoƒbƒtƒ@Šm•Û
+	// ï¿½oï¿½bï¿½tï¿½@ï¿½mï¿½ï¿½
 	try {
 		buf = new BYTE[sizeof(sram)];
 	}
@@ -194,34 +199,34 @@ BOOL FASTCALL SRAM::Load(Fileio *fio, int /*ver*/)
 		return FALSE;
 	}
 
-	// SRAMƒTƒCƒY
+	// SRAMï¿½Tï¿½Cï¿½Y
 	if (!fio->Read(&sram_size, sizeof(sram_size))) {
 		delete[] buf;
 		return FALSE;
 	}
 
-	// SRAM–{‘Ì(64KB‚Ü‚Æ‚ß‚Ä)
+	// SRAMï¿½{ï¿½ï¿½(64KBï¿½Ü‚Æ‚ß‚ï¿½)
 	if (!fio->Read(buf, sizeof(sram))) {
 		delete[] buf;
 		return FALSE;
 	}
 
-	// ”äŠr‚Æ“]‘—
+	// ï¿½ï¿½rï¿½Æ“]ï¿½ï¿½
 	if (memcmp(sram, buf, sizeof(sram)) != 0) {
 		memcpy(sram, buf, sizeof(sram));
 		changed = TRUE;
 	}
 
-	// æ‚Éƒoƒbƒtƒ@‰ğ•ú
+	// ï¿½ï¿½Éƒoï¿½bï¿½tï¿½@ï¿½ï¿½ï¿½
 	delete[] buf;
 	buf = NULL;
 
-	// ‘‚«‚İ‹–‰Âƒtƒ‰ƒO
+	// ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½İ‹ï¿½ï¿½Âƒtï¿½ï¿½ï¿½O
 	if (!fio->Read(&write_en, sizeof(write_en))) {
 		return FALSE;
 	}
 
-	// “¯Šúƒtƒ‰ƒO
+	// ï¿½ï¿½ï¿½ï¿½ï¿½tï¿½ï¿½ï¿½O
 	if (!fio->Read(&mem_sync, sizeof(mem_sync))) {
 		return FALSE;
 	}
@@ -231,7 +236,7 @@ BOOL FASTCALL SRAM::Load(Fileio *fio, int /*ver*/)
 
 //---------------------------------------------------------------------------
 //
-//	İ’è“K—p
+//	ï¿½İ’ï¿½Kï¿½p
 //
 //---------------------------------------------------------------------------
 void FASTCALL SRAM::ApplyCfg(const Config *config)
@@ -240,32 +245,32 @@ void FASTCALL SRAM::ApplyCfg(const Config *config)
 	ASSERT(config);
 	ASSERT_DIAG();
 
-	LOG0(Log::Normal, "İ’è“K—p");
+	LOG0(Log::Normal, "ï¿½İ’ï¿½Kï¿½p");
 
-	// SRAMƒTƒCƒY
+	// SRAMï¿½Tï¿½Cï¿½Y
 	if (config->sram_64k) {
 		sram_size = 64;
 #if defined(SRAM_LOG)
-		LOG0(Log::Detail, "ƒƒ‚ƒŠƒTƒCƒY 64KB");
+		LOG0(Log::Detail, "ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Tï¿½Cï¿½Y 64KB");
 #endif	// SRAM_LOG
 	}
 	else {
 		sram_size = 16;
 	}
 
-	// ƒƒ‚ƒŠƒXƒCƒbƒ`‘‚«‚İ
+	// ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Xï¿½Cï¿½bï¿½`ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 	mem_sync = config->ram_sramsync;
 }
 
 #if !defined(NDEBUG)
 //---------------------------------------------------------------------------
 //
-//	f’f
+//	ï¿½fï¿½f
 //
 //---------------------------------------------------------------------------
 void FASTCALL SRAM::AssertDiag() const
 {
-	// Šî–{ƒNƒ‰ƒX
+	// ï¿½ï¿½{ï¿½Nï¿½ï¿½ï¿½X
 	MemDevice::AssertDiag();
 
 	ASSERT(this);
@@ -281,7 +286,7 @@ void FASTCALL SRAM::AssertDiag() const
 
 //---------------------------------------------------------------------------
 //
-//	ƒoƒCƒg“Ç‚İ‚İ
+//	ï¿½oï¿½Cï¿½gï¿½Ç‚İï¿½ï¿½ï¿½
 //
 //---------------------------------------------------------------------------
 DWORD FASTCALL SRAM::ReadByte(DWORD addr)
@@ -292,27 +297,27 @@ DWORD FASTCALL SRAM::ReadByte(DWORD addr)
 	ASSERT((addr >= memdev.first) && (addr <= memdev.last));
 	ASSERT_DIAG();
 
-	// ƒIƒtƒZƒbƒgZo
+	// ï¿½Iï¿½tï¿½Zï¿½bï¿½gï¿½Zï¿½o
 	addr -= memdev.first;
 	size = (DWORD)(sram_size << 10);
 
-	// –¢À‘•ƒ`ƒFƒbƒN
+	// ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½`ï¿½Fï¿½bï¿½N
 	if (size <= addr) {
-		// ƒoƒXƒGƒ‰[
+		// ï¿½oï¿½Xï¿½Gï¿½ï¿½ï¿½[
 		cpu->BusErr(memdev.first + addr, TRUE);
 		return 0xff;
 	}
 
-	// ƒEƒFƒCƒg
+	// ï¿½Eï¿½Fï¿½Cï¿½g
 	scheduler->Wait(1);
 
-	// “Ç‚İ‚İ(ƒGƒ“ƒfƒBƒAƒ“‚ğ”½“]‚³‚¹‚é)
+	// ï¿½Ç‚İï¿½ï¿½ï¿½(ï¿½Gï¿½ï¿½ï¿½fï¿½Bï¿½Aï¿½ï¿½ï¿½ğ”½“]ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½)
 	return (DWORD)sram[addr ^ 1];
 }
 
 //---------------------------------------------------------------------------
 //
-//	ƒ[ƒh“Ç‚İ‚İ
+//	ï¿½ï¿½ï¿½[ï¿½hï¿½Ç‚İï¿½ï¿½ï¿½
 //
 //---------------------------------------------------------------------------
 DWORD FASTCALL SRAM::ReadWord(DWORD addr)
@@ -324,27 +329,27 @@ DWORD FASTCALL SRAM::ReadWord(DWORD addr)
 	ASSERT((addr & 1) == 0);
 	ASSERT_DIAG();
 
-	// ƒIƒtƒZƒbƒgZo
+	// ï¿½Iï¿½tï¿½Zï¿½bï¿½gï¿½Zï¿½o
 	addr -= memdev.first;
 	size = (DWORD)(sram_size << 10);
 
-	// –¢À‘•ƒ`ƒFƒbƒN
+	// ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½`ï¿½Fï¿½bï¿½N
 	if (size <= addr) {
-		// ƒoƒXƒGƒ‰[
+		// ï¿½oï¿½Xï¿½Gï¿½ï¿½ï¿½[
 		cpu->BusErr(memdev.first + addr, TRUE);
 		return 0xff;
 	}
 
-	// ƒEƒFƒCƒg
+	// ï¿½Eï¿½Fï¿½Cï¿½g
 	scheduler->Wait(1);
 
-	// “Ç‚İ‚İ(ƒGƒ“ƒfƒBƒAƒ“‚É’ˆÓ)
+	// ï¿½Ç‚İï¿½ï¿½ï¿½(ï¿½Gï¿½ï¿½ï¿½fï¿½Bï¿½Aï¿½ï¿½ï¿½É’ï¿½ï¿½ï¿½)
 	return (DWORD)(*(WORD *)&sram[addr]);
 }
 
 //---------------------------------------------------------------------------
 //
-//	ƒoƒCƒg‘‚«‚İ
+//	ï¿½oï¿½Cï¿½gï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 //
 //---------------------------------------------------------------------------
 void FASTCALL SRAM::WriteByte(DWORD addr, DWORD data)
@@ -356,40 +361,40 @@ void FASTCALL SRAM::WriteByte(DWORD addr, DWORD data)
 	ASSERT(data < 0x100);
 	ASSERT_DIAG();
 
-	// ƒIƒtƒZƒbƒgZo
+	// ï¿½Iï¿½tï¿½Zï¿½bï¿½gï¿½Zï¿½o
 	addr -= memdev.first;
 	size = (DWORD)(sram_size << 10);
 
-	// –¢À‘•ƒ`ƒFƒbƒN
+	// ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½`ï¿½Fï¿½bï¿½N
 	if (size <= addr) {
-		// ƒoƒXƒGƒ‰[
+		// ï¿½oï¿½Xï¿½Gï¿½ï¿½ï¿½[
 		cpu->BusErr(memdev.first + addr, FALSE);
 		return;
 	}
 
-	// ‘‚«‚İ‰Â”\ƒ`ƒFƒbƒN
+	// ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½İ‰Â”\ï¿½`ï¿½Fï¿½bï¿½N
 	if (!write_en) {
-		LOG1(Log::Warning, "‘‚«‚İ‹Ö~ $%06X", memdev.first + addr);
+		LOG1(Log::Warning, "ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½İ‹Ö~ $%06X", memdev.first + addr);
 		return;
 	}
 
-	// ƒEƒFƒCƒg
+	// ï¿½Eï¿½Fï¿½Cï¿½g
 	scheduler->Wait(1);
 
-	// ƒAƒhƒŒƒX$09‚É$00 or $10‚ª‘‚«‚Ü‚ê‚éê‡Aƒƒ‚ƒŠƒXƒCƒbƒ`©“®XV‚Å‚ ‚ê‚ÎƒXƒLƒbƒv‚³‚¹‚é
-	// (ƒŠƒZƒbƒg‚ÉMemory::Reset‚©‚ç‘‚«‚Ü‚ê‚Ä‚¢‚é‚½‚ßAã‘‚«‚É‚æ‚é”j‰ó‚ğ–h‚®)
+	// ï¿½Aï¿½hï¿½ï¿½ï¿½X$09ï¿½ï¿½$00 or $10ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ü‚ï¿½ï¿½ê‡ï¿½Aï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Xï¿½Cï¿½bï¿½`ï¿½ï¿½ï¿½ï¿½ï¿½Xï¿½Vï¿½Å‚ï¿½ï¿½ï¿½ÎƒXï¿½Lï¿½bï¿½vï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
+	// (ï¿½ï¿½ï¿½Zï¿½bï¿½gï¿½ï¿½ï¿½ï¿½Memory::Resetï¿½ï¿½ï¿½ç‘ï¿½ï¿½ï¿½ï¿½ï¿½Ü‚ï¿½Ä‚ï¿½ï¿½é‚½ï¿½ßAï¿½ã‘ï¿½ï¿½ï¿½É‚ï¿½ï¿½jï¿½ï¿½ï¿½hï¿½ï¿½)
 	if ((addr == 0x09) && (data == 0x10)) {
 		if (cpu->GetPC() == 0xff03a8) {
 			if (mem_sync) {
-				LOG2(Log::Warning, "ƒXƒCƒbƒ`•ÏX—}§ $%06X <- $%02X", memdev.first + addr, data);
+				LOG2(Log::Warning, "ï¿½Xï¿½Cï¿½bï¿½`ï¿½ÏXï¿½}ï¿½ï¿½ $%06X <- $%02X", memdev.first + addr, data);
 				return;
 			}
 		}
 	}
 
-	// ‘‚«‚İ(ƒGƒ“ƒfƒBƒAƒ“‚ğ”½“]‚³‚¹‚é)
+	// ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½(ï¿½Gï¿½ï¿½ï¿½fï¿½Bï¿½Aï¿½ï¿½ï¿½ğ”½“]ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½)
 	if (addr < 0x100) {
-		LOG2(Log::Detail, "ƒƒ‚ƒŠƒXƒCƒbƒ`•ÏX $%06X <- $%02X", memdev.first + addr, data);
+		LOG2(Log::Detail, "ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Xï¿½Cï¿½bï¿½`ï¿½ÏX $%06X <- $%02X", memdev.first + addr, data);
 	}
 	if (sram[addr ^ 1] != (BYTE)data) {
 		sram[addr ^ 1] = (BYTE)data;
@@ -399,7 +404,7 @@ void FASTCALL SRAM::WriteByte(DWORD addr, DWORD data)
 
 //---------------------------------------------------------------------------
 //
-//	ƒ[ƒh‘‚«‚İ
+//	ï¿½ï¿½ï¿½[ï¿½hï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 //
 //---------------------------------------------------------------------------
 void FASTCALL SRAM::WriteWord(DWORD addr, DWORD data)
@@ -412,29 +417,29 @@ void FASTCALL SRAM::WriteWord(DWORD addr, DWORD data)
 	ASSERT(data < 0x10000);
 	ASSERT_DIAG();
 
-	// ƒIƒtƒZƒbƒgZo
+	// ï¿½Iï¿½tï¿½Zï¿½bï¿½gï¿½Zï¿½o
 	addr -= memdev.first;
 	size = (DWORD)(sram_size << 10);
 
-	// –¢À‘•ƒ`ƒFƒbƒN
+	// ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½`ï¿½Fï¿½bï¿½N
 	if (size <= addr) {
-		// ƒoƒXƒGƒ‰[
+		// ï¿½oï¿½Xï¿½Gï¿½ï¿½ï¿½[
 		cpu->BusErr(memdev.first + addr, FALSE);
 		return;
 	}
 
-	// ‘‚«‚İ‰Â”\ƒ`ƒFƒbƒN
+	// ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½İ‰Â”\ï¿½`ï¿½Fï¿½bï¿½N
 	if (!write_en) {
-		LOG1(Log::Warning, "‘‚«‚İ‹Ö~ $%06X", memdev.first + addr);
+		LOG1(Log::Warning, "ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½İ‹Ö~ $%06X", memdev.first + addr);
 		return;
 	}
 
-	// ƒEƒFƒCƒg
+	// ï¿½Eï¿½Fï¿½Cï¿½g
 	scheduler->Wait(1);
 
-	// ‘‚«‚İ(ƒGƒ“ƒfƒBƒAƒ“‚É’ˆÓ)
+	// ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½(ï¿½Gï¿½ï¿½ï¿½fï¿½Bï¿½Aï¿½ï¿½ï¿½É’ï¿½ï¿½ï¿½)
 	if (addr < 0x100) {
-		LOG2(Log::Detail, "ƒƒ‚ƒŠƒXƒCƒbƒ`•ÏX $%06X <- $%04X", memdev.first + addr, data);
+		LOG2(Log::Detail, "ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Xï¿½Cï¿½bï¿½`ï¿½ÏX $%06X <- $%04X", memdev.first + addr, data);
 	}
 	if (*(WORD *)&sram[addr] != (WORD)data) {
 		*(WORD *)&sram[addr] = (WORD)data;
@@ -444,7 +449,7 @@ void FASTCALL SRAM::WriteWord(DWORD addr, DWORD data)
 
 //---------------------------------------------------------------------------
 //
-//	“Ç‚İ‚İ‚Ì‚İ
+//	ï¿½Ç‚İï¿½ï¿½İ‚Ì‚ï¿½
 //
 //---------------------------------------------------------------------------
 DWORD FASTCALL SRAM::ReadOnly(DWORD addr) const
@@ -455,22 +460,22 @@ DWORD FASTCALL SRAM::ReadOnly(DWORD addr) const
 	ASSERT((addr >= memdev.first) && (addr <= memdev.last));
 	ASSERT_DIAG();
 
-	// ƒIƒtƒZƒbƒgZo
+	// ï¿½Iï¿½tï¿½Zï¿½bï¿½gï¿½Zï¿½o
 	addr -= memdev.first;
 	size = (DWORD)(sram_size << 10);
 
-	// –¢À‘•ƒ`ƒFƒbƒN
+	// ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½`ï¿½Fï¿½bï¿½N
 	if (size <= addr) {
 		return 0xff;
 	}
 
-	// “Ç‚İ‚İ(ƒGƒ“ƒfƒBƒAƒ“‚ğ”½“]‚³‚¹‚é)
+	// ï¿½Ç‚İï¿½ï¿½ï¿½(ï¿½Gï¿½ï¿½ï¿½fï¿½Bï¿½Aï¿½ï¿½ï¿½ğ”½“]ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½)
 	return (DWORD)sram[addr ^ 1];
 }
 
 //---------------------------------------------------------------------------
 //
-//	SRAMƒAƒhƒŒƒXæ“¾
+//	SRAMï¿½Aï¿½hï¿½ï¿½ï¿½Xï¿½æ“¾
 //
 //---------------------------------------------------------------------------
 const BYTE* FASTCALL SRAM::GetSRAM() const
@@ -483,7 +488,7 @@ const BYTE* FASTCALL SRAM::GetSRAM() const
 
 //---------------------------------------------------------------------------
 //
-//	SRAMƒTƒCƒYæ“¾
+//	SRAMï¿½Tï¿½Cï¿½Yï¿½æ“¾
 //
 //---------------------------------------------------------------------------
 int FASTCALL SRAM::GetSize() const
@@ -496,7 +501,7 @@ int FASTCALL SRAM::GetSize() const
 
 //---------------------------------------------------------------------------
 //
-//	‘‚«‚İ‹–‰Â
+//	ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½İ‹ï¿½ï¿½ï¿½
 //
 //---------------------------------------------------------------------------
 void FASTCALL SRAM::WriteEnable(BOOL enable)
@@ -507,16 +512,16 @@ void FASTCALL SRAM::WriteEnable(BOOL enable)
 	write_en = enable;
 
 	if (write_en) {
-		LOG0(Log::Detail, "SRAM‘‚«‚İ‹–‰Â");
+		LOG0(Log::Detail, "SRAMï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½İ‹ï¿½ï¿½ï¿½");
 	}
 	else {
-		LOG0(Log::Detail, "SRAM‘‚«‚İ‹Ö~");
+		LOG0(Log::Detail, "SRAMï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½İ‹Ö~");
 	}
 }
 
 //---------------------------------------------------------------------------
 //
-//	ƒƒ‚ƒŠƒXƒCƒbƒ`İ’è
+//	ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Xï¿½Cï¿½bï¿½`ï¿½İ’ï¿½
 //
 //---------------------------------------------------------------------------
 void FASTCALL SRAM::SetMemSw(DWORD offset, DWORD data)
@@ -526,7 +531,7 @@ void FASTCALL SRAM::SetMemSw(DWORD offset, DWORD data)
 	ASSERT(data < 0x100);
 	ASSERT_DIAG();
 
-	LOG2(Log::Detail, "ƒƒ‚ƒŠƒXƒCƒbƒ`İ’è $%06X <- $%02X", memdev.first + offset, data);
+	LOG2(Log::Detail, "ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Xï¿½Cï¿½bï¿½`ï¿½İ’ï¿½ $%06X <- $%02X", memdev.first + offset, data);
 	if (sram[offset ^ 1] != (BYTE)data) {
 		sram[offset ^ 1] = (BYTE)data;
 		changed = TRUE;
@@ -535,7 +540,7 @@ void FASTCALL SRAM::SetMemSw(DWORD offset, DWORD data)
 
 //---------------------------------------------------------------------------
 //
-//	ƒƒ‚ƒŠƒXƒCƒbƒ`æ“¾
+//	ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Xï¿½Cï¿½bï¿½`ï¿½æ“¾
 //
 //---------------------------------------------------------------------------
 DWORD FASTCALL SRAM::GetMemSw(DWORD offset) const
@@ -549,7 +554,7 @@ DWORD FASTCALL SRAM::GetMemSw(DWORD offset) const
 
 //---------------------------------------------------------------------------
 //
-//	‹N“®ƒJƒEƒ“ƒ^XV
+//	ï¿½Nï¿½ï¿½ï¿½Jï¿½Eï¿½ï¿½ï¿½^ï¿½Xï¿½V
 //
 //---------------------------------------------------------------------------
 void FASTCALL SRAM::UpdateBoot()
@@ -559,19 +564,19 @@ void FASTCALL SRAM::UpdateBoot()
 	ASSERT(this);
 	ASSERT_DIAG();
 
-	// í‚É•ÏX‚ ‚è
+	// ï¿½ï¿½É•ÏXï¿½ï¿½ï¿½ï¿½
 	changed = TRUE;
 
-	// ƒ|ƒCƒ“ƒ^İ’è($ED0044)
+	// ï¿½|ï¿½Cï¿½ï¿½ï¿½^ï¿½İ’ï¿½($ED0044)
 	ptr = (WORD *)&sram[0x0044];
 
-	// ƒCƒ“ƒNƒŠƒƒ“ƒg(Low)
+	// ï¿½Cï¿½ï¿½ï¿½Nï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½g(Low)
 	if (ptr[1] != 0xffff) {
 		ptr[1] = ptr[1] + 1;
 		return;
 	}
 
-	// ƒCƒ“ƒNƒŠƒƒ“ƒg(High)
+	// ï¿½Cï¿½ï¿½ï¿½Nï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½g(High)
 	ptr[1] = 0x0000;
 	ptr[0] = ptr[0] + 1;
 }

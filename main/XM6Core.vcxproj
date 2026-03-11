@@ -238,6 +238,7 @@
     <ClCompile Include="..\vm\scsi.cpp" />
     <ClCompile Include="..\vm\sprite.cpp" />
     <ClCompile Include="..\vm\sram.cpp" />
+    <ClCompile Include="..\vm\sram_default.cpp" />
     <ClCompile Include="..\vm\sync.cpp" />
     <ClCompile Include="..\vm\sysport.cpp" />
     <ClCompile Include="..\vm\tvram.cpp" />

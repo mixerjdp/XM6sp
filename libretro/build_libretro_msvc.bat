@@ -82,6 +82,7 @@ set SOURCES=^
   ..\vm\scsi.cpp ^
   ..\vm\sprite.cpp ^
   ..\vm\sram.cpp ^
+  ..\vm\sram_default.cpp ^
   ..\vm\sync.cpp ^
   ..\vm\sysport.cpp ^
   ..\vm\tvram.cpp ^
