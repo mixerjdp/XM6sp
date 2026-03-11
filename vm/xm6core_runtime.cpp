@@ -7,6 +7,7 @@
 #include "adpcm.h"
 #include "ppi.h"
 #include "config.h"
+#include "midi.h"
 
 struct XM6ContextRuntimeShim {
 	VM *vm;
@@ -262,5 +263,112 @@ extern "C" XM6CORE_API int XM6CORE_CALL xm6_get_render_mode(XM6Handle handle)
 	}
 
 	return ctx->vm->GetRenderMode();
+}
+
+extern "C" XM6CORE_API int XM6CORE_CALL xm6_set_midi_enabled(XM6Handle handle, int enabled)
+{
+	if (!handle) {
+		return XM6CORE_ERR_INVALID_HANDLE;
+	}
+
+	XM6ContextRuntimeShim *ctx = reinterpret_cast<XM6ContextRuntimeShim*>(handle);
+	if (!ctx->vm) {
+		return XM6CORE_ERR_INVALID_HANDLE;
+	}
+
+	ctx->runtime_config.midi_bid = enabled ? 1 : 0;
+	ctx->vm->ApplyCfg(&ctx->runtime_config);
+
+	if (!enabled) {
+		MIDI *midi = (MIDI*)ctx->vm->SearchDevice(MAKEID('M', 'I', 'D', 'I'));
+		if (midi) {
+			midi->ClrTransData();
+		}
+	}
+
+	return XM6CORE_OK;
+}
+
+extern "C" XM6CORE_API int XM6CORE_CALL xm6_midi_read_output(
+	XM6Handle handle,
+	unsigned char* out_bytes,
+	unsigned int capacity,
+	unsigned int* out_count)
+{
+	if (!handle) {
+		return XM6CORE_ERR_INVALID_HANDLE;
+	}
+	if (!out_count) {
+		return XM6CORE_ERR_INVALID_ARGUMENT;
+	}
+	if ((capacity > 0) && !out_bytes) {
+		return XM6CORE_ERR_INVALID_ARGUMENT;
+	}
+
+	*out_count = 0;
+
+	XM6ContextRuntimeShim *ctx = reinterpret_cast<XM6ContextRuntimeShim*>(handle);
+	if (!ctx->vm) {
+		return XM6CORE_ERR_INVALID_HANDLE;
+	}
+
+	MIDI *midi = (MIDI*)ctx->vm->SearchDevice(MAKEID('M', 'I', 'D', 'I'));
+	if (!midi) {
+		return XM6CORE_ERR_NOT_READY;
+	}
+
+	DWORD pending = midi->GetTransNum();
+	if (pending == 0 || capacity == 0) {
+		return XM6CORE_OK;
+	}
+
+	DWORD to_copy = pending;
+	if (to_copy > capacity) {
+		to_copy = capacity;
+	}
+
+	DWORD copied = 0;
+	for (DWORD i = 0; i < to_copy; ++i) {
+		const MIDI::mididata_t *entry = midi->GetTransData(i);
+		if (!entry) {
+			break;
+		}
+		out_bytes[i] = (unsigned char)(entry->data & 0xff);
+		copied++;
+	}
+
+	midi->DelTransData(copied);
+	*out_count = (unsigned int)copied;
+	return XM6CORE_OK;
+}
+
+extern "C" XM6CORE_API int XM6CORE_CALL xm6_midi_write_input(
+	XM6Handle handle,
+	const unsigned char* bytes,
+	unsigned int count)
+{
+	if (!handle) {
+		return XM6CORE_ERR_INVALID_HANDLE;
+	}
+	if (count > 0 && !bytes) {
+		return XM6CORE_ERR_INVALID_ARGUMENT;
+	}
+
+	XM6ContextRuntimeShim *ctx = reinterpret_cast<XM6ContextRuntimeShim*>(handle);
+	if (!ctx->vm) {
+		return XM6CORE_ERR_INVALID_HANDLE;
+	}
+
+	if (count == 0) {
+		return XM6CORE_OK;
+	}
+
+	MIDI *midi = (MIDI*)ctx->vm->SearchDevice(MAKEID('M', 'I', 'D', 'I'));
+	if (!midi) {
+		return XM6CORE_ERR_NOT_READY;
+	}
+
+	midi->SetRecvData((const BYTE*)bytes, (DWORD)count);
+	return XM6CORE_OK;
 }
 

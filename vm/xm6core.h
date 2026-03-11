@@ -101,6 +101,18 @@ XM6CORE_API int XM6CORE_CALL xm6_set_mouse_port(XM6Handle handle, int port);
 XM6CORE_API int XM6CORE_CALL xm6_set_mouse_swap(XM6Handle handle, int enabled);
 XM6CORE_API int XM6CORE_CALL xm6_set_render_mode(XM6Handle handle, int mode);
 XM6CORE_API int XM6CORE_CALL xm6_get_render_mode(XM6Handle handle);
+XM6CORE_API int XM6CORE_CALL xm6_set_midi_enabled(XM6Handle handle, int enabled);
+XM6CORE_API int XM6CORE_CALL xm6_midi_read_output(
+  XM6Handle handle,
+  unsigned char* out_bytes,
+  unsigned int capacity,
+  unsigned int* out_count
+);
+XM6CORE_API int XM6CORE_CALL xm6_midi_write_input(
+  XM6Handle handle,
+  const unsigned char* bytes,
+  unsigned int count
+);
 
 XM6CORE_API int XM6CORE_CALL xm6_mount_fdd(XM6Handle handle, int drive, const char* image_path, int media_hint);
 XM6CORE_API int XM6CORE_CALL xm6_eject_fdd(XM6Handle handle, int drive, int force);

@@ -26,6 +26,8 @@ static retro_input_state_t g_input_state_cb = nullptr;
 
 static retro_log_printf_t g_log_cb = nullptr;
 static bool g_supports_input_bitmasks = false;
+static struct retro_midi_interface g_midi_cb = {};
+static bool g_supports_midi_interface = false;
 
 static const double k_fps = 55.0;
 static const unsigned k_sample_rate = 44100;
@@ -69,6 +71,15 @@ static int g_render_mode = XM6CORE_RENDER_MODE_ORIGINAL;
 static int g_master_volume = 100;
 static int g_fm_volume = 54;
 static int g_adpcm_volume = 52;
+static bool g_midi_output_enabled = false;
+enum midi_output_type_t {
+  MIDI_OUTPUT_LA = 0,
+  MIDI_OUTPUT_GM = 1,
+  MIDI_OUTPUT_GS = 2,
+  MIDI_OUTPUT_XG = 3
+};
+static int g_midi_output_type = MIDI_OUTPUT_GM;
+static bool g_midi_reset_pending = false;
 enum pointer_device_mode_t {
   POINTER_DEVICE_DISABLED = 0,
   POINTER_DEVICE_MOUSE = 1,
@@ -88,6 +99,7 @@ static const unsigned k_hdd_boot_warmup_frames = 8;
 
 static bool g_prev_start = false;
 static bool g_prev_select = false;
+static bool g_prev_midi_hotkey = false;
 
 static std::vector<int16_t> g_audio_buffer;
 
@@ -134,6 +146,14 @@ struct xm6_api_t {
   int (XM6CORE_CALL *set_mouse_swap)(XM6Handle handle, int enabled) = nullptr;
   int (XM6CORE_CALL *set_render_mode)(XM6Handle handle, int mode) = nullptr;
   int (XM6CORE_CALL *get_render_mode)(XM6Handle handle) = nullptr;
+  int (XM6CORE_CALL *set_midi_enabled)(XM6Handle handle, int enabled) = nullptr;
+  int (XM6CORE_CALL *midi_read_output)(XM6Handle handle,
+                                       unsigned char *out_bytes,
+                                       unsigned int capacity,
+                                       unsigned int *out_count) = nullptr;
+  int (XM6CORE_CALL *midi_write_input)(XM6Handle handle,
+                                       const unsigned char *bytes,
+                                       unsigned int count) = nullptr;
 
   int (XM6CORE_CALL *state_size)(XM6Handle handle, unsigned int *out_size) = nullptr;
   int (XM6CORE_CALL *save_state_mem)(XM6Handle handle, void *buffer, unsigned int size) = nullptr;
@@ -312,6 +332,9 @@ static bool load_xm6_api()
   g_xm6.set_mouse_swap = xm6_set_mouse_swap;
   g_xm6.set_render_mode = xm6_set_render_mode;
   g_xm6.get_render_mode = xm6_get_render_mode;
+  g_xm6.set_midi_enabled = xm6_set_midi_enabled;
+  g_xm6.midi_read_output = xm6_midi_read_output;
+  g_xm6.midi_write_input = xm6_midi_write_input;
   g_xm6.state_size = xm6_state_size;
   g_xm6.save_state_mem = xm6_save_state_mem;
   g_xm6.load_state_mem = xm6_load_state_mem;
@@ -412,6 +435,9 @@ static bool load_xm6_api()
   load_optional_symbol(&g_xm6.set_mouse_swap, "xm6_set_mouse_swap");
   load_optional_symbol(&g_xm6.set_render_mode, "xm6_set_render_mode");
   load_optional_symbol(&g_xm6.get_render_mode, "xm6_get_render_mode");
+  load_optional_symbol(&g_xm6.set_midi_enabled, "xm6_set_midi_enabled");
+  load_optional_symbol(&g_xm6.midi_read_output, "xm6_midi_read_output");
+  load_optional_symbol(&g_xm6.midi_write_input, "xm6_midi_write_input");
 
   core_log(RETRO_LOG_INFO, "[xm6-libretro] Loaded xm6core.dll");
   return true;
@@ -572,6 +598,8 @@ static void destroy_xm6_handle()
   g_hdd_boot_reset_countdown = 0;
   g_prev_start = false;
   g_prev_select = false;
+  g_prev_midi_hotkey = false;
+  g_midi_reset_pending = false;
   reset_mouse_state();
 }
 
@@ -1128,6 +1156,16 @@ static bool mount_current_disk()
   return mount_disk_index(g_disk_index);
 }
 
+static void init_midi_interface()
+{
+  std::memset(&g_midi_cb, 0, sizeof(g_midi_cb));
+  g_supports_midi_interface = false;
+  if (g_environ_cb) {
+    g_supports_midi_interface =
+      g_environ_cb(RETRO_ENVIRONMENT_GET_MIDI_INTERFACE, &g_midi_cb);
+  }
+}
+
 static void apply_joy_type_options()
 {
   if (!g_xm6_handle || !g_xm6.set_joy_type) {
@@ -1136,6 +1174,133 @@ static void apply_joy_type_options()
 
   for (unsigned port = 0; port < 2; ++port) {
     g_xm6.set_joy_type(g_xm6_handle, static_cast<int>(port), g_joy_type[port]);
+  }
+}
+
+static bool midi_output_ready()
+{
+  return g_midi_output_enabled &&
+         g_supports_midi_interface &&
+         g_midi_cb.write &&
+         g_midi_cb.output_enabled &&
+         g_midi_cb.output_enabled();
+}
+
+static void midi_send_bytes(const unsigned char *bytes, unsigned int length)
+{
+  if (!bytes || length == 0 || !midi_output_ready()) {
+    return;
+  }
+
+  for (unsigned int i = 0; i < length; ++i) {
+    g_midi_cb.write(bytes[i], 0);
+  }
+}
+
+static void midi_send_cc_all_channels(unsigned char controller)
+{
+  if (!midi_output_ready()) {
+    return;
+  }
+
+  for (unsigned int ch = 0; ch < 16; ++ch) {
+    g_midi_cb.write((unsigned char)(0xB0 + ch), 0);
+    g_midi_cb.write(controller, 0);
+    g_midi_cb.write(0x00, 0);
+  }
+}
+
+static void midi_send_reset_sequence()
+{
+  static const unsigned char kResetGM[] = { 0xF0, 0x7E, 0x7F, 0x09, 0x01, 0xF7 };
+  static const unsigned char kResetGS[] = { 0xF0, 0x41, 0x10, 0x42, 0x12, 0x40, 0x00, 0x7F, 0x00, 0x41, 0xF7 };
+  static const unsigned char kResetXG[] = { 0xF0, 0x43, 0x10, 0x4C, 0x00, 0x00, 0x7E, 0x00, 0xF7 };
+  static const unsigned char kResetLA[] = { 0xF0, 0x41, 0x10, 0x16, 0x12, 0x7F, 0x00, 0x00, 0x00, 0x01, 0xF7 };
+
+  if (!midi_output_ready()) {
+    return;
+  }
+
+  midi_send_cc_all_channels(0x78); // All Sound Off
+  midi_send_cc_all_channels(0x7B); // All Notes Off
+  midi_send_cc_all_channels(0x7D); // Omni Off
+  midi_send_cc_all_channels(0x7F); // Poly On
+  midi_send_cc_all_channels(0x79); // Reset All Controllers
+
+  switch (g_midi_output_type) {
+    case MIDI_OUTPUT_LA:
+      midi_send_bytes(kResetLA, static_cast<unsigned int>(sizeof(kResetLA)));
+      break;
+    case MIDI_OUTPUT_GS:
+      midi_send_bytes(kResetGM, static_cast<unsigned int>(sizeof(kResetGM)));
+      midi_send_bytes(kResetGS, static_cast<unsigned int>(sizeof(kResetGS)));
+      break;
+    case MIDI_OUTPUT_XG:
+      midi_send_bytes(kResetGM, static_cast<unsigned int>(sizeof(kResetGM)));
+      midi_send_bytes(kResetXG, static_cast<unsigned int>(sizeof(kResetXG)));
+      break;
+    case MIDI_OUTPUT_GM:
+    default:
+      midi_send_bytes(kResetGM, static_cast<unsigned int>(sizeof(kResetGM)));
+      break;
+  }
+
+  if (g_midi_cb.flush) {
+    g_midi_cb.flush();
+  }
+}
+
+static void midi_queue_reset_if_enabled()
+{
+  g_midi_reset_pending = g_midi_output_enabled;
+}
+
+static void pump_frontend_midi_input()
+{
+  if (!g_xm6_handle || !g_xm6.midi_write_input || !g_midi_output_enabled ||
+      !g_supports_midi_interface || !g_midi_cb.input_enabled || !g_midi_cb.read) {
+    return;
+  }
+
+  if (!g_midi_cb.input_enabled()) {
+    return;
+  }
+
+  unsigned char inbuf[256];
+  unsigned int count = 0;
+  while (count < static_cast<unsigned int>(sizeof(inbuf)) && g_midi_cb.read(&inbuf[count])) {
+    ++count;
+  }
+
+  if (count > 0) {
+    g_xm6.midi_write_input(g_xm6_handle, inbuf, count);
+  }
+}
+
+static void pump_core_midi_output()
+{
+  if (!g_xm6_handle || !g_xm6.midi_read_output || !midi_output_ready()) {
+    return;
+  }
+
+  unsigned char outbuf[512];
+  while (true) {
+    unsigned int count = 0;
+    if (g_xm6.midi_read_output(g_xm6_handle, outbuf,
+                               static_cast<unsigned int>(sizeof(outbuf)),
+                               &count) != XM6CORE_OK) {
+      break;
+    }
+    if (count == 0) {
+      break;
+    }
+    for (unsigned int i = 0; i < count; ++i) {
+      g_midi_cb.write(outbuf[i], 0);
+    }
+  }
+
+  if (g_midi_cb.flush) {
+    g_midi_cb.flush();
   }
 }
 
@@ -1165,6 +1330,9 @@ static void apply_runtime_core_options()
   }
   if (g_xm6.set_adpcm_volume) {
     g_xm6.set_adpcm_volume(g_xm6_handle, g_adpcm_volume);
+  }
+  if (g_xm6.set_midi_enabled) {
+    g_xm6.set_midi_enabled(g_xm6_handle, g_midi_output_enabled ? 1 : 0);
   }
   if (g_xm6.set_mouse_speed) {
     g_xm6.set_mouse_speed(g_xm6_handle, g_mouse_speed);
@@ -1295,6 +1463,24 @@ static void apply_core_option_values()
     g_adpcm_volume = std::atoi(var.value);
   }
 
+  var.key = "xm6_midi_output";
+  if (g_environ_cb(RETRO_ENVIRONMENT_GET_VARIABLE, &var) && var.value) {
+    g_midi_output_enabled = (std::strcmp(var.value, "enabled") == 0);
+  }
+
+  var.key = "xm6_midi_output_type";
+  if (g_environ_cb(RETRO_ENVIRONMENT_GET_VARIABLE, &var) && var.value) {
+    if (std::strcmp(var.value, "LA") == 0) {
+      g_midi_output_type = MIDI_OUTPUT_LA;
+    } else if (std::strcmp(var.value, "GS") == 0) {
+      g_midi_output_type = MIDI_OUTPUT_GS;
+    } else if (std::strcmp(var.value, "XG") == 0) {
+      g_midi_output_type = MIDI_OUTPUT_XG;
+    } else {
+      g_midi_output_type = MIDI_OUTPUT_GM;
+    }
+  }
+
   var.key = "xm6_pointer_device";
   if (g_environ_cb(RETRO_ENVIRONMENT_GET_VARIABLE, &var) && var.value) {
     if (std::strcmp(var.value, "mouse") == 0) {
@@ -1352,7 +1538,7 @@ static void apply_core_option_values()
     }
   }
 
-  core_log(RETRO_LOG_INFO, "[xm6-libretro] options: drive=FDD%d exec_mode=%s start_select=%s clock=%s joy1=%d joy2=%d ram=%dmb fast_floppy=%s render=%s vol(master=%d fm=%d adpcm=%d) mouse=%s port=%d speed=%d swap=%s hdd=%s",
+  core_log(RETRO_LOG_INFO, "[xm6-libretro] options: drive=FDD%d exec_mode=%s start_select=%s clock=%s joy1=%d joy2=%d ram=%dmb fast_floppy=%s render=%s vol(master=%d fm=%d adpcm=%d) midi=%s/%s mouse=%s port=%d speed=%d swap=%s hdd=%s",
            g_disk_drive,
            g_use_exec_to_frame ? "exec_to_frame" : "legacy_exec",
            (g_pad_start_select_mode == START_SELECT_F_KEYS) ? "f_keys" :
@@ -1364,6 +1550,10 @@ static void apply_core_option_values()
            g_fast_floppy ? "enabled" : "disabled",
            (g_render_mode == XM6CORE_RENDER_MODE_FAST) ? "fast" : "original",
            g_master_volume, g_fm_volume, g_adpcm_volume,
+           g_midi_output_enabled ? "enabled" : "disabled",
+           (g_midi_output_type == MIDI_OUTPUT_LA) ? "LA" :
+           (g_midi_output_type == MIDI_OUTPUT_GS) ? "GS" :
+           (g_midi_output_type == MIDI_OUTPUT_XG) ? "XG" : "GM",
            (g_pointer_device_mode == POINTER_DEVICE_MOUSE) ? "mouse" : "disabled",
            g_mouse_port, g_mouse_speed, g_mouse_swap ? "enabled" : "disabled",
            g_hdd_target_auto ? "AUTO" : (g_hdd_is_scsi ? (g_hdd_slot ? "SCSI1" : "SCSI0")
@@ -1401,6 +1591,10 @@ static void register_core_options()
       "FM volume; 54|100|90|80|70|60|50|40|30|20|10|0" },
     { "xm6_adpcm_volume",
       "ADPCM volume; 52|100|90|80|70|60|50|40|30|20|10|0" },
+    { "xm6_midi_output",
+      "MIDI output; disabled|enabled" },
+    { "xm6_midi_output_type",
+      "MIDI output type; GM|LA|GS|XG" },
     { "xm6_pointer_device",
       "Pointer device; disabled|mouse" },
     { "xm6_mouse_port",
@@ -1680,6 +1874,15 @@ static void poll_and_push_input()
     g_prev_select = select_pressed_p1;
   }
 
+  if (g_xm6.input_key) {
+    const bool midi_hotkey = joy_pressed(0, RETRO_DEVICE_ID_JOYPAD_R2);
+    if (midi_hotkey != g_prev_midi_hotkey) {
+      // ScrollLock/登録: useful for games that require MIDI enable on boot.
+      g_xm6.input_key(g_xm6_handle, 0x53, midi_hotkey ? 1 : 0);
+      g_prev_midi_hotkey = midi_hotkey;
+    }
+  }
+
   if (g_pointer_device_mode == POINTER_DEVICE_MOUSE &&
       g_mouse_port != 0 &&
       g_xm6.input_mouse &&
@@ -1886,6 +2089,8 @@ void retro_set_environment(retro_environment_t cb)
     g_supports_input_bitmasks = input_bitmasks;
   }
 
+  init_midi_interface();
+
   retro_keyboard_callback key_cb = {};
   key_cb.callback = keyboard_event_cb;
   g_environ_cb(RETRO_ENVIRONMENT_SET_KEYBOARD_CALLBACK, &key_cb);
@@ -1925,6 +2130,9 @@ void retro_init(void)
   g_master_volume = 100;
   g_fm_volume = 54;
   g_adpcm_volume = 52;
+  g_midi_output_enabled = false;
+  g_midi_output_type = MIDI_OUTPUT_GM;
+  g_midi_reset_pending = false;
   g_pointer_device_mode = POINTER_DEVICE_DISABLED;
   g_mouse_port = 0;
   g_mouse_speed = 205;
@@ -1936,11 +2144,14 @@ void retro_init(void)
   g_savestate_guard_countdown = 0;
   g_audio_buffer.clear();
 
+  init_midi_interface();
+
   load_xm6_api();
 }
 
 void retro_deinit(void)
 {
+  g_midi_reset_pending = false;
   destroy_xm6_handle();
   unload_xm6_api();
 }
@@ -1988,6 +2199,7 @@ void retro_reset(void)
     g_hdd_boot_reset_countdown = 0;
     reset_mouse_state();
     g_xm6.reset(g_xm6_handle);
+    midi_queue_reset_if_enabled();
     arm_savestate_guard("manual reset");
   }
 }
@@ -2019,6 +2231,10 @@ bool retro_load_game(const struct retro_game_info *info)
   apply_core_option_values();
   apply_runtime_core_options();
   apply_joy_type_options();
+  if (g_midi_output_enabled && !g_supports_midi_interface) {
+    core_log(RETRO_LOG_WARN,
+             "[xm6-libretro] MIDI output enabled but frontend MIDI interface is unavailable");
+  }
   reset_mouse_state();
   g_content_is_hdd = path_has_extension(info->path, ".hdf");
 
@@ -2077,6 +2293,8 @@ bool retro_load_game(const struct retro_game_info *info)
     g_xm6.reset(g_xm6_handle);
   }
 
+  midi_queue_reset_if_enabled();
+
   log_memory_exposure_status();
   g_game_loaded = true;
   return true;
@@ -2092,6 +2310,7 @@ void retro_unload_game(void)
   if (g_xm6_handle && g_xm6.eject_fdd && !g_content_is_hdd) {
     g_xm6.eject_fdd(g_xm6_handle, g_disk_drive, 1);
   }
+  g_midi_reset_pending = false;
   destroy_xm6_handle();
 }
 
@@ -2107,6 +2326,10 @@ void retro_run(void)
       g_video_cb(nullptr, g_frame_width, g_frame_height, g_frame_width * sizeof(uint32_t));
     }
     return;
+  }
+
+  if (!g_supports_midi_interface) {
+    init_midi_interface();
   }
 
   if (g_environ_cb) {
@@ -2125,6 +2348,8 @@ void retro_run(void)
       const int old_master_volume = g_master_volume;
       const int old_fm_volume = g_fm_volume;
       const int old_adpcm_volume = g_adpcm_volume;
+      const bool old_midi_output_enabled = g_midi_output_enabled;
+      const int old_midi_output_type = g_midi_output_type;
       const int old_pointer_device_mode = g_pointer_device_mode;
       const int old_mouse_port = g_mouse_port;
       const int old_mouse_speed = g_mouse_speed;
@@ -2170,6 +2395,17 @@ void retro_run(void)
                  "[xm6-libretro] Audio volumes changed (master=%d fm=%d adpcm=%d)",
                  g_master_volume, g_fm_volume, g_adpcm_volume);
       }
+      if (old_midi_output_enabled != g_midi_output_enabled ||
+          old_midi_output_type != g_midi_output_type) {
+        apply_runtime_core_options();
+        midi_queue_reset_if_enabled();
+        core_log(RETRO_LOG_INFO,
+                 "[xm6-libretro] MIDI output %s (type=%s)",
+                 g_midi_output_enabled ? "enabled" : "disabled",
+                 (g_midi_output_type == MIDI_OUTPUT_LA) ? "LA" :
+                 (g_midi_output_type == MIDI_OUTPUT_GS) ? "GS" :
+                 (g_midi_output_type == MIDI_OUTPUT_XG) ? "XG" : "GM");
+      }
       if (old_pointer_device_mode != g_pointer_device_mode ||
           old_mouse_port != g_mouse_port ||
           old_mouse_speed != g_mouse_speed ||
@@ -2196,10 +2432,12 @@ void retro_run(void)
           g_content_is_hdd ? k_savestate_guard_frames_hdd_load : k_savestate_guard_frames_floppy_load);
         if (g_content_is_hdd) {
           begin_hdd_boot_warmup("HDD");
+          midi_queue_reset_if_enabled();
         } else {
           g_video_not_ready_count = 0;
           core_log(RETRO_LOG_INFO, "[xm6-libretro] Performing floppy post-mount reset");
           g_xm6.reset(g_xm6_handle);
+          midi_queue_reset_if_enabled();
         }
       }
     }
@@ -2208,6 +2446,13 @@ void retro_run(void)
   if (g_savestate_guard_countdown > 0) {
     --g_savestate_guard_countdown;
   }
+
+  if (g_midi_reset_pending && midi_output_ready()) {
+    midi_send_reset_sequence();
+    g_midi_reset_pending = false;
+  }
+
+  pump_frontend_midi_input();
 
   poll_and_push_input();
 
@@ -2242,6 +2487,8 @@ void retro_run(void)
     g_xm6.exec(g_xm6_handle, 36000);
     vrc = g_xm6.video_poll(g_xm6_handle, &frame);
   }
+
+  pump_core_midi_output();
 
   if (vrc == XM6CORE_OK && frame.pixels_argb32 && frame.width > 0 && frame.height > 0) {
     g_video_not_ready_count = 0;
