@@ -71,12 +71,20 @@ BOOL FASTCALL SRAM::Init()
 	// ������
 	memset(sram, 0xff, sizeof(sram));
 
-	// SRAM.DAT���L���ɂ�����炸�A�r���h���ݍ��݂̃f�t�H���g��K�p
-	memcpy(sram, kDefaultSramFile, sizeof(kDefaultSramFile));
-
-	// �p�X�쐬�A�r���h���ݍ��݂̃f�t�H���g��SRAM.DAT�ɏ㏑��
+	// �p�X�쐬
 	sram_path.SysFile(Filepath::SRAM);
+
+#if defined(XM6_FORCE_DEFAULT_SRAM)
+	// libretro�p: ����f�t�H���g��K�p���āASRAM.DAT��㏑��
+	memcpy(sram, kDefaultSramFile, sizeof(kDefaultSramFile));
 	fio.Save(sram_path, (void *)kDefaultSramFile, sizeof(kDefaultSramFile));
+#else
+	// MFC�p: SRAM.DAT�����������΂��̒l���g�p�A�����Ȃ��ꍇ�̂݃f�t�H���g������
+	if (!fio.Load(sram_path, sram, sizeof(sram))) {
+		memcpy(sram, kDefaultSramFile, sizeof(kDefaultSramFile));
+		fio.Save(sram_path, (void *)kDefaultSramFile, sizeof(kDefaultSramFile));
+	}
+#endif
 
 	// �G���f�B�A�����]
 	for (i=0; i<sizeof(sram); i+=2) {

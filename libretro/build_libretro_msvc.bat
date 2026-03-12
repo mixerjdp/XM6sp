@@ -33,7 +33,7 @@ if errorlevel 1 (
   exit /b 1
 )
 
-set DEFINES=/D__LIBRETRO__ /DXM6CORE_MONOLITHIC /DXM6CORE_STATIC /DNDEBUG /D_NDEBUG /DMUSASHI_CNF=\"m68kconf_xm6.h\"
+set DEFINES=/D__LIBRETRO__ /DXM6CORE_MONOLITHIC /DXM6CORE_STATIC /DXM6_FORCE_DEFAULT_SRAM /DNDEBUG /D_NDEBUG /DMUSASHI_CNF=\"m68kconf_xm6.h\"
 set INCLUDES=/I. /I..\vm /I..\cpu /I..\cpu\Musashi /I..\cpu\Musashi\softfloat
 set COMMONFLAGS=/nologo /LD /O2 /MT /EHsc /std:c++14 /wd4018 /wd4244 /wd4267 /wd4996
 set LINKFLAGS=/link /OUT:%OUT% /OPT:REF /OPT:ICF winmm.lib
