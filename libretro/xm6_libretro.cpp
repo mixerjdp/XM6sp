@@ -2083,6 +2083,13 @@ static void push_geometry_if_changed(unsigned width, unsigned height, float aspe
     return;
   }
 
+  core_log(RETRO_LOG_INFO,
+           "[xm6-libretro] Resolution change: %ux%u -> %ux%u",
+           g_frame_width,
+           g_frame_height,
+           width,
+           height);
+
   g_frame_width = width;
   g_frame_height = height;
   g_frame_aspect = static_cast<float>(k_default_aspect);
