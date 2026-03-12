@@ -20,6 +20,7 @@
 #include "cpu.h"
 #include "memory.h"
 #include "render.h"
+#include "crtc.h"
 #include "keyboard.h"
 #include "mouse.h"
 #include "fdd.h"
@@ -39,14 +40,14 @@
 
 //---------------------------------------------------------------------------
 //
-//	バ�Eジョン斁E���E
+//	バ�Eジョン斁E���E
 //
 //---------------------------------------------------------------------------
 static const char XM6CORE_VERSION[] = "XM6 Core 2.06";
 
 //---------------------------------------------------------------------------
 //
-//	冁E��コンチE��スチE
+//	冁E��コンチE��スチE
 //	Handle opaco que mantiene el estado de una instancia del emulador.
 //
 //---------------------------------------------------------------------------
@@ -82,7 +83,7 @@ struct XM6Context {
 
 //---------------------------------------------------------------------------
 //
-//	ヘルパ�E: コンチE��スト検証
+//	ヘルパ�E: コンチE��スト検証
 //
 //---------------------------------------------------------------------------
 static inline XM6Context* ctx_from_handle(XM6Handle handle)
@@ -993,6 +994,87 @@ XM6CORE_API int XM6CORE_CALL xm6_video_consume(XM6Handle handle)
 	}
 
 	ctx->render->Complete();
+	return XM6CORE_OK;
+}
+
+//---------------------------------------------------------------------------
+//	xm6_get_video_refresh_hz - Obtiene la frecuencia vertical actual.
+//
+//	Devuelve la tasa real calculada por CRTC::GetHVHz() en Hz.
+//	Permite al frontend adaptar audio/video cuando el modo cambia entre
+//	15kHz (~61.46Hz) y 31kHz (~55.46Hz).
+//---------------------------------------------------------------------------
+XM6CORE_API int XM6CORE_CALL xm6_get_video_refresh_hz(XM6Handle handle, double *out_hz)
+{
+	XM6Context *ctx = ctx_from_handle(handle);
+	if (!ctx_valid(ctx)) {
+		return XM6CORE_ERR_INVALID_HANDLE;
+	}
+
+	if (!out_hz) {
+		return XM6CORE_ERR_INVALID_ARGUMENT;
+	}
+
+	CRTC *crtc = (CRTC*)ctx->vm->SearchDevice(MAKEID('C', 'R', 'T', 'C'));
+	if (!crtc) {
+		return XM6CORE_ERR_NOT_READY;
+	}
+
+	DWORD h = 0;
+	DWORD v = 0;
+	crtc->GetHVHz(&h, &v);
+	if (v == 0) {
+		return XM6CORE_ERR_NOT_READY;
+	}
+
+	*out_hz = (double)v / 100.0;
+	return XM6CORE_OK;
+}
+
+//---------------------------------------------------------------------------
+//	xm6_get_video_layout - Obtiene layout de video activo del render.
+//
+//	Expone ancho/alto de buffer visible y multiplicadores de presentación
+//	(h_mul/v_mul) para que el frontend ajuste geometría/aspecto.
+//---------------------------------------------------------------------------
+XM6CORE_API int XM6CORE_CALL xm6_get_video_layout(
+	XM6Handle handle,
+	unsigned int *out_width,
+	unsigned int *out_height,
+	unsigned int *out_h_mul,
+	unsigned int *out_v_mul,
+	int *out_lowres)
+{
+	XM6Context *ctx = ctx_from_handle(handle);
+	if (!ctx_valid(ctx)) {
+		return XM6CORE_ERR_INVALID_HANDLE;
+	}
+
+	if (!out_width || !out_height || !out_h_mul || !out_v_mul || !out_lowres) {
+		return XM6CORE_ERR_INVALID_ARGUMENT;
+	}
+
+	if (!ctx->render) {
+		return XM6CORE_ERR_NOT_READY;
+	}
+
+	Render::render_t *r = ctx->render->GetWorkAddr();
+	if (!r || r->width <= 0 || r->height <= 0) {
+		return XM6CORE_ERR_NOT_READY;
+	}
+
+	unsigned int h_mul = (r->h_mul > 0) ? (unsigned int)r->h_mul : 1u;
+	unsigned int v_mul = 1u;
+	if (r->v_mul == 0 || r->v_mul == 1 || r->v_mul == 2) {
+		v_mul = (unsigned int)r->v_mul;
+	}
+
+	*out_width = (unsigned int)r->width;
+	*out_height = (unsigned int)r->height;
+	*out_h_mul = h_mul;
+	*out_v_mul = v_mul;
+	*out_lowres = r->lowres ? 1 : 0;
+
 	return XM6CORE_OK;
 }
 

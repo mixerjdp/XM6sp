@@ -70,6 +70,15 @@ XM6CORE_API int XM6CORE_CALL xm6_get_power_switch(XM6Handle handle);
 
 XM6CORE_API int XM6CORE_CALL xm6_video_poll(XM6Handle handle, xm6_video_frame_t* out_frame);
 XM6CORE_API int XM6CORE_CALL xm6_video_consume(XM6Handle handle);
+XM6CORE_API int XM6CORE_CALL xm6_get_video_refresh_hz(XM6Handle handle, double* out_hz);
+XM6CORE_API int XM6CORE_CALL xm6_get_video_layout(
+  XM6Handle handle,
+  unsigned int* out_width,
+  unsigned int* out_height,
+  unsigned int* out_h_mul,
+  unsigned int* out_v_mul,
+  int* out_lowres
+);
 
 XM6CORE_API int XM6CORE_CALL xm6_audio_configure(XM6Handle handle, unsigned int sample_rate);
 XM6CORE_API int XM6CORE_CALL xm6_audio_mix(

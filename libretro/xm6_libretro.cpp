@@ -1,6 +1,7 @@
 #include <cstdio>
 #include <cstdarg>
 #include <cctype>
+#include <cmath>
 #include <cstring>
 #include <fstream>
 #include <string>
@@ -29,7 +30,8 @@ static bool g_supports_input_bitmasks = false;
 static struct retro_midi_interface g_midi_cb = {};
 static bool g_supports_midi_interface = false;
 
-static const double k_fps = 55.0;
+static const double k_default_fps = 55.0;
+static const double k_default_aspect = 4.0 / 3.0;
 static const unsigned k_sample_rate = 44100;
 static const unsigned k_default_width = 768;
 static const unsigned k_default_height = 512;
@@ -40,6 +42,8 @@ static const unsigned k_savestate_guard_frames_post_load = 180;
 
 static unsigned g_frame_width = k_default_width;
 static unsigned g_frame_height = k_default_height;
+static float g_frame_aspect = static_cast<float>(k_default_aspect);
+static double g_current_fps = k_default_fps;
 static double g_audio_fraction = 0.0;
 static bool g_game_loaded = false;
 
@@ -102,6 +106,33 @@ static bool g_prev_select = false;
 static bool g_prev_midi_hotkey = false;
 
 static std::vector<int16_t> g_audio_buffer;
+static std::vector<unsigned int> g_video_buffer;
+
+struct xm6_video_layout_t {
+  bool valid = false;
+  unsigned int width = 0;
+  unsigned int height = 0;
+  unsigned int h_mul = 1;
+  unsigned int v_mul = 1;
+  int lowres = 0;
+};
+
+struct xm6_video_mode_log_t {
+  bool valid = false;
+  unsigned int raw_w = 0;
+  unsigned int raw_h = 0;
+  unsigned int layout_w = 0;
+  unsigned int layout_h = 0;
+  unsigned int h_mul = 0;
+  unsigned int v_mul = 0;
+  int lowres = 0;
+  unsigned int h_scale = 0;
+  unsigned int v_scale = 0;
+  unsigned int out_w = 0;
+  unsigned int out_h = 0;
+};
+
+static xm6_video_mode_log_t g_video_mode_log = {};
 
 struct xm6_api_t {
   HMODULE module = nullptr;
@@ -119,6 +150,13 @@ struct xm6_api_t {
 
   int (XM6CORE_CALL *video_poll)(XM6Handle handle, xm6_video_frame_t *out_frame) = nullptr;
   int (XM6CORE_CALL *video_consume)(XM6Handle handle) = nullptr;
+  int (XM6CORE_CALL *get_video_refresh_hz)(XM6Handle handle, double *out_hz) = nullptr;
+  int (XM6CORE_CALL *get_video_layout)(XM6Handle handle,
+                                       unsigned int *out_width,
+                                       unsigned int *out_height,
+                                       unsigned int *out_h_mul,
+                                       unsigned int *out_v_mul,
+                                       int *out_lowres) = nullptr;
 
   int (XM6CORE_CALL *audio_configure)(XM6Handle handle, unsigned int sample_rate) = nullptr;
   int (XM6CORE_CALL *audio_mix)(XM6Handle handle, short *out_interleaved_stereo,
@@ -169,6 +207,7 @@ static xm6_api_t g_xm6;
 static XM6Handle g_xm6_handle = nullptr;
 
 static void core_log(enum retro_log_level level, const char *fmt, ...);
+static void reset_video_mode_log_state();
 
 static void XM6CORE_CALL xm6_host_message_cb(const char *message, void * /*user*/)
 {
@@ -310,6 +349,8 @@ static bool load_xm6_api()
   g_xm6.set_power = xm6_set_power;
   g_xm6.video_poll = xm6_video_poll;
   g_xm6.video_consume = xm6_video_consume;
+  g_xm6.get_video_refresh_hz = xm6_get_video_refresh_hz;
+  g_xm6.get_video_layout = xm6_get_video_layout;
   g_xm6.audio_configure = xm6_audio_configure;
   g_xm6.audio_mix = xm6_audio_mix;
   g_xm6.input_joy = xm6_input_joy;
@@ -418,6 +459,8 @@ static bool load_xm6_api()
 
   load_optional_symbol(&g_xm6.diag_init_probe, "xm6_diag_init_probe");
   load_optional_symbol(&g_xm6.video_attach_default_buffer, "xm6_video_attach_default_buffer");
+  load_optional_symbol(&g_xm6.get_video_refresh_hz, "xm6_get_video_refresh_hz");
+  load_optional_symbol(&g_xm6.get_video_layout, "xm6_get_video_layout");
   load_optional_symbol(&g_xm6.exec_to_frame, "xm6_exec_to_frame");
   load_optional_symbol(&g_xm6.exec_events_only, "xm6_exec_events_only");
   load_optional_symbol(&g_xm6.set_system_dir, "xm6_set_system_dir");
@@ -584,6 +627,9 @@ static void destroy_xm6_handle()
   }
   g_xm6_handle = nullptr;
   g_game_loaded = false;
+  g_current_fps = k_default_fps;
+  g_frame_aspect = static_cast<float>(k_default_aspect);
+  g_audio_fraction = 0.0;
   g_disk_paths.clear();
   g_disk_labels.clear();
   g_disk_target_drives.clear();
@@ -600,6 +646,8 @@ static void destroy_xm6_handle()
   g_prev_select = false;
   g_prev_midi_hotkey = false;
   g_midi_reset_pending = false;
+  reset_video_mode_log_state();
+  g_video_buffer.clear();
   reset_mouse_state();
 }
 
@@ -1730,9 +1778,288 @@ static void RETRO_CALLCONV keyboard_event_cb(bool down, unsigned keycode,
   g_xm6.input_key(g_xm6_handle, xm6_code, down ? 1 : 0);
 }
 
+static void fill_av_info(struct retro_system_av_info *info)
+{
+  if (!info) {
+    return;
+  }
+
+  std::memset(info, 0, sizeof(*info));
+  info->timing.fps = g_current_fps;
+  info->timing.sample_rate = static_cast<double>(k_sample_rate);
+  info->geometry.base_width = g_frame_width;
+  info->geometry.base_height = g_frame_height;
+  info->geometry.max_width = 1024;
+  info->geometry.max_height = 1024;
+  info->geometry.aspect_ratio = static_cast<float>(k_default_aspect);
+}
+
+static double sanitize_refresh_hz(double hz)
+{
+  if (hz < 20.0 || hz > 240.0) {
+    return k_default_fps;
+  }
+  return hz;
+}
+
+static float sanitize_aspect_ratio(float aspect)
+{
+  if (aspect < 0.5f || aspect > 3.0f) {
+    return static_cast<float>(k_default_aspect);
+  }
+  return aspect;
+}
+
+static unsigned int vertical_scale_from_layout(const xm6_video_layout_t &layout,
+                                               unsigned int frame_height)
+{
+  if (layout.valid && (layout.v_mul == 0 || layout.v_mul == 2)) {
+    return 2;
+  }
+
+  // Fallback: en algunos modos 31kHz el core reporta mitad de alto visible.
+  if (layout.valid && layout.lowres == 0 && frame_height > 0 && frame_height <= 300) {
+    return 2;
+  }
+
+  return 1;
+}
+
+static void compute_video_scale_factors(const xm6_video_layout_t &layout,
+                                        unsigned int frame_width,
+                                        unsigned int frame_height,
+                                        unsigned int *out_h_scale,
+                                        unsigned int *out_v_scale)
+{
+  unsigned int h_scale = 1;
+  unsigned int v_scale = 1;
+
+  if (layout.valid) {
+    if (layout.h_mul > 0) {
+      h_scale = layout.h_mul;
+    }
+    v_scale = vertical_scale_from_layout(layout, frame_height);
+  } else if (frame_width > 0 && frame_width <= 320) {
+    h_scale = 2;
+  }
+
+  if (out_h_scale) {
+    *out_h_scale = h_scale;
+  }
+  if (out_v_scale) {
+    *out_v_scale = v_scale;
+  }
+}
+
+static void reset_video_mode_log_state()
+{
+  g_video_mode_log = {};
+}
+
+static void log_video_mode_if_changed(unsigned int raw_w,
+                                      unsigned int raw_h,
+                                      const xm6_video_layout_t &layout,
+                                      unsigned int h_scale,
+                                      unsigned int v_scale,
+                                      unsigned int out_w,
+                                      unsigned int out_h)
+{
+  const unsigned int layout_w = layout.valid ? layout.width : 0;
+  const unsigned int layout_h = layout.valid ? layout.height : 0;
+  const unsigned int h_mul = layout.valid ? layout.h_mul : 0;
+  const unsigned int v_mul = layout.valid ? layout.v_mul : 0;
+  const int lowres = layout.valid ? layout.lowres : -1;
+
+  if (g_video_mode_log.valid &&
+      g_video_mode_log.raw_w == raw_w &&
+      g_video_mode_log.raw_h == raw_h &&
+      g_video_mode_log.layout_w == layout_w &&
+      g_video_mode_log.layout_h == layout_h &&
+      g_video_mode_log.h_mul == h_mul &&
+      g_video_mode_log.v_mul == v_mul &&
+      g_video_mode_log.lowres == lowres &&
+      g_video_mode_log.h_scale == h_scale &&
+      g_video_mode_log.v_scale == v_scale &&
+      g_video_mode_log.out_w == out_w &&
+      g_video_mode_log.out_h == out_h) {
+    return;
+  }
+
+  g_video_mode_log.valid = true;
+  g_video_mode_log.raw_w = raw_w;
+  g_video_mode_log.raw_h = raw_h;
+  g_video_mode_log.layout_w = layout_w;
+  g_video_mode_log.layout_h = layout_h;
+  g_video_mode_log.h_mul = h_mul;
+  g_video_mode_log.v_mul = v_mul;
+  g_video_mode_log.lowres = lowres;
+  g_video_mode_log.h_scale = h_scale;
+  g_video_mode_log.v_scale = v_scale;
+  g_video_mode_log.out_w = out_w;
+  g_video_mode_log.out_h = out_h;
+
+  core_log(RETRO_LOG_INFO,
+           "[xm6-libretro] Video mode raw=%ux%u layout=%ux%u hm=%u vm=%u low=%d scale=%ux%u out=%ux%u",
+           raw_w,
+           raw_h,
+           layout_w,
+           layout_h,
+           h_mul,
+           v_mul,
+           lowres,
+           h_scale,
+           v_scale,
+           out_w,
+           out_h);
+}
+
+static xm6_video_layout_t query_video_layout()
+{
+  xm6_video_layout_t layout;
+  if (!g_xm6_handle || !g_xm6.get_video_layout) {
+    return layout;
+  }
+
+  if (g_xm6.get_video_layout(g_xm6_handle,
+                             &layout.width,
+                             &layout.height,
+                             &layout.h_mul,
+                             &layout.v_mul,
+                             &layout.lowres) != XM6CORE_OK) {
+    return layout;
+  }
+
+  if (layout.h_mul == 0) {
+    layout.h_mul = 1;
+  }
+  layout.valid = true;
+  return layout;
+}
+
+static float query_frame_aspect(unsigned frame_width,
+                                unsigned frame_height,
+                                const xm6_video_layout_t &layout)
+{
+  (void)frame_width;
+  (void)frame_height;
+  (void)layout;
+  return static_cast<float>(k_default_aspect);
+}
+
+static bool build_scaled_video_frame(
+  const xm6_video_frame_t &frame,
+  const xm6_video_layout_t &layout,
+  const void **out_pixels,
+  unsigned *out_width,
+  unsigned *out_height,
+  unsigned *out_stride_pixels)
+{
+  if (!out_pixels || !out_width || !out_height || !out_stride_pixels) {
+    return false;
+  }
+  if (!frame.pixels_argb32 || frame.width == 0 || frame.height == 0 || frame.stride_pixels == 0) {
+    return false;
+  }
+
+  unsigned int h_factor = 1;
+  unsigned int v_factor = 1;
+  compute_video_scale_factors(layout, frame.width, frame.height, &h_factor, &v_factor);
+
+  const bool use_native_double_height = layout.valid && layout.lowres == 1 && layout.v_mul == 0;
+
+  if (h_factor == 1 && v_factor == 1 && !use_native_double_height) {
+    *out_pixels = frame.pixels_argb32;
+    *out_width = frame.width;
+    *out_height = frame.height;
+    *out_stride_pixels = frame.stride_pixels;
+    return true;
+  }
+
+  const unsigned src_w = frame.width;
+  const unsigned src_h = frame.height;
+  const unsigned dst_w = src_w * h_factor;
+  const unsigned dst_h = use_native_double_height ? (src_h * 2) : (src_h * v_factor);
+  if (dst_w == 0 || dst_h == 0 || dst_w > 4096 || dst_h > 4096) {
+    return false;
+  }
+
+  g_video_buffer.resize(static_cast<size_t>(dst_w) * static_cast<size_t>(dst_h));
+  if (use_native_double_height) {
+    for (unsigned y = 0; y < dst_h; ++y) {
+      const unsigned int *src = reinterpret_cast<const unsigned int*>(frame.pixels_argb32) +
+                                static_cast<size_t>(y) * static_cast<size_t>(frame.stride_pixels);
+      unsigned int *dst = g_video_buffer.data() + static_cast<size_t>(y) * static_cast<size_t>(dst_w);
+      if (h_factor == 1) {
+        std::memcpy(dst, src, static_cast<size_t>(src_w) * sizeof(unsigned int));
+      } else {
+        for (unsigned x = 0; x < src_w; ++x) {
+          const unsigned int pixel = src[x];
+          for (unsigned hx = 0; hx < h_factor; ++hx) {
+            dst[x * h_factor + hx] = pixel;
+          }
+        }
+      }
+    }
+  } else {
+    for (unsigned y = 0; y < src_h; ++y) {
+      const unsigned int *src = reinterpret_cast<const unsigned int*>(frame.pixels_argb32) +
+                                static_cast<size_t>(y) * static_cast<size_t>(frame.stride_pixels);
+      for (unsigned vy = 0; vy < v_factor; ++vy) {
+        unsigned int *dst = g_video_buffer.data() +
+                            static_cast<size_t>(y * v_factor + vy) * static_cast<size_t>(dst_w);
+        if (h_factor == 1) {
+          std::memcpy(dst, src, static_cast<size_t>(src_w) * sizeof(unsigned int));
+        } else {
+          for (unsigned x = 0; x < src_w; ++x) {
+            const unsigned int pixel = src[x];
+            for (unsigned hx = 0; hx < h_factor; ++hx) {
+              dst[x * h_factor + hx] = pixel;
+            }
+          }
+        }
+      }
+    }
+  }
+
+  *out_pixels = g_video_buffer.data();
+  *out_width = dst_w;
+  *out_height = dst_h;
+  *out_stride_pixels = dst_w;
+  return true;
+}
+
+static void update_refresh_rate_from_core()
+{
+  if (!g_xm6_handle || !g_xm6.get_video_refresh_hz) {
+    return;
+  }
+
+  double measured_hz = 0.0;
+  if (g_xm6.get_video_refresh_hz(g_xm6_handle, &measured_hz) != XM6CORE_OK) {
+    return;
+  }
+
+  measured_hz = sanitize_refresh_hz(measured_hz);
+  if (std::fabs(measured_hz - g_current_fps) < 0.01) {
+    return;
+  }
+
+  g_current_fps = measured_hz;
+  g_audio_fraction = 0.0;
+
+  if (g_environ_cb) {
+    retro_system_av_info av_info = {};
+    fill_av_info(&av_info);
+    g_environ_cb(RETRO_ENVIRONMENT_SET_SYSTEM_AV_INFO, &av_info);
+  }
+
+  core_log(RETRO_LOG_INFO, "[xm6-libretro] Timing updated to %.2f Hz", g_current_fps);
+}
+
 static unsigned calc_audio_frames_for_run()
 {
-  const double samples = (static_cast<double>(k_sample_rate) / k_fps) + g_audio_fraction;
+  const double fps = (g_current_fps > 1.0) ? g_current_fps : k_default_fps;
+  const double samples = (static_cast<double>(k_sample_rate) / fps) + g_audio_fraction;
   unsigned frames = static_cast<unsigned>(samples);
   g_audio_fraction = samples - static_cast<double>(frames);
 
@@ -1745,25 +2072,27 @@ static unsigned calc_audio_frames_for_run()
   return frames;
 }
 
-static void push_geometry_if_changed(unsigned width, unsigned height)
+static void push_geometry_if_changed(unsigned width, unsigned height, float aspect)
 {
   if (!g_environ_cb || width == 0 || height == 0) {
     return;
   }
 
+  aspect = sanitize_aspect_ratio(aspect);
   if (width == g_frame_width && height == g_frame_height) {
     return;
   }
 
   g_frame_width = width;
   g_frame_height = height;
+  g_frame_aspect = static_cast<float>(k_default_aspect);
 
   retro_game_geometry geom = {};
   geom.base_width = g_frame_width;
   geom.base_height = g_frame_height;
   geom.max_width = 1024;
   geom.max_height = 1024;
-  geom.aspect_ratio = 4.0f / 3.0f;
+  geom.aspect_ratio = static_cast<float>(k_default_aspect);
   g_environ_cb(RETRO_ENVIRONMENT_SET_GEOMETRY, &geom);
 }
 
@@ -2109,6 +2438,8 @@ void retro_init(void)
 {
   g_frame_width = k_default_width;
   g_frame_height = k_default_height;
+  g_frame_aspect = static_cast<float>(k_default_aspect);
+  g_current_fps = k_default_fps;
   g_audio_fraction = 0.0;
   g_game_loaded = false;
   g_disk_paths.clear();
@@ -2142,7 +2473,9 @@ void retro_init(void)
   g_mouse_left = false;
   g_mouse_right = false;
   g_savestate_guard_countdown = 0;
+  reset_video_mode_log_state();
   g_audio_buffer.clear();
+  g_video_buffer.clear();
 
   init_midi_interface();
 
@@ -2177,18 +2510,7 @@ void retro_get_system_info(struct retro_system_info *info)
 
 void retro_get_system_av_info(struct retro_system_av_info *info)
 {
-  if (!info) {
-    return;
-  }
-
-  std::memset(info, 0, sizeof(*info));
-  info->timing.fps = k_fps;
-  info->timing.sample_rate = static_cast<double>(k_sample_rate);
-  info->geometry.base_width = g_frame_width;
-  info->geometry.base_height = g_frame_height;
-  info->geometry.max_width = 1024;
-  info->geometry.max_height = 1024;
-  info->geometry.aspect_ratio = 4.0f / 3.0f;
+  fill_av_info(info);
 }
 
 void retro_set_controller_port_device(unsigned, unsigned) {}
@@ -2457,6 +2779,8 @@ void retro_run(void)
   poll_and_push_input();
 
   if (run_pending_hdd_boot_warmup_step()) {
+    update_refresh_rate_from_core();
+
     if (g_video_cb) {
       g_video_cb(nullptr, g_frame_width, g_frame_height, g_frame_width * sizeof(uint32_t));
     }
@@ -2480,6 +2804,8 @@ void retro_run(void)
     g_xm6.exec(g_xm6_handle, 36000);
   }
 
+  update_refresh_rate_from_core();
+
   xm6_video_frame_t frame = {};
   int vrc = g_xm6.video_poll(g_xm6_handle, &frame);
   if (vrc != XM6CORE_OK && g_use_exec_to_frame) {
@@ -2492,10 +2818,40 @@ void retro_run(void)
 
   if (vrc == XM6CORE_OK && frame.pixels_argb32 && frame.width > 0 && frame.height > 0) {
     g_video_not_ready_count = 0;
-    push_geometry_if_changed(frame.width, frame.height);
+    const xm6_video_layout_t layout = query_video_layout();
+    const float frame_aspect = query_frame_aspect(frame.width, frame.height, layout);
+    unsigned int h_scale = 1;
+    unsigned int v_scale = 1;
+    compute_video_scale_factors(layout, frame.width, frame.height, &h_scale, &v_scale);
+
+    const void *video_pixels = frame.pixels_argb32;
+    unsigned video_width = frame.width;
+    unsigned video_height = frame.height;
+    unsigned video_stride_pixels = frame.stride_pixels;
+    if (!build_scaled_video_frame(frame,
+                                  layout,
+                                  &video_pixels,
+                                  &video_width,
+                                  &video_height,
+                                  &video_stride_pixels)) {
+      video_pixels = frame.pixels_argb32;
+      video_width = frame.width;
+      video_height = frame.height;
+      video_stride_pixels = frame.stride_pixels;
+    }
+
+    log_video_mode_if_changed(frame.width,
+                              frame.height,
+                              layout,
+                              h_scale,
+                              v_scale,
+                              video_width,
+                              video_height);
+
+    push_geometry_if_changed(video_width, video_height, frame_aspect);
     if (g_video_cb) {
-      g_video_cb(frame.pixels_argb32, frame.width, frame.height,
-                 frame.stride_pixels * sizeof(uint32_t));
+      g_video_cb(video_pixels, video_width, video_height,
+                 video_stride_pixels * sizeof(uint32_t));
     }
     g_xm6.video_consume(g_xm6_handle);
   } else if (g_video_cb) {
