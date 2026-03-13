@@ -39,6 +39,7 @@ static const unsigned k_savestate_guard_frames_default = 300;
 static const unsigned k_savestate_guard_frames_floppy_load = 420;
 static const unsigned k_savestate_guard_frames_hdd_load = 720;
 static const unsigned k_savestate_guard_frames_post_load = 180;
+static const unsigned k_video_probe_frames_after_mode_change = 12;
 
 static unsigned g_frame_width = k_default_width;
 static unsigned g_frame_height = k_default_height;
@@ -133,6 +134,8 @@ struct xm6_video_mode_log_t {
 };
 
 static xm6_video_mode_log_t g_video_mode_log = {};
+static unsigned g_video_probe_frames_remaining = 0;
+static unsigned g_video_probe_frame_index = 0;
 
 struct xm6_api_t {
   HMODULE module = nullptr;
@@ -1854,6 +1857,8 @@ static void compute_video_scale_factors(const xm6_video_layout_t &layout,
 static void reset_video_mode_log_state()
 {
   g_video_mode_log = {};
+  g_video_probe_frames_remaining = 0;
+  g_video_probe_frame_index = 0;
 }
 
 static void log_video_mode_if_changed(unsigned int raw_w,
@@ -1911,6 +1916,10 @@ static void log_video_mode_if_changed(unsigned int raw_w,
            v_scale,
            out_w,
            out_h);
+
+
+  g_video_probe_frames_remaining = k_video_probe_frames_after_mode_change;
+  g_video_probe_frame_index = 0;
 }
 
 static xm6_video_layout_t query_video_layout()
@@ -1934,6 +1943,72 @@ static xm6_video_layout_t query_video_layout()
   }
   layout.valid = true;
   return layout;
+}
+
+static void log_video_probe_frame(const void *video_pixels,
+                                  unsigned int out_w,
+                                  unsigned int out_h,
+                                  unsigned int out_stride_pixels,
+                                  unsigned int raw_w,
+                                  unsigned int raw_h,
+                                  const xm6_video_layout_t &layout,
+                                  unsigned int h_scale,
+                                  unsigned int v_scale)
+{
+  if (g_video_probe_frames_remaining == 0) {
+    return;
+  }
+  if (!video_pixels || out_w == 0 || out_h == 0 || out_stride_pixels == 0) {
+    return;
+  }
+
+  const unsigned int *pixels = reinterpret_cast<const unsigned int*>(video_pixels);
+  const unsigned int edge_w = (out_w >= 8u) ? (out_w / 8u) : 1u;
+  const unsigned int edge_h = (out_h >= 8u) ? (out_h / 8u) : 1u;
+
+  unsigned long long non_black = 0;
+  unsigned long long edge_left_non_black = 0;
+  unsigned long long edge_right_non_black = 0;
+  unsigned long long edge_top_non_black = 0;
+  unsigned long long edge_bottom_non_black = 0;
+  unsigned int sig = 2166136261u;
+
+  for (unsigned int y = 0; y < out_h; ++y) {
+    const unsigned int *line = pixels + static_cast<size_t>(y) * static_cast<size_t>(out_stride_pixels);
+    for (unsigned int x = 0; x < out_w; ++x) {
+      const unsigned int rgb = line[x] & 0x00FFFFFFu;
+      sig ^= rgb;
+      sig *= 16777619u;
+      if (rgb == 0) {
+        continue;
+      }
+
+      ++non_black;
+      if (x < edge_w) {
+        ++edge_left_non_black;
+      }
+      if (x + edge_w >= out_w) {
+        ++edge_right_non_black;
+      }
+      if (y < edge_h) {
+        ++edge_top_non_black;
+      }
+      if (y + edge_h >= out_h) {
+        ++edge_bottom_non_black;
+      }
+    }
+  }
+
+  const unsigned long long total_pixels =
+    static_cast<unsigned long long>(out_w) * static_cast<unsigned long long>(out_h);
+  const unsigned int non_black_permille = (total_pixels > 0)
+    ? static_cast<unsigned int>((non_black * 1000ull) / total_pixels)
+    : 0u;
+
+  
+
+  ++g_video_probe_frame_index;
+  --g_video_probe_frames_remaining;
 }
 
 static float query_frame_aspect(unsigned frame_width,
@@ -2854,6 +2929,16 @@ void retro_run(void)
                               v_scale,
                               video_width,
                               video_height);
+
+    log_video_probe_frame(video_pixels,
+                          video_width,
+                          video_height,
+                          video_stride_pixels,
+                          frame.width,
+                          frame.height,
+                          layout,
+                          h_scale,
+                          v_scale);
 
     push_geometry_if_changed(video_width, video_height, frame_aspect);
     if (g_video_cb) {

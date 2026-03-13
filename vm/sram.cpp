@@ -69,17 +69,40 @@ BOOL FASTCALL SRAM::Init()
 	}
 
 	// ������
+
+	ASSERT(this);
+
+	// {NX
+	if (!MemDevice::Init()) {
+		return FALSE;
+	}
+
+	// 
 	memset(sram, 0xff, sizeof(sram));
 
-	// �p�X�쐬
+	// pX쐬
 	sram_path.SysFile(Filepath::SRAM);
 
 #if defined(XM6_FORCE_DEFAULT_SRAM)
-	// libretro�p: ����f�t�H���g��K�p���āASRAM.DAT��㏑��
-	memcpy(sram, kDefaultSramFile, sizeof(kDefaultSramFile));
-	fio.Save(sram_path, (void *)kDefaultSramFile, sizeof(kDefaultSramFile));
+	// libretro用: セッションの初回起動時のみデフォルトを適用してSRAM.DATを初期化
+	// 以降のリセット時などは以前の値を保持するため読込を試行する
+	static bool session_initialized = false;
+	if (!session_initialized) {
+		memcpy(sram, kDefaultSramFile, sizeof(kDefaultSramFile));
+		fio.Save(sram_path, (void *)kDefaultSramFile, sizeof(kDefaultSramFile));
+		session_initialized = true;
+		LOG0(Log::Normal, "SRAM: Initial session initialization (Template applied)");
+	} else {
+		// リセット時は保存されている設定の復元を試みる
+		if (!fio.Load(sram_path, sram, sizeof(sram))) {
+			memcpy(sram, kDefaultSramFile, sizeof(kDefaultSramFile));
+			LOG0(Log::Warning, "SRAM: SRAM.DAT not found during reset, using defaults");
+		} else {
+			LOG0(Log::Normal, "SRAM: Persistence restored after reset");
+		}
+	}
 #else
-	// MFC�p: SRAM.DAT�����������΂��̒l���g�p�A�����Ȃ��ꍇ�̂݃f�t�H���g������
+	// MFC用: SRAM.DATが存在すればその値を使用、存在しない場合のみデフォルトで初期化
 	if (!fio.Load(sram_path, sram, sizeof(sram))) {
 		memcpy(sram, kDefaultSramFile, sizeof(kDefaultSramFile));
 		fio.Save(sram_path, (void *)kDefaultSramFile, sizeof(kDefaultSramFile));

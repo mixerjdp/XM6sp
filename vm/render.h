@@ -2,8 +2,8 @@
 //
 //	X68000 EMULATOR "XM6"
 //
-//	Copyright (C) 2001,2002 ＰＩ．(ytanaka@ipc-tokai.or.jp)
-//	[ レンダラ ]
+//	Copyright (C) 2001,2002 ・ｽo・ｽh・ｽD(ytanaka@ipc-tokai.or.jp)
+//	[ ・ｽ・ｽ・ｽ・ｽ・ｽ_・ｽ・ｽ ]
 //
 //---------------------------------------------------------------------------
 
@@ -14,7 +14,7 @@
 
 //===========================================================================
 //
-//	レンダラ
+//	・ｽ・ｽ・ｽ・ｽ・ｽ_・ｽ・ｽ
 //
 //===========================================================================
 class Render : public Device
@@ -25,194 +25,207 @@ public:
 			compositor_fast = 1
 		};
 
-	// 内部データ定義
+	// ・ｽ・ｽ・ｽ・ｽ・ｽf・ｽ[・ｽ^・ｽ・ｽ`
 	typedef struct {
-		// 全体制御
-		BOOL act;						// 合成しているか
-		BOOL enable;					// 合成許可
-		int count;						// スケジューラ連携カウンタ
-		BOOL ready;						// 描画準備できているか
-		int first;						// 未処理ラスタ
-		int last;						// 表示終了ラスタ
+		// ・ｽS・ｽﾌ撰ｿｽ・ｽ・ｽ
+		BOOL act;						// ・ｽ・ｽ・ｽ・ｽ・ｽ・ｽ・ｽﾄゑｿｽ・ｽ驍ｩ
+		BOOL enable;					// ・ｽ・ｽ・ｽ・ｽ・ｽ・ｽ・ｽ・ｽ
+		int count;						// ・ｽX・ｽP・ｽW・ｽ・ｽ・ｽ[・ｽ・ｽ・ｽA・ｽg・ｽJ・ｽE・ｽ・ｽ・ｽ^
+		BOOL ready;						// ・ｽ`・ｽ謠・ｽ・ｽ・ｽﾅゑｿｽ・ｽﾄゑｿｽ・ｽ驍ｩ
+		int first;						// ・ｽ・ｽ・ｽ・ｽ・ｽ・ｽ・ｽ・ｽ・ｽX・ｽ^
+		int last;						// ・ｽ\・ｽ・ｽ・ｽI・ｽ・ｽ・ｽ・ｽ・ｽX・ｽ^
 
 		// CRTC
-		BOOL crtc;						// CRTC変更フラグ
-		int width;						// X方向ドット数(256～)
-		int h_mul;						// X方向倍率(1,2)
-		int height;						// Y方向ドット数(256～)
-		int v_mul;						// Y方向倍率(0,1,2)
-		BOOL lowres;					// 15kHzフラグ
+		BOOL crtc;						// CRTC・ｽﾏ更・ｽt・ｽ・ｽ・ｽO
+		int width;						// X・ｽ・ｽ・ｽ・ｽ・ｽh・ｽb・ｽg・ｽ・ｽ(256・ｽ`)
+		int h_mul;						// X・ｽ・ｽ・ｽ・ｽ・ｽ{・ｽ・ｽ(1,2)
+		int height;						// Y・ｽ・ｽ・ｽ・ｽ・ｽh・ｽb・ｽg・ｽ・ｽ(256・ｽ`)
+		int v_mul;						// Y・ｽ・ｽ・ｽ・ｽ・ｽ{・ｽ・ｽ(0,1,2)
+		BOOL lowres;					// 15kHz・ｽt・ｽ・ｽ・ｽO
 
 		// VC
-		BOOL vc;						// VC変更フラグ
+		BOOL vc;						// VC・ｽﾏ更・ｽt・ｽ・ｽ・ｽO
 
-		// 合成
-		BOOL mix[1024];					// 合成フラグ(ライン)
-		DWORD *mixbuf;					// 合成バッファ
-		DWORD *mixptr[8];				// 合成ポインタ
-		DWORD mixshift[8];				// 合成ポインタのYシフト
-		DWORD *mixx[8];					// 合成ポインタのXスクロールポインタ
-		DWORD *mixy[8];					// 合成ポインタのYスクロールポインタ
-		DWORD mixand[8];				// 合成ポインタのスクロールAND値
-		int mixmap[3];					// 合成マップ
-		int mixtype;					// 合成タイプ
-		int mixpage;					// 合成グラフィックページ数
-		int mixwidth;					// 合成バッファ幅
-		int mixheight;					// 合成バッファ高さ
-		int mixlen;						// 合成時処理長さ(x方向)
+		// ・ｽ・ｽ・ｽ・ｽ
+		BOOL mix[1024];					// ・ｽ・ｽ・ｽ・ｽ・ｽt・ｽ・ｽ・ｽO(・ｽ・ｽ・ｽC・ｽ・ｽ)
+		DWORD *mixbuf;					// ・ｽ・ｽ・ｽ・ｽ・ｽo・ｽb・ｽt・ｽ@
+		DWORD *mixptr[8];				// ・ｽ・ｽ・ｽ・ｽ・ｽ|・ｽC・ｽ・ｽ・ｽ^
+		DWORD mixshift[8];				// ・ｽ・ｽ・ｽ・ｽ・ｽ|・ｽC・ｽ・ｽ・ｽ^・ｽ・ｽY・ｽV・ｽt・ｽg
+		DWORD *mixx[8];					// ・ｽ・ｽ・ｽ・ｽ・ｽ|・ｽC・ｽ・ｽ・ｽ^・ｽ・ｽX・ｽX・ｽN・ｽ・ｽ・ｽ[・ｽ・ｽ・ｽ|・ｽC・ｽ・ｽ・ｽ^
+		DWORD *mixy[8];					// ・ｽ・ｽ・ｽ・ｽ・ｽ|・ｽC・ｽ・ｽ・ｽ^・ｽ・ｽY・ｽX・ｽN・ｽ・ｽ・ｽ[・ｽ・ｽ・ｽ|・ｽC・ｽ・ｽ・ｽ^
+		DWORD mixand[8];				// ・ｽ・ｽ・ｽ・ｽ・ｽ|・ｽC・ｽ・ｽ・ｽ^・ｽﾌス・ｽN・ｽ・ｽ・ｽ[・ｽ・ｽAND・ｽl
+		int mixmap[3];					// ・ｽ・ｽ・ｽ・ｽ・ｽ}・ｽb・ｽv
+		int mixtype;					// ・ｽ・ｽ・ｽ・ｽ・ｽ^・ｽC・ｽv
+		int mixpage;					// ・ｽ・ｽ・ｽ・ｽ・ｽO・ｽ・ｽ・ｽt・ｽB・ｽb・ｽN・ｽy・ｽ[・ｽW・ｽ・ｽ
+		int mixwidth;					// ・ｽ・ｽ・ｽ・ｽ・ｽo・ｽb・ｽt・ｽ@・ｽ・ｽ
+		int mixheight;					// ・ｽ・ｽ・ｽ・ｽ・ｽo・ｽb・ｽt・ｽ@・ｽ・ｽ・ｽ・ｽ
+		int mixlen;						// ・ｽ・ｽ・ｽ・ｽ・ｽ・ｽ・ｽ・ｽ・ｽ・ｽ・ｽ・ｽ・ｽ・ｽ(x・ｽ・ｽ・ｽ・ｽ)
 
-		// 描画
-		BOOL draw[1024];				// 描画フラグ(ライン)
-		BOOL *drawflag;					// 描画フラグ(16dot)
+		// ・ｽ`・ｽ・ｽ
+		BOOL draw[1024];				// ・ｽ`・ｽ・ｽt・ｽ・ｽ・ｽO(・ｽ・ｽ・ｽC・ｽ・ｽ)
+		BOOL *drawflag;					// ・ｽ`・ｽ・ｽt・ｽ・ｽ・ｽO(16dot)
 
-		// コントラスト
-		BOOL contrast;					// コントラスト変更フラグ
-		int contlevel;					// コントラスト
+		// ・ｽR・ｽ・ｽ・ｽg・ｽ・ｽ・ｽX・ｽg
+		BOOL contrast;					// ・ｽR・ｽ・ｽ・ｽg・ｽ・ｽ・ｽX・ｽg・ｽﾏ更・ｽt・ｽ・ｽ・ｽO
+		int contlevel;					// ・ｽR・ｽ・ｽ・ｽg・ｽ・ｽ・ｽX・ｽg
 
-		// パレット
-		BOOL palette;					// パレット変更フラグ
-		BOOL palmod[0x200];				// パレット変更フラグ
-		DWORD *palbuf;					// パレットバッファ
-		DWORD *palptr;					// パレットポインタ
-		const WORD *palvc;				// パレットVCポインタ
-		DWORD paldata[0x200];			// パレットデータ
-		BYTE pal64k[0x200];				// パレットデータ変形
+		// ・ｽp・ｽ・ｽ・ｽb・ｽg
+		BOOL palette;					// ・ｽp・ｽ・ｽ・ｽb・ｽg・ｽﾏ更・ｽt・ｽ・ｽ・ｽO
+		BOOL palmod[0x200];				// ・ｽp・ｽ・ｽ・ｽb・ｽg・ｽﾏ更・ｽt・ｽ・ｽ・ｽO
+		DWORD *palbuf;					// ・ｽp・ｽ・ｽ・ｽb・ｽg・ｽo・ｽb・ｽt・ｽ@
+		DWORD *palptr;					// ・ｽp・ｽ・ｽ・ｽb・ｽg・ｽ|・ｽC・ｽ・ｽ・ｽ^
+		const WORD *palvc;				// ・ｽp・ｽ・ｽ・ｽb・ｽgVC・ｽ|・ｽC・ｽ・ｽ・ｽ^
+		DWORD paldata[0x200];			// ・ｽp・ｽ・ｽ・ｽb・ｽg・ｽf・ｽ[・ｽ^
+		BYTE pal64k[0x200];				// ・ｽp・ｽ・ｽ・ｽb・ｽg・ｽf・ｽ[・ｽ^・ｽﾏ形
 
-		// テキストVRAM
-		BOOL texten;					// テキスト表示フラグ
-		BOOL textpal[1024];				// テキストパレットフラグ
-		BOOL textmod[1024];				// テキスト更新フラグ(ライン)
-		BOOL *textflag;					// テキスト更新フラグ(32dot)
-		BYTE *textbuf;					// テキストバッファ(パレット前)
-		DWORD *textout;					// テキストバッファ(パレット後)
-		const BYTE *texttv;				// テキストTVRAMポインタ
-		DWORD textx;					// テキストスクロールX
-		DWORD texty;					// テキストスクロールY
+		// ・ｽe・ｽL・ｽX・ｽgVRAM
+		BOOL texten;					// ・ｽe・ｽL・ｽX・ｽg・ｽ\・ｽ・ｽ・ｽt・ｽ・ｽ・ｽO
+		BOOL textpal[1024];				// ・ｽe・ｽL・ｽX・ｽg・ｽp・ｽ・ｽ・ｽb・ｽg・ｽt・ｽ・ｽ・ｽO
+		BOOL textmod[1024];				// ・ｽe・ｽL・ｽX・ｽg・ｽX・ｽV・ｽt・ｽ・ｽ・ｽO(・ｽ・ｽ・ｽC・ｽ・ｽ)
+		BOOL *textflag;					// ・ｽe・ｽL・ｽX・ｽg・ｽX・ｽV・ｽt・ｽ・ｽ・ｽO(32dot)
+		BYTE *textbuf;					// ・ｽe・ｽL・ｽX・ｽg・ｽo・ｽb・ｽt・ｽ@(・ｽp・ｽ・ｽ・ｽb・ｽg・ｽO)
+		DWORD *textout;					// ・ｽe・ｽL・ｽX・ｽg・ｽo・ｽb・ｽt・ｽ@(・ｽp・ｽ・ｽ・ｽb・ｽg・ｽ・ｽ)
+		const BYTE *texttv;				// ・ｽe・ｽL・ｽX・ｽgTVRAM・ｽ|・ｽC・ｽ・ｽ・ｽ^
+		DWORD textx;					// ・ｽe・ｽL・ｽX・ｽg・ｽX・ｽN・ｽ・ｽ・ｽ[・ｽ・ｽX
+		DWORD texty;					// ・ｽe・ｽL・ｽX・ｽg・ｽX・ｽN・ｽ・ｽ・ｽ[・ｽ・ｽY
 
-		// グラフィックVRAM
-		int grptype;					// グラフィックタイプ(0～4)
-		BOOL grpen[4];					// グラフィックブロック表示フラグ
-		BOOL grppal[2048];				// グラフィックパレットフラグ
-		BOOL grpmod[2048];				// グラフィック更新フラグ(ライン)
-		BOOL *grpflag;					// グラフィック更新フラグ(16dot)
-		DWORD *grpbuf[4];				// グラフィックブロックバッファ
-		const BYTE* grpgv;				// グラフィックGVRAMポインタ
-		DWORD grpx[4];					// グラフィックブロックスクロールX
-		DWORD grpy[4];					// グラフィックブロックスクロールY
+		// ・ｽO・ｽ・ｽ・ｽt・ｽB・ｽb・ｽNVRAM
+		int grptype;					// ・ｽO・ｽ・ｽ・ｽt・ｽB・ｽb・ｽN・ｽ^・ｽC・ｽv(0・ｽ`4)
+		BOOL grpen[4];					// ・ｽO・ｽ・ｽ・ｽt・ｽB・ｽb・ｽN・ｽu・ｽ・ｽ・ｽb・ｽN・ｽ\・ｽ・ｽ・ｽt・ｽ・ｽ・ｽO
+		BOOL grppal[2048];				// ・ｽO・ｽ・ｽ・ｽt・ｽB・ｽb・ｽN・ｽp・ｽ・ｽ・ｽb・ｽg・ｽt・ｽ・ｽ・ｽO
+		BOOL grpmod[2048];				// ・ｽO・ｽ・ｽ・ｽt・ｽB・ｽb・ｽN・ｽX・ｽV・ｽt・ｽ・ｽ・ｽO(・ｽ・ｽ・ｽC・ｽ・ｽ)
+		BOOL *grpflag;					// ・ｽO・ｽ・ｽ・ｽt・ｽB・ｽb・ｽN・ｽX・ｽV・ｽt・ｽ・ｽ・ｽO(16dot)
+		DWORD *grpbuf[4];				// ・ｽO・ｽ・ｽ・ｽt・ｽB・ｽb・ｽN・ｽu・ｽ・ｽ・ｽb・ｽN・ｽo・ｽb・ｽt・ｽ@
+		const BYTE* grpgv;				// ・ｽO・ｽ・ｽ・ｽt・ｽB・ｽb・ｽNGVRAM・ｽ|・ｽC・ｽ・ｽ・ｽ^
+		DWORD grpx[4];					// ・ｽO・ｽ・ｽ・ｽt・ｽB・ｽb・ｽN・ｽu・ｽ・ｽ・ｽb・ｽN・ｽX・ｽN・ｽ・ｽ・ｽ[・ｽ・ｽX
+		DWORD grpy[4];					// ・ｽO・ｽ・ｽ・ｽt・ｽB・ｽb・ｽN・ｽu・ｽ・ｽ・ｽb・ｽN・ｽX・ｽN・ｽ・ｽ・ｽ[・ｽ・ｽY
 
 		// PCG
-		BOOL pcgready[256 * 16];		// PCG準備OKフラグ
-		DWORD pcguse[256 * 16];			// PCG使用中カウント
-		DWORD pcgpal[16];				// PCGパレット使用カウント
-		DWORD *pcgbuf;					// PCGバッファ
-		const BYTE* sprmem;				// スプライトメモリ
+		BOOL pcgready[256 * 16];		// PCG・ｽ・ｽ・ｽ・ｽOK・ｽt・ｽ・ｽ・ｽO
+		DWORD pcguse[256 * 16];			// PCG・ｽg・ｽp・ｽ・ｽ・ｽJ・ｽE・ｽ・ｽ・ｽg
+		DWORD pcgpal[16];				// PCG・ｽp・ｽ・ｽ・ｽb・ｽg・ｽg・ｽp・ｽJ・ｽE・ｽ・ｽ・ｽg
+		DWORD *pcgbuf;					// PCG・ｽo・ｽb・ｽt・ｽ@
+		const BYTE* sprmem;				// ・ｽX・ｽv・ｽ・ｽ・ｽC・ｽg・ｽ・ｽ・ｽ・ｽ・ｽ・ｽ
 
-		// スプライト
-		DWORD **spptr;					// スプライトポインタバッファ
-		DWORD spreg[0x200];				// スプライトレジスタ保存
-		BOOL spuse[128];				// スプライト使用中フラグ
+		// ・ｽX・ｽv・ｽ・ｽ・ｽC・ｽg
+		DWORD **spptr;					// ・ｽX・ｽv・ｽ・ｽ・ｽC・ｽg・ｽ|・ｽC・ｽ・ｽ・ｽ^・ｽo・ｽb・ｽt・ｽ@
+		DWORD spreg[0x200];				// ・ｽX・ｽv・ｽ・ｽ・ｽC・ｽg・ｽ・ｽ・ｽW・ｽX・ｽ^・ｽﾛ托ｿｽ
+		BOOL spuse[128];				// ・ｽX・ｽv・ｽ・ｽ・ｽC・ｽg・ｽg・ｽp・ｽ・ｽ・ｽt・ｽ・ｽ・ｽO
 
 		// BG
-		DWORD bgreg[2][64 * 64];		// BGレジスタ＋変更フラグ($10000)
-		BOOL bgall[2][64];				// BG変更フラグ(ブロック単位)
-		BOOL bgdisp[2];					// BG表示フラグ
-		BOOL bgarea[2];					// BG表示エリア
-		BOOL bgsize;					// BG表示サイズ(16dot=TRUE)
-		DWORD **bgptr[2];				// BGポインタ+データ
-		BOOL bgmod[2][1024];			// BG更新フラグ
-		DWORD bgx[2];					// BGスクロール(X)
-		DWORD bgy[2];					// BGスクロール(Y)
+		DWORD bgreg[2][64 * 64];		// BG・ｽ・ｽ・ｽW・ｽX・ｽ^・ｽ{・ｽﾏ更・ｽt・ｽ・ｽ・ｽO($10000)
+		BOOL bgall[2][64];				// BG・ｽﾏ更・ｽt・ｽ・ｽ・ｽO(・ｽu・ｽ・ｽ・ｽb・ｽN・ｽP・ｽ・ｽ)
+		BOOL bgdisp[2];					// BG・ｽ\・ｽ・ｽ・ｽt・ｽ・ｽ・ｽO
+		BOOL bgarea[2];					// BG・ｽ\・ｽ・ｽ・ｽG・ｽ・ｽ・ｽA
+		BOOL bgsize;					// BG・ｽ\・ｽ・ｽ・ｽT・ｽC・ｽY(16dot=TRUE)
+		DWORD **bgptr[2];				// BG・ｽ|・ｽC・ｽ・ｽ・ｽ^+・ｽf・ｽ[・ｽ^
+		BOOL bgmod[2][1024];			// BG・ｽX・ｽV・ｽt・ｽ・ｽ・ｽO
+		DWORD bgx[2];					// BG・ｽX・ｽN・ｽ・ｽ・ｽ[・ｽ・ｽ(X)
+		DWORD bgy[2];					// BG・ｽX・ｽN・ｽ・ｽ・ｽ[・ｽ・ｽ(Y)
 
-		// BG/スプライト合成
-		BOOL bgspflag;					// BG/スプライト表示フラグ
-		BOOL bgspdisp;					// BG/スプライトCPU/Videoフラグ
-		BOOL bgspmod[512];				// BG/スプライト更新フラグ
-		DWORD *bgspbuf;					// BG/スプライトバッファ
-		DWORD zero;						// スクロールダミー(0)
+		// BG/・ｽX・ｽv・ｽ・ｽ・ｽC・ｽg・ｽ・ｽ・ｽ・ｽ
+		BOOL bgspflag;					// BG/・ｽX・ｽv・ｽ・ｽ・ｽC・ｽg・ｽ\・ｽ・ｽ・ｽt・ｽ・ｽ・ｽO
+		BOOL bgspdisp;					// BG/・ｽX・ｽv・ｽ・ｽ・ｽC・ｽgCPU/Video・ｽt・ｽ・ｽ・ｽO
+		BOOL bgspmod[512];				// BG/・ｽX・ｽv・ｽ・ｽ・ｽC・ｽg・ｽX・ｽV・ｽt・ｽ・ｽ・ｽO
+		DWORD *bgspbuf;					// BG/・ｽX・ｽv・ｽ・ｽ・ｽC・ｽg・ｽo・ｽb・ｽt・ｽ@
+		DWORD fast_bg_linebuf[1024];
+		WORD fast_bg_pribuf[1024];
+		BYTE fast_text_trflag[1024];
+		DWORD fast_grp_linebuf[1024];
+		DWORD fast_grp_linebuf_sp[1024];
+		DWORD fast_grp_linebuf_sp2[1024];
+		BOOL fast_grp_linebuf_sp_tr[1024];
+		DWORD fast_stamp_counter;
+		DWORD fast_mix_stamp[1024];
+		DWORD fast_mix_done[1024];
+		DWORD fast_bg_stamp[512];
+		DWORD fast_bg_done[512];
+		DWORD zero;						// ・ｽX・ｽN・ｽ・ｽ・ｽ[・ｽ・ｽ・ｽ_・ｽ~・ｽ[(0)
 	} render_t;
 
-	// 基本ファンクション
+	// ・ｽ・ｽ{・ｽt・ｽ@・ｽ・ｽ・ｽN・ｽV・ｽ・ｽ・ｽ・ｽ
 	Render(VM *p);
-										// コンストラクタ
+										// ・ｽR・ｽ・ｽ・ｽX・ｽg・ｽ・ｽ・ｽN・ｽ^
 	BOOL FASTCALL Init();
-										// 初期化
+										// ・ｽ・ｽ・ｽ・ｽ・ｽ・ｽ
 	void FASTCALL Cleanup();
-										// クリーンアップ
+										// ・ｽN・ｽ・ｽ・ｽ[・ｽ・ｽ・ｽA・ｽb・ｽv
 	void FASTCALL Reset();
-										// リセット
+										// ・ｽ・ｽ・ｽZ・ｽb・ｽg
 	BOOL FASTCALL Save(Fileio *fio, int ver);
-										// セーブ
+										// ・ｽZ・ｽ[・ｽu
 	BOOL FASTCALL Load(Fileio *fio, int ver);
-										// ロード
+										// ・ｽ・ｽ・ｽ[・ｽh
 	void FASTCALL ApplyCfg(const Config *config);
-										// 設定適用
+										// ・ｽﾝ抵ｿｽK・ｽp
 
-	// 外部API(コントロール)
+	// ・ｽO・ｽ・ｽAPI(・ｽR・ｽ・ｽ・ｽg・ｽ・ｽ・ｽ[・ｽ・ｽ)
 	void FASTCALL EnableAct(BOOL enable){ render.enable = enable; }
-										// 合成許可
+										// ・ｽ・ｽ・ｽ・ｽ・ｽ・ｽ・ｽ・ｽ
 	BOOL FASTCALL IsActive() const		{ return render.act; }
-										// アクティブか
+										// ・ｽA・ｽN・ｽe・ｽB・ｽu・ｽ・ｽ
 	BOOL FASTCALL IsReady() const		{ return (BOOL)(render.count > 0); }
 	void FASTCALL Complete()			{ render.count = 0; }
 	BOOL FASTCALL SetCompositorMode(int mode);
 	int FASTCALL GetCompositorMode() const		{ return compositor_mode; }
+	DWORD FASTCALL GetFastFallbackCount() const	{ return fast_fallback_count; }
 	void FASTCALL StartFrame();
-										// フレーム開始(V-DISP)
+										// ・ｽt・ｽ・ｽ・ｽ[・ｽ・ｽ・ｽJ・ｽn(V-DISP)
 	void FASTCALL EndFrame();
-										// フレーム終了(V-BLANK)
+										// ・ｽt・ｽ・ｽ・ｽ[・ｽ・ｽ・ｽI・ｽ・ｽ(V-BLANK)
 	void FASTCALL HSync(int raster);
-										// 水平同期(rasterまで終わり)
+										// ・ｽ・ｽ・ｽ・ｽ・ｽ・ｽ・ｽ・ｽ(raster・ｽﾜで終・ｽ・ｽ・ｽ)
 	void FASTCALL SetMixBuf(DWORD *buf, int width, int height);
-										// 合成バッファ指定
+										// ・ｽ・ｽ・ｽ・ｽ・ｽo・ｽb・ｽt・ｽ@・ｽw・ｽ・ｽ
 	render_t* FASTCALL GetWorkAddr() 	{ return &render; }
-										// ワークアドレス取得
+										// ・ｽ・ｽ・ｽ[・ｽN・ｽA・ｽh・ｽ・ｽ・ｽX・ｽ謫ｾ
 
-	// 外部API(画面)
+	// ・ｽO・ｽ・ｽAPI(・ｽ・ｽ・ｽ)
 	void FASTCALL SetCRTC();
-										// CRTCセット
+										// CRTC・ｽZ・ｽb・ｽg
 	void FASTCALL SetVC();
-										// VCセット
+										// VC・ｽZ・ｽb・ｽg
 	void FASTCALL SetContrast(int cont);
-										// コントラスト設定
+										// ・ｽR・ｽ・ｽ・ｽg・ｽ・ｽ・ｽX・ｽg・ｽﾝ抵ｿｽ
 	int FASTCALL GetContrast() const;
-										// コントラスト取得
+										// ・ｽR・ｽ・ｽ・ｽg・ｽ・ｽ・ｽX・ｽg・ｽ謫ｾ
 	void FASTCALL SetPalette(int index);
-										// パレット設定
+										// ・ｽp・ｽ・ｽ・ｽb・ｽg・ｽﾝ抵ｿｽ
 	const DWORD* FASTCALL GetPalette() const;
-										// パレットバッファ取得
+										// ・ｽp・ｽ・ｽ・ｽb・ｽg・ｽo・ｽb・ｽt・ｽ@・ｽ謫ｾ
 	void FASTCALL TextMem(DWORD addr);
-										// テキストVRAM変更
+										// ・ｽe・ｽL・ｽX・ｽgVRAM・ｽﾏ更
 	void FASTCALL TextScrl(DWORD x, DWORD y);
-										// テキストスクロール変更
+										// ・ｽe・ｽL・ｽX・ｽg・ｽX・ｽN・ｽ・ｽ・ｽ[・ｽ・ｽ・ｽﾏ更
 	void FASTCALL TextCopy(DWORD src, DWORD dst, DWORD plane);
-										// ラスタコピー
+										// ・ｽ・ｽ・ｽX・ｽ^・ｽR・ｽs・ｽ[
 	void FASTCALL GrpMem(DWORD addr, DWORD block);
-										// グラフィックVRAM変更
+										// ・ｽO・ｽ・ｽ・ｽt・ｽB・ｽb・ｽNVRAM・ｽﾏ更
 	void FASTCALL GrpAll(DWORD line, DWORD block);
-										// グラフィックVRAM変更
+										// ・ｽO・ｽ・ｽ・ｽt・ｽB・ｽb・ｽNVRAM・ｽﾏ更
 	void FASTCALL GrpScrl(int block, DWORD x, DWORD y);
-										// グラフィックスクロール変更
+										// ・ｽO・ｽ・ｽ・ｽt・ｽB・ｽb・ｽN・ｽX・ｽN・ｽ・ｽ・ｽ[・ｽ・ｽ・ｽﾏ更
 	void FASTCALL SpriteReg(DWORD addr, DWORD data);
-										// スプライトレジスタ変更
+										// ・ｽX・ｽv・ｽ・ｽ・ｽC・ｽg・ｽ・ｽ・ｽW・ｽX・ｽ^・ｽﾏ更
 	void FASTCALL BGScrl(int page, DWORD x, DWORD y);
-										// BGスクロール変更
+										// BG・ｽX・ｽN・ｽ・ｽ・ｽ[・ｽ・ｽ・ｽﾏ更
 	void FASTCALL BGCtrl(int index, BOOL flag);
-										// BGコントロール変更
+										// BG・ｽR・ｽ・ｽ・ｽg・ｽ・ｽ・ｽ[・ｽ・ｽ・ｽﾏ更
 	void FASTCALL BGMem(DWORD addr, WORD data);
-										// BG変更
+										// BG・ｽﾏ更
 	void FASTCALL PCGMem(DWORD addr);
-										// PCG変更
+										// PCG・ｽﾏ更
 
 	const DWORD* FASTCALL GetTextBuf() const;
-										// テキストバッファ取得
+										// ・ｽe・ｽL・ｽX・ｽg・ｽo・ｽb・ｽt・ｽ@・ｽ謫ｾ
 	const DWORD* FASTCALL GetGrpBuf(int index) const;
-										// グラフィックバッファ取得
+										// ・ｽO・ｽ・ｽ・ｽt・ｽB・ｽb・ｽN・ｽo・ｽb・ｽt・ｽ@・ｽ謫ｾ
 	const DWORD* FASTCALL GetPCGBuf() const;
-										// PCGバッファ取得
+										// PCG・ｽo・ｽb・ｽt・ｽ@・ｽ謫ｾ
 	const DWORD* FASTCALL GetBGSpBuf() const;
-										// BG/スプライトバッファ取得
+										// BG/・ｽX・ｽv・ｽ・ｽ・ｽC・ｽg・ｽo・ｽb・ｽt・ｽ@・ｽ謫ｾ
 	const DWORD* FASTCALL GetMixBuf() const;
-										// 合成バッファ取得
+										// ・ｽ・ｽ・ｽ・ｽ・ｽo・ｽb・ｽt・ｽ@・ｽ謫ｾ
 
 private:
 	class Backend;
@@ -225,52 +238,58 @@ private:
 	void FASTCALL InvalidateFrame();
 	void FASTCALL InvalidateAll();
 	void FASTCALL Process();
-										// レンダリング
+	void FASTCALL ProcessFast();
+										// ・ｽ・ｽ・ｽ・ｽ・ｽ_・ｽ・ｽ・ｽ・ｽ・ｽO
 	void FASTCALL Video();
-										// VC処理
+										// VC・ｽ・ｽ・ｽ・ｽ
 	void FASTCALL SetupGrp(int first);
-										// グラフィックセットアップ
+										// ・ｽO・ｽ・ｽ・ｽt・ｽB・ｽb・ｽN・ｽZ・ｽb・ｽg・ｽA・ｽb・ｽv
 	void FASTCALL Contrast();
-										// コントラスト処理
+										// ・ｽR・ｽ・ｽ・ｽg・ｽ・ｽ・ｽX・ｽg・ｽ・ｽ・ｽ・ｽ
 	void FASTCALL Palette();
-										// パレット処理
+										// ・ｽp・ｽ・ｽ・ｽb・ｽg・ｽ・ｽ・ｽ・ｽ
 	void FASTCALL MakePalette();
-										// パレット作成
+										// ・ｽp・ｽ・ｽ・ｽb・ｽg・ｽ・ｬ
 	DWORD FASTCALL ConvPalette(int color, int ratio);
-										// 色変換
+										// ・ｽF・ｽﾏ奇ｿｽ
 	void FASTCALL Text(int raster);
-										// テキスト
+										// ・ｽe・ｽL・ｽX・ｽg
 	void FASTCALL Grp(int block, int raster);
-										// グラフィック
+										// ・ｽO・ｽ・ｽ・ｽt・ｽB・ｽb・ｽN
 	void FASTCALL SpriteReset();
-										// スプライトリセット
+										// ・ｽX・ｽv・ｽ・ｽ・ｽC・ｽg・ｽ・ｽ・ｽZ・ｽb・ｽg
 	void FASTCALL BGSprite(int raster);
-										// BG/スプライト
+										// BG/・ｽX・ｽv・ｽ・ｽ・ｽC・ｽg
 	void FASTCALL BG(int page, int raster, DWORD *buf);
 										// BG
 	void FASTCALL BGBlock(int page, int y);
-										// BG(横ブロック)
+										// BG(・ｽ・ｽ・ｽu・ｽ・ｽ・ｽb・ｽN)
 	void FASTCALL Mix(int offset);
-										// 合成
+										// ・ｽ・ｽ・ｽ・ｽ
 	void FASTCALL MixFast(int y);
+	void FASTCALL MixFastLine(int dst_y, int src_y);
+	void FASTCALL FastBuildBGLinePX(int src_y, BOOL ton, int tx_pri, int sp_pri, DWORD *bg_line, BYTE *bg_flag, BOOL *active, BOOL *bg_opaq);
+	void FASTCALL FastDrawSpriteLinePX(int raster, int pri, DWORD *bg_line, BYTE *bg_flag, WORD *bg_pri, BOOL *active);
+	void FASTCALL FastDrawBGPageLinePX(int page, int raster, BOOL gd, DWORD *bg_line, BYTE *bg_flag, WORD *bg_pri, BOOL *active);
 	void FASTCALL FastMixGrp(int y, DWORD *grp, DWORD *grp_sp, DWORD *grp_sp2,
 		BOOL *grp_sp_tr, BOOL *gon, BOOL *tron, BOOL *pron);
 	void FASTCALL MixGrp(int y, DWORD *buf);
-										// 合成(グラフィック)
+										// ・ｽ・ｽ・ｽ・ｽ(・ｽO・ｽ・ｽ・ｽt・ｽB・ｽb・ｽN)
 	CRTC *crtc;
 										// CRTC
 	VC *vc;
 										// VC
 	Sprite *sprite;
-										// スプライト
+										// ・ｽX・ｽv・ｽ・ｽ・ｽC・ｽg
 	Backend *backend;
 	Backend *backend_original;
 	Backend *backend_fast;
 	int compositor_mode;
+	DWORD fast_fallback_count;
 	render_t render;
-										// 内部データ
+										// ・ｽ・ｽ・ｽ・ｽ・ｽf・ｽ[・ｽ^
 	BOOL cmov;
-										// CMOVキャッシュ
+										// CMOV・ｽL・ｽ・ｽ・ｽb・ｽV・ｽ・ｽ
 };
 
 #endif	// render_h

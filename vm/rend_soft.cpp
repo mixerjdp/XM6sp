@@ -511,11 +511,12 @@ void RendBG8(DWORD **ptr, DWORD *buf, int x, int len, BOOL *ready, const BYTE *m
 		DWORD* src_pixels = current_ptr[0];
 		if (!(bgdata & 0x4000)) {
 			for (int p = 0; p < 8; p++) {
-				if (src_pixels[p] & 0x00FFFFFF) dst[p] = src_pixels[p];
+				// Honor the explicit transparent flag (REND_COLOR0), not RGB==0.
+				if (!(src_pixels[p] & 0x80000000)) dst[p] = src_pixels[p];
 			}
 		} else {
 			for (int p = 0; p < 8; p++) {
-				if (src_pixels[p] & 0x00FFFFFF) dst[7 - p] = src_pixels[p];
+				if (!(src_pixels[p] & 0x80000000)) dst[7 - p] = src_pixels[p];
 			}
 		}
 		
@@ -546,11 +547,11 @@ void RendBG8P(DWORD **ptr, DWORD *buf, int offset, int length, BOOL *ready, cons
 	DWORD* src_pixels = ptr[0];
 	if (!(bgdata & 0x4000)) {
 		for (int p = 0; p < length; p++) {
-			if (src_pixels[offset + p] & 0x00FFFFFF) buf[p] = src_pixels[offset + p];
+			if (!(src_pixels[offset + p] & 0x80000000)) buf[p] = src_pixels[offset + p];
 		}
 	} else {
 		for (int p = 0; p < length; p++) {
-			if (src_pixels[7 - (offset + p)] & 0x00FFFFFF) buf[p] = src_pixels[7 - (offset + p)];
+			if (!(src_pixels[7 - (offset + p)] & 0x80000000)) buf[p] = src_pixels[7 - (offset + p)];
 		}
 	}
 }
@@ -573,11 +574,12 @@ void RendBG16(DWORD **ptr, DWORD *buf, int x, int len, BOOL *ready, const BYTE *
 		DWORD* src = current_ptr[0];
 		if (!(bgdata & 0x4000)) {
 			for (int p = 0; p < 16; p++) {
-				if (src[p] & 0x00FFFFFF) dst[p] = src[p];
+				// Honor the explicit transparent flag (REND_COLOR0), not RGB==0.
+				if (!(src[p] & 0x80000000)) dst[p] = src[p];
 			}
 		} else {
 			for (int p = 0; p < 16; p++) {
-				if (src[p] & 0x00FFFFFF) dst[15 - p] = src[p];
+				if (!(src[p] & 0x80000000)) dst[15 - p] = src[p];
 			}
 		}
 		
@@ -608,11 +610,11 @@ void RendBG16P(DWORD **ptr, DWORD *buf, int offset, int length, BOOL *ready, con
 	DWORD* src = ptr[0];
 	if (!(bgdata & 0x4000)) {
 		for (int p = 0; p < length; p++) {
-			if (src[offset + p] & 0x00FFFFFF) buf[p] = src[offset + p];
+			if (!(src[offset + p] & 0x80000000)) buf[p] = src[offset + p];
 		}
 	} else {
 		for (int p = 0; p < length; p++) {
-			if (src[15 - (offset + p)] & 0x00FFFFFF) buf[p] = src[15 - (offset + p)];
+			if (!(src[15 - (offset + p)] & 0x80000000)) buf[p] = src[15 - (offset + p)];
 		}
 	}
 }

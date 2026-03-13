@@ -21,6 +21,7 @@
 #include "memory.h"
 #include "render.h"
 #include "crtc.h"
+#include "vc.h"
 #include "keyboard.h"
 #include "mouse.h"
 #include "fdd.h"
@@ -44,6 +45,7 @@
 //
 //---------------------------------------------------------------------------
 static const char XM6CORE_VERSION[] = "XM6 Core 2.06";
+static const unsigned int k_video_probe_frames_after_mode_change = 12u;
 
 //---------------------------------------------------------------------------
 //
@@ -79,6 +81,12 @@ struct XM6Context {
 	// Message callback (client-side)
 	xm6_message_callback_t msg_callback;
 	void *msg_user;
+
+	// Internal video probe state
+	unsigned int video_probe_signature;
+	unsigned int video_probe_frames_remaining;
+	unsigned int video_probe_frame_index;
+	BOOL video_probe_has_signature;
 };
 
 //---------------------------------------------------------------------------
@@ -160,6 +168,172 @@ static const char* fdi_id_name(DWORD id)
 	}
 }
 
+static unsigned int hash_u32(unsigned int h, unsigned int v)
+{
+	h ^= v;
+	h *= 16777619u;
+	return h;
+}
+
+static unsigned int render_grpen_mask(const Render::render_t *r)
+{
+	unsigned int mask = 0u;
+	if (!r) {
+		return mask;
+	}
+	for (int i = 0; i < 4; ++i) {
+		if (r->grpen[i]) {
+			mask |= (1u << i);
+		}
+	}
+	return mask;
+}
+
+static unsigned int vc_gs_mask(const VC::vc_t *v)
+{
+	unsigned int mask = 0u;
+	if (!v) {
+		return mask;
+	}
+	for (int i = 0; i < 4; ++i) {
+		if (v->gs[i]) {
+			mask |= (1u << i);
+		}
+	}
+	return mask;
+}
+
+static void emit_video_probe_internal(XM6Context *ctx, const Render::render_t *r)
+{
+	if (!ctx || !r || !ctx->render) {
+		return;
+	}
+
+	const VC::vc_t *v = NULL;
+	if (ctx->vm) {
+		Device *dev = ctx->vm->SearchDevice(MAKEID('V', 'C', ' ', ' '));
+		if (dev && dev->GetID() == MAKEID('V', 'C', ' ', ' ')) {
+			VC *vc = static_cast<VC*>(dev);
+			v = vc->GetWorkAddr();
+		}
+	}
+
+	const unsigned int grpen_mask = render_grpen_mask(r);
+	const unsigned int gs_mask = vc_gs_mask(v);
+	const unsigned int sp_pri = v ? (v->sp & 3u) : 0u;
+	const unsigned int tx_pri = v ? (v->tx & 3u) : 0u;
+	const unsigned int gr_pri = v ? (v->gr & 3u) : 0u;
+	const unsigned int gp0 = v ? (v->gp[0] & 3u) : 0u;
+	const unsigned int gp1 = v ? (v->gp[1] & 3u) : 0u;
+	const unsigned int gp2 = v ? (v->gp[2] & 3u) : 0u;
+	const unsigned int gp3 = v ? (v->gp[3] & 3u) : 0u;
+	const unsigned int vr2h = v ? (v->vr2h & 0xffu) : 0u;
+	const unsigned int vr2l = v ? (v->vr2l & 0xffu) : 0u;
+	const unsigned int son = (v && v->son) ? 1u : 0u;
+	const unsigned int ton = (v && v->ton) ? 1u : 0u;
+	const unsigned int gon = (v && v->gon) ? 1u : 0u;
+	const unsigned int exon = (v && v->exon) ? 1u : 0u;
+	const unsigned int fast_fallback_count = (unsigned int)ctx->render->GetFastFallbackCount();
+
+	unsigned int signature = 2166136261u;
+	signature = hash_u32(signature, (unsigned int)r->width);
+	signature = hash_u32(signature, (unsigned int)r->height);
+	signature = hash_u32(signature, (unsigned int)r->h_mul);
+	signature = hash_u32(signature, (unsigned int)r->v_mul);
+	signature = hash_u32(signature, (unsigned int)(r->lowres ? 1u : 0u));
+	signature = hash_u32(signature, (unsigned int)r->grptype);
+	signature = hash_u32(signature, (unsigned int)r->mixpage);
+	signature = hash_u32(signature, (unsigned int)r->mixtype);
+	signature = hash_u32(signature, grpen_mask);
+	signature = hash_u32(signature, gs_mask);
+	signature = hash_u32(signature, sp_pri);
+	signature = hash_u32(signature, tx_pri);
+	signature = hash_u32(signature, gr_pri);
+	signature = hash_u32(signature, gp0);
+	signature = hash_u32(signature, gp1);
+	signature = hash_u32(signature, gp2);
+	signature = hash_u32(signature, gp3);
+	signature = hash_u32(signature, vr2h);
+	signature = hash_u32(signature, vr2l);
+	signature = hash_u32(signature, son);
+	signature = hash_u32(signature, ton);
+	signature = hash_u32(signature, gon);
+	signature = hash_u32(signature, exon);
+
+	if (!ctx->video_probe_has_signature || signature != ctx->video_probe_signature) {
+		ctx->video_probe_has_signature = TRUE;
+		ctx->video_probe_signature = signature;
+		ctx->video_probe_frames_remaining = k_video_probe_frames_after_mode_change;
+		ctx->video_probe_frame_index = 0;
+
+	/*	emit_messagef(ctx,
+			"[video-probe-int] core=xm6 mode-change raw=%ux%u hm=%u vm=%u low=%d mode=%s",
+			(unsigned int)r->width,
+			(unsigned int)r->height,
+			(unsigned int)r->h_mul,
+			(unsigned int)r->v_mul,
+			r->lowres ? 1 : 0,
+			(ctx->render->GetCompositorMode() == 1) ? "fast" : "original"); */
+	}
+
+	if (ctx->video_probe_frames_remaining == 0) {
+		return;
+	}
+
+	emit_messagef(ctx,
+		"[video-probe-int] core=xm6 frame=%u/%u raw=%ux%u hm=%u vm=%u low=%d mode=%s grptype=%d mixpage=%d mixtype=%d pri=%u/%u/%u gp=%u,%u,%u,%u gs=%u,%u,%u,%u en=%u,%u,%u,%u grpen=%u,%u,%u,%u text=%d bgsp=%d,%d vr2=%02X/%02X ffb=%u",
+		ctx->video_probe_frame_index + 1,
+		k_video_probe_frames_after_mode_change,
+		(unsigned int)r->width,
+		(unsigned int)r->height,
+		(unsigned int)r->h_mul,
+		(unsigned int)r->v_mul,
+		r->lowres ? 1 : 0,
+		(ctx->render->GetCompositorMode() == 1) ? "fast" : "original",
+		r->grptype,
+		r->mixpage,
+		r->mixtype,
+		sp_pri,
+		tx_pri,
+		gr_pri,
+		gp0,
+		gp1,
+		gp2,
+		gp3,
+		(gs_mask >> 0) & 1u,
+		(gs_mask >> 1) & 1u,
+		(gs_mask >> 2) & 1u,
+		(gs_mask >> 3) & 1u,
+		son,
+		ton,
+		gon,
+		exon,
+		(grpen_mask >> 0) & 1u,
+		(grpen_mask >> 1) & 1u,
+		(grpen_mask >> 2) & 1u,
+		(grpen_mask >> 3) & 1u,
+		r->texten ? 1 : 0,
+		r->bgspflag ? 1 : 0,
+		r->bgspdisp ? 1 : 0,
+		vr2h,
+		vr2l,
+		fast_fallback_count);
+
+	ctx->video_probe_frame_index++;
+	ctx->video_probe_frames_remaining--;
+}
+
+static void reset_video_probe_state(XM6Context *ctx)
+{
+	if (!ctx) {
+		return;
+	}
+	ctx->video_probe_signature = 0;
+	ctx->video_probe_frames_remaining = 0;
+	ctx->video_probe_frame_index = 0;
+	ctx->video_probe_has_signature = FALSE;
+}
+
 static void apply_runtime_config(XM6Context *ctx)
 {
 	ctx->vm->ApplyCfg(&ctx->runtime_config);
@@ -231,6 +405,8 @@ static void post_state_load_sync(XM6Context *ctx)
 	if (ctx->render) {
 		ctx->render->Complete();
 	}
+
+	reset_video_probe_state(ctx);
 }
 
 static bool create_temp_state_filepath(Filepath *out_path)
@@ -322,6 +498,7 @@ XM6CORE_API XM6Handle XM6CORE_CALL xm6_create(void)
 	ctx->ppi       = (PPI*)ctx->vm->SearchDevice(MAKEID('P', 'P', 'I', ' '));
 
 	apply_default_runtime_config(ctx);
+	reset_video_probe_state(ctx);
 	g_message_ctx = ctx;
 
 	return reinterpret_cast<XM6Handle>(ctx);
@@ -535,6 +712,7 @@ XM6CORE_API int XM6CORE_CALL xm6_reset(XM6Handle handle)
 	}
 
 	ctx->vm->Reset();
+	reset_video_probe_state(ctx);
 	return XM6CORE_OK;
 }
 
@@ -549,6 +727,9 @@ XM6CORE_API int XM6CORE_CALL xm6_set_power(XM6Handle handle, int enabled)
 	}
 
 	ctx->vm->SetPower(enabled ? TRUE : FALSE);
+	if (!enabled) {
+		reset_video_probe_state(ctx);
+	}
 	return XM6CORE_OK;
 }
 
@@ -972,6 +1153,8 @@ XM6CORE_API int XM6CORE_CALL xm6_video_poll(
 	out_frame->width = visible_w;
 	out_frame->height = visible_h;
 	out_frame->stride_pixels = stride;
+
+	emit_video_probe_internal(ctx, r);
 
 	return XM6CORE_OK;
 }
