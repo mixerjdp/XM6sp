@@ -3162,6 +3162,9 @@ void FASTCALL Render::FastDrawBGPageLinePX(int page, int raster, BOOL gd, DWORD 
 	const int bg_hadjust = CalcBGHAdjustPixels(compositor_mode, crtc, sprite);
 
 	(void)bg_pri;
+	if (!gd) {
+		return;
+	}
 	if (!render.bgdisp[page]) {
 		return;
 	}
@@ -3217,22 +3220,19 @@ void FASTCALL Render::FastDrawBGPageLinePX(int page, int raster, BOOL gd, DWORD 
 		else {
 			pixel = src[off];
 		}
-		bank = (int)((bgdata >> 8) & 0x0f);
-		if (pixel & REND_COLOR0) {
-			if (!gd) {
-				continue;
-			}
-			if (bank == 0) {
-				continue;
-			}
-			if (bg_flag[i] & 2) {
-				continue;
-			}
-			pixel &= 0x00ffffff;
-		}
-		else if (!FastVisiblePixel(pixel)) {
+
+		if (!(pixel & REND_COLOR0)) {
 			continue;
 		}
+		bank = (int)((bgdata >> 8) & 0x0f);
+		if (bank == 0) {
+			continue;
+		}
+		if (bg_flag[i] & 2) {
+			continue;
+		}
+
+		pixel &= ~REND_COLOR0;
 		bg_line[i] = pixel;
 		bg_flag[i] |= 2;
 		*active = TRUE;
@@ -3250,7 +3250,7 @@ void FASTCALL Render::FastBuildBGLinePX(int src_y, BOOL ton, int tx_pri, int sp_
 	const DWORD base = (render.paldata[0x100] & 0x00ffffff);
 	WORD *bg_pri = render.fast_bg_pribuf;
 	int raster = src_y & 0x1ff;
-
+	DWORD bg_tmp[1024];
 	for (i=0; i<render.mixlen; i++) {
 		bg_line[i] = REND_COLOR0;
 		bg_pri[i] = 0xffff;
@@ -3279,12 +3279,34 @@ void FASTCALL Render::FastBuildBGLinePX(int src_y, BOOL ton, int tx_pri, int sp_
 		FastDrawSpriteLinePX(raster, 1, bg_line, bg_flag, bg_pri, active);
 	}
 	if (render.bgdisp[1] && !render.bgsize) {
+		for (i=0; i<render.mixlen; i++) {
+			bg_tmp[i] = REND_COLOR0;
+		}
+		BG(1, raster, bg_tmp);
+		for (i=0; i<render.mixlen; i++) {
+			if (FastVisiblePixel(bg_tmp[i])) {
+				bg_line[i] = bg_tmp[i];
+				bg_flag[i] |= 2;
+				*active = TRUE;
+			}
+		}
 		FastDrawBGPageLinePX(1, raster, gd, bg_line, bg_flag, bg_pri, active);
 	}
 	if (sprite_visible) {
 		FastDrawSpriteLinePX(raster, 2, bg_line, bg_flag, bg_pri, active);
 	}
 	if (render.bgdisp[0]) {
+		for (i=0; i<render.mixlen; i++) {
+			bg_tmp[i] = REND_COLOR0;
+		}
+		BG(0, raster, bg_tmp);
+		for (i=0; i<render.mixlen; i++) {
+			if (FastVisiblePixel(bg_tmp[i])) {
+				bg_line[i] = bg_tmp[i];
+				bg_flag[i] |= 2;
+				*active = TRUE;
+			}
+		}
 		FastDrawBGPageLinePX(0, raster, gd, bg_line, bg_flag, bg_pri, active);
 	}
 	if (sprite_visible) {
