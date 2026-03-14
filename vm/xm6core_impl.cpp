@@ -47,6 +47,10 @@
 static const char XM6CORE_VERSION[] = "XM6 Core 2.06";
 static const unsigned int k_video_probe_frames_after_mode_change = 12u;
 
+#ifndef XM6CORE_ENABLE_VIDEO_PROBE_LOG
+#define XM6CORE_ENABLE_VIDEO_PROBE_LOG 0
+#endif
+
 //---------------------------------------------------------------------------
 //
 //	冁E��コンチE��スチE
@@ -280,6 +284,7 @@ static void emit_video_probe_internal(XM6Context *ctx, const Render::render_t *r
 		return;
 	}
 
+#if XM6CORE_ENABLE_VIDEO_PROBE_LOG
 	emit_messagef(ctx,
 		"[video-probe-int] core=xm6 frame=%u/%u raw=%ux%u hm=%u vm=%u low=%d mode=%s grptype=%d mixpage=%d mixtype=%d pri=%u/%u/%u gp=%u,%u,%u,%u gs=%u,%u,%u,%u en=%u,%u,%u,%u grpen=%u,%u,%u,%u text=%d bgsp=%d,%d vr2=%02X/%02X ffb=%u",
 		ctx->video_probe_frame_index + 1,
@@ -318,6 +323,7 @@ static void emit_video_probe_internal(XM6Context *ctx, const Render::render_t *r
 		vr2h,
 		vr2l,
 		fast_fallback_count);
+#endif
 
 	ctx->video_probe_frame_index++;
 	ctx->video_probe_frames_remaining--;
@@ -668,6 +674,35 @@ XM6CORE_API int XM6CORE_CALL xm6_exec_events_only(XM6Handle handle, unsigned int
 	}
 
 	ctx->scheduler->ExecEventsOnly((DWORD)hus);
+	return XM6CORE_OK;
+}
+
+//----------------------------------------------------------------------------
+//	xm6_exec_mpu_nowait_step
+//
+//	Replica el hack "No Wait Operation with MPU" del frontend MFC:
+//	ejecuta CPU->Exec(GetCPUSpeed()) pero restaura el contador de ciclos del
+//	scheduler para no avanzar el tiempo del sistema.
+//----------------------------------------------------------------------------
+XM6CORE_API int XM6CORE_CALL xm6_exec_mpu_nowait_step(XM6Handle handle)
+{
+	XM6Context *ctx = ctx_from_handle(handle);
+	if (!ctx_valid(ctx)) {
+		return XM6CORE_ERR_INVALID_HANDLE;
+	}
+	if (!ctx->scheduler) {
+		return XM6CORE_ERR_NOT_READY;
+	}
+
+	CPU *cpu = (CPU*)ctx->vm->SearchDevice(MAKEID('C', 'P', 'U', ' '));
+	if (!cpu) {
+		return XM6CORE_ERR_NOT_READY;
+	}
+
+	int backup_cycle = ctx->scheduler->GetCPUCycle();
+	cpu->Exec((int)ctx->scheduler->GetCPUSpeed());
+	ctx->scheduler->SetCPUCycle(backup_cycle);
+
 	return XM6CORE_OK;
 }
 

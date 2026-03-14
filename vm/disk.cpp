@@ -1940,7 +1940,7 @@ void FASTCALL SASIHD::Reset()
 	disk.attn = FALSE;
 
 	// リセットなし、コードをクリア
-	disk.reset = FALSE;
+	disk.reset = TRUE;
 	disk.code = 0x00;
 }
 

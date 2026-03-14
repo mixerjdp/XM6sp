@@ -131,6 +131,7 @@ void FASTCALL SASI::Reset()
 {
 	Memory *memory;
 	Memory::memtype type;
+	int i;
 
 	ASSERT(this);
 	LOG0(Log::Normal, "リセット");
@@ -189,6 +190,26 @@ void FASTCALL SASI::Reset()
 	}
 
 	// イベントリセット
+	// Reset attached disks/state so a VM reset behaves like a real bus reset.
+	for (i=0; i<SASIMax; i++) {
+		if (sasi.disk[i]) {
+			sasi.disk[i]->Reset();
+		}
+	}
+
+	for (i=0; i<(int)(sizeof(sasi.cmd) / sizeof(sasi.cmd[0])); i++) {
+		sasi.cmd[i] = 0;
+	}
+
+	// Clear transfer state.
+	sasi.blocks = 0;
+	sasi.next = 0;
+	sasi.offset = 0;
+	sasi.length = 0;
+	sasi.status = 0;
+	sasi.message = 0;
+	sasi.ctrl = 0;
+
 	event.SetUser(0);
 	event.SetTime(0);
 
@@ -1264,6 +1285,7 @@ void FASTCALL SASI::BusFree()
 #endif	// SASI_LOG
 
 	// バスリセット
+	sasi.sel = FALSE;
 	sasi.msg = FALSE;
 	sasi.cd = FALSE;
 	sasi.io = FALSE;
@@ -1348,6 +1370,7 @@ void FASTCALL SASI::Command()
 	// I/O=0, C/D=1, MSG=0
 	sasi.io = FALSE;
 	sasi.cd = TRUE;
+	sasi.sel = FALSE;
 	sasi.msg = FALSE;
 
 	// コマンド残り長さは6バイト(一部コマンドは10バイト。WriteByteで再設定)

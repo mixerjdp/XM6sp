@@ -2,6 +2,7 @@
 #include <cstdarg>
 #include <cctype>
 #include <cmath>
+#include <cstdint>
 #include <cstring>
 #include <fstream>
 #include <string>
@@ -41,6 +42,21 @@ static const unsigned k_savestate_guard_frames_hdd_load = 720;
 static const unsigned k_savestate_guard_frames_post_load = 180;
 static const unsigned k_video_probe_frames_after_mode_change = 12;
 
+static uint64_t now_usec()
+{
+  static LARGE_INTEGER freq = {};
+  if (freq.QuadPart == 0) {
+    QueryPerformanceFrequency(&freq);
+    if (freq.QuadPart == 0) {
+      return 0;
+    }
+  }
+
+  LARGE_INTEGER counter = {};
+  QueryPerformanceCounter(&counter);
+  return static_cast<uint64_t>((counter.QuadPart * 1000000LL) / freq.QuadPart);
+}
+
 static unsigned g_frame_width = k_default_width;
 static unsigned g_frame_height = k_default_height;
 static float g_frame_aspect = static_cast<float>(k_default_aspect);
@@ -64,7 +80,8 @@ static bool g_use_exec_to_frame = true;
 enum start_select_mode_t {
   START_SELECT_DISABLED = 0,
   START_SELECT_XF_KEYS = 1,
-  START_SELECT_F_KEYS = 2
+  START_SELECT_F_KEYS = 2,
+  START_SELECT_OPT_KEYS = 3
 };
 static int g_pad_start_select_mode = START_SELECT_XF_KEYS;
 static unsigned g_video_not_ready_count = 0;
@@ -98,12 +115,15 @@ static int g_mouse_x = 0;
 static int g_mouse_y = 0;
 static bool g_mouse_left = false;
 static bool g_mouse_right = false;
+static bool g_mpu_nowait = false;
 static unsigned g_hdd_boot_reset_countdown = 0;
 static unsigned g_savestate_guard_countdown = 0;
 static const unsigned k_hdd_boot_warmup_frames = 8;
 
 static bool g_prev_start = false;
 static bool g_prev_select = false;
+static unsigned g_prev_start_keycode = 0;
+static unsigned g_prev_select_keycode = 0;
 static bool g_prev_midi_hotkey = false;
 
 static std::vector<int16_t> g_audio_buffer;
@@ -148,6 +168,7 @@ struct xm6_api_t {
   int (XM6CORE_CALL *exec)(XM6Handle handle, unsigned int hus) = nullptr;
   int (XM6CORE_CALL *exec_events_only)(XM6Handle handle, unsigned int hus) = nullptr;
   int (XM6CORE_CALL *exec_to_frame)(XM6Handle handle) = nullptr;
+  int (XM6CORE_CALL *exec_mpu_nowait_step)(XM6Handle handle) = nullptr;
   int (XM6CORE_CALL *reset)(XM6Handle handle) = nullptr;
   int (XM6CORE_CALL *set_power)(XM6Handle handle, int enabled) = nullptr;
 
@@ -348,6 +369,7 @@ static bool load_xm6_api()
   g_xm6.exec = xm6_exec;
   g_xm6.exec_events_only = xm6_exec_events_only;
   g_xm6.exec_to_frame = xm6_exec_to_frame;
+  g_xm6.exec_mpu_nowait_step = xm6_exec_mpu_nowait_step;
   g_xm6.reset = xm6_reset;
   g_xm6.set_power = xm6_set_power;
   g_xm6.video_poll = xm6_video_poll;
@@ -466,6 +488,7 @@ static bool load_xm6_api()
   load_optional_symbol(&g_xm6.get_video_layout, "xm6_get_video_layout");
   load_optional_symbol(&g_xm6.exec_to_frame, "xm6_exec_to_frame");
   load_optional_symbol(&g_xm6.exec_events_only, "xm6_exec_events_only");
+  load_optional_symbol(&g_xm6.exec_mpu_nowait_step, "xm6_exec_mpu_nowait_step");
   load_optional_symbol(&g_xm6.set_system_dir, "xm6_set_system_dir");
   load_optional_symbol(&g_xm6.mount_sasi_hdd, "xm6_mount_sasi_hdd");
   load_optional_symbol(&g_xm6.mount_scsi_hdd, "xm6_mount_scsi_hdd");
@@ -647,6 +670,8 @@ static void destroy_xm6_handle()
   g_hdd_boot_reset_countdown = 0;
   g_prev_start = false;
   g_prev_select = false;
+  g_prev_start_keycode = 0;
+  g_prev_select_keycode = 0;
   g_prev_midi_hotkey = false;
   g_midi_reset_pending = false;
   reset_video_mode_log_state();
@@ -1418,6 +1443,8 @@ static void apply_core_option_values()
   if (g_environ_cb(RETRO_ENVIRONMENT_GET_VARIABLE, &var) && var.value) {
     if (std::strcmp(var.value, "f_keys") == 0) {
       g_pad_start_select_mode = START_SELECT_F_KEYS;
+    } else if (std::strcmp(var.value, "opt_keys") == 0) {
+      g_pad_start_select_mode = START_SELECT_OPT_KEYS;
     } else if (std::strcmp(var.value, "disabled") == 0) {
       g_pad_start_select_mode = START_SELECT_DISABLED;
     } else {
@@ -1589,10 +1616,16 @@ static void apply_core_option_values()
     }
   }
 
-  core_log(RETRO_LOG_INFO, "[xm6-libretro] options: drive=FDD%d exec_mode=%s start_select=%s clock=%s joy1=%d joy2=%d ram=%dmb fast_floppy=%s render=%s vol(master=%d fm=%d adpcm=%d) midi=%s/%s mouse=%s port=%d speed=%d swap=%s hdd=%s",
+  var.key = "xm6_mpu_nowait";
+  if (g_environ_cb(RETRO_ENVIRONMENT_GET_VARIABLE, &var) && var.value) {
+    g_mpu_nowait = (std::strcmp(var.value, "enabled") == 0);
+  }
+
+  core_log(RETRO_LOG_INFO, "[xm6-libretro] options: drive=FDD%d exec_mode=%s start_select=%s clock=%s joy1=%d joy2=%d ram=%dmb fast_floppy=%s render=%s vol(master=%d fm=%d adpcm=%d) midi=%s/%s mouse=%s port=%d speed=%d swap=%s hdd=%s mpu_nowait=%s",
            g_disk_drive,
            g_use_exec_to_frame ? "exec_to_frame" : "legacy_exec",
            (g_pad_start_select_mode == START_SELECT_F_KEYS) ? "f_keys" :
+           (g_pad_start_select_mode == START_SELECT_OPT_KEYS) ? "opt_keys" :
            (g_pad_start_select_mode == START_SELECT_XF_KEYS) ? "xf_keys" : "disabled",
            (g_system_clock == 1) ? "12mhz" :
            (g_system_clock == 3) ? "16mhz" :
@@ -1608,7 +1641,8 @@ static void apply_core_option_values()
            (g_pointer_device_mode == POINTER_DEVICE_MOUSE) ? "mouse" : "disabled",
            g_mouse_port, g_mouse_speed, g_mouse_swap ? "enabled" : "disabled",
            g_hdd_target_auto ? "AUTO" : (g_hdd_is_scsi ? (g_hdd_slot ? "SCSI1" : "SCSI0")
-                                                        : (g_hdd_slot ? "SASI1" : "SASI0")));
+                                                        : (g_hdd_slot ? "SASI1" : "SASI0")),
+           g_mpu_nowait ? "enabled" : "disabled");
 }
 
 static void register_core_options()
@@ -1623,7 +1657,7 @@ static void register_core_options()
     { "xm6_exec_mode",
       "Frame execution mode; exec_to_frame|legacy_exec" },
     { "xm6_pad_start_select",
-      "Map Start/Select to keys; xf_keys|f_keys|disabled" },
+      "Map Start/Select to keys; xf_keys|f_keys|opt_keys|disabled" },
     { "xm6_cpu_clock",
       "System clock; 10mhz|12mhz|16mhz|22mhz" },
     { "xm6_joy1_type",
@@ -1656,6 +1690,8 @@ static void register_core_options()
       "Swap mouse buttons; disabled|enabled" },
     { "xm6_hdd_target",
       "HDF mount target; auto|sasi0|sasi1|scsi0|scsi1" },
+    { "xm6_mpu_nowait",
+      "No Wait Operation with MPU; disabled|enabled" },
     { nullptr, nullptr }
   };
   g_environ_cb(RETRO_ENVIRONMENT_SET_VARIABLES, const_cast<retro_variable *>(vars));
@@ -2269,15 +2305,58 @@ static void poll_and_push_input()
   g_xm6.input_joy(g_xm6_handle, 0, axes_p1, buttons_p1);
   g_xm6.input_joy(g_xm6_handle, 1, axes_p2, buttons_p2);
 
-  if (g_pad_start_select_mode != START_SELECT_DISABLED && g_xm6.input_key) {
-    const unsigned start_key = (g_pad_start_select_mode == START_SELECT_F_KEYS) ? 0x63 : 0x55;
-    const unsigned select_key = (g_pad_start_select_mode == START_SELECT_F_KEYS) ? 0x64 : 0x57;
-    if (start_pressed_p1 != g_prev_start) {
+  if (g_xm6.input_key) {
+    unsigned start_key = 0;
+    unsigned select_key = 0;
+    switch (g_pad_start_select_mode) {
+      case START_SELECT_F_KEYS:
+        start_key = 0x63;   // F1
+        select_key = 0x64;  // F2
+        break;
+      case START_SELECT_OPT_KEYS:
+        start_key = 0x73;   // OPT1
+        select_key = 0x72;  // OPT2
+        break;
+      case START_SELECT_XF_KEYS:
+        start_key = 0x55;   // XF1
+        select_key = 0x57;  // XF2
+        break;
+      default:
+        break;
+    }
+
+    const bool prev_start_pressed = g_prev_start;
+    const bool prev_select_pressed = g_prev_select;
+
+    if (g_prev_start_keycode != start_key) {
+      if (g_prev_start_keycode && prev_start_pressed) {
+        g_xm6.input_key(g_xm6_handle, g_prev_start_keycode, 0);
+      }
+      if (start_key && start_pressed_p1) {
+        g_xm6.input_key(g_xm6_handle, start_key, 1);
+      }
+      g_prev_start_keycode = start_key;
+      g_prev_start = start_pressed_p1;
+    } else if (start_key && start_pressed_p1 != prev_start_pressed) {
       g_xm6.input_key(g_xm6_handle, start_key, start_pressed_p1 ? 1 : 0);
       g_prev_start = start_pressed_p1;
+    } else {
+      g_prev_start = start_pressed_p1;
     }
-    if (select_pressed_p1 != g_prev_select) {
+
+    if (g_prev_select_keycode != select_key) {
+      if (g_prev_select_keycode && prev_select_pressed) {
+        g_xm6.input_key(g_xm6_handle, g_prev_select_keycode, 0);
+      }
+      if (select_key && select_pressed_p1) {
+        g_xm6.input_key(g_xm6_handle, select_key, 1);
+      }
+      g_prev_select_keycode = select_key;
+      g_prev_select = select_pressed_p1;
+    } else if (select_key && select_pressed_p1 != prev_select_pressed) {
       g_xm6.input_key(g_xm6_handle, select_key, select_pressed_p1 ? 1 : 0);
+      g_prev_select = select_pressed_p1;
+    } else {
       g_prev_select = select_pressed_p1;
     }
   } else {
@@ -2535,6 +2614,8 @@ void retro_init(void)
   g_hdd_boot_reset_countdown = 0;
   g_prev_start = false;
   g_prev_select = false;
+  g_prev_start_keycode = 0;
+  g_prev_select_keycode = 0;
   g_pad_start_select_mode = START_SELECT_XF_KEYS;
   g_video_not_ready_count = 0;
   g_system_clock = 0;
@@ -2554,6 +2635,7 @@ void retro_init(void)
   g_mouse_y = 0;
   g_mouse_left = false;
   g_mouse_right = false;
+  g_mpu_nowait = false;
   g_savestate_guard_countdown = 0;
   reset_video_mode_log_state();
   g_audio_buffer.clear();
@@ -2602,7 +2684,18 @@ void retro_reset(void)
   if (g_xm6_handle && g_xm6.reset) {
     g_hdd_boot_reset_countdown = 0;
     reset_mouse_state();
-    g_xm6.reset(g_xm6_handle);
+    g_video_not_ready_count = 0;
+
+    if (g_content_is_hdd && g_xm6.set_power) {
+      core_log(RETRO_LOG_INFO,
+               "[xm6-libretro] Manual reset while HDD mounted: power cycle + deferred warm-up reset");
+      g_xm6.set_power(g_xm6_handle, 0);
+      g_xm6.set_power(g_xm6_handle, 1);
+      begin_hdd_boot_warmup("manual reset (HDD)");
+    } else {
+      g_xm6.reset(g_xm6_handle);
+    }
+
     midi_queue_reset_if_enabled();
     arm_savestate_guard("manual reset");
   }
@@ -2735,6 +2828,8 @@ void retro_run(void)
   if (!g_supports_midi_interface) {
     init_midi_interface();
   }
+
+  const uint64_t frame_start_usec = now_usec();
 
   if (g_environ_cb) {
     bool updated = false;
@@ -2964,6 +3059,23 @@ void retro_run(void)
     }
   } else if (g_audio_cb) {
     g_audio_cb(0, 0);
+  }
+
+  if (g_mpu_nowait && g_xm6.exec_mpu_nowait_step) {
+    const double fps = (g_current_fps > 1.0) ? g_current_fps : k_default_fps;
+    const uint64_t budget_us = static_cast<uint64_t>(1000000.0 / fps);
+    const uint64_t safety_us = 150;
+    const uint64_t stop_usec =
+      frame_start_usec + ((budget_us > safety_us) ? (budget_us - safety_us) : 0u);
+
+    for (unsigned int i = 0; i < 512; ++i) {
+      if (now_usec() >= stop_usec) {
+        break;
+      }
+      if (g_xm6.exec_mpu_nowait_step(g_xm6_handle) != XM6CORE_OK) {
+        break;
+      }
+    }
   }
 }
 
