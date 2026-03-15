@@ -3289,10 +3289,11 @@ void FASTCALL Render::FastBuildBGLinePX(int src_y, BOOL ton, int tx_pri, int sp_
 	const BOOL has_sources = (BOOL)(sprite_visible || has_bg);
 	const BOOL gd = (BOOL)(sp_pri >= tx_pri);
 	const BOOL opaq = gd ? TRUE : (BOOL)!ton;
+	const DWORD base = (render.paldata[0x100] & ~REND_COLOR0);
 	const int raster = (src_y & 0x1ff);
 	const DWORD *src;
 	for (i=0; i<render.mixlen; i++) {
-		bg_line[i] = REND_COLOR0;
+		bg_line[i] = opaq ? base : REND_COLOR0;
 		bg_flag[i] = 0;
 	}
 	*active = has_sources;
