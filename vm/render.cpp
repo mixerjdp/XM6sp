@@ -3204,6 +3204,7 @@ void FASTCALL Render::FastDrawBGPageLinePX(int page, int raster, BOOL gd, DWORD 
 	DWORD *src;
 	DWORD bgdata;
 	DWORD pixel;
+	DWORD pcgno;
 	int bank;
 	const int bg_hadjust = CalcBGHAdjustPixels(compositor_mode, crtc, sprite);
 
@@ -3260,6 +3261,12 @@ void FASTCALL Render::FastDrawBGPageLinePX(int page, int raster, BOOL gd, DWORD 
 		if (!src) {
 			continue;
 		}
+		pcgno = bgdata & 0x0fff;
+		if (!render.pcgready[pcgno]) {
+			ASSERT(render.pcguse[pcgno] > 0);
+			render.pcgready[pcgno] = TRUE;
+			RendPCGNew(pcgno, render.sprmem, render.pcgbuf, render.paldata);
+		}
 		if (bgdata & 0x4000) {
 			pixel = src[render.bgsize ? (15 - off) : (7 - off)];
 		}
@@ -3280,7 +3287,7 @@ void FASTCALL Render::FastDrawBGPageLinePX(int page, int raster, BOOL gd, DWORD 
 
 		pixel &= ~REND_COLOR0;
 		bg_line[i] = pixel;
-		bg_flag[i] |= 2;
+		bg_flag[i] |= 6;
 		*active = TRUE;
 	}
 }
@@ -3350,6 +3357,9 @@ void FASTCALL Render::FastBuildBGLinePX(int src_y, BOOL ton, int tx_pri, int sp_
 			bg_flag[i] |= 2;
 			*active = TRUE;
 		}
+	}
+	if (render.bgdisp[0]) {
+		FastDrawBGPageLinePX(0, raster, gd, bg_line, bg_flag, render.fast_bg_pribuf, active);
 	}
 
 	if (bg_opaq) {
@@ -4447,7 +4457,24 @@ void FASTCALL Render::MixFastLine(int dst_y, int src_y)
 	bg_active = FALSE;
 	bg_opaq = FALSE;
 	FastBuildBGLinePX(src_y, ton, tx_pri, sp_pri, bg_line, bg_flag, &bg_active, &bg_opaq);
-	bgon = bg_active;
+	if (gon || tron || pron) {
+		for (i=0; i<render.mixlen; i++) {
+			if ((bg_flag[i] & 4) == 0) {
+				continue;
+			}
+			if (FastVisiblePixel(grp[i]) || FastVisiblePixel(grp_sp[i]) || FastVisiblePixel(grp_sp2[i])) {
+				bg_line[i] = REND_COLOR0;
+				bg_flag[i] &= (BYTE)~6;
+			}
+		}
+	}
+	bgon = FALSE;
+	for (i=0; i<render.mixlen; i++) {
+		if (bg_flag[i] & 2) {
+			bgon = TRUE;
+			break;
+		}
+	}
 	FastPrepareBGTextLine(bgtext_line, tr_flag, bg_flag, text_line, bg_line, render.mixlen, ton, bgon, tx_pri, sp_pri, bg_opaq);
 
 	// px68k starts the destination scanline as empty and lets the first visible
