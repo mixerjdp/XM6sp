@@ -3437,7 +3437,11 @@ static inline DWORD Px68kUnpack565I(WORD pixel)
 	const DWORD r8 = (DWORD)((r5 << 3) | (r5 >> 2));
 	const DWORD g8 = (DWORD)((g6 << 2) | (g6 >> 4));
 	const DWORD b8 = (DWORD)((b5 << 3) | (b5 >> 2));
-	return (DWORD)((r8 << 16) | (g8 << 8) | (b8 << 0));
+	DWORD out = (DWORD)((r8 << 16) | (g8 << 8) | (b8 << 0));
+	if (pixel & 0x0020) {
+		out |= REND_PX68K_IBIT;
+	}
+	return out;
 }
 
 static DWORD FastBlendPixel(DWORD base, DWORD top)
