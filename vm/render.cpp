@@ -4435,7 +4435,6 @@ void FASTCALL Render::MixFastLine(int dst_y, int src_y)
 	BOOL bg_active;
 	BOOL bg_opaq;
 	DWORD mix_stamp;
-	const DWORD backdrop = (render.paldata[0x100] & ~REND_COLOR0);
 	int i;
 
 	if (!render.mixbuf) {
@@ -4468,10 +4467,9 @@ void FASTCALL Render::MixFastLine(int dst_y, int src_y)
 	FastMixGrp(src_y, grp, grp_sp, grp_sp2, grp_sp_tr, &gon, &tron, &pron);
 
 	for (i=0; i<render.mixlen; i++) {
-		// px68k dim/half-fill checks the final destination for RGB565I black.
-		// Keep Fast mode black-initialized only in dim mode so the later half-fill
-		// pass sees the same holes that px68k would fill.
-		out[i] = dim_mode ? 0 : backdrop;
+		// px68k does not prefill the final scanline with backdrop before layering.
+		// Start from visible black so opaq-path copies and half-fill behavior match.
+		out[i] = 0;
 		if (ton) {
 			text_line[i] = render.textout[(((src_y + (int)render.texty) & 0x3ff) << 10) + (((int)render.textx + i) & 0x3ff)];
 		}
@@ -4488,9 +4486,9 @@ void FASTCALL Render::MixFastLine(int dst_y, int src_y)
 	bgon = bg_active;
 	FastPrepareBGTextLine(bgtext_line, tr_flag, bg_flag, text_line, bg_line, render.mixlen, ton, bgon, tx_pri, sp_pri, bg_opaq);
 
-	// Output is already prefilled with backdrop; treat the destination as non-opaque
-	// so transparent pixels don't overwrite the backdrop.
-	opaq = FALSE;
+	// px68k starts the destination scanline as empty and lets the first visible
+	// layer copy opaquely; later layers then overlay only visible pixels.
+	opaq = TRUE;
 	tdrawed = FALSE;
 
 	if (gr_pri >= 2) {
