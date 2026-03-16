@@ -136,6 +136,18 @@ static inline unsigned current_video_bpp_bytes()
   return (g_frontend_pixel_format == RETRO_PIXEL_FORMAT_RGB565) ? 2u : 4u;
 }
 
+static inline unsigned current_video_pitch_bytes(unsigned width_pixels)
+{
+  // px68k libretro always reports a pitch of 800 for RGB565 output, even when the
+  // visible width is smaller (e.g. 512/768). Match that behavior in Fast mode
+  // to minimize border/backdrop and shader edge-case differences.
+  if (g_frontend_pixel_format == RETRO_PIXEL_FORMAT_RGB565) {
+    const unsigned stride_pixels = (width_pixels <= 800) ? 800u : width_pixels;
+    return stride_pixels * sizeof(uint16_t);
+  }
+  return width_pixels * sizeof(uint32_t);
+}
+
 static inline uint16_t px68k_pack_rgb565i(uint32_t pixel)
 {
   // XM6 uses REND_COLOR0 (bit31) as "transparent". px68k uses 0 in 565 buffers
@@ -2877,7 +2889,7 @@ void retro_run(void)
 {
   if (!g_xm6_handle || !g_game_loaded) {
     if (g_video_cb) {
-      const unsigned pitch = g_frame_width * current_video_bpp_bytes();
+      const unsigned pitch = current_video_pitch_bytes(g_frame_width);
       g_video_cb(nullptr, g_frame_width, g_frame_height, pitch);
     }
     return;
@@ -3106,16 +3118,17 @@ void retro_run(void)
 
         if (g_frontend_pixel_format == RETRO_PIXEL_FORMAT_RGB565) {
           const uint32_t *src = static_cast<const uint32_t *>(video_pixels);
-          g_video_buffer_rgb565.resize(static_cast<size_t>(video_width) * static_cast<size_t>(video_height));
+          const unsigned out_stride_pixels = (video_width <= 800) ? 800u : video_width;
+          g_video_buffer_rgb565.resize(static_cast<size_t>(out_stride_pixels) * static_cast<size_t>(video_height));
           for (unsigned y = 0; y < video_height; ++y) {
             const uint32_t *src_row = src + static_cast<size_t>(y) * static_cast<size_t>(video_stride_pixels);
-            uint16_t *dst_row = g_video_buffer_rgb565.data() + static_cast<size_t>(y) * static_cast<size_t>(video_width);
+            uint16_t *dst_row = g_video_buffer_rgb565.data() + static_cast<size_t>(y) * static_cast<size_t>(out_stride_pixels);
             for (unsigned x = 0; x < video_width; ++x) {
               dst_row[x] = px68k_pack_rgb565i(src_row[x]);
             }
           }
           cb_pixels = g_video_buffer_rgb565.data();
-          cb_pitch = video_width * sizeof(uint16_t);
+          cb_pitch = out_stride_pixels * sizeof(uint16_t);
         }
 
 	      g_video_cb(cb_pixels, video_width, video_height, cb_pitch);
@@ -3123,7 +3136,7 @@ void retro_run(void)
     g_xm6.video_consume(g_xm6_handle);
   } else if (g_video_cb) {
     ++g_video_not_ready_count;
-    const unsigned pitch = g_frame_width * current_video_bpp_bytes();
+    const unsigned pitch = current_video_pitch_bytes(g_frame_width);
     g_video_cb(nullptr, g_frame_width, g_frame_height, pitch);
   }
 

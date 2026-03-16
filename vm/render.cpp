@@ -3387,7 +3387,7 @@ void FASTCALL Render::FastBuildBGLinePX(int src_y, BOOL ton, int tx_pri, int sp_
 	}
 
 	src = &render.bgspbuf[raster << 9];
-	for (i=0; i<render.mixlen; i++) {
+	for (i = 0; i < render.mixlen; i++) {
 		bg_line[i] = src[i];
 		if (FastVisiblePixel(src[i])) {
 			bg_flag[i] |= 2;
@@ -4435,6 +4435,7 @@ void FASTCALL Render::MixFastLine(int dst_y, int src_y)
 	BOOL bg_active;
 	BOOL bg_opaq;
 	DWORD mix_stamp;
+	const DWORD backdrop = (render.paldata[0x100] & ~REND_COLOR0);
 	int i;
 
 	if (!render.mixbuf) {
@@ -4467,7 +4468,8 @@ void FASTCALL Render::MixFastLine(int dst_y, int src_y)
 	FastMixGrp(src_y, grp, grp_sp, grp_sp2, grp_sp_tr, &gon, &tron, &pron);
 
 	for (i=0; i<render.mixlen; i++) {
-		out[i] = REND_COLOR0;
+		// px68k backdrop policy: default to TextPal[0] so "holes" never become black.
+		out[i] = backdrop;
 		if (ton) {
 			text_line[i] = render.textout[(((src_y + (int)render.texty) & 0x3ff) << 10) + (((int)render.textx + i) & 0x3ff)];
 		}
@@ -4484,7 +4486,9 @@ void FASTCALL Render::MixFastLine(int dst_y, int src_y)
 	bgon = bg_active;
 	FastPrepareBGTextLine(bgtext_line, tr_flag, bg_flag, text_line, bg_line, render.mixlen, ton, bgon, tx_pri, sp_pri, bg_opaq);
 
-	opaq = TRUE;
+	// Output is already prefilled with backdrop; treat the destination as non-opaque
+	// so transparent pixels don't overwrite the backdrop.
+	opaq = FALSE;
 	tdrawed = FALSE;
 
 	if (gr_pri >= 2) {
@@ -4597,12 +4601,6 @@ void FASTCALL Render::MixFastLine(int dst_y, int src_y)
 	}
 	else if (dim_mode && tron) {
 		FastDrawHalfFillLine(out, grp_sp, render.mixlen);
-	}
-
-	if (opaq) {
-		for (i=0; i<render.mixlen; i++) {
-			out[i] = REND_COLOR0;
-		}
 	}
 
 	RendMix01(dst, out, render.drawflag + (src_y << 6), render.mixlen);
