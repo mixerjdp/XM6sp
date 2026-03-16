@@ -3762,7 +3762,7 @@ static void FastBuildSpecial8(const Render::render_t *work, int pair, int y, int
 		else {
 			grp_sp[i] = REND_COLOR0;
 			grp_sp2[i] = pixel;
-			if ((even_index != 0) && (!FastVisiblePixel(pixel))) {
+			if ((even_index != 0) && (Px68kPack565I(pixel) == 0)) {
 				grp_sp_tr[i] = TRUE;
 				*active = TRUE;
 			}
@@ -3796,13 +3796,16 @@ static void FastBuildLine8TR(const Render::render_t *work, int pair, int y, int 
 	x = work->grpx[pair * 2 + 0] & 0x1ff;
 	off = ((DWORD)((y + (int)work->grpy[pair * 2 + 0]) & 0x1ff) << 10) + (x << 1) + pair;
 	for (i=0; i<len; i++) {
-		pixel = opaq ? REND_COLOR0 : dst[i];
+		pixel = opaq ? 0 : dst[i];
 		index = work->grpgv[off];
 		if (FastVisiblePixel(grp_sp[i])) {
 			if (index != 0) {
 				base = work->paldata[index];
-				if (FastVisiblePixel(base)) {
+				if (Px68kPack565I(base) != 0) {
 					pixel = FastBlendPixel(base, grp_sp[i]);
+				}
+				else {
+					pixel = 0;
 				}
 			}
 		}
@@ -3836,13 +3839,13 @@ static void FastBuildLine8TRGT(const Render::render_t *work, int pair, int y, in
 	x = work->grpx[pair * 2 + 0] & 0x1ff;
 	off = ((DWORD)((y + (int)work->grpy[pair * 2 + 0]) & 0x1ff) << 10) + (x << 1) + pair;
 	for (i=0; i<len; i++) {
-		pixel = opaq ? REND_COLOR0 : dst[i];
+		pixel = opaq ? 0 : dst[i];
 		index = work->grpgv[off];
-		if (!FastVisiblePixel(grp_sp[i]) && !grp_sp_tr[i] && (index != 0)) {
-			pixel = work->paldata[index];
+		if (FastVisiblePixel(grp_sp[i]) || grp_sp_tr[i]) {
+			pixel = 0;
 		}
-		else if (opaq) {
-			pixel = REND_COLOR0;
+		else if (index != 0) {
+			pixel = work->paldata[index];
 		}
 		dst[i] = pixel;
 		grp_sp_tr[i] = FALSE;
