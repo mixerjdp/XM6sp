@@ -1549,54 +1549,11 @@ void FASTCALL Render::MakePalette()
 		}
 	}
 
-	// --- px68k-safe palette table for fast compositor ---
-	// Matches px68k's "avoid zero output for non-zero source" behavior:
-	// if a non-zero 15-bit color collapses to RGB=0 after contrast scaling,
-	// clamp it to the smallest visible blue step so it won't act like "transparent"
-	// in px68k-style pipelines.
-	auto conv_px68k_safe = [](int color, int ratio) -> DWORD {
-		DWORD r = (DWORD)color;
-		DWORD g = (DWORD)color;
-		DWORD b = (DWORD)color;
-		r <<= 13; r &= 0xf80000;
-		g &= 0x00f800;
-		b <<= 2;  b &= 0x0000f8;
-		if (color & 1) {
-			r |= 0x070000;
-			g |= 0x000700;
-			b |= 0x000007;
-		}
-		b *= ratio; b >>= 8;
-		g *= ratio; g >>= 8; g &= 0xff00;
-		r *= ratio; r >>= 8; r &= 0xff0000;
-		DWORD out = (DWORD)(r | g | b);
-		if (color & 1) {
-			out |= REND_PX68K_IBIT;
-		}
-
-		// px68k "avoid 0" hack: if a non-zero source color would quantize to 0 in 565I,
-		// clamp to the smallest visible blue step.
-		if (color) {
-			const DWORD rgb = out & 0x00ffffff;
-			const WORD r5 = (WORD)((rgb >> 19) & 0x1f);
-			const WORD g5 = (WORD)((rgb >> 11) & 0x1f);
-			const WORD b5 = (WORD)((rgb >>  3) & 0x1f);
-			WORD packed = (WORD)((r5 << 11) | (g5 << 6) | b5);
-			if (out & REND_PX68K_IBIT) {
-				packed |= 0x0020;
-			}
-			if (packed == 0) {
-				out |= 0x000008;	// ensures b5=1 after RGB565I quantization
-			}
-		}
-		return out;
-	};
-
 	p = palbuf_fast;
 	for (i=0; i<16; i++) {
 		ratio = 256 - ((15 - i) << 4);
 		for (j=0; j<0x10000; j++) {
-			*p++ = conv_px68k_safe(j, ratio);
+			*p++ = ConvPalette(j, ratio);
 		}
 	}
 }
