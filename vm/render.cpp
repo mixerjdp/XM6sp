@@ -4394,7 +4394,7 @@ static void FastDrawHalfFillLine(DWORD *dst, const DWORD *grp_sp, int len)
 {
 	int i;
 	for (i=0; i<len; i++) {
-		if (!FastVisiblePixel(dst[i]) && FastVisiblePixel(grp_sp[i])) {
+		if ((Px68kPack565I(dst[i]) == 0) && FastVisiblePixel(grp_sp[i])) {
 			dst[i] = FastDimPixel(grp_sp[i]);
 		}
 	}
@@ -4468,8 +4468,10 @@ void FASTCALL Render::MixFastLine(int dst_y, int src_y)
 	FastMixGrp(src_y, grp, grp_sp, grp_sp2, grp_sp_tr, &gon, &tron, &pron);
 
 	for (i=0; i<render.mixlen; i++) {
-		// px68k backdrop policy: default to TextPal[0] so "holes" never become black.
-		out[i] = backdrop;
+		// px68k dim/half-fill checks the final destination for RGB565I black.
+		// Keep Fast mode black-initialized only in dim mode so the later half-fill
+		// pass sees the same holes that px68k would fill.
+		out[i] = dim_mode ? 0 : backdrop;
 		if (ton) {
 			text_line[i] = render.textout[(((src_y + (int)render.texty) & 0x3ff) << 10) + (((int)render.textx + i) & 0x3ff)];
 		}
