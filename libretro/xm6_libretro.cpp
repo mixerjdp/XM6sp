@@ -129,6 +129,35 @@ static bool g_prev_midi_hotkey = false;
 
 static std::vector<int16_t> g_audio_buffer;
 static std::vector<unsigned int> g_video_buffer;
+static std::vector<uint16_t> g_video_buffer_rgb565;
+
+static inline unsigned current_video_bpp_bytes()
+{
+  return (g_frontend_pixel_format == RETRO_PIXEL_FORMAT_RGB565) ? 2u : 4u;
+}
+
+static inline uint16_t px68k_pack_rgb565i(uint32_t pixel)
+{
+  // XM6 uses REND_COLOR0 (bit31) as "transparent". px68k uses 0 in 565 buffers
+  // as a "no write" value in some blend paths; mapping REND_COLOR0 -> 0 keeps
+  // behavior consistent when a transparent pixel ever escapes to the output.
+  if (pixel & 0x80000000u) {
+    return 0;
+  }
+
+  const uint32_t rgb = pixel & 0x00ffffffu;
+  const uint16_t r5 = (uint16_t)((rgb >> 19) & 0x1fu);
+  const uint16_t g5 = (uint16_t)((rgb >> 11) & 0x1fu);
+  const uint16_t b5 = (uint16_t)((rgb >> 3) & 0x1fu);
+
+  // px68k uses a 565 layout where bit 0x0020 is repurposed as the "I" bit.
+  // Keep it to match its TR half-color mixing behavior.
+  uint16_t out = (uint16_t)((r5 << 11) | (g5 << 6) | b5);
+  if (pixel & 0x40000000u) {
+    out |= 0x0020;
+  }
+  return out;
+}
 
 struct xm6_video_layout_t {
   bool valid = false;
@@ -299,7 +328,9 @@ static bool set_frontend_pixel_format(enum retro_pixel_format fmt)
 
 static void sync_frontend_pixel_format_for_render_mode()
 {
-  const enum retro_pixel_format desired = RETRO_PIXEL_FORMAT_XRGB8888;
+  const enum retro_pixel_format desired =
+    (g_render_mode == XM6CORE_RENDER_MODE_FAST) ? RETRO_PIXEL_FORMAT_RGB565
+                                               : RETRO_PIXEL_FORMAT_XRGB8888;
 
   if (desired == g_frontend_pixel_format && g_frontend_pixel_format != RETRO_PIXEL_FORMAT_UNKNOWN) {
     return;
@@ -308,11 +339,22 @@ static void sync_frontend_pixel_format_for_render_mode()
   if (set_frontend_pixel_format(desired)) {
     core_log(RETRO_LOG_INFO,
              "[xm6-libretro] Video output pixel format set to %s",
-             "XRGB8888");
+             (desired == RETRO_PIXEL_FORMAT_RGB565) ? "RGB565" : "XRGB8888");
     return;
   }
 
-  core_log(RETRO_LOG_ERROR, "[xm6-libretro] Frontend does not support XRGB8888");
+  if (desired == RETRO_PIXEL_FORMAT_RGB565) {
+    core_log(RETRO_LOG_WARN, "[xm6-libretro] Frontend does not support RGB565 (falling back to XRGB8888)");
+    if (set_frontend_pixel_format(RETRO_PIXEL_FORMAT_XRGB8888)) {
+      core_log(RETRO_LOG_INFO,
+               "[xm6-libretro] Video output pixel format set to %s",
+               "XRGB8888");
+      return;
+    }
+  }
+
+  core_log(RETRO_LOG_ERROR, "[xm6-libretro] Frontend does not support %s",
+           (desired == RETRO_PIXEL_FORMAT_RGB565) ? "RGB565" : "XRGB8888");
 }
 
 static bool get_core_module_dir(char *out_dir, size_t out_dir_size)
@@ -1893,9 +1935,9 @@ static unsigned int vertical_scale_from_layout(const xm6_video_layout_t &layout,
   }
 
   // Fallback: en algunos modos 31kHz el core reporta mitad de alto visible.
-  if (layout.valid && layout.lowres == 0 && frame_height > 0 && frame_height <= 300) {
-    return 2;
-  }
+  //if (layout.valid && layout.lowres == 0 && frame_height > 0 && frame_height <= 300) {
+  //   return 2;
+  // }
 
   return 1;
 }
@@ -1909,14 +1951,22 @@ static void compute_video_scale_factors(const xm6_video_layout_t &layout,
   unsigned int h_scale = 1;
   unsigned int v_scale = 1;
 
-  // Fast compositor path: keep core-provided geometry as-is,
-  // matching px68k's direct line output style.
+  // Fast compositor path: derive presentation scale from CRTC layout
+  // multipliers (TextDotX/TextDotY style), matching px68k behavior.
   if (g_render_mode == XM6CORE_RENDER_MODE_FAST) {
+    if (layout.valid) {
+      if (layout.h_mul > 0) {
+        h_scale = layout.h_mul;
+      }
+      v_scale = vertical_scale_from_layout(layout, frame_height);
+    } else if (frame_width > 0 && frame_width <= 320) {
+      h_scale = 2;
+    }
     if (out_h_scale) {
-      *out_h_scale = 1;
+      *out_h_scale = h_scale;
     }
     if (out_v_scale) {
-      *out_v_scale = 1;
+      *out_v_scale = v_scale;
     }
     return;
   }
@@ -2750,9 +2800,17 @@ bool retro_load_game(const struct retro_game_info *info)
   }
 
   sync_frontend_pixel_format_for_render_mode();
-  if (g_frontend_pixel_format != RETRO_PIXEL_FORMAT_XRGB8888) {
-    core_log(RETRO_LOG_ERROR, "[xm6-libretro] Failed to set XRGB8888 pixel format");
-    return false;
+  if (g_render_mode == XM6CORE_RENDER_MODE_FAST) {
+    if (g_frontend_pixel_format != RETRO_PIXEL_FORMAT_RGB565) {
+      core_log(RETRO_LOG_WARN,
+               "[xm6-libretro] Fast compositor requested RGB565 but frontend is using %s",
+               (g_frontend_pixel_format == RETRO_PIXEL_FORMAT_XRGB8888) ? "XRGB8888" : "UNKNOWN");
+    }
+  } else {
+    if (g_frontend_pixel_format != RETRO_PIXEL_FORMAT_XRGB8888) {
+      core_log(RETRO_LOG_ERROR, "[xm6-libretro] Failed to set XRGB8888 pixel format");
+      return false;
+    }
   }
 
   g_disk_paths.clear();
@@ -2827,7 +2885,7 @@ void retro_run(void)
 {
   if (!g_xm6_handle || !g_game_loaded) {
     if (g_video_cb) {
-      const unsigned pitch = g_frame_width * sizeof(uint32_t);
+      const unsigned pitch = g_frame_width * current_video_bpp_bytes();
       g_video_cb(nullptr, g_frame_width, g_frame_height, pitch);
     }
     return;
@@ -2972,7 +3030,7 @@ void retro_run(void)
     update_refresh_rate_from_core();
 
     if (g_video_cb) {
-      const unsigned pitch = g_frame_width * sizeof(uint32_t);
+      const unsigned pitch = g_frame_width * current_video_bpp_bytes();
       g_video_cb(nullptr, g_frame_width, g_frame_height, pitch);
     }
 
@@ -3051,13 +3109,29 @@ void retro_run(void)
 
 	    push_geometry_if_changed(video_width, video_height, frame_aspect);
 	    if (g_video_cb) {
-	      g_video_cb(video_pixels, video_width, video_height,
-	                 video_stride_pixels * sizeof(uint32_t));
+        const void *cb_pixels = video_pixels;
+        unsigned cb_pitch = video_stride_pixels * sizeof(uint32_t);
+
+        if (g_frontend_pixel_format == RETRO_PIXEL_FORMAT_RGB565) {
+          const uint32_t *src = static_cast<const uint32_t *>(video_pixels);
+          g_video_buffer_rgb565.resize(static_cast<size_t>(video_width) * static_cast<size_t>(video_height));
+          for (unsigned y = 0; y < video_height; ++y) {
+            const uint32_t *src_row = src + static_cast<size_t>(y) * static_cast<size_t>(video_stride_pixels);
+            uint16_t *dst_row = g_video_buffer_rgb565.data() + static_cast<size_t>(y) * static_cast<size_t>(video_width);
+            for (unsigned x = 0; x < video_width; ++x) {
+              dst_row[x] = px68k_pack_rgb565i(src_row[x]);
+            }
+          }
+          cb_pixels = g_video_buffer_rgb565.data();
+          cb_pitch = video_width * sizeof(uint16_t);
+        }
+
+	      g_video_cb(cb_pixels, video_width, video_height, cb_pitch);
 	    }
     g_xm6.video_consume(g_xm6_handle);
   } else if (g_video_cb) {
     ++g_video_not_ready_count;
-    const unsigned pitch = g_frame_width * sizeof(uint32_t);
+    const unsigned pitch = g_frame_width * current_video_bpp_bytes();
     g_video_cb(nullptr, g_frame_width, g_frame_height, pitch);
   }
 
