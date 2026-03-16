@@ -285,6 +285,8 @@ private:
 	Backend *backend_original;
 	Backend *backend_fast;
 	int compositor_mode;
+	DWORD *palbuf_original;
+	DWORD *palbuf_fast;
 	DWORD fast_fallback_count;
 	render_t render;
 										// ・ｽ・ｽ・ｽ・ｽ・ｽf・ｽ[・ｽ^

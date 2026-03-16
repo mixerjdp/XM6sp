@@ -1935,9 +1935,9 @@ static unsigned int vertical_scale_from_layout(const xm6_video_layout_t &layout,
   }
 
   // Fallback: en algunos modos 31kHz el core reporta mitad de alto visible.
-  //if (layout.valid && layout.lowres == 0 && frame_height > 0 && frame_height <= 300) {
-  //   return 2;
-  // }
+  if (layout.valid && layout.lowres == 0 && frame_height > 0 && frame_height <= 300) {
+    return 2;
+  }
 
   return 1;
 }
@@ -1951,22 +1951,14 @@ static void compute_video_scale_factors(const xm6_video_layout_t &layout,
   unsigned int h_scale = 1;
   unsigned int v_scale = 1;
 
-  // Fast compositor path: derive presentation scale from CRTC layout
-  // multipliers (TextDotX/TextDotY style), matching px68k behavior.
+  // Fast compositor path: keep core-provided geometry as-is,
+  // matching px68k's direct line output style.
   if (g_render_mode == XM6CORE_RENDER_MODE_FAST) {
-    if (layout.valid) {
-      if (layout.h_mul > 0) {
-        h_scale = layout.h_mul;
-      }
-      v_scale = vertical_scale_from_layout(layout, frame_height);
-    } else if (frame_width > 0 && frame_width <= 320) {
-      h_scale = 2;
-    }
     if (out_h_scale) {
-      *out_h_scale = h_scale;
+      *out_h_scale = 1;
     }
     if (out_v_scale) {
-      *out_v_scale = v_scale;
+      *out_v_scale = 1;
     }
     return;
   }

@@ -123,6 +123,8 @@ Render::Render(VM *p) : Device(p)
 	backend_original = NULL;
 	backend_fast = NULL;
 	compositor_mode = compositor_original;
+	palbuf_original = NULL;
+	palbuf_fast = NULL;
 	fast_fallback_count = 0;
 	render.fast_stamp_counter = 1;
 	memset(render.fast_mix_stamp, 0, sizeof(render.fast_mix_stamp));
@@ -208,16 +210,36 @@ BOOL FASTCALL Render::Init()
 	vc = (VC*)vm->SearchDevice(MAKEID('V', 'C', ' ', ' '));
 	ASSERT(vc);
 
-	// ?p???b?g?o?b?t?@?m??(4MB)
+	// ?p???b?g?o?b?t?@?m??(4MB x2: original + px68k-safe for fast)
+	palbuf_original = NULL;
+	palbuf_fast = NULL;
 	try {
-		render.palbuf = new DWORD[0x10000 * 16];
+		palbuf_original = new DWORD[0x10000 * 16];
+		palbuf_fast = new DWORD[0x10000 * 16];
 	}
 	catch (...) {
+		if (palbuf_original) {
+			delete[] palbuf_original;
+			palbuf_original = NULL;
+		}
+		if (palbuf_fast) {
+			delete[] palbuf_fast;
+			palbuf_fast = NULL;
+		}
 		return FALSE;
 	}
-	if (!render.palbuf) {
+	if (!palbuf_original || !palbuf_fast) {
+		if (palbuf_original) {
+			delete[] palbuf_original;
+			palbuf_original = NULL;
+		}
+		if (palbuf_fast) {
+			delete[] palbuf_fast;
+			palbuf_fast = NULL;
+		}
 		return FALSE;
 	}
+	render.palbuf = palbuf_original;
 
 	// ?e?L?X?gVRAM?o?b?t?@?m??(4.7MB)
 	try {
@@ -436,11 +458,16 @@ void FASTCALL Render::Cleanup()
 		render.textout = NULL;
 	}
 
-	// ?p???b?g?o?b?t?@
-	if (render.palbuf) {
-		delete[] render.palbuf;
-		render.palbuf = NULL;
+	// ?p???b?g?o?b?t?@ (original + fast)
+	if (palbuf_original) {
+		delete[] palbuf_original;
+		palbuf_original = NULL;
 	}
+	if (palbuf_fast) {
+		delete[] palbuf_fast;
+		palbuf_fast = NULL;
+	}
+	render.palbuf = NULL;
 
 	// ??{?N???X??
 	Device::Cleanup();
@@ -661,13 +688,16 @@ void FASTCALL Render::ApplyCfg(const Config *config)
 BOOL FASTCALL Render::SetCompositorMode(int mode)
 {
 	Backend *next = NULL;
+	DWORD *next_palbuf = NULL;
 
 	switch (mode) {
 	case compositor_original:
 		next = backend_original;
+		next_palbuf = palbuf_original;
 		break;
 	case compositor_fast:
 		next = backend_fast;
+		next_palbuf = palbuf_fast;
 		break;
 	default:
 		return FALSE;
@@ -679,6 +709,11 @@ BOOL FASTCALL Render::SetCompositorMode(int mode)
 	}
 
 	backend = next;
+	if (next_palbuf && render.palbuf != next_palbuf) {
+		render.palbuf = next_palbuf;
+		render.palptr = render.palbuf + (render.contlevel << 16);
+		InvalidateAll();
+	}
 	backend->Activate(this);
 	return TRUE;
 }
@@ -1502,19 +1537,66 @@ void FASTCALL Render::MakePalette()
 	int i;
 	int j;
 
-	ASSERT(render.palbuf);
+	ASSERT(palbuf_original);
+	ASSERT(palbuf_fast);
 
-	// ??????
-	p = render.palbuf;
-
-	// ?R???g???X?g???[?v
+	// --- Original palette table ---
+	p = palbuf_original;
 	for (i=0; i<16; i++) {
-		// ????Z?o
 		ratio = 256 - ((15 - i) << 4);
-
-		// ?????[?v
 		for (j=0; j<0x10000; j++) {
 			*p++ = ConvPalette(j, ratio);
+		}
+	}
+
+	// --- px68k-safe palette table for fast compositor ---
+	// Matches px68k's "avoid zero output for non-zero source" behavior:
+	// if a non-zero 15-bit color collapses to RGB=0 after contrast scaling,
+	// clamp it to the smallest visible blue step so it won't act like "transparent"
+	// in px68k-style pipelines.
+	auto conv_px68k_safe = [](int color, int ratio) -> DWORD {
+		DWORD r = (DWORD)color;
+		DWORD g = (DWORD)color;
+		DWORD b = (DWORD)color;
+		r <<= 13; r &= 0xf80000;
+		g &= 0x00f800;
+		b <<= 2;  b &= 0x0000f8;
+		if (color & 1) {
+			r |= 0x070000;
+			g |= 0x000700;
+			b |= 0x000007;
+		}
+		b *= ratio; b >>= 8;
+		g *= ratio; g >>= 8; g &= 0xff00;
+		r *= ratio; r >>= 8; r &= 0xff0000;
+		DWORD out = (DWORD)(r | g | b);
+		if (color & 1) {
+			out |= REND_PX68K_IBIT;
+		}
+
+		// px68k "avoid 0" hack: if a non-zero source color would quantize to 0 in 565I,
+		// clamp to the smallest visible blue step.
+		if (color) {
+			const DWORD rgb = out & 0x00ffffff;
+			const WORD r5 = (WORD)((rgb >> 19) & 0x1f);
+			const WORD g5 = (WORD)((rgb >> 11) & 0x1f);
+			const WORD b5 = (WORD)((rgb >>  3) & 0x1f);
+			WORD packed = (WORD)((r5 << 11) | (g5 << 6) | b5);
+			if (out & REND_PX68K_IBIT) {
+				packed |= 0x0020;
+			}
+			if (packed == 0) {
+				out |= 0x000008;	// ensures b5=1 after RGB565I quantization
+			}
+		}
+		return out;
+	};
+
+	p = palbuf_fast;
+	for (i=0; i<16; i++) {
+		ratio = 256 - ((15 - i) << 4);
+		for (j=0; j<0x10000; j++) {
+			*p++ = conv_px68k_safe(j, ratio);
 		}
 	}
 }
