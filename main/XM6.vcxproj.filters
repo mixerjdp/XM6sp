@@ -1,490 +1,571 @@
-<?xml version="1.0" encoding="utf-8"?>
-<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+<?xml version='1.0' encoding='utf-8'?>
+<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003" ToolsVersion="4.0">
   <ItemGroup>
-    <Filter Include="??? ????">
-      <UniqueIdentifier>{4FC737F1-C7A5-4376-A066-2A32D752A2FF}</UniqueIdentifier>
-      <Extensions>cpp;c;cxx;def;odl;idl;hpj;bat;asm;asmx</Extensions>
-    </Filter>
-    <Filter Include="??? ????\VM">
+    <Filter Include="VM">
       <UniqueIdentifier>{9ed18be7-b3e2-4ee8-8f99-bb48548c73e0}</UniqueIdentifier>
     </Filter>
-    <Filter Include="??? ????\MFC">
+    <Filter Include="MFC">
       <UniqueIdentifier>{7fbd05ea-1faf-46c1-81a1-dce273417d6d}</UniqueIdentifier>
     </Filter>
-    <Filter Include="???? ????">
-      <UniqueIdentifier>{93995380-89BD-4b04-88EB-625FBE52EBFB}</UniqueIdentifier>
-      <Extensions>h;hpp;hxx;hm;inl;inc;xsd</Extensions>
-    </Filter>
-    <Filter Include="???? ????\VM">
-      <UniqueIdentifier>{2c4935c5-ef39-4c50-99c1-9dcecefff9e3}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="???? ????\MFC">
-      <UniqueIdentifier>{046eee75-e50d-4012-8895-bc61ffda3d54}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="???? ????">
-      <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
-      <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx</Extensions>
+    <Filter Include="Libretro">
+      <UniqueIdentifier>{a5a7f1ef-4a6f-4bf4-a657-7d1eb0b7e9a1}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\vm\adpcm.cpp">
-      <Filter>??? ????\VM</Filter>
+      <Filter>VM</Filter>
     </ClCompile>
     <ClCompile Include="..\vm\areaset.cpp">
-      <Filter>??? ????\VM</Filter>
+      <Filter>VM</Filter>
     </ClCompile>
     <ClCompile Include="..\vm\cpu.cpp">
-      <Filter>??? ????\VM</Filter>
+      <Filter>VM</Filter>
     </ClCompile>
     <ClCompile Include="..\vm\cpudebug.c">
-      <Filter>??? ????\VM</Filter>
+      <Filter>VM</Filter>
     </ClCompile>
     <ClCompile Include="..\vm\crtc.cpp">
-      <Filter>??? ????\VM</Filter>
+      <Filter>VM</Filter>
     </ClCompile>
     <ClCompile Include="..\vm\device.cpp">
-      <Filter>??? ????\VM</Filter>
+      <Filter>VM</Filter>
     </ClCompile>
     <ClCompile Include="..\vm\disk.cpp">
-      <Filter>??? ????\VM</Filter>
+      <Filter>VM</Filter>
     </ClCompile>
     <ClCompile Include="..\vm\dmac.cpp">
-      <Filter>??? ????\VM</Filter>
+      <Filter>VM</Filter>
     </ClCompile>
     <ClCompile Include="..\vm\event.cpp">
-      <Filter>??? ????\VM</Filter>
+      <Filter>VM</Filter>
     </ClCompile>
     <ClCompile Include="..\vm\fdc.cpp">
-      <Filter>??? ????\VM</Filter>
+      <Filter>VM</Filter>
     </ClCompile>
     <ClCompile Include="..\vm\fdd.cpp">
-      <Filter>??? ????\VM</Filter>
+      <Filter>VM</Filter>
     </ClCompile>
     <ClCompile Include="..\vm\fdi.cpp">
-      <Filter>??? ????\VM</Filter>
+      <Filter>VM</Filter>
     </ClCompile>
     <ClCompile Include="..\vm\fileio.cpp">
-      <Filter>??? ????\VM</Filter>
+      <Filter>VM</Filter>
     </ClCompile>
     <ClCompile Include="..\vm\filepath.cpp">
-      <Filter>??? ????\VM</Filter>
+      <Filter>VM</Filter>
     </ClCompile>
     <ClCompile Include="..\vm\fmgen.cpp">
-      <Filter>??? ????\VM</Filter>
+      <Filter>VM</Filter>
     </ClCompile>
     <ClCompile Include="..\vm\fmtimer.cpp">
-      <Filter>??? ????\VM</Filter>
+      <Filter>VM</Filter>
     </ClCompile>
     <ClCompile Include="..\vm\gvram.cpp">
-      <Filter>??? ????\VM</Filter>
+      <Filter>VM</Filter>
     </ClCompile>
     <ClCompile Include="..\vm\iosc.cpp">
-      <Filter>??? ????\VM</Filter>
+      <Filter>VM</Filter>
     </ClCompile>
     <ClCompile Include="..\vm\keyboard.cpp">
-      <Filter>??? ????\VM</Filter>
+      <Filter>VM</Filter>
     </ClCompile>
     <ClCompile Include="..\vm\log.cpp">
-      <Filter>??? ????\VM</Filter>
+      <Filter>VM</Filter>
     </ClCompile>
     <ClCompile Include="..\vm\memory.cpp">
-      <Filter>??? ????\VM</Filter>
+      <Filter>VM</Filter>
     </ClCompile>
     <ClCompile Include="..\vm\mercury.cpp">
-      <Filter>??? ????\VM</Filter>
+      <Filter>VM</Filter>
     </ClCompile>
     <ClCompile Include="..\vm\mfp.cpp">
-      <Filter>??? ????\VM</Filter>
+      <Filter>VM</Filter>
     </ClCompile>
     <ClCompile Include="..\vm\midi.cpp">
-      <Filter>??? ????\VM</Filter>
+      <Filter>VM</Filter>
     </ClCompile>
     <ClCompile Include="..\vm\mouse.cpp">
-      <Filter>??? ????\VM</Filter>
+      <Filter>VM</Filter>
     </ClCompile>
     <ClCompile Include="..\vm\neptune.cpp">
-      <Filter>??? ????\VM</Filter>
+      <Filter>VM</Filter>
     </ClCompile>
     <ClCompile Include="..\vm\opm.cpp">
-      <Filter>??? ????\VM</Filter>
+      <Filter>VM</Filter>
     </ClCompile>
     <ClCompile Include="..\vm\opmif.cpp">
-      <Filter>??? ????\VM</Filter>
+      <Filter>VM</Filter>
     </ClCompile>
+    <ClCompile Include="..\vm\xm6core_impl.cpp">
+      <Filter>VM</Filter>
+    </ClCompile>
+    <ClCompile Include="..\vm\xm6core_runtime.cpp">
+      <Filter>VM</Filter>
+    </ClCompile>
+    <ClCompile Include="..\vm\x68sound_bridge.cpp">
+      <Filter>VM</Filter>
+    </ClCompile>
+    <ClCompile Include="..\vm\x68sound\X68Sound.cpp">
+      <Filter>VM</Filter>
+    </ClCompile>
+    <None Include="..\vm\xm6core_impl.cpp">
+      <Filter>VM</Filter>
+    </None>
+    <None Include="..\vm\xm6core_runtime.cpp">
+      <Filter>VM</Filter>
+    </None>
     <ClCompile Include="..\vm\ppi.cpp">
-      <Filter>??? ????\VM</Filter>
+      <Filter>VM</Filter>
     </ClCompile>
     <ClCompile Include="..\vm\printer.cpp">
-      <Filter>??? ????\VM</Filter>
+      <Filter>VM</Filter>
     </ClCompile>
     <ClCompile Include="..\vm\render.cpp">
-      <Filter>??? ????\VM</Filter>
+      <Filter>VM</Filter>
+    </ClCompile>
+    <ClCompile Include="..\vm\renderfast_compositor.cpp">
+      <Filter>VM</Filter>
+    </ClCompile>
+    <ClCompile Include="..\vm\rend_soft.cpp">
+      <Filter>VM</Filter>
     </ClCompile>
     <ClCompile Include="..\vm\rtc.cpp">
-      <Filter>??? ????\VM</Filter>
+      <Filter>VM</Filter>
     </ClCompile>
     <ClCompile Include="..\vm\sasi.cpp">
-      <Filter>??? ????\VM</Filter>
+      <Filter>VM</Filter>
     </ClCompile>
     <ClCompile Include="..\vm\scc.cpp">
-      <Filter>??? ????\VM</Filter>
+      <Filter>VM</Filter>
     </ClCompile>
     <ClCompile Include="..\vm\schedule.cpp">
-      <Filter>??? ????\VM</Filter>
+      <Filter>VM</Filter>
     </ClCompile>
     <ClCompile Include="..\vm\scsi.cpp">
-      <Filter>??? ????\VM</Filter>
+      <Filter>VM</Filter>
     </ClCompile>
     <ClCompile Include="..\vm\sprite.cpp">
-      <Filter>??? ????\VM</Filter>
+      <Filter>VM</Filter>
     </ClCompile>
     <ClCompile Include="..\vm\sram.cpp">
-      <Filter>??? ????\VM</Filter>
+      <Filter>VM</Filter>
     </ClCompile>
     <ClCompile Include="..\vm\sram_default.cpp">
-      <Filter>??? ????\VM</Filter>
+      <Filter>VM</Filter>
     </ClCompile>
     <ClCompile Include="..\vm\sync.cpp">
-      <Filter>??? ????\VM</Filter>
+      <Filter>VM</Filter>
     </ClCompile>
     <ClCompile Include="..\vm\sysport.cpp">
-      <Filter>??? ????\VM</Filter>
+      <Filter>VM</Filter>
     </ClCompile>
     <ClCompile Include="..\vm\tvram.cpp">
-      <Filter>??? ????\VM</Filter>
+      <Filter>VM</Filter>
     </ClCompile>
     <ClCompile Include="..\vm\vc.cpp">
-      <Filter>??? ????\VM</Filter>
+      <Filter>VM</Filter>
     </ClCompile>
     <ClCompile Include="..\vm\vm.cpp">
-      <Filter>??? ????\VM</Filter>
+      <Filter>VM</Filter>
     </ClCompile>
     <ClCompile Include="..\vm\windrv.cpp">
-      <Filter>??? ????\VM</Filter>
+      <Filter>VM</Filter>
+    </ClCompile>
+    <ClCompile Include="..\vm\musashi_adapter.cpp">
+      <Filter>VM</Filter>
+    </ClCompile>
+    <ClCompile Include="..\vm\musashi_mem.cpp">
+      <Filter>VM</Filter>
+    </ClCompile>
+    <ClCompile Include="..\cpu\Musashi\m68kcpu.c">
+      <Filter>VM</Filter>
+    </ClCompile>
+    <ClCompile Include="..\cpu\Musashi\m68kops.c">
+      <Filter>VM</Filter>
+    </ClCompile>
+    <ClCompile Include="..\cpu\Musashi\m68kdasm.c">
+      <Filter>VM</Filter>
+    </ClCompile>
+    <ClCompile Include="..\cpu\Musashi\softfloat\softfloat.c">
+      <Filter>VM</Filter>
     </ClCompile>
     <ClCompile Include="..\mfc\mfc_app.cpp">
-      <Filter>??? ????\MFC</Filter>
+      <Filter>MFC</Filter>
     </ClCompile>
     <ClCompile Include="..\mfc\mfc_cfg.cpp">
-      <Filter>??? ????\MFC</Filter>
+      <Filter>MFC</Filter>
     </ClCompile>
     <ClCompile Include="..\mfc\mfc_cmd.cpp">
-      <Filter>??? ????\MFC</Filter>
+      <Filter>MFC</Filter>
     </ClCompile>
     <ClCompile Include="..\mfc\mfc_com.cpp">
-      <Filter>??? ????\MFC</Filter>
+      <Filter>MFC</Filter>
     </ClCompile>
     <ClCompile Include="..\mfc\mfc_cpu.cpp">
-      <Filter>??? ????\MFC</Filter>
+      <Filter>MFC</Filter>
     </ClCompile>
     <ClCompile Include="..\mfc\mfc_dev.cpp">
-      <Filter>??? ????\MFC</Filter>
+      <Filter>MFC</Filter>
     </ClCompile>
     <ClCompile Include="..\mfc\mfc_draw.cpp">
-      <Filter>??? ????\MFC</Filter>
+      <Filter>MFC</Filter>
+    </ClCompile>
+    <ClCompile Include="..\mfc\mfc_dx9.cpp">
+      <Filter>MFC</Filter>
     </ClCompile>
     <ClCompile Include="..\mfc\mfc_frm.cpp">
-      <Filter>??? ????\MFC</Filter>
+      <Filter>MFC</Filter>
     </ClCompile>
     <ClCompile Include="..\mfc\mfc_host.cpp">
-      <Filter>??? ????\MFC</Filter>
+      <Filter>MFC</Filter>
     </ClCompile>
     <ClCompile Include="..\mfc\mfc_info.cpp">
-      <Filter>??? ????\MFC</Filter>
+      <Filter>MFC</Filter>
     </ClCompile>
     <ClCompile Include="..\mfc\mfc_inp.cpp">
-      <Filter>??? ????\MFC</Filter>
+      <Filter>MFC</Filter>
     </ClCompile>
     <ClCompile Include="..\mfc\mfc_midi.cpp">
-      <Filter>??? ????\MFC</Filter>
+      <Filter>MFC</Filter>
     </ClCompile>
     <ClCompile Include="..\mfc\mfc_port.cpp">
-      <Filter>??? ????\MFC</Filter>
+      <Filter>MFC</Filter>
     </ClCompile>
     <ClCompile Include="..\mfc\mfc_que.cpp">
-      <Filter>??? ????\MFC</Filter>
+      <Filter>MFC</Filter>
     </ClCompile>
     <ClCompile Include="..\mfc\mfc_rend.cpp">
-      <Filter>??? ????\MFC</Filter>
+      <Filter>MFC</Filter>
     </ClCompile>
     <ClCompile Include="..\mfc\mfc_sch.cpp">
-      <Filter>??? ????\MFC</Filter>
+      <Filter>MFC</Filter>
     </ClCompile>
     <ClCompile Include="..\mfc\mfc_snd.cpp">
-      <Filter>??? ????\MFC</Filter>
+      <Filter>MFC</Filter>
+    </ClCompile>
+    <ClCompile Include="..\mfc\mfc_asm_portable.cpp">
+      <Filter>MFC</Filter>
     </ClCompile>
     <ClCompile Include="..\mfc\mfc_stat.cpp">
-      <Filter>??? ????\MFC</Filter>
+      <Filter>MFC</Filter>
     </ClCompile>
     <ClCompile Include="..\mfc\mfc_sub.cpp">
-      <Filter>??? ????\MFC</Filter>
+      <Filter>MFC</Filter>
     </ClCompile>
     <ClCompile Include="..\mfc\mfc_sys.cpp">
-      <Filter>??? ????\MFC</Filter>
+      <Filter>MFC</Filter>
     </ClCompile>
     <ClCompile Include="..\mfc\mfc_tkey.cpp">
-      <Filter>??? ????\MFC</Filter>
+      <Filter>MFC</Filter>
     </ClCompile>
     <ClCompile Include="..\mfc\mfc_tool.cpp">
-      <Filter>??? ????\MFC</Filter>
+      <Filter>MFC</Filter>
     </ClCompile>
     <ClCompile Include="..\mfc\mfc_ver.cpp">
-      <Filter>??? ????\MFC</Filter>
+      <Filter>MFC</Filter>
     </ClCompile>
     <ClCompile Include="..\mfc\mfc_vid.cpp">
-      <Filter>??? ????\MFC</Filter>
+      <Filter>MFC</Filter>
     </ClCompile>
     <ClCompile Include="..\mfc\mfc_w32.cpp">
-      <Filter>??? ????\MFC</Filter>
+      <Filter>MFC</Filter>
     </ClCompile>
     <ClCompile Include="..\vm\core_soft.cpp">
-      <Filter>??? ????\VM</Filter>
+      <Filter>VM</Filter>
     </ClCompile>
+    <ClCompile Include="..\libretro\xm6_libretro.cpp">
+      <Filter>Libretro</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="..\mfc\resource.h">
+      <Filter>MFC</Filter>
+    </ClInclude>
+    <ClInclude Include="..\vm\adpcm.h">
+      <Filter>VM</Filter>
+    </ClInclude>
+    <ClInclude Include="..\vm\areaset.h">
+      <Filter>VM</Filter>
+    </ClInclude>
+    <ClInclude Include="..\vm\cisc.h">
+      <Filter>VM</Filter>
+    </ClInclude>
+    <ClInclude Include="..\vm\config.h">
+      <Filter>VM</Filter>
+    </ClInclude>
+    <ClInclude Include="..\vm\core_soft.h">
+      <Filter>VM</Filter>
+    </ClInclude>
+    <ClInclude Include="..\vm\cpu.h">
+      <Filter>VM</Filter>
+    </ClInclude>
+    <ClInclude Include="..\vm\crtc.h">
+      <Filter>VM</Filter>
+    </ClInclude>
+    <ClInclude Include="..\vm\device.h">
+      <Filter>VM</Filter>
+    </ClInclude>
+    <ClInclude Include="..\vm\disk.h">
+      <Filter>VM</Filter>
+    </ClInclude>
+    <ClInclude Include="..\vm\dmac.h">
+      <Filter>VM</Filter>
+    </ClInclude>
+    <ClInclude Include="..\vm\event.h">
+      <Filter>VM</Filter>
+    </ClInclude>
+    <ClInclude Include="..\vm\fdc.h">
+      <Filter>VM</Filter>
+    </ClInclude>
+    <ClInclude Include="..\vm\fdd.h">
+      <Filter>VM</Filter>
+    </ClInclude>
+    <ClInclude Include="..\vm\fdi.h">
+      <Filter>VM</Filter>
+    </ClInclude>
+    <ClInclude Include="..\vm\fileio.h">
+      <Filter>VM</Filter>
+    </ClInclude>
+    <ClInclude Include="..\vm\filepath.h">
+      <Filter>VM</Filter>
+    </ClInclude>
+    <ClInclude Include="..\vm\fmgen.h">
+      <Filter>VM</Filter>
+    </ClInclude>
+    <ClInclude Include="..\vm\fmgeninl.h">
+      <Filter>VM</Filter>
+    </ClInclude>
+    <ClInclude Include="..\vm\fmtimer.h">
+      <Filter>VM</Filter>
+    </ClInclude>
+    <ClInclude Include="..\vm\gvram.h">
+      <Filter>VM</Filter>
+    </ClInclude>
+    <ClInclude Include="..\vm\iosc.h">
+      <Filter>VM</Filter>
+    </ClInclude>
+    <ClInclude Include="..\vm\keyboard.h">
+      <Filter>VM</Filter>
+    </ClInclude>
+    <ClInclude Include="..\vm\log.h">
+      <Filter>VM</Filter>
+    </ClInclude>
+    <ClInclude Include="..\vm\memory.h">
+      <Filter>VM</Filter>
+    </ClInclude>
+    <ClInclude Include="..\vm\mfp.h">
+      <Filter>VM</Filter>
+    </ClInclude>
+    <ClInclude Include="..\vm\midi.h">
+      <Filter>VM</Filter>
+    </ClInclude>
+    <ClInclude Include="..\vm\mouse.h">
+      <Filter>VM</Filter>
+    </ClInclude>
+    <ClInclude Include="..\vm\opm.h">
+      <Filter>VM</Filter>
+    </ClInclude>
+    <ClInclude Include="..\vm\opmif.h">
+      <Filter>VM</Filter>
+    </ClInclude>
+    <ClInclude Include="..\vm\x68sound_adpcm_core.h">
+      <Filter>VM</Filter>
+    </ClInclude>
+    <ClInclude Include="..\vm\x68sound_bridge.h">
+      <Filter>VM</Filter>
+    </ClInclude>
+    <ClInclude Include="..\vm\x68sound\adpcm.h">
+      <Filter>VM</Filter>
+    </ClInclude>
+    <ClInclude Include="..\vm\x68sound\global.h">
+      <Filter>VM</Filter>
+    </ClInclude>
+    <ClInclude Include="..\vm\x68sound\lfo.h">
+      <Filter>VM</Filter>
+    </ClInclude>
+    <ClInclude Include="..\vm\x68sound\op.h">
+      <Filter>VM</Filter>
+    </ClInclude>
+    <ClInclude Include="..\vm\x68sound\opm.h">
+      <Filter>VM</Filter>
+    </ClInclude>
+    <ClInclude Include="..\vm\x68sound\pcm8.h">
+      <Filter>VM</Filter>
+    </ClInclude>
+    <ClInclude Include="..\vm\x68sound\x68sound.h">
+      <Filter>VM</Filter>
+    </ClInclude>
+    <ClInclude Include="..\vm\x68sound\x68sound_platform.h">
+      <Filter>VM</Filter>
+    </ClInclude>
+    <ClInclude Include="..\vm\os.h">
+      <Filter>VM</Filter>
+    </ClInclude>
+    <ClInclude Include="..\vm\ppi.h">
+      <Filter>VM</Filter>
+    </ClInclude>
+    <ClInclude Include="..\vm\printer.h">
+      <Filter>VM</Filter>
+    </ClInclude>
+    <ClInclude Include="..\vm\rend_soft.h">
+      <Filter>VM</Filter>
+    </ClInclude>
+    <ClInclude Include="..\vm\render.h">
+      <Filter>VM</Filter>
+    </ClInclude>
+    <ClInclude Include="..\vm\renderin.h">
+      <Filter>VM</Filter>
+    </ClInclude>
+    <ClInclude Include="..\vm\rtc.h">
+      <Filter>VM</Filter>
+    </ClInclude>
+    <ClInclude Include="..\vm\sasi.h">
+      <Filter>VM</Filter>
+    </ClInclude>
+    <ClInclude Include="..\vm\scc.h">
+      <Filter>VM</Filter>
+    </ClInclude>
+    <ClInclude Include="..\vm\schedule.h">
+      <Filter>VM</Filter>
+    </ClInclude>
+    <ClInclude Include="..\vm\sprite.h">
+      <Filter>VM</Filter>
+    </ClInclude>
+    <ClInclude Include="..\vm\sram.h">
+      <Filter>VM</Filter>
+    </ClInclude>
+    <ClInclude Include="..\vm\musashi_adapter.h">
+      <Filter>VM</Filter>
+    </ClInclude>
+    <ClInclude Include="..\cpu\Musashi\m68k.h">
+      <Filter>VM</Filter>
+    </ClInclude>
+    <ClInclude Include="..\cpu\Musashi\m68kcpu.h">
+      <Filter>VM</Filter>
+    </ClInclude>
+    <ClInclude Include="..\cpu\Musashi\m68kconf_xm6.h">
+      <Filter>VM</Filter>
+    </ClInclude>
+    <ClInclude Include="..\vm\sync.h">
+      <Filter>VM</Filter>
+    </ClInclude>
+    <ClInclude Include="..\vm\sysport.h">
+      <Filter>VM</Filter>
+    </ClInclude>
+    <ClInclude Include="..\vm\tvram.h">
+      <Filter>VM</Filter>
+    </ClInclude>
+    <ClInclude Include="..\vm\vc.h">
+      <Filter>VM</Filter>
+    </ClInclude>
+    <ClInclude Include="..\vm\vm.h">
+      <Filter>VM</Filter>
+    </ClInclude>
+    <ClInclude Include="..\vm\windrv.h">
+      <Filter>VM</Filter>
+    </ClInclude>
+    <ClInclude Include="..\vm\xm6.h">
+      <Filter>VM</Filter>
+    </ClInclude>
+    <ClInclude Include="..\vm\cpudebug.h">
+      <Filter>VM</Filter>
+    </ClInclude>
+    <ClInclude Include="..\mfc\mfc.h">
+      <Filter>MFC</Filter>
+    </ClInclude>
+    <ClInclude Include="..\mfc\mfc_app.h">
+      <Filter>MFC</Filter>
+    </ClInclude>
+    <ClInclude Include="..\mfc\mfc_asm.h">
+      <Filter>MFC</Filter>
+    </ClInclude>
+    <ClInclude Include="..\mfc\mfc_cfg.h">
+      <Filter>MFC</Filter>
+    </ClInclude>
+    <ClInclude Include="..\mfc\mfc_com.h">
+      <Filter>MFC</Filter>
+    </ClInclude>
+    <ClInclude Include="..\mfc\mfc_cpu.h">
+      <Filter>MFC</Filter>
+    </ClInclude>
+    <ClInclude Include="..\mfc\mfc_dev.h">
+      <Filter>MFC</Filter>
+    </ClInclude>
+    <ClInclude Include="..\mfc\mfc_draw.h">
+      <Filter>MFC</Filter>
+    </ClInclude>
+    <ClInclude Include="..\mfc\mfc_dx9.h">
+      <Filter>MFC</Filter>
+    </ClInclude>
+    <ClInclude Include="..\mfc\mfc_frm.h">
+      <Filter>MFC</Filter>
+    </ClInclude>
+    <ClInclude Include="..\mfc\mfc_inp.h">
+      <Filter>MFC</Filter>
+    </ClInclude>
+    <ClInclude Include="..\mfc\mfc_midi.h">
+      <Filter>MFC</Filter>
+    </ClInclude>
+    <ClInclude Include="..\mfc\mfc_port.h">
+      <Filter>MFC</Filter>
+    </ClInclude>
+    <ClInclude Include="..\mfc\mfc_que.h">
+      <Filter>MFC</Filter>
+    </ClInclude>
+    <ClInclude Include="..\mfc\mfc_rend.h">
+      <Filter>MFC</Filter>
+    </ClInclude>
+    <ClInclude Include="..\mfc\mfc_res.h">
+      <Filter>MFC</Filter>
+    </ClInclude>
+    <ClInclude Include="..\mfc\mfc_sch.h">
+      <Filter>MFC</Filter>
+    </ClInclude>
+    <ClInclude Include="..\mfc\mfc_snd.h">
+      <Filter>MFC</Filter>
+    </ClInclude>
+    <ClInclude Include="..\mfc\mfc_stat.h">
+      <Filter>MFC</Filter>
+    </ClInclude>
+    <ClInclude Include="..\mfc\mfc_sub.h">
+      <Filter>MFC</Filter>
+    </ClInclude>
+    <ClInclude Include="..\mfc\mfc_sys.h">
+      <Filter>MFC</Filter>
+    </ClInclude>
+    <ClInclude Include="..\mfc\mfc_tool.h">
+      <Filter>MFC</Filter>
+    </ClInclude>
+    <ClInclude Include="..\mfc\mfc_ver.h">
+      <Filter>MFC</Filter>
+    </ClInclude>
+    <ClInclude Include="..\mfc\mfc_vid.h">
+      <Filter>MFC</Filter>
+    </ClInclude>
+    <ClInclude Include="..\mfc\mfc_w32.h">
+      <Filter>MFC</Filter>
+    </ClInclude>
+    <ClInclude Include="..\libretro\libretro.h">
+      <Filter>Libretro</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="..\mfc\mfc_res.rc">
-      <Filter>??? ????\MFC</Filter>
+      <Filter>MFC</Filter>
     </ResourceCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="adpcm.h">
-      <Filter>???? ????\VM</Filter>
-    </ClInclude>
-    <ClInclude Include="areaset.h">
-      <Filter>???? ????\VM</Filter>
-    </ClInclude>
-    <ClInclude Include="cisc.h">
-      <Filter>???? ????\VM</Filter>
-    </ClInclude>
-    <ClInclude Include="config.h">
-      <Filter>???? ????\VM</Filter>
-    </ClInclude>
-    <ClInclude Include="core_soft.h">
-      <Filter>???? ????\VM</Filter>
-    </ClInclude>
-    <ClInclude Include="cpu.h">
-      <Filter>???? ????\VM</Filter>
-    </ClInclude>
-    <ClInclude Include="crtc.h">
-      <Filter>???? ????\VM</Filter>
-    </ClInclude>
-    <ClInclude Include="device.h">
-      <Filter>???? ????\VM</Filter>
-    </ClInclude>
-    <ClInclude Include="disk.h">
-      <Filter>???? ????\VM</Filter>
-    </ClInclude>
-    <ClInclude Include="dmac.h">
-      <Filter>???? ????\VM</Filter>
-    </ClInclude>
-    <ClInclude Include="event.h">
-      <Filter>???? ????\VM</Filter>
-    </ClInclude>
-    <ClInclude Include="fdc.h">
-      <Filter>???? ????\VM</Filter>
-    </ClInclude>
-    <ClInclude Include="fdd.h">
-      <Filter>???? ????\VM</Filter>
-    </ClInclude>
-    <ClInclude Include="fdi.h">
-      <Filter>???? ????\VM</Filter>
-    </ClInclude>
-    <ClInclude Include="fileio.h">
-      <Filter>???? ????\VM</Filter>
-    </ClInclude>
-    <ClInclude Include="filepath.h">
-      <Filter>???? ????\VM</Filter>
-    </ClInclude>
-    <ClInclude Include="fmgen.h">
-      <Filter>???? ????\VM</Filter>
-    </ClInclude>
-    <ClInclude Include="fmgeninl.h">
-      <Filter>???? ????\VM</Filter>
-    </ClInclude>
-    <ClInclude Include="fmtimer.h">
-      <Filter>???? ????\VM</Filter>
-    </ClInclude>
-    <ClInclude Include="gvram.h">
-      <Filter>???? ????\VM</Filter>
-    </ClInclude>
-    <ClInclude Include="iosc.h">
-      <Filter>???? ????\VM</Filter>
-    </ClInclude>
-    <ClInclude Include="keyboard.h">
-      <Filter>???? ????\VM</Filter>
-    </ClInclude>
-    <ClInclude Include="log.h">
-      <Filter>???? ????\VM</Filter>
-    </ClInclude>
-    <ClInclude Include="memory.h">
-      <Filter>???? ????\VM</Filter>
-    </ClInclude>
-    <ClInclude Include="mfp.h">
-      <Filter>???? ????\VM</Filter>
-    </ClInclude>
-    <ClInclude Include="midi.h">
-      <Filter>???? ????\VM</Filter>
-    </ClInclude>
-    <ClInclude Include="mouse.h">
-      <Filter>???? ????\VM</Filter>
-    </ClInclude>
-    <ClInclude Include="opm.h">
-      <Filter>???? ????\VM</Filter>
-    </ClInclude>
-    <ClInclude Include="opmif.h">
-      <Filter>???? ????\VM</Filter>
-    </ClInclude>
-    <ClInclude Include="os.h">
-      <Filter>???? ????\VM</Filter>
-    </ClInclude>
-    <ClInclude Include="ppi.h">
-      <Filter>???? ????\VM</Filter>
-    </ClInclude>
-    <ClInclude Include="printer.h">
-      <Filter>???? ????\VM</Filter>
-    </ClInclude>
-    <ClInclude Include="rend_soft.h">
-      <Filter>???? ????\VM</Filter>
-    </ClInclude>
-    <ClInclude Include="render.h">
-      <Filter>???? ????\VM</Filter>
-    </ClInclude>
-    <ClInclude Include="renderin.h">
-      <Filter>???? ????\VM</Filter>
-    </ClInclude>
-    <ClInclude Include="rtc.h">
-      <Filter>???? ????\VM</Filter>
-    </ClInclude>
-    <ClInclude Include="sasi.h">
-      <Filter>???? ????\VM</Filter>
-    </ClInclude>
-    <ClInclude Include="scc.h">
-      <Filter>???? ????\VM</Filter>
-    </ClInclude>
-    <ClInclude Include="schedule.h">
-      <Filter>???? ????\VM</Filter>
-    </ClInclude>
-    <ClInclude Include="sprite.h">
-      <Filter>???? ????\VM</Filter>
-    </ClInclude>
-    <ClInclude Include="sram.h">
-      <Filter>???? ????\VM</Filter>
-    </ClInclude>
-    <ClInclude Include="starcpu.h">
-      <Filter>???? ????\VM</Filter>
-    </ClInclude>
-    <ClInclude Include="sync.h">
-      <Filter>???? ????\VM</Filter>
-    </ClInclude>
-    <ClInclude Include="sysport.h">
-      <Filter>???? ????\VM</Filter>
-    </ClInclude>
-    <ClInclude Include="tvram.h">
-      <Filter>???? ????\VM</Filter>
-    </ClInclude>
-    <ClInclude Include="vc.h">
-      <Filter>???? ????\VM</Filter>
-    </ClInclude>
-    <ClInclude Include="vm.h">
-      <Filter>???? ????\VM</Filter>
-    </ClInclude>
-    <ClInclude Include="windrv.h">
-      <Filter>???? ????\VM</Filter>
-    </ClInclude>
-    <ClInclude Include="xm6.h">
-      <Filter>???? ????\VM</Filter>
-    </ClInclude>
-    <ClInclude Include="cpudebug.h">
-      <Filter>???? ????\MFC</Filter>
-    </ClInclude>
-    <ClInclude Include="mfc.h">
-      <Filter>???? ????\MFC</Filter>
-    </ClInclude>
-    <ClInclude Include="mfc_app.h">
-      <Filter>???? ????\MFC</Filter>
-    </ClInclude>
-    <ClInclude Include="mfc_asm.h">
-      <Filter>???? ????\MFC</Filter>
-    </ClInclude>
-    <ClInclude Include="mfc_cfg.h">
-      <Filter>???? ????\MFC</Filter>
-    </ClInclude>
-    <ClInclude Include="mfc_com.h">
-      <Filter>???? ????\MFC</Filter>
-    </ClInclude>
-    <ClInclude Include="mfc_cpu.h">
-      <Filter>???? ????\MFC</Filter>
-    </ClInclude>
-    <ClInclude Include="mfc_dev.h">
-      <Filter>???? ????\MFC</Filter>
-    </ClInclude>
-    <ClInclude Include="mfc_draw.h">
-      <Filter>???? ????\MFC</Filter>
-    </ClInclude>
-    <ClInclude Include="mfc_frm.h">
-      <Filter>???? ????\MFC</Filter>
-    </ClInclude>
-    <ClInclude Include="mfc_inp.h">
-      <Filter>???? ????\MFC</Filter>
-    </ClInclude>
-    <ClInclude Include="mfc_midi.h">
-      <Filter>???? ????\MFC</Filter>
-    </ClInclude>
-    <ClInclude Include="mfc_port.h">
-      <Filter>???? ????\MFC</Filter>
-    </ClInclude>
-    <ClInclude Include="mfc_que.h">
-      <Filter>???? ????\MFC</Filter>
-    </ClInclude>
-    <ClInclude Include="mfc_rend.h">
-      <Filter>???? ????\MFC</Filter>
-    </ClInclude>
-    <ClInclude Include="mfc_res.h">
-      <Filter>???? ????\MFC</Filter>
-    </ClInclude>
-    <ClInclude Include="mfc_sch.h">
-      <Filter>???? ????\MFC</Filter>
-    </ClInclude>
-    <ClInclude Include="mfc_snd.h">
-      <Filter>???? ????\MFC</Filter>
-    </ClInclude>
-    <ClInclude Include="mfc_stat.h">
-      <Filter>???? ????\MFC</Filter>
-    </ClInclude>
-    <ClInclude Include="mfc_sub.h">
-      <Filter>???? ????\MFC</Filter>
-    </ClInclude>
-    <ClInclude Include="mfc_sys.h">
-      <Filter>???? ????\MFC</Filter>
-    </ClInclude>
-    <ClInclude Include="mfc_tool.h">
-      <Filter>???? ????\MFC</Filter>
-    </ClInclude>
-    <ClInclude Include="mfc_ver.h">
-      <Filter>???? ????\MFC</Filter>
-    </ClInclude>
-    <ClInclude Include="mfc_vid.h">
-      <Filter>???? ????\MFC</Filter>
-    </ClInclude>
-    <ClInclude Include="mfc_w32.h">
-      <Filter>???? ????\MFC</Filter>
-    </ClInclude>
-    <ClInclude Include="..\mfc\resource.h">
-      <Filter>???? ????</Filter>
-    </ClInclude>
-  </ItemGroup>
-  <ItemGroup>
-    <Image Include="..\mfc\res\x68000.ico">
-      <Filter>???? ????</Filter>
+    <Image Include="..\mfc\res\crt.bmp">
+      <Filter>MFC</Filter>
     </Image>
-    <Image Include="..\mfc\res\xm6.ico">
-      <Filter>???? ????</Filter>
+    <Image Include="..\mfc\res\x68000.ico">
+      <Filter>MFC</Filter>
     </Image>
     <Image Include="..\mfc\res\x68k.bmp">
-      <Filter>???? ????</Filter>
+      <Filter>MFC</Filter>
     </Image>
-    <Image Include="..\mfc\res\crt.bmp">
-      <Filter>???? ????</Filter>
+    <Image Include="..\mfc\res\xm6.ico">
+      <Filter>MFC</Filter>
     </Image>
   </ItemGroup>
 </Project>

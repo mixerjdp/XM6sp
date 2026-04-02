@@ -11,6 +11,8 @@
 #define xm6_h
 
 #include <assert.h>
+#include <stdint.h>
+#include "win_compat.h"
 
 #if !defined(FASTCALL)
 #if defined(_MSC_VER) && defined(_M_IX86)
@@ -59,10 +61,17 @@
 //	Šî–{Œ^’è‹`
 //
 //---------------------------------------------------------------------------
-typedef unsigned char BYTE;
-typedef unsigned short WORD;
-typedef unsigned long DWORD;
+#if !defined(XM6_BASIC_TYPES_DEFINED)
+typedef uint8_t BYTE;
+typedef uint16_t WORD;
+typedef uint32_t DWORD;
 typedef int BOOL;
+#define XM6_BASIC_TYPES_DEFINED 1
+#endif
+
+static_assert(sizeof(BYTE) == 1, "BYTE must be 8-bit");
+static_assert(sizeof(WORD) == 2, "WORD must be 16-bit");
+static_assert(sizeof(DWORD) == 4, "DWORD must be 32-bit");
 
 //---------------------------------------------------------------------------
 //

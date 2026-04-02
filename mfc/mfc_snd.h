@@ -2,8 +2,8 @@
 //
 //	X68000 EMULATOR "XM6"
 //
-//	Copyright (C) 2001-2006 ＰＩ．(ytanaka@ipc-tokai.or.jp)
-//	[ MFC サウンド ]
+//	Copyright (C) 2001-2006 PI.(ytanaka@ipc-tokai.or.jp)
+//	[ MFC sound ]
 //
 //---------------------------------------------------------------------------
 
@@ -17,128 +17,137 @@
 
 //===========================================================================
 //
-//	サウンド
+//	Sound
 //
 //===========================================================================
 class CSound : public CComponent
 {
 public:
-	// 基本ファンクション
 	CSound(CFrmWnd *pWnd);
-										// コンストラクタ
+										// Constructor
 	void FASTCALL Enable(BOOL bEnable);
-										// 動作制御
+										// Enable control
 	BOOL FASTCALL Init();
-										// 初期化
+										// Initialization
 	void FASTCALL Cleanup();
-										// クリーンアップ
+										// Cleanup
 	void FASTCALL ApplyCfg(const Config *pConfig);
-										// 設定適用
+										// Apply configuration
 
-	// 外部API
+	// External API
 	void FASTCALL Process(BOOL bRun);
-										// 進行
+										// Process
 	BOOL FASTCALL IsPlay() const		{ return m_bPlay; }
-										// 再生フラグを取得
+										// Get playback flag
 	void FASTCALL SetVolume(int nVolume);
-										// 音量セット
+										// Volume setting
 	int FASTCALL GetVolume();
-										// 音量取得
+										// Get volume
 	void FASTCALL SetFMVol(int nVolume);
-										// FM音源音量セット
+										// FM volume setting
 	void FASTCALL SetADPCMVol(int nVolume);
-										// ADPCM音源音量セット
+										// ADPCM volume setting
+	void FASTCALL SetYmfm(BOOL bEnable);
+										// YMFM runtime toggle
+	BOOL FASTCALL IsYmfm() const		{ return m_bYmfm; }
+										// YMFM runtime status
 	int FASTCALL GetMasterVol(int& nMaximum);
-										// マスタ音量取得
+										// Get master volume
 	void FASTCALL SetMasterVol(int nVolume);
-										// マスタ音量セット
+										// Master volume setting
 	BOOL FASTCALL StartSaveWav(LPCTSTR lpszWavFile);
-										// WAVセーブ開始
+										// WAV save start
 	BOOL FASTCALL IsSaveWav() const;
-										// WAVセーブ中か
+										// WAV save status
 	void FASTCALL EndSaveWav();
-										// WAVセーブ終了
+										// WAV save end
 
-	// デバイス
+	// Device
 	LPGUID m_lpGUID[16];
-										// DirectSoundデバイスのGUID
+										// DirectSound device GUID
 	CString m_DeviceDescr[16];
-										// DirectSoundデバイスの名前
+										// DirectSound device name
 	int m_nDeviceNum;
-										// 検出したデバイス数
+										// Number of detected devices
 
 private:
-	// 初期設定
+	// Initialization
 	BOOL FASTCALL InitSub();
-										// 初期化サブ
+										// Initialization sub
 	void FASTCALL CleanupSub();
-										// クリーンアップサブ
+										// Cleanup sub
 	void FASTCALL Play();
-										// 演奏開始
+										// Play start
 	void FASTCALL Stop();
-										// 演奏停止
+										// Play stop
 	void FASTCALL EnumDevice();
-										// デバイス列挙
+										// Device enumeration
 	static BOOL CALLBACK EnumCallback(LPGUID lpGuid, LPCSTR lpDescr, LPCSTR lpModule,
-					void *lpContext);	// デバイス列挙コールバック
+					void *lpContext);	// Device enum callback
 	int m_nSelectDevice;
-										// 選択したデバイス
+										// Selected device
 
-	// WAVセーブ
+	// WAV save
 	void FASTCALL ProcessSaveWav(int *pStream, DWORD dwLength);
-										// WAVセーブ実行
+										// WAV save process
 	Fileio m_WavFile;
-										// WAVファイル
+										// WAV file
 	WORD *m_pWav;
-										// WAVデータバッファ(フラグ兼用)
+										// WAV data buffer (for flagging)
 	UINT m_nWav;
-										// WAVデータバッファオフセット
+										// WAV data buffer offset
 	DWORD m_dwWav;
-										// WAVトータル書き込みサイズ
+										// WAV header write size
 
-	// 再生
+	// Playback
 	UINT m_uRate;
-										// サンプリングレート
+										// Sampling rate
 	UINT m_uTick;
-										// バッファサイズ(ms)
+										// Buffer size (ms)
 	UINT m_uPoll;
-										// ポーリング間隔(ms)
+										// Polling interval (ms)
 	UINT m_uCount;
-										// ポーリングカウント
+										// Polling count
 	UINT m_uBufSize;
-										// バッファサイズ(バイト)
+										// Buffer size (bytes)
 	BOOL m_bPlay;
-										// 再生フラグ
+										// Playback flag
 	DWORD m_dwWrite;
-										// 書き込み完了位置
+										// Write position
 	int m_nMaster;
-										// マスタ音量
+										// Master volume
 	int m_nFMVol;
-										// FM音量(0～100)
+										// FM volume (0~100)
 	int m_nADPCMVol;
-										// ADPCM音量(0～100)
+										// ADPCM volume (0~100)
+	BOOL m_bYmfm;
+										// YMFM runtime flag
+	BOOL m_bYmfmActive;
+										// Active YMFM engine flag
+	UINT m_uConfiguredRate;
+										// Configured sampling rate
 	LPDIRECTSOUND m_lpDS;
 										// DirectSound
 	LPDIRECTSOUNDBUFFER m_lpDSp;
-										// DirectSoundBuffer(プライマリ)
+										// DirectSoundBuffer (primary)
 	LPDIRECTSOUNDBUFFER m_lpDSb;
-										// DirectSoundBuffer(セカンダリ)
+										// DirectSoundBuffer (secondary)
 	DWORD *m_lpBuf;
-										// サウンドバッファ
+										// Sound buffer
 	static const UINT RateTable[];
-										// サンプリングレートテーブル
+										// Sampling rate table
 
-	// オブジェクト
+	// Object
 	OPMIF *m_pOPMIF;
-										// OPMインタフェース
+										// OPM interface
 	ADPCM *m_pADPCM;
 										// ADPCM
 	SCSI *m_pSCSI;
 										// SCSI
 	FM::OPM *m_pOPM;
-										// OPMデバイス
+										// OPM device
 	Scheduler *m_pScheduler;
-										// スケジューラ
+										// Scheduler
 };
 
 #endif	// mfc_snd_h

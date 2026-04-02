@@ -23,6 +23,8 @@ This folder contains a libretro bridge implementation that uses
 - Core options:
   - `xm6_disk_drive` (`FDD0`/`FDD1`)
   - `xm6_exec_mode` (`exec_to_frame`/`legacy_exec`)
+  - `xm6_audio_engine` (`XM6`/`PX68k`)
+  - `xm6_legacy_dmac_cnt` (`disabled`/`enabled`)
   - `xm6_pad_start_select` (`xf_keys`/`disabled`)
 
 ## Build (Windows/MinGW)

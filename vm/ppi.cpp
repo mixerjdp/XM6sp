@@ -1,8 +1,8 @@
-//---------------------------------------------------------------------------
+ï»¿//---------------------------------------------------------------------------
 //
 //	X68000 EMULATOR "XM6"
 //
-//	Copyright (C) 2001-2006 ‚o‚hD(ytanaka@ipc-tokai.or.jp)
+//	Copyright (C) 2001-2006 â€šoâ€šhÂD(ytanaka@ipc-tokai.or.jp)
 //	[ PPI(i8255A) ]
 //
 //---------------------------------------------------------------------------
@@ -16,6 +16,7 @@
 #include "config.h"
 #include "fileio.h"
 #include "ppi.h"
+#include "x68sound_bridge.h"
 
 //===========================================================================
 //
@@ -26,25 +27,25 @@
 
 //---------------------------------------------------------------------------
 //
-//	ƒRƒ“ƒXƒgƒ‰ƒNƒ^
+//	Æ’RÆ’â€œÆ’XÆ’gÆ’â€°Æ’NÆ’^
 //
 //---------------------------------------------------------------------------
 PPI::PPI(VM *p) : MemDevice(p)
 {
 	int i;
 
-	// ƒfƒoƒCƒXID‚ğ‰Šú‰»
+	// Æ’fÆ’oÆ’CÆ’XIDâ€šÃ°Ââ€°Å Ãºâ€°Â»
 	dev.id = MAKEID('P', 'P', 'I', ' ');
 	dev.desc = "PPI (i8255A)";
 
-	// ŠJnƒAƒhƒŒƒXAI—¹ƒAƒhƒŒƒX
+	// Å JÅ½nÆ’AÆ’hÆ’Å’Æ’XÂAÂIâ€”Â¹Æ’AÆ’hÆ’Å’Æ’X
 	memdev.first = 0xe9a000;
 	memdev.last = 0xe9bfff;
 
-	// “à•”ƒ[ƒN
+	// â€œÃ â€¢â€Æ’ÂÂ[Æ’N
 	memset(&ppi, 0, sizeof(ppi));
 
-	// ƒIƒuƒWƒFƒNƒg
+	// Æ’IÆ’uÆ’WÆ’FÆ’NÆ’g
 	adpcm = NULL;
 	for (i=0; i<PortMax; i++) {
 		joy[i] = NULL;
@@ -53,7 +54,7 @@ PPI::PPI(VM *p) : MemDevice(p)
 
 //---------------------------------------------------------------------------
 //
-//	‰Šú‰»
+//	Ââ€°Å Ãºâ€°Â»
 //
 //---------------------------------------------------------------------------
 BOOL FASTCALL PPI::Init()
@@ -62,17 +63,17 @@ BOOL FASTCALL PPI::Init()
 
 	ASSERT(this);
 
-	// Šî–{ƒNƒ‰ƒX
+	// Å Ã®â€“{Æ’NÆ’â€°Æ’X
 	if (!MemDevice::Init()) {
 		return FALSE;
 	}
 
-	// ADPCMæ“¾
+	// ADPCMÅ½Ã¦â€œÂ¾
 	ASSERT(!adpcm);
 	adpcm = (ADPCM*)vm->SearchDevice(MAKEID('A', 'P', 'C', 'M'));
 	ASSERT(adpcm);
 
-	// ƒWƒ‡ƒCƒXƒeƒBƒbƒNƒ^ƒCƒv
+	// Æ’WÆ’â€¡Æ’CÆ’XÆ’eÆ’BÆ’bÆ’NÆ’^Æ’CÆ’v
 	for (i=0; i<PortMax; i++) {
 		ppi.type[i] = 0;
 		ASSERT(!joy[i]);
@@ -84,7 +85,7 @@ BOOL FASTCALL PPI::Init()
 
 //---------------------------------------------------------------------------
 //
-//	ƒNƒŠ[ƒ“ƒAƒbƒv
+//	Æ’NÆ’Å Â[Æ’â€œÆ’AÆ’bÆ’v
 //
 //---------------------------------------------------------------------------
 void FASTCALL PPI::Cleanup()
@@ -93,20 +94,20 @@ void FASTCALL PPI::Cleanup()
 
 	ASSERT(this);
 
-	// ƒWƒ‡ƒCƒXƒeƒBƒbƒNƒfƒoƒCƒX‚ğ‰ğ•ú
+	// Æ’WÆ’â€¡Æ’CÆ’XÆ’eÆ’BÆ’bÆ’NÆ’fÆ’oÆ’CÆ’Xâ€šÃ°â€°Ã°â€¢Ãº
 	for (i=0; i<PortMax; i++) {
 		ASSERT(joy[i]);
 		delete joy[i];
 		joy[i] = NULL;
 	}
 	 
-	// Šî–{ƒNƒ‰ƒX‚Ö
+	// Å Ã®â€“{Æ’NÆ’â€°Æ’Xâ€šÃ–
 	MemDevice::Cleanup();
 }
 
 //---------------------------------------------------------------------------
 //
-//	ƒŠƒZƒbƒg
+//	Æ’Å Æ’ZÆ’bÆ’g
 //
 //---------------------------------------------------------------------------
 void FASTCALL PPI::Reset()
@@ -116,17 +117,17 @@ void FASTCALL PPI::Reset()
 	ASSERT(this);
 	ASSERT_DIAG();
 
-	LOG0(Log::Normal, "ƒŠƒZƒbƒg");
+	LOG0(Log::Normal, "Æ’Å Æ’ZÆ’bÆ’g");
 
-	// ƒ|[ƒgC
+	// Æ’|Â[Æ’gC
 	ppi.portc = 0;
 
-	// ƒRƒ“ƒgƒ[ƒ‹
+	// Æ’RÆ’â€œÆ’gÆ’ÂÂ[Æ’â€¹
 	for (i=0; i<PortMax; i++) {
 		ppi.ctl[i] = 0;
 	}
 
-	// ƒWƒ‡ƒCƒXƒeƒBƒbƒNƒfƒoƒCƒX‚É‘Î‚µ‚ÄAƒŠƒZƒbƒg‚ğ’Ê’m
+	// Æ’WÆ’â€¡Æ’CÆ’XÆ’eÆ’BÆ’bÆ’NÆ’fÆ’oÆ’CÆ’Xâ€šÃ‰â€˜Ãâ€šÂµâ€šÃ„ÂAÆ’Å Æ’ZÆ’bÆ’gâ€šÃ°â€™ÃŠâ€™m
 	for (i=0; i<PortMax; i++) {
 		joy[i]->Reset();
 	}
@@ -134,7 +135,7 @@ void FASTCALL PPI::Reset()
 
 //---------------------------------------------------------------------------
 //
-//	ƒZ[ƒu
+//	Æ’ZÂ[Æ’u
 //
 //---------------------------------------------------------------------------
 BOOL FASTCALL PPI::Save(Fileio *fio, int ver)
@@ -148,28 +149,28 @@ BOOL FASTCALL PPI::Save(Fileio *fio, int ver)
 	ASSERT(ver >= 0x0200);
 	ASSERT_DIAG();
 
-	LOG0(Log::Normal, "ƒZ[ƒu");
+	LOG0(Log::Normal, "Æ’ZÂ[Æ’u");
 
-	// ƒTƒCƒY‚ğƒZ[ƒu
+	// Æ’TÆ’CÆ’Yâ€šÃ°Æ’ZÂ[Æ’u
 	sz = sizeof(ppi_t);
 	if (!fio->Write(&sz, sizeof(sz))) {
 		return FALSE;
 	}
 
-	// À‘Ì‚ğƒZ[ƒu
+	// Å½Ã€â€˜ÃŒâ€šÃ°Æ’ZÂ[Æ’u
 	if (!fio->Write(&ppi, (int)sz)) {
 		return FALSE;
 	}
 
-	// ƒfƒoƒCƒX‚ğƒZ[ƒu
+	// Æ’fÆ’oÆ’CÆ’Xâ€šÃ°Æ’ZÂ[Æ’u
 	for (i=0; i<PortMax; i++) {
-		// ƒfƒoƒCƒXƒ^ƒCƒv
+		// Æ’fÆ’oÆ’CÆ’XÆ’^Æ’CÆ’v
 		type = joy[i]->GetType();
 		if (!fio->Write(&type, sizeof(type))) {
 			return FALSE;
 		}
 
-		// ƒfƒoƒCƒXÀ‘Ì
+		// Æ’fÆ’oÆ’CÆ’XÅ½Ã€â€˜ÃŒ
 		if (!joy[i]->Save(fio, ver)) {
 			return FALSE;
 		}
@@ -180,7 +181,7 @@ BOOL FASTCALL PPI::Save(Fileio *fio, int ver)
 
 //---------------------------------------------------------------------------
 //
-//	ƒ[ƒh
+//	Æ’ÂÂ[Æ’h
 //
 //---------------------------------------------------------------------------
 BOOL FASTCALL PPI::Load(Fileio *fio, int ver)
@@ -194,9 +195,9 @@ BOOL FASTCALL PPI::Load(Fileio *fio, int ver)
 	ASSERT(ver >= 0x0200);
 	ASSERT_DIAG();
 
-	LOG0(Log::Normal, "ƒ[ƒh");
+	LOG0(Log::Normal, "Æ’ÂÂ[Æ’h");
 
-	// ƒTƒCƒY‚ğƒ[ƒhAÆ‡
+	// Æ’TÆ’CÆ’Yâ€šÃ°Æ’ÂÂ[Æ’hÂAÂÃ†Ââ€¡
 	if (!fio->Read(&sz, sizeof(sz))) {
 		return FALSE;
 	}
@@ -204,37 +205,37 @@ BOOL FASTCALL PPI::Load(Fileio *fio, int ver)
 		return FALSE;
 	}
 
-	// À‘Ì‚ğƒ[ƒh
+	// Å½Ã€â€˜ÃŒâ€šÃ°Æ’ÂÂ[Æ’h
 	if (!fio->Read(&ppi, (int)sz)) {
 		return FALSE;
 	}
 
-	// version2.00‚Å‚ ‚ê‚Î‚±‚±‚Ü‚Å
+	// version2.00â€šÃ…â€šÂ â€šÃªâ€šÃâ€šÂ±â€šÂ±â€šÃœâ€šÃ…
 	if (ver <= 0x200) {
 		return TRUE;
 	}
 
-	// ƒfƒoƒCƒX‚ğƒ[ƒh
+	// Æ’fÆ’oÆ’CÆ’Xâ€šÃ°Æ’ÂÂ[Æ’h
 	for (i=0; i<PortMax; i++) {
-		// ƒfƒoƒCƒXƒ^ƒCƒv‚ğ“¾‚é
+		// Æ’fÆ’oÆ’CÆ’XÆ’^Æ’CÆ’vâ€šÃ°â€œÂ¾â€šÃ©
 		if (!fio->Read(&type, sizeof(type))) {
 			return FALSE;
 		}
 
-		// Œ»İ‚ÌƒfƒoƒCƒX‚Æˆê’v‚µ‚Ä‚¢‚È‚¯‚ê‚ÎAì‚è’¼‚·
+		// Å’Â»ÂÃâ€šÃŒÆ’fÆ’oÆ’CÆ’Xâ€šÃ†Ë†Ãªâ€™vâ€šÂµâ€šÃ„â€šÂ¢â€šÃˆâ€šÂ¯â€šÃªâ€šÃÂAÂÃ¬â€šÃ¨â€™Â¼â€šÂ·
 		if (joy[i]->GetType() != type) {
 			delete joy[i];
 			joy[i] = NULL;
 
-			// PPI‚É‹L‰¯‚µ‚Ä‚¢‚éƒ^ƒCƒv‚à‚ ‚í‚¹‚Ä•ÏX
+			// PPIâ€šÃ‰â€¹Lâ€°Â¯â€šÂµâ€šÃ„â€šÂ¢â€šÃ©Æ’^Æ’CÆ’vâ€šÃ â€šÂ â€šÃ­â€šÂ¹â€šÃ„â€¢ÃÂX
 			ppi.type[i] = (int)type;
 
-			// Äì¬
+			// ÂÃ„ÂÃ¬ÂÂ¬
 			joy[i] = CreateJoy(i, ppi.type[i]);
 			ASSERT(joy[i]->GetType() == type);
 		}
 
-		// ƒfƒoƒCƒXŒÅ—L
+		// Æ’fÆ’oÆ’CÆ’XÅ’Ã…â€”L
 		if (!joy[i]->Load(fio, ver)) {
 			return FALSE;
 		}
@@ -245,7 +246,7 @@ BOOL FASTCALL PPI::Load(Fileio *fio, int ver)
 
 //---------------------------------------------------------------------------
 //
-//	İ’è“K—p
+//	ÂÃâ€™Ã¨â€œKâ€”p
 //
 //---------------------------------------------------------------------------
 void FASTCALL PPI::ApplyCfg(const Config *config)
@@ -256,21 +257,21 @@ void FASTCALL PPI::ApplyCfg(const Config *config)
 	ASSERT(config);
 	ASSERT_DIAG();
 
-	LOG0(Log::Normal, "İ’è“K—p");
+	LOG0(Log::Normal, "ÂÃâ€™Ã¨â€œKâ€”p");
 
-	// ƒ|[ƒgƒ‹[ƒv
+	// Æ’|Â[Æ’gÆ’â€¹Â[Æ’v
 	for (i=0; i<PortMax; i++) {
-		// ƒ^ƒCƒvˆê’v‚È‚çŸ‚Ö
+		// Æ’^Æ’CÆ’vË†Ãªâ€™vâ€šÃˆâ€šÃ§Å½Å¸â€šÃ–
 		if (config->joy_type[i] == ppi.type[i]) {
 			continue;
 		}
 
-		// Œ»İ‚ÌƒfƒoƒCƒX‚ğíœ
+		// Å’Â»ÂÃâ€šÃŒÆ’fÆ’oÆ’CÆ’Xâ€šÃ°ÂÃ­ÂÅ“
 		ASSERT(joy[i]);
 		delete joy[i];
 		joy[i] = NULL;
 
-		// ƒ^ƒCƒv‹L‰¯AƒWƒ‡ƒCƒXƒeƒBƒbƒNì¬
+		// Æ’^Æ’CÆ’vâ€¹Lâ€°Â¯ÂAÆ’WÆ’â€¡Æ’CÆ’XÆ’eÆ’BÆ’bÆ’NÂÃ¬ÂÂ¬
 		ppi.type[i] = config->joy_type[i];
 		joy[i] = CreateJoy(i, config->joy_type[i]);
 	}
@@ -279,7 +280,7 @@ void FASTCALL PPI::ApplyCfg(const Config *config)
 #if defined(_DEBUG)
 //---------------------------------------------------------------------------
 //
-//	f’f
+//	Âfâ€™f
 //
 //---------------------------------------------------------------------------
 void FASTCALL PPI::AssertDiag() const
@@ -295,7 +296,7 @@ void FASTCALL PPI::AssertDiag() const
 
 //---------------------------------------------------------------------------
 //
-//	ƒoƒCƒg“Ç‚İ‚İ
+//	Æ’oÆ’CÆ’gâ€œÃ‡â€šÃÂÅ¾â€šÃ
 //
 //---------------------------------------------------------------------------
 DWORD FASTCALL PPI::ReadByte(DWORD addr)
@@ -307,31 +308,31 @@ DWORD FASTCALL PPI::ReadByte(DWORD addr)
 	ASSERT(PortMax >= 2);
 	ASSERT_DIAG();
 
-	// Šï”ƒAƒhƒŒƒX‚Ì‚İƒfƒR[ƒh‚³‚ê‚Ä‚¢‚é
+	// Å Ã¯Ââ€Æ’AÆ’hÆ’Å’Æ’Xâ€šÃŒâ€šÃÆ’fÆ’RÂ[Æ’hâ€šÂ³â€šÃªâ€šÃ„â€šÂ¢â€šÃ©
 	if ((addr & 1) == 0) {
 		return 0xff;
 	}
 
-	// 8ƒoƒCƒg’PˆÊ‚Åƒ‹[ƒv
+	// 8Æ’oÆ’CÆ’gâ€™PË†ÃŠâ€šÃ…Æ’â€¹Â[Æ’v
 	addr &= 7;
 
-	// ƒEƒFƒCƒg
+	// Æ’EÆ’FÆ’CÆ’g
 	scheduler->Wait(1);
 
-	// ƒfƒR[ƒh
+	// Æ’fÆ’RÂ[Æ’h
 	addr >>= 1;
 	switch (addr) {
-		// ƒ|[ƒgA
+		// Æ’|Â[Æ’gA
 		case 0:
 #if defined(PPI_LOG)
 			data = joy[0]->ReadPort(ppi.ctl[0]);
-			LOG2(Log::Normal, "ƒ|[ƒg1“Ç‚İo‚µ ƒRƒ“ƒgƒ[ƒ‹$%02X ƒf[ƒ^$%02X",
+			LOG2(Log::Normal, "Æ’|Â[Æ’g1â€œÃ‡â€šÃÂoâ€šÂµ Æ’RÆ’â€œÆ’gÆ’ÂÂ[Æ’â€¹$%02X Æ’fÂ[Æ’^$%02X",
 								ppi.ctl[0], data);
 #else
 			data = joy[0]->ReadPort(ppi.ctl[0]);
 #endif	// PPI_LOG
 
-			// PC7,PC6‚ğl—¶
+			// PC7,PC6â€šÃ°Âlâ€”Â¶
 			if (ppi.ctl[0] & 0x80) {
 				data &= ~0x40;
 			}
@@ -340,29 +341,29 @@ DWORD FASTCALL PPI::ReadByte(DWORD addr)
 			}
 			return data;
 
-		// ƒ|[ƒgB
+		// Æ’|Â[Æ’gB
 		case 1:
 #if defined(PPI_LOG)
 			data = joy[1]->ReadPort(ppi.ctl[1]);
-			LOG2(Log::Normal, "ƒ|[ƒg2“Ç‚İo‚µ ƒRƒ“ƒgƒ[ƒ‹$%02X ƒf[ƒ^$%02X",
+			LOG2(Log::Normal, "Æ’|Â[Æ’g2â€œÃ‡â€šÃÂoâ€šÂµ Æ’RÆ’â€œÆ’gÆ’ÂÂ[Æ’â€¹$%02X Æ’fÂ[Æ’^$%02X",
 								ppi.ctl[1], data);
 			return data;
 #else
 			return joy[1]->ReadPort(ppi.ctl[1]);
 #endif	// PPI_LOG
 
-		// ƒ|[ƒgC
+		// Æ’|Â[Æ’gC
 		case 2:
 			return ppi.portc;
 	}
 
-	LOG1(Log::Warning, "–¢À‘•ƒŒƒWƒXƒ^“Ç‚İ‚İ R%02d", addr);
+	LOG1(Log::Warning, "â€“Â¢Å½Ã€â€˜â€¢Æ’Å’Æ’WÆ’XÆ’^â€œÃ‡â€šÃÂÅ¾â€šÃ R%02d", addr);
 	return 0xff;
 }
 
 //---------------------------------------------------------------------------
 //
-//	ƒ[ƒh“Ç‚İ‚İ
+//	Æ’ÂÂ[Æ’hâ€œÃ‡â€šÃÂÅ¾â€šÃ
 //
 //---------------------------------------------------------------------------
 DWORD FASTCALL PPI::ReadWord(DWORD addr)
@@ -377,7 +378,7 @@ DWORD FASTCALL PPI::ReadWord(DWORD addr)
 
 //---------------------------------------------------------------------------
 //
-//	ƒoƒCƒg‘‚«‚İ
+//	Æ’oÆ’CÆ’gÂâ€˜â€šÂ«ÂÅ¾â€šÃ
 //
 //---------------------------------------------------------------------------
 void FASTCALL PPI::WriteByte(DWORD addr, DWORD data)
@@ -390,28 +391,28 @@ void FASTCALL PPI::WriteByte(DWORD addr, DWORD data)
 	ASSERT(data < 0x100);
 	ASSERT_DIAG();
 
-	// Šï”ƒAƒhƒŒƒX‚Ì‚İƒfƒR[ƒh‚³‚ê‚Ä‚¢‚é
+	// Å Ã¯Ââ€Æ’AÆ’hÆ’Å’Æ’Xâ€šÃŒâ€šÃÆ’fÆ’RÂ[Æ’hâ€šÂ³â€šÃªâ€šÃ„â€šÂ¢â€šÃ©
 	if ((addr & 1) == 0) {
 		return;
 	}
 
-	// 8ƒoƒCƒg’PˆÊ‚Åƒ‹[ƒv
+	// 8Æ’oÆ’CÆ’gâ€™PË†ÃŠâ€šÃ…Æ’â€¹Â[Æ’v
 	addr &= 7;
 
-	// ƒEƒFƒCƒg
+	// Æ’EÆ’FÆ’CÆ’g
 	scheduler->Wait(1);
 
-	// ƒ|[ƒgC‚Ö‚ÌWrite
+	// Æ’|Â[Æ’gCâ€šÃ–â€šÃŒWrite
 	if (addr == 5) {
-		// ƒWƒ‡ƒCƒXƒeƒBƒbƒNEADPCMƒRƒ“ƒgƒ[ƒ‹
+		// Æ’WÆ’â€¡Æ’CÆ’XÆ’eÆ’BÆ’bÆ’NÂEADPCMÆ’RÆ’â€œÆ’gÆ’ÂÂ[Æ’â€¹
 		SetPortC(data);
 		return;
 	}
 
-	// ƒ‚[ƒhƒRƒ“ƒgƒ[ƒ‹
+	// Æ’â€šÂ[Æ’hÆ’RÆ’â€œÆ’gÆ’ÂÂ[Æ’â€¹
 	if (addr == 7) {
 		if (data < 0x80) {
-			// ƒrƒbƒgƒZƒbƒgEƒŠƒZƒbƒgƒ‚[ƒh
+			// Æ’rÆ’bÆ’gÆ’ZÆ’bÆ’gÂEÆ’Å Æ’ZÆ’bÆ’gÆ’â€šÂ[Æ’h
 			i = ((data >> 1) & 0x07);
 			bit = (DWORD)(1 << i);
 			if (data & 1) {
@@ -423,20 +424,20 @@ void FASTCALL PPI::WriteByte(DWORD addr, DWORD data)
 			return;
 		}
 
-		// ƒ‚[ƒhƒRƒ“ƒgƒ[ƒ‹
+		// Æ’â€šÂ[Æ’hÆ’RÆ’â€œÆ’gÆ’ÂÂ[Æ’â€¹
 		if (data != 0x92) {
-			LOG0(Log::Warning, "ƒTƒ|[ƒgŠOƒ‚[ƒhw’è $%02X");
+			LOG0(Log::Warning, "Æ’TÆ’|Â[Æ’gÅ OÆ’â€šÂ[Æ’hÅ½wâ€™Ã¨ $%02X");
 		}
 		return;
 	}
 
-	LOG2(Log::Warning, "–¢À‘•ƒŒƒWƒXƒ^‘‚«‚İ R%02d <- $%02X",
+	LOG2(Log::Warning, "â€“Â¢Å½Ã€â€˜â€¢Æ’Å’Æ’WÆ’XÆ’^Ââ€˜â€šÂ«ÂÅ¾â€šÃ R%02d <- $%02X",
 							addr, data);
 }
 
 //---------------------------------------------------------------------------
 //
-//	ƒ[ƒh‘‚«‚İ
+//	Æ’ÂÂ[Æ’hÂâ€˜â€šÂ«ÂÅ¾â€šÃ
 //
 //---------------------------------------------------------------------------
 void FASTCALL PPI::WriteWord(DWORD addr, DWORD data)
@@ -452,7 +453,7 @@ void FASTCALL PPI::WriteWord(DWORD addr, DWORD data)
 
 //---------------------------------------------------------------------------
 //
-//	“Ç‚İ‚İ‚Ì‚İ
+//	â€œÃ‡â€šÃÂÅ¾â€šÃâ€šÃŒâ€šÃ
 //
 //---------------------------------------------------------------------------
 DWORD FASTCALL PPI::ReadOnly(DWORD addr) const
@@ -464,23 +465,23 @@ DWORD FASTCALL PPI::ReadOnly(DWORD addr) const
 	ASSERT(PortMax >= 2);
 	ASSERT_DIAG();
 
-	// Šï”ƒAƒhƒŒƒX‚Ì‚İƒfƒR[ƒh‚³‚ê‚Ä‚¢‚é
+	// Å Ã¯Ââ€Æ’AÆ’hÆ’Å’Æ’Xâ€šÃŒâ€šÃÆ’fÆ’RÂ[Æ’hâ€šÂ³â€šÃªâ€šÃ„â€šÂ¢â€šÃ©
 	if ((addr & 1) == 0) {
 		return 0xff;
 	}
 
-	// 8ƒoƒCƒg’PˆÊ‚Åƒ‹[ƒv
+	// 8Æ’oÆ’CÆ’gâ€™PË†ÃŠâ€šÃ…Æ’â€¹Â[Æ’v
 	addr &= 7;
 
-	// ƒfƒR[ƒh
+	// Æ’fÆ’RÂ[Æ’h
 	addr >>= 1;
 	switch (addr) {
-		// ƒ|[ƒgA
+		// Æ’|Â[Æ’gA
 		case 0:
-			// ƒf[ƒ^æ“¾
+			// Æ’fÂ[Æ’^Å½Ã¦â€œÂ¾
 			data = joy[0]->ReadOnly(ppi.ctl[0]);
 
-			// PC7,PC6‚ğl—¶
+			// PC7,PC6â€šÃ°Âlâ€”Â¶
 			if (ppi.ctl[0] & 0x80) {
 				data &= ~0x40;
 			}
@@ -489,11 +490,11 @@ DWORD FASTCALL PPI::ReadOnly(DWORD addr) const
 			}
 			return data;
 
-		// ƒ|[ƒgB
+		// Æ’|Â[Æ’gB
 		case 1:
 			return joy[1]->ReadOnly(ppi.ctl[1]);
 
-		// ƒ|[ƒgC
+		// Æ’|Â[Æ’gC
 		case 2:
 			return ppi.portc;
 	}
@@ -503,7 +504,7 @@ DWORD FASTCALL PPI::ReadOnly(DWORD addr) const
 
 //---------------------------------------------------------------------------
 //
-//	ƒ|[ƒgCƒZƒbƒg
+//	Æ’|Â[Æ’gCÆ’ZÆ’bÆ’g
 //
 //---------------------------------------------------------------------------
 void FASTCALL PPI::SetPortC(DWORD data)
@@ -513,20 +514,32 @@ void FASTCALL PPI::SetPortC(DWORD data)
 	ASSERT(PortMax >= 2);
 	ASSERT_DIAG();
 
-	// ƒf[ƒ^‚ğ‹L‰¯
+	// Æ’fÂ[Æ’^â€šÃ°â€¹Lâ€°Â¯
 	ppi.portc = data;
+	static int portc_trace_count = 0;
+	if (portc_trace_count < 24) {
+		fprintf(stderr,
+			"[vm][ppi-portc] n=%d data=$%02X ctl0=$%02X ctl1=$%02X pan=%u rate=%u\r\n",
+			portc_trace_count,
+			(unsigned)data,
+			(unsigned)((ppi.portc & 0x03u)),
+			(unsigned)((ppi.portc >> 2) & 0x03u),
+			(unsigned)(ppi.portc & 3u),
+			(unsigned)((ppi.portc >> 2) & 3u));
+		++portc_trace_count;
+	}
 
-	// ƒRƒ“ƒgƒ[ƒ‹ƒf[ƒ^‘g‚İ—§‚Ä(ƒ|[ƒgA)...bit0‚ªPC4Abit6,7‚ªPC6,7‚ğ¦‚·
+	// Æ’RÆ’â€œÆ’gÆ’ÂÂ[Æ’â€¹Æ’fÂ[Æ’^â€˜gâ€šÃâ€”Â§â€šÃ„(Æ’|Â[Æ’gA)...bit0â€šÂªPC4ÂAbit6,7â€šÂªPC6,7â€šÃ°Å½Â¦â€šÂ·
 	ppi.ctl[0] = ppi.portc & 0xc0;
 	if (ppi.portc & 0x10) {
 		ppi.ctl[0] |= 0x01;
 	}
 #if defined(PPI_LOG)
-	LOG1(Log::Normal, "ƒ|[ƒg1 ƒRƒ“ƒgƒ[ƒ‹ $%02X", ppi.ctl[0]);
+	LOG1(Log::Normal, "Æ’|Â[Æ’g1 Æ’RÆ’â€œÆ’gÆ’ÂÂ[Æ’â€¹ $%02X", ppi.ctl[0]);
 #endif	// PPI_LOG
 	joy[0]->Control(ppi.ctl[0]);
 
-	// ƒRƒ“ƒgƒ[ƒ‹ƒf[ƒ^‘g‚İ—§‚Ä(ƒ|[ƒgB)...bit0‚ªPC5‚ğ¦‚·
+	// Æ’RÆ’â€œÆ’gÆ’ÂÂ[Æ’â€¹Æ’fÂ[Æ’^â€˜gâ€šÃâ€”Â§â€šÃ„(Æ’|Â[Æ’gB)...bit0â€šÂªPC5â€šÃ°Å½Â¦â€šÂ·
 	if (ppi.portc & 0x20) {
 		ppi.ctl[1] = 0x01;
 	}
@@ -534,20 +547,23 @@ void FASTCALL PPI::SetPortC(DWORD data)
 		ppi.ctl[1] = 0x00;
 	}
 #if defined(PPI_LOG)
-	LOG1(Log::Normal, "ƒ|[ƒg2 ƒRƒ“ƒgƒ[ƒ‹ $%02X", ppi.ctl[1]);
+	LOG1(Log::Normal, "Æ’|Â[Æ’g2 Æ’RÆ’â€œÆ’gÆ’ÂÂ[Æ’â€¹ $%02X", ppi.ctl[1]);
 #endif	// PPI_LOG
 	joy[1]->Control(ppi.ctl[1]);
 
-	// ADPCMƒpƒ“ƒ|ƒbƒg
+	// ADPCMÆ’pÆ’â€œÆ’|Æ’bÆ’g
 	adpcm->SetPanpot(data & 3);
 
-	// ADPCM‘¬“x”ä—¦
+	// ADPCMâ€˜Â¬â€œxâ€Ã¤â€”Â¦
 	adpcm->SetRatio((data >> 2) & 3);
+#if defined(XM6CORE_ENABLE_X68SOUND)
+	Xm6X68Sound::WritePpi(static_cast<unsigned char>(data));
+#endif
 }
 
 //---------------------------------------------------------------------------
 //
-//	“à•”ƒf[ƒ^æ“¾
+//	â€œÃ â€¢â€Æ’fÂ[Æ’^Å½Ã¦â€œÂ¾
 //
 //---------------------------------------------------------------------------
 void FASTCALL PPI::GetPPI(ppi_t *buffer)
@@ -556,13 +572,13 @@ void FASTCALL PPI::GetPPI(ppi_t *buffer)
 	ASSERT(buffer);
 	ASSERT_DIAG();
 
-	// “à•”ƒ[ƒN‚ğƒRƒs[
+	// â€œÃ â€¢â€Æ’ÂÂ[Æ’Nâ€šÃ°Æ’RÆ’sÂ[
 	*buffer = ppi;
 }
 
 //---------------------------------------------------------------------------
 //
-//	ƒWƒ‡ƒCƒXƒeƒBƒbƒNî•ñİ’è
+//	Æ’WÆ’â€¡Æ’CÆ’XÆ’eÆ’BÆ’bÆ’NÂÃ®â€¢Ã±ÂÃâ€™Ã¨
 //
 //---------------------------------------------------------------------------
 void FASTCALL PPI::SetJoyInfo(int port, const joyinfo_t *info)
@@ -573,22 +589,22 @@ void FASTCALL PPI::SetJoyInfo(int port, const joyinfo_t *info)
 	ASSERT(PortMax >= 2);
 	ASSERT_DIAG();
 
-	// ”äŠr‚µ‚ÄAˆê’v‚µ‚Ä‚¢‚ê‚Î‰½‚à‚µ‚È‚¢
+	// â€Ã¤Å râ€šÂµâ€šÃ„ÂAË†Ãªâ€™vâ€šÂµâ€šÃ„â€šÂ¢â€šÃªâ€šÃâ€°Â½â€šÃ â€šÂµâ€šÃˆâ€šÂ¢
 	if (memcmp(&ppi.info[port], info, sizeof(joyinfo_t)) == 0) {
 		return;
 	}
 
-	// •Û‘¶
+	// â€¢Ã›â€˜Â¶
 	memcpy(&ppi.info[port], info, sizeof(joyinfo_t));
 
-	// ‚»‚Ìƒ|[ƒg‚É‘Î‰‚·‚éƒWƒ‡ƒCƒXƒeƒBƒbƒNƒfƒoƒCƒX‚ÖA’Ê’m
+	// â€šÂ»â€šÃŒÆ’|Â[Æ’gâ€šÃ‰â€˜Ãâ€°Å¾â€šÂ·â€šÃ©Æ’WÆ’â€¡Æ’CÆ’XÆ’eÆ’BÆ’bÆ’NÆ’fÆ’oÆ’CÆ’Xâ€šÃ–ÂAâ€™ÃŠâ€™m
 	ASSERT(joy[port]);
 	joy[port]->Notify();
 }
 
 //---------------------------------------------------------------------------
 //
-//	ƒWƒ‡ƒCƒXƒeƒBƒbƒNî•ñæ“¾
+//	Æ’WÆ’â€¡Æ’CÆ’XÆ’eÆ’BÆ’bÆ’NÂÃ®â€¢Ã±Å½Ã¦â€œÂ¾
 //
 //---------------------------------------------------------------------------
 const PPI::joyinfo_t* FASTCALL PPI::GetJoyInfo(int port) const
@@ -603,7 +619,7 @@ const PPI::joyinfo_t* FASTCALL PPI::GetJoyInfo(int port) const
 
 //---------------------------------------------------------------------------
 //
-//	ƒWƒ‡ƒCƒXƒeƒBƒbƒNƒfƒoƒCƒXì¬
+//	Æ’WÆ’â€¡Æ’CÆ’XÆ’eÆ’BÆ’bÆ’NÆ’fÆ’oÆ’CÆ’XÂÃ¬ÂÂ¬
 //
 //---------------------------------------------------------------------------
 void FASTCALL PPI::SetJoyType(int port, int type)
@@ -637,33 +653,33 @@ JoyDevice* FASTCALL PPI::CreateJoy(int port, int type)
 	ASSERT((port >= 0) && (port < PortMax));
 	ASSERT(PortMax >= 2);
 
-	// ƒ^ƒCƒv•Ê
+	// Æ’^Æ’CÆ’vâ€¢ÃŠ
 	switch (type) {
-		// Ú‘±‚È‚µ
+		// ÂÃšâ€˜Â±â€šÃˆâ€šÂµ
 		case 0:
 			return new JoyDevice(this, port);
 
-		// ATARI•W€
+		// ATARIâ€¢WÂâ‚¬
 		case 1:
 			return new JoyAtari(this, port);
 
-		// ATARI•W€+START/SELCT
+		// ATARIâ€¢WÂâ‚¬+START/SELCT
 		case 2:
 			return new JoyASS(this, port);
 
-		// ƒTƒCƒo[ƒXƒeƒBƒbƒN(ƒAƒiƒƒO)
+		// Æ’TÆ’CÆ’oÂ[Æ’XÆ’eÆ’BÆ’bÆ’N(Æ’AÆ’iÆ’ÂÆ’O)
 		case 3:
 			return new JoyCyberA(this, port);
 
-		// ƒTƒCƒo[ƒXƒeƒBƒbƒN(ƒfƒWƒ^ƒ‹)
+		// Æ’TÆ’CÆ’oÂ[Æ’XÆ’eÆ’BÆ’bÆ’N(Æ’fÆ’WÆ’^Æ’â€¹)
 		case 4:
 			return new JoyCyberD(this, port);
 
-		// MD3ƒ{ƒ^ƒ“
+		// MD3Æ’{Æ’^Æ’â€œ
 		case 5:
 			return new JoyMd3(this, port);
 
-		// MD6ƒ{ƒ^ƒ“
+		// MD6Æ’{Æ’^Æ’â€œ
 		case 6:
 			return new JoyMd6(this, port);
 
@@ -675,7 +691,7 @@ JoyDevice* FASTCALL PPI::CreateJoy(int port, int type)
 		case 8:
 			return new JoyCpsfMd(this, port);
 
-		// ƒ}ƒWƒJƒ‹ƒpƒbƒh
+		// Æ’}Æ’WÆ’JÆ’â€¹Æ’pÆ’bÆ’h
 		case 9:
 			return new JoyMagical(this, port);
 
@@ -683,72 +699,72 @@ JoyDevice* FASTCALL PPI::CreateJoy(int port, int type)
 		case 10:
 			return new JoyLR(this, port);
 
-		// ƒpƒbƒNƒ‰ƒ“ƒhê—pƒpƒbƒh
+		// Æ’pÆ’bÆ’NÆ’â€°Æ’â€œÆ’hÂÃªâ€”pÆ’pÆ’bÆ’h
 		case 11:
 			return new JoyPacl(this, port);
 
-		// BM68ê—pƒRƒ“ƒgƒ[ƒ‰
+		// BM68ÂÃªâ€”pÆ’RÆ’â€œÆ’gÆ’ÂÂ[Æ’â€°
 		case 12:
 			return new JoyBM(this, port);
 
-		// ‚»‚Ì‘¼
+		// â€šÂ»â€šÃŒâ€˜Â¼
 		default:
 			ASSERT(FALSE);
 			break;
 	}
 
-	// ’ÊíA‚±‚±‚É‚Í‚±‚È‚¢
+	// â€™ÃŠÂÃ­ÂAâ€šÂ±â€šÂ±â€šÃ‰â€šÃâ€šÂ±â€šÃˆâ€šÂ¢
 	return new JoyDevice(this, port);
 }
 
 //===========================================================================
 //
-//	ƒWƒ‡ƒCƒXƒeƒBƒbƒNƒfƒoƒCƒX
+//	Æ’WÆ’â€¡Æ’CÆ’XÆ’eÆ’BÆ’bÆ’NÆ’fÆ’oÆ’CÆ’X
 //
 //===========================================================================
 
 //---------------------------------------------------------------------------
 //
-//	ƒRƒ“ƒXƒgƒ‰ƒNƒ^
+//	Æ’RÆ’â€œÆ’XÆ’gÆ’â€°Æ’NÆ’^
 //
 //---------------------------------------------------------------------------
 JoyDevice::JoyDevice(PPI *parent, int no)
 {
 	ASSERT((no >= 0) || (no < PPI::PortMax));
 
-	// ƒ^ƒCƒvNULL
+	// Æ’^Æ’CÆ’vNULL
 	id = MAKEID('N', 'U', 'L', 'L');
 	type = 0;
 
-	// eƒfƒoƒCƒX(PPI)‚ğ‹L‰¯Aƒ|[ƒg”Ô†İ’è
+	// ÂeÆ’fÆ’oÆ’CÆ’X(PPI)â€šÃ°â€¹Lâ€°Â¯ÂAÆ’|Â[Æ’gâ€Ã”Ââ€ ÂÃâ€™Ã¨
 	ppi = parent;
 	port = no;
 
-	// ²Eƒ{ƒ^ƒ“‚È‚µAƒfƒWƒ^ƒ‹Aƒf[ƒ^”0
+	// Å½Â²ÂEÆ’{Æ’^Æ’â€œâ€šÃˆâ€šÂµÂAÆ’fÆ’WÆ’^Æ’â€¹ÂAÆ’fÂ[Æ’^Ââ€0
 	axes = 0;
 	buttons = 0;
 	analog = FALSE;
 	datas = 0;
 
-	// •\¦
+	// â€¢\Å½Â¦
 	axis_desc = NULL;
 	button_desc = NULL;
 
-	// ƒf[ƒ^ƒoƒbƒtƒ@‚ÍNULL
+	// Æ’fÂ[Æ’^Æ’oÆ’bÆ’tÆ’@â€šÃNULL
 	data = NULL;
 
-	// XVƒ`ƒFƒbƒN—v
+	// ÂXÂVÆ’`Æ’FÆ’bÆ’Nâ€”v
 	changed = TRUE;
 }
 
 //---------------------------------------------------------------------------
 //
-//	ƒfƒXƒgƒ‰ƒNƒ^
+//	Æ’fÆ’XÆ’gÆ’â€°Æ’NÆ’^
 //
 //---------------------------------------------------------------------------
 JoyDevice::~JoyDevice()
 {
-	// ƒf[ƒ^ƒoƒbƒtƒ@‚ª‚ ‚ê‚Î‰ğ•ú
+	// Æ’fÂ[Æ’^Æ’oÆ’bÆ’tÆ’@â€šÂªâ€šÂ â€šÃªâ€šÃâ€°Ã°â€¢Ãº
 	if (data) {
 		delete[] data;
 		data = NULL;
@@ -757,7 +773,7 @@ JoyDevice::~JoyDevice()
 
 //---------------------------------------------------------------------------
 //
-//	ƒŠƒZƒbƒg
+//	Æ’Å Æ’ZÆ’bÆ’g
 //
 //---------------------------------------------------------------------------
 void FASTCALL JoyDevice::Reset()
@@ -767,7 +783,7 @@ void FASTCALL JoyDevice::Reset()
 
 //---------------------------------------------------------------------------
 //
-//	ƒZ[ƒu
+//	Æ’ZÂ[Æ’u
 //
 //---------------------------------------------------------------------------
 BOOL FASTCALL JoyDevice::Save(Fileio *fio, int /*ver*/)
@@ -775,13 +791,13 @@ BOOL FASTCALL JoyDevice::Save(Fileio *fio, int /*ver*/)
 	ASSERT(this);
 	ASSERT(fio);
 
-	// ƒf[ƒ^”‚ª0‚È‚çƒZ[ƒu‚µ‚È‚¢
+	// Æ’fÂ[Æ’^Ââ€â€šÂª0â€šÃˆâ€šÃ§Æ’ZÂ[Æ’uâ€šÂµâ€šÃˆâ€šÂ¢
 	if (datas <= 0) {
 		ASSERT(datas == 0);
 		return TRUE;
 	}
 
-	// ƒf[ƒ^”‚¾‚¯•Û‘¶
+	// Æ’fÂ[Æ’^Ââ€â€šÂ¾â€šÂ¯â€¢Ã›â€˜Â¶
 	if (!fio->Write(data, sizeof(DWORD) * datas)) {
 		return FALSE;
 	}
@@ -791,7 +807,7 @@ BOOL FASTCALL JoyDevice::Save(Fileio *fio, int /*ver*/)
 
 //---------------------------------------------------------------------------
 //
-//	ƒ[ƒh
+//	Æ’ÂÂ[Æ’h
 //
 //---------------------------------------------------------------------------
 BOOL FASTCALL JoyDevice::Load(Fileio *fio, int /*ver*/)
@@ -799,16 +815,16 @@ BOOL FASTCALL JoyDevice::Load(Fileio *fio, int /*ver*/)
 	ASSERT(this);
 	ASSERT(fio);
 
-	// ƒf[ƒ^”‚ª0‚È‚çƒ[ƒh‚µ‚È‚¢
+	// Æ’fÂ[Æ’^Ââ€â€šÂª0â€šÃˆâ€šÃ§Æ’ÂÂ[Æ’hâ€šÂµâ€šÃˆâ€šÂ¢
 	if (datas <= 0) {
 		ASSERT(datas == 0);
 		return TRUE;
 	}
 
-	// XV‚ ‚è
+	// ÂXÂVâ€šÂ â€šÃ¨
 	changed = TRUE;
 
-	// ƒf[ƒ^À‘Ì‚ğƒ[ƒh
+	// Æ’fÂ[Æ’^Å½Ã€â€˜ÃŒâ€šÃ°Æ’ÂÂ[Æ’h
 	if (!fio->Read(data, sizeof(DWORD) * datas)) {
 		return FALSE;
 	}
@@ -818,7 +834,7 @@ BOOL FASTCALL JoyDevice::Load(Fileio *fio, int /*ver*/)
 
 //---------------------------------------------------------------------------
 //
-//	ƒ|[ƒg“Ç‚İæ‚è
+//	Æ’|Â[Æ’gâ€œÃ‡â€šÃÅ½Ã¦â€šÃ¨
 //
 //---------------------------------------------------------------------------
 DWORD FASTCALL JoyDevice::ReadPort(DWORD ctl)
@@ -828,35 +844,35 @@ DWORD FASTCALL JoyDevice::ReadPort(DWORD ctl)
 	ASSERT(ppi);
 	ASSERT(ctl < 0x100);
 
-	// •ÏXƒtƒ‰ƒO‚ğƒ`ƒFƒbƒN
+	// â€¢ÃÂXÆ’tÆ’â€°Æ’Oâ€šÃ°Æ’`Æ’FÆ’bÆ’N
 	if (changed) {
-		// ƒtƒ‰ƒO—‚Æ‚·
+		// Æ’tÆ’â€°Æ’Oâ€”Å½â€šÃ†â€šÂ·
 		changed = FALSE;
 
-		// ƒf[ƒ^ì¬
+		// Æ’fÂ[Æ’^ÂÃ¬ÂÂ¬
 		MakeData();
 	}
 
-	// ReadOnly‚Æ“¯‚¶ƒf[ƒ^‚ğ•Ô‚·
+	// ReadOnlyâ€šÃ†â€œÂ¯â€šÂ¶Æ’fÂ[Æ’^â€šÃ°â€¢Ã”â€šÂ·
 	return ReadOnly(ctl);
 }
 
 //---------------------------------------------------------------------------
 //
-//	ƒ|[ƒg“Ç‚İæ‚è(Read Only)
+//	Æ’|Â[Æ’gâ€œÃ‡â€šÃÅ½Ã¦â€šÃ¨(Read Only)
 //
 //---------------------------------------------------------------------------
 DWORD FASTCALL JoyDevice::ReadOnly(DWORD /*ctl*/) const
 {
 	ASSERT(this);
 
-	// –¢Ú‘±
+	// â€“Â¢ÂÃšâ€˜Â±
 	return 0xff;
 }
 
 //---------------------------------------------------------------------------
 //
-//	ƒRƒ“ƒgƒ[ƒ‹
+//	Æ’RÆ’â€œÆ’gÆ’ÂÂ[Æ’â€¹
 //
 //---------------------------------------------------------------------------
 void FASTCALL JoyDevice::Control(DWORD /*ctl*/)
@@ -866,7 +882,7 @@ void FASTCALL JoyDevice::Control(DWORD /*ctl*/)
 
 //---------------------------------------------------------------------------
 //
-//	ƒf[ƒ^ì¬
+//	Æ’fÂ[Æ’^ÂÃ¬ÂÂ¬
 //
 //---------------------------------------------------------------------------
 void FASTCALL JoyDevice::MakeData()
@@ -876,7 +892,7 @@ void FASTCALL JoyDevice::MakeData()
 
 //---------------------------------------------------------------------------
 //
-//	²•\¦
+//	Å½Â²â€¢\Å½Â¦
 //
 //---------------------------------------------------------------------------
 const char* FASTCALL JoyDevice::GetAxisDesc(int axis) const
@@ -884,23 +900,23 @@ const char* FASTCALL JoyDevice::GetAxisDesc(int axis) const
 	ASSERT(this);
 	ASSERT(axis >= 0);
 
-	// ²”‚ğ’´‚¦‚Ä‚¢‚ê‚ÎNULL
+	// Å½Â²Ââ€â€šÃ°â€™Â´â€šÂ¦â€šÃ„â€šÂ¢â€šÃªâ€šÃNULL
 	if (axis >= axes) {
 		return NULL;
 	}
 
-	// ²•\¦ƒe[ƒuƒ‹‚ª‚È‚¯‚ê‚ÎNULL
+	// Å½Â²â€¢\Å½Â¦Æ’eÂ[Æ’uÆ’â€¹â€šÂªâ€šÃˆâ€šÂ¯â€šÃªâ€šÃNULL
 	if (!axis_desc) {
 		return NULL;
 	}
 
-	// ²•\¦ƒe[ƒuƒ‹‚©‚ç•Ô‚·
+	// Å½Â²â€¢\Å½Â¦Æ’eÂ[Æ’uÆ’â€¹â€šÂ©â€šÃ§â€¢Ã”â€šÂ·
 	return axis_desc[axis];
 }
 
 //---------------------------------------------------------------------------
 //
-//	ƒ{ƒ^ƒ“•\¦
+//	Æ’{Æ’^Æ’â€œâ€¢\Å½Â¦
 //
 //---------------------------------------------------------------------------
 const char* FASTCALL JoyDevice::GetButtonDesc(int button) const
@@ -908,56 +924,56 @@ const char* FASTCALL JoyDevice::GetButtonDesc(int button) const
 	ASSERT(this);
 	ASSERT(button >= 0);
 
-	// ƒ{ƒ^ƒ“”‚ğ’´‚¦‚Ä‚¢‚ê‚ÎNULL
+	// Æ’{Æ’^Æ’â€œÂâ€â€šÃ°â€™Â´â€šÂ¦â€šÃ„â€šÂ¢â€šÃªâ€šÃNULL
 	if (button >= buttons) {
 		return NULL;
 	}
 
-	// ƒ{ƒ^ƒ“•\¦ƒe[ƒuƒ‹‚ª‚È‚¯‚ê‚ÎNULL
+	// Æ’{Æ’^Æ’â€œâ€¢\Å½Â¦Æ’eÂ[Æ’uÆ’â€¹â€šÂªâ€šÃˆâ€šÂ¯â€šÃªâ€šÃNULL
 	if (!button_desc) {
 		return NULL;
 	}
 
-	// ƒ{ƒ^ƒ“•\¦ƒe[ƒuƒ‹‚©‚ç•Ô‚·
+	// Æ’{Æ’^Æ’â€œâ€¢\Å½Â¦Æ’eÂ[Æ’uÆ’â€¹â€šÂ©â€šÃ§â€¢Ã”â€šÂ·
 	return button_desc[button];
 }
 
 //===========================================================================
 //
-//	ƒWƒ‡ƒCƒXƒeƒBƒbƒN(ATARI•W€)
+//	Æ’WÆ’â€¡Æ’CÆ’XÆ’eÆ’BÆ’bÆ’N(ATARIâ€¢WÂâ‚¬)
 //
 //===========================================================================
 
 //---------------------------------------------------------------------------
 //
-//	ƒRƒ“ƒXƒgƒ‰ƒNƒ^
+//	Æ’RÆ’â€œÆ’XÆ’gÆ’â€°Æ’NÆ’^
 //
 //---------------------------------------------------------------------------
 JoyAtari::JoyAtari(PPI *parent, int no) : JoyDevice(parent, no)
 {
-	// ƒ^ƒCƒvATAR
+	// Æ’^Æ’CÆ’vATAR
 	id = MAKEID('A', 'T', 'A', 'R');
 	type = 1;
 
-	// 2²2ƒ{ƒ^ƒ“Aƒf[ƒ^”1
+	// 2Å½Â²2Æ’{Æ’^Æ’â€œÂAÆ’fÂ[Æ’^Ââ€1
 	axes = 2;
 	buttons = 2;
 	datas = 1;
 
-	// •\¦ƒe[ƒuƒ‹
+	// â€¢\Å½Â¦Æ’eÂ[Æ’uÆ’â€¹
 	axis_desc = AxisDescTable;
 	button_desc = ButtonDescTable;
 
-	// ƒf[ƒ^ƒoƒbƒtƒ@Šm•Û
+	// Æ’fÂ[Æ’^Æ’oÆ’bÆ’tÆ’@Å mâ€¢Ã›
 	data = new DWORD[datas];
 
-	// ‰Šúƒf[ƒ^İ’è
+	// Ââ€°Å ÃºÆ’fÂ[Æ’^ÂÃâ€™Ã¨
 	data[0] = 0xff;
 }
 
 //---------------------------------------------------------------------------
 //
-//	ƒ|[ƒg“Ç‚İæ‚è(Read Only)
+//	Æ’|Â[Æ’gâ€œÃ‡â€šÃÅ½Ã¦â€šÃ¨(Read Only)
 //
 //---------------------------------------------------------------------------
 DWORD FASTCALL JoyAtari::ReadOnly(DWORD ctl) const
@@ -965,18 +981,18 @@ DWORD FASTCALL JoyAtari::ReadOnly(DWORD ctl) const
 	ASSERT(this);
 	ASSERT(ctl < 0x100);
 
-	// PC4‚ª1‚È‚çA0xff
+	// PC4â€šÂª1â€šÃˆâ€šÃ§ÂA0xff
 	if (ctl & 1) {
 		return 0xff;
 	}
 
-	// ì¬Ï‚İ‚Ìƒf[ƒ^‚ğ•Ô‚·
+	// ÂÃ¬ÂÂ¬ÂÃâ€šÃâ€šÃŒÆ’fÂ[Æ’^â€šÃ°â€¢Ã”â€šÂ·
 	return data[0];
 }
 
 //---------------------------------------------------------------------------
 //
-//	ƒf[ƒ^ì¬
+//	Æ’fÂ[Æ’^ÂÃ¬ÂÂ¬
 //
 //---------------------------------------------------------------------------
 void FASTCALL JoyAtari::MakeData()
@@ -987,7 +1003,7 @@ void FASTCALL JoyAtari::MakeData()
 	ASSERT(this);
 	ASSERT(ppi);
 
-	// ƒf[ƒ^‰Šú‰»
+	// Æ’fÂ[Æ’^Ââ€°Å Ãºâ€°Â»
 	info = ppi->GetJoyInfo(port);
 	data[0] = 0xff;
 
@@ -1011,12 +1027,12 @@ void FASTCALL JoyAtari::MakeData()
 		data[0] &= ~0x08;
 	}
 
-	// ƒ{ƒ^ƒ“A
+	// Æ’{Æ’^Æ’â€œA
 	if (info->button[0]) {
 		data[0] &= ~0x40;
 	}
 
-	// ƒ{ƒ^ƒ“B
+	// Æ’{Æ’^Æ’â€œB
 	if (info->button[1]) {
 		data[0] &= ~0x20;
 	}
@@ -1024,7 +1040,7 @@ void FASTCALL JoyAtari::MakeData()
 
 //---------------------------------------------------------------------------
 //
-//	²•\¦ƒe[ƒuƒ‹
+//	Å½Â²â€¢\Å½Â¦Æ’eÂ[Æ’uÆ’â€¹
 //
 //---------------------------------------------------------------------------
 const char* JoyAtari::AxisDescTable[] = {
@@ -1034,7 +1050,7 @@ const char* JoyAtari::AxisDescTable[] = {
 
 //---------------------------------------------------------------------------
 //
-//	ƒ{ƒ^ƒ“•\¦ƒe[ƒuƒ‹
+//	Æ’{Æ’^Æ’â€œâ€¢\Å½Â¦Æ’eÂ[Æ’uÆ’â€¹
 //
 //---------------------------------------------------------------------------
 const char* JoyAtari::ButtonDescTable[] = {
@@ -1044,40 +1060,40 @@ const char* JoyAtari::ButtonDescTable[] = {
 
 //===========================================================================
 //
-//	ƒWƒ‡ƒCƒXƒeƒBƒbƒN(ATARI•W€+START/SELECT)
+//	Æ’WÆ’â€¡Æ’CÆ’XÆ’eÆ’BÆ’bÆ’N(ATARIâ€¢WÂâ‚¬+START/SELECT)
 //
 //===========================================================================
 
 //---------------------------------------------------------------------------
 //
-//	ƒRƒ“ƒXƒgƒ‰ƒNƒ^
+//	Æ’RÆ’â€œÆ’XÆ’gÆ’â€°Æ’NÆ’^
 //
 //---------------------------------------------------------------------------
 JoyASS::JoyASS(PPI *parent, int no) : JoyDevice(parent, no)
 {
-	// ƒ^ƒCƒvATSS
+	// Æ’^Æ’CÆ’vATSS
 	id = MAKEID('A', 'T', 'S', 'S');
 	type = 2;
 
-	// 2²4ƒ{ƒ^ƒ“Aƒf[ƒ^”1
+	// 2Å½Â²4Æ’{Æ’^Æ’â€œÂAÆ’fÂ[Æ’^Ââ€1
 	axes = 2;
 	buttons = 4;
 	datas = 1;
 
-	// •\¦ƒe[ƒuƒ‹
+	// â€¢\Å½Â¦Æ’eÂ[Æ’uÆ’â€¹
 	axis_desc = AxisDescTable;
 	button_desc = ButtonDescTable;
 
-	// ƒf[ƒ^ƒoƒbƒtƒ@Šm•Û
+	// Æ’fÂ[Æ’^Æ’oÆ’bÆ’tÆ’@Å mâ€¢Ã›
 	data = new DWORD[datas];
 
-	// ‰Šúƒf[ƒ^İ’è
+	// Ââ€°Å ÃºÆ’fÂ[Æ’^ÂÃâ€™Ã¨
 	data[0] = 0xff;
 }
 
 //---------------------------------------------------------------------------
 //
-//	ƒ|[ƒg“Ç‚İæ‚è(Read Only)
+//	Æ’|Â[Æ’gâ€œÃ‡â€šÃÅ½Ã¦â€šÃ¨(Read Only)
 //
 //---------------------------------------------------------------------------
 DWORD FASTCALL JoyASS::ReadOnly(DWORD ctl) const
@@ -1085,18 +1101,18 @@ DWORD FASTCALL JoyASS::ReadOnly(DWORD ctl) const
 	ASSERT(this);
 	ASSERT(ctl < 0x100);
 
-	// PC4‚ª1‚È‚çA0xff
+	// PC4â€šÂª1â€šÃˆâ€šÃ§ÂA0xff
 	if (ctl & 1) {
 		return 0xff;
 	}
 
-	// ì¬Ï‚İ‚Ìƒf[ƒ^‚ğ•Ô‚·
+	// ÂÃ¬ÂÂ¬ÂÃâ€šÃâ€šÃŒÆ’fÂ[Æ’^â€šÃ°â€¢Ã”â€šÂ·
 	return data[0];
 }
 
 //---------------------------------------------------------------------------
 //
-//	ƒf[ƒ^ì¬
+//	Æ’fÂ[Æ’^ÂÃ¬ÂÂ¬
 //
 //---------------------------------------------------------------------------
 void FASTCALL JoyASS::MakeData()
@@ -1107,7 +1123,7 @@ void FASTCALL JoyASS::MakeData()
 	ASSERT(this);
 	ASSERT(ppi);
 
-	// ƒf[ƒ^‰Šú‰»
+	// Æ’fÂ[Æ’^Ââ€°Å Ãºâ€°Â»
 	info = ppi->GetJoyInfo(port);
 	data[0] = 0xff;
 
@@ -1131,22 +1147,22 @@ void FASTCALL JoyASS::MakeData()
 		data[0] &= ~0x08;
 	}
 
-	// ƒ{ƒ^ƒ“A
+	// Æ’{Æ’^Æ’â€œA
 	if (info->button[0]) {
 		data[0] &= ~0x40;
 	}
 
-	// ƒ{ƒ^ƒ“B
+	// Æ’{Æ’^Æ’â€œB
 	if (info->button[1]) {
 		data[0] &= ~0x20;
 	}
 
-	// START(¶‰E“¯‰Ÿ‚µ‚Æ‚µ‚Ä•\Œ»)
+	// START(ÂÂ¶â€°Eâ€œÂ¯Å½Å¾â€°Å¸â€šÂµâ€šÃ†â€šÂµâ€šÃ„â€¢\Å’Â»)
 	if (info->button[2]) {
 		data[0] &= ~0x0c;
 	}
 
-	// SELECT(ã‰º“¯‰Ÿ‚µ‚Æ‚µ‚Ä•\Œ»)
+	// SELECT(ÂÃ£â€°Âºâ€œÂ¯Å½Å¾â€°Å¸â€šÂµâ€šÃ†â€šÂµâ€šÃ„â€¢\Å’Â»)
 	if (info->button[3]) {
 		data[0] &= ~0x03;
 	}
@@ -1154,7 +1170,7 @@ void FASTCALL JoyASS::MakeData()
 
 //---------------------------------------------------------------------------
 //
-//	²•\¦ƒe[ƒuƒ‹
+//	Å½Â²â€¢\Å½Â¦Æ’eÂ[Æ’uÆ’â€¹
 //
 //---------------------------------------------------------------------------
 const char* JoyASS::AxisDescTable[] = {
@@ -1164,7 +1180,7 @@ const char* JoyASS::AxisDescTable[] = {
 
 //---------------------------------------------------------------------------
 //
-//	ƒ{ƒ^ƒ“•\¦ƒe[ƒuƒ‹
+//	Æ’{Æ’^Æ’â€œâ€¢\Å½Â¦Æ’eÂ[Æ’uÆ’â€¹
 //
 //---------------------------------------------------------------------------
 const char* JoyASS::ButtonDescTable[] = {
@@ -1176,39 +1192,39 @@ const char* JoyASS::ButtonDescTable[] = {
 
 //===========================================================================
 //
-//	ƒWƒ‡ƒCƒXƒeƒBƒbƒN(ƒTƒCƒo[ƒXƒeƒBƒbƒNEƒAƒiƒƒO)
+//	Æ’WÆ’â€¡Æ’CÆ’XÆ’eÆ’BÆ’bÆ’N(Æ’TÆ’CÆ’oÂ[Æ’XÆ’eÆ’BÆ’bÆ’NÂEÆ’AÆ’iÆ’ÂÆ’O)
 //
 //===========================================================================
 
 //---------------------------------------------------------------------------
 //
-//	ƒRƒ“ƒXƒgƒ‰ƒNƒ^
+//	Æ’RÆ’â€œÆ’XÆ’gÆ’â€°Æ’NÆ’^
 //
 //---------------------------------------------------------------------------
 JoyCyberA::JoyCyberA(PPI *parent, int no) : JoyDevice(parent, no)
 {
 	int i;
 
-	// ƒ^ƒCƒvCYBA
+	// Æ’^Æ’CÆ’vCYBA
 	id = MAKEID('C', 'Y', 'B', 'A');
 	type = 3;
 
-	// 3²8ƒ{ƒ^ƒ“AƒAƒiƒƒOAƒf[ƒ^”11
+	// 3Å½Â²8Æ’{Æ’^Æ’â€œÂAÆ’AÆ’iÆ’ÂÆ’OÂAÆ’fÂ[Æ’^Ââ€11
 	axes = 3;
 	buttons = 8;
 	analog = TRUE;
 	datas = 12;
 
-	// •\¦ƒe[ƒuƒ‹
+	// â€¢\Å½Â¦Æ’eÂ[Æ’uÆ’â€¹
 	axis_desc = AxisDescTable;
 	button_desc = ButtonDescTable;
 
-	// ƒf[ƒ^ƒoƒbƒtƒ@Šm•Û
+	// Æ’fÂ[Æ’^Æ’oÆ’bÆ’tÆ’@Å mâ€¢Ã›
 	data = new DWORD[datas];
 
-	// ‰Šúƒf[ƒ^İ’è
+	// Ââ€°Å ÃºÆ’fÂ[Æ’^ÂÃâ€™Ã¨
 	for (i=0; i<12; i++) {
-		// ACK,L/H,ƒ{ƒ^ƒ“
+		// ACK,L/H,Æ’{Æ’^Æ’â€œ
 		if (i & 1) {
 			data[i] = 0xbf;
 		}
@@ -1216,24 +1232,24 @@ JoyCyberA::JoyCyberA(PPI *parent, int no) : JoyDevice(parent, no)
 			data[i] = 0x9f;
 		}
 
-		// ƒZƒ“ƒ^’l‚Í0x7f‚Æ‚·‚é
+		// Æ’ZÆ’â€œÆ’^â€™lâ€šÃ0x7fâ€šÃ†â€šÂ·â€šÃ©
 		if ((i >= 2) && (i <= 5)) {
-			// ƒAƒiƒƒOƒf[ƒ^H‚ğ7‚É‚·‚é
+			// Æ’AÆ’iÆ’ÂÆ’OÆ’fÂ[Æ’^Hâ€šÃ°7â€šÃ‰â€šÂ·â€šÃ©
 			data[i] &= 0xf7;
 		}
 	}
 
-	// ƒXƒPƒWƒ…[ƒ‰æ“¾
+	// Æ’XÆ’PÆ’WÆ’â€¦Â[Æ’â€°Å½Ã¦â€œÂ¾
 	scheduler = (Scheduler*)ppi->GetVM()->SearchDevice(MAKEID('S', 'C', 'H', 'E'));
 	ASSERT(scheduler);
 
-	// ©“®ƒŠƒZƒbƒg(ƒRƒ“ƒgƒ[ƒ‰‚ğ·‚µ‘Ö‚¦‚½ê‡‚É”õ‚¦‚é)
+	// Å½Â©â€œÂ®Æ’Å Æ’ZÆ’bÆ’g(Æ’RÆ’â€œÆ’gÆ’ÂÂ[Æ’â€°â€šÃ°ÂÂ·â€šÂµâ€˜Ã–â€šÂ¦â€šÂ½ÂÃªÂâ€¡â€šÃ‰â€Ãµâ€šÂ¦â€šÃ©)
 	Reset();
 }
 
 //---------------------------------------------------------------------------
 //
-//	ƒŠƒZƒbƒg
+//	Æ’Å Æ’ZÆ’bÆ’g
 //
 //---------------------------------------------------------------------------
 void FASTCALL JoyCyberA::Reset()
@@ -1241,22 +1257,22 @@ void FASTCALL JoyCyberA::Reset()
 	ASSERT(this);
 	ASSERT(scheduler);
 
-	// Šî–{ƒNƒ‰ƒX
+	// Å Ã®â€“{Æ’NÆ’â€°Æ’X
 	JoyDevice::Reset();
 
-	// ƒV[ƒPƒ“ƒX‰Šú‰»
+	// Æ’VÂ[Æ’PÆ’â€œÆ’XÂâ€°Å Ãºâ€°Â»
 	seq = 0;
 
-	// ƒRƒ“ƒgƒ[ƒ‹0
+	// Æ’RÆ’â€œÆ’gÆ’ÂÂ[Æ’â€¹0
 	ctrl = 0;
 
-	// ŠÔ‹L‰¯
+	// Å½Å¾Å Ã”â€¹Lâ€°Â¯
 	hus = scheduler->GetTotalTime();
 }
 
 //---------------------------------------------------------------------------
 //
-//	ƒZ[ƒu
+//	Æ’ZÂ[Æ’u
 //
 //---------------------------------------------------------------------------
 BOOL FASTCALL JoyCyberA::Save(Fileio *fio, int ver)
@@ -1264,22 +1280,22 @@ BOOL FASTCALL JoyCyberA::Save(Fileio *fio, int ver)
 	ASSERT(this);
 	ASSERT(fio);
 
-	// Šî–{ƒNƒ‰ƒX
+	// Å Ã®â€“{Æ’NÆ’â€°Æ’X
 	if (!JoyDevice::Save(fio, ver)) {
 		return FALSE;
 	}
 
-	// ƒV[ƒPƒ“ƒX‚ğƒZ[ƒu
+	// Æ’VÂ[Æ’PÆ’â€œÆ’Xâ€šÃ°Æ’ZÂ[Æ’u
 	if (!fio->Write(&seq, sizeof(seq))) {
 		return FALSE;
 	}
 
-	// ƒRƒ“ƒgƒ[ƒ‹‚ğƒZ[ƒu
+	// Æ’RÆ’â€œÆ’gÆ’ÂÂ[Æ’â€¹â€šÃ°Æ’ZÂ[Æ’u
 	if (!fio->Write(&ctrl, sizeof(ctrl))) {
 		return FALSE;
 	}
 
-	// ŠÔ‚ğƒZ[ƒu
+	// Å½Å¾Å Ã”â€šÃ°Æ’ZÂ[Æ’u
 	if (!fio->Write(&hus, sizeof(hus))) {
 		return FALSE;
 	}
@@ -1289,7 +1305,7 @@ BOOL FASTCALL JoyCyberA::Save(Fileio *fio, int ver)
 
 //---------------------------------------------------------------------------
 //
-//	ƒ[ƒh
+//	Æ’ÂÂ[Æ’h
 //
 //---------------------------------------------------------------------------
 BOOL FASTCALL JoyCyberA::Load(Fileio *fio, int ver)
@@ -1297,22 +1313,22 @@ BOOL FASTCALL JoyCyberA::Load(Fileio *fio, int ver)
 	ASSERT(this);
 	ASSERT(fio);
 
-	// Šî–{ƒNƒ‰ƒX
+	// Å Ã®â€“{Æ’NÆ’â€°Æ’X
 	if (!JoyDevice::Load(fio, ver)) {
 		return FALSE;
 	}
 
-	// ƒV[ƒPƒ“ƒX‚ğƒ[ƒh
+	// Æ’VÂ[Æ’PÆ’â€œÆ’Xâ€šÃ°Æ’ÂÂ[Æ’h
 	if (!fio->Read(&seq, sizeof(seq))) {
 		return FALSE;
 	}
 
-	// ƒRƒ“ƒgƒ[ƒ‹‚ğƒ[ƒh
+	// Æ’RÆ’â€œÆ’gÆ’ÂÂ[Æ’â€¹â€šÃ°Æ’ÂÂ[Æ’h
 	if (!fio->Read(&ctrl, sizeof(ctrl))) {
 		return FALSE;
 	}
 
-	// ŠÔ‚ğƒ[ƒh
+	// Å½Å¾Å Ã”â€šÃ°Æ’ÂÂ[Æ’h
 	if (!fio->Read(&hus, sizeof(hus))) {
 		return FALSE;
 	}
@@ -1322,16 +1338,16 @@ BOOL FASTCALL JoyCyberA::Load(Fileio *fio, int ver)
 
 //---------------------------------------------------------------------------
 //
-//	‰“š‘¬“xİ’è(À‹@‚Æ‚Ì”äŠr‚ÉŠî‚Ã‚­)
-//	¦³Šm‚É‚ÍPC4‚ğÅ‰‚É—§‚Ä‚Ä‚©‚çAPA4‚Ìb5¨b6‚ª—‚¿‚é‚Ü‚Å‚É100usˆÈã
-//	‚©‚©‚Á‚Ä‚¢‚é•µˆÍ‹C‚ª‚ ‚é‚ªA‚»‚±‚Ü‚Å‚ÍƒGƒ~ƒ…ƒŒ[ƒVƒ‡ƒ“‚µ‚È‚¢
+//	â€°Å¾â€œÅ¡â€˜Â¬â€œxÂÃâ€™Ã¨(Å½Ã€â€¹@â€šÃ†â€šÃŒâ€Ã¤Å râ€šÃ‰Å Ã®â€šÃƒâ€šÂ­)
+//	ÂÂ¦ÂÂ³Å mâ€šÃ‰â€šÃPC4â€šÃ°ÂÃ…Ââ€°â€šÃ‰â€”Â§â€šÃ„â€šÃ„â€šÂ©â€šÃ§ÂAPA4â€šÃŒb5ÂÂ¨b6â€šÂªâ€”Å½â€šÂ¿â€šÃ©â€šÃœâ€šÃ…â€šÃ‰100usË†ÃˆÂÃ£
+//	â€šÂ©â€šÂ©â€šÃâ€šÃ„â€šÂ¢â€šÃ©â€¢ÂµË†Ãâ€¹Câ€šÂªâ€šÂ â€šÃ©â€šÂªÂAâ€šÂ»â€šÂ±â€šÃœâ€šÃ…â€šÃÆ’GÆ’~Æ’â€¦Æ’Å’Â[Æ’VÆ’â€¡Æ’â€œâ€šÂµâ€šÃˆâ€šÂ¢
 //
 //---------------------------------------------------------------------------
 #define JOYCYBERA_CYCLE		108
 
 //---------------------------------------------------------------------------
 //
-//	ƒ|[ƒg“Ç‚İæ‚è
+//	Æ’|Â[Æ’gâ€œÃ‡â€šÃÅ½Ã¦â€šÃ¨
 //
 //---------------------------------------------------------------------------
 DWORD FASTCALL JoyCyberA::ReadPort(DWORD ctl)
@@ -1339,46 +1355,46 @@ DWORD FASTCALL JoyCyberA::ReadPort(DWORD ctl)
 	DWORD diff;
 	DWORD n;
 
-	// ƒV[ƒPƒ“ƒX0‚Í–³Œø
+	// Æ’VÂ[Æ’PÆ’â€œÆ’X0â€šÃâ€“Â³Å’Ã¸
 	if (seq == 0) {
 		return 0xff;
 	}
 
-	// ƒV[ƒPƒ“ƒX12ˆÈã‚à–³Œø
+	// Æ’VÂ[Æ’PÆ’â€œÆ’X12Ë†ÃˆÂÃ£â€šÃ â€“Â³Å’Ã¸
 	if (seq >= 13) {
-		// ƒV[ƒPƒ“ƒX0
+		// Æ’VÂ[Æ’PÆ’â€œÆ’X0
 		seq = 0;
 		return 0xff;
 	}
 
-	// •ÏXƒtƒ‰ƒO‚ğƒ`ƒFƒbƒN
+	// â€¢ÃÂXÆ’tÆ’â€°Æ’Oâ€šÃ°Æ’`Æ’FÆ’bÆ’N
 	if (changed) {
-		// ƒtƒ‰ƒO—‚Æ‚·
+		// Æ’tÆ’â€°Æ’Oâ€”Å½â€šÃ†â€šÂ·
 		changed = FALSE;
 
-		// ƒf[ƒ^ì¬
+		// Æ’fÂ[Æ’^ÂÃ¬ÂÂ¬
 		MakeData();
 	}
 
 	ASSERT((seq >= 1) && (seq <= 12));
 
-	// ·•ªæ“¾
+	// ÂÂ·â€¢ÂªÅ½Ã¦â€œÂ¾
 	diff = scheduler->GetTotalTime();
 	diff -= hus;
 
-	// ·•ª‚©‚çŒvZ
+	// ÂÂ·â€¢Âªâ€šÂ©â€šÃ§Å’vÅ½Z
 	if (diff >= JOYCYBERA_CYCLE) {
 		n = diff / JOYCYBERA_CYCLE;
 		diff %= JOYCYBERA_CYCLE;
 
-		// ƒV[ƒPƒ“ƒX‚ğƒŠƒZƒbƒg
+		// Æ’VÂ[Æ’PÆ’â€œÆ’Xâ€šÃ°Æ’Å Æ’ZÆ’bÆ’g
 		if ((seq & 1) == 0) {
 			seq--;
 		}
-		// 2’PˆÊ‚Åi‚ß‚é
+		// 2â€™PË†ÃŠâ€šÃ…Âiâ€šÃŸâ€šÃ©
 		seq += (2 * n);
 
-		// ŠÔ‚ğ•â³
+		// Å½Å¾Å Ã”â€šÃ°â€¢Ã¢ÂÂ³
 		hus += (JOYCYBERA_CYCLE * n);
 
 		// +1
@@ -1387,50 +1403,50 @@ DWORD FASTCALL JoyCyberA::ReadPort(DWORD ctl)
 			seq++;
 		}
 
-		// ƒV[ƒPƒ“ƒXƒI[ƒo[‘Îô
+		// Æ’VÂ[Æ’PÆ’â€œÆ’XÆ’IÂ[Æ’oÂ[â€˜ÃÂÃ´
 		if (seq >= 13) {
 			seq = 0;
 			return 0xff;
 		}
 	}
 	if (diff >= (JOYCYBERA_CYCLE / 2)) {
-		// Œã”¼‚Éİ’è
+		// Å’Ã£â€Â¼â€šÃ‰ÂÃâ€™Ã¨
 		if (seq & 1) {
 			seq++;
 		}
 	}
 
-	// ƒf[ƒ^æ“¾
+	// Æ’fÂ[Æ’^Å½Ã¦â€œÂ¾
 	return ReadOnly(ctl);
 }
 
 //---------------------------------------------------------------------------
 //
-//	ƒ|[ƒg“Ç‚İæ‚è(Read Only)
+//	Æ’|Â[Æ’gâ€œÃ‡â€šÃÅ½Ã¦â€šÃ¨(Read Only)
 //
 //---------------------------------------------------------------------------
 DWORD FASTCALL JoyCyberA::ReadOnly(DWORD /*ctl*/) const
 {
 	ASSERT(this);
 
-	// ƒV[ƒPƒ“ƒX0‚Í–³Œø
+	// Æ’VÂ[Æ’PÆ’â€œÆ’X0â€šÃâ€“Â³Å’Ã¸
 	if (seq == 0) {
 		return 0xff;
 	}
 
-	// ƒV[ƒPƒ“ƒX12ˆÈã‚à–³Œø
+	// Æ’VÂ[Æ’PÆ’â€œÆ’X12Ë†ÃˆÂÃ£â€šÃ â€“Â³Å’Ã¸
 	if (seq >= 13) {
 		return 0xff;
 	}
 
-	// ƒV[ƒPƒ“ƒX‚É]‚Á‚½ƒf[ƒ^‚ğ•Ô‚·
+	// Æ’VÂ[Æ’PÆ’â€œÆ’Xâ€šÃ‰Â]â€šÃâ€šÂ½Æ’fÂ[Æ’^â€šÃ°â€¢Ã”â€šÂ·
 	ASSERT((seq >= 1) && (seq <= 12));
 	return data[seq - 1];
 }
 
 //---------------------------------------------------------------------------
 //
-//	ƒRƒ“ƒgƒ[ƒ‹
+//	Æ’RÆ’â€œÆ’gÆ’ÂÂ[Æ’â€¹
 //
 //---------------------------------------------------------------------------
 void FASTCALL JoyCyberA::Control(DWORD ctl)
@@ -1438,17 +1454,17 @@ void FASTCALL JoyCyberA::Control(DWORD ctl)
 	ASSERT(this);
 	ASSERT(ctl < 0x100);
 
-	// ƒV[ƒPƒ“ƒX0(–³Œø)‚ÆƒV[ƒPƒ“ƒX11ˆÈ~
+	// Æ’VÂ[Æ’PÆ’â€œÆ’X0(â€“Â³Å’Ã¸)Å½Å¾â€šÃ†Æ’VÂ[Æ’PÆ’â€œÆ’X11Ë†ÃˆÂ~
 	if ((seq == 0) || (seq >= 11)) {
-		// 1¨0‚ÅAƒV[ƒPƒ“ƒXŠJn
+		// 1ÂÂ¨0â€šÃ…ÂAÆ’VÂ[Æ’PÆ’â€œÆ’XÅ JÅ½n
 		if (ctl) {
-			// ¡‰ñ1‚É‚µ‚½
+			// ÂÂ¡â€°Ã±1â€šÃ‰â€šÂµâ€šÂ½
 			ctrl = 1;
 		}
 		else {
-			// ¡‰ñ0‚É‚µ‚½
+			// ÂÂ¡â€°Ã±0â€šÃ‰â€šÂµâ€šÂ½
 			if (ctrl) {
-				// 1¨0‚Ö‚Ì—§‚¿‰º‚°
+				// 1ÂÂ¨0â€šÃ–â€šÃŒâ€”Â§â€šÂ¿â€°Âºâ€šÂ°
 				seq = 1;
 				hus = scheduler->GetTotalTime();
 			}
@@ -1457,25 +1473,25 @@ void FASTCALL JoyCyberA::Control(DWORD ctl)
 		return;
 	}
 
-	// ƒV[ƒPƒ“ƒX1ˆÈ~‚Å‚ÍAACK‚Ì‚İ—LŒø
+	// Æ’VÂ[Æ’PÆ’â€œÆ’X1Ë†ÃˆÂ~â€šÃ…â€šÃÂAACKâ€šÃŒâ€šÃâ€”LÅ’Ã¸
 	ctrl = ctl;
 	if (ctl) {
 		return;
 	}
 
-	// ƒV[ƒPƒ“ƒX‚ğ2’PˆÊ‚Åi‚ß‚éŒø‰Ê‚ğ‚à‚Â
+	// Æ’VÂ[Æ’PÆ’â€œÆ’Xâ€šÃ°2â€™PË†ÃŠâ€šÃ…Âiâ€šÃŸâ€šÃ©Å’Ã¸â€°ÃŠâ€šÃ°â€šÃ â€šÃ‚
 	if ((seq & 1) == 0) {
 		seq--;
 	}
 	seq += 2;
 
-	// ŠÔ‚ğ‹L‰¯
+	// Å½Å¾Å Ã”â€šÃ°â€¹Lâ€°Â¯
 	hus = scheduler->GetTotalTime();
 }
 
 //---------------------------------------------------------------------------
 //
-//	ƒf[ƒ^ì¬
+//	Æ’fÂ[Æ’^ÂÃ¬ÂÂ¬
 //
 //---------------------------------------------------------------------------
 void FASTCALL JoyCyberA::MakeData()
@@ -1486,10 +1502,10 @@ void FASTCALL JoyCyberA::MakeData()
 	ASSERT(this);
 	ASSERT(ppi);
 
-	// ƒWƒ‡ƒCƒXƒeƒBƒbƒNî•ñæ“¾
+	// Æ’WÆ’â€¡Æ’CÆ’XÆ’eÆ’BÆ’bÆ’NÂÃ®â€¢Ã±Å½Ã¦â€œÂ¾
 	info = ppi->GetJoyInfo(port);
 
-	// data[0]:ƒ{ƒ^ƒ“A,ƒ{ƒ^ƒ“B,ƒ{ƒ^ƒ“C,ƒ{ƒ^ƒ“D
+	// data[0]:Æ’{Æ’^Æ’â€œA,Æ’{Æ’^Æ’â€œB,Æ’{Æ’^Æ’â€œC,Æ’{Æ’^Æ’â€œD
 	data[0] |= 0x0f;
 	if (info->button[0]) {
 		data[0] &= ~0x08;
@@ -1504,7 +1520,7 @@ void FASTCALL JoyCyberA::MakeData()
 		data[0] &= ~0x01;
 	}
 
-	// data[1]:ƒ{ƒ^ƒ“E1,ƒ{ƒ^ƒ“E2,ƒ{ƒ^ƒ“F,ƒ{ƒ^ƒ“G
+	// data[1]:Æ’{Æ’^Æ’â€œE1,Æ’{Æ’^Æ’â€œE2,Æ’{Æ’^Æ’â€œF,Æ’{Æ’^Æ’â€œG
 	data[1] |= 0x0f;
 	if (info->button[4]) {
 		data[1] &= ~0x08;
@@ -1537,7 +1553,7 @@ void FASTCALL JoyCyberA::MakeData()
 	data[4] &= 0xf0;
 	data[4] |= (axis >> 4);
 
-	// data[5]:4H(—\–ñ‚Æ‚È‚Á‚Ä‚¢‚éBÀ‹@‚Å‚Í0)
+	// data[5]:4H(â€”\â€“Ã±â€šÃ†â€šÃˆâ€šÃâ€šÃ„â€šÂ¢â€šÃ©ÂBÅ½Ã€â€¹@â€šÃ…â€šÃ0)
 	data[5] &= 0xf0;
 
 	// data[6]:1L
@@ -1558,12 +1574,12 @@ void FASTCALL JoyCyberA::MakeData()
 	data[8] &= 0xf0;
 	data[8] |= (axis & 0x0f);
 
-	// data[9]:4L(—\–ñ‚Æ‚È‚Á‚Ä‚¢‚éBÀ‹@‚Å‚Í0)
+	// data[9]:4L(â€”\â€“Ã±â€šÃ†â€šÃˆâ€šÃâ€šÃ„â€šÂ¢â€šÃ©ÂBÅ½Ã€â€¹@â€šÃ…â€šÃ0)
 	data[9] &= 0xf0;
 
 	// data[10]:A,B,A',B'
-	// A,B‚ÍƒŒƒo[ˆê‘Ì‚Ìƒ~ƒjƒ{ƒ^ƒ“AA'B'‚Í’Êí‚Ì‰Ÿ‚µƒ{ƒ^ƒ“
-	// ƒŒƒo[ˆê‘Ì‚Ìƒ~ƒjƒ{ƒ^ƒ“‚Æ‚µ‚Äˆµ‚¤(ƒAƒtƒ^[ƒo[ƒi[II)
+	// A,Bâ€šÃÆ’Å’Æ’oÂ[Ë†Ãªâ€˜ÃŒâ€šÃŒÆ’~Æ’jÆ’{Æ’^Æ’â€œÂAA'B'â€šÃâ€™ÃŠÂÃ­â€šÃŒâ€°Å¸â€šÂµÆ’{Æ’^Æ’â€œ
+	// Æ’Å’Æ’oÂ[Ë†Ãªâ€˜ÃŒâ€šÃŒÆ’~Æ’jÆ’{Æ’^Æ’â€œâ€šÃ†â€šÂµâ€šÃ„Ë†Âµâ€šÂ¤(Æ’AÆ’tÆ’^Â[Æ’oÂ[Æ’iÂ[II)
 	data[10] &= 0xf0;
 	data[10] |= 0x0f;
 	if (info->button[0]) {
@@ -1576,7 +1592,7 @@ void FASTCALL JoyCyberA::MakeData()
 
 //---------------------------------------------------------------------------
 //
-//	²•\¦ƒe[ƒuƒ‹
+//	Å½Â²â€¢\Å½Â¦Æ’eÂ[Æ’uÆ’â€¹
 //
 //---------------------------------------------------------------------------
 const char* JoyCyberA::AxisDescTable[] = {
@@ -1587,7 +1603,7 @@ const char* JoyCyberA::AxisDescTable[] = {
 
 //---------------------------------------------------------------------------
 //
-//	ƒ{ƒ^ƒ“•\¦ƒe[ƒuƒ‹
+//	Æ’{Æ’^Æ’â€œâ€¢\Å½Â¦Æ’eÂ[Æ’uÆ’â€¹
 //
 //---------------------------------------------------------------------------
 const char* JoyCyberA::ButtonDescTable[] = {
@@ -1603,41 +1619,41 @@ const char* JoyCyberA::ButtonDescTable[] = {
 
 //===========================================================================
 //
-//	ƒWƒ‡ƒCƒXƒeƒBƒbƒN(ƒTƒCƒo[ƒXƒeƒBƒbƒNEƒfƒWƒ^ƒ‹)
+//	Æ’WÆ’â€¡Æ’CÆ’XÆ’eÆ’BÆ’bÆ’N(Æ’TÆ’CÆ’oÂ[Æ’XÆ’eÆ’BÆ’bÆ’NÂEÆ’fÆ’WÆ’^Æ’â€¹)
 //
 //===========================================================================
 
 //---------------------------------------------------------------------------
 //
-//	ƒRƒ“ƒXƒgƒ‰ƒNƒ^
+//	Æ’RÆ’â€œÆ’XÆ’gÆ’â€°Æ’NÆ’^
 //
 //---------------------------------------------------------------------------
 JoyCyberD::JoyCyberD(PPI *parent, int no) : JoyDevice(parent, no)
 {
-	// ƒ^ƒCƒvCYBD
+	// Æ’^Æ’CÆ’vCYBD
 	id = MAKEID('C', 'Y', 'B', 'D');
 	type = 4;
 
-	// 3²6ƒ{ƒ^ƒ“Aƒf[ƒ^”2
+	// 3Å½Â²6Æ’{Æ’^Æ’â€œÂAÆ’fÂ[Æ’^Ââ€2
 	axes = 3;
 	buttons = 6;
 	datas = 2;
 
-	// •\¦ƒe[ƒuƒ‹
+	// â€¢\Å½Â¦Æ’eÂ[Æ’uÆ’â€¹
 	axis_desc = AxisDescTable;
 	button_desc = ButtonDescTable;
 
-	// ƒf[ƒ^ƒoƒbƒtƒ@Šm•Û
+	// Æ’fÂ[Æ’^Æ’oÆ’bÆ’tÆ’@Å mâ€¢Ã›
 	data = new DWORD[datas];
 
-	// ‰Šúƒf[ƒ^İ’è
+	// Ââ€°Å ÃºÆ’fÂ[Æ’^ÂÃâ€™Ã¨
 	data[0] = 0xff;
 	data[1] = 0xff;
 }
 
 //---------------------------------------------------------------------------
 //
-//	ƒ|[ƒg“Ç‚İæ‚è(Read Only)
+//	Æ’|Â[Æ’gâ€œÃ‡â€šÃÅ½Ã¦â€šÃ¨(Read Only)
 //
 //---------------------------------------------------------------------------
 DWORD FASTCALL JoyCyberD::ReadOnly(DWORD ctl) const
@@ -1647,7 +1663,7 @@ DWORD FASTCALL JoyCyberD::ReadOnly(DWORD ctl) const
 	ASSERT(data[0] < 0x100);
 	ASSERT(data[1] < 0x100);
 
-	// PC4‚É‚æ‚Á‚Ä•ª‚¯‚é
+	// PC4â€šÃ‰â€šÃ¦â€šÃâ€šÃ„â€¢Âªâ€šÂ¯â€šÃ©
 	if (ctl & 1) {
 		return data[1];
 	}
@@ -1658,7 +1674,7 @@ DWORD FASTCALL JoyCyberD::ReadOnly(DWORD ctl) const
 
 //---------------------------------------------------------------------------
 //
-//	ƒf[ƒ^ì¬
+//	Æ’fÂ[Æ’^ÂÃ¬ÂÂ¬
 //
 //---------------------------------------------------------------------------
 void FASTCALL JoyCyberD::MakeData()
@@ -1669,7 +1685,7 @@ void FASTCALL JoyCyberD::MakeData()
 	ASSERT(this);
 	ASSERT(ppi);
 
-	// ƒf[ƒ^‰Šú‰»
+	// Æ’fÂ[Æ’^Ââ€°Å Ãºâ€°Â»
 	info = ppi->GetJoyInfo(port);
 	data[0] = 0xff;
 	data[1] = 0xff;
@@ -1694,42 +1710,42 @@ void FASTCALL JoyCyberD::MakeData()
 		data[0] &= ~0x08;
 	}
 
-	// ƒ{ƒ^ƒ“A
+	// Æ’{Æ’^Æ’â€œA
 	if (info->button[0]) {
 		data[0] &= ~0x20;
 	}
 
-	// ƒ{ƒ^ƒ“B
+	// Æ’{Æ’^Æ’â€œB
 	if (info->button[1]) {
 		data[0] &= ~0x40;
 	}
 
-	// ƒXƒƒbƒgƒ‹Up
+	// Æ’XÆ’ÂÆ’bÆ’gÆ’â€¹Up
 	axis = info->axis[2];
 	if ((axis >= 0xfffff800) && (axis < 0xfffffc00)) {
 		data[1] &= ~0x01;
 	}
-	// ƒXƒƒbƒgƒ‹Down
+	// Æ’XÆ’ÂÆ’bÆ’gÆ’â€¹Down
 	if ((axis >= 0x00000400) && (axis < 0x00000800)) {
 		data[1] &= ~0x02;
 	}
 
-	// ƒ{ƒ^ƒ“C
+	// Æ’{Æ’^Æ’â€œC
 	if (info->button[2]) {
 		data[1] &= ~0x04;
 	}
 
-	// ƒ{ƒ^ƒ“D
+	// Æ’{Æ’^Æ’â€œD
 	if (info->button[3]) {
 		data[1] &= ~0x08;
 	}
 
-	// ƒ{ƒ^ƒ“E1
+	// Æ’{Æ’^Æ’â€œE1
 	if (info->button[4]) {
 		data[1] &= ~0x20;
 	}
 
-	// ƒ{ƒ^ƒ“E2
+	// Æ’{Æ’^Æ’â€œE2
 	if (info->button[5]) {
 		data[1] &= ~0x40;
 	}
@@ -1737,7 +1753,7 @@ void FASTCALL JoyCyberD::MakeData()
 
 //---------------------------------------------------------------------------
 //
-//	²•\¦ƒe[ƒuƒ‹
+//	Å½Â²â€¢\Å½Â¦Æ’eÂ[Æ’uÆ’â€¹
 //
 //---------------------------------------------------------------------------
 const char* JoyCyberD::AxisDescTable[] = {
@@ -1748,7 +1764,7 @@ const char* JoyCyberD::AxisDescTable[] = {
 
 //---------------------------------------------------------------------------
 //
-//	ƒ{ƒ^ƒ“•\¦ƒe[ƒuƒ‹
+//	Æ’{Æ’^Æ’â€œâ€¢\Å½Â¦Æ’eÂ[Æ’uÆ’â€¹
 //
 //---------------------------------------------------------------------------
 const char* JoyCyberD::ButtonDescTable[] = {
@@ -1762,41 +1778,41 @@ const char* JoyCyberD::ButtonDescTable[] = {
 
 //===========================================================================
 //
-//	ƒWƒ‡ƒCƒXƒeƒBƒbƒN(MD3ƒ{ƒ^ƒ“)
+//	Æ’WÆ’â€¡Æ’CÆ’XÆ’eÆ’BÆ’bÆ’N(MD3Æ’{Æ’^Æ’â€œ)
 //
 //===========================================================================
 
 //---------------------------------------------------------------------------
 //
-//	ƒRƒ“ƒXƒgƒ‰ƒNƒ^
+//	Æ’RÆ’â€œÆ’XÆ’gÆ’â€°Æ’NÆ’^
 //
 //---------------------------------------------------------------------------
 JoyMd3::JoyMd3(PPI *parent, int no) : JoyDevice(parent, no)
 {
-	// ƒ^ƒCƒvMD3B
+	// Æ’^Æ’CÆ’vMD3B
 	id = MAKEID('M', 'D', '3', 'B');
 	type = 5;
 
-	// 2²4ƒ{ƒ^ƒ“Aƒf[ƒ^”2
+	// 2Å½Â²4Æ’{Æ’^Æ’â€œÂAÆ’fÂ[Æ’^Ââ€2
 	axes = 2;
 	buttons = 4;
 	datas = 2;
 
-	// •\¦ƒe[ƒuƒ‹
+	// â€¢\Å½Â¦Æ’eÂ[Æ’uÆ’â€¹
 	axis_desc = AxisDescTable;
 	button_desc = ButtonDescTable;
 
-	// ƒf[ƒ^ƒoƒbƒtƒ@Šm•Û
+	// Æ’fÂ[Æ’^Æ’oÆ’bÆ’tÆ’@Å mâ€¢Ã›
 	data = new DWORD[datas];
 
-	// ‰Šúƒf[ƒ^İ’è
+	// Ââ€°Å ÃºÆ’fÂ[Æ’^ÂÃâ€™Ã¨
 	data[0] = 0xf3;
 	data[1] = 0xff;
 }
 
 //---------------------------------------------------------------------------
 //
-//	ƒ|[ƒg“Ç‚İæ‚è(Read Only)
+//	Æ’|Â[Æ’gâ€œÃ‡â€šÃÅ½Ã¦â€šÃ¨(Read Only)
 //
 //---------------------------------------------------------------------------
 DWORD FASTCALL JoyMd3::ReadOnly(DWORD ctl) const
@@ -1806,7 +1822,7 @@ DWORD FASTCALL JoyMd3::ReadOnly(DWORD ctl) const
 	ASSERT(data[0] < 0x100);
 	ASSERT(data[1] < 0x100);
 
-	// PC4‚É‚æ‚Á‚Ä•ª‚¯‚é
+	// PC4â€šÃ‰â€šÃ¦â€šÃâ€šÃ„â€¢Âªâ€šÂ¯â€šÃ©
 	if (ctl & 1) {
 		return data[1];
 	}
@@ -1817,7 +1833,7 @@ DWORD FASTCALL JoyMd3::ReadOnly(DWORD ctl) const
 
 //---------------------------------------------------------------------------
 //
-//	ƒf[ƒ^ì¬
+//	Æ’fÂ[Æ’^ÂÃ¬ÂÂ¬
 //
 //---------------------------------------------------------------------------
 void FASTCALL JoyMd3::MakeData()
@@ -1828,7 +1844,7 @@ void FASTCALL JoyMd3::MakeData()
 	ASSERT(this);
 	ASSERT(ppi);
 
-	// ƒf[ƒ^‰Šú‰»
+	// Æ’fÂ[Æ’^Ââ€°Å Ãºâ€°Â»
 	info = ppi->GetJoyInfo(port);
 	data[0] = 0xf3;
 	data[1] = 0xff;
@@ -1855,22 +1871,22 @@ void FASTCALL JoyMd3::MakeData()
 		data[1] &= ~0x08;
 	}
 
-	// ƒ{ƒ^ƒ“B
+	// Æ’{Æ’^Æ’â€œB
 	if (info->button[1]) {
 		data[1] &= ~0x20;
 	}
 
-	// ƒ{ƒ^ƒ“C
+	// Æ’{Æ’^Æ’â€œC
 	if (info->button[2]) {
 		data[1] &= ~0x40;
 	}
 
-	// ƒ{ƒ^ƒ“A
+	// Æ’{Æ’^Æ’â€œA
 	if (info->button[0]) {
 		data[0] &= ~0x20;
 	}
 
-	// ƒXƒ^[ƒgƒ{ƒ^ƒ“
+	// Æ’XÆ’^Â[Æ’gÆ’{Æ’^Æ’â€œ
 	if (info->button[3]) {
 		data[0] &= ~0x40;
 	}
@@ -1878,7 +1894,7 @@ void FASTCALL JoyMd3::MakeData()
 
 //---------------------------------------------------------------------------
 //
-//	²•\¦ƒe[ƒuƒ‹
+//	Å½Â²â€¢\Å½Â¦Æ’eÂ[Æ’uÆ’â€¹
 //
 //---------------------------------------------------------------------------
 const char* JoyMd3::AxisDescTable[] = {
@@ -1888,7 +1904,7 @@ const char* JoyMd3::AxisDescTable[] = {
 
 //---------------------------------------------------------------------------
 //
-//	ƒ{ƒ^ƒ“•\¦ƒe[ƒuƒ‹
+//	Æ’{Æ’^Æ’â€œâ€¢\Å½Â¦Æ’eÂ[Æ’uÆ’â€¹
 //
 //---------------------------------------------------------------------------
 const char* JoyMd3::ButtonDescTable[] = {
@@ -1900,51 +1916,51 @@ const char* JoyMd3::ButtonDescTable[] = {
 
 //===========================================================================
 //
-//	ƒWƒ‡ƒCƒXƒeƒBƒbƒN(MD6ƒ{ƒ^ƒ“)
+//	Æ’WÆ’â€¡Æ’CÆ’XÆ’eÆ’BÆ’bÆ’N(MD6Æ’{Æ’^Æ’â€œ)
 //
 //===========================================================================
 
 //---------------------------------------------------------------------------
 //
-//	ƒRƒ“ƒXƒgƒ‰ƒNƒ^
+//	Æ’RÆ’â€œÆ’XÆ’gÆ’â€°Æ’NÆ’^
 //
 //---------------------------------------------------------------------------
 JoyMd6::JoyMd6(PPI *parent, int no) : JoyDevice(parent, no)
 {
-	// ƒ^ƒCƒvMD6B
+	// Æ’^Æ’CÆ’vMD6B
 	id = MAKEID('M', 'D', '6', 'B');
 	type = 6;
 
-	// 2²8ƒ{ƒ^ƒ“Aƒf[ƒ^”3
+	// 2Å½Â²8Æ’{Æ’^Æ’â€œÂAÆ’fÂ[Æ’^Ââ€3
 	axes = 2;
 	buttons = 8;
 	datas = 5;
 
-	// •\¦ƒe[ƒuƒ‹
+	// â€¢\Å½Â¦Æ’eÂ[Æ’uÆ’â€¹
 	axis_desc = AxisDescTable;
 	button_desc = ButtonDescTable;
 
-	// ƒf[ƒ^ƒoƒbƒtƒ@Šm•Û
+	// Æ’fÂ[Æ’^Æ’oÆ’bÆ’tÆ’@Å mâ€¢Ã›
 	data = new DWORD[datas];
 
-	// ‰Šúƒf[ƒ^İ’è
+	// Ââ€°Å ÃºÆ’fÂ[Æ’^ÂÃâ€™Ã¨
 	data[0] = 0xf3;
 	data[1] = 0xff;
 	data[2] = 0xf0;
 	data[3] = 0xff;
 	data[4] = 0xff;
 
-	// ƒXƒPƒWƒ…[ƒ‰æ“¾
+	// Æ’XÆ’PÆ’WÆ’â€¦Â[Æ’â€°Å½Ã¦â€œÂ¾
 	scheduler = (Scheduler*)ppi->GetVM()->SearchDevice(MAKEID('S', 'C', 'H', 'E'));
 	ASSERT(scheduler);
 
-	// ©“®ƒŠƒZƒbƒg(ƒRƒ“ƒgƒ[ƒ‰‚ğ·‚µ‘Ö‚¦‚½ê‡‚É”õ‚¦‚é)
+	// Å½Â©â€œÂ®Æ’Å Æ’ZÆ’bÆ’g(Æ’RÆ’â€œÆ’gÆ’ÂÂ[Æ’â€°â€šÃ°ÂÂ·â€šÂµâ€˜Ã–â€šÂ¦â€šÂ½ÂÃªÂâ€¡â€šÃ‰â€Ãµâ€šÂ¦â€šÃ©)
 	Reset();
 }
 
 //---------------------------------------------------------------------------
 //
-//	ƒŠƒZƒbƒg
+//	Æ’Å Æ’ZÆ’bÆ’g
 //
 //---------------------------------------------------------------------------
 void FASTCALL JoyMd6::Reset()
@@ -1952,10 +1968,10 @@ void FASTCALL JoyMd6::Reset()
 	ASSERT(this);
 	ASSERT(scheduler);
 
-	// Šî–{ƒNƒ‰ƒX
+	// Å Ã®â€“{Æ’NÆ’â€°Æ’X
 	JoyDevice::Reset();
 
-	// ƒV[ƒPƒ“ƒXAƒRƒ“ƒgƒ[ƒ‹AŠÔ‚ğ‰Šú‰»
+	// Æ’VÂ[Æ’PÆ’â€œÆ’XÂAÆ’RÆ’â€œÆ’gÆ’ÂÂ[Æ’â€¹ÂAÅ½Å¾Å Ã”â€šÃ°Ââ€°Å Ãºâ€°Â»
 	seq = 0;
 	ctrl = 0;
 	hus = scheduler->GetTotalTime();
@@ -1963,7 +1979,7 @@ void FASTCALL JoyMd6::Reset()
 
 //---------------------------------------------------------------------------
 //
-//	ƒZ[ƒu
+//	Æ’ZÂ[Æ’u
 //
 //---------------------------------------------------------------------------
 BOOL FASTCALL JoyMd6::Save(Fileio *fio, int ver)
@@ -1971,22 +1987,22 @@ BOOL FASTCALL JoyMd6::Save(Fileio *fio, int ver)
 	ASSERT(this);
 	ASSERT(fio);
 
-	// Šî–{ƒNƒ‰ƒX
+	// Å Ã®â€“{Æ’NÆ’â€°Æ’X
 	if (!JoyDevice::Save(fio, ver)) {
 		return FALSE;
 	}
 
-	// ƒV[ƒPƒ“ƒX‚ğƒZ[ƒu
+	// Æ’VÂ[Æ’PÆ’â€œÆ’Xâ€šÃ°Æ’ZÂ[Æ’u
 	if (!fio->Write(&seq, sizeof(seq))) {
 		return FALSE;
 	}
 
-	// ƒRƒ“ƒgƒ[ƒ‹‚ğƒZ[ƒu
+	// Æ’RÆ’â€œÆ’gÆ’ÂÂ[Æ’â€¹â€šÃ°Æ’ZÂ[Æ’u
 	if (!fio->Write(&ctrl, sizeof(ctrl))) {
 		return FALSE;
 	}
 
-	// ŠÔ‚ğƒZ[ƒu
+	// Å½Å¾Å Ã”â€šÃ°Æ’ZÂ[Æ’u
 	if (!fio->Write(&hus, sizeof(hus))) {
 		return FALSE;
 	}
@@ -1996,7 +2012,7 @@ BOOL FASTCALL JoyMd6::Save(Fileio *fio, int ver)
 
 //---------------------------------------------------------------------------
 //
-//	ƒ[ƒh
+//	Æ’ÂÂ[Æ’h
 //
 //---------------------------------------------------------------------------
 BOOL FASTCALL JoyMd6::Load(Fileio *fio, int ver)
@@ -2004,22 +2020,22 @@ BOOL FASTCALL JoyMd6::Load(Fileio *fio, int ver)
 	ASSERT(this);
 	ASSERT(fio);
 
-	// Šî–{ƒNƒ‰ƒX
+	// Å Ã®â€“{Æ’NÆ’â€°Æ’X
 	if (!JoyDevice::Load(fio, ver)) {
 		return FALSE;
 	}
 
-	// ƒV[ƒPƒ“ƒX‚ğƒ[ƒh
+	// Æ’VÂ[Æ’PÆ’â€œÆ’Xâ€šÃ°Æ’ÂÂ[Æ’h
 	if (!fio->Read(&seq, sizeof(seq))) {
 		return FALSE;
 	}
 
-	// ƒRƒ“ƒgƒ[ƒ‹‚ğƒ[ƒh
+	// Æ’RÆ’â€œÆ’gÆ’ÂÂ[Æ’â€¹â€šÃ°Æ’ÂÂ[Æ’h
 	if (!fio->Read(&ctrl, sizeof(ctrl))) {
 		return FALSE;
 	}
 
-	// ŠÔ‚ğƒ[ƒh
+	// Å½Å¾Å Ã”â€šÃ°Æ’ÂÂ[Æ’h
 	if (!fio->Read(&hus, sizeof(hus))) {
 		return FALSE;
 	}
@@ -2029,7 +2045,7 @@ BOOL FASTCALL JoyMd6::Load(Fileio *fio, int ver)
 
 //---------------------------------------------------------------------------
 //
-//	ƒ|[ƒg“Ç‚İæ‚è(Read Only)
+//	Æ’|Â[Æ’gâ€œÃ‡â€šÃÅ½Ã¦â€šÃ¨(Read Only)
 //
 //---------------------------------------------------------------------------
 DWORD FASTCALL JoyMd6::ReadOnly(DWORD /*ctl*/) const
@@ -2041,45 +2057,45 @@ DWORD FASTCALL JoyMd6::ReadOnly(DWORD /*ctl*/) const
 	ASSERT(data[3] < 0x100);
 	ASSERT(data[4] < 0x100);
 
-	// ƒV[ƒPƒ“ƒX•Ê
+	// Æ’VÂ[Æ’PÆ’â€œÆ’Xâ€¢ÃŠ
 	switch (seq) {
-		// ‰Šúó‘Ô CTL=0
+		// Ââ€°Å ÃºÂÃ³â€˜Ã” CTL=0
 		case 0:
 			return data[0];
 
-		// 1‰ñ–Ú CTL=1
+		// 1â€°Ã±â€“Ãš CTL=1
 		case 1:
 			return data[1];
 
-		// 1‰ñ–Ú CTL=0
+		// 1â€°Ã±â€“Ãš CTL=0
 		case 2:
 			return data[0];
 
-		// 2‰ñ–Ú CTL=1
+		// 2â€°Ã±â€“Ãš CTL=1
 		case 3:
 			return data[1];
 
-		// 6BŠm’èŒã CTL=0
+		// 6BÅ mâ€™Ã¨Å’Ã£ CTL=0
 		case 4:
 			return data[2];
 
-		// 6BŠm’èŒã CTL=1
+		// 6BÅ mâ€™Ã¨Å’Ã£ CTL=1
 		case 5:
 			return data[3];
 
-		// 6BŠm’èŒã CTL=0
+		// 6BÅ mâ€™Ã¨Å’Ã£ CTL=0
 		case 6:
 			return data[4];
 
-		// 6BŠm’èŒã CTL=1
+		// 6BÅ mâ€™Ã¨Å’Ã£ CTL=1
 		case 7:
 			return data[1];
 
-		// 6BŠm’èŒã CTL=0
+		// 6BÅ mâ€™Ã¨Å’Ã£ CTL=0
 		case 8:
 			return data[0];
 
-		// ‚»‚Ì‘¼(‚ ‚è“¾‚È‚¢)
+		// â€šÂ»â€šÃŒâ€˜Â¼(â€šÂ â€šÃ¨â€œÂ¾â€šÃˆâ€šÂ¢)
 		default:
 			ASSERT(FALSE);
 			break;
@@ -2090,7 +2106,7 @@ DWORD FASTCALL JoyMd6::ReadOnly(DWORD /*ctl*/) const
 
 //---------------------------------------------------------------------------
 //
-//	ƒRƒ“ƒgƒ[ƒ‹
+//	Æ’RÆ’â€œÆ’gÆ’ÂÂ[Æ’â€¹
 //
 //---------------------------------------------------------------------------
 void FASTCALL JoyMd6::Control(DWORD ctl)
@@ -2100,19 +2116,19 @@ void FASTCALL JoyMd6::Control(DWORD ctl)
 	ASSERT(this);
 	ASSERT(ctl < 0x100);
 
-	// bit0‚Ì‚İ•K—v
+	// bit0â€šÃŒâ€šÃâ€¢Kâ€”v
 	ctl &= 0x01;
 
-	// •K‚¸XV
+	// â€¢Kâ€šÂ¸ÂXÂV
 	ctrl = ctl;
 
-	// seq >= 3‚È‚çA‘O‰ñ‚Ì‹N“®‚©‚ç1.8ms(3600hus)Œo‰ß‚µ‚½‚©ƒ`ƒFƒbƒN
-	// Œo‰ß‚µ‚Ä‚¢‚ê‚ÎAseq=0 or seq=1‚ÉƒŠƒZƒbƒg(—’éí‹LV4)
+	// seq >= 3â€šÃˆâ€šÃ§ÂAâ€˜Oâ€°Ã±â€šÃŒâ€¹Nâ€œÂ®â€šÂ©â€šÃ§1.8ms(3600hus)Å’oâ€°ÃŸâ€šÂµâ€šÂ½â€šÂ©Æ’`Æ’FÆ’bÆ’N
+	// Å’oâ€°ÃŸâ€šÂµâ€šÃ„â€šÂ¢â€šÃªâ€šÃÂAseq=0 or seq=1â€šÃ‰Æ’Å Æ’ZÆ’bÆ’g(Ââ€”â€™Ã©ÂÃ­â€¹LV4)
 	if (seq >= 3) {
 		diff = scheduler->GetTotalTime();
 		diff -= hus;
 		if (diff >= 3600) {
-			// ƒŠƒZƒbƒg
+			// Æ’Å Æ’ZÆ’bÆ’g
 			if (ctl) {
 				seq = 1;
 				hus = scheduler->GetTotalTime();
@@ -2125,84 +2141,84 @@ void FASTCALL JoyMd6::Control(DWORD ctl)
 	}
 
 	switch (seq) {
-		// ƒV[ƒPƒ“ƒXŠO CTL=0
+		// Æ’VÂ[Æ’PÆ’â€œÆ’XÅ O CTL=0
 		case 0:
-			// 1‚È‚çAƒV[ƒPƒ“ƒX1‚ÆŠÔ‹L‰¯
+			// 1â€šÃˆâ€šÃ§ÂAÆ’VÂ[Æ’PÆ’â€œÆ’X1â€šÃ†Å½Å¾Å Ã”â€¹Lâ€°Â¯
 			if (ctl) {
 				seq = 1;
 				hus = scheduler->GetTotalTime();
 			}
 			break;
 
-		// Å‰‚Ì1‚ÌŒã CTL=1
+		// ÂÃ…Ââ€°â€šÃŒ1â€šÃŒÅ’Ã£ CTL=1
 		case 1:
-			// 0‚È‚çAƒV[ƒPƒ“ƒX2
+			// 0â€šÃˆâ€šÃ§ÂAÆ’VÂ[Æ’PÆ’â€œÆ’X2
 			if (!ctl) {
 				seq = 2;
 			}
 			break;
 
-		// 1¨0‚ÌŒã CTL=0
+		// 1ÂÂ¨0â€šÃŒÅ’Ã£ CTL=0
 		case 2:
-			// 1‚È‚çAŠÔƒ`ƒFƒbƒN
+			// 1â€šÃˆâ€šÃ§ÂAÅ½Å¾Å Ã”Æ’`Æ’FÆ’bÆ’N
 			if (ctl) {
 				diff = scheduler->GetTotalTime();
 				diff -= hus;
 				if (diff <= 2200) {
-					// 1.1ms(2200hus)ˆÈ‰º‚È‚çŸ‚ÌƒV[ƒPƒ“ƒX‚Ö(6B“Ç‚İæ‚è)
+					// 1.1ms(2200hus)Ë†Ãˆâ€°Âºâ€šÃˆâ€šÃ§Å½Å¸â€šÃŒÆ’VÂ[Æ’PÆ’â€œÆ’Xâ€šÃ–(6Bâ€œÃ‡â€šÃÅ½Ã¦â€šÃ¨)
 					seq = 3;
 				}
 				else {
-					// \•ªŠÔ‚ª‹ó‚¢‚Ä‚¢‚é‚Ì‚ÅAƒV[ƒPƒ“ƒX1‚Æ“¯‚¶‚Æ‚İ‚È‚·(3B“Ç‚İæ‚è)
+					// Â\â€¢ÂªÅ½Å¾Å Ã”â€šÂªâ€¹Ã³â€šÂ¢â€šÃ„â€šÂ¢â€šÃ©â€šÃŒâ€šÃ…ÂAÆ’VÂ[Æ’PÆ’â€œÆ’X1â€šÃ†â€œÂ¯â€šÂ¶â€šÃ†â€šÃâ€šÃˆâ€šÂ·(3Bâ€œÃ‡â€šÃÅ½Ã¦â€šÃ¨)
 					seq = 1;
 					hus = scheduler->GetTotalTime();
 				}
 			}
 			break;
 
-		// 6BŠm’èŒã CTL=1
+		// 6BÅ mâ€™Ã¨Å’Ã£ CTL=1
 		case 3:
 			if (!ctl) {
 				seq = 4;
 			}
 			break;
 
-		// 6BŠm’èŒã CTL=0
+		// 6BÅ mâ€™Ã¨Å’Ã£ CTL=0
 		case 4:
 			if (ctl) {
 				seq = 5;
 			}
 			break;
 
-		// 6BŠm’èŒã CTL=1
+		// 6BÅ mâ€™Ã¨Å’Ã£ CTL=1
 		case 5:
 			if (!ctl) {
 				seq = 6;
 			}
 			break;
 
-		// 6BŠm’èŒã CTL=0
+		// 6BÅ mâ€™Ã¨Å’Ã£ CTL=0
 		case 6:
 			if (ctl) {
 				seq = 7;
 			}
 			break;
 
-		// 1.8ms‚Ì‘Ò‚¿
+		// 1.8msâ€šÃŒâ€˜Ã’â€šÂ¿
 		case 7:
 			if (!ctl) {
 				seq = 8;
 			}
 			break;
 
-		// 1.8ms‚Ì‘Ò‚¿
+		// 1.8msâ€šÃŒâ€˜Ã’â€šÂ¿
 		case 8:
 			if (ctl) {
 				seq = 7;
 			}
 			break;
 
-		// ‚»‚Ì‘¼(‚ ‚è“¾‚È‚¢)
+		// â€šÂ»â€šÃŒâ€˜Â¼(â€šÂ â€šÃ¨â€œÂ¾â€šÃˆâ€šÂ¢)
 		default:
 			ASSERT(FALSE);
 			break;
@@ -2211,7 +2227,7 @@ void FASTCALL JoyMd6::Control(DWORD ctl)
 
 //---------------------------------------------------------------------------
 //
-//	ƒf[ƒ^ì¬
+//	Æ’fÂ[Æ’^ÂÃ¬ÂÂ¬
 //
 //---------------------------------------------------------------------------
 void FASTCALL JoyMd6::MakeData()
@@ -2222,7 +2238,7 @@ void FASTCALL JoyMd6::MakeData()
 	ASSERT(this);
 	ASSERT(ppi);
 
-	// ƒf[ƒ^‰Šú‰»
+	// Æ’fÂ[Æ’^Ââ€°Å Ãºâ€°Â»
 	info = ppi->GetJoyInfo(port);
 	data[0] = 0xf3;
 	data[1] = 0xff;
@@ -2256,67 +2272,67 @@ void FASTCALL JoyMd6::MakeData()
 		data[4] &= ~0x08;
 	}
 
-	// ƒ{ƒ^ƒ“B(data[1], data[3], data[4])
+	// Æ’{Æ’^Æ’â€œB(data[1], data[3], data[4])
 	if (info->button[1]) {
-		// 3BŒİŠ·
+		// 3BÅ’ÃÅ Â·
 		data[1] &= ~0x20;
 
-		// (—’éí‹LV4)
+		// (Ââ€”â€™Ã©ÂÃ­â€¹LV4)
 		data[3] &= ~0x20;
 
 		// (SFII'patch)
 		data[4] &= ~0x40;
 	}
 
-	// ƒ{ƒ^ƒ“C(data[1], data[3])
+	// Æ’{Æ’^Æ’â€œC(data[1], data[3])
 	if (info->button[2]) {
-		// 3BŒİŠ·
+		// 3BÅ’ÃÅ Â·
 		data[1] &= ~0x40;
 
 		// (SFII'patch)
 		data[3] &= ~0x20;
 
-		// (—’éí‹LV4)
+		// (Ââ€”â€™Ã©ÂÃ­â€¹LV4)
 		data[3] &= ~0x40;
 	}
 
-	// ƒ{ƒ^ƒ“A(data[0], data[2], data[4])
+	// Æ’{Æ’^Æ’â€œA(data[0], data[2], data[4])
 	if (info->button[0]) {
-		// 3BŒİŠ·
+		// 3BÅ’ÃÅ Â·
 		data[0] &= ~0x20;
 
-		// 6Bƒ}[ƒJ
+		// 6BÆ’}Â[Æ’J
 		data[2] &= ~0x20;
 
 		// (SFII'patch)
 		data[4] &= ~0x20;
 	}
 
-	// ƒXƒ^[ƒgƒ{ƒ^ƒ“(data[0], data[2])
+	// Æ’XÆ’^Â[Æ’gÆ’{Æ’^Æ’â€œ(data[0], data[2])
 	if (info->button[6]) {
-		// 3BŒİŠ·
+		// 3BÅ’ÃÅ Â·
 		data[0] &= ~0x40;
 
-		// 6Bƒ}[ƒJ
+		// 6BÆ’}Â[Æ’J
 		data[2] &= ~0x40;
 	}
 
-	// ƒ{ƒ^ƒ“X(data[3])
+	// Æ’{Æ’^Æ’â€œX(data[3])
 	if (info->button[3]) {
 		data[3] &= ~0x04;
 	}
 
-	// ƒ{ƒ^ƒ“Y(data[3])
+	// Æ’{Æ’^Æ’â€œY(data[3])
 	if (info->button[4]) {
 		data[3] &= ~0x02;
 	}
 
-	// ƒ{ƒ^ƒ“Z(data[3])
+	// Æ’{Æ’^Æ’â€œZ(data[3])
 	if (info->button[5]) {
 		data[3] &= ~0x01;
 	}
 
-	// MODEƒ{ƒ^ƒ“(data[3])
+	// MODEÆ’{Æ’^Æ’â€œ(data[3])
 	if (info->button[7]) {
 		data[3] &= ~0x08;
 	}
@@ -2324,7 +2340,7 @@ void FASTCALL JoyMd6::MakeData()
 
 //---------------------------------------------------------------------------
 //
-//	²•\¦ƒe[ƒuƒ‹
+//	Å½Â²â€¢\Å½Â¦Æ’eÂ[Æ’uÆ’â€¹
 //
 //---------------------------------------------------------------------------
 const char* JoyMd6::AxisDescTable[] = {
@@ -2334,7 +2350,7 @@ const char* JoyMd6::AxisDescTable[] = {
 
 //---------------------------------------------------------------------------
 //
-//	ƒ{ƒ^ƒ“•\¦ƒe[ƒuƒ‹
+//	Æ’{Æ’^Æ’â€œâ€¢\Å½Â¦Æ’eÂ[Æ’uÆ’â€¹
 //
 //---------------------------------------------------------------------------
 const char* JoyMd6::ButtonDescTable[] = {
@@ -2350,41 +2366,41 @@ const char* JoyMd6::ButtonDescTable[] = {
 
 //===========================================================================
 //
-//	ƒWƒ‡ƒCƒXƒeƒBƒbƒN(CPSF-SFC)
+//	Æ’WÆ’â€¡Æ’CÆ’XÆ’eÆ’BÆ’bÆ’N(CPSF-SFC)
 //
 //===========================================================================
 
 //---------------------------------------------------------------------------
 //
-//	ƒRƒ“ƒXƒgƒ‰ƒNƒ^
+//	Æ’RÆ’â€œÆ’XÆ’gÆ’â€°Æ’NÆ’^
 //
 //---------------------------------------------------------------------------
 JoyCpsf::JoyCpsf(PPI *parent, int no) : JoyDevice(parent, no)
 {
-	// ƒ^ƒCƒvCPSF
+	// Æ’^Æ’CÆ’vCPSF
 	id = MAKEID('C', 'P', 'S', 'F');
 	type = 7;
 
-	// 2²8ƒ{ƒ^ƒ“Aƒf[ƒ^”2
+	// 2Å½Â²8Æ’{Æ’^Æ’â€œÂAÆ’fÂ[Æ’^Ââ€2
 	axes = 2;
 	buttons = 8;
 	datas = 2;
 
-	// •\¦ƒe[ƒuƒ‹
+	// â€¢\Å½Â¦Æ’eÂ[Æ’uÆ’â€¹
 	axis_desc = AxisDescTable;
 	button_desc = ButtonDescTable;
 
-	// ƒf[ƒ^ƒoƒbƒtƒ@Šm•Û
+	// Æ’fÂ[Æ’^Æ’oÆ’bÆ’tÆ’@Å mâ€¢Ã›
 	data = new DWORD[datas];
 
-	// ‰Šúƒf[ƒ^İ’è
+	// Ââ€°Å ÃºÆ’fÂ[Æ’^ÂÃâ€™Ã¨
 	data[0] = 0xff;
 	data[1] = 0xff;
 }
 
 //---------------------------------------------------------------------------
 //
-//	ƒ|[ƒg“Ç‚İæ‚è(Read Only)
+//	Æ’|Â[Æ’gâ€œÃ‡â€šÃÅ½Ã¦â€šÃ¨(Read Only)
 //
 //---------------------------------------------------------------------------
 DWORD FASTCALL JoyCpsf::ReadOnly(DWORD ctl) const
@@ -2394,7 +2410,7 @@ DWORD FASTCALL JoyCpsf::ReadOnly(DWORD ctl) const
 	ASSERT(data[0] < 0x100);
 	ASSERT(data[1] < 0x100);
 
-	// PC4‚É‚æ‚Á‚Ä•ª‚¯‚é
+	// PC4â€šÃ‰â€šÃ¦â€šÃâ€šÃ„â€¢Âªâ€šÂ¯â€šÃ©
 	if (ctl & 1) {
 		return data[1];
 	}
@@ -2405,7 +2421,7 @@ DWORD FASTCALL JoyCpsf::ReadOnly(DWORD ctl) const
 
 //---------------------------------------------------------------------------
 //
-//	ƒf[ƒ^ì¬
+//	Æ’fÂ[Æ’^ÂÃ¬ÂÂ¬
 //
 //---------------------------------------------------------------------------
 void FASTCALL JoyCpsf::MakeData()
@@ -2416,7 +2432,7 @@ void FASTCALL JoyCpsf::MakeData()
 	ASSERT(this);
 	ASSERT(ppi);
 
-	// ƒf[ƒ^‰Šú‰»
+	// Æ’fÂ[Æ’^Ââ€°Å Ãºâ€°Â»
 	info = ppi->GetJoyInfo(port);
 	data[0] = 0xff;
 	data[1] = 0xff;
@@ -2442,32 +2458,32 @@ void FASTCALL JoyCpsf::MakeData()
 	}
 
 
-	// ƒ{ƒ^ƒ“Y
+	// Æ’{Æ’^Æ’â€œY
 	if (info->button[0]) {
 		data[1] &= ~0x02;
 	}
 
-	// ƒ{ƒ^ƒ“X
+	// Æ’{Æ’^Æ’â€œX
 	if (info->button[1]) {
 		data[1] &= ~0x04;
 	}
 
-	// ƒ{ƒ^ƒ“B
+	// Æ’{Æ’^Æ’â€œB
 	if (info->button[2]) {
 		data[0] &= ~0x40;
 	}
 
-	// ƒ{ƒ^ƒ“A
+	// Æ’{Æ’^Æ’â€œA
 	if (info->button[3]) {
 		data[0] &= ~0x20;
 	}
 
-	// ƒ{ƒ^ƒ“L
+	// Æ’{Æ’^Æ’â€œL
 	if (info->button[4]) {
 		data[1] &= ~0x20;
 	}
 
-	// ƒ{ƒ^ƒ“R
+	// Æ’{Æ’^Æ’â€œR
 	if (info->button[5]) {
 		data[1] &= ~0x01;
 	}
@@ -2475,32 +2491,32 @@ void FASTCALL JoyCpsf::MakeData()
 
 /* CPSFMD
 
-// ƒ{ƒ^ƒ“A
+// Æ’{Æ’^Æ’â€œA
 	if (info->button[0]) {
 		data[0] &= ~0x20;
 	}
 
-	// ƒ{ƒ^ƒ“B
+	// Æ’{Æ’^Æ’â€œB
 	if (info->button[1]) {
 		data[0] &= ~0x40;
 	}
 
-	// ƒ{ƒ^ƒ“C
+	// Æ’{Æ’^Æ’â€œC
 	if (info->button[2]) {
 		data[1] &= ~0x20;
 	}
 
-	// ƒ{ƒ^ƒ“X
+	// Æ’{Æ’^Æ’â€œX
 	if (info->button[3]) {
 		data[1] &= ~0x04;
 	}
 
-	// ƒ{ƒ^ƒ“Y
+	// Æ’{Æ’^Æ’â€œY
 	if (info->button[4]) {
 		data[1] &= ~0x02;
 	}
 
-	// ƒ{ƒ^ƒ“Z
+	// Æ’{Æ’^Æ’â€œZ
 	if (info->button[5]) {
 		data[1] &= ~0x01;
 	}
@@ -2508,12 +2524,12 @@ void FASTCALL JoyCpsf::MakeData()
 
 
 
-	// ƒXƒ^[ƒgƒ{ƒ^ƒ“
+	// Æ’XÆ’^Â[Æ’gÆ’{Æ’^Æ’â€œ
 	if (info->button[6]) {
 		data[1] &= ~0x40;
 	}
 
-	// ƒZƒŒƒNƒgƒ{ƒ^ƒ“
+	// Æ’ZÆ’Å’Æ’NÆ’gÆ’{Æ’^Æ’â€œ
 	if (info->button[7]) {
 		data[1] &= ~0x08;
 	}
@@ -2521,7 +2537,7 @@ void FASTCALL JoyCpsf::MakeData()
 
 //---------------------------------------------------------------------------
 //
-//	²•\¦ƒe[ƒuƒ‹
+//	Å½Â²â€¢\Å½Â¦Æ’eÂ[Æ’uÆ’â€¹
 //
 //---------------------------------------------------------------------------
 const char* JoyCpsf::AxisDescTable[] = {
@@ -2531,7 +2547,7 @@ const char* JoyCpsf::AxisDescTable[] = {
 
 //---------------------------------------------------------------------------
 //
-//	ƒ{ƒ^ƒ“•\¦ƒe[ƒuƒ‹
+//	Æ’{Æ’^Æ’â€œâ€¢\Å½Â¦Æ’eÂ[Æ’uÆ’â€¹
 //
 //---------------------------------------------------------------------------
 const char* JoyCpsf::ButtonDescTable[] = {
@@ -2548,41 +2564,41 @@ const char* JoyCpsf::ButtonDescTable[] = {
 
 //===========================================================================
 //
-//	ƒWƒ‡ƒCƒXƒeƒBƒbƒN(CPSF-MD)
+//	Æ’WÆ’â€¡Æ’CÆ’XÆ’eÆ’BÆ’bÆ’N(CPSF-MD)
 //
 //===========================================================================
 
 //---------------------------------------------------------------------------
 //
-//	ƒRƒ“ƒXƒgƒ‰ƒNƒ^
+//	Æ’RÆ’â€œÆ’XÆ’gÆ’â€°Æ’NÆ’^
 //
 //---------------------------------------------------------------------------
 JoyCpsfMd::JoyCpsfMd(PPI *parent, int no) : JoyDevice(parent, no)
 {
-	// ƒ^ƒCƒvCPSM
+	// Æ’^Æ’CÆ’vCPSM
 	id = MAKEID('C', 'P', 'S', 'M');
 	type = 8;
 
-	// 2²8ƒ{ƒ^ƒ“Aƒf[ƒ^”2
+	// 2Å½Â²8Æ’{Æ’^Æ’â€œÂAÆ’fÂ[Æ’^Ââ€2
 	axes = 2;
 	buttons = 8;
 	datas = 2;
 
-	// •\¦ƒe[ƒuƒ‹
+	// â€¢\Å½Â¦Æ’eÂ[Æ’uÆ’â€¹
 	axis_desc = AxisDescTable;
 	button_desc = ButtonDescTable;
 
-	// ƒf[ƒ^ƒoƒbƒtƒ@Šm•Û
+	// Æ’fÂ[Æ’^Æ’oÆ’bÆ’tÆ’@Å mâ€¢Ã›
 	data = new DWORD[datas];
 
-	// ‰Šúƒf[ƒ^İ’è
+	// Ââ€°Å ÃºÆ’fÂ[Æ’^ÂÃâ€™Ã¨
 	data[0] = 0xff;
 	data[1] = 0xff;
 }
 
 //---------------------------------------------------------------------------
 //
-//	ƒ|[ƒg“Ç‚İæ‚è(Read Only)
+//	Æ’|Â[Æ’gâ€œÃ‡â€šÃÅ½Ã¦â€šÃ¨(Read Only)
 //
 //---------------------------------------------------------------------------
 DWORD FASTCALL JoyCpsfMd::ReadOnly(DWORD ctl) const
@@ -2592,7 +2608,7 @@ DWORD FASTCALL JoyCpsfMd::ReadOnly(DWORD ctl) const
 	ASSERT(data[0] < 0x100);
 	ASSERT(data[1] < 0x100);
 
-	// PC4‚É‚æ‚Á‚Ä•ª‚¯‚é
+	// PC4â€šÃ‰â€šÃ¦â€šÃâ€šÃ„â€¢Âªâ€šÂ¯â€šÃ©
 	if (ctl & 1) {
 		return data[1];
 	}
@@ -2603,7 +2619,7 @@ DWORD FASTCALL JoyCpsfMd::ReadOnly(DWORD ctl) const
 
 //---------------------------------------------------------------------------
 //
-//	ƒf[ƒ^ì¬
+//	Æ’fÂ[Æ’^ÂÃ¬ÂÂ¬
 //
 //---------------------------------------------------------------------------
 void FASTCALL JoyCpsfMd::MakeData()
@@ -2614,7 +2630,7 @@ void FASTCALL JoyCpsfMd::MakeData()
 	ASSERT(this);
 	ASSERT(ppi);
 
-	// ƒf[ƒ^‰Šú‰»
+	// Æ’fÂ[Æ’^Ââ€°Å Ãºâ€°Â»
 	info = ppi->GetJoyInfo(port);
 	data[0] = 0xff;
 	data[1] = 0xff;
@@ -2639,42 +2655,42 @@ void FASTCALL JoyCpsfMd::MakeData()
 		data[0] &= ~0x08;
 	}
 
-	// ƒ{ƒ^ƒ“A
+	// Æ’{Æ’^Æ’â€œA
 	if (info->button[0]) {
 		data[0] &= ~0x20;
 	}
 
-	// ƒ{ƒ^ƒ“B
+	// Æ’{Æ’^Æ’â€œB
 	if (info->button[1]) {
 		data[0] &= ~0x40;
 	}
 
-	// ƒ{ƒ^ƒ“C
+	// Æ’{Æ’^Æ’â€œC
 	if (info->button[2]) {
 		data[1] &= ~0x20;
 	}
 
-	// ƒ{ƒ^ƒ“X
+	// Æ’{Æ’^Æ’â€œX
 	if (info->button[3]) {
 		data[1] &= ~0x04;
 	}
 
-	// ƒ{ƒ^ƒ“Y
+	// Æ’{Æ’^Æ’â€œY
 	if (info->button[4]) {
 		data[1] &= ~0x02;
 	}
 
-	// ƒ{ƒ^ƒ“Z
+	// Æ’{Æ’^Æ’â€œZ
 	if (info->button[5]) {
 		data[1] &= ~0x01;
 	}
 
-	// ƒXƒ^[ƒgƒ{ƒ^ƒ“
+	// Æ’XÆ’^Â[Æ’gÆ’{Æ’^Æ’â€œ
 	if (info->button[6]) {
 		data[1] &= ~0x40;
 	}
 
-	// MODEƒ{ƒ^ƒ“
+	// MODEÆ’{Æ’^Æ’â€œ
 	if (info->button[7]) {
 		data[1] &= ~0x08;
 	}
@@ -2682,7 +2698,7 @@ void FASTCALL JoyCpsfMd::MakeData()
 
 //---------------------------------------------------------------------------
 //
-//	²•\¦ƒe[ƒuƒ‹
+//	Å½Â²â€¢\Å½Â¦Æ’eÂ[Æ’uÆ’â€¹
 //
 //---------------------------------------------------------------------------
 const char* JoyCpsfMd::AxisDescTable[] = {
@@ -2692,7 +2708,7 @@ const char* JoyCpsfMd::AxisDescTable[] = {
 
 //---------------------------------------------------------------------------
 //
-//	ƒ{ƒ^ƒ“•\¦ƒe[ƒuƒ‹
+//	Æ’{Æ’^Æ’â€œâ€¢\Å½Â¦Æ’eÂ[Æ’uÆ’â€¹
 //
 //---------------------------------------------------------------------------
 const char* JoyCpsfMd::ButtonDescTable[] = {
@@ -2708,41 +2724,41 @@ const char* JoyCpsfMd::ButtonDescTable[] = {
 
 //===========================================================================
 //
-//	ƒWƒ‡ƒCƒXƒeƒBƒbƒN(ƒ}ƒWƒJƒ‹ƒpƒbƒh)
+//	Æ’WÆ’â€¡Æ’CÆ’XÆ’eÆ’BÆ’bÆ’N(Æ’}Æ’WÆ’JÆ’â€¹Æ’pÆ’bÆ’h)
 //
 //===========================================================================
 
 //---------------------------------------------------------------------------
 //
-//	ƒRƒ“ƒXƒgƒ‰ƒNƒ^
+//	Æ’RÆ’â€œÆ’XÆ’gÆ’â€°Æ’NÆ’^
 //
 //---------------------------------------------------------------------------
 JoyMagical::JoyMagical(PPI *parent, int no) : JoyDevice(parent, no)
 {
-	// ƒ^ƒCƒvMAGI
+	// Æ’^Æ’CÆ’vMAGI
 	id = MAKEID('M', 'A', 'G', 'I');
 	type = 9;
 
-	// 2²6ƒ{ƒ^ƒ“Aƒf[ƒ^”2
+	// 2Å½Â²6Æ’{Æ’^Æ’â€œÂAÆ’fÂ[Æ’^Ââ€2
 	axes = 2;
 	buttons = 6;
 	datas = 2;
 
-	// •\¦ƒe[ƒuƒ‹
+	// â€¢\Å½Â¦Æ’eÂ[Æ’uÆ’â€¹
 	axis_desc = AxisDescTable;
 	button_desc = ButtonDescTable;
 
-	// ƒf[ƒ^ƒoƒbƒtƒ@Šm•Û
+	// Æ’fÂ[Æ’^Æ’oÆ’bÆ’tÆ’@Å mâ€¢Ã›
 	data = new DWORD[datas];
 
-	// ‰Šúƒf[ƒ^İ’è
+	// Ââ€°Å ÃºÆ’fÂ[Æ’^ÂÃâ€™Ã¨
 	data[0] = 0xff;
 	data[1] = 0xfc;
 }
 
 //---------------------------------------------------------------------------
 //
-//	ƒ|[ƒg“Ç‚İæ‚è(Read Only)
+//	Æ’|Â[Æ’gâ€œÃ‡â€šÃÅ½Ã¦â€šÃ¨(Read Only)
 //
 //---------------------------------------------------------------------------
 DWORD FASTCALL JoyMagical::ReadOnly(DWORD ctl) const
@@ -2752,7 +2768,7 @@ DWORD FASTCALL JoyMagical::ReadOnly(DWORD ctl) const
 	ASSERT(data[0] < 0x100);
 	ASSERT(data[1] < 0x100);
 
-	// PC4‚É‚æ‚Á‚Ä•ª‚¯‚é
+	// PC4â€šÃ‰â€šÃ¦â€šÃâ€šÃ„â€¢Âªâ€šÂ¯â€šÃ©
 	if (ctl & 1) {
 		return data[1];
 	}
@@ -2763,7 +2779,7 @@ DWORD FASTCALL JoyMagical::ReadOnly(DWORD ctl) const
 
 //---------------------------------------------------------------------------
 //
-//	ƒf[ƒ^ì¬
+//	Æ’fÂ[Æ’^ÂÃ¬ÂÂ¬
 //
 //---------------------------------------------------------------------------
 void FASTCALL JoyMagical::MakeData()
@@ -2774,7 +2790,7 @@ void FASTCALL JoyMagical::MakeData()
 	ASSERT(this);
 	ASSERT(ppi);
 
-	// ƒf[ƒ^‰Šú‰»
+	// Æ’fÂ[Æ’^Ââ€°Å Ãºâ€°Â»
 	info = ppi->GetJoyInfo(port);
 	data[0] = 0xff;
 	data[1] = 0xfc;
@@ -2799,32 +2815,32 @@ void FASTCALL JoyMagical::MakeData()
 		data[0] &= ~0x08;
 	}
 
-	// ƒ{ƒ^ƒ“A
+	// Æ’{Æ’^Æ’â€œA
 	if (info->button[0]) {
 		data[0] &= ~0x40;
 	}
 
-	// ƒ{ƒ^ƒ“B
+	// Æ’{Æ’^Æ’â€œB
 	if (info->button[1]) {
 		data[1] &= ~0x40;
 	}
 
-	// ƒ{ƒ^ƒ“C
+	// Æ’{Æ’^Æ’â€œC
 	if (info->button[2]) {
 		data[0] &= ~0x20;
 	}
 
-	// ƒ{ƒ^ƒ“D
+	// Æ’{Æ’^Æ’â€œD
 	if (info->button[3]) {
 		data[1] &= ~0x40;
 	}
 
-	// ƒ{ƒ^ƒ“R
+	// Æ’{Æ’^Æ’â€œR
 	if (info->button[4]) {
 		data[1] &= ~0x08;
 	}
 
-	// ƒ{ƒ^ƒ“L
+	// Æ’{Æ’^Æ’â€œL
 	if (info->button[5]) {
 		data[1] &= ~0x04;
 	}
@@ -2832,7 +2848,7 @@ void FASTCALL JoyMagical::MakeData()
 
 //---------------------------------------------------------------------------
 //
-//	²•\¦ƒe[ƒuƒ‹
+//	Å½Â²â€¢\Å½Â¦Æ’eÂ[Æ’uÆ’â€¹
 //
 //---------------------------------------------------------------------------
 const char* JoyMagical::AxisDescTable[] = {
@@ -2842,7 +2858,7 @@ const char* JoyMagical::AxisDescTable[] = {
 
 //---------------------------------------------------------------------------
 //
-//	ƒ{ƒ^ƒ“•\¦ƒe[ƒuƒ‹
+//	Æ’{Æ’^Æ’â€œâ€¢\Å½Â¦Æ’eÂ[Æ’uÆ’â€¹
 //
 //---------------------------------------------------------------------------
 const char* JoyMagical::ButtonDescTable[] = {
@@ -2856,41 +2872,41 @@ const char* JoyMagical::ButtonDescTable[] = {
 
 //===========================================================================
 //
-//	ƒWƒ‡ƒCƒXƒeƒBƒbƒN(XPD-1LR)
+//	Æ’WÆ’â€¡Æ’CÆ’XÆ’eÆ’BÆ’bÆ’N(XPD-1LR)
 //
 //===========================================================================
 
 //---------------------------------------------------------------------------
 //
-//	ƒRƒ“ƒXƒgƒ‰ƒNƒ^
+//	Æ’RÆ’â€œÆ’XÆ’gÆ’â€°Æ’NÆ’^
 //
 //---------------------------------------------------------------------------
 JoyLR::JoyLR(PPI *parent, int no) : JoyDevice(parent, no)
 {
-	// ƒ^ƒCƒvXPLR
+	// Æ’^Æ’CÆ’vXPLR
 	id = MAKEID('X', 'P', 'L', 'R');
 	type = 10;
 
-	// 4²2ƒ{ƒ^ƒ“Aƒf[ƒ^”2
+	// 4Å½Â²2Æ’{Æ’^Æ’â€œÂAÆ’fÂ[Æ’^Ââ€2
 	axes = 4;
 	buttons = 2;
 	datas = 2;
 
-	// •\¦ƒe[ƒuƒ‹
+	// â€¢\Å½Â¦Æ’eÂ[Æ’uÆ’â€¹
 	axis_desc = AxisDescTable;
 	button_desc = ButtonDescTable;
 
-	// ƒf[ƒ^ƒoƒbƒtƒ@Šm•Û
+	// Æ’fÂ[Æ’^Æ’oÆ’bÆ’tÆ’@Å mâ€¢Ã›
 	data = new DWORD[datas];
 
-	// ‰Šúƒf[ƒ^İ’è
+	// Ââ€°Å ÃºÆ’fÂ[Æ’^ÂÃâ€™Ã¨
 	data[0] = 0xff;
 	data[1] = 0xff;
 }
 
 //---------------------------------------------------------------------------
 //
-//	ƒ|[ƒg“Ç‚İæ‚è(Read Only)
+//	Æ’|Â[Æ’gâ€œÃ‡â€šÃÅ½Ã¦â€šÃ¨(Read Only)
 //
 //---------------------------------------------------------------------------
 DWORD FASTCALL JoyLR::ReadOnly(DWORD ctl) const
@@ -2900,7 +2916,7 @@ DWORD FASTCALL JoyLR::ReadOnly(DWORD ctl) const
 	ASSERT(data[0] < 0x100);
 	ASSERT(data[1] < 0x100);
 
-	// PC4‚É‚æ‚Á‚Ä•ª‚¯‚é
+	// PC4â€šÃ‰â€šÃ¦â€šÃâ€šÃ„â€¢Âªâ€šÂ¯â€šÃ©
 	if (ctl & 1) {
 		return data[1];
 	}
@@ -2911,7 +2927,7 @@ DWORD FASTCALL JoyLR::ReadOnly(DWORD ctl) const
 
 //---------------------------------------------------------------------------
 //
-//	ƒf[ƒ^ì¬
+//	Æ’fÂ[Æ’^ÂÃ¬ÂÂ¬
 //
 //---------------------------------------------------------------------------
 void FASTCALL JoyLR::MakeData()
@@ -2922,67 +2938,67 @@ void FASTCALL JoyLR::MakeData()
 	ASSERT(this);
 	ASSERT(ppi);
 
-	// ƒf[ƒ^‰Šú‰»
+	// Æ’fÂ[Æ’^Ââ€°Å Ãºâ€°Â»
 	info = ppi->GetJoyInfo(port);
 	data[0] = 0xff;
 	data[1] = 0xff;
 
-	// ‰E‘¤Up
+	// â€°Eâ€˜Â¤Up
 	axis = info->axis[3];
 	if ((axis >= 0xfffff800) && (axis < 0xfffffc00)) {
 		data[1] &= ~0x01;
 	}
-	// ‰E‘¤Down
+	// â€°Eâ€˜Â¤Down
 	if ((axis >= 0x00000400) && (axis < 0x00000800)) {
 		data[1] &= ~0x02;
 	}
 
-	// ‰E‘¤Left
+	// â€°Eâ€˜Â¤Left
 	axis = info->axis[2];
 	if ((axis >= 0xfffff800) && (axis < 0xfffffc00)) {
 		data[1] &= ~0x04;
 	}
-	// ‰E‘¤Right
+	// â€°Eâ€˜Â¤Right
 	if ((axis >= 0x00000400) && (axis < 0x00000800)) {
 		data[1] &= ~0x08;
 	}
 
-	// ƒ{ƒ^ƒ“A
+	// Æ’{Æ’^Æ’â€œA
 	if (info->button[0]) {
 		data[1] &= ~0x40;
 	}
 
-	// ƒ{ƒ^ƒ“B
+	// Æ’{Æ’^Æ’â€œB
 	if (info->button[1]) {
 		data[1] &= ~0x20;
 	}
 
-	// ¶‘¤Up
+	// ÂÂ¶â€˜Â¤Up
 	axis = info->axis[1];
 	if ((axis >= 0xfffff800) && (axis < 0xfffffc00)) {
 		data[0] &= ~0x01;
 	}
-	// ¶‘¤Down
+	// ÂÂ¶â€˜Â¤Down
 	if ((axis >= 0x00000400) && (axis < 0x00000800)) {
 		data[0] &= ~0x02;
 	}
 
-	// ‰E‘¤Left
+	// â€°Eâ€˜Â¤Left
 	axis = info->axis[0];
 	if ((axis >= 0xfffff800) && (axis < 0xfffffc00)) {
 		data[0] &= ~0x04;
 	}
-	// ‰E‘¤Right
+	// â€°Eâ€˜Â¤Right
 	if ((axis >= 0x00000400) && (axis < 0x00000800)) {
 		data[0] &= ~0x08;
 	}
 
-	// ƒ{ƒ^ƒ“A
+	// Æ’{Æ’^Æ’â€œA
 	if (info->button[0]) {
 		data[0] &= ~0x40;
 	}
 
-	// ƒ{ƒ^ƒ“B
+	// Æ’{Æ’^Æ’â€œB
 	if (info->button[1]) {
 		data[0] &= ~0x20;
 	}
@@ -2990,7 +3006,7 @@ void FASTCALL JoyLR::MakeData()
 
 //---------------------------------------------------------------------------
 //
-//	²•\¦ƒe[ƒuƒ‹
+//	Å½Â²â€¢\Å½Â¦Æ’eÂ[Æ’uÆ’â€¹
 //
 //---------------------------------------------------------------------------
 const char* JoyLR::AxisDescTable[] = {
@@ -3002,7 +3018,7 @@ const char* JoyLR::AxisDescTable[] = {
 
 //---------------------------------------------------------------------------
 //
-//	ƒ{ƒ^ƒ“•\¦ƒe[ƒuƒ‹
+//	Æ’{Æ’^Æ’â€œâ€¢\Å½Â¦Æ’eÂ[Æ’uÆ’â€¹
 //
 //---------------------------------------------------------------------------
 const char* JoyLR::ButtonDescTable[] = {
@@ -3012,39 +3028,39 @@ const char* JoyLR::ButtonDescTable[] = {
 
 //===========================================================================
 //
-//	ƒWƒ‡ƒCƒXƒeƒBƒbƒN(ƒpƒbƒNƒ‰ƒ“ƒhê—pƒpƒbƒh)
+//	Æ’WÆ’â€¡Æ’CÆ’XÆ’eÆ’BÆ’bÆ’N(Æ’pÆ’bÆ’NÆ’â€°Æ’â€œÆ’hÂÃªâ€”pÆ’pÆ’bÆ’h)
 //
 //===========================================================================
 
 //---------------------------------------------------------------------------
 //
-//	ƒRƒ“ƒXƒgƒ‰ƒNƒ^
+//	Æ’RÆ’â€œÆ’XÆ’gÆ’â€°Æ’NÆ’^
 //
 //---------------------------------------------------------------------------
 JoyPacl::JoyPacl(PPI *parent, int no) : JoyDevice(parent, no)
 {
-	// ƒ^ƒCƒvPACL
+	// Æ’^Æ’CÆ’vPACL
 	id = MAKEID('P', 'A', 'C', 'L');
 	type = 11;
 
-	// 0²3ƒ{ƒ^ƒ“Aƒf[ƒ^”1
+	// 0Å½Â²3Æ’{Æ’^Æ’â€œÂAÆ’fÂ[Æ’^Ââ€1
 	axes = 0;
 	buttons = 3;
 	datas = 1;
 
-	// •\¦ƒe[ƒuƒ‹
+	// â€¢\Å½Â¦Æ’eÂ[Æ’uÆ’â€¹
 	button_desc = ButtonDescTable;
 
-	// ƒf[ƒ^ƒoƒbƒtƒ@Šm•Û
+	// Æ’fÂ[Æ’^Æ’oÆ’bÆ’tÆ’@Å mâ€¢Ã›
 	data = new DWORD[datas];
 
-	// ‰Šúƒf[ƒ^İ’è
+	// Ââ€°Å ÃºÆ’fÂ[Æ’^ÂÃâ€™Ã¨
 	data[0] = 0xff;
 }
 
 //---------------------------------------------------------------------------
 //
-//	ƒ|[ƒg“Ç‚İæ‚è(Read Only)
+//	Æ’|Â[Æ’gâ€œÃ‡â€šÃÅ½Ã¦â€šÃ¨(Read Only)
 //
 //---------------------------------------------------------------------------
 DWORD FASTCALL JoyPacl::ReadOnly(DWORD ctl) const
@@ -3053,18 +3069,18 @@ DWORD FASTCALL JoyPacl::ReadOnly(DWORD ctl) const
 	ASSERT(ctl < 0x100);
 	ASSERT(data[0] < 0x100);
 
-	// PC4‚ª1‚È‚çA0xff
+	// PC4â€šÂª1â€šÃˆâ€šÃ§ÂA0xff
 	if (ctl & 1) {
 		return 0xff;
 	}
 
-	// ì¬Ï‚İ‚Ìƒf[ƒ^‚ğ•Ô‚·
+	// ÂÃ¬ÂÂ¬ÂÃâ€šÃâ€šÃŒÆ’fÂ[Æ’^â€šÃ°â€¢Ã”â€šÂ·
 	return data[0];
 }
 
 //---------------------------------------------------------------------------
 //
-//	ƒf[ƒ^ì¬
+//	Æ’fÂ[Æ’^ÂÃ¬ÂÂ¬
 //
 //---------------------------------------------------------------------------
 void FASTCALL JoyPacl::MakeData()
@@ -3074,21 +3090,21 @@ void FASTCALL JoyPacl::MakeData()
 	ASSERT(this);
 	ASSERT(ppi);
 
-	// ƒf[ƒ^‰Šú‰»
+	// Æ’fÂ[Æ’^Ââ€°Å Ãºâ€°Â»
 	info = ppi->GetJoyInfo(port);
 	data[0] = 0xff;
 
-	// ƒ{ƒ^ƒ“A(Left)
+	// Æ’{Æ’^Æ’â€œA(Left)
 	if (info->button[0]) {
 		data[0] &= ~0x04;
 	}
 
-	// ƒ{ƒ^ƒ“B(Jump)
+	// Æ’{Æ’^Æ’â€œB(Jump)
 	if (info->button[1]) {
 		data[0] &= ~0x20;
 	}
 
-	// ƒ{ƒ^ƒ“C(Right)
+	// Æ’{Æ’^Æ’â€œC(Right)
 	if (info->button[2]) {
 		data[0] &= ~0x08;
 	}
@@ -3096,7 +3112,7 @@ void FASTCALL JoyPacl::MakeData()
 
 //---------------------------------------------------------------------------
 //
-//	ƒ{ƒ^ƒ“•\¦ƒe[ƒuƒ‹
+//	Æ’{Æ’^Æ’â€œâ€¢\Å½Â¦Æ’eÂ[Æ’uÆ’â€¹
 //
 //---------------------------------------------------------------------------
 const char* JoyPacl::ButtonDescTable[] = {
@@ -3107,39 +3123,39 @@ const char* JoyPacl::ButtonDescTable[] = {
 
 //===========================================================================
 //
-//	ƒWƒ‡ƒCƒXƒeƒBƒbƒN(BM68ê—pƒRƒ“ƒgƒ[ƒ‰)
+//	Æ’WÆ’â€¡Æ’CÆ’XÆ’eÆ’BÆ’bÆ’N(BM68ÂÃªâ€”pÆ’RÆ’â€œÆ’gÆ’ÂÂ[Æ’â€°)
 //
 //===========================================================================
 
 //---------------------------------------------------------------------------
 //
-//	ƒRƒ“ƒXƒgƒ‰ƒNƒ^
+//	Æ’RÆ’â€œÆ’XÆ’gÆ’â€°Æ’NÆ’^
 //
 //---------------------------------------------------------------------------
 JoyBM::JoyBM(PPI *parent, int no) : JoyDevice(parent, no)
 {
-	// ƒ^ƒCƒvBM68
+	// Æ’^Æ’CÆ’vBM68
 	id = MAKEID('B', 'M', '6', '8');
 	type = 12;
 
-	// 0²6ƒ{ƒ^ƒ“Aƒf[ƒ^”1
+	// 0Å½Â²6Æ’{Æ’^Æ’â€œÂAÆ’fÂ[Æ’^Ââ€1
 	axes = 0;
 	buttons = 6;
 	datas = 1;
 
-	// •\¦ƒe[ƒuƒ‹
+	// â€¢\Å½Â¦Æ’eÂ[Æ’uÆ’â€¹
 	button_desc = ButtonDescTable;
 
-	// ƒf[ƒ^ƒoƒbƒtƒ@Šm•Û
+	// Æ’fÂ[Æ’^Æ’oÆ’bÆ’tÆ’@Å mâ€¢Ã›
 	data = new DWORD[datas];
 
-	// ‰Šúƒf[ƒ^İ’è
+	// Ââ€°Å ÃºÆ’fÂ[Æ’^ÂÃâ€™Ã¨
 	data[0] = 0xff;
 }
 
 //---------------------------------------------------------------------------
 //
-//	ƒ|[ƒg“Ç‚İæ‚è(Read Only)
+//	Æ’|Â[Æ’gâ€œÃ‡â€šÃÅ½Ã¦â€šÃ¨(Read Only)
 //
 //---------------------------------------------------------------------------
 DWORD FASTCALL JoyBM::ReadOnly(DWORD ctl) const
@@ -3148,18 +3164,18 @@ DWORD FASTCALL JoyBM::ReadOnly(DWORD ctl) const
 	ASSERT(ctl < 0x100);
 	ASSERT(data[0] < 0x100);
 
-	// PC4‚ª1‚È‚çA0xff
+	// PC4â€šÂª1â€šÃˆâ€šÃ§ÂA0xff
 	if (ctl & 1) {
 		return 0xff;
 	}
 
-	// ì¬Ï‚İ‚Ìƒf[ƒ^‚ğ•Ô‚·
+	// ÂÃ¬ÂÂ¬ÂÃâ€šÃâ€šÃŒÆ’fÂ[Æ’^â€šÃ°â€¢Ã”â€šÂ·
 	return data[0];
 }
 
 //---------------------------------------------------------------------------
 //
-//	ƒf[ƒ^ì¬
+//	Æ’fÂ[Æ’^ÂÃ¬ÂÂ¬
 //
 //---------------------------------------------------------------------------
 void FASTCALL JoyBM::MakeData()
@@ -3169,36 +3185,36 @@ void FASTCALL JoyBM::MakeData()
 	ASSERT(this);
 	ASSERT(ppi);
 
-	// ƒf[ƒ^‰Šú‰»
+	// Æ’fÂ[Æ’^Ââ€°Å Ãºâ€°Â»
 	info = ppi->GetJoyInfo(port);
 	data[0] = 0xff;
 
-	// ƒ{ƒ^ƒ“1(C)
+	// Æ’{Æ’^Æ’â€œ1(C)
 	if (info->button[0]) {
 		data[0] &= ~0x08;
 	}
 
-	// ƒ{ƒ^ƒ“2(C+,D-)
+	// Æ’{Æ’^Æ’â€œ2(C+,D-)
 	if (info->button[1]) {
 		data[0] &= ~0x04;
 	}
 
-	// ƒ{ƒ^ƒ“3(D)
+	// Æ’{Æ’^Æ’â€œ3(D)
 	if (info->button[2]) {
 		data[0] &= ~0x40;
 	}
 
-	// ƒ{ƒ^ƒ“4(D+,E-)
+	// Æ’{Æ’^Æ’â€œ4(D+,E-)
 	if (info->button[3]) {
 		data[0] &= ~0x20;
 	}
 
-	// ƒ{ƒ^ƒ“5(E)
+	// Æ’{Æ’^Æ’â€œ5(E)
 	if (info->button[4]) {
 		data[0] &= ~0x02;
 	}
 
-	// ƒ{ƒ^ƒ“F(Hat)
+	// Æ’{Æ’^Æ’â€œF(Hat)
 	if (info->button[5]) {
 		data[0] &= ~0x01;
 	}
@@ -3206,7 +3222,7 @@ void FASTCALL JoyBM::MakeData()
 
 //---------------------------------------------------------------------------
 //
-//	ƒ{ƒ^ƒ“•\¦ƒe[ƒuƒ‹
+//	Æ’{Æ’^Æ’â€œâ€¢\Å½Â¦Æ’eÂ[Æ’uÆ’â€¹
 //
 //---------------------------------------------------------------------------
 const char* JoyBM::ButtonDescTable[] = {
@@ -3217,3 +3233,4 @@ const char* JoyBM::ButtonDescTable[] = {
 	"E",
 	"HiHat"
 };
+

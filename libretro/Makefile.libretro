@@ -1,17 +1,178 @@
-TARGET_NAME := xm6
-TARGET := $(TARGET_NAME)_libretro.dll
+﻿TARGET_NAME := xm6
 
 CXX ?= g++
-CXXFLAGS ?= -O2 -std=gnu++14 -Wall -Wextra -Wno-cast-function-type -D__LIBRETRO__ -DXM6_FORCE_DEFAULT_SRAM
-LDFLAGS ?= -shared -static -static-libgcc -static-libstdc++
 
-SOURCES := xm6_libretro.cpp
-INCLUDES := -I. -I../vm
+TARGET_OS ?=
+ifeq ($(TARGET_OS),)
+ifeq ($(OS),Windows_NT)
+TARGET_OS := windows
+else
+TARGET_OS := linux
+endif
+endif
+
+TARGET_ARCH ?=
+ifeq ($(TARGET_ARCH),)
+ifneq (,$(findstring aarch64,$(CXX)))
+TARGET_ARCH := aarch64
+else ifneq (,$(findstring arm64,$(CXX)))
+TARGET_ARCH := arm64
+else ifeq ($(TARGET_OS),windows)
+TARGET_ARCH := x86_64
+else
+TARGET_ARCH := $(shell uname -m 2>/dev/null)
+endif
+endif
+
+IS_WINDOWS := 0
+ifeq ($(TARGET_OS),windows)
+IS_WINDOWS := 1
+endif
+
+TARGET_EXT := so
+SHARED_FLAGS := -shared
+FPIC := -fPIC
+THREAD_FLAGS := -pthread
+EXTRA_LIBS :=
+
+ifeq ($(IS_WINDOWS),1)
+TARGET_EXT := dll
+FPIC :=
+THREAD_FLAGS :=
+EXTRA_LIBS := -lwinmm
+else
+EXTRA_LIBS := -ldl
+endif
+
+TARGET := $(TARGET_NAME)_libretro.$(TARGET_EXT)
+
+DEFINES := \
+	-D__LIBRETRO__ \
+	-DXM6CORE_MONOLITHIC \
+	-DXM6CORE_STATIC \
+	-DXM6_FORCE_DEFAULT_SRAM \
+	-DMUSASHI_CNF=\"m68kconf_xm6.h\"
+
+CXXFLAGS ?= -O2 -std=gnu++14 -Wall -Wextra -Wno-cast-function-type
+CXXFLAGS += $(DEFINES) $(FPIC)
+
+ifeq ($(IS_WINDOWS),0)
+CXXFLAGS += -D_GNU_SOURCE=1
+endif
+
+ifneq (,$(filter aarch64 arm64,$(TARGET_ARCH)))
+CXXFLAGS += -DXM6_TARGET_ARM64=1
+endif
+
+INCLUDES := -I. -I../vm -I../cpu -I../cpu/Musashi -I../cpu/Musashi/softfloat
+
+YMFM_SRC ?= ../vm/ymfm
+YMFM_SOURCES :=
+ifneq ($(wildcard $(YMFM_SRC)/ymfm_opm.cpp),)
+DEFINES += -DXM6CORE_ENABLE_YMFM
+INCLUDES += -I$(YMFM_SRC)
+YMFM_SOURCES += ../vm/ymfm_opm_engine.cpp $(YMFM_SRC)/ymfm_opm.cpp
+endif
+
+XM6_ENABLE_WINDRV_HOSTFS ?= 0
+WINDRV_SOURCE := ../vm/windrv_posix_stub.cpp
+ifeq ($(IS_WINDOWS),1)
+ifeq ($(XM6_ENABLE_WINDRV_HOSTFS),1)
+WINDRV_SOURCE := ../vm/windrv.cpp
+endif
+endif
+
+VM_SOURCES := \
+	../vm/adpcm.cpp \
+	../vm/areaset.cpp \
+	../vm/cpu.cpp \
+	../vm/cpudebug.c \
+	../vm/crtc.cpp \
+	../vm/device.cpp \
+	../vm/disk.cpp \
+	../vm/dmac.cpp \
+	../vm/event.cpp \
+	../vm/fdc.cpp \
+	../vm/fdd.cpp \
+	../vm/fdi.cpp \
+	../vm/fileio.cpp \
+	../vm/filepath.cpp \
+	../vm/fmgen.cpp \
+	../vm/fmtimer.cpp \
+	../vm/gvram.cpp \
+	../vm/iosc.cpp \
+	../vm/keyboard.cpp \
+	../vm/log.cpp \
+	../vm/memory.cpp \
+	../vm/mercury.cpp \
+	../vm/mfp.cpp \
+	../vm/midi.cpp \
+	../vm/mouse.cpp \
+	../vm/neptune.cpp \
+	../vm/opm.cpp \
+	../vm/opmif.cpp \
+	../vm/ppi.cpp \
+	../vm/printer.cpp \
+	../vm/render.cpp \
+	../vm/renderfast_compositor.cpp \
+	../vm/rend_soft.cpp \
+	../vm/rtc.cpp \
+	../vm/sasi.cpp \
+	../vm/scc.cpp \
+	../vm/schedule.cpp \
+	../vm/scsi.cpp \
+	../vm/sprite.cpp \
+	../vm/sram.cpp \
+	../vm/sram_default.cpp \
+	../vm/sync.cpp \
+	../vm/sysport.cpp \
+	../vm/tvram.cpp \
+	../vm/vc.cpp \
+	../vm/vm.cpp \
+	$(WINDRV_SOURCE) \
+	../vm/core_soft.cpp \
+	../vm/xm6core_diag.cpp \
+	../vm/xm6core_impl.cpp \
+	../vm/xm6core_runtime.cpp \
+	../vm/xm6core_stubs.cpp \
+	../vm/x68sound_bridge.cpp \
+	../vm/musashi_adapter.cpp \
+	../vm/musashi_mem.cpp
+
+CPU_SOURCES := \
+	../cpu/Musashi/softfloat/softfloat.cpp \
+	../cpu/Musashi/m68kcpu.cpp \
+	../cpu/Musashi/m68kops.cpp \
+	../cpu/Musashi/m68kdasm.cpp
+
+SOURCES := xm6_libretro.cpp $(VM_SOURCES) $(YMFM_SOURCES) $(CPU_SOURCES)
+OBJECTS := $(SOURCES:.cpp=.o)
+OBJECTS := $(OBJECTS:.c=.o)
+
+X68SOUND_SRC ?= ../vm/x68sound
+ifneq ($(wildcard $(X68SOUND_SRC)/X68Sound.cpp),)
+DEFINES += -DXM6CORE_ENABLE_X68SOUND -DXM6CORE_X68SOUND_RENDER_ONLY
+INCLUDES += -I$(X68SOUND_SRC)
+SOURCES += $(X68SOUND_SRC)/X68Sound.cpp
+OBJECTS := $(SOURCES:.cpp=.o)
+OBJECTS := $(OBJECTS:.c=.o)
+endif
 
 all: $(TARGET)
 
-$(TARGET): $(SOURCES)
-	$(CXX) $(CXXFLAGS) $(INCLUDES) -o $@ $^ $(LDFLAGS)
+$(TARGET): $(OBJECTS)
+	$(CXX) $(OBJECTS) $(SHARED_FLAGS) $(THREAD_FLAGS) -o $@ $(LDFLAGS) $(EXTRA_LIBS)
 
+%.o: %.cpp
+	$(CXX) $(CXXFLAGS) $(INCLUDES) -c $< -o $@
+
+%.o: %.c
+	$(CXX) $(CXXFLAGS) $(INCLUDES) -x c -c $< -o $@
+
+ifeq ($(IS_WINDOWS),1)
 clean:
-	rm -f $(TARGET)
+	-@for %%f in ($(subst /,\,$(OBJECTS)) $(TARGET)) do @if exist "%%f" del /Q "%%f" >NUL 2>&1
+else
+clean:
+	rm -f $(OBJECTS) $(TARGET)
+endif

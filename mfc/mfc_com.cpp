@@ -1,38 +1,38 @@
-  //---------------------------------------------------------------------------
-  //
-  //	EMULADOR X68000 "XM6"
-  //
-  //	Copyright (C) 2001-2006 PI.(ytanaka@ipc-tokai.or.jp)
-  //	[ Componente MFC ]
-  //
-  //---------------------------------------------------------------------------
+//---------------------------------------------------------------------------
+//
+//	X68000 Emulator "XM6"
+//
+//	Copyright (C) 2001-2006 PI.(ytanaka@ipc-tokai.or.jp)
+//	[MFC component]
+//
+//---------------------------------------------------------------------------
 
 #if defined(_WIN32)
 
-#include "os.h"
 #include "mfc.h"
+#include "os.h"
 #include "xm6.h"
 #include "mfc_frm.h"
 #include "mfc_com.h"
 
-  //===========================================================================
-  //
-  //	Componente
-  //
-  //===========================================================================
+//===========================================================================
+//
+//	Component
+//
+//===========================================================================
 
-  //---------------------------------------------------------------------------
-  //
-  //	Constructor
-  //
-  //---------------------------------------------------------------------------
+//---------------------------------------------------------------------------
+//
+//	Constructor
+//
+//---------------------------------------------------------------------------
 CComponent::CComponent(CFrmWnd *pFrmWnd)
 {
- 	 // Memorizar la ventana de marco
+	// Store the frame window
 	ASSERT(pFrmWnd);
 	m_pFrmWnd = pFrmWnd;
 
- 	 // Inicializacion del area de trabajo
+	// Initialize the working area
 	m_pPrev = NULL;
 	m_pNext = NULL;
 	m_dwID = 0;
@@ -40,43 +40,43 @@ CComponent::CComponent(CFrmWnd *pFrmWnd)
 	m_bEnable = FALSE;
 }
 
-  //---------------------------------------------------------------------------
-  //
-  //	Destructor
-  //
-  //---------------------------------------------------------------------------
+//---------------------------------------------------------------------------
+//
+//	Destructor
+//
+//---------------------------------------------------------------------------
 CComponent::~CComponent()
 {
- 	 // Desactivado (no tiene mucho significado)
+	// Keep it disabled; destruction does not mean much here
 	m_bEnable = FALSE;
 }
 
-  //---------------------------------------------------------------------------
-  //
-  //	Inicializacion
-  //
-  //---------------------------------------------------------------------------
+//---------------------------------------------------------------------------
+//
+//	Initialization
+//
+//---------------------------------------------------------------------------
 BOOL FASTCALL CComponent::Init()
 {
 	ASSERT(this);
 	return TRUE;
 }
 
-  //---------------------------------------------------------------------------
-  //
-  //	Limpieza
-  //
-  //---------------------------------------------------------------------------
+//---------------------------------------------------------------------------
+//
+//	Cleanup
+//
+//---------------------------------------------------------------------------
 void FASTCALL CComponent::Cleanup()
 {
 	ASSERT(this);
 }
 
-  //---------------------------------------------------------------------------
-  //
-  //	Guardar
-  //
-  //---------------------------------------------------------------------------
+//---------------------------------------------------------------------------
+//
+//	Save
+//
+//---------------------------------------------------------------------------
 BOOL FASTCALL CComponent::Save(Fileio* /*pFio*/, int /*nVer*/)
 {
 	ASSERT(this);
@@ -85,11 +85,11 @@ BOOL FASTCALL CComponent::Save(Fileio* /*pFio*/, int /*nVer*/)
 	return TRUE;
 }
 
-  //---------------------------------------------------------------------------
-  //
-  //	Cargar
-  //
-  //---------------------------------------------------------------------------
+//---------------------------------------------------------------------------
+//
+//	Load
+//
+//---------------------------------------------------------------------------
 BOOL FASTCALL CComponent::Load(Fileio* /*pFio*/, int /*nVer*/)
 {
 	ASSERT(this);
@@ -98,11 +98,11 @@ BOOL FASTCALL CComponent::Load(Fileio* /*pFio*/, int /*nVer*/)
 	return TRUE;
 }
 
-  //---------------------------------------------------------------------------
-  //
-  //	Aplicar configuracion
-  //
-  //---------------------------------------------------------------------------
+//---------------------------------------------------------------------------
+//
+//	Apply configuration
+//
+//---------------------------------------------------------------------------
 void FASTCALL CComponent::ApplyCfg(const Config* /*pConfig*/)
 {
 	ASSERT(this);
@@ -110,16 +110,16 @@ void FASTCALL CComponent::ApplyCfg(const Config* /*pConfig*/)
 }
 
 #if !defined(NDEBUG)
-  //---------------------------------------------------------------------------
-  //
-  //	Diagnostico
-  //
-  //---------------------------------------------------------------------------
+//---------------------------------------------------------------------------
+//
+//	Diagnostics
+//
+//---------------------------------------------------------------------------
 void CComponent::AssertValid() const
 {
 	ASSERT(this);
 
- 	 // Clase base
+	// Base class
 	CObject::AssertValid();
 
 	ASSERT(m_pFrmWnd);
@@ -129,13 +129,13 @@ void CComponent::AssertValid() const
 	ASSERT(!m_pPrev || (m_pPrev->GetNextComponent() == (CComponent*)this));
 	ASSERT(!m_pNext || (m_pNext->GetPrevComponent() == (CComponent*)this));
 }
- #endif	 // NDEBUG
+#endif	// NDEBUG
 
-  //---------------------------------------------------------------------------
-  //
-  //	Obtener nombre
-  //
-  //---------------------------------------------------------------------------
+//---------------------------------------------------------------------------
+//
+//	Get the name
+//
+//---------------------------------------------------------------------------
 void FASTCALL CComponent::GetDesc(CString& strDesc) const
 {
 	ASSERT(this);
@@ -144,43 +144,43 @@ void FASTCALL CComponent::GetDesc(CString& strDesc) const
 	strDesc = m_strDesc;
 }
 
-  //---------------------------------------------------------------------------
-  //
-  //	Buscar componente
-  //
-  //---------------------------------------------------------------------------
+//---------------------------------------------------------------------------
+//
+//	Search for a component
+//
+//---------------------------------------------------------------------------
 CComponent* FASTCALL CComponent::SearchComponent(DWORD dwID)
 {
 	CComponent *pComponent;
 
 	ASSERT(this);
 
- 	 // Obtener el primer componente
+	// Get the first component
 	pComponent = this;
 	while (pComponent->m_pPrev) {
 		ASSERT(pComponent == pComponent->m_pPrev->m_pNext);
 		pComponent = pComponent->m_pPrev;
 	}
 
- 	 // Buscar ID
+	// Search by ID
 	while (pComponent) {
 		if (pComponent->GetID() == dwID) {
 			return pComponent;
 		}
 
- 		 // Siguiente
+		// Next
 		pComponent = pComponent->m_pNext;
 	}
 
- 	 // No se encontro
+	// Not found
 	return NULL;
 }
 
-  //---------------------------------------------------------------------------
-  //
-  //	Anadir nuevo componente
-  //
-  //---------------------------------------------------------------------------
+//---------------------------------------------------------------------------
+//
+//	Add a new component
+//
+//---------------------------------------------------------------------------
 void FASTCALL CComponent::AddComponent(CComponent *pNewComponent)
 {
 	CComponent *pComponent;
@@ -190,17 +190,17 @@ void FASTCALL CComponent::AddComponent(CComponent *pNewComponent)
 	ASSERT(!pNewComponent->m_pPrev);
 	ASSERT(!pNewComponent->m_pNext);
 
- 	 // Obtener el primer componente
+	// Get the first component
 	pComponent = this;
 
- 	 // Buscar el ultimo componente
+	// Find the last component
 	while (pComponent->m_pNext) {
 		pComponent = pComponent->m_pNext;
 	}
 
- 	 // Conexion mediante enlace bidireccional
+	// Link the components in both directions
 	pComponent->m_pNext = pNewComponent;
 	pNewComponent->m_pPrev = pComponent;
 }
 
- #endif	 // _WIN32
+#endif	// _WIN32

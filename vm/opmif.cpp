@@ -2,7 +2,7 @@
 //
 //	X68000 EMULATOR "XM6"
 //
-//	Copyright (C) 2001-2006 ‚o‚hD(ytanaka@ipc-tokai.or.jp)
+//	Copyright (C) 2001-2006 â€šoâ€šhÂD(ytanaka@ipc-tokai.or.jp)
 //	[ OPM(YM2151) ]
 //
 //---------------------------------------------------------------------------
@@ -19,6 +19,7 @@
 #include "config.h"
 #include "opm.h"
 #include "opmif.h"
+#include "x68sound_bridge.h"
 
 //===========================================================================
 //
@@ -29,20 +30,20 @@
 
 //---------------------------------------------------------------------------
 //
-//	ƒRƒ“ƒXƒgƒ‰ƒNƒ^
+//	Æ’RÆ’â€œÆ’XÆ’gÆ’â€°Æ’NÆ’^
 //
 //---------------------------------------------------------------------------
 OPMIF::OPMIF(VM *p) : MemDevice(p)
 {
-	// ƒfƒoƒCƒXID‚ğ‰Šú‰»
+	// Æ’fÆ’oÆ’CÆ’XIDâ€šÃ°Ââ€°Å Ãºâ€°Â»
 	dev.id = MAKEID('O', 'P', 'M', ' ');
 	dev.desc = "OPM (YM2151)";
 
-	// ŠJnƒAƒhƒŒƒXAI—¹ƒAƒhƒŒƒX
+	// Å JÅ½nÆ’AÆ’hÆ’Å’Æ’XÂAÂIâ€”Â¹Æ’AÆ’hÆ’Å’Æ’X
 	memdev.first = 0xe90000;
 	memdev.last = 0xe91fff;
 
-	// ƒ[ƒNƒNƒŠƒA
+	// Æ’ÂÂ[Æ’NÆ’NÆ’Å Æ’A
 	mfp = NULL;
 	fdd = NULL;
 	adpcm = NULL;
@@ -52,7 +53,7 @@ OPMIF::OPMIF(VM *p) : MemDevice(p)
 
 //---------------------------------------------------------------------------
 //
-//	‰Šú‰»
+//	Ââ€°Å Ãºâ€°Â»
 //
 //---------------------------------------------------------------------------
 BOOL FASTCALL OPMIF::Init()
@@ -61,27 +62,27 @@ BOOL FASTCALL OPMIF::Init()
 
 	ASSERT(this);
 
-	// Šî–{ƒNƒ‰ƒX
+	// Å Ã®â€“{Æ’NÆ’â€°Æ’X
 	if (!MemDevice::Init()) {
 		return FALSE;
 	}
 
-	// MFPæ“¾
+	// MFPÅ½Ã¦â€œÂ¾
 	ASSERT(!mfp);
 	mfp = (MFP*)vm->SearchDevice(MAKEID('M', 'F', 'P', ' '));
 	ASSERT(mfp);
 
-	// ADPCMæ“¾
+	// ADPCMÅ½Ã¦â€œÂ¾
 	ASSERT(!adpcm);
 	adpcm = (ADPCM*)vm->SearchDevice(MAKEID('A', 'P', 'C', 'M'));
 	ASSERT(adpcm);
 
-	// FDDæ“¾
+	// FDDÅ½Ã¦â€œÂ¾
 	ASSERT(!fdd);
 	fdd = (FDD*)vm->SearchDevice(MAKEID('F', 'D', 'D', ' '));
 	ASSERT(fdd);
 
-	// ƒCƒxƒ“ƒgì¬
+	// Æ’CÆ’xÆ’â€œÆ’gÂÃ¬ÂÂ¬
 	event[0].SetDevice(this);
 	event[0].SetDesc("Timer-A");
 	event[1].SetDevice(this);
@@ -92,7 +93,7 @@ BOOL FASTCALL OPMIF::Init()
 		scheduler->AddEvent(&event[i]);
 	}
 
-	// ƒoƒbƒtƒ@Šm•Û
+	// Æ’oÆ’bÆ’tÆ’@Å mâ€¢Ã›
 	try {
 		opmbuf = new DWORD [BufMax * 2];
 	}
@@ -103,13 +104,13 @@ BOOL FASTCALL OPMIF::Init()
 		return FALSE;
 	}
 
-	// ƒ[ƒNƒNƒŠƒA
+	// Æ’ÂÂ[Æ’NÆ’NÆ’Å Æ’A
 	memset(&opm, 0, sizeof(opm));
 	memset(&bufinfo, 0, sizeof(bufinfo));
 	bufinfo.max = BufMax;
 	bufinfo.sound = TRUE;
 
-	// ƒoƒbƒtƒ@‰Šú‰»
+	// Æ’oÆ’bÆ’tÆ’@Ââ€°Å Ãºâ€°Â»
 	InitBuf(44100);
 
 	return TRUE;
@@ -117,7 +118,7 @@ BOOL FASTCALL OPMIF::Init()
 
 //---------------------------------------------------------------------------
 //
-//	ƒNƒŠ[ƒ“ƒAƒbƒv
+//	Æ’NÆ’Å Â[Æ’â€œÆ’AÆ’bÆ’v
 //
 //---------------------------------------------------------------------------
 void FASTCALL OPMIF::Cleanup()
@@ -129,13 +130,13 @@ void FASTCALL OPMIF::Cleanup()
 		opmbuf = NULL;
 	}
 
-	// Šî–{ƒNƒ‰ƒX‚Ö
+	// Å Ã®â€“{Æ’NÆ’â€°Æ’Xâ€šÃ–
 	MemDevice::Cleanup();
 }
 
 //---------------------------------------------------------------------------
 //
-//	ƒŠƒZƒbƒg
+//	Æ’Å Æ’ZÆ’bÆ’g
 //
 //---------------------------------------------------------------------------
 void FASTCALL OPMIF::Reset()
@@ -145,21 +146,21 @@ void FASTCALL OPMIF::Reset()
 	ASSERT(this);
 	ASSERT_DIAG();
 
-	LOG0(Log::Normal, "ƒŠƒZƒbƒg");
+	LOG0(Log::Normal, "Æ’Å Æ’ZÆ’bÆ’g");
 
-	// ƒCƒxƒ“ƒg‚ğ~‚ß‚é
+	// Æ’CÆ’xÆ’â€œÆ’gâ€šÃ°Å½~â€šÃŸâ€šÃ©
 	event[0].SetTime(0);
 	event[1].SetTime(0);
 
-	// ƒoƒbƒtƒ@ƒNƒŠƒA
+	// Æ’oÆ’bÆ’tÆ’@Æ’NÆ’Å Æ’A
 	memset(opmbuf, 0, sizeof(DWORD) * (BufMax * 2));
 
-	// ƒGƒ“ƒWƒ“‚ªw’è‚³‚ê‚Ä‚¢‚ê‚ÎƒŠƒZƒbƒg
+	// Æ’GÆ’â€œÆ’WÆ’â€œâ€šÂªÅ½wâ€™Ã¨â€šÂ³â€šÃªâ€šÃ„â€šÂ¢â€šÃªâ€šÃÆ’Å Æ’ZÆ’bÆ’g
 	if (engine) {
 		engine->Reset();
 	}
 
-	// ƒŒƒWƒXƒ^ƒNƒŠƒA
+	// Æ’Å’Æ’WÆ’XÆ’^Æ’NÆ’Å Æ’A
 	for (i=0; i<0x100; i++) {
 		if (i == 8) {
 			continue;
@@ -180,7 +181,7 @@ void FASTCALL OPMIF::Reset()
 		opm.key[i] = i;
 	}
 
-	// ‚»‚Ì‘¼ƒ[ƒNƒGƒŠƒA‚ğ‰Šú‰»
+	// â€šÂ»â€šÃŒâ€˜Â¼Æ’ÂÂ[Æ’NÆ’GÆ’Å Æ’Aâ€šÃ°Ââ€°Å Ãºâ€°Â»
 	opm.addr = 0;
 	opm.busy = FALSE;
 	for (i=0; i<2; i++) {
@@ -191,13 +192,13 @@ void FASTCALL OPMIF::Reset()
 	}
 	opm.started = FALSE;
 
-	// Š„‚è‚İ—v‹‚È‚µ
+	// Å â€â€šÃ¨ÂÅ¾â€šÃâ€”vâ€¹Ââ€šÃˆâ€šÂµ
 	mfp->SetGPIP(3, 1);
 }
 
 //---------------------------------------------------------------------------
 //
-//	ƒZ[ƒu
+//	Æ’ZÂ[Æ’u
 //
 //---------------------------------------------------------------------------
 BOOL FASTCALL OPMIF::Save(Fileio *fio, int ver)
@@ -208,31 +209,31 @@ BOOL FASTCALL OPMIF::Save(Fileio *fio, int ver)
 	ASSERT(fio);
 	ASSERT_DIAG();
 
-	LOG0(Log::Normal, "ƒZ[ƒu");
+	LOG0(Log::Normal, "Æ’ZÂ[Æ’u");
 
-	// ƒTƒCƒY‚ğƒZ[ƒu
+	// Æ’TÆ’CÆ’Yâ€šÃ°Æ’ZÂ[Æ’u
 	sz = sizeof(opm_t);
 	if (!fio->Write(&sz, sizeof(sz))) {
 		return FALSE;
 	}
 
-	// –{‘Ì‚ğƒZ[ƒu
+	// â€“{â€˜ÃŒâ€šÃ°Æ’ZÂ[Æ’u
 	if (!fio->Write(&opm, (int)sz)) {
 		return FALSE;
 	}
 
-	// ƒoƒbƒtƒ@î•ñ‚ÌƒTƒCƒY‚ğƒZ[ƒu
+	// Æ’oÆ’bÆ’tÆ’@ÂÃ®â€¢Ã±â€šÃŒÆ’TÆ’CÆ’Yâ€šÃ°Æ’ZÂ[Æ’u
 	sz = sizeof(opmbuf_t);
 	if (!fio->Write(&sz, sizeof(sz))) {
 		return FALSE;
 	}
 
-	// ƒoƒbƒtƒ@î•ñ‚ğƒZ[ƒu
+	// Æ’oÆ’bÆ’tÆ’@ÂÃ®â€¢Ã±â€šÃ°Æ’ZÂ[Æ’u
 	if (!fio->Write(&bufinfo, (int)sz)) {
 		return FALSE;
 	}
 
-	// ƒCƒxƒ“ƒg‚ğƒZ[ƒu
+	// Æ’CÆ’xÆ’â€œÆ’gâ€šÃ°Æ’ZÂ[Æ’u
 	if (!event[0].Save(fio, ver)) {
 		return FALSE;
 	}
@@ -245,7 +246,7 @@ BOOL FASTCALL OPMIF::Save(Fileio *fio, int ver)
 
 //---------------------------------------------------------------------------
 //
-//	ƒ[ƒh
+//	Æ’ÂÂ[Æ’h
 //
 //---------------------------------------------------------------------------
 BOOL FASTCALL OPMIF::Load(Fileio *fio, int ver)
@@ -257,9 +258,9 @@ BOOL FASTCALL OPMIF::Load(Fileio *fio, int ver)
 	ASSERT(fio);
 	ASSERT_DIAG();
 
-	LOG0(Log::Normal, "ƒ[ƒh");
+	LOG0(Log::Normal, "Æ’ÂÂ[Æ’h");
 
-	// ƒTƒCƒY‚ğƒ[ƒhAÆ‡
+	// Æ’TÆ’CÆ’Yâ€šÃ°Æ’ÂÂ[Æ’hÂAÂÃ†Ââ€¡
 	if (!fio->Read(&sz, sizeof(sz))) {
 		return FALSE;
 	}
@@ -267,12 +268,12 @@ BOOL FASTCALL OPMIF::Load(Fileio *fio, int ver)
 		return FALSE;
 	}
 
-	// –{‘Ì‚ğƒ[ƒh
+	// â€“{â€˜ÃŒâ€šÃ°Æ’ÂÂ[Æ’h
 	if (!fio->Read(&opm, (int)sz)) {
 		return FALSE;
 	}
 
-	// ƒoƒbƒtƒ@î•ñ‚ÌƒTƒCƒY‚ğƒ[ƒhAÆ‡
+	// Æ’oÆ’bÆ’tÆ’@ÂÃ®â€¢Ã±â€šÃŒÆ’TÆ’CÆ’Yâ€šÃ°Æ’ÂÂ[Æ’hÂAÂÃ†Ââ€¡
 	if (!fio->Read(&sz, sizeof(sz))) {
 		return FALSE;
 	}
@@ -280,12 +281,12 @@ BOOL FASTCALL OPMIF::Load(Fileio *fio, int ver)
 		return FALSE;
 	}
 
-	// ƒoƒbƒtƒ@î•ñ‚ğƒ[ƒh
+	// Æ’oÆ’bÆ’tÆ’@ÂÃ®â€¢Ã±â€šÃ°Æ’ÂÂ[Æ’h
 	if (!fio->Read(&bufinfo, (int)sz)) {
 		return FALSE;
 	}
 
-	// ƒCƒxƒ“ƒg‚ğƒ[ƒh
+	// Æ’CÆ’xÆ’â€œÆ’gâ€šÃ°Æ’ÂÂ[Æ’h
 	if (!event[0].Load(fio, ver)) {
 		return FALSE;
 	}
@@ -293,28 +294,29 @@ BOOL FASTCALL OPMIF::Load(Fileio *fio, int ver)
 		return FALSE;
 	}
 
-	// ƒoƒbƒtƒ@‚ğƒNƒŠƒA
+	// Æ’oÆ’bÆ’tÆ’@â€šÃ°Æ’NÆ’Å Æ’A
 	InitBuf(bufinfo.rate * 100);
 
-	// ƒGƒ“ƒWƒ“‚Ö‚ÌƒŒƒWƒXƒ^Äİ’è
+	// Æ’GÆ’â€œÆ’WÆ’â€œâ€šÃ–â€šÃŒÆ’Å’Æ’WÆ’XÆ’^ÂÃ„ÂÃâ€™Ã¨
 	if (engine) {
-		// ƒŒƒWƒXƒ^•œ‹Œ:ƒmƒCƒYALFOAPMDAAMDACSM
+		const bool raw_mode = engine->UseRawModeReg();
+		// Æ’Å’Æ’WÆ’XÆ’^â€¢Å“â€¹Å’:Æ’mÆ’CÆ’YÂALFOÂAPMDÂAAMDÂACSM
 		engine->SetReg(0x0f, opm.reg[0x0f]);
-		engine->SetReg(0x14, opm.reg[0x14] & 0x80);
+		engine->SetReg(0x14, raw_mode ? opm.reg[0x14] : (opm.reg[0x14] & 0x80));
 		engine->SetReg(0x18, opm.reg[0x18]);
 		engine->SetReg(0x19, opm.reg[0x19]);
 
-		// ƒŒƒWƒXƒ^•œ‹Œ:ƒŒƒWƒXƒ^
+		// Æ’Å’Æ’WÆ’XÆ’^â€¢Å“â€¹Å’:Æ’Å’Æ’WÆ’XÆ’^
 		for (i=0x20; i<0x100; i++) {
 			engine->SetReg(i, opm.reg[i]);
 		}
 
-		// ƒŒƒWƒXƒ^•œ‹Œ:ƒL[
+		// Æ’Å’Æ’WÆ’XÆ’^â€¢Å“â€¹Å’:Æ’LÂ[
 		for (i=0; i<8; i++) {
 			engine->SetReg(8, opm.key[i]);
 		}
 
-		// ƒŒƒWƒXƒ^•œ‹Œ:LFO
+		// Æ’Å’Æ’WÆ’XÆ’^â€¢Å“â€¹Å’:LFO
 		engine->SetReg(1, 2);
 		engine->SetReg(1, 0);
 	}
@@ -324,7 +326,7 @@ BOOL FASTCALL OPMIF::Load(Fileio *fio, int ver)
 
 //---------------------------------------------------------------------------
 //
-//	İ’è“K—p
+//	ÂÃâ€™Ã¨â€œKâ€”p
 //
 //---------------------------------------------------------------------------
 void FASTCALL OPMIF::ApplyCfg(const Config* /*config*/)
@@ -332,18 +334,18 @@ void FASTCALL OPMIF::ApplyCfg(const Config* /*config*/)
 	ASSERT(this);
 	ASSERT_DIAG();
 
-	LOG0(Log::Normal, "İ’è“K—p");
+	LOG0(Log::Normal, "ÂÃâ€™Ã¨â€œKâ€”p");
 }
 
 #if !defined(NDEBUG)
 //---------------------------------------------------------------------------
 //
-//	f’f
+//	Âfâ€™f
 //
 //---------------------------------------------------------------------------
 void FASTCALL OPMIF::AssertDiag() const
 {
-	// Šî–{ƒNƒ‰ƒX
+	// Å Ã®â€“{Æ’NÆ’â€°Æ’X
 	MemDevice::AssertDiag();
 
 	ASSERT(this);
@@ -375,7 +377,7 @@ void FASTCALL OPMIF::AssertDiag() const
 
 //---------------------------------------------------------------------------
 //
-//	ƒoƒCƒg“Ç‚İ‚İ
+//	Æ’oÆ’CÆ’gâ€œÃ‡â€šÃÂÅ¾â€šÃ
 //
 //---------------------------------------------------------------------------
 DWORD FASTCALL OPMIF::ReadByte(DWORD addr)
@@ -386,25 +388,25 @@ DWORD FASTCALL OPMIF::ReadByte(DWORD addr)
 	ASSERT((addr >= memdev.first) && (addr <= memdev.last));
 	ASSERT_DIAG();
 
-	// Šï”ƒAƒhƒŒƒX‚Ì‚İƒfƒR[ƒh‚³‚ê‚Ä‚¢‚é
+	// Å Ã¯Ââ€Æ’AÆ’hÆ’Å’Æ’Xâ€šÃŒâ€šÃÆ’fÆ’RÂ[Æ’hâ€šÂ³â€šÃªâ€šÃ„â€šÂ¢â€šÃ©
 	if ((addr & 1) != 0) {
-		// 4ƒoƒCƒg’PˆÊ‚Åƒ‹[ƒv
+		// 4Æ’oÆ’CÆ’gâ€™PË†ÃŠâ€šÃ…Æ’â€¹Â[Æ’v
 		addr &= 3;
 
-		// ƒEƒFƒCƒg
+		// Æ’EÆ’FÆ’CÆ’g
 		scheduler->Wait(1);
 
 		if (addr != 0x01) {
-			// ƒf[ƒ^ƒ|[ƒg‚ÍBUSY‚Æƒ^ƒCƒ}‚Ìó‘Ô
+			// Æ’fÂ[Æ’^Æ’|Â[Æ’gâ€šÃBUSYâ€šÃ†Æ’^Æ’CÆ’}â€šÃŒÂÃ³â€˜Ã”
 			data = 0;
 
-			// BUSY(1‰ñ‚¾‚¯)
+			// BUSY(1â€°Ã±â€šÂ¾â€šÂ¯)
 			if (opm.busy) {
 				data |= 0x80;
 				opm.busy = FALSE;
 			}
 
-			// ƒ^ƒCƒ}
+			// Æ’^Æ’CÆ’}
 			if (opm.interrupt[0]) {
 				data |= 0x01;
 			}
@@ -415,7 +417,7 @@ DWORD FASTCALL OPMIF::ReadByte(DWORD addr)
 			return data;
 		}
 
-		// ƒAƒhƒŒƒXƒ|[ƒg‚ÍFF
+		// Æ’AÆ’hÆ’Å’Æ’XÆ’|Â[Æ’gâ€šÃFF
 		return 0xff;
 	}
 
@@ -424,7 +426,7 @@ DWORD FASTCALL OPMIF::ReadByte(DWORD addr)
 
 //---------------------------------------------------------------------------
 //
-//	ƒ[ƒh‘‚«‚İ
+//	Æ’ÂÂ[Æ’hÂâ€˜â€šÂ«ÂÅ¾â€šÃ
 //
 //---------------------------------------------------------------------------
 DWORD FASTCALL OPMIF::ReadWord(DWORD addr)
@@ -439,7 +441,7 @@ DWORD FASTCALL OPMIF::ReadWord(DWORD addr)
 
 //---------------------------------------------------------------------------
 //
-//	ƒoƒCƒg‘‚«‚İ
+//	Æ’oÆ’CÆ’gÂâ€˜â€šÂ«ÂÅ¾â€šÃ
 //
 //---------------------------------------------------------------------------
 void FASTCALL OPMIF::WriteByte(DWORD addr, DWORD data)
@@ -449,28 +451,28 @@ void FASTCALL OPMIF::WriteByte(DWORD addr, DWORD data)
 	ASSERT(data < 0x100);
 	ASSERT_DIAG();
 
-	// Šï”ƒAƒhƒŒƒX‚Ì‚İƒfƒR[ƒh‚³‚ê‚Ä‚¢‚é
+	// Å Ã¯Ââ€Æ’AÆ’hÆ’Å’Æ’Xâ€šÃŒâ€šÃÆ’fÆ’RÂ[Æ’hâ€šÂ³â€šÃªâ€šÃ„â€šÂ¢â€šÃ©
 	if ((addr & 1) != 0) {
-		// 4ƒoƒCƒg’PˆÊ‚Åƒ‹[ƒv
+		// 4Æ’oÆ’CÆ’gâ€™PË†ÃŠâ€šÃ…Æ’â€¹Â[Æ’v
 		addr &= 3;
 
-		// ƒEƒFƒCƒg
+		// Æ’EÆ’FÆ’CÆ’g
 		scheduler->Wait(1);
 
 		if (addr == 0x01) {
-			// ƒAƒhƒŒƒXw’è(BUSY‚ÉŠÖ‚í‚ç‚¸w’è‚Å‚«‚é‚±‚Æ‚É‚·‚é)
+			// Æ’AÆ’hÆ’Å’Æ’XÅ½wâ€™Ã¨(BUSYâ€šÃ‰Å Ã–â€šÃ­â€šÃ§â€šÂ¸Å½wâ€™Ã¨â€šÃ…â€šÂ«â€šÃ©â€šÂ±â€šÃ†â€šÃ‰â€šÂ·â€šÃ©)
 			opm.addr = data;
 
-			// BUSY‚ğ~‚ë‚·BƒAƒhƒŒƒXw’èŒã‚Ì‘Ò‚¿‚Í”­¶‚µ‚È‚¢‚±‚Æ‚É‚·‚é
+			// BUSYâ€šÃ°Â~â€šÃ«â€šÂ·ÂBÆ’AÆ’hÆ’Å’Æ’XÅ½wâ€™Ã¨Å’Ã£â€šÃŒâ€˜Ã’â€šÂ¿â€šÃâ€Â­ÂÂ¶â€šÂµâ€šÃˆâ€šÂ¢â€šÂ±â€šÃ†â€šÃ‰â€šÂ·â€šÃ©
 			opm.busy = FALSE;
 
 			return;
 		}
 		else {
-			// ƒf[ƒ^‘‚«‚İ(BUSY‚ÉŠÖ‚í‚ç‚¸‘‚«‚ß‚é‚±‚Æ‚É‚·‚é)
+			// Æ’fÂ[Æ’^Ââ€˜â€šÂ«ÂÅ¾â€šÃ(BUSYâ€šÃ‰Å Ã–â€šÃ­â€šÃ§â€šÂ¸Ââ€˜â€šÂ«ÂÅ¾â€šÃŸâ€šÃ©â€šÂ±â€šÃ†â€šÃ‰â€šÂ·â€šÃ©)
 			Output(opm.addr, data);
 
-			// BUSY‚ğã‚°‚é
+			// BUSYâ€šÃ°ÂÃ£â€šÂ°â€šÃ©
 			opm.busy = TRUE;
 			return;
 		}
@@ -479,7 +481,7 @@ void FASTCALL OPMIF::WriteByte(DWORD addr, DWORD data)
 
 //---------------------------------------------------------------------------
 //
-//	ƒ[ƒh‘‚«‚İ
+//	Æ’ÂÂ[Æ’hÂâ€˜â€šÂ«ÂÅ¾â€šÃ
 //
 //---------------------------------------------------------------------------
 void FASTCALL OPMIF::WriteWord(DWORD addr, DWORD data)
@@ -495,7 +497,7 @@ void FASTCALL OPMIF::WriteWord(DWORD addr, DWORD data)
 
 //---------------------------------------------------------------------------
 //
-//	“Ç‚İ‚İ‚Ì‚İ
+//	â€œÃ‡â€šÃÂÅ¾â€šÃâ€šÃŒâ€šÃ
 //
 //---------------------------------------------------------------------------
 DWORD FASTCALL OPMIF::ReadOnly(DWORD addr) const
@@ -506,13 +508,13 @@ DWORD FASTCALL OPMIF::ReadOnly(DWORD addr) const
 	ASSERT((addr >= memdev.first) && (addr <= memdev.last));
 	ASSERT_DIAG();
 
-	// Šï”ƒAƒhƒŒƒX‚Ì‚İƒfƒR[ƒh‚³‚ê‚Ä‚¢‚é
+	// Å Ã¯Ââ€Æ’AÆ’hÆ’Å’Æ’Xâ€šÃŒâ€šÃÆ’fÆ’RÂ[Æ’hâ€šÂ³â€šÃªâ€šÃ„â€šÂ¢â€šÃ©
 	if ((addr & 1) != 0) {
-		// 4ƒoƒCƒg’PˆÊ‚Åƒ‹[ƒv
+		// 4Æ’oÆ’CÆ’gâ€™PË†ÃŠâ€šÃ…Æ’â€¹Â[Æ’v
 		addr &= 3;
 
 		if (addr != 0x01) {
-			// ƒf[ƒ^ƒ|[ƒg‚ÍBUSY‚Æƒ^ƒCƒ}‚Ìó‘Ô
+			// Æ’fÂ[Æ’^Æ’|Â[Æ’gâ€šÃBUSYâ€šÃ†Æ’^Æ’CÆ’}â€šÃŒÂÃ³â€˜Ã”
 			data = 0;
 
 			// BUSY
@@ -520,7 +522,7 @@ DWORD FASTCALL OPMIF::ReadOnly(DWORD addr) const
 				data |= 0x80;
 			}
 
-			// ƒ^ƒCƒ}
+			// Æ’^Æ’CÆ’}
 			if (opm.interrupt[0]) {
 				data |= 0x01;
 			}
@@ -531,7 +533,7 @@ DWORD FASTCALL OPMIF::ReadOnly(DWORD addr) const
 			return data;
 		}
 
-		// ƒAƒhƒŒƒXƒ|[ƒg‚ÍFF
+		// Æ’AÆ’hÆ’Å’Æ’XÆ’|Â[Æ’gâ€šÃFF
 		return 0xff;
 	}
 
@@ -540,7 +542,7 @@ DWORD FASTCALL OPMIF::ReadOnly(DWORD addr) const
 
 //---------------------------------------------------------------------------
 //
-//	“à•”ƒf[ƒ^æ“¾
+//	â€œÃ â€¢â€Æ’fÂ[Æ’^Å½Ã¦â€œÂ¾
 //
 //---------------------------------------------------------------------------
 void FASTCALL OPMIF::GetOPM(opm_t *buffer)
@@ -549,13 +551,13 @@ void FASTCALL OPMIF::GetOPM(opm_t *buffer)
 	ASSERT(buffer);
 	ASSERT_DIAG();
 
-	// “à•”ƒf[ƒ^‚ğƒRƒs[
+	// â€œÃ â€¢â€Æ’fÂ[Æ’^â€šÃ°Æ’RÆ’sÂ[
 	*buffer = opm;
 }
 
 //---------------------------------------------------------------------------
 //
-//	ƒCƒxƒ“ƒgƒR[ƒ‹ƒoƒbƒN
+//	Æ’CÆ’xÆ’â€œÆ’gÆ’RÂ[Æ’â€¹Æ’oÆ’bÆ’N
 //
 //---------------------------------------------------------------------------
 BOOL FASTCALL OPMIF::Callback(Event *ev)
@@ -566,49 +568,30 @@ BOOL FASTCALL OPMIF::Callback(Event *ev)
 	ASSERT(ev);
 	ASSERT_DIAG();
 
-	// ƒ†[ƒUƒf[ƒ^óM
 	index = ev->GetUser();
 	ASSERT((index >= 0) && (index <= 1));
 
-#if defined(OPM_LOG)
-	LOG2(Log::Normal, "ƒ^ƒCƒ}%c ƒR[ƒ‹ƒoƒbƒN Time %d", index + 'A', ev->GetTime());
-#endif	// OPM_LOG
-
-	// ƒCƒl[ƒuƒ‹‚©‚Â“®ì’†‚È‚çAŠ„‚è‚İ‚ğ‹N‚±‚·
 	if (opm.enable[index] && opm.action[index]) {
 		opm.action[index] = FALSE;
 		opm.interrupt[index] = TRUE;
-#if defined(OPM_LOG)
-		LOG2(Log::Normal, "ƒ^ƒCƒ}%c ƒI[ƒo[ƒtƒ[Š„‚è‚İ Time %d", index + 'A', ev->GetTime());
-#endif	// OPM_LOG
 		mfp->SetGPIP(3, 0);
 	}
 
-	// ŠÔ‚ªˆá‚Á‚Ä‚¢‚ê‚ÎAÄİ’è
 	if (ev->GetTime() != opm.time[index]) {
 		ev->SetTime(opm.time[index]);
-#if defined(OPM_LOG)
-		LOG2(Log::Normal, "ƒ^ƒCƒ}%c ƒCƒxƒ“ƒgƒŠƒXƒ^[ƒg Time %d", index + 'A', ev->GetTime());
-#endif	// OPM_LOG
 	}
 
-	// ƒ^ƒCƒ}A‚ÍCSM‚Ìê‡‚ª‚ ‚é
 	if ((index == 0) && engine) {
 		if (opm.reg[0x14] & 0x80) {
 			ProcessBuf();
 			engine->TimerA();
+			Xm6X68Sound::TimerA();
 		}
 	}
 
-	// ƒ^ƒCƒ}‚Í‰ñ‚µ‘±‚¯‚é
 	return TRUE;
 }
 
-//---------------------------------------------------------------------------
-//
-//	ƒGƒ“ƒWƒ“w’è
-//
-//---------------------------------------------------------------------------
 void FASTCALL OPMIF::SetEngine(FM::OPM *p)
 {
 	int i;
@@ -616,10 +599,11 @@ void FASTCALL OPMIF::SetEngine(FM::OPM *p)
 	ASSERT(this);
 	ASSERT_DIAG();
 
-	// NULL‚ğw’è‚³‚ê‚éê‡‚à‚ ‚é
+	// NULLâ€šÃ°Å½wâ€™Ã¨â€šÂ³â€šÃªâ€šÃ©ÂÃªÂâ€¡â€šÃ â€šÂ â€šÃ©
 	engine = p;
+	const bool raw_mode = engine ? engine->UseRawModeReg() : false;
 
-	// ADPCM‚Ö’Ê’m
+	// ADPCMâ€šÃ–â€™ÃŠâ€™m
 	if (engine) {
 		adpcm->Enable(TRUE);
 	}
@@ -627,103 +611,112 @@ void FASTCALL OPMIF::SetEngine(FM::OPM *p)
 		adpcm->Enable(FALSE);
 	}
 
-	// enginew’è‚ ‚è‚È‚çAOPMƒŒƒWƒXƒ^‚ğo—Í
+	// engineÅ½wâ€™Ã¨â€šÂ â€šÃ¨â€šÃˆâ€šÃ§ÂAOPMÆ’Å’Æ’WÆ’XÆ’^â€šÃ°Âoâ€”Ã
 	if (!engine) {
 		return;
 	}
 	ProcessBuf();
 
-	// ƒŒƒWƒXƒ^•œ‹Œ:ƒmƒCƒYALFOAPMDAAMDACSM
+	// Æ’Å’Æ’WÆ’XÆ’^â€¢Å“â€¹Å’:Æ’mÆ’CÆ’YÂALFOÂAPMDÂAAMDÂACSM
 	engine->SetReg(0x0f, opm.reg[0x0f]);
-	engine->SetReg(0x14, opm.reg[0x14] & 0x80);
+	engine->SetReg(0x14, raw_mode ? opm.reg[0x14] : (opm.reg[0x14] & 0x80));
 	engine->SetReg(0x18, opm.reg[0x18]);
 	engine->SetReg(0x19, opm.reg[0x19]);
 
-	// ƒŒƒWƒXƒ^•œ‹Œ:ƒŒƒWƒXƒ^
+	// Æ’Å’Æ’WÆ’XÆ’^â€¢Å“â€¹Å’:Æ’Å’Æ’WÆ’XÆ’^
 	for (i=0x20; i<0x100; i++) {
 		engine->SetReg(i, opm.reg[i]);
 	}
 
-	// ƒŒƒWƒXƒ^•œ‹Œ:ƒL[
+	// Æ’Å’Æ’WÆ’XÆ’^â€¢Å“â€¹Å’:Æ’LÂ[
 	for (i=0; i<8; i++) {
 		engine->SetReg(8, opm.key[i]);
 	}
 
-	// ƒŒƒWƒXƒ^•œ‹Œ:LFO
+	// Æ’Å’Æ’WÆ’XÆ’^â€¢Å“â€¹Å’:LFO
 	engine->SetReg(1, 2);
 	engine->SetReg(1, 0);
 }
 
 //---------------------------------------------------------------------------
 //
-//	ƒŒƒWƒXƒ^o—Í
+//	Æ’Å’Æ’WÆ’XÆ’^Âoâ€”Ã
 //
 //---------------------------------------------------------------------------
 void FASTCALL OPMIF::Output(DWORD addr, DWORD data)
 {
+	const bool raw_mode = engine ? engine->UseRawModeReg() : false;
+	const DWORD x68sound_data = data;
+
 	ASSERT(this);
 	ASSERT(addr < 0x100);
 	ASSERT(data < 0x100);
 	ASSERT_DIAG();
 
-	// “ÁêƒŒƒWƒXƒ^‚Ìˆ—
+	// ??????z???
 	switch (addr) {
-		// ƒ^ƒCƒ}A
+		// ???C?}A
 		case 0x10:
 		case 0x11:
 			opm.reg[addr] = data;
 			CalcTimerA();
 			return;
 
-		// ƒ^ƒCƒ}B
+		// ???C?}B
 		case 0x12:
 			opm.reg[addr] = data;
 			CalcTimerB();
 			return;
 
-		// ƒ^ƒCƒ}§Œä
+		// ???C?}????
 		case 0x14:
 			CtrlTimer(data);
-			data &= 0x80;
+			data &= raw_mode ? 0xff : 0x80;
 			break;
 
-		// ”Ä—pƒ|[ƒg•t‚«
+		// ???p?[?g?t??
 		case 0x1b:
 			CtrlCT(data);
 			opm.reg[addr] = data;
-			data &= 0x3f;
+			data &= raw_mode ? 0xff : 0x3f;
 			break;
 
-		// ƒL[
+		// ?L?[
 		case 0x08:
 			opm.key[data & 0x07] = data;
 			opm.reg[addr] = data;
 			break;
 
-		// ‚»‚Ì‘¼
+		// OPM operator/global writes
 		default:
 			opm.reg[addr] = data;
 			break;
 	}
 
-	// ƒGƒ“ƒWƒ“‚ªw’è‚³‚ê‚Ä‚¢‚ê‚ÎAƒoƒbƒtƒ@ƒŠƒ“ƒO‚µ‚Äo—Í
+	// ?G???W????w???????A?o?b?t?@??O??o??
 	if (engine) {
 		if ((addr < 0x10) || (addr > 0x14)) {
-			// ƒ^ƒCƒ}ŠÖ˜A‚Å‚Íƒoƒbƒtƒ@ƒŠƒ“ƒO‚µ‚È‚¢
+			// ???C?}???A????????
 			ProcessBuf();
 
-			// ƒL[ƒIƒtˆÈŠO‚ÍƒXƒ^[ƒgƒtƒ‰ƒOUp
+			// ?L?[?I?t??O??X?^?[?g?t???OUp
 			if ((addr != 0x08) || (data >= 0x08)) {
 				opm.started = TRUE;
 			}
 		}
 		engine->SetReg(addr, data);
 	}
+
+	if (addr == 0x1b) {
+		Xm6X68Sound::WriteOpm(static_cast<unsigned char>(addr), static_cast<unsigned char>(x68sound_data));
+	} else {
+		Xm6X68Sound::WriteOpm(static_cast<unsigned char>(addr), static_cast<unsigned char>(data));
+	}
 }
 
 //---------------------------------------------------------------------------
 //
-//	ƒ^ƒCƒ}AZo
+//	???C?}A?Z?o
 //
 //---------------------------------------------------------------------------
 void FASTCALL OPMIF::CalcTimerA()
@@ -734,7 +727,6 @@ void FASTCALL OPMIF::CalcTimerA()
 	ASSERT(this);
 	ASSERT_DIAG();
 
-	// hus’PˆÊ‚ÅŒvZ
 	hus = opm.reg[0x10];
 	hus <<= 2;
 	low = opm.reg[0x11] & 3;
@@ -743,21 +735,21 @@ void FASTCALL OPMIF::CalcTimerA()
 	hus <<= 5;
 	opm.time[0] = hus;
 #if defined(OPM_LOG)
-	LOG1(Log::Normal, "ƒ^ƒCƒ}A = %d", hus);
+	LOG1(Log::Normal, "???C?}A = %d", hus);
 #endif	// OPM_LOG
 
-	// ~‚Ü‚Á‚Ä‚¢‚ê‚ÎƒXƒ^[ƒg(YST)
+	// ?~??????????????
 	if (event[0].GetTime() == 0) {
 		event[0].SetTime(hus);
 #if defined(OPM_LOG)
-		LOG1(Log::Normal, "ƒ^ƒCƒ}A ƒXƒ^[ƒg Time %d", event[0].GetTime());
+		LOG1(Log::Normal, "???C?}A ?X?^?[?g Time %d", event[0].GetTime());
 #endif	// OPM_LOG
 	}
 }
 
 //---------------------------------------------------------------------------
 //
-//	ƒ^ƒCƒ}BZo
+//	???C?}B?Z?o
 //
 //---------------------------------------------------------------------------
 void FASTCALL OPMIF::CalcTimerB()
@@ -767,27 +759,26 @@ void FASTCALL OPMIF::CalcTimerB()
 	ASSERT(this);
 	ASSERT_DIAG();
 
-	// hus’PˆÊ‚ÅŒvZ
 	hus = opm.reg[0x12];
 	hus = (0x100 - hus);
 	hus <<= 9;
 	opm.time[1] = hus;
 #if defined(OPM_LOG)
-	LOG1(Log::Normal, "ƒ^ƒCƒ}B = %d", hus);
+	LOG1(Log::Normal, "???C?}B = %d", hus);
 #endif	// OPM_LOG
 
-	// ~‚Ü‚Á‚Ä‚¢‚ê‚ÎƒXƒ^[ƒg(YST)
+	// ?~??????????????
 	if (event[1].GetTime() == 0) {
 		event[1].SetTime(hus);
 #if defined(OPM_LOG)
-		LOG1(Log::Normal, "ƒ^ƒCƒ}B ƒXƒ^[ƒg Time %d", event[1].GetTime());
+		LOG1(Log::Normal, "???C?}B ?X?^?[?g Time %d", event[1].GetTime());
 #endif	// OPM_LOG
 	}
 }
 
 //---------------------------------------------------------------------------
 //
-//	ƒ^ƒCƒ}§Œä
+//	???C?}????
 //
 //---------------------------------------------------------------------------
 void FASTCALL OPMIF::CtrlTimer(DWORD data)
@@ -796,7 +787,7 @@ void FASTCALL OPMIF::CtrlTimer(DWORD data)
 	ASSERT(data < 0x100);
 	ASSERT_DIAG();
 
-	// ƒI[ƒo[ƒtƒ[ƒtƒ‰ƒO‚ÌƒNƒŠƒA
+	// Æ’IÂ[Æ’oÂ[Æ’tÆ’ÂÂ[Æ’tÆ’â€°Æ’Oâ€šÃŒÆ’NÆ’Å Æ’A
 	if (data & 0x10) {
 		opm.interrupt[0] = FALSE;
 	}
@@ -804,12 +795,12 @@ void FASTCALL OPMIF::CtrlTimer(DWORD data)
 		opm.interrupt[1] = FALSE;
 	}
 
-	// —¼•û—‚¿‚½‚çAŠ„‚è‚İ‚ğ—‚Æ‚·
+	// â€”Â¼â€¢Ã»â€”Å½â€šÂ¿â€šÂ½â€šÃ§ÂAÅ â€â€šÃ¨ÂÅ¾â€šÃâ€šÃ°â€”Å½â€šÃ†â€šÂ·
 	if (!opm.interrupt[0] && !opm.interrupt[1]) {
 		mfp->SetGPIP(3, 1);
 	}
 
-	// ƒ^ƒCƒ}AƒAƒNƒVƒ‡ƒ“§Œä
+	// Æ’^Æ’CÆ’}AÆ’AÆ’NÆ’VÆ’â€¡Æ’â€œÂÂ§Å’Ã¤
 	if (data & 0x04) {
 		opm.action[0] = TRUE;
 	}
@@ -817,21 +808,21 @@ void FASTCALL OPMIF::CtrlTimer(DWORD data)
 		opm.action[0] = FALSE;
 	}
 
-	// ƒ^ƒCƒ}AƒCƒl[ƒuƒ‹§Œä
+	// Æ’^Æ’CÆ’}AÆ’CÆ’lÂ[Æ’uÆ’â€¹ÂÂ§Å’Ã¤
 	if (data & 0x01) {
-		// 0¨1‚Åƒ^ƒCƒ}’l‚ğƒ[ƒhA‚»‚êˆÈŠO‚Å‚àƒ^ƒCƒ}ON
+		// 0ÂÂ¨1â€šÃ…Æ’^Æ’CÆ’}â€™lâ€šÃ°Æ’ÂÂ[Æ’hÂAâ€šÂ»â€šÃªË†ÃˆÅ Oâ€šÃ…â€šÃ Æ’^Æ’CÆ’}ON
 		if (!opm.enable[0]) {
 			CalcTimerA();
 		}
 		opm.enable[0] = TRUE;
 	}
 	else {
-		// (ƒ}ƒ“ƒnƒbƒ^ƒ“EƒŒƒNƒCƒGƒ€)
+		// (Æ’}Æ’â€œÆ’nÆ’bÆ’^Æ’â€œÂEÆ’Å’Æ’NÆ’CÆ’GÆ’â‚¬)
 		event[0].SetTime(0);
 		opm.enable[0] = FALSE;
 	}
 
-	// ƒ^ƒCƒ}BƒAƒNƒVƒ‡ƒ“§Œä
+	// Æ’^Æ’CÆ’}BÆ’AÆ’NÆ’VÆ’â€¡Æ’â€œÂÂ§Å’Ã¤
 	if (data & 0x08) {
 		opm.action[1] = TRUE;
 	}
@@ -839,31 +830,31 @@ void FASTCALL OPMIF::CtrlTimer(DWORD data)
 		opm.action[1] = FALSE;
 	}
 
-	// ƒ^ƒCƒ}BƒCƒl[ƒuƒ‹§Œä
+	// Æ’^Æ’CÆ’}BÆ’CÆ’lÂ[Æ’uÆ’â€¹ÂÂ§Å’Ã¤
 	if (data & 0x02) {
-		// 0¨1‚Åƒ^ƒCƒ}’l‚ğƒ[ƒhA‚»‚êˆÈŠO‚Å‚àƒ^ƒCƒ}ON
+		// 0ÂÂ¨1â€šÃ…Æ’^Æ’CÆ’}â€™lâ€šÃ°Æ’ÂÂ[Æ’hÂAâ€šÂ»â€šÃªË†ÃˆÅ Oâ€šÃ…â€šÃ Æ’^Æ’CÆ’}ON
 		if (!opm.enable[1]) {
 			CalcTimerB();
 		}
 		opm.enable[1] = TRUE;
 	}
 	else {
-		// (ƒ}ƒ“ƒnƒbƒ^ƒ“EƒŒƒNƒCƒGƒ€)
+		// (Æ’}Æ’â€œÆ’nÆ’bÆ’^Æ’â€œÂEÆ’Å’Æ’NÆ’CÆ’GÆ’â‚¬)
 		event[1].SetTime(0);
 		opm.enable[1] = FALSE;
 	}
 
-	// ƒf[ƒ^‚ğ‹L‰¯
+	// Æ’fÂ[Æ’^â€šÃ°â€¹Lâ€°Â¯
 	opm.reg[0x14] = data;
 
 #if defined(OPM_LOG)
-	LOG1(Log::Normal, "ƒ^ƒCƒ}§Œä $%02X", data);
+	LOG1(Log::Normal, "Æ’^Æ’CÆ’}ÂÂ§Å’Ã¤ $%02X", data);
 #endif	// OPM_LOG
 }
 
 //---------------------------------------------------------------------------
 //
-//	CT§Œä
+//	CTÂÂ§Å’Ã¤
 //
 //---------------------------------------------------------------------------
 void FASTCALL OPMIF::CtrlCT(DWORD data)
@@ -873,19 +864,19 @@ void FASTCALL OPMIF::CtrlCT(DWORD data)
 	ASSERT(this);
 	ASSERT_DIAG();
 
-	// CTƒ|[ƒg‚Ì‚İæ‚èo‚·
+	// CTÆ’|Â[Æ’gâ€šÃŒâ€šÃÅ½Ã¦â€šÃ¨Âoâ€šÂ·
 	data &= 0xc0;
 
-	// ˆÈ‘O‚Ìƒf[ƒ^‚ğ“¾‚é
+	// Ë†Ãˆâ€˜Oâ€šÃŒÆ’fÂ[Æ’^â€šÃ°â€œÂ¾â€šÃ©
 	ct = opm.reg[0x1b];
 	ct &= 0xc0;
 
-	// ˆê’v‚µ‚Ä‚¢‚ê‚Î‰½‚à‚µ‚È‚¢
+	// Ë†Ãªâ€™vâ€šÂµâ€šÃ„â€šÂ¢â€šÃªâ€šÃâ€°Â½â€šÃ â€šÂµâ€šÃˆâ€šÂ¢
 	if (data == ct) {
 		return;
 	}
 
-	// ƒ`ƒFƒbƒN(ADPCM)
+	// Æ’`Æ’FÆ’bÆ’N(ADPCM)
 	if ((data & 0x80) != (ct & 0x80)) {
 		if (data & 0x80) {
 			adpcm->SetClock(4);
@@ -895,7 +886,7 @@ void FASTCALL OPMIF::CtrlCT(DWORD data)
 		}
 	}
 
-	// ƒ`ƒFƒbƒN(FDD)
+	// Æ’`Æ’FÆ’bÆ’N(FDD)
 	if ((data & 0x40) != (ct & 0x40)) {
 		if (data & 0x40) {
 			fdd->ForceReady(TRUE);
@@ -908,7 +899,7 @@ void FASTCALL OPMIF::CtrlCT(DWORD data)
 
 //---------------------------------------------------------------------------
 //
-//	ƒoƒbƒtƒ@“à—e‚ğ“¾‚é
+//	Æ’oÆ’bÆ’tÆ’@â€œÃ â€”eâ€šÃ°â€œÂ¾â€šÃ©
 //
 //---------------------------------------------------------------------------
 void FASTCALL OPMIF::GetBufInfo(opmbuf_t *buf)
@@ -922,7 +913,7 @@ void FASTCALL OPMIF::GetBufInfo(opmbuf_t *buf)
 
 //---------------------------------------------------------------------------
 //
-//	ƒoƒbƒtƒ@‰Šú‰»
+//	Æ’oÆ’bÆ’tÆ’@Ââ€°Å Ãºâ€°Â»
 //
 //---------------------------------------------------------------------------
 void FASTCALL OPMIF::InitBuf(DWORD rate)
@@ -932,27 +923,27 @@ void FASTCALL OPMIF::InitBuf(DWORD rate)
 	ASSERT((rate % 100) == 0);
 	ASSERT_DIAG();
 
-	// ADPCM‚Éæ‚É’Ê’m
+	// ADPCMâ€šÃ‰ÂÃ¦â€šÃ‰â€™ÃŠâ€™m
 	adpcm->InitBuf(rate);
 
-	// ƒJƒEƒ“ƒ^Aƒ|ƒCƒ“ƒ^
+	// Æ’JÆ’EÆ’â€œÆ’^ÂAÆ’|Æ’CÆ’â€œÆ’^
 	bufinfo.num = 0;
 	bufinfo.read = 0;
 	bufinfo.write = 0;
 	bufinfo.under = 0;
 	bufinfo.over = 0;
 
-	// ƒTƒEƒ“ƒhŠÔ‚ÆA˜AŒg‚·‚éƒTƒ“ƒvƒ‹”
+	// Æ’TÆ’EÆ’â€œÆ’hÅ½Å¾Å Ã”â€šÃ†ÂAËœAÅ’gâ€šÂ·â€šÃ©Æ’TÆ’â€œÆ’vÆ’â€¹Ââ€
 	scheduler->SetSoundTime(0);
 	bufinfo.samples = 0;
 
-	// ‡¬ƒŒ[ƒg
+	// Ââ€¡ÂÂ¬Æ’Å’Â[Æ’g
 	bufinfo.rate = rate / 100;
 }
 
 //---------------------------------------------------------------------------
 //
-//	ƒoƒbƒtƒ@ƒŠƒ“ƒO
+//	Æ’oÆ’bÆ’tÆ’@Æ’Å Æ’â€œÆ’O
 //
 //---------------------------------------------------------------------------
 DWORD FASTCALL OPMIF::ProcessBuf()
@@ -965,29 +956,29 @@ DWORD FASTCALL OPMIF::ProcessBuf()
 	ASSERT(this);
 	ASSERT_DIAG();
 
-	// ƒGƒ“ƒWƒ“‚ª‚È‚¯‚ê‚ÎƒŠƒ^[ƒ“
+	// Æ’GÆ’â€œÆ’WÆ’â€œâ€šÂªâ€šÃˆâ€šÂ¯â€šÃªâ€šÃÆ’Å Æ’^Â[Æ’â€œ
 	if (!engine) {
 		return bufinfo.num;
 	}
 
-	// ƒTƒEƒ“ƒhŠÔ‚©‚çA“KØ‚ÈƒTƒ“ƒvƒ‹”‚ğ“¾‚é
+	// Æ’TÆ’EÆ’â€œÆ’hÅ½Å¾Å Ã”â€šÂ©â€šÃ§ÂAâ€œKÂÃ˜â€šÃˆÆ’TÆ’â€œÆ’vÆ’â€¹Ââ€â€šÃ°â€œÂ¾â€šÃ©
 	sample = scheduler->GetSoundTime();
 	stime = sample;
 
 	sample *= bufinfo.rate;
 	sample /= 20000;
 
-	// bufmax‚É§ŒÀ
+	// bufmaxâ€šÃ‰ÂÂ§Å’Ã€
 	if (sample > BufMax) {
-		// ƒI[ƒo[‚µ‚·‚¬‚Ä‚¢‚é‚Ì‚ÅAƒŠƒZƒbƒg
+		// Æ’IÂ[Æ’oÂ[â€šÂµâ€šÂ·â€šÂ¬â€šÃ„â€šÂ¢â€šÃ©â€šÃŒâ€šÃ…ÂAÆ’Å Æ’ZÆ’bÆ’g
 		scheduler->SetSoundTime(0);
 		bufinfo.samples = 0;
 		return bufinfo.num;
 	}
 
-	// Œ»ó‚Æˆê’v‚µ‚Ä‚¢‚ê‚ÎƒŠƒ^[ƒ“
+	// Å’Â»ÂÃ³â€šÃ†Ë†Ãªâ€™vâ€šÂµâ€šÃ„â€šÂ¢â€šÃªâ€šÃÆ’Å Æ’^Â[Æ’â€œ
 	if (sample <= bufinfo.samples) {
-		// ƒVƒ“ƒNƒ‚³‚¹‚é
+		// Æ’VÆ’â€œÆ’NÆ’Ââ€šÂ³â€šÂ¹â€šÃ©
 		while (stime >= 40000) {
 			stime -= 20000;
 			scheduler->SetSoundTime(stime);
@@ -996,17 +987,17 @@ DWORD FASTCALL OPMIF::ProcessBuf()
 		return bufinfo.num;
 	}
 
-	// Œ»ó‚Æˆá‚¤•”•ª‚¾‚¯¶¬‚·‚é
+	// Å’Â»ÂÃ³â€šÃ†Ë†Ã¡â€šÂ¤â€¢â€â€¢Âªâ€šÂ¾â€šÂ¯ÂÂ¶ÂÂ¬â€šÂ·â€šÃ©
 	sample -= bufinfo.samples;
 
-	// 1‰ñ‚Ü‚½‚Í2‰ñ‚Ì‚Ç‚¿‚ç‚©ƒ`ƒFƒbƒN
+	// 1â€°Ã±â€šÃœâ€šÂ½â€šÃ2â€°Ã±â€šÃŒâ€šÃ‡â€šÂ¿â€šÃ§â€šÂ©Æ’`Æ’FÆ’bÆ’N
 	first = sample;
 	if ((first + bufinfo.write) > BufMax) {
 		first = BufMax - bufinfo.write;
 	}
 	second = sample - first;
 
-	// 1‰ñ–Ú
+	// 1â€°Ã±â€“Ãš
 	memset(&opmbuf[bufinfo.write * 2], 0, first * 8);
 	if (bufinfo.sound) {
 		engine->Mix((int32*)&opmbuf[bufinfo.write * 2], first);
@@ -1019,7 +1010,7 @@ DWORD FASTCALL OPMIF::ProcessBuf()
 		bufinfo.read = bufinfo.write;
 	}
 
-	// 2‰ñ–Ú
+	// 2â€°Ã±â€“Ãš
 	if (second > 0) {
 		memset(opmbuf, 0, second * 8);
 		if (bufinfo.sound) {
@@ -1034,7 +1025,7 @@ DWORD FASTCALL OPMIF::ProcessBuf()
 		}
 	}
 
-	// ‡¬Ï‚İƒTƒ“ƒvƒ‹”‚Ö‰ÁZ‚µA20000hus‚²‚Æ‚ÉƒVƒ“ƒNƒ‚³‚¹‚é
+	// Ââ€¡ÂÂ¬ÂÃâ€šÃÆ’TÆ’â€œÆ’vÆ’â€¹Ââ€â€šÃ–â€°ÃÅ½Zâ€šÂµÂA20000husâ€šÂ²â€šÃ†â€šÃ‰Æ’VÆ’â€œÆ’NÆ’Ââ€šÂ³â€šÂ¹â€šÃ©
 	bufinfo.samples += sample;
 	while (stime >= 40000) {
 		stime -= 20000;
@@ -1047,7 +1038,7 @@ DWORD FASTCALL OPMIF::ProcessBuf()
 
 //---------------------------------------------------------------------------
 //
-//	ƒoƒbƒtƒ@‚©‚çæ“¾
+//	Æ’oÆ’bÆ’tÆ’@â€šÂ©â€šÃ§Å½Ã¦â€œÂ¾
 //
 //---------------------------------------------------------------------------
 void FASTCALL OPMIF::GetBuf(DWORD *buf, int samples)
@@ -1063,13 +1054,13 @@ void FASTCALL OPMIF::GetBuf(DWORD *buf, int samples)
 	ASSERT(engine);
 	ASSERT_DIAG();
 
-	// ƒI[ƒo[ƒ‰ƒ“ƒ`ƒFƒbƒN‚ğæ‚É
+	// Æ’IÂ[Æ’oÂ[Æ’â€°Æ’â€œÆ’`Æ’FÆ’bÆ’Nâ€šÃ°ÂÃ¦â€šÃ‰
 	over = 0;
 	if (bufinfo.num > (DWORD)samples) {
 		over = bufinfo.num - samples;
 	}
 
-	// ‰‰ñA2‰ñ–ÚAƒAƒ“ƒ_[ƒ‰ƒ“‚Ì—v‹”‚ğŒˆ‚ß‚é
+	// Ââ€°â€°Ã±ÂA2â€°Ã±â€“ÃšÂAÆ’AÆ’â€œÆ’_Â[Æ’â€°Æ’â€œâ€šÃŒâ€”vâ€¹ÂÂâ€â€šÃ°Å’Ë†â€šÃŸâ€šÃ©
 	first = samples;
 	second = 0;
 	under = 0;
@@ -1083,14 +1074,14 @@ void FASTCALL OPMIF::GetBuf(DWORD *buf, int samples)
 		second = samples - first;
 	}
 
-	// ‰‰ñ“Ç‚İæ‚è
+	// Ââ€°â€°Ã±â€œÃ‡â€šÃÅ½Ã¦â€šÃ¨
 	memcpy(buf, &opmbuf[bufinfo.read * 2], (first * 8));
 	buf += (first * 2);
 	bufinfo.read += first;
 	bufinfo.read &= (BufMax - 1);
 	bufinfo.num -= first;
 
-	// 2‰ñ–Ú“Ç‚İæ‚è
+	// 2â€°Ã±â€“Ãšâ€œÃ‡â€šÃÅ½Ã¦â€šÃ¨
 	if (second > 0) {
 		memcpy(buf, &opmbuf[bufinfo.read * 2], (second * 8));
 		bufinfo.read += second;
@@ -1098,21 +1089,21 @@ void FASTCALL OPMIF::GetBuf(DWORD *buf, int samples)
 		bufinfo.num -= second;
 	}
 
-	// ƒAƒ“ƒ_[ƒ‰ƒ“
+	// Æ’AÆ’â€œÆ’_Â[Æ’â€°Æ’â€œ
 	if (under > 0) {
-		// ‚±‚Ì1/4‚¾‚¯AŸ‰ñ‚É‡¬‚³‚ê‚é‚æ‚¤d‘g‚Ş
+		// â€šÂ±â€šÃŒ1/4â€šÂ¾â€šÂ¯ÂAÅ½Å¸â€°Ã±â€šÃ‰Ââ€¡ÂÂ¬â€šÂ³â€šÃªâ€šÃ©â€šÃ¦â€šÂ¤Å½dâ€˜gâ€šÃ
 		bufinfo.samples = 0;
 		under *= 5000;
 		under /= bufinfo.rate;
 		scheduler->SetSoundTime(under);
 
-		// ‹L˜^
+		// â€¹LËœ^
 		bufinfo.under++;
 	}
 
-	// ƒI[ƒo[ƒ‰ƒ“
+	// Æ’IÂ[Æ’oÂ[Æ’â€°Æ’â€œ
 	if (over > 0) {
-		// ‚±‚Ì1/4‚¾‚¯AŸ‰ñ’x‚ç‚¹‚é‚æ‚¤d‘g‚Ş
+		// â€šÂ±â€šÃŒ1/4â€šÂ¾â€šÂ¯ÂAÅ½Å¸â€°Ã±â€™xâ€šÃ§â€šÂ¹â€šÃ©â€šÃ¦â€šÂ¤Å½dâ€˜gâ€šÃ
 		over *= 5000;
 		over /= bufinfo.rate;
 		under = scheduler->GetSoundTime();
@@ -1124,7 +1115,7 @@ void FASTCALL OPMIF::GetBuf(DWORD *buf, int samples)
 			scheduler->SetSoundTime(under);
 		}
 
-		// ‹L˜^
+		// â€¹LËœ^
 		bufinfo.over++;
 	}
 }

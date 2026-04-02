@@ -2,8 +2,8 @@
 //
 //	X68000 EMULATOR "XM6"
 //
-//	Copyright (C) 2001-2005 ‚o‚hD(ytanaka@ipc-tokai.or.jp)
-//	[ MFC ƒTƒuƒEƒBƒ“ƒhƒE(ƒrƒfƒI) ]
+//	Copyright (C) 2001-2005 ï¼°ï¼©ï¼(ytanaka@ipc-tokai.or.jp)
+//	[ MFC ã‚µãƒ–ã‚¦ã‚£ãƒ³ãƒ‰ã‚¦(ãƒ“ãƒ‡ã‚ª) ]
 //
 //---------------------------------------------------------------------------
 
@@ -16,85 +16,85 @@
 
 //===========================================================================
 //
-//	ƒTƒuƒrƒfƒIƒEƒBƒ“ƒhƒE
+//	Sub-video window
 //
 //===========================================================================
 class CSubVideoWnd : public CSubWnd
 {
 public:
 	CSubVideoWnd();
-										// ƒRƒ“ƒXƒgƒ‰ƒNƒ^
+										// Constructor
 	BOOL PreCreateWindow(CREATESTRUCT& cs);
-										// ƒEƒBƒ“ƒhƒEì¬€”õ
+										// Window creation preparation
 	void FASTCALL Refresh();
-										// ƒŠƒtƒŒƒbƒVƒ…
+										// Refresh
 	void FASTCALL Update();
-										// ƒƒbƒZ[ƒWƒXƒŒƒbƒh‚©‚ç‚ÌXV
+										// Update from message thread
 #if !defined(NDEBUG)
 	void AssertValid() const;
-										// f’f
+										// Diagnostics
 #endif	// NDEBUG
 
 protected:
-	// ƒƒbƒZ[ƒW ƒnƒ“ƒhƒ‰
+	// Message handler
 	afx_msg int OnCreate(LPCREATESTRUCT lpCreateStruct);
-										// ƒEƒBƒ“ƒhƒEì¬
+										// Window creation
 	afx_msg void OnSizing(UINT nSide, LPRECT lpRect);
-										// ƒTƒCƒY•ÏX’†
+										// Sizing
 	afx_msg void OnSize(UINT nType, int cx, int cy);
-										// ƒTƒCƒY•ÏX
+										// Size change
 
-	// XV
+	// Update
 	virtual void FASTCALL Setup(CRect& rect, BYTE *pBits) = 0;
-										// ƒZƒbƒgƒAƒbƒv
+										// Setup
 
-	// qƒEƒBƒ“ƒhƒE
+	// Child window
 	CSubBMPWnd *m_pBMPWnd;
-										// ƒrƒbƒgƒ}ƒbƒvƒEƒBƒ“ƒhƒE
+										// Bitmap window
 	CStatusBar m_StatusBar;
-										// ƒXƒe[ƒ^ƒXƒo[
+										// Status bar
 	int m_nScrlWidth;
-										// ‰¼‘z‰æ–Ê•(ƒhƒbƒg’PˆÊ)
+										// Virtual screen width (dots)
 	int m_nScrlHeight;
-										// ‰¼‘z‰æ–Ê‚‚³(ƒhƒbƒg’PˆÊ)
+										// Virtual screen height (dots)
 	int m_nPane;
-										// ƒXƒe[ƒ^ƒXƒo[ƒyƒCƒ“”
+										// Status bar pane count
 
-	// ‹¤’Ê
+	// Common
 	DWORD FASTCALL GetColor(DWORD dwColor) const;
-										// ƒJƒ‰[ì¬ (16bit‚©‚ç)
+										// Create color (from 16-bit)
 	DWORD FASTCALL GetPalette(DWORD dwPalette) const;
-										// ƒJƒ‰[ì¬ (ƒpƒŒƒbƒgƒCƒ“ƒfƒbƒNƒX‚©‚ç)
+										// Create color (from palette index)
 	CRTC *m_pCRTC;
 										// CRTC
 	VC *m_pVC;
 										// VC
 	BOOL m_bScroll;
-										// ƒXƒNƒ[ƒ‹l—¶‚·‚é
+										// Consider scroll
 	BOOL m_bPalette;
-										// ƒpƒŒƒbƒgl—¶‚·‚é
+										// Consider palette
 	BOOL m_bContrast;
-										// ƒRƒ“ƒgƒ‰ƒXƒgl—¶‚·‚é
+										// Consider contrast
 
 	DECLARE_MESSAGE_MAP()
-										// ƒƒbƒZ[ƒW ƒ}ƒbƒv‚ ‚è
+										// Message map exists
 };
 
 
 //===========================================================================
 //
-//	ƒeƒLƒXƒg‰æ–ÊƒEƒBƒ“ƒhƒE
+//	Text screen window
 //
 //===========================================================================
 class CTVRAMWnd : public CSubVideoWnd
 {
 public:
 	CTVRAMWnd();
-										// ƒRƒ“ƒXƒgƒ‰ƒNƒ^
+										// Constructor
 	void FASTCALL Setup(CRect& rect, BYTE* pBits);
-										// ƒZƒbƒgƒAƒbƒv
+										// Setup
 	void FASTCALL Update();
-										// ƒƒbƒZ[ƒWƒXƒŒƒbƒh‚©‚ç‚ÌXV
+										// Update from message thread
 
 private:
 	TVRAM *m_pTVRAM;
@@ -103,205 +103,205 @@ private:
 
 //===========================================================================
 //
-//	ƒOƒ‰ƒtƒBƒbƒN‰æ–Ê(1024~1024)ƒEƒBƒ“ƒhƒE
+//	Graphic screen (1024x1024) window
 //
 //===========================================================================
 class CG1024Wnd : public CSubBitmapWnd
 {
 public:
 	CG1024Wnd();
-										// ƒRƒ“ƒXƒgƒ‰ƒNƒ^
+										// Constructor
 	void FASTCALL Setup(int x, int y, int width, int height, BYTE *ptr);
-										// ƒZƒbƒgƒAƒbƒv
+										// Setup
 	void FASTCALL Update();
-										// ƒƒbƒZ[ƒWƒXƒŒƒbƒh‚©‚ç‚ÌXV
+										// Update from message thread
 
 private:
 	const WORD *m_pPalette;
-										// VCƒpƒŒƒbƒgƒAƒhƒŒƒX
+										// VC palette address
 	WORD m_WndPalette[16];
-										// ƒEƒBƒ“ƒhƒE•ÛƒpƒŒƒbƒg
+										// Window-held palette
 	DWORD m_WndColor[16];
-										// ƒEƒBƒ“ƒhƒEƒJƒ‰[ƒe[ƒuƒ‹
+										// Window color table
 	const BYTE *m_pGVRAM;
-										// GVRAMƒAƒhƒŒƒX
+										// GVRAM address
 };
 
 //===========================================================================
 //
-//	ƒOƒ‰ƒtƒBƒbƒN‰æ–Ê(16F)ƒEƒBƒ“ƒhƒE
+//	Graphic screen (16 colors) window
 //
 //===========================================================================
 class CG16Wnd : public CSubBitmapWnd
 {
 public:
 	CG16Wnd(int nPage);
-										// ƒRƒ“ƒXƒgƒ‰ƒNƒ^
+										// Constructor
 	void FASTCALL Setup(int x, int y, int width, int height, BYTE *ptr);
-										// ƒZƒbƒgƒAƒbƒv
+										// Setup
 	void FASTCALL Update();
-										// ƒƒbƒZ[ƒWƒXƒŒƒbƒh‚©‚ç‚ÌXV
+										// Update from message thread
 
 private:
 	int m_nPage;
-										// ƒy[ƒW”Ô†
+										// Page number
 	const WORD *m_pPalette;
-										// VCƒpƒŒƒbƒgƒAƒhƒŒƒX
+										// VC palette address
 	WORD m_WndPalette[16];
-										// ƒEƒBƒ“ƒhƒE•ÛƒpƒŒƒbƒg
+										// Window-held palette
 	DWORD m_WndColor[16];
-										// ƒEƒBƒ“ƒhƒEƒJƒ‰[ƒe[ƒuƒ‹
+										// Window color table
 	const BYTE *m_pGVRAM;
-										// GVRAMƒAƒhƒŒƒX
+										// GVRAM address
 };
 
 //===========================================================================
 //
-//	ƒOƒ‰ƒtƒBƒbƒN‰æ–Ê(256F)ƒEƒBƒ“ƒhƒE
+//	Graphic screen (256 colors) window
 //
 //===========================================================================
 class CG256Wnd : public CSubBitmapWnd
 {
 public:
 	CG256Wnd(int nPage);
-										// ƒRƒ“ƒXƒgƒ‰ƒNƒ^
+										// Constructor
 	void FASTCALL Setup(int x, int y, int width, int height, BYTE *ptr);
-										// ƒZƒbƒgƒAƒbƒv
+										// Setup
 	void FASTCALL Update();
-										// ƒƒbƒZ[ƒWƒXƒŒƒbƒh‚©‚ç‚ÌXV
+										// Update from message thread
 
 private:
 	int m_nPage;
-										// ƒy[ƒW”Ô†
+										// Page number
 	const WORD *m_pPalette;
-										// VCƒpƒŒƒbƒgƒAƒhƒŒƒX
+										// VC palette address
 	WORD m_WndPalette[256];
-										// ƒEƒBƒ“ƒhƒE•ÛƒpƒŒƒbƒg
+										// Window-held palette
 	DWORD m_WndColor[256];
-										// ƒEƒBƒ“ƒhƒEƒJƒ‰[ƒe[ƒuƒ‹
+										// Window color table
 	const BYTE *m_pGVRAM;
-										// GVRAMƒAƒhƒŒƒX
+										// GVRAM address
 };
 
 //===========================================================================
 //
-//	ƒOƒ‰ƒtƒBƒbƒN‰æ–Ê(65536F)ƒEƒBƒ“ƒhƒE
+//	Graphic screen (65536 colors) window
 //
 //===========================================================================
 class CG64KWnd : public CSubBitmapWnd
 {
 public:
 	CG64KWnd();
-										// ƒRƒ“ƒXƒgƒ‰ƒNƒ^
+										// Constructor
 	void FASTCALL Setup(int x, int y, int width, int height, BYTE *ptr);
-										// ƒZƒbƒgƒAƒbƒv
+										// Setup
 	void FASTCALL Update();
-										// ƒƒbƒZ[ƒWƒXƒŒƒbƒh‚©‚ç‚ÌXV
+										// Update from message thread
 
 private:
 	void FASTCALL Palette();
-										// ƒpƒŒƒbƒgÄİ’è
+										// Palette reset
 	const WORD *m_pPalette;
-										// VCƒpƒŒƒbƒgƒAƒhƒŒƒX
+										// VC palette address
 	WORD m_WndPalette[256];
-										// ƒEƒBƒ“ƒhƒE•ÛƒpƒŒƒbƒg
+										// Window-held palette
 	DWORD m_WndColor[0x10000];
-										// ƒEƒBƒ“ƒhƒEƒJƒ‰[ƒe[ƒuƒ‹
+										// Window color table
 	const BYTE *m_pGVRAM;
-										// GVRAMƒAƒhƒŒƒX
+										// GVRAM address
 };
 
 //===========================================================================
 //
-//	PCGƒEƒBƒ“ƒhƒE
+//	PCG window
 //
 //===========================================================================
 class CPCGWnd : public CSubBitmapWnd
 {
 public:
 	CPCGWnd();
-										// ƒRƒ“ƒXƒgƒ‰ƒNƒ^
+										// Constructor
 	void FASTCALL Setup(int x, int y, int width, int height, BYTE *ptr);
-										// ƒZƒbƒgƒAƒbƒv
+										// Setup
 	void FASTCALL Update();
-										// ƒƒbƒZ[ƒWƒXƒŒƒbƒh‚©‚ç‚ÌXV
+										// Update from message thread
 	afx_msg void OnParentNotify(UINT message, LPARAM lParam);
-										// eƒEƒCƒ“ƒhƒE‚Ö’Ê’m
+										// Notify parent window
 	afx_msg void OnContextMenu(CWnd *pWnd, CPoint point);
-										// ƒRƒ“ƒeƒLƒXƒgƒƒjƒ…[
+										// Context menu
 	afx_msg void OnPalette(UINT uID);
-										// ƒpƒŒƒbƒg•ÏX
+										// Palette change
 
 private:
 	const WORD *m_pPalette;
-										// VCƒpƒŒƒbƒgƒAƒhƒŒƒX
+										// VC palette address
 	WORD m_WndPalette[256];
-										// ƒEƒBƒ“ƒhƒE•ÛƒpƒŒƒbƒg
+										// Window-held palette
 	DWORD m_WndColor[256];
-										// ƒEƒBƒ“ƒhƒEƒJƒ‰[ƒe[ƒuƒ‹
+										// Window color table
 	const BYTE *m_pPCG;
-										// PCGƒAƒhƒŒƒX
+										// PCG address
 	int m_nColor;
-										// ƒJƒ‰[ƒuƒƒbƒN
+										// Color block
 
 	DECLARE_MESSAGE_MAP()
-										// ƒƒbƒZ[ƒW ƒ}ƒbƒv‚ ‚è
+										// Message map exists
 };
 
 //===========================================================================
 //
-//	BGƒEƒBƒ“ƒhƒE
+//	BG window
 //
 //===========================================================================
 class CBGWnd : public CSubBitmapWnd
 {
 public:
 	CBGWnd(int nPage);
-										// ƒRƒ“ƒXƒgƒ‰ƒNƒ^
+										// Constructor
 	void FASTCALL Setup(int x, int y, int width, int height, BYTE *ptr);
-										// ƒZƒbƒgƒAƒbƒv
+										// Setup
 	void FASTCALL Update();
-										// ƒƒbƒZ[ƒWƒXƒŒƒbƒh‚©‚ç‚ÌXV
+										// Update from message thread
 
 private:
 	const WORD *m_pPalette;
-										// VCƒpƒŒƒbƒgƒAƒhƒŒƒX
+										// VC palette address
 	WORD m_WndPalette[256];
-										// ƒEƒBƒ“ƒhƒE•ÛƒpƒŒƒbƒg
+										// Window-held palette
 	DWORD m_WndColor[256];
-										// ƒEƒBƒ“ƒhƒEƒJƒ‰[ƒe[ƒuƒ‹
+										// Window color table
 	int m_nPage;
-										// ƒy[ƒW
+										// Page
 	Sprite *m_pSprite;
-										// ƒXƒvƒ‰ƒCƒgƒRƒ“ƒgƒ[ƒ‰
+										// Sprite controller
 };
 
 //===========================================================================
 //
-//	ƒpƒŒƒbƒgƒEƒBƒ“ƒhƒE
+//	Palette window
 //
 //===========================================================================
 class CPaletteWnd : public CSubBitmapWnd
 {
 public:
 	CPaletteWnd(BOOL bRend);
-										// ƒRƒ“ƒXƒgƒ‰ƒNƒ^
+										// Constructor
 	void FASTCALL Setup(int x, int y, int width, int height, BYTE *ptr);
-										// ƒZƒbƒgƒAƒbƒv
+										// Setup
 	void FASTCALL Update();
-										// ƒƒbƒZ[ƒWƒXƒŒƒbƒh‚©‚ç‚ÌXV
+										// Update from message thread
 
 private:
 	void FASTCALL SetupRend(DWORD *buf, int no);
-										// ƒZƒbƒgƒAƒbƒv(ƒŒƒ“ƒ_ƒ‰)
+										// Setup (Renderer)
 	void FASTCALL SetupVC(DWORD *buf, int no);
-										// ƒZƒbƒgƒAƒbƒv(VC)
+										// Setup (VC)
 	BOOL m_bRend;
-										// ƒŒƒ“ƒ_ƒ‰ƒtƒ‰ƒO
+										// Renderer flag
 	Render *m_pRender;
-										// ƒŒƒ“ƒ_ƒ‰
+										// Renderer
 	const WORD *m_pVCPal;
-										// VCƒpƒŒƒbƒg
+										// VC palette
 };
 
 #endif	// mfc_vid_h

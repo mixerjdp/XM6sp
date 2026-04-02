@@ -10,10 +10,8 @@
 #include "xm6.h"
 #include "filepath.h"
 #include "fileio.h"
-#include <malloc.h>
+#include <stdlib.h>
 #include <string.h>
-
-#if defined(_WIN32)
 
 Fileio::Fileio()
 {
@@ -263,18 +261,13 @@ DWORD FASTCALL Fileio::GetFileSize() const
 	if (memory_mode) {
 		return memory_size;
 	}
-#if defined(_MSC_VER)
-	__int64 len;
+	int64_t len;
 	ASSERT(handle >= 0);
 	len = _filelengthi64(handle);
-	if (len >= 0x100000000i64) {
+	if (len >= 0x100000000LL) {
 		return 0xffffffff;
 	}
 	return (DWORD)len;
-#else
-	ASSERT(handle >= 0);
-	return (DWORD)filelength(handle);
-#endif
 }
 
 DWORD FASTCALL Fileio::GetFilePos() const
@@ -306,5 +299,3 @@ void FASTCALL Fileio::Close()
 	memory_pos = 0;
 	memory_capacity = 0;
 }
-
-#endif	// _WIN32

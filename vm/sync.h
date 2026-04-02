@@ -12,10 +12,9 @@
 #include "os.h"
 #include "xm6.h"
 
-#if defined(_WIN32)
-
-struct _RTL_CRITICAL_SECTION;
-typedef struct _RTL_CRITICAL_SECTION CRITICAL_SECTION;
+#if !defined(_WIN32)
+#include <pthread.h>
+#endif
 
 class Sync
 {
@@ -26,8 +25,11 @@ public:
 	void FASTCALL Unlock();
 
 private:
+#if defined(_WIN32)
 	CRITICAL_SECTION *csect;
+#else
+	pthread_mutex_t *mutex;
+#endif
 };
 
-#endif	// _WIN32
 #endif	// sync_h

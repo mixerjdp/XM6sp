@@ -2,7 +2,7 @@
 //
 //	X68000 EMULATOR "XM6"
 //
-//	Copyright (C) 2001-2004 ＰＩ．(ytanaka@ipc-tokai.or.jp)
+//	Copyright (C) 2001-2004 PI(ytanaka@ipc-tokai.or.jp)
 //	[ MFP(MC68901) ]
 //
 //---------------------------------------------------------------------------
@@ -21,161 +21,161 @@
 class MFP : public MemDevice
 {
 public:
-	// 内部データ定義
+	// Internal data structure
 	typedef struct {
-		// 割り込み
-		BOOL ier[0x10];					// 割り込みイネーブルレジスタ
-		BOOL ipr[0x10];					// 割り込みペンディングレジスタ
-		BOOL isr[0x10];					// 割り込みインサービスレジスタ
-		BOOL imr[0x10];					// 割り込みマスクレジスタ
-		BOOL ireq[0x10];				// 割り込みリクエストレジスタ
-		DWORD vr;						// ベクタレジスタ
-		int iidx;						// 割り込みインデックス
+		// Interrupt
+		BOOL ier[0x10];					// Interrupt enable register
+		BOOL ipr[0x10];					// Interrupt pending register
+		BOOL isr[0x10];					// Interrupt in-service register
+		BOOL imr[0x10];					// Interrupt mask register
+		BOOL ireq[0x10];				// Interrupt request register
+		DWORD vr;						// Vector register
+		int iidx;						// Interrupt index
 
-		// タイマ
-		DWORD tcr[4];					// タイマコントロールレジスタ
-		DWORD tdr[4];					// タイマデータレジスタ
-		DWORD tir[4];					// タイマインターナルレジスタ
-		DWORD tbr[2];					// タイマバックアップレジスタ
-		DWORD sram;						// si, info.ram対策フラグ
-		DWORD tecnt;					// イベントカウントモードカウンタ
+		// Timer
+		DWORD tcr[4];					// Timer control register
+		DWORD tdr[4];					// Timer data register
+		DWORD tir[4];					// Timer counter(timer register)
+		DWORD tbr[2];					// Timer backup register
+		DWORD sram;						// si, info.ram speed flag
+		DWORD tecnt;					// Event count mode counter
 
 		// GPIP
-		DWORD gpdr;						// GPIPデータレジスタ
-		DWORD aer;						// アクティブエッジレジスタ
-		DWORD ddr;						// データ方向レジスタ
-		DWORD ber;						// バックアップエッジレジスタ
+		DWORD gpdr;						// GPIP data register
+		DWORD aer;						// Active edge register
+		DWORD ddr;						// Data direction register
+		DWORD ber;						// Backup edge register
 
 		// USART
-		DWORD scr;						// SYNCキャラクタレジスタ
-		DWORD ucr;						// USARTコントロールレジスタ
-		DWORD rsr;						// レシーバステータスレジスタ
-		DWORD tsr;						// トランスミッタステータスレジスタ
-		DWORD rur;						// レシーバユーザレジスタ
-		DWORD tur;						// トランスミッタユーザレジスタ
-		DWORD buffer[0x10];				// USART FIFOバッファ
-		int datacount;					// USART 有効データ数
-		int readpoint;					// USART MFP読み取りポイント
-		int writepoint;					// USART キーボード書き込みポイント
+		DWORD scr;						// SYNC register
+		DWORD ucr;						// USART control register
+		DWORD rsr;						// Receiver status register
+		DWORD tsr;						// Transmitter status register
+		DWORD rur;						// Receiver data register
+		DWORD tur;						// Transmitter data register
+		DWORD buffer[0x10];				// USART FIFO buffer
+		int datacount;					// USART valid data count
+		int readpoint;					// USART MFP read pointer
+		int writepoint;					// USART keyboard write pointer
 	} mfp_t;
 
 public:
-	// 基本ファンクション
+	// Basic constructor
 	MFP(VM *p);
-										// コンストラクタ
+										// Constructor
 	BOOL FASTCALL Init();
-										// 初期化
+										// Initialization
 	void FASTCALL Cleanup();
-										// クリーンアップ
+										// Cleanup
 	void FASTCALL Reset();
-										// リセット
+										// Reset
 	BOOL FASTCALL Save(Fileio *fio, int ver);
-										// セーブ
+										// Save
 	BOOL FASTCALL Load(Fileio *fio, int ver);
-										// ロード
+										// Load
 	void FASTCALL ApplyCfg(const Config *config);
-										// 設定適用
+										// Apply config
 
-	// メモリデバイス
+	// Sub device
 	DWORD FASTCALL ReadByte(DWORD addr);
-										// バイト読み込み
+										// Byte read
 	DWORD FASTCALL ReadWord(DWORD addr);
-										// ワード読み込み
+										// Word read
 	void FASTCALL WriteByte(DWORD addr, DWORD data);
-										// バイト書き込み
+										// Byte write
 	void FASTCALL WriteWord(DWORD addr, DWORD data);
-										// ワード書き込み
+										// Word write
 	DWORD FASTCALL ReadOnly(DWORD addr) const;
-										// 読み込みのみ
+										// Read only
 
-	// 外部API
+	// External API
 	void FASTCALL GetMFP(mfp_t *buffer) const;
-										// 内部データ取得
+										// Get MFP
 	BOOL FASTCALL Callback(Event *ev);
-										// イベントコールバック
+										// Event callback
 	void FASTCALL IntAck();
-										// 割り込み応答
+										// Interrupt acknowledge
 	void FASTCALL EventCount(int channel, int value);
-										// イベントカウント
+										// Event count
 	void FASTCALL SetGPIP(int num, int value);
-										// GPIP設定
+										// GPIP set
 	void FASTCALL KeyData(DWORD data);
-										// キーデータ設定
+										// Key data set
 	DWORD FASTCALL GetVR() const;
-										// ベクタレジスタ取得
+										// Vector register get
 
 private:
-	// 割り込みコントロール
+	// Interrupt controller
 	void FASTCALL Interrupt(int level, BOOL enable);
-										// 割り込み
+										// Interrupt
 	void FASTCALL IntCheck();
-										// 割り込み優先順位チェック
+										// Interrupt priority check
 	void FASTCALL SetIER(int offset, DWORD data);
-										// IER設定
+										// IER set
 	DWORD FASTCALL GetIER(int offset) const;
-										// IER取得
+										// IER get
 	void FASTCALL SetIPR(int offset, DWORD data);
-										// IPR設定
+										// IPR set
 	DWORD FASTCALL GetIPR(int offset) const;
-										// IPR取得
+										// IPR get
 	void FASTCALL SetISR(int offset, DWORD data);
-										// ISR設定
+										// ISR set
 	DWORD FASTCALL GetISR(int offset) const;
-										// ISR取得
+										// ISR get
 	void FASTCALL SetIMR(int offset, DWORD data);
-										// IMR設定
+										// IMR set
 	DWORD FASTCALL GetIMR(int offset) const;
-										// IMR設定
+										// IMR get
 	void FASTCALL SetVR(DWORD data);
-										// VR設定
+										// VR set
 	static const char* IntDesc[0x10];
-										// 割り込み名称テーブル
+										// Interrupt cause table
 
-	// タイマ
+	// Timer
 	void FASTCALL SetTCR(int channel, DWORD data);
-										// TCR設定
+										// TCR set
 	DWORD FASTCALL GetTCR(int channel) const;
-										// TCR取得
+										// TCR get
 	void FASTCALL SetTDR(int channel, DWORD data);
-										// TDR設定
+										// TDR set
 	DWORD FASTCALL GetTIR(int channel) const;
-										// TIR取得
+										// TIR get
 	void FASTCALL Proceed(int channel);
-										// タイマを進める
+										// Timer proceed
 	Event timer[4];
-										// タイマイベント
+										// Timer event
 	static const int TimerInt[4];
-										// タイマ割り込みテーブル
+										// Timer interrupt table
 	static const DWORD TimerHus[8];
-										// タイマ時間テーブル
+										// Timer time table
 
 	// GPIP
 	void FASTCALL SetGPDR(DWORD data);
-										// GPDR設定
+										// GPDR set
 	void FASTCALL IntGPIP();
-										// GPIP割り込み
+										// GPIP interrupt
 	static const int GPIPInt[8];
-										// GPIP割り込みテーブル
+										// GPIP interrupt table
 
 	// USART
 	void FASTCALL SetRSR(DWORD data);
-										// RSR設定
+										// RSR set
 	void FASTCALL Receive();
-										// USARTデータ受信
+										// USART data receive
 	void FASTCALL SetTSR(DWORD data);
-										// TSR設定
+										// TSR set
 	void FASTCALL Transmit(DWORD data);
-										// USARTデータ送信
+										// USART data transmit
 	void FASTCALL USART();
-										// USART処理
+										// USART
 	Event usart;
-										// USARTイベント
+										// USART event
 	Sync *sync;
 										// USART Sync
 	Keyboard *keyboard;
-										// キーボード
+										// Keyboard
 	mfp_t mfp;
-										// 内部データ
+										// Internal data
 };
 
 #endif	// mfp_h

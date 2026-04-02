@@ -2,15 +2,15 @@
 //
 //	X68000 EMULATOR "XM6"
 //
-//	Copyright (C) 2001-2005 ＰＩ．(ytanaka@ipc-tokai.or.jp)
-//	[Subventana MFC]
+//	Copyright (C) 2001-2005 PI.(ytanaka@ipc-tokai.or.jp)
+//	[ MFC sub window ]
 //
 //---------------------------------------------------------------------------
 
 #if defined(_WIN32)
 
-#include "os.h"
 #include "mfc.h"
+#include "os.h"
 #include "xm6.h"
 #include "render.h"
 #include "mfc_frm.h"
@@ -22,33 +22,33 @@
 
 //===========================================================================
 //
-//	subventana
+//	Sub window
 //
 //===========================================================================
 
 //---------------------------------------------------------------------------
 //
-//	constructor
+//	Constructor
 //
 //---------------------------------------------------------------------------
 CSubWnd::CSubWnd()
 {
-	// objeto
+	// Object
 	m_pSch = NULL;
 	m_pDrawView = NULL;
 	m_pNextWnd = NULL;
 
-	// propiedad
+	// Property
 	m_strCaption.Empty();
 	m_bEnable = TRUE;
 	m_dwID = 0;
 	m_bPopup = FALSE;
 
-	// tamano de la ventana
+	// Window size
 	m_nWidth = -1;
 	m_nHeight = -1;
 
-	// fuente de texto
+	// Text font
 	m_pTextFont = NULL;
 	m_tmWidth = -1;
 	m_tmHeight = -1;
@@ -56,7 +56,7 @@ CSubWnd::CSubWnd()
 
 //---------------------------------------------------------------------------
 //
-//	Mapa de mensajes
+//	Message map
 //
 //---------------------------------------------------------------------------
 BEGIN_MESSAGE_MAP(CSubWnd, CWnd)
@@ -68,7 +68,7 @@ END_MESSAGE_MAP()
 
 //---------------------------------------------------------------------------
 //
-//	inicializacion
+//	Initialization
 //
 //---------------------------------------------------------------------------
 BOOL FASTCALL CSubWnd::Init(CDrawView *pDrawView)
@@ -80,23 +80,23 @@ BOOL FASTCALL CSubWnd::Init(CDrawView *pDrawView)
 	ASSERT(pDrawView);
 	ASSERT(m_dwID != 0);
 
-	// Memoria de la vista de dibujo
+	// Draw view member
 	ASSERT(!m_pDrawView);
 	m_pDrawView = pDrawView;
 	ASSERT(m_pDrawView);
 
-	// Adquisicion de la ventana del marco
+	// Get frame window
 	pFrmWnd = (CFrmWnd*)AfxGetApp()->m_pMainWnd;
 	ASSERT(pFrmWnd);
 
-	// Adquisicion del programador
+	// Get scheduler
 	ASSERT(!m_pSch);
 	m_pSch = pFrmWnd->GetScheduler();
 	ASSERT(m_pSch);
 
-	// creacion de ventanas
+	// Window creation
 	if (pFrmWnd->IsPopupSWnd()) {
-		// ventana emergente
+		// Popup window
 		m_bPopup = TRUE;
 		bRet = CreateEx(0,
 					pDrawView->GetWndClassName(),
@@ -110,9 +110,9 @@ BOOL FASTCALL CSubWnd::Init(CDrawView *pDrawView)
 					0);
 	}
 	else {
-		// ventana hija
+		// Child window
 		m_bPopup = FALSE;
-		bRet = Create(NULL, 
+		bRet = Create(NULL,
 					m_strCaption,
 					WS_CHILD | WS_OVERLAPPED | WS_SYSMENU | WS_CAPTION |
 					WS_VISIBLE | WS_MINIMIZEBOX | WS_CLIPSIBLINGS,
@@ -121,9 +121,9 @@ BOOL FASTCALL CSubWnd::Init(CDrawView *pDrawView)
 					(UINT)m_dwID);
 	}
 
-	// Si tiene exito.
+	// If successful
 	if (bRet) {
-		// Registro en la ventana principal
+		// Register with main window
 		m_pDrawView->AddSWnd(this);
 	}
 
@@ -132,7 +132,7 @@ BOOL FASTCALL CSubWnd::Init(CDrawView *pDrawView)
 
 //---------------------------------------------------------------------------
 //
-//	creacion de ventanas
+//	Window creation
 //
 //---------------------------------------------------------------------------
 int CSubWnd::OnCreate(LPCREATESTRUCT lpCreateStruct)
@@ -147,85 +147,83 @@ int CSubWnd::OnCreate(LPCREATESTRUCT lpCreateStruct)
 	ASSERT(m_nWidth > 0);
 	ASSERT(m_nHeight > 0);
 
-	// clase basica
+	// Base class
 	if (CWnd::OnCreate(lpCreateStruct) != 0) {
 		return -1;
 	}
 
-	//  Configuracion de los iconos
+	// Icon configuration
 	SetIcon(AfxGetApp()->LoadIcon(IDI_XICON), TRUE);
 
 	// IME Off
 	::ImmAssociateContext(m_hWnd, (HIMC)NULL);
 
-	// Configuracion de la fuente del texto
+	// Text font configuration
 	m_pTextFont = m_pDrawView->GetTextFont();
 	SetupTextFont();
 
-	// Calcular el tamano de ajuste de la ventana
+	// Calculate window fit size
 	rectWnd.left = 0;
 	rectWnd.top = 0;
 	rectWnd.right = m_nWidth * m_tmWidth;
 	rectWnd.bottom = m_nHeight* m_tmHeight;
 	CalcWindowRect(&rectWnd);
 
-	// Obtener indice (previsto)
+	// Get index (expected)
 	nSWnd = m_pDrawView->GetNewSWnd();
 
-	// Posicion de la ventana determinada a partir del indice.
+	// Window position determined from index
 	m_pDrawView->GetWindowRect(&rectParent);
 	point.x = (nSWnd * 24) % (rectParent.Width() - 24);
 	point.y = (nSWnd * 24) % (rectParent.Height() - 24);
 
 	if (m_bPopup) {
-		// Para los tipos de ventanas emergentes, las coordenadas de la pantalla son la referencia
+		// For popup window types, screen coordinates are the reference
 		point.x += rectParent.left;
 		point.y += rectParent.top;
 	}
 
-	// Fijar la posicion y el tamano de la ventana 
+	// Set window position and size
 	SetWindowPos(&wndTop, point.x, point.y,
 		rectWnd.right, rectWnd.bottom, 0);
-
-		
 
 	return 0;
 }
 
 //---------------------------------------------------------------------------
 //
-//	eliminacion de ventanas
+//	Window destruction
 //
 //---------------------------------------------------------------------------
 void CSubWnd::OnDestroy()
 {
 	ASSERT(this);
 
-	// 動作停止
+	// Disable
 	Enable(FALSE);
 
-	// 親ウィンドウへ通知
+	// Unregister from draw view
 	m_pDrawView->DelSWnd(this);
 
-	// 基本クラスへ
+	// Base class
 	CWnd::OnDestroy();
 }
 
 //---------------------------------------------------------------------------
 //
-//	ウィンドウ削除完了
+//	Window destruction
 //
 //---------------------------------------------------------------------------
 void CSubWnd::PostNcDestroy()
 {
-	// インタフェース要素を削除
+	// Delete interface object
 	ASSERT(this);
 	delete this;
 }
 
 //---------------------------------------------------------------------------
 //
-//	背景描画
+//	Background draw
 //
 //---------------------------------------------------------------------------
 BOOL CSubWnd::OnEraseBkgnd(CDC *pDC)
@@ -233,18 +231,18 @@ BOOL CSubWnd::OnEraseBkgnd(CDC *pDC)
 	ASSERT(this);
 	ASSERT_VALID(this);
 
-	// 有効なら、全領域責任を持つ
+	// If enabled, suppress
 	if (m_bEnable) {
 		return TRUE;
 	}
 
-	// 基本クラスへ
+	// Base class
 	return CWnd::OnEraseBkgnd(pDC);
 }
 
 //---------------------------------------------------------------------------
 //
-//	アクティベート
+//	Activate
 //
 //---------------------------------------------------------------------------
 void CSubWnd::OnActivate(UINT nState, CWnd *pWnd, BOOL bMinimized)
@@ -252,25 +250,25 @@ void CSubWnd::OnActivate(UINT nState, CWnd *pWnd, BOOL bMinimized)
 	ASSERT(this);
 	ASSERT_VALID(this);
 
-	// ポップアップウィンドウのみ
+	// Popup window only
 	if (m_bPopup) {
 		if (nState == WA_INACTIVE) {
-			// ポップアップウィンドウがインアクティブなら、低速実行
+			// If popup window loses focus, suspend
 			m_pSch->Activate(FALSE);
 		}
 		else {
-			// ポップアップウィンドウがアクティブなら、通常実行
+			// If popup window gains focus, resume
 			m_pSch->Activate(TRUE);
 		}
 	}
 
-	// 基本クラス
+	// Base class
 	CWnd::OnActivate(nState, pWnd, bMinimized);
 }
 
 //---------------------------------------------------------------------------
 //
-//	動作制御
+//	Enable control
 //
 //---------------------------------------------------------------------------
 void FASTCALL CSubWnd::Enable(BOOL bEnable)
@@ -282,7 +280,7 @@ void FASTCALL CSubWnd::Enable(BOOL bEnable)
 
 //---------------------------------------------------------------------------
 //
-//	ウィンドウIDを取得
+//	Get window ID
 //
 //---------------------------------------------------------------------------
 DWORD FASTCALL CSubWnd::GetID() const
@@ -295,7 +293,7 @@ DWORD FASTCALL CSubWnd::GetID() const
 
 //---------------------------------------------------------------------------
 //
-//	テキストフォントセットアップ
+//	Text font setup
 //
 //---------------------------------------------------------------------------
 void FASTCALL CSubWnd::SetupTextFont()
@@ -306,25 +304,25 @@ void FASTCALL CSubWnd::SetupTextFont()
 
 	ASSERT(this);
 
-	// フォントセレクト
+	// Font selection
 	ASSERT(m_pTextFont);
 	pFont = dc.SelectObject(m_pTextFont);
 	ASSERT(pFont);
 
-	// テキストメトリックを取得
+	// Get text metrics
 	VERIFY(dc.GetTextMetrics(&tm));
 
-	// フォントを戻す
+	// Deselect font
 	VERIFY(dc.SelectObject(pFont));
 
-	// テキスト横幅、縦幅を格納
+	// Store text width, height
 	m_tmWidth = tm.tmAveCharWidth;
 	m_tmHeight = tm.tmHeight + tm.tmExternalLeading;
 }
 
 //---------------------------------------------------------------------------
 //
-//	メッセージスレッドから更新
+//	Message thread update
 //
 //---------------------------------------------------------------------------
 void FASTCALL CSubWnd::Update()
@@ -335,7 +333,7 @@ void FASTCALL CSubWnd::Update()
 
 //---------------------------------------------------------------------------
 //
-//	セーブ
+//	Save
 //
 //---------------------------------------------------------------------------
 BOOL FASTCALL CSubWnd::Save(Fileio* /*pFio*/, int /*nVer*/)
@@ -348,7 +346,7 @@ BOOL FASTCALL CSubWnd::Save(Fileio* /*pFio*/, int /*nVer*/)
 
 //---------------------------------------------------------------------------
 //
-//	ロード
+//	Load
 //
 //---------------------------------------------------------------------------
 BOOL FASTCALL CSubWnd::Load(Fileio* /*pFio*/, int /*nVer*/)
@@ -361,7 +359,7 @@ BOOL FASTCALL CSubWnd::Load(Fileio* /*pFio*/, int /*nVer*/)
 
 //---------------------------------------------------------------------------
 //
-//	設定適用
+//	Apply configuration
 //
 //---------------------------------------------------------------------------
 void FASTCALL CSubWnd::ApplyCfg(const Config* /*pConfig*/)
@@ -373,21 +371,21 @@ void FASTCALL CSubWnd::ApplyCfg(const Config* /*pConfig*/)
 #if !defined(NDEBUG)
 //---------------------------------------------------------------------------
 //
-//	診断
+//	Diagnostics
 //
 //---------------------------------------------------------------------------
 void CSubWnd::AssertValid() const
 {
 	ASSERT(this);
 
-	// 他のオブジェクト
+	// Member objects
 	ASSERT(m_pSch);
 	ASSERT(m_pSch->GetID() == MAKEID('S', 'C', 'H', 'E'));
 	ASSERT(m_pDrawView);
 	ASSERT(m_pDrawView->m_hWnd);
 	ASSERT(::IsWindow(m_pDrawView->m_hWnd));
 
-	// プロパティ
+	// Properties
 	ASSERT(m_strCaption.GetLength() > 0);
 	ASSERT(m_dwID != 0);
 	ASSERT(m_nWidth > 0);
@@ -401,18 +399,18 @@ void CSubWnd::AssertValid() const
 
 //===========================================================================
 //
-//	サブテキストウィンドウ
+//	Sub text window
 //
 //===========================================================================
 
 //---------------------------------------------------------------------------
 //
-//	コンストラクタ
+//	Constructor
 //
 //---------------------------------------------------------------------------
 CSubTextWnd::CSubTextWnd()
 {
-	// メンバ変数初期化
+	// Member variable initialization
 	m_bReverse = FALSE;
 	m_pTextBuf = NULL;
 	m_pDrawBuf = NULL;
@@ -420,7 +418,7 @@ CSubTextWnd::CSubTextWnd()
 
 //---------------------------------------------------------------------------
 //
-//	メッセージ マップ
+//	Message map
 //
 //---------------------------------------------------------------------------
 BEGIN_MESSAGE_MAP(CSubTextWnd, CSubWnd)
@@ -432,7 +430,7 @@ END_MESSAGE_MAP()
 
 //---------------------------------------------------------------------------
 //
-//	ウィンドウ作成
+//	Window creation
 //
 //---------------------------------------------------------------------------
 int CSubTextWnd::OnCreate(LPCREATESTRUCT lpCreateStruct)
@@ -442,16 +440,16 @@ int CSubTextWnd::OnCreate(LPCREATESTRUCT lpCreateStruct)
 	ASSERT(m_nWidth > 0);
 	ASSERT(m_nHeight > 0);
 
-	// テキストバッファ確保
+	// Text buffer allocation
 	m_pTextBuf = new BYTE[m_nWidth * m_nHeight];
 	ASSERT(m_pTextBuf);
 
-	// 描画バッファ確保、初期化
+	// Draw buffer allocation, initialization
 	m_pDrawBuf = new BYTE[m_nWidth * m_nHeight];
 	ASSERT(m_pDrawBuf);
 	memset(m_pDrawBuf, 0xff, m_nWidth * m_nHeight);
 
-	// 基本クラス(ここでDrawViewヘ通知)
+	// Base class (delegates to DrawView)
 	if (CSubWnd::OnCreate(lpCreateStruct) != 0) {
 		return -1;
 	}
@@ -461,24 +459,24 @@ int CSubTextWnd::OnCreate(LPCREATESTRUCT lpCreateStruct)
 
 //---------------------------------------------------------------------------
 //
-//	ウィンドウ削除
+//	Window destruction
 //
 //---------------------------------------------------------------------------
 void CSubTextWnd::OnDestroy()
 {
 	ASSERT(this);
 
-	// 基本クラスを先に実行する(DrawViewへの通知を急ぐため)
+	// Base class (also performs notification to DrawView)
 	CSubWnd::OnDestroy();
 
-	// テキストバッファ解放
+	// Text buffer delete
 	ASSERT(m_pTextBuf);
 	if (m_pTextBuf) {
 		delete[] m_pTextBuf;
 		m_pTextBuf = NULL;
 	}
 
-	// 描画バッファ解放
+	// Draw buffer delete
 	ASSERT(m_pDrawBuf);
 	if (m_pDrawBuf) {
 		delete[] m_pDrawBuf;
@@ -488,35 +486,35 @@ void CSubTextWnd::OnDestroy()
 
 //---------------------------------------------------------------------------
 //
-//	描画
+//	Draw
 //
 //---------------------------------------------------------------------------
 void CSubTextWnd::OnPaint()
 {
 	PAINTSTRUCT ps;
 
-	// VMをロック
+	// VM lock
 	::LockVM();
 
     BeginPaint(&ps);
 
-	// テキストバッファ、有効フラグチェック
+	// Text buffer, enable flag check
 	if (m_pTextBuf && m_bEnable) {
-		// 描画バッファをFFで埋める
+		// Clear draw buffer with FF
 		memset(m_pDrawBuf, 0xff, m_nWidth * m_nHeight);
 
-		// 描画は行わない(VMスレッドからのRefreshに任せる)
+		// Draw processing (VM thread calls Refresh to delegate)
 	}
 
 	EndPaint(&ps);
 
-	// VMアンロック
+	// VM unlock
 	::UnlockVM();
 }
 
 //---------------------------------------------------------------------------
 //
-//	サイズ変更
+//	Size change
 //
 //---------------------------------------------------------------------------
 void CSubTextWnd::OnSize(UINT nType, int cx, int cy)
@@ -529,18 +527,18 @@ void CSubTextWnd::OnSize(UINT nType, int cx, int cy)
 	ASSERT(m_tmWidth > 0);
 	ASSERT(m_tmHeight > 0);
 
-	// キャラクタ当たりのクライアントサイズを計算
+	// Calculate client size from character metrics
 	GetClientRect(&rectClient);
 	nWidth = rectClient.Width() / m_tmWidth;
 	nHeight = rectClient.Height() / m_tmHeight;
 
-	// 一致していなくて
+	// If not matching
 	if ((nWidth != m_nWidth) || (nHeight != m_nHeight)) {
-		// 最小化でなくて
+		// If not minimized
 		if (nType != SIZE_MINIMIZED) {
-			// テキストバッファがあれば
+			// Text buffer reallocation
 			if (m_pTextBuf && m_pDrawBuf) {
-				// 余裕があれば、+1
+				// If odd, +1
 				if ((nWidth * m_tmWidth) < rectClient.Width()) {
 					nWidth++;
 				}
@@ -548,7 +546,7 @@ void CSubTextWnd::OnSize(UINT nType, int cx, int cy)
 					nHeight++;
 				}
 
-				// バッファ変更(VMロックを挟む)
+				// Buffer change (VM lock required)
 				::LockVM();
 				ASSERT(m_pTextBuf);
 				if (m_pTextBuf) {
@@ -569,16 +567,16 @@ void CSubTextWnd::OnSize(UINT nType, int cx, int cy)
 		}
 	}
 
-	// 再描画を図る
+	// Redraw
 	Invalidate(FALSE);
 
-	// 基本クラスへ
+	// Base class
 	CSubWnd::OnSize(nType, cx, cy);
 }
 
 //---------------------------------------------------------------------------
 //
-//	リフレッシュ描画
+//	Refresh display
 //
 //---------------------------------------------------------------------------
 void FASTCALL CSubTextWnd::Refresh()
@@ -587,19 +585,19 @@ void FASTCALL CSubTextWnd::Refresh()
 
 	ASSERT(this);
 
-	// テキストバッファ、有効フラグチェック
+	// Text buffer, enable flag check
 	if (m_pTextBuf && m_bEnable) {
-		// セットアップ
+		// Setup
 		Setup();
 
-		// 描画
+		// Draw
 		OnDraw(&dc);
 	}
 }
 
 //---------------------------------------------------------------------------
 //
-//	描画メイン
+//	Draw callback
 //
 //---------------------------------------------------------------------------
 void FASTCALL CSubTextWnd::OnDraw(CDC *pDC)
@@ -621,25 +619,25 @@ void FASTCALL CSubTextWnd::OnDraw(CDC *pDC)
 	ASSERT(m_nWidth >= 0);
 	ASSERT(m_nHeight >= 0);
 
-	// フォント指定
+	// Font selection
 	pFont = pDC->SelectObject(m_pTextFont);
 	ASSERT(pFont);
 
-	// 色指定
+	// Color selection
 	pDC->SetTextColor(::GetSysColor(COLOR_WINDOWTEXT));
 	pDC->SetBkColor(::GetSysColor(COLOR_WINDOW));
 	bReverse = FALSE;
 
-	// ポインタ、座標初期化
+	// Pointer, coordinate initialization
 	pText = m_pTextBuf;
 	pDraw = m_pDrawBuf;
 	point.y = 0;
 
-	// yループ
+	// y loop
 	for (y=0; y<m_nHeight; y++) {
 		point.x = 0;
 		for (x=0; x<m_nWidth; x++) {
-			// 一致チェック
+			// Match check
 			if (*pText == *pDraw) {
 				pText++;
 				pDraw++;
@@ -647,11 +645,11 @@ void FASTCALL CSubTextWnd::OnDraw(CDC *pDC)
 				continue;
 			}
 
-			// コピー
+			// Copy
 			ch = *pText++;
 			*pDraw++ = ch;
 
-			// 反転チェック
+			// Reverse check
 			if (ch >= 0x80) {
 				ch &= 0x7f;
 				if (!bReverse) {
@@ -668,20 +666,20 @@ void FASTCALL CSubTextWnd::OnDraw(CDC *pDC)
 				}
 			}
 
-			// テキストアウト
+			// Text out
 			pDC->TextOut(point.x, point.y, (LPCTSTR)&ch ,1);
 			point.x += m_tmWidth;
 		}
 		point.y += m_tmHeight;
 	}
 
-	// フォント指定解除
+	// Font selection restore
 	VERIFY(pDC->SelectObject(pFont));
 }
 
 //---------------------------------------------------------------------------
 //
-//	クリア
+//	Clear
 //
 //---------------------------------------------------------------------------
 void FASTCALL CSubTextWnd::Clear()
@@ -691,18 +689,18 @@ void FASTCALL CSubTextWnd::Clear()
 	ASSERT(m_nWidth >= 0);
 	ASSERT(m_nHeight >= 0);
 
-	// クリア
+	// Clear
 	if (m_pTextBuf) {
 		memset(m_pTextBuf, 0x20, m_nWidth * m_nHeight);
 	}
 
-	// 反転オフ
+	// Reverse off
 	Reverse(FALSE);
 }
 
 //---------------------------------------------------------------------------
 //
-//	文字セット
+//	Set character
 //
 //---------------------------------------------------------------------------
 void FASTCALL CSubTextWnd::SetChr(int x, int y, TCHAR ch)
@@ -713,9 +711,9 @@ void FASTCALL CSubTextWnd::SetChr(int x, int y, TCHAR ch)
 	ASSERT(y >= 0);
 	ASSERT(_istprint(ch));
 
-	// 有効範囲かチェック
+	// Valid range check
 	if ((x < m_nWidth) && (y < m_nHeight)) {
-		// 書き込み
+		// Set character
 		if (m_bReverse) {
 			m_pTextBuf[(y * m_nWidth) + x] = (BYTE)(ch | 0x80);
 		}
@@ -727,7 +725,7 @@ void FASTCALL CSubTextWnd::SetChr(int x, int y, TCHAR ch)
 
 //---------------------------------------------------------------------------
 //
-//	文字列セット
+//	Set string
 //
 //---------------------------------------------------------------------------
 void FASTCALL CSubTextWnd::SetString(int x, int y, LPCTSTR lpszText)
@@ -738,7 +736,7 @@ void FASTCALL CSubTextWnd::SetString(int x, int y, LPCTSTR lpszText)
 	ASSERT(y >= 0);
 	ASSERT(lpszText);
 
-	// '\0'までループ
+	// Loop until '\0'
 	while (_istprint(*lpszText)) {
 		SetChr(x, y, *lpszText);
 
@@ -749,7 +747,7 @@ void FASTCALL CSubTextWnd::SetString(int x, int y, LPCTSTR lpszText)
 
 //---------------------------------------------------------------------------
 //
-//	反転セット
+//	Reverse
 //
 //---------------------------------------------------------------------------
 void FASTCALL CSubTextWnd::Reverse(BOOL bReverse)
@@ -762,7 +760,7 @@ void FASTCALL CSubTextWnd::Reverse(BOOL bReverse)
 
 //---------------------------------------------------------------------------
 //
-//	リサイズ
+//	Resize
 //
 //---------------------------------------------------------------------------
 void FASTCALL CSubTextWnd::ReSize(int nWidth, int nHeight)
@@ -774,42 +772,42 @@ void FASTCALL CSubTextWnd::ReSize(int nWidth, int nHeight)
 	ASSERT(nWidth > 0);
 	ASSERT(nHeight > 0);
 
-	// 一致チェック
+	// Match check
 	if ((nWidth == m_nWidth) && (nHeight == m_nHeight)) {
 		return;
 	}
 
-	// バッファがなければ何もしない
+	// If no buffer, do nothing
 	if (!m_pTextBuf || !m_pDrawBuf) {
 		return;
 	}
 
-	// サイズを算出
+	// Calculate size
 	rectWnd.left = 0;
 	rectWnd.top = 0;
 	rectWnd.right = nWidth * m_tmWidth;
 	rectWnd.bottom = nHeight * m_tmHeight;
 	CalcWindowRect(&rectWnd);
 
-	// 現在と同じなら何もしない
+	// If same, do nothing
 	GetWindowRect(&rectNow);
 	if ((rectNow.Width() == rectWnd.Width()) && (rectNow.Height() == rectWnd.Height())) {
 		return;
 	}
 
-	// サイズ変更
+	// Size change
 	SetWindowPos(&wndTop, 0, 0, rectWnd.Width(), rectWnd.Height(), SWP_NOMOVE);
 }
 
 //===========================================================================
 //
-//	サブテキスト可変ウィンドウ
+//	Sub text size window
 //
 //===========================================================================
 
 //---------------------------------------------------------------------------
 //
-//	コンストラクタ
+//	Constructor
 //
 //---------------------------------------------------------------------------
 CSubTextSizeWnd::CSubTextSizeWnd()
@@ -818,19 +816,19 @@ CSubTextSizeWnd::CSubTextSizeWnd()
 
 //---------------------------------------------------------------------------
 //
-//	ウィンドウ作成準備
+//	Window creation preprocessing
 //
 //---------------------------------------------------------------------------
 BOOL CSubTextSizeWnd::PreCreateWindow(CREATESTRUCT& cs)
 {
 	ASSERT(this);
 
-	// 基本クラス
+	// Base class
 	if (!CSubTextWnd::PreCreateWindow(cs)) {
 		return FALSE;
 	}
 
-	// サイズ可変、最大化可・
+	// Size, resizable, maximize box
 	cs.style |= WS_THICKFRAME;
 	cs.style |= WS_MAXIMIZEBOX;
 
@@ -839,7 +837,7 @@ BOOL CSubTextSizeWnd::PreCreateWindow(CREATESTRUCT& cs)
 
 //---------------------------------------------------------------------------
 //
-//	描画メイン
+//	Draw callback
 //
 //---------------------------------------------------------------------------
 void FASTCALL CSubTextSizeWnd::OnDraw(CDC *pDC)
@@ -849,36 +847,36 @@ void FASTCALL CSubTextSizeWnd::OnDraw(CDC *pDC)
 	ASSERT(this);
 	ASSERT(pDC);
 
-	// クライアント矩形を取得
+	// Get client rectangle
 	GetClientRect(&rect);
 
-	// 右側をクリア
+	// Clear right
 	rect.left = m_nWidth * m_tmWidth;
 	pDC->FillSolidRect(&rect, GetSysColor(COLOR_WINDOW));
 
-	// 下側をクリア
+	// Clear bottom
 	rect.left = 0;
 	rect.top = m_nHeight * m_tmHeight;
 	pDC->FillSolidRect(&rect, GetSysColor(COLOR_WINDOW));
 
-	// 基本クラスへ
+	// Base class
 	CSubTextWnd::OnDraw(pDC);
 }
 
 //===========================================================================
 //
-//	サブテキストスクロールウィンドウ
+//	Sub text scroll window
 //
 //===========================================================================
 
 //---------------------------------------------------------------------------
 //
-//	コンストラクタ
+//	Constructor
 //
 //---------------------------------------------------------------------------
 CSubTextScrlWnd::CSubTextScrlWnd()
 {
-	// メンバ変数初期化
+	// Member variable initialization
 	m_ScrlWidth = -1;
 	m_ScrlHeight = -1;
 	m_bScrlH = FALSE;
@@ -889,7 +887,7 @@ CSubTextScrlWnd::CSubTextScrlWnd()
 
 //---------------------------------------------------------------------------
 //
-//	メッセージ マップ
+//	Message map
 //
 //---------------------------------------------------------------------------
 BEGIN_MESSAGE_MAP(CSubTextScrlWnd, CSubTextSizeWnd)
@@ -901,19 +899,19 @@ END_MESSAGE_MAP()
 
 //---------------------------------------------------------------------------
 //
-//	ウィンドウ作成準備
+//	Window creation preprocessing
 //
 //---------------------------------------------------------------------------
 BOOL CSubTextScrlWnd::PreCreateWindow(CREATESTRUCT& cs)
 {
 	ASSERT(this);
 
-	// 基本クラス
+	// Base class
 	if (!CSubTextSizeWnd::PreCreateWindow(cs)) {
 		return FALSE;
 	}
 
-	// スクロールバーを追加
+	// Add scroll bars
 	cs.style |= WS_HSCROLL;
 	cs.style |= WS_VSCROLL;
 
@@ -922,7 +920,7 @@ BOOL CSubTextScrlWnd::PreCreateWindow(CREATESTRUCT& cs)
 
 //---------------------------------------------------------------------------
 //
-//	ウィンドウ作成
+//	Window creation
 //
 //---------------------------------------------------------------------------
 int CSubTextScrlWnd::OnCreate(LPCREATESTRUCT lpcs)
@@ -932,16 +930,16 @@ int CSubTextScrlWnd::OnCreate(LPCREATESTRUCT lpcs)
 
 	ASSERT(this);
 
-	// 基本クラス
+	// Base class
 	if (CSubTextSizeWnd::OnCreate(lpcs) != 0) {
 		return -1;
 	}
 
-	// スクロール準備
+	// Scroll setup
 	ShowScrollBar(SB_BOTH, FALSE);
 	SetupScrl();
 
-	// サイズ調整
+	// Size adjustment
 	GetWindowRect(&wrect);
 	GetClientRect(&crect);
 	wrect.right -= wrect.left;
@@ -955,23 +953,23 @@ int CSubTextScrlWnd::OnCreate(LPCREATESTRUCT lpcs)
 
 //---------------------------------------------------------------------------
 //
-//	サイズ変更
+//	Size change
 //
 //---------------------------------------------------------------------------
 void CSubTextScrlWnd::OnSize(UINT nType, int cx, int cy)
 {
 	ASSERT(this);
 
-	// 基本クラスを先に実行
+	// Base class first
 	CSubTextSizeWnd::OnSize(nType, cx, cy);
 
-	// スクロール準備
+	// Scroll setup
 	SetupScrl();
 }
 
 //---------------------------------------------------------------------------
 //
-//	スクロール準備
+//	Scroll setup
 //
 //---------------------------------------------------------------------------
 void FASTCALL CSubTextScrlWnd::SetupScrl()
@@ -986,15 +984,15 @@ void FASTCALL CSubTextScrlWnd::SetupScrl()
 	ASSERT(m_tmWidth > 0);
 	ASSERT(m_tmHeight > 0);
 
-	// クライアントサイズを取得
+	// Get client size
 	GetClientRect(&rect);
 
-	// 最小化なら何もしない
+	// Do nothing if not yet valid
 	if ((rect.right == 0) || (rect.bottom == 0)) {
 		return;
 	}
 
-	// Hスクロールを判定
+	// Evaluate H scroll
 	width = rect.right / m_tmWidth;
 	if (width < m_ScrlWidth) {
 		if (!m_bScrlH) {
@@ -1002,7 +1000,7 @@ void FASTCALL CSubTextScrlWnd::SetupScrl()
 			m_ScrlX = 0;
 			ShowScrollBar(SB_HORZ, TRUE);
 		}
-		// スクロールバーが必要なので、詳細設定
+		// Scroll bar needed, set position
 		SetupScrlH();
 	}
 	else {
@@ -1013,7 +1011,7 @@ void FASTCALL CSubTextScrlWnd::SetupScrl()
 		}
 	}
 
-	// Vスクロールを判定
+	// Evaluate V scroll
 	height = rect.bottom / m_tmHeight;
 	if (height < m_ScrlHeight) {
 		if (!m_bScrlV) {
@@ -1021,7 +1019,7 @@ void FASTCALL CSubTextScrlWnd::SetupScrl()
 			m_ScrlY = 0;
 			ShowScrollBar(SB_VERT, TRUE);
 		}
-		// スクロールバーが必要なので、詳細設定
+		// Scroll bar needed, set position
 		SetupScrlV();
 	}
 	else {
@@ -1035,7 +1033,7 @@ void FASTCALL CSubTextScrlWnd::SetupScrl()
 
 //---------------------------------------------------------------------------
 //
-//	スクロール準備(水平)
+//	Scroll setup (horizontal)
 //
 //---------------------------------------------------------------------------
 void FASTCALL CSubTextScrlWnd::SetupScrlH()
@@ -1046,11 +1044,11 @@ void FASTCALL CSubTextScrlWnd::SetupScrlH()
 
 	ASSERT(this);
 
-	// 水平表示可能キャラクタを取得
+	// Get scrollable character count
 	GetClientRect(&rect);
 	width = rect.right / m_tmWidth;
 
-	// スクロール情報をセット
+	// Scroll bar setup
 	memset(&si, 0, sizeof(si));
 	si.cbSize = sizeof(si);
 	si.fMask = SIF_ALL;
@@ -1058,7 +1056,7 @@ void FASTCALL CSubTextScrlWnd::SetupScrlH()
 	si.nMax = m_ScrlWidth - 1;
 	si.nPage = width;
 
-	// 位置は、必要なら補正する
+	// Position, correct if needed
 	si.nPos = m_ScrlX;
 	if (si.nPos + width > m_ScrlWidth) {
 		si.nPos = m_ScrlWidth - width;
@@ -1073,7 +1071,7 @@ void FASTCALL CSubTextScrlWnd::SetupScrlH()
 
 //---------------------------------------------------------------------------
 //
-//	スクロール(水平)
+//	Scroll (horizontal)
 //
 //---------------------------------------------------------------------------
 void CSubTextScrlWnd::OnHScroll(UINT nSBCode, UINT nPos, CScrollBar * /*pBar*/)
@@ -1082,38 +1080,38 @@ void CSubTextScrlWnd::OnHScroll(UINT nSBCode, UINT nPos, CScrollBar * /*pBar*/)
 
 	ASSERT(this);
 
-	// スクロール情報を取得
+	// Get scroll info
 	memset(&si, 0, sizeof(si));
 	si.cbSize = sizeof(si);
 	GetScrollInfo(SB_HORZ, &si, SIF_ALL);
 
-	// スクロールバーコード別
+	// Scroll bar code processing
 	switch (nSBCode) {
-		// 左へ
+		// Left end
 		case SB_LEFT:
 			m_ScrlX = si.nMin;
 			break;
 
-		// 右へ
+		// Right end
 		case SB_RIGHT:
 			m_ScrlX = si.nMax;
 			break;
 
-		// 1ライン左へ
+		// 1 line left
 		case SB_LINELEFT:
 			if (m_ScrlX > 0) {
 				m_ScrlX--;
 			}
 			break;
 
-		// 1ライン右へ
+		// 1 line right
 		case SB_LINERIGHT:
 			if (m_ScrlX < si.nMax) {
 				m_ScrlX++;
 			}
 			break;
 
-		// 1ページ左へ
+		// 1 page left
 		case SB_PAGELEFT:
 			if (m_ScrlX >= (int)si.nPage) {
 				m_ScrlX -= (int)si.nPage;
@@ -1123,7 +1121,7 @@ void CSubTextScrlWnd::OnHScroll(UINT nSBCode, UINT nPos, CScrollBar * /*pBar*/)
 			}
 			break;
 
-		// 1ページ右へ
+		// 1 page right
 		case SB_PAGERIGHT:
 			if ((m_ScrlX + (int)si.nPage) <= (int)si.nMax) {
 				m_ScrlX += si.nPage;
@@ -1133,25 +1131,25 @@ void CSubTextScrlWnd::OnHScroll(UINT nSBCode, UINT nPos, CScrollBar * /*pBar*/)
 			}
 			break;
 
-		// サム移動
+		// Thumb move
 		case SB_THUMBPOSITION:
 		case SB_THUMBTRACK:
 			m_ScrlX = nPos;
 			break;
 	}
 
-	// 正に補正
+	// Clamp
 	if (m_ScrlX < 0) {
 		m_ScrlX = 0;
 	}
 
-	// セット
+	// Set
 	SetupScrlH();
 }
 
 //---------------------------------------------------------------------------
 //
-//	スクロール準備(垂直)
+//	Scroll setup (vertical)
 //
 //---------------------------------------------------------------------------
 void FASTCALL CSubTextScrlWnd::SetupScrlV()
@@ -1162,11 +1160,11 @@ void FASTCALL CSubTextScrlWnd::SetupScrlV()
 
 	ASSERT(this);
 
-	// 垂直表示可能キャラクタを取得
+	// Get scrollable character count
 	GetClientRect(&rect);
 	height = rect.bottom / m_tmHeight;
 
-	// スクロール情報をセット
+	// Scroll bar setup
 	memset(&si, 0, sizeof(si));
 	si.cbSize = sizeof(si);
 	si.fMask = SIF_ALL;
@@ -1174,7 +1172,7 @@ void FASTCALL CSubTextScrlWnd::SetupScrlV()
 	si.nMax = m_ScrlHeight - 1;
 	si.nPage = height;
 
-	// 位置は、必要なら補正する
+	// Position, correct if needed
 	si.nPos = m_ScrlY;
 	if (si.nPos + height > m_ScrlHeight) {
 		si.nPos = m_ScrlHeight - height;
@@ -1189,7 +1187,7 @@ void FASTCALL CSubTextScrlWnd::SetupScrlV()
 
 //---------------------------------------------------------------------------
 //
-//	スクロール(垂直)
+//	Scroll (vertical)
 //
 //---------------------------------------------------------------------------
 void CSubTextScrlWnd::OnVScroll(UINT nSBCode, UINT nPos, CScrollBar * /*pBar*/)
@@ -1198,38 +1196,38 @@ void CSubTextScrlWnd::OnVScroll(UINT nSBCode, UINT nPos, CScrollBar * /*pBar*/)
 
 	ASSERT(this);
 
-	// スクロール情報を取得
+	// Get scroll info
 	memset(&si, 0, sizeof(si));
 	si.cbSize = sizeof(si);
 	GetScrollInfo(SB_VERT, &si, SIF_ALL);
 
-	// スクロールバーコード別
+	// Scroll bar code processing
 	switch (nSBCode) {
-		// 上へ
+		// Top
 		case SB_TOP:
 			m_ScrlY = si.nMin;
 			break;
 
-		// 下へ
+		// Bottom
 		case SB_BOTTOM:
 			m_ScrlY = si.nMax;
 			break;
 
-		// 1ライン上へ
+		// 1 line up
 		case SB_LINEUP:
 			if (m_ScrlY > 0) {
 				m_ScrlY--;
 			}
 			break;
 
-		// 1ライン下へ
+		// 1 line down
 		case SB_LINEDOWN:
 			if (m_ScrlY < si.nMax) {
 				m_ScrlY++;
 			}
 			break;
 
-		// 1ページ上へ
+		// 1 page up
 		case SB_PAGEUP:
 			if (m_ScrlY >= (int)si.nPage) {
 				m_ScrlY -= si.nPage;
@@ -1239,7 +1237,7 @@ void CSubTextScrlWnd::OnVScroll(UINT nSBCode, UINT nPos, CScrollBar * /*pBar*/)
 			}
 			break;
 
-		// 1ページ下へ
+		// 1 page down
 		case SB_PAGEDOWN:
 			if ((m_ScrlY + (int)si.nPage) <= (int)si.nMax) {
 				m_ScrlY += si.nPage;
@@ -1249,7 +1247,7 @@ void CSubTextScrlWnd::OnVScroll(UINT nSBCode, UINT nPos, CScrollBar * /*pBar*/)
 			}
 			break;
 
-		// サム移動
+		// Thumb move
 		case SB_THUMBPOSITION:
 			m_ScrlY = nPos;
 			break;
@@ -1258,35 +1256,35 @@ void CSubTextScrlWnd::OnVScroll(UINT nSBCode, UINT nPos, CScrollBar * /*pBar*/)
 			break;
 	}
 
-	// 正に補正
+	// Clamp
 	if (m_ScrlY < 0) {
 		m_ScrlY = 0;
 	}
 
-	// セット、描画
+	// Set and draw
 	SetupScrlV();
 }
 
 //===========================================================================
 //
-//	サブリストウィンドウ
+//	Sub list window
 //
 //===========================================================================
 
 //---------------------------------------------------------------------------
 //
-//	コンストラクタ
+//	Constructor
 //
 //---------------------------------------------------------------------------
 CSubListWnd::CSubListWnd()
 {
-	// リストコントロールの準備が終わるまでDisableしておく
+	// List control initialization ends disabled
 	m_bEnable = FALSE;
 }
 
 //---------------------------------------------------------------------------
 //
-//	メッセージ マップ
+//	Message map
 //
 //---------------------------------------------------------------------------
 BEGIN_MESSAGE_MAP(CSubListWnd, CSubWnd)
@@ -1297,19 +1295,19 @@ END_MESSAGE_MAP()
 
 //---------------------------------------------------------------------------
 //
-//	ウィンドウ作成準備
+//	Window creation preprocessing
 //
 //---------------------------------------------------------------------------
 BOOL CSubListWnd::PreCreateWindow(CREATESTRUCT& cs)
 {
 	ASSERT(this);
 
-	// 基本クラス
+	// Base class
 	if (!CSubWnd::PreCreateWindow(cs)) {
 		return FALSE;
 	}
 
-	// ウィンドウサイズを可変とする
+	// Make window resizable
 	cs.style |= WS_THICKFRAME;
 	cs.style |= WS_MAXIMIZEBOX;
 
@@ -1318,7 +1316,7 @@ BOOL CSubListWnd::PreCreateWindow(CREATESTRUCT& cs)
 
 //---------------------------------------------------------------------------
 //
-//	ウィンドウ作成
+//	Window creation
 //
 //---------------------------------------------------------------------------
 int CSubListWnd::OnCreate(LPCREATESTRUCT lpcs)
@@ -1327,28 +1325,28 @@ int CSubListWnd::OnCreate(LPCREATESTRUCT lpcs)
 	CDC *pDC;
 	TEXTMETRIC tm;
 
-	// 基本クラス
+	// Base class
 	if (CSubWnd::OnCreate(lpcs) != 0) {
 		return -1;
 	}
 
-	// リストコントロールを作成
+	// Create list control
 	VERIFY(m_ListCtrl.Create(WS_CHILD | WS_VISIBLE |
 							LVS_REPORT | LVS_NOSORTHEADER| LVS_SINGLESEL |
 						 	LVS_OWNERDRAWFIXED | LVS_OWNERDATA,
 							CRect(0, 0, 0, 0), this, 0));
 
-	// フォントサイズを取り直す
+	// Font size calculation
 	pDC = m_ListCtrl.GetDC();
 	pDC->GetTextMetrics(&tm);
 	m_ListCtrl.ReleaseDC(pDC);
 	m_tmWidth = tm.tmAveCharWidth;
 	m_tmHeight = tm.tmHeight + tm.tmExternalLeading;
 
-	// 初期化
+	// Initialization
 	InitList();
 
-	// 有効にして、リフレッシュ
+	// Enable and refresh
 	m_bEnable = TRUE;
 	Refresh();
 
@@ -1357,7 +1355,7 @@ int CSubListWnd::OnCreate(LPCREATESTRUCT lpcs)
 
 //---------------------------------------------------------------------------
 //
-//	サイズ変更
+//	Size change
 //
 //---------------------------------------------------------------------------
 void CSubListWnd::OnSize(UINT nType, int cx, int cy)
@@ -1366,10 +1364,10 @@ void CSubListWnd::OnSize(UINT nType, int cx, int cy)
 
 	ASSERT(this);
 
-	// 基本クラス
+	// Base class
 	CSubWnd::OnSize(nType, cx, cy);
 
-	// クライアントエリア一杯になるように、リストコントロールを調整
+	// Resize list control to fill client area
 	if (m_ListCtrl.GetSafeHwnd()) {
 		GetClientRect(&rect);
 		m_ListCtrl.SetWindowPos(&wndTop, 0, 0, rect.right, rect.bottom, SWP_NOZORDER);
@@ -1378,53 +1376,53 @@ void CSubListWnd::OnSize(UINT nType, int cx, int cy)
 
 //---------------------------------------------------------------------------
 //
-//	オーナードロー
+//	Owner draw
 //
 //---------------------------------------------------------------------------
 void CSubListWnd::OnDrawItem(int /*nID*/, LPDRAWITEMSTRUCT /*lpDIS*/)
 {
-	// 必ず派生クラスで定義すること
+	// Must be implemented in derived class
 	ASSERT(FALSE);
 }
 
 //===========================================================================
 //
-//	Ventana Sub BMP
+//	Sub BMP window
 //
 //===========================================================================
 
 //---------------------------------------------------------------------------
 //
-//	constructor
+//	Constructor
 //
 //---------------------------------------------------------------------------
 CSubBMPWnd::CSubBMPWnd()
 {
-	// sin mapa de bits
+	// No bitmap
 	memset(&m_bmi, 0, sizeof(m_bmi));
 	m_bmi.biSize = sizeof(BITMAPINFOHEADER);
 	m_pBits = NULL;
 	m_hBitmap = NULL;
 
-	//100% de ampliacion
+	// 50% magnification
 	m_nMul = 2;
 
-	// Tamano de la pantalla virtual
+	// Virtual screen size
 	m_nScrlWidth = -1;
 	m_nScrlHeight = -1;
 
-	//Desplazamiento
+	// Scroll offset
 	m_nScrlX = 0;
 	m_nScrlY = 0;
 
-	// cursor del raton
+	// Mouse cursor
 	m_nCursorX = -1;
 	m_nCursorY = -1;
 }
 
 //---------------------------------------------------------------------------
 //
-//	Mapa de mensajes
+//	Message map
 //
 //---------------------------------------------------------------------------
 BEGIN_MESSAGE_MAP(CSubBMPWnd, CWnd)
@@ -1440,14 +1438,14 @@ END_MESSAGE_MAP()
 
 //---------------------------------------------------------------------------
 //
-//	creacion de ventanas
+//	Window creation
 //
 //---------------------------------------------------------------------------
 int CSubBMPWnd::OnCreate(LPCREATESTRUCT lpCreateStruct)
 {
 	ASSERT(this);
 
-	// clase basica
+	// Base class
 	if (CWnd::OnCreate(lpCreateStruct) != 0) {
 		return -1;
 	}
@@ -1455,7 +1453,7 @@ int CSubBMPWnd::OnCreate(LPCREATESTRUCT lpCreateStruct)
 	// IME Off
 	::ImmAssociateContext(m_hWnd, (HIMC)NULL);
 
-	// Barras de desplazamiento disponibles
+	// Show available scroll bars
 	ShowScrollBar(SB_HORZ, TRUE);
 	ShowScrollBar(SB_VERT, TRUE);
 
@@ -1464,7 +1462,7 @@ int CSubBMPWnd::OnCreate(LPCREATESTRUCT lpCreateStruct)
 
 //---------------------------------------------------------------------------
 //
-//  eliminacion de la ventana
+//	Window destruction
 //
 //---------------------------------------------------------------------------
 void CSubBMPWnd::OnDestroy()
@@ -1472,7 +1470,7 @@ void CSubBMPWnd::OnDestroy()
 	ASSERT(this);
 	ASSERT_VALID(this);
 
-	//  Eliminacion de mapas de bits
+	// Bitmap deletion
 	if (m_hBitmap) {
 		::DeleteObject(m_hBitmap);
 		m_hBitmap = NULL;
@@ -1480,13 +1478,13 @@ void CSubBMPWnd::OnDestroy()
 		m_pBits = NULL;
 	}
 
-	// clase basica
+	// Base class
 	CWnd::OnDestroy();
 }
 
 //---------------------------------------------------------------------------
 //
-//	Eliminacion de la ventana completada.
+//	Window destruction complete
 //
 //---------------------------------------------------------------------------
 void CSubBMPWnd::PostNcDestroy()
@@ -1495,13 +1493,13 @@ void CSubBMPWnd::PostNcDestroy()
 	ASSERT(!m_hBitmap);
 	ASSERT(!m_pBits);
 
-	// Eliminar elementos de la interfaz.
+	// Delete interface elements
 	delete this;
 }
 
 //---------------------------------------------------------------------------
 //
-//	Cambio de tamano de las ventanas
+//	Size change
 //
 //---------------------------------------------------------------------------
 void CSubBMPWnd::OnSize(UINT nType, int cx, int cy)
@@ -1510,17 +1508,17 @@ void CSubBMPWnd::OnSize(UINT nType, int cx, int cy)
 
 	ASSERT(this);
 
-	// clase basica
+	// Base class
 	CWnd::OnSize(nType, cx, cy);
 
-	// inicializacion del raton
+	// Initialize mouse
 	m_nCursorX = -1;
 	m_nCursorY = -1;
 
-	// bloquear
+	// Lock
 	::LockVM();
 
-	// Si tienes un mapa de bits, liberalo una vez
+	// If bitmap exists, release it once
 	if (m_hBitmap) {
 		::DeleteObject(m_hBitmap);
 		m_hBitmap = NULL;
@@ -1528,13 +1526,13 @@ void CSubBMPWnd::OnSize(UINT nType, int cx, int cy)
 		m_pBits = NULL;
 	}
 
-	// Regresar si se minimiza
+	// Return if minimized
 	if (nType == SIZE_MINIMIZED) {
 		::UnlockVM();
 		return;
 	}
 
-	// Pulse cx,cy hasta el area de desplazamiento.
+	// Scale cx,cy to scroll area
 	cx = (cx * 2) / m_nMul;
 	if (cx >= m_nScrlWidth) {
 		cx = m_nScrlWidth;
@@ -1544,7 +1542,7 @@ void CSubBMPWnd::OnSize(UINT nType, int cx, int cy)
 		cy = m_nScrlHeight;
 	}
 
-	// Creacion de mapas de bits (32 bits, igual tamano)
+	// Create bitmap (32 bits, equal size)
 	m_bmi.biWidth = cx;
 	m_bmi.biHeight = -cy;
 	m_bmi.biPlanes = 1;
@@ -1553,40 +1551,40 @@ void CSubBMPWnd::OnSize(UINT nType, int cx, int cy)
 	m_hBitmap = ::CreateDIBSection(dc.m_hDC, (BITMAPINFO*)&m_bmi,
 						DIB_RGB_COLORS, (void**)&m_pBits, NULL, 0);
 
-	// Inicializar (rellenar en negro)
+	// Initialize (fill black)
 	if (m_hBitmap) {
 		memset(m_pBits, 0, m_bmi.biSizeImage);
 	}
 
-	// Ajustes de la barra de desplazamiento
+	// Scroll bar adjustment
 	SetupScrlH();
 	SetupScrlV();
 
-	// desbloquear
+	// Unlock
 	::UnlockVM();
 }
 
 //---------------------------------------------------------------------------
 //
-//	dibujo de fondo
+//	Background draw
 //
 //---------------------------------------------------------------------------
 BOOL CSubBMPWnd::OnEraseBkgnd(CDC* /*pDC*/)
 {
-	// Nada.
+	// Nothing
 	return TRUE;
 }
 
 //---------------------------------------------------------------------------
 //
-//	redibujar
+//	Redraw
 //
 //---------------------------------------------------------------------------
 void CSubBMPWnd::OnPaint()
 {
 	PAINTSTRUCT ps;
 
-	// Solo se detiene para Windows.
+	// Just stop for Windows
 	BeginPaint(&ps);
 	EndPaint(&ps);
 }
@@ -1594,7 +1592,7 @@ void CSubBMPWnd::OnPaint()
 #if !defined(NDEBUG)
 //---------------------------------------------------------------------------
 //
-//	diagnostico
+//	Diagnostics
 //
 //---------------------------------------------------------------------------
 void CSubBMPWnd::AssertValid() const
@@ -1614,7 +1612,7 @@ void CSubBMPWnd::AssertValid() const
 
 //---------------------------------------------------------------------------
 //
-//	Desplazamiento listo (horizontal)
+//	Scroll setup (horizontal)
 //
 //---------------------------------------------------------------------------
 void FASTCALL CSubBMPWnd::SetupScrlH()
@@ -1625,12 +1623,12 @@ void FASTCALL CSubBMPWnd::SetupScrlH()
 	ASSERT(this);
 	ASSERT_VALID(this);
 
-	// Si no hay mapa de bits, no lo haremos.
+	// If no bitmap, skip
 	if (!m_hBitmap) {
 		return;
 	}
 
-	// Establecer la informacion de desplazamiento.
+	// Set scroll info
 	memset(&si, 0, sizeof(si));
 	si.cbSize = sizeof(si);
 	si.fMask = SIF_ALL;
@@ -1638,7 +1636,7 @@ void FASTCALL CSubBMPWnd::SetupScrlH()
 	si.nMax = m_nScrlWidth - 1;
 	si.nPage = m_bmi.biWidth;
 
-	// La posicion se corrige si es necesario.
+	// Correct position if needed
 	si.nPos = m_nScrlX;
 	if (si.nPos + (int)si.nPage >= m_nScrlWidth) {
 		si.nPos = m_nScrlWidth - (int)si.nPage;
@@ -1649,13 +1647,13 @@ void FASTCALL CSubBMPWnd::SetupScrlH()
 	m_nScrlX = si.nPos;
 	ASSERT((m_nScrlX >= 0) && (m_nScrlX < m_nScrlWidth));
 
-	// configuracion (de un ordenador o archivo, etc.)
+	// Set
 	SetScrollInfo(SB_HORZ, &si, TRUE);
 }
 
 //---------------------------------------------------------------------------
 //
-//	Desplazamiento (horizontal)
+//	Scroll (horizontal)
 //
 //---------------------------------------------------------------------------
 void CSubBMPWnd::OnHScroll(UINT nSBCode, UINT nPos, CScrollBar* /*pBar*/)
@@ -1665,38 +1663,38 @@ void CSubBMPWnd::OnHScroll(UINT nSBCode, UINT nPos, CScrollBar* /*pBar*/)
 	ASSERT(this);
 	ASSERT_VALID(this);
 
-	// Obtenga informacion sobre el desplazamiento.
+	// Get scroll info
 	memset(&si, 0, sizeof(si));
 	si.cbSize = sizeof(si);
 	GetScrollInfo(SB_HORZ, &si, SIF_ALL);
 
-	// Por codigo de barras de desplazamiento
+	// By scroll bar code
 	switch (nSBCode) {
-		// A la izquierda.
+		// Left
 		case SB_LEFT:
 			m_nScrlX = si.nMin;
 			break;
 
-		// A la derecha.
+		// Right
 		case SB_RIGHT:
 			m_nScrlX = si.nMax;
 			break;
 
-		// Una linea a la izquierda.
+		// One line left
 		case SB_LINELEFT:
 			if (m_nScrlX > 0) {
 				m_nScrlX--;
 			}
 			break;
 
-		// Una linea a la derecha.
+		// One line right
 		case SB_LINERIGHT:
 			if (m_nScrlX < si.nMax) {
 				m_nScrlX++;
 			}
 			break;
 
-		// Pagina 1, izquierda.
+		// One page left
 		case SB_PAGELEFT:
 			if (m_nScrlX >= (int)si.nPage) {
 				m_nScrlX -= (int)si.nPage;
@@ -1706,7 +1704,7 @@ void CSubBMPWnd::OnHScroll(UINT nSBCode, UINT nPos, CScrollBar* /*pBar*/)
 			}
 			break;
 
-		// Pagina 1 derecha.
+		// One page right
 		case SB_PAGERIGHT:
 			if ((m_nScrlX + (int)si.nPage) <= si.nMax) {
 				m_nScrlX += (int)si.nPage;
@@ -1716,7 +1714,7 @@ void CSubBMPWnd::OnHScroll(UINT nSBCode, UINT nPos, CScrollBar* /*pBar*/)
 			}
 			break;
 
-		// cambio de pulgar
+		// Thumb change
 		case SB_THUMBPOSITION:
 		case SB_THUMBTRACK:
 			m_nScrlX = nPos;
@@ -1724,13 +1722,13 @@ void CSubBMPWnd::OnHScroll(UINT nSBCode, UINT nPos, CScrollBar* /*pBar*/)
 	}
 	ASSERT((m_nScrlX >= 0) && (m_nScrlX < m_nScrlWidth));
 
-	// set
+	// Set
 	SetupScrlH();
 }
 
 //---------------------------------------------------------------------------
 //
-//	Preparado para el desplazamiento (vertical)
+//	Scroll setup (vertical)
 //
 //---------------------------------------------------------------------------
 void FASTCALL CSubBMPWnd::SetupScrlV()
@@ -1740,12 +1738,12 @@ void FASTCALL CSubBMPWnd::SetupScrlV()
 	ASSERT(this);
 	ASSERT_VALID(this);
 
-	// Si no hay mapa de bits, no lo haremos.
+	// If no bitmap, skip
 	if (!m_hBitmap) {
 		return;
 	}
 
-	// Establecer la informacion de desplazamiento.
+	// Set scroll info
 	memset(&si, 0, sizeof(si));
 	si.cbSize = sizeof(si);
 	si.fMask = SIF_ALL;
@@ -1753,7 +1751,7 @@ void FASTCALL CSubBMPWnd::SetupScrlV()
 	si.nMax = m_nScrlHeight - 1;
 	si.nPage = -m_bmi.biHeight;
 
-	// La posicion se corrige si es necesario.
+	// Correct position if needed
 	si.nPos = m_nScrlY;
 	if (si.nPos + (int)si.nPage >= m_nScrlHeight) {
 		si.nPos = m_nScrlHeight - (int)si.nPage;
@@ -1769,7 +1767,7 @@ void FASTCALL CSubBMPWnd::SetupScrlV()
 
 //---------------------------------------------------------------------------
 //
-//	Desplazamiento (vertical)
+//	Scroll (vertical)
 //
 //---------------------------------------------------------------------------
 void CSubBMPWnd::OnVScroll(UINT nSBCode, UINT nPos, CScrollBar* /*pBar*/)
@@ -1779,38 +1777,38 @@ void CSubBMPWnd::OnVScroll(UINT nSBCode, UINT nPos, CScrollBar* /*pBar*/)
 	ASSERT(this);
 	ASSERT_VALID(this);
 
-	// Obtenga informacion sobre el desplazamiento.
+	// Get scroll info
 	memset(&si, 0, sizeof(si));
 	si.cbSize = sizeof(si);
 	GetScrollInfo(SB_VERT, &si, SIF_ALL);
 
-	// Por codigo de barras de desplazamiento
+	// By scroll bar code
 	switch (nSBCode) {
-		// Hacia arriba.
+		// Top
 		case SB_TOP:
 			m_nScrlY = si.nMin;
 			break;
 
-		// abajo
+		// Bottom
 		case SB_BOTTOM:
 			m_nScrlY = si.nMax;
 			break;
 
-		// Una linea.
+		// One line
 		case SB_LINEUP:
 			if (m_nScrlY > 0) {
 				m_nScrlY--;
 			}
 			break;
 
-		// Una linea menos.
+		// One line less
 		case SB_LINEDOWN:
 			if (m_nScrlY < si.nMax) {
 				m_nScrlY++;
 			}
 			break;
 
-		// Pagina 1 DE 1
+		// One page up
 		case SB_PAGEUP:
 			if (m_nScrlY >= (int)si.nPage) {
 				m_nScrlY -= (int)si.nPage;
@@ -1820,7 +1818,7 @@ void CSubBMPWnd::OnVScroll(UINT nSBCode, UINT nPos, CScrollBar* /*pBar*/)
 			}
 			break;
 
-		// Pagina 1 abajo.
+		// One page down
 		case SB_PAGEDOWN:
 			if ((m_nScrlY + (int)si.nPage) <= si.nMax) {
 				m_nScrlY += (int)si.nPage;
@@ -1830,7 +1828,7 @@ void CSubBMPWnd::OnVScroll(UINT nSBCode, UINT nPos, CScrollBar* /*pBar*/)
 			}
 			break;
 
-		// cambio de pulgar
+		// Thumb change
 		case SB_THUMBPOSITION:
 			m_nScrlY = nPos;
 			break;
@@ -1841,13 +1839,13 @@ void CSubBMPWnd::OnVScroll(UINT nSBCode, UINT nPos, CScrollBar* /*pBar*/)
 
 	ASSERT((m_nScrlY >= 0) && (m_nScrlY <= m_nScrlHeight));
 
-	// set
+	// Set
 	SetupScrlV();
 }
 
 //---------------------------------------------------------------------------
 //
-//	moviendo el raton
+//	Mouse move
 //
 //---------------------------------------------------------------------------
 void CSubBMPWnd::OnMouseMove(UINT nFlags, CPoint point)
@@ -1855,55 +1853,49 @@ void CSubBMPWnd::OnMouseMove(UINT nFlags, CPoint point)
 	ASSERT(this);
 	ASSERT_VALID(this);
 
-	// Memoria de la posicion del movimiento del raton
+	// Store mouse position
 	m_nCursorX = point.x;
 	m_nCursorY = point.y;
 
-	// Consideracion del aumento
+	// Consider magnification
 	m_nCursorX = (m_nCursorX * 2) / m_nMul;
 	m_nCursorY = (m_nCursorY * 2) / m_nMul;
 
-	// clase basica
+	// Base class
 	CWnd::OnMouseMove(nFlags, point);
 }
 
 //---------------------------------------------------------------------------
 //
-//	dibujo
+//	Draw
 //
 //---------------------------------------------------------------------------
 void FASTCALL CSubBMPWnd::Refresh(int nWidth, int nHeight)
 {
 	CClientDC dc(this);
 	CDC mDC;
-	HBITMAP hBitmap;	
+	HBITMAP hBitmap;
 	CRect Rect;
-
 
 	ASSERT(this);
 	ASSERT_VALID(this);
 
-	// Solo si hay un mapa de bits disponible.
+	// Only if bitmap is available
 	if (m_hBitmap) {
-		// Creacion de la memoria DC
+		// Create memory DC
 		mDC.CreateCompatibleDC(&dc);
-		
-		// seleccion de objetos
+
+		// Object selection
 		hBitmap = (HBITMAP)::SelectObject(mDC.m_hDC, m_hBitmap);
-		
+
 		// BitBlt or StretchBlt
 		if (hBitmap) {
 			if (m_nMul == 2) {
-				// igual tamano
-			    //	dc.BitBlt(0, 0, m_bmi.biWidth, -m_bmi.biHeight,
-				//					&mDC, 0, 0, SRCCOPY);
-				
+				// Equal size
 				int bmibiwidth =  m_bmi.biWidth;
 				int bmibiheight = -m_bmi.biHeight;
-							
-				
-				// Stretchblt: nHeight y nWidth son par疥etros del tama exacto del bitmap origen en la resolucion origen
 
+				// Stretchblt: nHeight and nWidth are exact source bitmap size parameters at source resolution
 				dc.StretchBlt(0, 0,
 					bmibiwidth,
 					bmibiheight,
@@ -1911,35 +1903,26 @@ void FASTCALL CSubBMPWnd::Refresh(int nWidth, int nHeight)
 					0, 0,
 					nHeight, nWidth,
 					SRCCOPY);
-
-							
-
-				/*CString sz;
-				sz.Format(_T("info.nWidth:%d   info.nHeight:%d\r\n"), nWidth, nHeight);
-				OutputDebugStringW(CT2W(sz));*/
-
 			}
 			else {
-				// n veces
-				dc.StretchBlt(  0, 0,
-								(m_bmi.biWidth * m_nMul) >> 1,
-								-((m_bmi.biHeight * m_nMul) >> 1),
-								&mDC,
-								0, 0,
-								m_bmi.biWidth, -m_bmi.biHeight,
-								SRCCOPY);
+				// n times
+				dc.StretchBlt(0, 0,
+							(m_bmi.biWidth * m_nMul) >> 1,
+							-((m_bmi.biHeight * m_nMul) >> 1),
+							&mDC,
+							0, 0,
+							m_bmi.biWidth, -m_bmi.biHeight,
+							SRCCOPY);
 			}
 
-			// Fin de la seleccion de objetos
+			// End of object selection
 			::SelectObject(mDC.m_hDC, hBitmap);
 		}
 
-		// Fin de la memoria DC
+		// End of memory DC
 		mDC.DeleteDC();
 	}
 }
-
-
 
 void FASTCALL CSubBMPWnd::Refresh()
 {
@@ -1950,23 +1933,23 @@ void FASTCALL CSubBMPWnd::Refresh()
 	ASSERT(this);
 	ASSERT_VALID(this);
 
-	// ビットマップがある場合に限り
+	// Return if bitmap available
 	if (m_hBitmap) {
-		// メモリDC作成
+		// Memory DC creation
 		mDC.CreateCompatibleDC(&dc);
 
-		// オブジェクト選択
+		// Object selection
 		hBitmap = (HBITMAP)::SelectObject(mDC.m_hDC, m_hBitmap);
 
 		// BitBlt or StretchBlt
 		if (hBitmap) {
 			if (m_nMul == 2) {
-				// 等倍
+				// Equal
 				dc.BitBlt(0, 0, m_bmi.biWidth, -m_bmi.biHeight,
 					&mDC, 0, 0, SRCCOPY);
 			}
 			else {
-				// n倍
+				// n times
 				dc.StretchBlt(0, 0,
 					(m_bmi.biWidth * m_nMul) >> 1,
 					-((m_bmi.biHeight * m_nMul) >> 1),
@@ -1976,19 +1959,18 @@ void FASTCALL CSubBMPWnd::Refresh()
 					SRCCOPY);
 			}
 
-			// オブジェクト選択終了
+			// Object deselection
 			::SelectObject(mDC.m_hDC, hBitmap);
 		}
 
-		// メモリDC終了
+		// Memory DC deselection
 		mDC.DeleteDC();
 	}
 }
 
-
 //---------------------------------------------------------------------------
 //
-//	Adquisicion del maximo rectangulo de la ventana
+//	Get maximum window rectangle
 //
 //---------------------------------------------------------------------------
 void FASTCALL CSubBMPWnd::GetMaximumRect(LPRECT lpRect, BOOL bScroll)
@@ -1997,32 +1979,31 @@ void FASTCALL CSubBMPWnd::GetMaximumRect(LPRECT lpRect, BOOL bScroll)
 	ASSERT(lpRect);
 	ASSERT_VALID(this);
 
-	// Obtiene el tamano de la ventana BMP al maximo.
+	// Get max BMP window size
 	lpRect->left = 0;
 	lpRect->top = 0;
 	lpRect->right = (m_nScrlWidth * m_nMul) >> 1;
 	lpRect->bottom = (m_nScrlHeight * m_nMul) >> 1;
 
-	//  Anadir barras de desplazamiento
+	// Add scroll bars
 	if (bScroll) {
 		lpRect->right += ::GetSystemMetrics(SM_CXVSCROLL);
 		lpRect->bottom += ::GetSystemMetrics(SM_CYHSCROLL);
 	}
 
-	// Convertido en rectangulo de ventana
+	// Convert to window rectangle
 	CalcWindowRect(lpRect);
 }
 
-
 BOOL FASTCALL CSubBMPWnd::Init(CDrawView* pDrawView)
-{	
+{
 	pDrawView = NULL;
 	return 0;
 }
 
 //---------------------------------------------------------------------------
 //
-//	Adquisicion de rectangulos de ajuste
+//	Get fit rectangle
 //
 //---------------------------------------------------------------------------
 void FASTCALL CSubBMPWnd::GetFitRect(LPRECT lpRect)
@@ -2031,16 +2012,16 @@ void FASTCALL CSubBMPWnd::GetFitRect(LPRECT lpRect)
 	ASSERT(lpRect);
 	ASSERT_VALID(this);
 
-	// Obtener el rectangulo actual del cliente
+	// Get current client rectangle
 	GetClientRect(lpRect);
 
-	// Convertido en rectangulo de ventana
+	// Convert to window rectangle
 	CalcWindowRect(lpRect);
 }
 
 //---------------------------------------------------------------------------
 //
-//	Adquisicion de rectangulos de dibujo
+//	Get draw rectangle
 //
 //---------------------------------------------------------------------------
 void FASTCALL CSubBMPWnd::GetDrawRect(LPRECT lpRect)
@@ -2049,7 +2030,7 @@ void FASTCALL CSubBMPWnd::GetDrawRect(LPRECT lpRect)
 	ASSERT(lpRect);
 	ASSERT_VALID(this);
 
-	// Si no hay mapa de bits, error
+	// If no bitmap, error
 	if (!m_hBitmap) {
 		ASSERT(!m_pBits);
 		lpRect->top = 0;
@@ -2059,18 +2040,18 @@ void FASTCALL CSubBMPWnd::GetDrawRect(LPRECT lpRect)
 		return;
 	}
 
-	// Mapa de bits disponible
+	// Bitmap available
 	ASSERT(m_pBits);
 
-	// Ajustes de desplazamiento
+	// Scroll offset
 	lpRect->left = m_nScrlX;
 	lpRect->top = m_nScrlY;
 
-	// Ajuste del rango (m_bmi.biHeight es siempre negativo).
+	// Range adjustment (m_bmi.biHeight is always negative)
 	lpRect->right = lpRect->left + m_bmi.biWidth;
 	lpRect->bottom = lpRect->top - m_bmi.biHeight;
 
-	// examen
+	// Check
 	ASSERT(lpRect->left <= lpRect->right);
 	ASSERT(lpRect->top <= lpRect->bottom);
 	ASSERT(lpRect->right <= m_nScrlWidth);
@@ -2079,7 +2060,7 @@ void FASTCALL CSubBMPWnd::GetDrawRect(LPRECT lpRect)
 
 //---------------------------------------------------------------------------
 //
-//	adquisicion de bits
+//	Get bits
 //
 //---------------------------------------------------------------------------
 BYTE* FASTCALL CSubBMPWnd::GetBits() const
@@ -2087,43 +2068,43 @@ BYTE* FASTCALL CSubBMPWnd::GetBits() const
 	ASSERT(this);
 	ASSERT_VALID(this);
 
-	// Mapa de bits disponible
+	// Bitmap available
 	if (m_pBits) {
 		ASSERT(m_hBitmap);
 		return m_pBits;
 	}
 
-	// sin mapa de bits
+	// No bitmap
 	ASSERT(!m_hBitmap);
 	return NULL;
 }
 
 //===========================================================================
 //
-//	サブビットマップウィンドウ
+//	Sub bitmap window
 //
 //===========================================================================
 
 //---------------------------------------------------------------------------
 //
-//	コンストラクタ
+//	Constructor
 //
 //---------------------------------------------------------------------------
 CSubBitmapWnd::CSubBitmapWnd()
 {
-	// メンバ変数初期化
+	// Member variable initialization
 	m_nWidth = 48;
 	m_nHeight = 16;
 	m_pBMPWnd = NULL;
 
-	// 仮想画面サイズ(派生クラスで必ず再定義すること)
+	// Virtual size (must be defined by derived class)
 	m_nScrlWidth = -1;
 	m_nScrlHeight = -1;
 }
 
 //---------------------------------------------------------------------------
 //
-//	メッセージ マップ
+//	Message map
 //
 //---------------------------------------------------------------------------
 BEGIN_MESSAGE_MAP(CSubBitmapWnd, CSubWnd)
@@ -2134,19 +2115,19 @@ END_MESSAGE_MAP()
 
 //---------------------------------------------------------------------------
 //
-//	ウィンドウ作成準備
+//	Window creation preprocessing
 //
 //---------------------------------------------------------------------------
 BOOL CSubBitmapWnd::PreCreateWindow(CREATESTRUCT& cs)
 {
 	ASSERT(this);
 
-	// 基本クラス
+	// Base class
 	if (!CSubWnd::PreCreateWindow(cs)) {
 		return FALSE;
 	}
 
-	// サイズ可変
+	// Resizable
 	cs.style |= WS_THICKFRAME;
 
 	return TRUE;
@@ -2154,7 +2135,7 @@ BOOL CSubBitmapWnd::PreCreateWindow(CREATESTRUCT& cs)
 
 //---------------------------------------------------------------------------
 //
-//	ウィンドウ作成
+//	Window creation
 //
 //---------------------------------------------------------------------------
 int CSubBitmapWnd::OnCreate(LPCREATESTRUCT lpcs)
@@ -2165,12 +2146,12 @@ int CSubBitmapWnd::OnCreate(LPCREATESTRUCT lpcs)
 
 	ASSERT(this);
 
-	// 基本クラス
+	// Base class
 	if (CSubWnd::OnCreate(lpcs) != 0) {
 		return -1;
 	}
 
-	// ステータスバー
+	// Status bar
 	id = 0;
 	m_StatusBar.Create(this);
 	size = m_StatusBar.CalcFixedLayout(TRUE, TRUE);
@@ -2179,7 +2160,7 @@ int CSubBitmapWnd::OnCreate(LPCREATESTRUCT lpcs)
 	m_StatusBar.SetIndicators(&id, 1);
 	m_StatusBar.SetPaneInfo(0, 0, SBPS_STRETCH, 0);
 
-	// BMPウィンドウ
+	// BMP window
 	rect.bottom -= size.cy;
 	m_pBMPWnd = new CSubBMPWnd;
 	ASSERT(m_nScrlWidth > 0);
@@ -2194,7 +2175,7 @@ int CSubBitmapWnd::OnCreate(LPCREATESTRUCT lpcs)
 
 //---------------------------------------------------------------------------
 //
-//	サイズ変更中
+//	Size change start
 //
 //---------------------------------------------------------------------------
 void CSubBitmapWnd::OnSizing(UINT nSide, LPRECT lpRect)
@@ -2203,25 +2184,25 @@ void CSubBitmapWnd::OnSizing(UINT nSide, LPRECT lpRect)
 	CSize sizeBar;
 	CRect rectSizing;
 
-	// 基本クラス
+	// Base class
 	CSubWnd::OnSizing(nSide, lpRect);
 
-	// ステータスバーがなければ、リターン
+	// Return if no status bar
 	if (!::IsWindow(m_StatusBar.m_hWnd)) {
 		return;
 	}
 
-	// BMPウィンドウの最大サイズを得る(スクロールバー込み)
+	// Get BMP window max size (including scroll bar)
 	m_pBMPWnd->GetMaximumRect(&rect, TRUE);
 
-	// ステータスバーのサイズを得て、合計
+	// Get status bar size and subtract
 	sizeBar = m_StatusBar.CalcFixedLayout(TRUE, TRUE);
 	rect.bottom += sizeBar.cy;
 
-	// このウィンドウの最大時のサイズを得る
+	// Get max size of this window
 	::AdjustWindowRectEx(&rect, GetStyle(), FALSE, GetExStyle());
 
-	// オーバーチェック
+	// Clamp check
 	rectSizing = *lpRect;
 	if (rectSizing.Width() >= rect.Width()) {
 		lpRect->right = lpRect->left + rect.Width();
@@ -2233,7 +2214,7 @@ void CSubBitmapWnd::OnSizing(UINT nSide, LPRECT lpRect)
 
 //---------------------------------------------------------------------------
 //
-//	サイズ変更
+//	Size change
 //
 //---------------------------------------------------------------------------
 void CSubBitmapWnd::OnSize(UINT nType, int cx, int cy)
@@ -2248,34 +2229,34 @@ void CSubBitmapWnd::OnSize(UINT nType, int cx, int cy)
 	ASSERT(cx >= 0);
 	ASSERT(cy >= 0);
 
-	// 基本クラス
+	// Base class
 	CSubWnd::OnSize(nType, cx, cy);
 
-	// ステータスバー再配置(ウィンドウ有効の場合に限定)
+	// Status bar placement (only if window is valid)
 	if (::IsWindow(m_StatusBar.m_hWnd)) {
-		// ステータスバーの高さ、クライアント領域の広さを得る
+		// Get status bar height, client area height for adjustment
 		sizeBar = m_StatusBar.CalcFixedLayout(TRUE, TRUE);
 		GetClientRect(&rectClient);
 
-		// クライアント領域が、ステータスバーを収めるために十分であれば位置変更
+		// If client area is larger than status bar, resize to fit
 		if (rectClient.Height() > sizeBar.cy) {
 			m_StatusBar.MoveWindow(0,
 								rectClient.Height() - sizeBar.cy,
 								rectClient.Width(),
 								sizeBar.cy);
 
-			// BMPウィンドウをあわせて再配置
+			// Resize BMP window accordingly
 			rectClient.bottom -= sizeBar.cy;
 			m_pBMPWnd->MoveWindow(0, 0, rectClient.Width(), rectClient.Height());
 		}
 
-		// BMPウィンドウのサイズを得て、オーバー分取得
+		// Get BMP window size, subtract offset
 		m_pBMPWnd->GetWindowRect(&rectWnd);
 		m_pBMPWnd->GetMaximumRect(&rectMax, FALSE);
 		cx = rectWnd.Width() - rectMax.Width();
 		cy = rectWnd.Height() - rectMax.Height();
 
-		// もしあれば、このウィンドウをそれだけ縮小(スクロールバーの自動ON/OFFに対処)
+		// If possible, shrink this window (depending on scroll bar visibility)
 		if ((cx > 0) || (cy > 0)) {
 			GetWindowRect(&rectWnd);
 			SetWindowPos(&wndTop, 0, 0, rectWnd.Width() - cx, rectWnd.Height() - cy,
@@ -2283,59 +2264,43 @@ void CSubBitmapWnd::OnSize(UINT nType, int cx, int cy)
 			return;
 		}
 
-#if 0
-		// BMPウィンドウのフィットサイズを得て、オーバー分取得
-		m_pBMPWnd->GetFitRect(&rectFit);
-		cx = rectWnd.Width() - rectFit.Width();
-		cy = rectWnd.Height() - rectFit.Height();
 
-		// もしあれば、このウィンドウをそれだけ縮小(200%以上の場合の余分に対処)
-		if ((cx > 0) || (cy > 0)) {
-			GetWindowRect(&rectWnd);
-			SetWindowPos(&wndTop, 0, 0, rectWnd.Width() - cx, rectWnd.Height() - cy,
-						SWP_NOMOVE);
-		}
-#endif
+
 	}
 }
 
 //---------------------------------------------------------------------------
 //
-//	更新
+//	Refresh
 //
 //---------------------------------------------------------------------------
 void FASTCALL CSubBitmapWnd::Refresh()
 {
 	CRect rect;
 
-	// 有効フラグチェック
+	// Enable flag check
 	if (!m_bEnable || !m_pBMPWnd) {
 		return;
 	}
 
-	// 描画矩形取得
+	// Get draw rect
 	m_pBMPWnd->GetDrawRect(&rect);
 	if ((rect.Width() == 0) && (rect.Height() == 0)) {
 		return;
 	}
-	
-	// セットアップ
-	Setup(rect.left, rect.top, rect.Width(), rect.Height(), m_pBMPWnd->GetBits());
-	//m_pBMPWnd->m_nScrlWidth;
 
+	// Setup
+	Setup(rect.left, rect.top, rect.Width(), rect.Height(), m_pBMPWnd->GetBits());
 
 	CDrawView::DRAWINFO info;
 	m_pDrawView->GetDrawInfo(&info);
-	/*CString sz;
-	sz.Format(_T("info.nWidth:%d   info.nHeight:%d    \r\n"), info.nWidth, info.nHeight);
-	OutputDebugStringW(CT2W(sz));*/
-	// 表示
+	// Display
 	m_pBMPWnd->Refresh();
 }
 
 //---------------------------------------------------------------------------
 //
-//	パレット変換
+//	Palette conversion
 //
 //---------------------------------------------------------------------------
 DWORD FASTCALL CSubBitmapWnd::ConvPalette(WORD value)
@@ -2344,20 +2309,20 @@ DWORD FASTCALL CSubBitmapWnd::ConvPalette(WORD value)
 	DWORD g;
 	DWORD b;
 
-	// 全てコピー
+	// All copy
 	r = (DWORD)value;
 	g = (DWORD)value;
 	b = (DWORD)value;
 
-	// MSBからG:5、R:5、B:5、I:1の順になっている
-	// これを R:8 G:8 B:8のDWORDに変換。b31-b24は使わない
+	// MSB: G:5, R:5, B:5, I:1 -> must become
+	// R:8, G:8, B:8 DWORD (B:31-24 unused)
 	r <<= 13;
 	r &= 0xf80000;
 	g &= 0x00f800;
 	b <<= 2;
 	b &= 0x0000f8;
 
-	// 輝度ビットは一律Up
+	// Intensity bit round up
 	if (value & 1) {
 		r |= 0x070000;
 		g |= 0x000700;

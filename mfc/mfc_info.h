@@ -2,7 +2,7 @@
 //
 //	X68000 EMULATOR "XM6"
 //
-//	Copyright (C) 2001-2006 ‚o‚hD(ytanaka@ipc-tokai.or.jp)
+//	Copyright (C) 2001-2006 ï¿½oï¿½hï¿½D(ytanaka@ipc-tokai.or.jp)
 //	[ MFC Info ]
 //
 //---------------------------------------------------------------------------
@@ -22,161 +22,161 @@
 class CInfo : public CComponent
 {
 public:
-	// ’è”’l
+	// Constant values
 	enum {
-		InfoBufMax = 100				// î•ñƒoƒbƒtƒ@Å‘åƒLƒƒƒ‰ƒNƒ^”
+		InfoBufMax = 100				// Maximum info buffer characters
 	};
 
 public:
-	// Šî–{ƒtƒ@ƒ“ƒNƒVƒ‡ƒ“
+	// Basic methods
 	CInfo(CFrmWnd *pWnd, CStatusBar *pBar);
-										// ƒRƒ“ƒXƒgƒ‰ƒNƒ^
+										// Constructor
 	BOOL FASTCALL Init();
-										// ‰Šú‰»
+										// Initialization
 	void FASTCALL Cleanup();
-										// ƒNƒŠ[ƒ“ƒAƒbƒv
+										// Cleanup
 	void FASTCALL ApplyCfg(const Config *pConfig);
-										// İ’è“K—p
+										// Apply settings
 	void FASTCALL Enable(BOOL bEnable);
-										// “®ì§Œä
+										// Enable control
 
-	// ƒLƒƒƒvƒVƒ‡ƒ“
+	// Caption
 	void FASTCALL ResetCaption();
-										// ƒLƒƒƒvƒVƒ‡ƒ“ƒŠƒZƒbƒg
+										// Reset caption
 	void FASTCALL UpdateCaption();
-										// ƒLƒƒƒvƒVƒ‡ƒ“XV
+										// Update caption
 
-	// î•ñ
+	// Info
 	void FASTCALL SetInfo(CString& strInfo);
-										// î•ñİ’è
+										// Set info string
 	void FASTCALL SetMessageString(const CString& strMessage) const;
-										// ’ÊíƒƒbƒZ[ƒWİ’è
+										// Set status bar message
 	void FASTCALL UpdateInfo();
-										// î•ñXV
+										// Update info
 
-	// ƒXƒe[ƒ^ƒX
+	// Status bar
 	void FASTCALL ResetStatus();
-										// ƒXƒe[ƒ^ƒXƒŠƒZƒbƒg
+										// Reset status
 	void FASTCALL UpdateStatus();
-										// ƒXƒe[ƒ^ƒXXV
+										// Update status
 	void FASTCALL DrawStatus(int nPane, HDC hDC, CRect& rectDraw);
-										// ƒXƒe[ƒ^ƒX•`‰æ
+										// Draw status
 
-	// ƒXƒe[ƒ^ƒXƒrƒ…[
+	// Status view
 	void FASTCALL SetStatusView(CStatusView *pView);
-										// ƒXƒe[ƒ^ƒXƒrƒ…[İ’è
+										// Set status view
 
 private:
-	// ’è”’l
+	// Constant values
 	enum {
-		CapTimeLong = 1500,				// ƒLƒƒƒvƒVƒ‡ƒ“XVŠÔ(’Êí)
-		CapTimeShort = 300,				// ƒLƒƒƒvƒVƒ‡ƒ“XVŠÔ(‰‰ñ)
-		InfoTime = 2000,				// î•ñ•\¦ŠÔ
-		PaneMax = 5,					// ƒXƒe[ƒ^ƒXÅ‘åƒyƒCƒ“”
-		DiskTypeTime = 12				// ƒfƒBƒXƒNí•Ê•ÛŠÔ
+		CapTimeLong = 1500,				// Caption update interval (long)
+		CapTimeShort = 300,				// Caption update interval (short)
+		InfoTime = 2000,				// Info display duration
+		PaneMax = 5,					// Status bar max panes
+		DiskTypeTime = 12				// Disk type polling interval
 	};
 
-	// ƒLƒƒƒvƒVƒ‡ƒ“
+	// Caption
 	BOOL FASTCALL CheckParcent();
-										// “ƒ`ƒFƒbƒN
+										// Percent check
 	BOOL FASTCALL CheckVM();
-										// VMƒtƒ@ƒCƒ‹ƒ`ƒFƒbƒN
+										// VM file check
 	BOOL FASTCALL CheckMO();
-										// MOƒtƒ@ƒCƒ‹ƒ`ƒFƒbƒN
+										// MO file check
 	BOOL FASTCALL CheckCD();
-										// CDƒtƒ@ƒCƒ‹ƒ`ƒFƒbƒN
+										// CD file check
 	void FASTCALL SetCaption();
-										// ƒLƒƒƒvƒVƒ‡ƒ“İ’è
+										// Set caption
 	CString m_strRun;
-										// “®ì’†ƒƒbƒZ[ƒW
+										// Running message
 	CString m_strStop;
-										// ’â~’†ƒƒbƒZ[ƒW
+										// Stopped message
 	BOOL m_bRun;
-										// ƒXƒPƒWƒ…[ƒ‰“®ì’†
+										// Scheduler running
 	BOOL m_bCount;
-										// “®ì“Œv‘ª’†
+										// Progress count
 	int m_nParcent;
-										// “®ì“(-1‚Í”ñ•\¦)
+										// Progress (-1 means unknown)
 	DWORD m_dwTick;
-										// “Œv‘ª(GetTickCount)
+										// Elapsed time (GetTickCount)
 	DWORD m_dwTime;
-										// “Œv‘ª(GetTotalTime)
+										// Elapsed time (GetTotalTime)
 	TCHAR m_szVM[_MAX_PATH];
-										// VMƒtƒ@ƒCƒ‹ƒpƒX
+										// VM file path
 	TCHAR m_szVMFull[_MAX_PATH];
-										// VMƒtƒ@ƒCƒ‹ƒpƒX(ƒtƒ‹)
+										// VM file path (full)
 	TCHAR m_szMO[_MAX_PATH];
-										// MOƒtƒ@ƒCƒ‹ƒpƒX
+										// MO file path
 	TCHAR m_szMOFull[_MAX_PATH];
-										// MOƒtƒ@ƒCƒ‹ƒpƒX(ƒtƒ‹)
+										// MO file path (full)
 	TCHAR m_szCD[_MAX_PATH];
-										// CDƒtƒ@ƒCƒ‹ƒpƒX
+										// CD file path
 	TCHAR m_szCDFull[_MAX_PATH];
-										// CDƒtƒ@ƒCƒ‹ƒpƒX(ƒtƒ‹)
+										// CD file path (full)
 	CScheduler *m_pSch;
-										// ƒXƒPƒWƒ…[ƒ‰(Win)
+										// Scheduler (Win)
 	Scheduler *m_pScheduler;
-										// ƒXƒPƒWƒ…[ƒ‰
+										// Scheduler
 	SASI *m_pSASI;
 										// SASI
 	SCSI *m_pSCSI;
 										// SCSI
 
-	// î•ñ
+	// Info
 	BOOL m_bInfo;
-										// î•ñ‚Ì—L–³
+										// Info validity
 	BOOL m_bPower;
-										// “dŒ¹‚ÌON/OFF
+										// Power ON/OFF
 	CString m_strInfo;
-										// î•ñ•¶š—ñ
+										// Info string
 	CString m_strPower;
-										// “dŒ¹OFF•¶š—ñ
+										// Power OFF string
 	TCHAR m_szInfo[InfoBufMax];
-										// ’Êí•¶š—ñ
+										// Status bar string
 	DWORD m_dwInfo;
-										// î•ñ•\¦ŠÔ
+										// Info display duration
 
-	// ƒXƒe[ƒ^ƒX
+	// Status bar
 	COLORREF FASTCALL StatusFloppy(LPTSTR szText, int nDrive) const;
-										// ƒXƒe[ƒ^ƒXFD
+										// Status FD
 	COLORREF FASTCALL StatusHardDisk(LPTSTR szText);
-										// ƒXƒe[ƒ^ƒXHD
+										// Status HD
 	COLORREF FASTCALL StatusTimer(LPTSTR szText) const;
-										// ƒXƒe[ƒ^ƒXTIMER
+										// Status TIMER
 	COLORREF FASTCALL StatusPower(LPTSTR szText) const;
-										// ƒXƒe[ƒ^ƒXPOWER
+										// Status POWER
 	COLORREF m_colStatus[PaneMax];
-										// ƒXƒe[ƒ^ƒX•\¦F
+										// Status display color
 	TCHAR m_szStatus[PaneMax][_MAX_PATH];
-										// ƒXƒe[ƒ^ƒX•¶š—ñ
+										// Status bar string
 	BYTE m_bmpDrive[2][0x100];
-										// ƒXƒe[ƒ^ƒXƒhƒ‰ƒCƒuBMP
+										// Status bar drive BMP
 	FDD *m_pFDD;
 										// FDD
 	RTC *m_pRTC;
 										// RTC
 	DWORD m_dwNumber;
-										// XVƒiƒ“ƒo
+										// Update counter
 	DWORD m_dwDiskID;
-										// ƒfƒBƒXƒNBUSYí•Ê
+										// Disk BUSY state
 	DWORD m_dwDiskTime;
-										// ƒfƒBƒXƒNí•Ê•ÛŠÔ
+										// Disk type polling duration
 
-	// ƒXƒe[ƒ^ƒXƒo[
+	// Status bar
 	CStatusBar *m_pStatusBar;
-										// ƒXƒe[ƒ^ƒXƒo[
+										// Status bar
 
-	// ƒXƒe[ƒ^ƒXƒrƒ…[
+	// Status view
 	CStatusView *m_pStatusView;
-										// ƒXƒe[ƒ^ƒXƒrƒ…[
+										// Status view
 
-	// ƒRƒ“ƒtƒBƒMƒ…ƒŒ[ƒVƒ‡ƒ“
+	// Component initialization
 	BOOL m_bFloppyLED;
-										// ƒ‚[ƒ^ON‚ÅLED“_“”
+										// Floppy LED state
 	BOOL m_bPowerLED;
-										// ÂF“dŒ¹LED
+										// Power LED
 	BOOL m_bCaptionInfo;
-										// ƒLƒƒƒvƒVƒ‡ƒ“‚Ö‚Ìî•ñ•\¦
+										// Caption info display
 };
 
 #endif	// mfc_info_h

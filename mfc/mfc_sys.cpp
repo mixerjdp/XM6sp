@@ -9,8 +9,8 @@
 
 #if defined(_WIN32)
 
-#include "os.h"
 #include "mfc.h"
+#include "os.h"
 #include "xm6.h"
 #include "log.h"
 #include "device.h"

@@ -3,7 +3,7 @@
 //	X68000 EMULATOR "XM6"
 //
 //	Copyright (C) 2001-2003 ＰＩ．(ytanaka@ipc-tokai.or.jp)
-//	[ エリアセット ]
+// [ Area Set ]
 //
 //---------------------------------------------------------------------------
 
@@ -14,45 +14,45 @@
 
 //===========================================================================
 //
-//	エリアセット
+// Area Set
 //
 //===========================================================================
 class AreaSet : public MemDevice
 {
 public:
-	// 基本ファンクション
+// Basic functions
 	AreaSet(VM *p);
-										// コンストラクタ
+// Constructor
 	BOOL FASTCALL Init();
-										// 初期化
+// Initialization
 	void FASTCALL Cleanup();
-										// クリーンアップ
+// Cleanup
 	void FASTCALL Reset();
-										// リセット
+// Reset
 	BOOL FASTCALL Save(Fileio *fio, int ver);
-										// セーブ
+// Save
 	BOOL FASTCALL Load(Fileio *fio, int ver);
-										// ロード
+// Load
 	void FASTCALL ApplyCfg(const Config *config);
-										// 設定適用
+// Apply settings
 
-	// メモリデバイス
+// Memory device
 	DWORD FASTCALL ReadByte(DWORD addr);
-										// バイト読み込み
+// Byte read
 	void FASTCALL WriteByte(DWORD addr, DWORD data);
-										// バイト書き込み
+// Byte write
 	DWORD FASTCALL ReadOnly(DWORD addr) const;
-										// 読み込みのみ
+// Read only
 
-	// 外部API
+// Public API
 	DWORD FASTCALL GetArea() const;
-										// 設定値取得
+// Get configuration value
 
 private:
 	Memory *memory;
-										// メモリ
+// Memory
 	DWORD area;
-										// エリアセットレジスタ
+// Area set register
 };
 
 #endif	// areaset_h

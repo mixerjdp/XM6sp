@@ -1,41 +1,39 @@
 # AGENTS.md
 #
-# This file provides guidance to WARP (warp.dev) when working with code in this repository.
+# This file provides guidance to AI agents when working with code in this repository.
 
 ## Common commands
-Build (VS2012 toolchain as configured in `.vscode/build.bat`):
-- Debug: `.vscode\build.bat Debug`
-- Release: `.vscode\build.bat Release`
-  - This runs: `msbuild 00proj.vc7\XM6.sln /p:Configuration=<Debug|Release> /p:Platform=Win32 /m`
-  - `build.bat` calls `C:\Program Files (x86)\Microsoft Visual Studio 11.0\VC\bin\vcvars32.bat` first.
+The build scripts have been refactored and relocated. You can build the project using the following batch files:
+- 32-bit Build: `build32.bat`
+- 64-bit Build: `build64.bat`
+- Visual Studio Build: `main\buildvs.bat`
 
 Run:
-- Debug exe: `00proj.vc7\Debug\XM6.exe`
-- Release exe: `00proj.vc7\Release\XM6.exe`
+- Standalone executables are directed to modern output directories (e.g., `build_win32\`, `build_win64\`, or inside `main\`) depending on the build profile executed.
+- Libretro cores map to `.dll` or `.so` libraries, depending on the OS target.
 
 Tests/Lint:
 - No test or lint commands were found in the repo.
 
 ## High-level architecture
-The project is an XM6 (Sharp X68000) emulator split into a host UI layer and a portable VM layer, with a scheduler thread driving emulation. The following overview is distilled from `Leeme.MD`.
+The project is an XM6 (Sharp X68000) emulator. The architecture has been heavily restructured and expanded from its legacy core. It is now split into multiple focused modules, introducing a multi-platform Libretro frontend alongside the traditional MFC host.
 
-### Two-layer split
-- **VM layer** (`vm/`): OS-agnostic emulation of X68000 hardware (CPU, CRTC, DMA, FM audio, etc.). Owns the emulated memory/register state.
-- **MFC host layer** (`mfc/`): Windows UI built on MFC; handles input, audio/video output, and bridges host services to the VM.
+### Layer split and modular subdirectories
+- **VM layer** (`vm/`): OS-agnostic underlying emulation of X68000 hardware (CRTC, DMA, FM audio, etc.). This module owns the foundational emulated memory and register states.
+- **CPU core** (`cpu/`): Isolated and optimized instructions and execution paths for the processor cores.
+- **MFC host layer** (`mfc/`): The standalone Windows UI built on MFC. It continues to handle input, windowing, and bridges host services to the VM.
+- **Libretro frontend** (`libretro/`): A standard Libretro core implementation. This acts as an alternative frontend that wraps the VM layer for integration into multi-platform ecosystems (e.g., RetroArch), entirely bypassing the MFC overhead.
+- **Main module** (`main/`): Contains overarching project definitions, startup routines, and Visual Studio build infrastructure.
 
-### Startup and main loop
-- Entry point: `CApp::InitInstance` in `mfc/mfc_app.cpp` sets up host capabilities/paths and creates the main frame window.
-- VM creation: `CFrmWnd::OnCreate` in `mfc/mfc_frm.cpp` instantiates the global VM, initializes devices, and connects host-side components.
-- Emulation loop: a `WM_KICK` message starts `CScheduler::Run` in `mfc/mfc_sch.cpp`, which spins a dedicated thread that repeatedly calls `vm->Exec()` (in `vm/vm.cpp`) to execute instructions and process interrupts/events.
+### Startup and execution loops
+- **Standalone (MFC)**: Entry points reside in the `mfc/` or `main/` layers setting up host capabilities. A dedicated scheduler thread is spawned to repeatedly call the continuous `vm->Exec()` loop, managing interrupts synchronously.
+- **Libretro Core**: Driven by the host frontend through standard `retro_run()` callbacks. It manages execution iteratively, advancing frames and syncing audio/video sequentially without relying on Windows-specific threads.
 
-### Video/audio output
-- VM video devices write to internal buffers (`vm/gvram.cpp`, `vm/tvram.cpp`).
-- `mfc/mfc_draw.cpp` consumes those buffers and draws via GDI/DirectX on the UI thread.
-
-### MFC component system and command handling
-- MFC-side components inherit `CComponent` (`mfc/mfc_com.h`), are linked in a list, and are discoverable via `CFrmWnd::SearchComponent(ID)`.
-- UI commands are wired via MFC message maps in `mfc/mfc_frm.cpp`, with command logic mostly in `mfc/mfc_cmd.cpp`.
+### Expanded Video/Audio output
+- Both Audio and Video handling have been significantly expanded with enhanced performance and features.
+- Video: Emulated hardware capabilities bridge internal VM video buffers (`vm/gvram.cpp`, `vm/tvram.cpp`) to rendering abstraction layers. Custom shader structures (located in `shaders/`) provide modern scaling and post-processing.
+- Audio: The audio pipeline has been expanded with greater fidelity and integration flexibility to satisfy the continuous streaming demands of the new libretro frontend and the standalone client.
 
 ### Localization resources
-- `mfc/mfc_app.cpp` determines Japanese vs. non‑Japanese environments.
-- String resources are loaded via `GetMsg(UINT, CString&)` against `mfc/mfc_res.rc` and IDs in `mfc/mfc_res.h`; this repo is the Spanish‑translated variant.
+- String resources and graphical assets (`res/`) have been expanded.
+- The emulator now supports 3 distinct languages, extending its accessibility across broader regions, dynamically dispatching localized labels across the interface.

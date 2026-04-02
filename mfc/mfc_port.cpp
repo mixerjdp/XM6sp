@@ -2,15 +2,15 @@
 //
 //	X68000 EMULATOR "XM6"
 //
-//	Copyright (C) 2001-2005 ＰＩ．(ytanaka@ipc-tokai.or.jp)
-//	[ MFC ポート ]
+//	Copyright (C) 2001-2005 PI (ytanaka@ipc-tokai.or.jp)
+//	[ MFC Port ]
 //
 //---------------------------------------------------------------------------
 
 #if defined(_WIN32)
 
-#include "os.h"
 #include "mfc.h"
+#include "os.h"
 #include "xm6.h"
 #include "vm.h"
 #include "scc.h"
@@ -25,62 +25,62 @@
 
 //===========================================================================
 //
-//	ポート
+//	Port
 //
 //===========================================================================
 
 //---------------------------------------------------------------------------
 //
-//	COMスレッド関数
+//	COM thread function
 //
 //---------------------------------------------------------------------------
 static UINT COMThread(LPVOID pParam)
 {
 	CPort *pPort;
 
-	// パラメータを受け取る
+	// Receive parameter
 	pPort = (CPort*)pParam;
 	ASSERT(pPort);
 
-	// 実行
+	// Execute
 	pPort->RunCOM();
 
-	// 終了コードを持ってスレッドを終了
+	// Return code terminates thread
 	return 0;
 }
 
 //---------------------------------------------------------------------------
 //
-//	LPTスレッド関数
+//	LPT thread function
 //
 //---------------------------------------------------------------------------
 static UINT LPTThread(LPVOID pParam)
 {
 	CPort *pPort;
 
-	// パラメータを受け取る
+	// Receive parameter
 	pPort = (CPort*)pParam;
 	ASSERT(pPort);
 
-	// 実行
+	// Execute
 	pPort->RunLPT();
 
-	// 終了コードを持ってスレッドを終了
+	// Return code terminates thread
 	return 0;
 }
 
 //---------------------------------------------------------------------------
 //
-//	コンストラクタ
+//	Constructor
 //
 //---------------------------------------------------------------------------
 CPort::CPort(CFrmWnd *pWnd) : CComponent(pWnd)
 {
-	// コンポーネントパラメータ
+	// Component identifier
 	m_dwID = MAKEID('P', 'O', 'R', 'T');
 	m_strDesc = _T("Port Handler");
 
-	// シリアルポート
+	// Serial port
 	m_nCOM = 0;
 	m_hCOM = INVALID_HANDLE_VALUE;
 	m_pCOM = NULL;
@@ -98,7 +98,7 @@ CPort::CPort(CFrmWnd *pWnd) : CComponent(pWnd)
 	m_bForce = FALSE;
 	m_pSCC = NULL;
 
-	// パラレルポート
+	// Parallel port
 	m_nLPT = 0;
 	m_hLPT = INVALID_HANDLE_VALUE;
 	m_pLPT = NULL;
@@ -111,24 +111,24 @@ CPort::CPort(CFrmWnd *pWnd) : CComponent(pWnd)
 
 //---------------------------------------------------------------------------
 //
-//	初期化
+//	Initialization
 //
 //---------------------------------------------------------------------------
 BOOL FASTCALL CPort::Init()
 {
 	ASSERT(this);
 
-	// 基本クラス
+	// Base class
 	if (!CComponent::Init()) {
 		return FALSE;
 	}
 
-	// SCC取得
+	// Get SCC
 	ASSERT(!m_pSCC);
 	m_pSCC = (SCC*)::GetVM()->SearchDevice(MAKEID('S', 'C', 'C', ' '));
 	ASSERT(m_pSCC);
 
-	// シリアルキュー初期化
+	// Serial queue initialization
 	if (!m_TxQueue.Init(0x1000)) {
 		return FALSE;
 	}
@@ -136,20 +136,20 @@ BOOL FASTCALL CPort::Init()
 		return FALSE;
 	}
 
-	// シリアルポート
+	// Serial port
 	OpenCOM();
 
-	// プリンタ取得
+	// Get printer
 	ASSERT(!m_pPrinter);
 	m_pPrinter = (Printer*)::GetVM()->SearchDevice(MAKEID('P', 'R', 'N', ' '));
 	ASSERT(m_pPrinter);
 
-	// パラレルキュー初期化
+	// Parallel queue initialization
 	if (!m_LPTQueue.Init(0x1000)) {
 		return FALSE;
 	}
 
-	// パラレルポート
+	// Parallel port
 	OpenLPT();
 
 	return TRUE;
@@ -157,26 +157,26 @@ BOOL FASTCALL CPort::Init()
 
 //---------------------------------------------------------------------------
 //
-//	クリーンアップ
+//	Cleanup
 //
 //---------------------------------------------------------------------------
 void FASTCALL CPort::Cleanup()
 {
 	ASSERT(this);
 
-	// パラレルポート
+	// Parallel port
 	CloseLPT();
 
-	// シリアルポート
+	// Serial port
 	CloseCOM();
 
-	// 基本クラス
+	// Base class
 	CComponent::Cleanup();
 }
 
 //---------------------------------------------------------------------------
 //
-//	設定適用
+//	Apply configuration
 //
 //---------------------------------------------------------------------------
 void FASTCALL CPort::ApplyCfg(const Config* pConfig)
@@ -187,61 +187,61 @@ void FASTCALL CPort::ApplyCfg(const Config* pConfig)
 	ASSERT(this);
 	ASSERT(pConfig);
 
-	// COMフラグ初期化
+	// COM flag initialization
 	bCOM = FALSE;
 
-	// COMポート番号が違っているか
+	// COM port number has changed
 	if (pConfig->port_com != (int)m_nCOM) {
 		m_nCOM = pConfig->port_com;
 		bCOM = TRUE;
 
-		// TrueKeyとポート番号が重なっていたら、TrueKeyを優先
+		// If TrueKey and port number are same, disable port, TrueKey has priority
 		if (pConfig->port_com == pConfig->tkey_com) {
 			m_nCOM = 0;
 		}
 	}
 
-	// 受信ファイル名が違っているか
+	// Receive log file has changed
 	if (_tcscmp(pConfig->port_recvlog, m_RecvLog) != 0) {
 		ASSERT(_tcslen(pConfig->port_recvlog) < _MAX_PATH);
 		_tcscpy(m_RecvLog, pConfig->port_recvlog);
 		bCOM = TRUE;
 	}
 
-	// 強制フラグが違っているか
+	// Force flag has changed
 	if (pConfig->port_384 != m_bForce) {
 		m_bForce = pConfig->port_384;
 		bCOM = TRUE;
 	}
 
-	// 変更点があれば
+	// If change detected
 	if (bCOM) {
-		// クローズ成功させるため、一度ロックしているVMを離す
+		// For cleanup, temporarily release locked VM
 		::UnlockVM();
 		CloseCOM();
 		OpenCOM();
 		::LockVM();
 	}
 
-	// LPTフラグ初期化
+	// LPT flag initialization
 	bLPT = FALSE;
 
-	// LPTポート番号が違っているか
+	// LPT port number has changed
 	if (pConfig->port_lpt != (int)m_nLPT) {
 		m_nLPT = pConfig->port_lpt;
 		bLPT = TRUE;
 	}
 
-	// 送信ファイル名が違っているか
+	// Send log file has changed
 	if (strcmp(pConfig->port_sendlog, m_SendLog) != 0) {
 		ASSERT(strlen(pConfig->port_sendlog) < sizeof(m_SendLog));
 		strcpy(m_SendLog, pConfig->port_sendlog);
 		bLPT = TRUE;
 	}
 
-	// 変更点があれば
+	// If change detected
 	if (bLPT) {
-		// クローズ成功させるため、一度ロックしているVMを離す
+		// For cleanup, temporarily release locked VM
 		::UnlockVM();
 		CloseLPT();
 		OpenLPT();
@@ -251,14 +251,14 @@ void FASTCALL CPort::ApplyCfg(const Config* pConfig)
 
 //===========================================================================
 //
-//	シリアルポート
+//	Serial port
 //
 //===========================================================================
 
 //---------------------------------------------------------------------------
 //
-//	COMオープン
-//	※VMロック状態
+//	COM open
+//	Note VM is locked
 //
 //---------------------------------------------------------------------------
 BOOL FASTCALL CPort::OpenCOM()
@@ -268,16 +268,16 @@ BOOL FASTCALL CPort::OpenCOM()
 
 	ASSERT(this);
 
-	// ポートが0なら、割り当てない
+	// Port 0 means not assigned
 	if (m_nCOM == 0) {
 		m_hCOM = INVALID_HANDLE_VALUE;
 		return TRUE;
 	}
 
-	// ファイル名を作成
+	// Create file name
 	strFile.Format(_T("\\\\.\\COM%d"), m_nCOM);
 
-	// オープン
+	// Open
 	m_hCOM = ::CreateFile(  strFile,
 							GENERIC_READ | GENERIC_WRITE,
 							0,
@@ -289,16 +289,16 @@ BOOL FASTCALL CPort::OpenCOM()
 		return FALSE;
 	}
 
-	// バッファサイズ
+	// Buffer size
 	::SetupComm(m_hCOM, 0x1000, 0x1000);
 
-	// 送受信をクリア
+	// Clear send/receive
 	m_TxQueue.Clear();
 	m_RxQueue.Clear();
 	::PurgeComm(m_hCOM, PURGE_TXCLEAR);
 	::PurgeComm(m_hCOM, PURGE_RXCLEAR);
 
-	// 信号線の初期設定
+	// Set send/receive settings
 	OnErr();
 	OnCTSDSR();
 	::GetCommState(m_hCOM, &dcb);
@@ -308,10 +308,10 @@ BOOL FASTCALL CPort::OpenCOM()
 	::UnlockVM();
 	CtrlCOM();
 
-	// ログファイルの作成(アペンド)
+	// Create log file (append)
 	AppendCOM();
 
-	// スレッドを立てる
+	// Start thread
 	m_bCOMReq = FALSE;
 	m_pCOM = AfxBeginThread(COMThread, this);
 	if (!m_pCOM) {
@@ -324,7 +324,7 @@ BOOL FASTCALL CPort::OpenCOM()
 
 //---------------------------------------------------------------------------
 //
-//	COMログファイル
+//	COM log file
 //
 //---------------------------------------------------------------------------
 void FASTCALL CPort::AppendCOM()
@@ -337,28 +337,28 @@ void FASTCALL CPort::AppendCOM()
 
 	ASSERT(this);
 
-	// ログファイル指定が空であれば、必要ない
+	// If log file is not specified, return
 	if (_tcslen(m_RecvLog) == 0) {
 		return;
 	}
 
-	// 分割
+	// Parse
 	_tsplitpath(m_RecvLog, szDrive, szDir, szFile, szExt);
 
-	// フルパス指定でなければ相対パスを採用
+	// If no drive path, use relative path
 	path.SetPath(m_RecvLog);
 	if ((_tcslen(szDrive) == 0) && (szDir[0] != _T('\\'))) {
 		path.SetBaseDir();
 	}
 
-	// アペンドオープン
+	// Append open
 	m_RecvFile.Open(path, Fileio::Append);
 }
 
 //---------------------------------------------------------------------------
 //
-//	COMクローズ
-//	※VMロック状態
+//	COM close
+//	Note VM is locked
 //
 //---------------------------------------------------------------------------
 void FASTCALL CPort::CloseCOM()
@@ -367,50 +367,50 @@ void FASTCALL CPort::CloseCOM()
 
 	ASSERT(this);
 
-	// スレッドを閉じる
+	// Stop thread
 	if (m_pCOM) {
-		// 終了要求を上げ
+		// Set exit flag
 		m_bCOMReq = TRUE;
 
-		// 終了待ち(無期限)
+		// Wait for exit (infinite)
 		::WaitForSingleObject(m_pCOM->m_hThread, INFINITE);
 
 		m_pCOM = NULL;
 	}
 
-	// ハンドルを閉じる
+	// Close handle
 	if (m_hCOM != INVALID_HANDLE_VALUE) {
-		// バッファパージ
+		// Buffer purge
 		m_TxQueue.Clear();
 		m_RxQueue.Clear();
 		::PurgeComm(m_hCOM, PURGE_TXCLEAR);
 		::PurgeComm(m_hCOM, PURGE_RXCLEAR);
 
-		// 送信中か
+		// Send
 		if (m_bTxValid) {
-			// 送信I/Oが完了しているか
+			// If overlapped I/O is in progress
 			if (!GetOverlappedResult(m_hCOM, &m_TxOver, &dwCompleted, FALSE)) {
-				// まだ保留中なので、キャンセル
+				// Still pending, so cancel
 				CancelIo(m_hCOM);
 			}
 			m_bTxValid = FALSE;
 		}
 
-		// 受信I/Oが完了しているか
+		// If overlapped I/O is in progress
 		if (!GetOverlappedResult(m_hCOM, &m_RxOver, &dwCompleted, FALSE)) {
-			// まだ保留中なので、キャンセル
+			// Still pending, so cancel
 			CancelIo(m_hCOM);
 		}
 
-		// クローズ
+		// Close
 		::CloseHandle(m_hCOM);
 		m_hCOM = INVALID_HANDLE_VALUE;
 	}
 
-	// ログファイルクローズ
+	// Log file close
 	m_RecvFile.Close();
 
-	// SCCに対し、送信ウェイト解除など
+	// To SCC, if send/wait is not complete
 	m_pSCC->WaitTx(0, FALSE);
 	m_pSCC->SetCTS(0, FALSE);
 	m_pSCC->SetDCD(0, FALSE);
@@ -418,7 +418,7 @@ void FASTCALL CPort::CloseCOM()
 
 //---------------------------------------------------------------------------
 //
-//	COM実行
+//	COM execution
 //
 //---------------------------------------------------------------------------
 void FASTCALL CPort::RunCOM()
@@ -429,10 +429,10 @@ void FASTCALL CPort::RunCOM()
 	ASSERT(this);
 	ASSERT(m_hCOM);
 
-	// イベントマスク
+	// Event mask
 	::SetCommMask(m_hCOM, 0);
 
-	// タイムアウト
+	// Timeout
 	::GetCommTimeouts(m_hCOM, &cto);
 	cto.ReadIntervalTimeout = 1;
 	cto.ReadTotalTimeoutMultiplier = 0;
@@ -441,53 +441,53 @@ void FASTCALL CPort::RunCOM()
 	cto.WriteTotalTimeoutConstant = 10000;
 	::SetCommTimeouts(m_hCOM, &cto);
 
-	// 受信待ち
+	// Receive wait
 	memset(&m_RxOver, 0, sizeof(m_RxOver));
 	::ReadFile(m_hCOM, m_RxBuf, sizeof(m_RxBuf), NULL, &m_RxOver);
 
-	// 送信なし
+	// Not sending
 	m_bTxValid = FALSE;
 	memset(&m_TxOver, 0, sizeof(m_TxOver));
 
-	// 終了フラグが上がるまで
+	// Until exit flag is set
 	while (!m_bCOMReq) {
-		// スリープ
+		// Sleep
 		::Sleep(5);
 
 		// CTS, DSR
 		OnCTSDSR();
 
-		// エラー
+		// Error
 		OnErr();
 
-		// 受信
+		// Receive
 		OnRx();
 
-		// Win32側情報を取得
+		// Get Win32 status
 		::GetCommState(m_hCOM, &dcb);
 
-		// VMロック
+		// Lock VM
 		::LockVM();
 
-		// 同期処理
+		// Adjust
 		AdjustCOM(&dcb);
 		SignalCOM();
 		BufCOM();
 
-		// VMアンロック
+		// Unlock VM
 		::UnlockVM();
 
-		// 信号線制御
+		// Send control
 		CtrlCOM();
 
-		// 送信
+		// Send
 		OnTx();
 	}
 }
 
 //---------------------------------------------------------------------------
 //
-//	パラメータあわせ
+//	Adjust parameters
 //
 //---------------------------------------------------------------------------
 void FASTCALL CPort::AdjustCOM(DCB *pDCB)
@@ -520,45 +520,45 @@ void FASTCALL CPort::AdjustCOM(DCB *pDCB)
 	ASSERT(m_hCOM);
 	ASSERT(pDCB);
 
-	// 変更有無をオフ
+	// Change flag clear
 	bFlag = FALSE;
 
-	// SCC側情報を取得
+	// Get SCC data
 	scc = m_pSCC->GetWork();
 	p = &scc->ch[0];
 
-	// Win32側情報を取得
+	// Get Win32 data
 	memcpy(&dcb, pDCB, sizeof(dcb));
 
-	// ボーレート
+	// Baudrate
 	dwValue = CBR_300;
 	for (i=0;; i++) {
-		// テーブル終端であれば300bps
+		// End if table ends at 300bps
 		if (dwTable[i] == 0) {
 			break;
 		}
-		// 上下5%の幅でマッチさせる
+		// Match with 5% margin
 		if (MatchCOM(p->baudrate, dwTable[i])) {
 			dwValue = dwTable[i];
 			break;
 		}
 	}
 
-	// 強制38400bps
+	// Force 38400bps
 	if (m_bForce) {
 		dwValue = CBR_38400;
 	}
 
-	// 比較
+	// Compare
 	if (dcb.BaudRate != dwValue) {
 		dcb.BaudRate = dwValue;
 		bFlag = TRUE;
 	}
 
-	// バイナリモード
+	// Binary mode
 	dcb.fBinary = 0;
 
-	// パリティ有無
+	// Parity setting
 	if (p->parity == 0) {
 		dwValue = 0;
 	}
@@ -569,25 +569,25 @@ void FASTCALL CPort::AdjustCOM(DCB *pDCB)
 		dcb.fParity = dwValue;
 	}
 
-	// CTSフロー
+	// CTS filter
 	if (dcb.fOutxCtsFlow != 0) {
 		dcb.fOutxCtsFlow = 0;
 		bFlag = TRUE;
 	}
 
-	// DSRフロー
+	// DSR filter
 	if (dcb.fOutxDsrFlow != 0) {
 		dcb.fOutxDsrFlow = 0;
 		bFlag = TRUE;
 	}
 
-	// DTR制御
+	// DTR control
 	if (dcb.fDtrControl != DTR_CONTROL_ENABLE) {
 		dcb.fDtrControl = DTR_CONTROL_ENABLE;
 		bFlag = TRUE;
 	}
 
-	// DSRセンス
+	// DSR sensitivity
 	if (dcb.fDsrSensitivity != 0) {
 		dcb.fDsrSensitivity = 0;
 		bFlag = TRUE;
@@ -629,7 +629,7 @@ void FASTCALL CPort::AdjustCOM(DCB *pDCB)
 		bFlag = TRUE;
 	}
 
-	// データビット長
+	// Data bits
 	if (dcb.ByteSize != (BYTE)p->rxbit) {
 		if (p->rxbit == p->txbit) {
 			if (p->rxbit >= 5) {
@@ -639,7 +639,7 @@ void FASTCALL CPort::AdjustCOM(DCB *pDCB)
 		}
 	}
 
-	// パリティ
+	// Parity
 	switch (p->parity) {
 		case 0:
 			dwValue = NOPARITY;
@@ -659,7 +659,7 @@ void FASTCALL CPort::AdjustCOM(DCB *pDCB)
 		bFlag = TRUE;
 	}
 
-	// ストップビット
+	// Stop bits
 	switch (p->stopbit) {
 		case 1:
 			dwValue = ONESTOPBIT;
@@ -679,16 +679,16 @@ void FASTCALL CPort::AdjustCOM(DCB *pDCB)
 		bFlag = TRUE;
 	}
 
-	// 異なっていれば
+	// If different
 	if (bFlag) {
-		// 設定
+		// Set
 		::SetCommState(m_hCOM, &dcb);
 
-		// バッファクリア
+		// Clear buffer
 		m_TxQueue.Clear();
 		m_RxQueue.Clear();
 
-		// Win32側パージ
+		// Win32 purge
 		::PurgeComm(m_hCOM, PURGE_TXCLEAR);
 		::PurgeComm(m_hCOM, PURGE_RXCLEAR);
 	}
@@ -696,7 +696,7 @@ void FASTCALL CPort::AdjustCOM(DCB *pDCB)
 
 //---------------------------------------------------------------------------
 //
-//	ボーレートマッチ
+//	Baudrate match
 //
 //---------------------------------------------------------------------------
 BOOL FASTCALL CPort::MatchCOM(DWORD dwSCC, DWORD dwBase)
@@ -705,24 +705,24 @@ BOOL FASTCALL CPort::MatchCOM(DWORD dwSCC, DWORD dwBase)
 
 	ASSERT(this);
 
-	// オリジナルに対して5%のオフセット
+	// 5% offset against reference
 	dwOffset = (dwBase * 5);
 	dwOffset /= 100;
 
-	// 範囲に収まっていればOK
+	// If within range, OK
 	if ((dwBase - dwOffset) <= dwSCC) {
 		if (dwSCC <= (dwBase + dwOffset)) {
 			return TRUE;
 		}
 	}
 
-	// 違う
+	// Different
 	return FALSE;
 }
 
 //---------------------------------------------------------------------------
 //
-//	信号線あわせ
+//	Signal handling
 //
 //---------------------------------------------------------------------------
 void FASTCALL CPort::SignalCOM()
@@ -730,7 +730,7 @@ void FASTCALL CPort::SignalCOM()
 	ASSERT(this);
 	ASSERT(m_pSCC);
 
-	// VMへ通知(エラー)
+	// Notify VM (error)
 	if (m_dwErr & CE_BREAK) {
 		m_pSCC->SetBreak(0, TRUE);
 	}
@@ -744,11 +744,11 @@ void FASTCALL CPort::SignalCOM()
 		m_pSCC->ParityErr(0);
 	}
 
-	// VMへ通知(信号線)
+	// Notify VM (receive signal)
 	m_pSCC->SetCTS(0, m_bCTS);
 	m_pSCC->SetDCD(0, m_bDSR);
 
-	// VMから通知(信号線)
+	// Get from VM (receive signal)
 	m_bBreak = m_pSCC->GetBreak(0);
 	m_bRTS = m_pSCC->GetRTS(0);
 	m_bDTR = m_pSCC->GetDTR(0);
@@ -756,7 +756,7 @@ void FASTCALL CPort::SignalCOM()
 
 //---------------------------------------------------------------------------
 //
-//	バッファあわせ
+//	Buffer handling
 //
 //---------------------------------------------------------------------------
 void FASTCALL CPort::BufCOM()
@@ -769,27 +769,27 @@ void FASTCALL CPort::BufCOM()
 	ASSERT(this);
 	ASSERT(m_pSCC);
 
-	// 受信データを一括取得
+	// Get all receive data
 	dwRx = m_RxQueue.Get(RxBuf);
 
-	// 有効なデータはすべてSCCへ送る
+	// Send all valid data to SCC
 	for (i=0; i<dwRx; i++) {
 		m_pSCC->Send(0, RxBuf[i]);
 	}
 
-	// SCC側バッファの状態を見て、送信ウェイト制御
+	// Based on SCC send buffer status, wait for send completion
 	if (m_pSCC->IsTxFull(0)) {
-		// バッファが一杯なので、これ以上送信させない
+		// Buffer is full, so continue waiting until send completes
 		m_pSCC->WaitTx(0, TRUE);
 	}
 	else {
-		// 送信可
+		// Send ok
 		m_pSCC->WaitTx(0, FALSE);
 	}
 
-	// 送信データがあれば、受け取る
+	// If there is send data, receive
 	while (!m_pSCC->IsTxEmpty(0)) {
-		// バッファを超えない範囲に押さえる
+		// If buffer is full, break within range
 		if (m_TxQueue.GetFree() == 0) {
 			break;
 		}
@@ -801,7 +801,7 @@ void FASTCALL CPort::BufCOM()
 
 //---------------------------------------------------------------------------
 //
-//	信号線制御
+//	Control
 //
 //---------------------------------------------------------------------------
 void FASTCALL CPort::CtrlCOM()
@@ -809,7 +809,7 @@ void FASTCALL CPort::CtrlCOM()
 	ASSERT(this);
 	ASSERT(m_hCOM);
 
-	// ブレーク
+	// Break
 	if (m_bBreak) {
 		::EscapeCommFunction(m_hCOM, SETBREAK);
 	}
@@ -846,7 +846,7 @@ void FASTCALL CPort::OnCTSDSR()
 	ASSERT(this);
 	ASSERT(m_hCOM);
 
-	// 状態取得
+	// Get status
 	::GetCommModemStatus(m_hCOM, &dwStat);
 
 	// CTS
@@ -868,7 +868,7 @@ void FASTCALL CPort::OnCTSDSR()
 
 //---------------------------------------------------------------------------
 //
-//	受信エラー
+//	Receive error
 //
 //---------------------------------------------------------------------------
 void FASTCALL CPort::OnErr()
@@ -876,13 +876,13 @@ void FASTCALL CPort::OnErr()
 	ASSERT(this);
 	ASSERT(m_hCOM);
 
-	// エラーをクリアし、同時に情報を記録
+	// Clear error and record
 	::ClearCommError(m_hCOM, &m_dwErr, NULL);
 }
 
 //---------------------------------------------------------------------------
 //
-//	受信サブ
+//	Receive subroutine
 //
 //---------------------------------------------------------------------------
 void FASTCALL CPort::OnRx()
@@ -892,31 +892,31 @@ void FASTCALL CPort::OnRx()
 	ASSERT(this);
 	ASSERT(m_hCOM);
 
-	// 受信完了していなければ何もしない
+	// If not receiving, exit
 	dwReceived = 0;
 	if (!GetOverlappedResult(m_hCOM, &m_RxOver, &dwReceived, FALSE)) {
 		return;
 	}
 
-	// 受信が有効であれば
+	// If receive data is valid
 	if (dwReceived > 0) {
-		// 受信ログファイルが有効であれば、書き込む
+		// If receive log file is valid, save
 		if (m_RecvFile.IsValid()) {
 			m_RecvFile.Write(m_RxBuf, dwReceived);
 		}
 
-		// キューに挿入
+		// Add to queue
 		m_RxQueue.Insert(m_RxBuf, dwReceived);
 	}
 
-	// 次の受信
+	// Next receive
 	memset(&m_RxOver, 0, sizeof(m_RxOver));
 	::ReadFile(m_hCOM, m_RxBuf, sizeof(m_RxBuf), NULL, &m_RxOver);
 }
 
 //---------------------------------------------------------------------------
 //
-//	送信サブ
+//	Send subroutine
 //
 //---------------------------------------------------------------------------
 void FASTCALL CPort::OnTx()
@@ -927,30 +927,30 @@ void FASTCALL CPort::OnTx()
 	ASSERT(this);
 	ASSERT(m_hCOM);
 
-	// 前回の送信が終わっていなければ、リターン
+	// If previous send is not finished, return
 	if (m_bTxValid) {
 		if (!GetOverlappedResult(m_hCOM, &m_TxOver, &dwSent, FALSE)) {
 			return;
 		}
 
-		// 送信できた分だけ、送信バッファから進める
+		// If send is complete, discard from send buffer
 		if (dwSent > 0) {
 			m_TxQueue.Discard(dwSent);
 		}
 
-		// 現状送信なし
+		// No send now
 		m_bTxValid = FALSE;
 	}
 
-	// 送信するものがなければ、リターン
+	// If no send data, return
 	if (m_TxQueue.IsEmpty()) {
 		return;
 	}
 
-	// 送信キューから取得(ポインタは進めない)
+	// Get send queue (pointer is incremented)
 	dwSize = m_TxQueue.Copy(m_TxBuf);
 
-	// 送信開始
+	// Send start
 	memset(&m_TxOver, 0, sizeof(m_TxOver));
 	m_bTxValid = TRUE;
 	::WriteFile(m_hCOM, m_TxBuf, dwSize, NULL, &m_TxOver);
@@ -958,7 +958,7 @@ void FASTCALL CPort::OnTx()
 
 //---------------------------------------------------------------------------
 //
-//	COM情報取得
+//	Get COM info
 //
 //---------------------------------------------------------------------------
 BOOL FASTCALL CPort::GetCOMInfo(LPTSTR lpszDevFile, DWORD *dwLogFile) const
@@ -967,32 +967,32 @@ BOOL FASTCALL CPort::GetCOMInfo(LPTSTR lpszDevFile, DWORD *dwLogFile) const
 	ASSERT(lpszDevFile);
 	ASSERT(dwLogFile);
 
-	// ファイルはヌル、ハンドルは無効
+	// File is serial, handle is invalid
 	_tcscpy(lpszDevFile, _T("  (None)"));
 	*dwLogFile = (DWORD)INVALID_HANDLE_VALUE;
 
-	// スレッドが立っていなければ、この時点でFALSEで帰る
+	// If thread is not running, exit with FALSE at this point
 	if (!m_pCOM) {
 		return FALSE;
 	}
 
-	// デバイスファイルを設定
+	// Set device file name
 	if (m_nCOM > 0) {
 		_stprintf(lpszDevFile, _T("\\\\.\\COM%d"), m_nCOM);
 	}
 
-	// ログファイルを設定
+	// Set log file
 	if (m_RecvFile.IsValid()) {
 		*dwLogFile = (DWORD)m_RecvFile.GetHandle();
 	}
 
-	// スレッドは動いている
+	// Thread is running
 	return TRUE;
 }
 
 //---------------------------------------------------------------------------
 //
-//	送信キュー情報取得
+//	Get Tx queue
 //
 //---------------------------------------------------------------------------
 void FASTCALL CPort::GetTxQueue(CQueue::LPQUEUEINFO lpqi) const
@@ -1005,7 +1005,7 @@ void FASTCALL CPort::GetTxQueue(CQueue::LPQUEUEINFO lpqi) const
 
 //---------------------------------------------------------------------------
 //
-//	受信キュー情報取得
+//	Get Rx queue
 //
 //---------------------------------------------------------------------------
 void FASTCALL CPort::GetRxQueue(CQueue::LPQUEUEINFO lpqi) const
@@ -1018,14 +1018,14 @@ void FASTCALL CPort::GetRxQueue(CQueue::LPQUEUEINFO lpqi) const
 
 //===========================================================================
 //
-//	パラレルポート
+//	Parallel port
 //
 //===========================================================================
 
 //---------------------------------------------------------------------------
 //
-//	LPTオープン
-//	※VMロック状態
+//	LPT open
+//	Note VM is locked
 //
 //---------------------------------------------------------------------------
 BOOL FASTCALL CPort::OpenLPT()
@@ -1035,20 +1035,20 @@ BOOL FASTCALL CPort::OpenLPT()
 
 	ASSERT(this);
 
-	// ハンドル初期化
+	// Initialize handle
 	m_hLPT = INVALID_HANDLE_VALUE;
 	m_pLPT = NULL;
 	m_bLPTValid = FALSE;
 
-	// ログファイルの作成(アペンド)
+	// Create log file (append)
 	AppendLPT();
 
-	// ポートが0でない場合、LPTデバイスへ出力
+	// If port is not 0, output to LPT device
 	if (m_nLPT != 0) {
-		// ファイル名を作成
+		// Create file name
 		strFile.Format(_T("\\\\.\\LPT%d"), m_nLPT);
 
-		// オープン
+		// Open
 		m_hLPT = ::CreateFile(  strFile,
 								GENERIC_WRITE,
 								0,
@@ -1057,15 +1057,15 @@ BOOL FASTCALL CPort::OpenLPT()
 								FILE_ATTRIBUTE_NORMAL | FILE_FLAG_OVERLAPPED,
 								0);
 
-		// オープンできていたら設定
+		// If opened successfully, set
 		if (m_hLPT != INVALID_HANDLE_VALUE) {
-			// バッファサイズ
+			// Buffer size
 			::SetupComm(m_hLPT, 0x400, 0x1000);
 
-			// イベントマスク
+			// Event mask
 			::SetCommMask(m_hLPT, 0);
 
-			// タイムアウト
+			// Timeout
 			::GetCommTimeouts(m_hLPT, &cto);
 			cto.WriteTotalTimeoutMultiplier = 1;
 			cto.WriteTotalTimeoutConstant = 10;
@@ -1073,30 +1073,30 @@ BOOL FASTCALL CPort::OpenLPT()
 		}
 	}
 
-	// バッファ初期化
+	// Buffer initialization
 	m_LPTQueue.Clear();
 
-	// ログファイル又はLPTデバイスがあれば
+	// If log file or LPT device is available
 	if (m_SendFile.IsValid() || (m_hLPT != INVALID_HANDLE_VALUE)) {
-		// スレッドを立てる
+		// Start thread
 		m_bLPTReq = FALSE;
 		m_pLPT = AfxBeginThread(LPTThread, this);
 
-		// スレッド成功なら、プリンタへ通知
+		// If thread starts, notify printer
 		if (m_pLPT) {
 			m_pPrinter->Connect(TRUE);
 			return TRUE;
 		}
 	}
 
-	// ポートを閉じる(内部でm_pPrinter->Connect(FALSE)を呼ぶ)
+	// Close port (eventually m_pPrinter->Connect(FALSE) is called)
 	CloseLPT();
 	return TRUE;
 }
 
 //---------------------------------------------------------------------------
 //
-//	LPTログファイル
+//	LPT log file
 //
 //---------------------------------------------------------------------------
 void FASTCALL CPort::AppendLPT()
@@ -1109,28 +1109,28 @@ void FASTCALL CPort::AppendLPT()
 
 	ASSERT(this);
 
-	// ログファイル指定が空であれば、必要ない
+	// If log file is not specified, return
 	if (_tcslen(m_SendLog) == 0) {
 		return;
 	}
 
-	// 分割
+	// Parse
 	_tsplitpath(m_SendLog, szDrive, szDir, szFile, szExt);
 
-	// フルパス指定でなければ相対パスを採用
+	// If no drive path, use relative path
 	path.SetPath(m_SendLog);
 	if ((_tcslen(szDrive) == 0) && (szDir[0] != _T('\\'))) {
 		path.SetBaseDir();
 	}
 
-	// アペンドオープン
+	// Append open
 	m_SendFile.Open(path, Fileio::Append);
 }
 
 //---------------------------------------------------------------------------
 //
-//	LPTクローズ
-//	※VMロック状態
+//	LPT close
+//	Note VM is locked
 //
 //---------------------------------------------------------------------------
 void FASTCALL CPort::CloseLPT()
@@ -1139,72 +1139,72 @@ void FASTCALL CPort::CloseLPT()
 
 	ASSERT(this);
 
-	// スレッドを閉じる
+	// Stop thread
 	if (m_pLPT) {
-		// 終了要求を上げ
+		// Set exit flag
 		m_bLPTReq = TRUE;
 
-		// 終了待ち(無期限)
+		// Wait for exit (infinite)
 		::WaitForSingleObject(m_pLPT->m_hThread, INFINITE);
 
 		m_pLPT = NULL;
 	}
 
-	// ハンドルを閉じる
+	// Close handle
 	if (m_hLPT != INVALID_HANDLE_VALUE) {
-		// 送信中か
+		// Send
 		if (m_bLPTValid) {
 			if (!GetOverlappedResult(m_hLPT, &m_LPTOver, &dwCompleted, FALSE)) {
-				// まだ保留中
+				// Still pending
 				CancelIo(m_hLPT);
 			}
-			// 送信していない
+			// Not sending
 			m_bLPTValid = FALSE;
 		}
 
-		// クローズ
+		// Close
 		::CloseHandle(m_hLPT);
 
-		// ワーク
+		// Reset
 		m_hLPT = INVALID_HANDLE_VALUE;
 		m_bLPTValid = FALSE;
 		memset(&m_LPTOver, 0, sizeof(m_LPTOver));
 	}
 
-	// ログファイルクローズ
+	// Log file close
 	if (m_SendFile.IsValid()) {
 		m_SendFile.Close();
 	}
 
-	// プリンタに対し、切断を通知
+	// To printer, disconnect notification
 	m_pPrinter->Connect(FALSE);
 }
 
 //---------------------------------------------------------------------------
 //
-//	LPT実行
+//	LPT execution
 //
 //---------------------------------------------------------------------------
 void FASTCALL CPort::RunLPT()
 {
 	ASSERT(this);
 
-	// 終了フラグが上がるまで
+	// Until exit flag is set
 	while (!m_bLPTReq) {
-		// スリープ
+		// Sleep
 		::Sleep(10);
 
-		// バッファの内容を送信またはログ出力
+		// Send buffer content and log output
 		SendLPT();
 
-		// プリンタからデータ取得
+		// Get printer data
 		RecvLPT();
 	}
 }
 
 //---------------------------------------------------------------------------
 //
-//	プリンタデータ送信
+//	Printer data send
 //
 //---------------------------------------------------------------------------
 void FASTCALL CPort::SendLPT()
@@ -1215,65 +1215,65 @@ void FASTCALL CPort::SendLPT()
 
 	ASSERT(this);
 
-	// 送信中か
+	// Send
 	if (!m_bLPTValid) {
-		// 手持ちのバッファが空なら、何もしない
+		// If overlapped buffer is empty, do nothing
 		if (m_LPTQueue.IsEmpty()) {
 			return;
 		}
 
-		// データを一括して受け取る
+		// Copy data as batch and receive
 		dwNum = m_LPTQueue.Copy(Buffer);
 		ASSERT(dwNum > 0);
 		ASSERT(dwNum <= sizeof(Buffer));
 
-		// バッファは有効。LPTデバイスがなければログ記録のみ
+		// Buffer valid, LPT device not available, log only
 		if (m_hLPT == INVALID_HANDLE_VALUE) {
-			// 送信ログファイルは必ず存在
+			// Send log file must be valid
 			ASSERT(m_SendFile.IsValid());
 
-			// ログファイルを書き込む
+			// Write to log file
 			m_SendFile.Write(Buffer, dwNum);
 
-			// ここで進める
+			// Discard here
 			m_LPTQueue.Discard(dwNum);
 			return;
 		}
 
-		// バッファ有効かつLPTデバイスあり。同期書き込みを行う
+		// Buffer valid, LPT device available. Start write operation
 		memset(&m_LPTOver, 0, sizeof(m_LPTOver));
 		::WriteFile(m_hLPT, Buffer, dwNum, &dwWritten, &m_LPTOver);
 		m_bLPTValid = TRUE;
 		return;
 	}
 
-	// デバイスがなければここで完了
+	// If device is not available, exit here
 	if (m_hLPT == INVALID_HANDLE_VALUE) {
 		return;
 	}
 
-	// 送信完了したか
+	// If send is not complete
 	if (!GetOverlappedResult(m_hLPT, &m_LPTOver, &dwWritten, FALSE)) {
 		return;
 	}
 
-	// 送信完了した。出来た部分だけ改めて受け取る(バッファ整合)
+	// Send complete. Copy remaining data and discard (buffer discard)
 	m_LPTQueue.Copy(Buffer);
 	m_LPTQueue.Discard(dwWritten);
 
-	// 書けた分だけログファイルへ
+	// If log file is valid
 	if (m_SendFile.IsValid()) {
 		m_SendFile.Write(Buffer, dwWritten);
 	}
 
-	// 送信フラグ落とす
+	// Send flag off
 	m_bLPTValid = FALSE;
 }
 
 //---------------------------------------------------------------------------
 //
-//	プリンタデータ取得
-//	※プリンタデバイス内で排他制御がかかる
+//	Printer data receive
+//	Printer device performs handshaking
 //
 //---------------------------------------------------------------------------
 void FASTCALL CPort::RecvLPT()
@@ -1284,23 +1284,23 @@ void FASTCALL CPort::RecvLPT()
 
 	ASSERT(this);
 
-	// バッファ余裕個数を取得
+	// Get buffer free space
 	dwFree = m_LPTQueue.GetFree();
 	dwNum = 0;
 
-	// バッファに余裕があるだけループ
+	// Loop while there is free space in buffer
 	while (dwFree > 0) {
-		// データ取得を試みる
+		// Get data if available
 		if (!m_pPrinter->GetData(&Buffer[dwNum])) {
 			break;
 		}
 
-		// データ個数を増やす
+		// Increment data count
 		dwFree--;
 		dwNum++;
 	}
 
-	// 追加したものがあればキューへ
+	// Add to queue if there is new data
 	if (dwNum > 0) {
 		m_LPTQueue.Insert(Buffer, dwNum);
 	}
@@ -1308,7 +1308,7 @@ void FASTCALL CPort::RecvLPT()
 
 //---------------------------------------------------------------------------
 //
-//	LPT情報取得
+//	Get LPT info
 //
 //---------------------------------------------------------------------------
 BOOL FASTCALL CPort::GetLPTInfo(LPTSTR lpszDevFile, DWORD *dwLogFile) const
@@ -1317,32 +1317,32 @@ BOOL FASTCALL CPort::GetLPTInfo(LPTSTR lpszDevFile, DWORD *dwLogFile) const
 	ASSERT(lpszDevFile);
 	ASSERT(dwLogFile);
 
-	// ファイルはヌル、ハンドルは無効
+	// File is parallel, handle is invalid
 	_tcscpy(lpszDevFile, _T("  (None)"));
 	*dwLogFile = (DWORD)INVALID_HANDLE_VALUE;
 
-	// スレッドが立っていなければ、この時点でFALSEで帰る
+	// If thread is not running, exit with FALSE at this point
 	if (!m_pLPT) {
 		return FALSE;
 	}
 
-	// デバイスファイルを設定
+	// Set device file name
 	if (m_nLPT > 0) {
 		_stprintf(lpszDevFile, _T("\\\\.\\LPT%d"), m_nLPT);
 	}
 
-	// ログファイルを設定
+	// Set log file
 	if (m_SendFile.IsValid()) {
 		*dwLogFile = (DWORD)m_SendFile.GetHandle();
 	}
 
-	// スレッドは動いている
+	// Thread is running
 	return TRUE;
 }
 
 //---------------------------------------------------------------------------
 //
-//	LPTキュー情報取得
+//	Get LPT queue
 //
 //---------------------------------------------------------------------------
 void FASTCALL CPort::GetLPTQueue(CQueue::LPQUEUEINFO lpqi) const

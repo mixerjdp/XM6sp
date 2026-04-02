@@ -1,11 +1,11 @@
-  //---------------------------------------------------------------------------
-  //
-  //	EMULADOR X68000 "XM6"
-  //
-  //	Copyright (C) 2001-2006 PI.(ytanaka@ipc-tokai.or.jp)
-  //	[ Subventana MFC (Dispositivo) ]
-  //
-  //---------------------------------------------------------------------------
+//---------------------------------------------------------------------------
+//
+//	X68000 Emulator "XM6"
+//
+//	Copyright (C) 2001-2006 PI.(ytanaka@ipc-tokai.or.jp)
+//	[MFC subwindow (Devices)]
+//
+//---------------------------------------------------------------------------
 
 #if defined(_WIN32)
 
@@ -21,382 +21,382 @@
 #include "scsi.h"
 #include "mfc_sub.h"
 
-  //===========================================================================
-  //
-  //	Ventana MFP
-  //
-  //===========================================================================
+//===========================================================================
+//
+//	MFP window
+//
+//===========================================================================
 class CMFPWnd : public CSubTextWnd
 {
 public:
 	CMFPWnd();
- 										 // Constructor
+										// Constructor
 	void FASTCALL Setup();
- 										 // Configuracion
+										// Configuration
 
 private:
 	void FASTCALL SetupInt(int x, int y);
- 										 // Configuracion (Interrupcion)
+										// Configuration (Interrupt)
 	void FASTCALL SetupGPIP(int x, int y);
- 										 // Configuracion (GPIP)
+										// Configuration (GPIP)
 	void FASTCALL SetupTimer(int x, int y);
- 										 // Configuracion (Temporizador)
+										// Configuration (Timer)
 	static LPCTSTR DescInt[];
- 										 // Tabla de interrupciones
+										// Interrupt table
 	static LPCTSTR DescGPIP[];
- 										 // Tabla GPIP
+										// GPIP table
 	static LPCTSTR DescTimer[];
- 										 // Tabla de temporizador
+										// Timer table
 	MFP *m_pMFP;
- 										 // MFP
+										// MFP
 	MFP::mfp_t m_mfp;
- 										 // Datos internos MFP
+										// MFP internal data
 };
 
-  //===========================================================================
-  //
-  //	Ventana DMAC
-  //
-  //===========================================================================
+//===========================================================================
+//
+//	DMAC window
+//
+//===========================================================================
 class CDMACWnd : public CSubTextWnd
 {
 public:
 	CDMACWnd();
- 										 // Constructor
+										// Constructor
 	void FASTCALL Setup();
- 										 // Configuracion
+										// Configuration
 
 private:
 	void FASTCALL SetupCh(int nCh, DMAC::dma_t *pDMA, LPCTSTR lpszTitle);
- 										 // Configuracion (Canal)
+										// Configuration (Channel)
 	DMAC *m_pDMAC;
- 										 // DMAC
+										// DMAC
 };
 
-  //===========================================================================
-  //
-  //	Ventana CRTC
-  //
-  //===========================================================================
+//===========================================================================
+//
+//	CRTC window
+//
+//===========================================================================
 class CCRTCWnd : public CSubTextWnd
 {
 public:
 	CCRTCWnd();
- 										 // Constructor
+										// Constructor
 	void FASTCALL Setup();
- 										 // Configuracion
+										// Configuration
 
 private:
 	CRTC *m_pCRTC;
- 										 // CRTC
+										// CRTC
 };
 
-  //===========================================================================
-  //
-  //	Ventana VC
-  //
-  //===========================================================================
+//===========================================================================
+//
+//	VC window
+//
+//===========================================================================
 class CVCWnd : public CSubTextWnd
 {
 public:
 	CVCWnd();
- 										 // Constructor
+										// Constructor
 	void FASTCALL Setup();
- 										 // Configuracion
+										// Configuration
 
 private:
 	VC *m_pVC;
- 										 // VC
+										// VC
 };
 
-  //===========================================================================
-  //
-  //	Ventana RTC
-  //
-  //===========================================================================
+//===========================================================================
+//
+//	RTC window
+//
+//===========================================================================
 class CRTCWnd : public CSubTextWnd
 {
 public:
 	CRTCWnd();
- 										 // Constructor
+										// Constructor
 	void FASTCALL Setup();
- 										 // Configuracion
+										// Configuration
 
 private:
 	RTC* m_pRTC;
- 										 // FDC
+										// FDC
 };
 
-  //===========================================================================
-  //
-  //	Ventana OPM
-  //
-  //===========================================================================
+//===========================================================================
+//
+//	OPM window
+//
+//===========================================================================
 class COPMWnd : public CSubTextWnd
 {
 public:
 	COPMWnd();
- 										 // Constructor
+										// Constructor
 	void FASTCALL Setup();
- 										 // Configuracion
+										// Configuration
 
 private:
 	OPMIF *m_pOPM;
- 										 // OPM
+										// OPM
 };
 
-  //===========================================================================
-  //
-  //	Ventana de teclado
-  //
-  //===========================================================================
+//===========================================================================
+//
+//	Keyboard window
+//
+//===========================================================================
 class CKeyboardWnd : public CSubTextWnd
 {
 public:
 	CKeyboardWnd();
- 										 // Constructor
+										// Constructor
 	void FASTCALL Setup();
- 										 // Configuracion
+										// Configuration
 
 private:
 	static LPCTSTR DescLED[];
- 										 // Tabla de LED
+										// LED table
 	Keyboard *m_pKeyboard;
- 										 // Teclado
+										// Keyboard
 };
 
-  //===========================================================================
-  //
-  //	Ventana FDD
-  //
-  //===========================================================================
+//===========================================================================
+//
+//	FDD window
+//
+//===========================================================================
 class CFDDWnd : public CSubTextWnd
 {
 public:
 	CFDDWnd();
- 										 // Constructor
+										// Constructor
 	void FASTCALL Setup();
- 										 // Configuracion
+										// Configuration
 
 private:
 	void FASTCALL SetupFDD(int nDrive, int x);
- 										 // Configuracion sub
+										// Sub configuration
 	BOOL FASTCALL SetupTrack();
- 										 // Configuracion de pista
+										// Configuration of pista
 	static LPCTSTR DescTable[];
- 										 // Tabla de descripcion
+										// Description table
 	FDD *m_pFDD;
- 										 // FDD
+										// FDD
 	FDC *m_pFDC;
- 										 // FDC
+										// FDC
 	DWORD m_dwDrive;
- 										 // Unidad de acceso
+										// Access unit
 	DWORD m_dwHD;
- 										 // Cabezal de acceso
+										// Access head
 	DWORD m_CHRN[4];
- 										 // CHRN de acceso
+										// Access CHRN
 };
 
-  //===========================================================================
-  //
-  //	Ventana FDC
-  //
-  //===========================================================================
+//===========================================================================
+//
+//	FDC window
+//
+//===========================================================================
 class CFDCWnd : public CSubTextWnd
 {
 public:
 	CFDCWnd();
- 										 // Constructor
+										// Constructor
 	void FASTCALL Setup();
- 										 // Configuracion
+										// Configuration
 
 private:
 	void FASTCALL SetupGeneral(int x, int y);
- 										 // Configuracion (General)
+										// Configuration (General)
 	void FASTCALL SetupParam(int x, int y);
- 										 // Configuracion (Parametro)
+										// Configuration (Parameter)
 	void FASTCALL SetupSR(int x, int y);
- 										 // Configuracion (Registro de estado)
+										// Configuration (Status register)
 	static LPCTSTR SRDesc[8];
- 										 // Cadena (Registro de estado)
+										// String (status register)
 	void FASTCALL SetupST0(int x, int y);
- 										 // Configuracion (ST0)
+										// Configuration (ST0)
 	static LPCTSTR ST0Desc[8];
- 										 // Cadena (ST0)
+										// String (ST0)
 	void FASTCALL SetupST1(int x, int y);
- 										 // Configuracion (ST1)
+										// Configuration (ST1)
 	static LPCTSTR ST1Desc[8];
- 										 // Cadena (ST1)
+										// String (ST1)
 	void FASTCALL SetupST2(int x, int y);
- 										 // Configuracion (ST2)
+										// Configuration (ST2)
 	static LPCTSTR ST2Desc[8];
- 										 // Cadena (ST2)
+										// String (ST2)
 	void FASTCALL SetupSub(int x, int y, LPCTSTR lpszTitle, LPCTSTR *lpszDesc,
- 					DWORD data);		 // Configuracion (Sub)
+					DWORD data);		// Configuration (Sub)
 	FDC *m_pFDC;
- 										 // FDC
+										// FDC
 	const FDC::fdc_t *m_pWork;
- 										 // Datos internos FDC
+										// FDC internal data
 };
 
-  //===========================================================================
-  //
-  //	Ventana SCC
-  //
-  //===========================================================================
+//===========================================================================
+//
+//	SCC window
+//
+//===========================================================================
 class CSCCWnd : public CSubTextWnd
 {
 public:
 	CSCCWnd();
- 										 // Constructor
+										// Constructor
 	void FASTCALL Setup();
- 										 // Configuracion
+										// Configuration
 
 private:
 	void FASTCALL SetupSCC(SCC::ch_t *pCh, int x, int y);
- 										 // Configuracion (Canal)
+										// Configuration (Channel)
 	SCC *m_pSCC;
- 										 // SCC
+										// SCC
 	static LPCTSTR DescTable[];
- 										 // Tabla de cadenas
+										// String table
 };
 
-  //===========================================================================
-  //
-  //	Ventana Cynthia
-  //
-  //===========================================================================
+//===========================================================================
+//
+//	Cynthia window
+//
+//===========================================================================
 class CCynthiaWnd : public CSubTextWnd
 {
 public:
 	CCynthiaWnd();
- 										 // Constructor
+										// Constructor
 	void FASTCALL Setup();
- 										 // Configuracion
+										// Configuration
 
 private:
 	Sprite *m_pSprite;
- 										 // CYNTHIA
+										// CYNTHIA
 };
 
-  //===========================================================================
-  //
-  //	Ventana SASI
-  //
-  //===========================================================================
+//===========================================================================
+//
+//	SASI window
+//
+//===========================================================================
 class CSASIWnd : public CSubTextWnd
 {
 public:
 	CSASIWnd();
- 										 // Constructor
+										// Constructor
 	void FASTCALL Setup();
- 										 // Configuracion
+										// Configuration
 
 private:
 	void FASTCALL SetupCmd(int x, int y);
- 										 // Configuracion (Comando)
+										// Configuration (Command)
 	void FASTCALL SetupCtrl(int x, int y);
- 										 // Configuracion (Controlador)
+										// Configuration (Controller)
 	void FASTCALL SetupDrive(int x, int y);
- 										 // Configuracion (Unidad)
+										// Configuration (Unit)
 	void FASTCALL SetupCache(int x, int y);
- 										 // Configuracion (Cache)
+										// Configuration (Cache)
 	SASI *m_pSASI;
- 										 // SASI
+										// SASI
 	SASI::sasi_t m_sasi;
- 										 // Datos internos SASI
+										// Data internos SASI
 };
 
-  //===========================================================================
-  //
-  //	Ventana MIDI
-  //
-  //===========================================================================
+//===========================================================================
+//
+//	MIDI window
+//
+//===========================================================================
 class CMIDIWnd : public CSubTextWnd
 {
 public:
 	CMIDIWnd();
- 										 // Constructor
+										// Constructor
 	void FASTCALL Setup();
- 										 // Configuracion
+										// Configuration
 
 private:
 	void FASTCALL SetupCtrl(int x, int y);
- 										 // Configuracion (Control)
+										// Configuration (Control)
 	static LPCTSTR DescCtrl[];
- 										 // Tabla de cadenas (Control)
+										// String table (Control)
 	void FASTCALL SetupInt(int x, int y);
- 										 // Configuracion (Interrupcion)
+										// Configuration (Interrupt)
 	static LPCTSTR DescInt[];
- 										 // Tabla de cadenas (Interrupcion)
+										// String table (Interrupt)
 	void FASTCALL SetupTrans(int x, int y);
- 										 // Configuracion (Transmision)
+										// Configuration (Transmission)
 	static LPCTSTR DescTrans[];
- 										 // Tabla de cadenas (Transmision)
+										// String table (Transmission)
 	void FASTCALL SetupRecv(int x, int y);
- 										 // Configuracion (Recepcion)
+										// Configuration (Reception)
 	static LPCTSTR DescRecv[];
- 										 // Tabla de cadenas (Recepcion)
+										// String table (Reception)
 	void FASTCALL SetupRT(int x, int y);
- 										 // Configuracion (Transmision en tiempo real)
+										// Configuration (Real-time transmission)
 	static LPCTSTR DescRT[];
- 										 // Tabla de cadenas (Transmision en tiempo real)
+										// String table (Real-time transmission)
 	void FASTCALL SetupRR(int x, int y);
- 										 // Configuracion (Recepcion en tiempo real)
+										// Configuration (Real-time reception)
 	static LPCTSTR DescRR[];
- 										 // Tabla de cadenas (Recepcion en tiempo real)
+										// String table (Real-time reception)
 	void FASTCALL SetupCount(int x, int y);
- 										 // Configuracion (Contador)
+										// Configuration (Counter)
 	static LPCTSTR DescCount[];
- 										 // Tabla de cadenas (Contador)
+										// String table (Counter)
 	void FASTCALL SetupHunter(int x, int y);
- 										 // Configuracion (Address Hunter)
+										// Configuration (Address Hunter)
 	static LPCTSTR DescHunter[];
- 										 // Tabla de cadenas (Address Hunter)
+										// String table (Address Hunter)
 	void FASTCALL SetupFSK(int x, int y);
- 										 // Configuracion (FSK)
+										// Configuration (FSK)
 	static LPCTSTR DescFSK[];
- 										 // Tabla de cadenas (FSK)
+										// String table (FSK)
 	void FASTCALL SetupGPIO(int x, int y);
- 										 // Configuracion (GPIO)
+										// Configuration (GPIO)
 	static LPCTSTR DescGPIO[];
- 										 // Tabla de cadenas (GPIO)
+										// String table (GPIO)
 
 	MIDI *m_pMIDI;
- 										 // MIDI
+										// MIDI
 	MIDI::midi_t m_midi;
- 										 // Datos internos MIDI
+										// MIDI internal data
 };
 
-  //===========================================================================
-  //
-  //	Ventana SCSI
-  //
-  //===========================================================================
+//===========================================================================
+//
+//	SCSI window
+//
+//===========================================================================
 class CSCSIWnd : public CSubTextWnd
 {
 public:
 	CSCSIWnd();
- 										 // Constructor
+										// Constructor
 	void FASTCALL Setup();
- 										 // Configuracion
+										// Configuration
 
 private:
 	void FASTCALL SetupCmd(int x, int y);
- 										 // Configuracion (Comando)
+										// Configuration (Command)
 	void FASTCALL SetupCtrl(int x, int y);
- 										 // Configuracion (Controlador)
+										// Configuration (Controller)
 	void FASTCALL SetupDrive(int x, int y);
- 										 // Configuracion (Unidad)
+										// Configuration (Unit)
 	void FASTCALL SetupReg(int x, int y);
- 										 // Configuracion (Registro)
+										// Configuration (Register)
 	void FASTCALL SetupCDB(int x, int y);
- 										 // Configuracion (CDB)
+										// Configuration (CDB)
 	SCSI *m_pSCSI;
- 										 // SCSI
+										// SCSI
 	SCSI::scsi_t m_scsi;
- 										 // Datos internos SCSI
+										// SCSI internal data
 };
 
- #endif	 // mfc_dev_h
- #endif	 // _WIN32
+#endif	// mfc_dev_h
+#endif	// _WIN32

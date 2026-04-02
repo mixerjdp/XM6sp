@@ -2,50 +2,50 @@
 //
 //	X68000 EMULATOR "XM6"
 //
-//	Copyright (C) 2001-2004 ＰＩ．(ytanaka@ipc-tokai.or.jp)
-//	[ MFC キュー ]
+//	Copyright (C) 2001-2004 ﾅ｡ﾂｰﾃ･窶｢ﾂｽD(ytanaka@ipc-tokai.or.jp)
+//	[ MFC Queue ]
 //
 //---------------------------------------------------------------------------
 
 #if defined(_WIN32)
 
-#include "os.h"
 #include "mfc.h"
+#include "os.h"
 #include "xm6.h"
 #include "mfc_que.h"
 
 //===========================================================================
 //
-//	キュー
+//	Queue
 //
 //===========================================================================
 
 //---------------------------------------------------------------------------
 //
-//	コンストラクタ
+//	Constructor
 //
 //---------------------------------------------------------------------------
 CQueue::CQueue()
 {
-	// ポインタなし
+	// No pointer
 	m_Queue.pBuf = NULL;
 
-	// サイズ0
+	// Size 0
 	m_Queue.dwSize = 0;
 	m_Queue.dwMask = 0;
 
-	// その他
+	// Others
 	Clear();
 }
 
 //---------------------------------------------------------------------------
 //
-//	デストラクタ
+//	Destructor
 //
 //---------------------------------------------------------------------------
 CQueue::~CQueue()
 {
-	// メモリ解放
+	// Cleanup
 	if (m_Queue.pBuf) {
 		delete[] m_Queue.pBuf;
 		m_Queue.pBuf = NULL;
@@ -54,7 +54,7 @@ CQueue::~CQueue()
 
 //---------------------------------------------------------------------------
 //
-//	初期化
+//	Initialization
 //
 //---------------------------------------------------------------------------
 BOOL FASTCALL CQueue::Init(DWORD dwSize)
@@ -64,7 +64,7 @@ BOOL FASTCALL CQueue::Init(DWORD dwSize)
 	ASSERT(m_Queue.dwSize == 0);
 	ASSERT(dwSize > 0);
 
-	// メモリ確保
+	// Allocate
 	try {
 		m_Queue.pBuf = new BYTE[dwSize];
 	}
@@ -76,11 +76,11 @@ BOOL FASTCALL CQueue::Init(DWORD dwSize)
 		return FALSE;
 	}
 
-	// サイズ設定
+	// Size setting
 	m_Queue.dwSize = dwSize;
 	m_Queue.dwMask = m_Queue.dwSize - 1;
 
-	// クリア
+	// Clear
 	Clear();
 
 	return TRUE;
@@ -88,8 +88,8 @@ BOOL FASTCALL CQueue::Init(DWORD dwSize)
 
 //---------------------------------------------------------------------------
 //
-//	クリア
-//	※同期非対応
+//	Clear
+//	Internal use only
 //
 //---------------------------------------------------------------------------
 void FASTCALL CQueue::Clear()
@@ -105,8 +105,8 @@ void FASTCALL CQueue::Clear()
 
 //---------------------------------------------------------------------------
 //
-//	キュー内のデータをすべて取得
-//	※同期非対応
+//	Get all data from queue
+//	Internal use only
 //
 //---------------------------------------------------------------------------
 DWORD FASTCALL CQueue::Get(BYTE *pDest)
@@ -124,12 +124,12 @@ DWORD FASTCALL CQueue::Get(BYTE *pDest)
 
 	ASSERT(pDest);
 
-	// データがなければ0
+	// If no data, return 0
 	if (m_Queue.dwNum == 0) {
 		return 0;
 	}
 
-	// 現在分、オーバーラップ分の個数を決める
+	// Calculate number of bytes before and after overlap
 	dwLength = m_Queue.dwNum;
 	dwRest = 0;
 	if ((dwLength + m_Queue.dwRead) > m_Queue.dwSize) {
@@ -137,30 +137,30 @@ DWORD FASTCALL CQueue::Get(BYTE *pDest)
 		dwLength -= dwRest;
 	}
 
-	// カレント
+	// Copy
 	memcpy(pDest, &m_Queue.pBuf[m_Queue.dwRead], dwLength);
 	m_Queue.dwRead += dwLength;
 	m_Queue.dwRead &= m_Queue.dwMask;
 	m_Queue.dwNum -= dwLength;
 
-	// オーバーラップ
+	// Overlap
 	memcpy(&pDest[dwLength], m_Queue.pBuf, dwRest);
 	m_Queue.dwRead += dwRest;
 	m_Queue.dwRead &= m_Queue.dwMask;
 	m_Queue.dwNum -= dwRest;
 
-	// トータルReadを増やす
+	// Increment total read
 	m_Queue.dwTotalRead += dwLength;
 	m_Queue.dwTotalRead += dwRest;
 
-	// コピーしたサイズを返す
+	// Return copy total size
 	return (DWORD)(dwLength + dwRest);
 }
 
 //---------------------------------------------------------------------------
 //
-//	キュー内のデータをすべて取得(キュー進めない)
-//	※同期非対応
+//	Get all data from queue (queue unchanged)
+//	Internal use only
 //
 //---------------------------------------------------------------------------
 DWORD FASTCALL CQueue::Copy(BYTE *pDest) const
@@ -178,12 +178,12 @@ DWORD FASTCALL CQueue::Copy(BYTE *pDest) const
 
 	ASSERT(pDest);
 
-	// データがなければ0
+	// If no data, return 0
 	if (m_Queue.dwNum == 0) {
 		return 0;
 	}
 
-	// 現在分、オーバーラップ分の個数を決める
+	// Calculate number of bytes before and after overlap
 	dwLength = m_Queue.dwNum;
 	dwRest = 0;
 	if ((dwLength + m_Queue.dwRead) > m_Queue.dwSize) {
@@ -191,20 +191,20 @@ DWORD FASTCALL CQueue::Copy(BYTE *pDest) const
 		dwLength -= dwRest;
 	}
 
-	// カレント
+	// Copy
 	memcpy(pDest, &m_Queue.pBuf[m_Queue.dwRead], dwLength);
 
-	// オーバーラップ
+	// Overlap
 	memcpy(&pDest[dwLength], m_Queue.pBuf, dwRest);
 
-	// コピーしたサイズを返す
+	// Return copy total size
 	return (DWORD)(dwLength + dwRest);
 }
 
 //---------------------------------------------------------------------------
 //
-//	キューを進める
-//	※同期非対応。Copy->Diskcard間でGetしないこと
+//	Discard from queue
+//	Internal use only. Copy->Discard returns same as Get if queue unchanged
 //
 //---------------------------------------------------------------------------
 void FASTCALL CQueue::Discard(DWORD dwNum)
@@ -220,21 +220,21 @@ void FASTCALL CQueue::Discard(DWORD dwNum)
 	ASSERT(dwNum <= m_Queue.dwSize);
 	ASSERT(dwNum <= m_Queue.dwNum);
 
-	// 進める
+	// Discard
 	m_Queue.dwRead += dwNum;
 	m_Queue.dwRead &= m_Queue.dwMask;
 
-	// 個数
+	// Count
 	m_Queue.dwNum -= dwNum;
 
-	// トータル
+	// Total
 	m_Queue.dwTotalRead += dwNum;
 }
 
 //---------------------------------------------------------------------------
 //
-//	キューを戻す
-//	※同期非対応。Get->Back間でInsertしないこと
+//	Put back into queue
+//	Internal use only. Get->Back returns same as Insert if unchanged
 //
 //---------------------------------------------------------------------------
 void FASTCALL CQueue::Back(DWORD dwNum)
@@ -251,32 +251,32 @@ void FASTCALL CQueue::Back(DWORD dwNum)
 
 	ASSERT(dwNum <= m_Queue.dwSize);
 
-	// dwRest分を算出
+	// Calculate dwRest
 	dwRest = 0;
 	if (m_Queue.dwRead < dwNum) {
 		dwRest = dwNum - m_Queue.dwRead;
 		dwNum = m_Queue.dwRead;
 	}
 
-	// カレント
+	// Copy
 	m_Queue.dwRead -= dwNum;
 	m_Queue.dwRead &= m_Queue.dwMask;
 	m_Queue.dwNum += dwNum;
 
-	// オーバーラップ
+	// Overlap
 	m_Queue.dwRead -= dwRest;
 	m_Queue.dwRead &= m_Queue.dwMask;
 	m_Queue.dwNum += dwRest;
 
-	// トータル
+	// Total
 	m_Queue.dwTotalRead -= dwNum;
 	m_Queue.dwTotalRead -= dwRest;
 }
 
 //---------------------------------------------------------------------------
 //
-//	キューの空き個数を取得
-//	※同期非対応。
+//	Get free space count
+//	Internal use only
 //
 //---------------------------------------------------------------------------
 DWORD FASTCALL CQueue::GetFree() const
@@ -294,8 +294,8 @@ DWORD FASTCALL CQueue::GetFree() const
 
 //---------------------------------------------------------------------------
 //
-//	キューに挿入
-//	※同期非対応。
+//	Insert into queue
+//	Internal use only
 //
 //---------------------------------------------------------------------------
 BOOL FASTCALL CQueue::Insert(const BYTE *pSrc, DWORD dwLength)
@@ -312,32 +312,32 @@ BOOL FASTCALL CQueue::Insert(const BYTE *pSrc, DWORD dwLength)
 
 	ASSERT(pSrc);
 
-	// 現在分、オーバーラップ分の個数を決める
+	// Calculate number of bytes before and after overlap
 	dwRest = 0;
 	if ((dwLength + m_Queue.dwWrite) > m_Queue.dwSize) {
 		dwRest = (dwLength + m_Queue.dwWrite) - m_Queue.dwSize;
 		dwLength -= dwRest;
 	}
 
-	// カレント
+	// Copy
 	memcpy(&m_Queue.pBuf[m_Queue.dwWrite], pSrc, dwLength);
 	m_Queue.dwWrite += dwLength;
 	m_Queue.dwWrite &= m_Queue.dwMask;
 	m_Queue.dwNum += dwLength;
 
-	// オーバーラップ
+	// Overlap
 	memcpy(m_Queue.pBuf, &pSrc[dwLength], dwRest);
 	m_Queue.dwWrite += dwRest;
 	m_Queue.dwWrite &= m_Queue.dwMask;
 	m_Queue.dwNum += dwRest;
 
-	// トータルWriteを増やす
+	// Increment total write
 	m_Queue.dwTotalWrite += dwLength;
 	m_Queue.dwTotalWrite += dwRest;
 
-	// Read位置を超えてしまった場合は補正してFALSE
+	// If read position has passed, return FALSE with correction
 	if (m_Queue.dwNum > m_Queue.dwSize) {
-		// バッファオーバーラン
+		// Buffer overflow
 		m_Queue.dwNum = m_Queue.dwSize;
 		m_Queue.dwRead = m_Queue.dwWrite;
 		return FALSE;
@@ -347,8 +347,8 @@ BOOL FASTCALL CQueue::Insert(const BYTE *pSrc, DWORD dwLength)
 
 //---------------------------------------------------------------------------
 //
-//	キュー情報取得
-//	※同期非対応。
+//	Get queue
+//	Internal use only
 //
 //---------------------------------------------------------------------------
 void FASTCALL CQueue::GetQueue(QUEUEINFO *pInfo) const

@@ -2,15 +2,15 @@
 //
 //	X68000 EMULATOR "XM6"
 //
-//	Copyright (C) 2001-2006 ‚o‚hD(ytanaka@ipc-tokai.or.jp)
-//	[ MFC •â•ƒc[ƒ‹ ]
+//	Copyright (C) 2001-2006 ï¿½oï¿½hï¿½D(ytanaka@ipc-tokai.or.jp)
+//	[ MFC ï¿½â•ï¿½cï¿½[ï¿½ï¿½ ]
 //
 //---------------------------------------------------------------------------
 
 #if defined(_WIN32)
 
-#include "os.h"
 #include "mfc.h"
+#include "os.h"
 #include "xm6.h"
 #include "vm.h"
 #include "fdi.h"
@@ -23,24 +23,24 @@
 
 //===========================================================================
 //
-//	ƒtƒƒbƒs[ƒfƒBƒXƒNƒCƒ[ƒWì¬ƒ_ƒCƒAƒƒO
+//	ï¿½tï¿½ï¿½ï¿½bï¿½sï¿½[ï¿½fï¿½Bï¿½Xï¿½Nï¿½Cï¿½ï¿½ï¿½[ï¿½Wï¿½ì¬ï¿½_ï¿½Cï¿½Aï¿½ï¿½ï¿½O
 //
 //===========================================================================
 
 //---------------------------------------------------------------------------
 //
-//	ƒRƒ“ƒXƒgƒ‰ƒNƒ^
+	// Constructor
 //
 //---------------------------------------------------------------------------
 CFDIDlg::CFDIDlg(CWnd *pParent) : CDialog(IDD_FDIDLG, pParent)
 {
-	// ‰pŒêŠÂ‹«‚Ö‚Ì‘Î‰
+	// Support for non-Japanese environment
 	if (!::IsJapanese()) {
 		m_lpszTemplateName = MAKEINTRESOURCE(IDD_US_FDIDLG);
 		m_nIDHelp = IDD_US_FDIDLG;
 	}
 
-	// ƒ_ƒCƒAƒƒOƒf[ƒ^
+	// Dialog data
 	m_szFileName[0] = _T('\0');
 	m_szDiskName[0] = _T('\0');
 	m_dwPhysical = FDI_2HD;
@@ -50,7 +50,7 @@ CFDIDlg::CFDIDlg(CWnd *pParent) : CDialog(IDD_FDIDLG, pParent)
 
 //---------------------------------------------------------------------------
 //
-//	ƒƒbƒZ[ƒW ƒ}ƒbƒv
+	// Message map
 //
 //---------------------------------------------------------------------------
 BEGIN_MESSAGE_MAP(CFDIDlg, CDialog)
@@ -67,7 +67,7 @@ END_MESSAGE_MAP()
 
 //---------------------------------------------------------------------------
 //
-//	ƒ_ƒCƒAƒƒO‰Šú‰»
+	// Dialog initialization
 //
 //---------------------------------------------------------------------------
 BOOL CFDIDlg::OnInitDialog()
@@ -75,46 +75,46 @@ BOOL CFDIDlg::OnInitDialog()
 	CButton *pButton;
 	CEdit *pEdit;
 
-	// Šî–{ƒNƒ‰ƒX
+	// ï¿½ï¿½{ï¿½Nï¿½ï¿½ï¿½X
 	CDialog::OnInitDialog();
 
-	// ƒtƒ@ƒCƒ‹‚ğ•·‚­
+	// ï¿½tï¿½@ï¿½Cï¿½ï¿½ï¿½ğ•·‚ï¿½
 	if (!GetFile()) {
 		EndDialog(IDCANCEL);
 		return FALSE;
 	}
 
-	// ƒfƒBƒXƒN–¼
+	// Diskï¿½ï¿½
 	pEdit = (CEdit*)GetDlgItem(IDC_FDI_NAMEE);
 	ASSERT(pEdit);
 	if (m_dwType == 2) {
-		// Å‰‚Ìƒtƒ@ƒCƒ‹‘I‘ğ‚ÅD68‚ª‘I‚Î‚ê‚½ê‡‚Ì‚İ
+		// ï¿½Åï¿½ï¿½Ìƒtï¿½@ï¿½Cï¿½ï¿½ï¿½Iï¿½ï¿½ï¿½ï¿½D68ï¿½ï¿½ï¿½Iï¿½Î‚ê‚½ï¿½ê‡ï¿½Ì‚ï¿½
 		_tcscpy(m_szDiskName, _T("Default"));
 	}
 	pEdit->SetWindowText(m_szDiskName);
 	MaskName();
 
-	// •¨—ƒtƒH[ƒ}ƒbƒg
+	// Physical format
 	SetPhysical();
 	MaskPhysical();
 
-	// ˜_—ƒtƒH[ƒ}ƒbƒg
+	// Logical format
 	SetLogical();
 	MaskLogical();
 
-	// ƒ}ƒEƒ“ƒg
+	// Drive
 	switch (m_nDrive) {
-		// ƒhƒ‰ƒCƒu0
+		// ï¿½hï¿½ï¿½ï¿½Cï¿½u0
 		case 0:
 			pButton = (CButton*)GetDlgItem(IDC_FDI_DRIVE0);
 			break;
 
-		// ƒhƒ‰ƒCƒu1
+		// ï¿½hï¿½ï¿½ï¿½Cï¿½u1
 		case 1:
 			pButton = (CButton*)GetDlgItem(IDC_FDI_DRIVE1);
 			break;
 
-		// ƒ}ƒEƒ“ƒg‚µ‚È‚¢
+		// Driveï¿½ï¿½ï¿½È‚ï¿½
 		default:
 			pButton = (CButton*)GetDlgItem(IDC_FDI_NOTMOUNT);
 			break;
@@ -127,7 +127,7 @@ BOOL CFDIDlg::OnInitDialog()
 
 //---------------------------------------------------------------------------
 //
-//	ƒ_ƒCƒAƒƒOOK
+//	ï¿½_ï¿½Cï¿½Aï¿½ï¿½ï¿½OOK
 //
 //---------------------------------------------------------------------------
 void CFDIDlg::OnOK()
@@ -135,24 +135,24 @@ void CFDIDlg::OnOK()
 	CButton *pButton;
 	CEdit *pEdit;
 
-	// ƒfƒBƒXƒN–¼
+	// Diskï¿½ï¿½
 	pEdit = (CEdit*)GetDlgItem(IDC_FDI_NAMEE);
 	ASSERT(pEdit);
 	pEdit->GetWindowText(m_szDiskName, sizeof(m_szDiskName));
 	if (m_dwType == 2) {
-		// D88‚Í16•¶š‚Ü‚Å
+		// D88ï¿½ï¿½16ï¿½ï¿½ï¿½ï¿½ï¿½Ü‚ï¿½
 		m_szDiskName[16] = _T('\0');
 	}
 	else {
-		// DIM‚Í59•¶š‚Ü‚Å
+		// DIMï¿½ï¿½59ï¿½ï¿½ï¿½ï¿½ï¿½Ü‚ï¿½
 		m_szDiskName[59] = _T('\0');
 	}
 
-	// ƒf[ƒ^æ“¾
+	// ï¿½fï¿½[ï¿½^ï¿½æ“¾
 	GetPhysical();
 	GetLogical();
 
-	// ƒ}ƒEƒ“ƒg
+	// Drive
 	m_nDrive = -1;
 	pButton = (CButton*)GetDlgItem(IDC_FDI_DRIVE0);
 	ASSERT(pButton);
@@ -165,34 +165,34 @@ void CFDIDlg::OnOK()
 		m_nDrive = 1;
 	}
 
-	// Šî–{ƒNƒ‰ƒX
+	// ï¿½ï¿½{ï¿½Nï¿½ï¿½ï¿½X
 	CDialog::OnOK();
 }
 
 //---------------------------------------------------------------------------
 //
-//	ƒ_ƒCƒAƒƒOƒLƒƒƒ“ƒZƒ‹
+//	ï¿½_ï¿½Cï¿½Aï¿½ï¿½ï¿½Oï¿½Lï¿½ï¿½ï¿½ï¿½ï¿½Zï¿½ï¿½
 //
 //---------------------------------------------------------------------------
 void CFDIDlg::OnCancel()
 {
-	// Šî–{ƒNƒ‰ƒX
+	// ï¿½ï¿½{ï¿½Nï¿½ï¿½ï¿½X
 	CDialog::OnCancel();
 }
 
 //---------------------------------------------------------------------------
 //
-//	ƒtƒ@ƒCƒ‹‘I‘ğ
+	// File browse
 //
 //---------------------------------------------------------------------------
 void CFDIDlg::OnBrowse()
 {
-	// ƒTƒuŠÖ”‚É”C‚¹‚é
+	// ï¿½Tï¿½uï¿½Öï¿½ï¿½É”Cï¿½ï¿½ï¿½ï¿½
 	if (!GetFile()) {
 		return;
 	}
 
-	// UIİ’è
+	// UIï¿½İ’ï¿½
 	MaskName();
 	SetPhysical();
 	MaskPhysical();
@@ -202,7 +202,7 @@ void CFDIDlg::OnBrowse()
 
 //---------------------------------------------------------------------------
 //
-//	ƒfƒBƒXƒN–¼ƒ}ƒXƒN
+//	ï¿½fï¿½Bï¿½Xï¿½Nï¿½ï¿½ï¿½}ï¿½Xï¿½N
 //
 //---------------------------------------------------------------------------
 void FASTCALL CFDIDlg::MaskName()
@@ -211,15 +211,15 @@ void FASTCALL CFDIDlg::MaskName()
 	CStatic *pStatic;
 	CString strStatic;
 
-	// ƒXƒ^ƒeƒBƒbƒNƒeƒLƒXƒgæ“¾
+	// ï¿½Xï¿½^ï¿½eï¿½Bï¿½bï¿½Nï¿½eï¿½Lï¿½Xï¿½gï¿½æ“¾
 	pStatic = (CStatic*)GetDlgItem(IDC_FDI_NAMEL);
 	ASSERT(pStatic);
 
-	// ƒGƒfƒBƒbƒgƒ{ƒbƒNƒXæ“¾
+	// ï¿½Gï¿½fï¿½Bï¿½bï¿½gï¿½{ï¿½bï¿½Nï¿½Xï¿½æ“¾
 	pEdit = (CEdit*)GetDlgItem(IDC_FDI_NAMEE);
 	ASSERT(pEdit);
 
-	// D68(D88)‚ÆDIM‚Ì‚İ‹–‰Â
+	// D68(D88)ï¿½ï¿½DIMï¿½Ì‚İ‹ï¿½ï¿½ï¿½
 	switch (m_dwType) {
 		// 2HD,2DD,2HQ
 		case 0:
@@ -242,7 +242,7 @@ void FASTCALL CFDIDlg::MaskName()
 			pEdit->EnableWindow(TRUE);
 			break;
 
-		// ‚»‚Ì‘¼(‚ ‚è“¾‚È‚¢)
+		// ï¿½ï¿½ï¿½Ì‘ï¿½(ï¿½ï¿½ï¿½è“¾ï¿½È‚ï¿½)
 		default:
 			ASSERT(FALSE);
 			break;
@@ -251,18 +251,18 @@ void FASTCALL CFDIDlg::MaskName()
 
 //---------------------------------------------------------------------------
 //
-//	•¨—ƒtƒH[ƒ}ƒbƒgƒNƒŠƒbƒN
+	// Createï¿½tï¿½Hï¿½[ï¿½}ï¿½bï¿½gï¿½Nï¿½ï¿½ï¿½bï¿½N
 //
 //---------------------------------------------------------------------------
 void CFDIDlg::OnPhysical()
 {
-	// ˜_—ƒtƒH[ƒ}ƒbƒgƒ`ƒFƒbƒNƒ{ƒbƒNƒX‚Ìó‘Ô‚ğƒŠƒAƒ‹ƒ^ƒCƒ€‚É•Ï‚¦‚é
+	// Logical formatï¿½`ï¿½Fï¿½bï¿½Nï¿½{ï¿½bï¿½Nï¿½Xï¿½Ìï¿½Ô‚ï¿½ï¿½ï¿½ï¿½Aï¿½ï¿½ï¿½^ï¿½Cï¿½ï¿½ï¿½É•Ï‚ï¿½ï¿½ï¿½
 	MaskLogical();
 }
 
 //---------------------------------------------------------------------------
 //
-//	•¨—ƒtƒH[ƒ}ƒbƒgİ’è
+	// Createï¿½tï¿½Hï¿½[ï¿½}ï¿½bï¿½gï¿½İ’ï¿½
 //
 //---------------------------------------------------------------------------
 void FASTCALL CFDIDlg::SetPhysical()
@@ -270,30 +270,30 @@ void FASTCALL CFDIDlg::SetPhysical()
 	int i;
 	CButton *pButton;
 
-	// ƒ^ƒCƒv‚É‚æ‚èAƒtƒH[ƒ}ƒbƒg‚ğ§ŒÀ
+	// ï¿½^ï¿½Cï¿½vï¿½É‚ï¿½ï¿½Aï¿½tï¿½Hï¿½[ï¿½}ï¿½bï¿½gï¿½ğ§Œï¿½
 	switch (m_dwType) {
 		// 2HD
 		case 0:
-			// 2HD‚Ì‚İ
+			// 2HDï¿½Ì‚ï¿½
 			m_dwPhysical = FDI_2HD;
 			break;
 
 		// 2DD
 		case 3:
-			// 2DD‚Ì‚İ
+			// 2DDï¿½Ì‚ï¿½
 			m_dwPhysical = FDI_2DD;
 			break;
 
 		// 2HQ
 		case 4:
-			// 2HQ‚Ì‚İ
+			// 2HQï¿½Ì‚ï¿½
 			m_dwPhysical = FDI_2HQ;
 			break;
 	}
 
-	// ƒ^ƒCƒv‚É‚æ‚èAƒtƒH[ƒ}ƒbƒg‚ğ§ŒÀ(DIM)
+	// ï¿½^ï¿½Cï¿½vï¿½É‚ï¿½ï¿½Aï¿½tï¿½Hï¿½[ï¿½}ï¿½bï¿½gï¿½ğ§Œï¿½(DIM)
 	if (m_dwType == 1) {
-		// DIMƒCƒ[ƒW‚ÍOS-9,2DDˆÈŠO
+		// DIMï¿½Cï¿½ï¿½ï¿½[ï¿½Wï¿½ï¿½OS-9,2DDï¿½ÈŠO
 		if (m_dwPhysical == FDI_OS9) {
 			m_dwPhysical = FDI_2HD;
 		}
@@ -302,11 +302,11 @@ void FASTCALL CFDIDlg::SetPhysical()
 		}
 	}
 
-	// •¨—ƒtƒH[ƒ}ƒbƒg‚É‘Î‰‚µ‚½ƒ{ƒ^ƒ“ID‚ğæ“¾
+	// Physical formatï¿½É‘Î‰ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½{ï¿½^ï¿½ï¿½IDï¿½ï¿½ï¿½æ“¾
 	for (i=0; i<8; i++) {
-		// •¨—ƒtƒH[ƒ}ƒbƒg‚ªˆê’v‚µ‚Ä‚¢‚é‚©
+		// Physical formatï¿½ï¿½ï¿½ï¿½vï¿½ï¿½ï¿½Ä‚ï¿½ï¿½é‚©
 		if (IDTable[i * 2 + 0] == m_dwPhysical) {
-			// ‚±‚Ìƒ{ƒ^ƒ“‚ğƒ`ƒFƒbƒN
+			// ï¿½ï¿½ï¿½Ìƒ{ï¿½^ï¿½ï¿½ï¿½ï¿½ï¿½`ï¿½Fï¿½bï¿½N
 			pButton = (CButton*)GetDlgItem(IDTable[i * 2 + 1]);
 			ASSERT(pButton);
 			pButton->SetCheck(1);
@@ -317,7 +317,7 @@ void FASTCALL CFDIDlg::SetPhysical()
 
 //---------------------------------------------------------------------------
 //
-//	•¨—ƒtƒH[ƒ}ƒbƒgæ“¾
+	// Createï¿½tï¿½Hï¿½[ï¿½}ï¿½bï¿½gï¿½æ“¾
 //
 //---------------------------------------------------------------------------
 void FASTCALL CFDIDlg::GetPhysical()
@@ -326,11 +326,11 @@ void FASTCALL CFDIDlg::GetPhysical()
 	CButton *pButton;
 
 	for (i=0; i<8; i++) {
-		// ƒ{ƒ^ƒ“æ“¾
+		// ï¿½{ï¿½^ï¿½ï¿½ï¿½æ“¾
 		pButton = (CButton*)GetDlgItem(IDTable[i * 2 + 1]);
 		ASSERT(pButton);
 
-		// ƒ`ƒFƒbƒN‚³‚ê‚Ä‚¢‚ê‚Î’l‚ğİ’è‚µ‚ÄI—¹
+		// ï¿½`ï¿½Fï¿½bï¿½Nï¿½ï¿½ï¿½ï¿½Ä‚ï¿½ï¿½ï¿½Î’lï¿½ï¿½İ’è‚µï¿½ÄIï¿½ï¿½
 		if (pButton->GetCheck() == 1) {
 			m_dwPhysical = IDTable[i * 2 + 0];
 			break;
@@ -340,7 +340,7 @@ void FASTCALL CFDIDlg::GetPhysical()
 
 //---------------------------------------------------------------------------
 //
-//	•¨—ƒtƒH[ƒ}ƒbƒgƒ}ƒXƒN
+	// Createï¿½tï¿½Hï¿½[ï¿½}ï¿½bï¿½gï¿½}ï¿½Xï¿½N
 //
 //---------------------------------------------------------------------------
 void FASTCALL CFDIDlg::MaskPhysical()
@@ -348,17 +348,17 @@ void FASTCALL CFDIDlg::MaskPhysical()
 	int i;
 	CButton *pButton;
 
-	// ƒ‰ƒWƒIƒ{ƒ^ƒ“ƒ‹[ƒv
+	// ï¿½ï¿½ï¿½Wï¿½Iï¿½{ï¿½^ï¿½ï¿½ï¿½ï¿½ï¿½[ï¿½v
 	for (i=0; i<8; i++) {
-		// ƒ{ƒ^ƒ“æ“¾
+		// ï¿½{ï¿½^ï¿½ï¿½ï¿½æ“¾
 		pButton = (CButton*)GetDlgItem(IDTable[i * 2 + 1]);
 		ASSERT(pButton);
 
-		// ƒ^ƒCƒv•Ê
+		// ï¿½^ï¿½Cï¿½vï¿½ï¿½
 		switch (m_dwType) {
 			// 2HD
 			case 0:
-				// i=0(2HD)‚Ì‚İ‹–‰ÂA‚»‚Ì‘¼‹Ö~
+				// i=0(2HD)ï¿½Ì‚İ‹ï¿½ï¿½ÂAï¿½ï¿½ï¿½Ì‘ï¿½ï¿½Ö~
 				if (i == 0) {
 					pButton->EnableWindow(TRUE);
 				}
@@ -370,7 +370,7 @@ void FASTCALL CFDIDlg::MaskPhysical()
 
 			// DIM
 			case 1:
-				// i=6,7(2DD,OS-9)‚Ì‚İ‹Ö~A‚»‚Ì‘¼‹–‰Â
+				// i=6,7(2DD,OS-9)ï¿½Ì‚İ‹Ö~ï¿½Aï¿½ï¿½ï¿½Ì‘ï¿½ï¿½ï¿½ï¿½ï¿½
 				if (i < 6) {
 					pButton->EnableWindow(TRUE);
 				}
@@ -382,13 +382,13 @@ void FASTCALL CFDIDlg::MaskPhysical()
 
 			// D68
 			case 2:
-				// ‚·‚×‚Ä‹–‰Â
+				// ï¿½ï¿½ï¿½×‚Ä‹ï¿½ï¿½ï¿½
 				pButton->EnableWindow(TRUE);
 				break;
 
 			// 2DD
 			case 3:
-				// i=6(2DD)‚Ì‚İ‹–‰ÂA‚»‚Ì‘¼‹Ö~
+				// i=6(2DD)ï¿½Ì‚İ‹ï¿½ï¿½ÂAï¿½ï¿½ï¿½Ì‘ï¿½ï¿½Ö~
 				if (i == 6) {
 					pButton->EnableWindow(TRUE);
 				}
@@ -400,7 +400,7 @@ void FASTCALL CFDIDlg::MaskPhysical()
 
 			// 2HQ
 			case 4:
-				// i=5(2HQ)‚Ì‚İ‹–‰ÂA‚»‚Ì‘¼‹Ö~
+				// i=5(2HQ)ï¿½Ì‚İ‹ï¿½ï¿½ÂAï¿½ï¿½ï¿½Ì‘ï¿½ï¿½Ö~
 				if (i == 5) {
 					pButton->EnableWindow(TRUE);
 				}
@@ -410,7 +410,7 @@ void FASTCALL CFDIDlg::MaskPhysical()
 				}
 				break;
 
-			// ‚»‚Ì‘¼(‚ ‚è‚¦‚È‚¢)
+			// ï¿½ï¿½ï¿½Ì‘ï¿½(ï¿½ï¿½ï¿½è‚¦ï¿½È‚ï¿½)
 			default:
 				ASSERT(FALSE);
 				break;
@@ -420,7 +420,7 @@ void FASTCALL CFDIDlg::MaskPhysical()
 
 //---------------------------------------------------------------------------
 //
-//	•¨—ƒtƒH[ƒ}ƒbƒgƒe[ƒuƒ‹
+	// Createï¿½tï¿½Hï¿½[ï¿½}ï¿½bï¿½gï¿½eï¿½[ï¿½uï¿½ï¿½
 //
 //---------------------------------------------------------------------------
 const DWORD CFDIDlg::IDTable[] = {
@@ -444,26 +444,26 @@ const DWORD CFDIDlg::IDTable[] = {
 
 //---------------------------------------------------------------------------
 //
-//	˜_—ƒtƒH[ƒ}ƒbƒgİ’è
+//	ï¿½_ï¿½ï¿½ï¿½tï¿½Hï¿½[ï¿½}ï¿½bï¿½gï¿½İ’ï¿½
 //
 //---------------------------------------------------------------------------
 void FASTCALL CFDIDlg::SetLogical()
 {
 	CButton *pButton;
 
-	// MS-DOSŒn‚Ì•¨—ƒtƒH[ƒ}ƒbƒg‚Ì‚İ˜_—ƒtƒH[ƒ}ƒbƒg‰Â”
+	// MS-DOSï¿½nï¿½Ì•ï¿½ï¿½ï¿½ï¿½tï¿½Hï¿½[ï¿½}ï¿½bï¿½gï¿½Ì‚İ˜_ï¿½ï¿½ï¿½tï¿½Hï¿½[ï¿½}ï¿½bï¿½gï¿½ÂE
 	switch (m_dwPhysical) {
-		// ˜_—ƒtƒH[ƒ}ƒbƒg‚Å‚«‚È‚¢‚à‚Ì
+		// Logical formatï¿½Å‚ï¿½ï¿½È‚ï¿½ï¿½ï¿½ï¿½ï¿½
 		case FDI_OS9:
 			m_bLogical = FALSE;
 			break;
 
-		// ˜_—ƒtƒH[ƒ}ƒbƒg‚Å‚«‚é‚à‚Ì
+		// Logical formatï¿½Å‚ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 		default:
 			break;
 	}
 
-	// İ’è
+	// ï¿½İ’ï¿½
 	pButton = (CButton*)GetDlgItem(IDC_FDI_LOGC);
 	ASSERT(pButton);
 	if (m_bLogical) {
@@ -476,14 +476,14 @@ void FASTCALL CFDIDlg::SetLogical()
 
 //---------------------------------------------------------------------------
 //
-//	˜_—ƒtƒH[ƒ}ƒbƒgæ“¾
+//	ï¿½_ï¿½ï¿½ï¿½tï¿½Hï¿½[ï¿½}ï¿½bï¿½gï¿½æ“¾
 //
 //---------------------------------------------------------------------------
 void FASTCALL CFDIDlg::GetLogical()
 {
 	CButton *pButton;
 
-	// æ“¾
+	// ï¿½æ“¾
 	pButton = (CButton*)GetDlgItem(IDC_FDI_LOGC);
 	ASSERT(pButton);
 	if (pButton->GetCheck() == 1) {
@@ -496,7 +496,7 @@ void FASTCALL CFDIDlg::GetLogical()
 
 //---------------------------------------------------------------------------
 //
-//	˜_—ƒtƒH[ƒ}ƒbƒgƒ}ƒXƒN
+//	ï¿½_ï¿½ï¿½ï¿½tï¿½Hï¿½[ï¿½}ï¿½bï¿½gï¿½}ï¿½Xï¿½N
 //
 //---------------------------------------------------------------------------
 void FASTCALL CFDIDlg::MaskLogical()
@@ -504,30 +504,30 @@ void FASTCALL CFDIDlg::MaskLogical()
 	BOOL bEnable;
 	CButton *pButton;
 
-	// ˜_—ƒtƒH[ƒ}ƒbƒg‘€ì‰Â
+	// Logical formatï¿½ï¿½ï¿½ï¿½ï¿½
 	bEnable = TRUE;
 
-	// OS-9‚Í˜_—ƒtƒH[ƒ}ƒbƒg‚Å‚«‚È‚¢
+	// OS-9ï¿½Í˜_ï¿½ï¿½ï¿½tï¿½Hï¿½[ï¿½}ï¿½bï¿½gï¿½Å‚ï¿½ï¿½È‚ï¿½
 	pButton = (CButton*)GetDlgItem(IDC_FDI_OS9);
 	ASSERT(pButton);
 	if (pButton->GetCheck() == 1) {
 		bEnable = FALSE;
 	}
 
-	// ˜_—ƒtƒH[ƒ}ƒbƒgƒ`ƒFƒbƒNƒ{ƒbƒNƒX‚ğæ“¾
+	// Logical formatï¿½`ï¿½Fï¿½bï¿½Nï¿½{ï¿½bï¿½Nï¿½Xï¿½ï¿½ï¿½æ“¾
 	pButton = (CButton*)GetDlgItem(IDC_FDI_LOGC);
 	ASSERT(pButton);
 
-	// ‘€ì‰Â”\ƒtƒ‰ƒO‚ğƒ`ƒFƒbƒN
+	// ErrorÂ”\ï¿½tï¿½ï¿½ï¿½Oï¿½ï¿½ï¿½`ï¿½Fï¿½bï¿½N
 	if (bEnable) {
-		// ƒ{ƒ^ƒ“—LŒø
+		// ï¿½{ï¿½^ï¿½ï¿½ï¿½Lï¿½ï¿½
 		pButton->EnableWindow(TRUE);
 	}
 	else {
-		// ˜_—ƒtƒH[ƒ}ƒbƒg‚È‚µ
+		// Logical formatï¿½È‚ï¿½
 		m_bLogical = FALSE;
 
-		// ƒ`ƒFƒbƒN‰ğœ‚µ‚ÄAƒ{ƒ^ƒ“–³Œø
+		// ï¿½`ï¿½Fï¿½bï¿½Nï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ÄAï¿½{ï¿½^ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 		pButton->SetCheck(0);
 		pButton->EnableWindow(FALSE);
 	}
@@ -535,7 +535,7 @@ void FASTCALL CFDIDlg::MaskLogical()
 
 //---------------------------------------------------------------------------
 //
-//	ƒtƒ@ƒCƒ‹‘I‘ğ
+	// File browse
 //
 //---------------------------------------------------------------------------
 BOOL FASTCALL CFDIDlg::GetFile()
@@ -546,23 +546,23 @@ BOOL FASTCALL CFDIDlg::GetFile()
 	TCHAR szExt[_MAX_EXT];
 	CEdit *pEdit;
 
-	// ‰Šú‰»
+	// Errorï¿½ï¿½
 	m_szFileName[0] = _T('\0');
 
-	// ƒtƒ@ƒCƒ‹ƒZ[ƒuƒ_ƒCƒAƒƒO
+	// ï¿½tï¿½@ï¿½Cï¿½ï¿½ï¿½Zï¿½[ï¿½uï¿½_ï¿½Cï¿½Aï¿½ï¿½ï¿½O
 	if (!::FileSaveDlg(this, m_szFileName, NULL, IDS_FDOPEN)) {
 		return FALSE;
 	}
 
-	// ƒtƒ@ƒCƒ‹–¼‚ğİ’è
+	// File nameİ’ï¿½
 	pEdit = (CEdit*)GetDlgItem(IDC_FDI_FILEE);
 	ASSERT(pEdit);
 	pEdit->SetWindowText(m_szFileName);
 
-	// ƒpƒX•ª—£
+	// ï¿½pï¿½Xï¿½ï¿½ï¿½ï¿½
 	_tsplitpath(m_szFileName, szDrive, szDir, szFile, szExt);
 
-	// Šg’£q‚©‚çƒ^ƒCƒv‚ğŒˆ’è
+	// ï¿½gï¿½ï¿½ï¿½qï¿½ï¿½ï¿½ï¿½^ï¿½Cï¿½vï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 	if (_tcsnicmp(szExt, _T(".DIM"), 4) == 0) {
 		m_dwType = 1;
 		return TRUE;
@@ -584,31 +584,31 @@ BOOL FASTCALL CFDIDlg::GetFile()
 		return TRUE;
 	}
 
-	// ‚¢‚¸‚ê‚Å‚à‚È‚¯‚ê‚ÎA2HD
+	// Errorï¿½ï¿½Å‚ï¿½ï¿½È‚ï¿½ï¿½ï¿½ÎA2HD
 	m_dwType = 0;
 	return TRUE;
 }
 
 //===========================================================================
 //
-//	‘å—e—ÊƒfƒBƒXƒNƒCƒ[ƒWì¬ƒ_ƒCƒAƒƒO
+//	ï¿½ï¿½eï¿½Êƒfï¿½Bï¿½Xï¿½Nï¿½Cï¿½ï¿½ï¿½[ï¿½Wï¿½ì¬ï¿½_ï¿½Cï¿½Aï¿½ï¿½ï¿½O
 //
 //===========================================================================
 
 //---------------------------------------------------------------------------
 //
-//	ƒRƒ“ƒXƒgƒ‰ƒNƒ^
+	// Constructor
 //
 //---------------------------------------------------------------------------
 CDiskDlg::CDiskDlg(CWnd *pParent) : CDialog(IDD_DISKDLG, pParent)
 {
-	// ‰pŒêŠÂ‹«‚Ö‚Ì‘Î‰
+	// Support for non-Japanese environment
 	if (!::IsJapanese()) {
 		m_lpszTemplateName = MAKEINTRESOURCE(IDD_US_DISKDLG);
 		m_nIDHelp = IDD_US_DISKDLG;
 	}
 
-	// ƒ[ƒN‰Šú‰»
+	// Member variablesï¿½ï¿½
 	m_szPath[0] = _T('\0');
 	m_nType = -1;
 	m_bSucceed = FALSE;
@@ -620,7 +620,7 @@ CDiskDlg::CDiskDlg(CWnd *pParent) : CDialog(IDD_DISKDLG, pParent)
 
 //---------------------------------------------------------------------------
 //
-//	ƒƒbƒZ[ƒW ƒ}ƒbƒv
+	// Message map
 //
 //---------------------------------------------------------------------------
 BEGIN_MESSAGE_MAP(CDiskDlg, CDialog)
@@ -634,7 +634,7 @@ END_MESSAGE_MAP()
 
 //---------------------------------------------------------------------------
 //
-//	ƒ_ƒCƒAƒƒO‰Šú‰»
+	// Dialog initialization
 //
 //---------------------------------------------------------------------------
 BOOL CDiskDlg::OnInitDialog()
@@ -645,16 +645,16 @@ BOOL CDiskDlg::OnInitDialog()
 	ASSERT(this);
 	ASSERT((m_nType >= 0) && (m_nType <= 2));
 
-	// Šî–{ƒNƒ‰ƒX
+	// ï¿½ï¿½{ï¿½Nï¿½ï¿½ï¿½X
 	CDialog::OnInitDialog();
 
-	// ƒtƒ@ƒCƒ‹‚ğ•·‚­
+	// ï¿½tï¿½@ï¿½Cï¿½ï¿½ï¿½ğ•·‚ï¿½
 	if (!GetFile()) {
 		EndDialog(IDCANCEL);
 		return FALSE;
 	}
 
-	// ƒLƒƒƒvƒVƒ‡ƒ“İ’è
+	// Validï¿½Vï¿½ï¿½ï¿½ï¿½ï¿½İ’ï¿½
 	GetWindowText(strCap);
 	switch (m_nType) {
 		// SASI-HD
@@ -669,7 +669,7 @@ BOOL CDiskDlg::OnInitDialog()
 		case 2:
 			strText = _T("SCSI MO");
 			break;
-		// ‚»‚Ì‘¼(‚ ‚è“¾‚È‚¢)
+		// ï¿½ï¿½ï¿½Ì‘ï¿½(ï¿½ï¿½ï¿½è“¾ï¿½È‚ï¿½)
 		default:
 			ASSERT(FALSE);
 			break;
@@ -677,7 +677,7 @@ BOOL CDiskDlg::OnInitDialog()
 	strCap = strText + strCap;
 	SetWindowText(strCap);
 
-	// ƒRƒ“ƒgƒ[ƒ‹‰Šú‰»
+	// ï¿½Rï¿½ï¿½ï¿½gï¿½ï¿½ï¿½[ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 	switch (m_nType) {
 		// SASI-HD
 		case 0:
@@ -694,19 +694,19 @@ BOOL CDiskDlg::OnInitDialog()
 			CtrlMO();
 			break;
 
-		// ‚»‚Ì‘¼(‚ ‚è“¾‚È‚¢)
+		// ï¿½ï¿½ï¿½Ì‘ï¿½(ï¿½ï¿½ï¿½è“¾ï¿½È‚ï¿½)
 		default:
 			ASSERT(FALSE);
 			break;
 	}
 
-	// I—¹
+	// Exit
 	return TRUE;
 }
 
 //---------------------------------------------------------------------------
 //
-//	SASI-HD ƒRƒ“ƒgƒ[ƒ‹‰Šú‰»
+//	SASI-HD ï¿½Rï¿½ï¿½ï¿½gï¿½ï¿½ï¿½[ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 //
 //---------------------------------------------------------------------------
 void FASTCALL CDiskDlg::CtrlSASI()
@@ -720,22 +720,22 @@ void FASTCALL CDiskDlg::CtrlSASI()
 
 	ASSERT(this);
 
-	// ƒTƒCƒYE˜_—ƒtƒH[ƒ}ƒbƒgEƒIƒvƒVƒ‡ƒ“‚ğ‚·‚×‚Ä‰B‚·
+	// Sizeï¿½Eï¿½_ï¿½ï¿½ï¿½tï¿½Hï¿½[ï¿½}ï¿½bï¿½gï¿½Eï¿½Iï¿½vï¿½Vï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½×‚Ä‰Bï¿½ï¿½
 	for (i=0;; i++) {
-		// I—¹ƒ`ƒFƒbƒN
+		// Exitï¿½`ï¿½Fï¿½bï¿½N
 		if (SASITable[i] == 0) {
 			break;
 		}
 
-		// æ“¾
+		// ï¿½æ“¾
 		pWnd = GetDlgItem(SASITable[i]);
 		ASSERT(pWnd);
 
-		// ‰B‚·
+		// ï¿½Bï¿½ï¿½
 		pWnd->ShowWindow(SW_HIDE);
 	}
 
-	// ˜_—ƒtƒH[ƒ}ƒbƒgƒ`ƒFƒbƒNƒ{ƒbƒNƒX‚ğˆÚ“®Aƒ`ƒFƒbƒN•t‚¯‚é
+	// Logical formatï¿½`ï¿½Fï¿½bï¿½Nï¿½{ï¿½bï¿½Nï¿½Xï¿½ï¿½ï¿½Ú“ï¿½ï¿½Aï¿½`ï¿½Fï¿½bï¿½Nï¿½tï¿½ï¿½ï¿½ï¿½
 	pWnd = GetDlgItem(IDC_DISK_SIZEE);
 	ASSERT(pWnd);
 	pWnd->GetWindowRect(&rectDst);
@@ -749,7 +749,7 @@ void FASTCALL CDiskDlg::CtrlSASI()
 	pButton = (CButton*)pWnd;
 	pButton->SetCheck(1);
 
-	// ˜_—ƒtƒH[ƒ}ƒbƒgƒOƒ‹[ƒvƒ{ƒbƒNƒX‚ğk¬
+	// Logical formatï¿½Oï¿½ï¿½ï¿½[ï¿½vï¿½{ï¿½bï¿½Nï¿½Xï¿½ï¿½ï¿½kï¿½ï¿½
 	pWnd = GetDlgItem(IDC_DISK_SIZEG);
 	ASSERT(pWnd);
 	pWnd->GetClientRect(&rectDst);
@@ -759,22 +759,22 @@ void FASTCALL CDiskDlg::CtrlSASI()
 	pWnd->SetWindowPos(&wndTop, 0, 0, rectSrc.Width(), rectDst.Height(),
 								SWP_NOMOVE | SWP_NOZORDER);
 
-	// ƒTƒCƒYƒXƒsƒ“ƒRƒ“ƒgƒ[ƒ‹æ“¾Aİ’è(0‚©‚ç2)
+	// Sizeï¿½Xï¿½sï¿½ï¿½ï¿½Rï¿½ï¿½ï¿½gï¿½ï¿½ï¿½[ï¿½ï¿½ï¿½æ“¾ï¿½Aï¿½İ’ï¿½(0ï¿½ï¿½ï¿½ï¿½2)
 	pSpin = (CSpinButtonCtrl*)GetDlgItem(IDC_DISK_SIZES);
 	ASSERT(pSpin);
 	pSpin->SetRange(0, 2);
 	pSpin->SetPos(2);
 
-	// æ‚ÉOnVScroll
+	// NamenVScroll
 	OnVScroll(0, 2, NULL);
 
-	// IDC_DISK_LOGG‚ÌƒNƒ‰ƒCƒAƒ“ƒgÀ•W‚ğæ“¾
+	// IDC_DISK_LOGGï¿½ÌƒNï¿½ï¿½ï¿½Cï¿½Aï¿½ï¿½ï¿½gï¿½ï¿½ï¿½Wï¿½ï¿½ï¿½æ“¾
 	pWnd = GetDlgItem(IDC_DISK_LOGG);
 	ASSERT(pWnd);
 	pWnd->GetWindowRect(&rectSrc);
 	ScreenToClient(&rectSrc);
 
-	// OKƒ{ƒ^ƒ“ˆÚ“®
+	// OKï¿½{ï¿½^ï¿½ï¿½ï¿½Ú“ï¿½
 	pWnd = GetDlgItem(IDOK);
 	ASSERT(pWnd);
 	pWnd->GetWindowRect(&rectDst);
@@ -782,7 +782,7 @@ void FASTCALL CDiskDlg::CtrlSASI()
 	pWnd->SetWindowPos(&wndTop, rectDst.left, rectSrc.bottom + 10,
 						 0, 0, SWP_NOSIZE | SWP_NOZORDER);
 
-	// ƒLƒƒƒ“ƒZƒ‹ƒ{ƒ^ƒ“ˆÚ“®
+	// ï¿½Lï¿½ï¿½ï¿½ï¿½ï¿½Zï¿½ï¿½ï¿½{ï¿½^ï¿½ï¿½ï¿½Ú“ï¿½
 	pWnd = GetDlgItem(IDCANCEL);
 	ASSERT(pWnd);
 	pWnd->GetWindowRect(&rectDst);
@@ -790,11 +790,11 @@ void FASTCALL CDiskDlg::CtrlSASI()
 	pWnd->SetWindowPos(&wndTop, rectDst.left, rectSrc.bottom + 10,
 						0, 0, SWP_NOSIZE | SWP_NOZORDER);
 
-	// ‚·‚®AƒNƒ‰ƒCƒAƒ“ƒgÀ•W‚ğæ“¾
+	// Errorï¿½Aï¿½Nï¿½ï¿½ï¿½Cï¿½Aï¿½ï¿½ï¿½gï¿½ï¿½ï¿½Wï¿½ï¿½ï¿½æ“¾
 	pWnd->GetWindowRect(&rectDst);
 	ScreenToClient(&rectDst);
 
-	// ƒEƒBƒ“ƒhƒE‘S‘Ì
+	// Windowï¿½Sï¿½ï¿½
 	GetClientRect(&rectSrc);
 	rectSrc.bottom = rectSrc.top + rectDst.bottom + 10;
 	AdjustWindowRect(&rectSrc, GetStyle(), FALSE);
@@ -803,7 +803,7 @@ void FASTCALL CDiskDlg::CtrlSASI()
 
 //---------------------------------------------------------------------------
 //
-//	SCSI-HD ƒRƒ“ƒgƒ[ƒ‹‰Šú‰»
+//	SCSI-HD ï¿½Rï¿½ï¿½ï¿½gï¿½ï¿½ï¿½[ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 //
 //---------------------------------------------------------------------------
 void FASTCALL CDiskDlg::CtrlSCSI()
@@ -816,37 +816,37 @@ void FASTCALL CDiskDlg::CtrlSCSI()
 
 	ASSERT(this);
 
-	// ƒTƒCƒYE˜_—ƒtƒH[ƒ}ƒbƒgEƒIƒvƒVƒ‡ƒ“‚ğ‚·‚×‚Ä‰B‚·
+	// Sizeï¿½Eï¿½_ï¿½ï¿½ï¿½tï¿½Hï¿½[ï¿½}ï¿½bï¿½gï¿½Eï¿½Iï¿½vï¿½Vï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½×‚Ä‰Bï¿½ï¿½
 	for (i=0;; i++) {
-		// I—¹ƒ`ƒFƒbƒN
+		// Exitï¿½`ï¿½Fï¿½bï¿½N
 		if (SCSITable[i] == 0) {
 			break;
 		}
 
-		// æ“¾
+		// ï¿½æ“¾
 		pWnd = GetDlgItem(SCSITable[i]);
 		ASSERT(pWnd);
 
-		// ‰B‚·
+		// ï¿½Bï¿½ï¿½
 		pWnd->ShowWindow(SW_HIDE);
 	}
 
-	// ƒTƒCƒYƒXƒsƒ“ƒRƒ“ƒgƒ[ƒ‹æ“¾Aİ’è(10MB‚©‚ç4095MB)
+	// Sizeï¿½Xï¿½sï¿½ï¿½ï¿½Rï¿½ï¿½ï¿½gï¿½ï¿½ï¿½[ï¿½ï¿½ï¿½æ“¾ï¿½Aï¿½İ’ï¿½(10MBï¿½ï¿½ï¿½ï¿½4095MB)
 	pSpin = (CSpinButtonCtrl*)GetDlgItem(IDC_DISK_SIZES);
 	ASSERT(pSpin);
 	pSpin->SetRange(10, 4095);
 	pSpin->SetPos(100);
 
-	// æ‚ÉOnVScroll
+	// NamenVScroll
 	OnVScroll(0, 100, NULL);
 
-	// IDC_DISK_SIZEG‚ÌƒNƒ‰ƒCƒAƒ“ƒgÀ•W‚ğæ“¾
+	// IDC_DISK_SIZEGï¿½ÌƒNï¿½ï¿½ï¿½Cï¿½Aï¿½ï¿½ï¿½gï¿½ï¿½ï¿½Wï¿½ï¿½ï¿½æ“¾
 	pWnd = GetDlgItem(IDC_DISK_SIZEG);
 	ASSERT(pWnd);
 	pWnd->GetWindowRect(&rectSrc);
 	ScreenToClient(&rectSrc);
 
-	// OKƒ{ƒ^ƒ“ˆÚ“®
+	// OKï¿½{ï¿½^ï¿½ï¿½ï¿½Ú“ï¿½
 	pWnd = GetDlgItem(IDOK);
 	ASSERT(pWnd);
 	pWnd->GetWindowRect(&rectDst);
@@ -854,7 +854,7 @@ void FASTCALL CDiskDlg::CtrlSCSI()
 	pWnd->SetWindowPos(&wndTop, rectDst.left, rectSrc.bottom + 10,
 						 0, 0, SWP_NOSIZE | SWP_NOZORDER);
 
-	// ƒLƒƒƒ“ƒZƒ‹ƒ{ƒ^ƒ“ˆÚ“®
+	// ï¿½Lï¿½ï¿½ï¿½ï¿½ï¿½Zï¿½ï¿½ï¿½{ï¿½^ï¿½ï¿½ï¿½Ú“ï¿½
 	pWnd = GetDlgItem(IDCANCEL);
 	ASSERT(pWnd);
 	pWnd->GetWindowRect(&rectDst);
@@ -862,11 +862,11 @@ void FASTCALL CDiskDlg::CtrlSCSI()
 	pWnd->SetWindowPos(&wndTop, rectDst.left, rectSrc.bottom + 10,
 						0, 0, SWP_NOSIZE | SWP_NOZORDER);
 
-	// ‚·‚®AƒNƒ‰ƒCƒAƒ“ƒgÀ•W‚ğæ“¾
+	// Errorï¿½Aï¿½Nï¿½ï¿½ï¿½Cï¿½Aï¿½ï¿½ï¿½gï¿½ï¿½ï¿½Wï¿½ï¿½ï¿½æ“¾
 	pWnd->GetWindowRect(&rectDst);
 	ScreenToClient(&rectDst);
 
-	// ƒEƒBƒ“ƒhƒE‘S‘Ì
+	// Windowï¿½Sï¿½ï¿½
 	GetClientRect(&rectSrc);
 	rectSrc.bottom = rectSrc.top + rectDst.bottom + 10;
 	AdjustWindowRect(&rectSrc, GetStyle(), FALSE);
@@ -875,7 +875,7 @@ void FASTCALL CDiskDlg::CtrlSCSI()
 
 //---------------------------------------------------------------------------
 //
-//	SCSI-MO ƒRƒ“ƒgƒ[ƒ‹‰Šú‰»
+//	SCSI-MO ï¿½Rï¿½ï¿½ï¿½gï¿½ï¿½ï¿½[ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 //
 //---------------------------------------------------------------------------
 void FASTCALL CDiskDlg::CtrlMO()
@@ -886,22 +886,22 @@ void FASTCALL CDiskDlg::CtrlMO()
 
 	ASSERT(this);
 
-	// •s—v‚ÈƒRƒ“ƒgƒ[ƒ‹‚ğ‰B‚·
+	// ï¿½sï¿½vï¿½ÈƒRï¿½ï¿½ï¿½gï¿½ï¿½ï¿½[ï¿½ï¿½ï¿½ï¿½ï¿½Bï¿½ï¿½
 	for (i=0;; i++) {
-		// I—¹ƒ`ƒFƒbƒN
+		// Exitï¿½`ï¿½Fï¿½bï¿½N
 		if (MOTable[i] == 0) {
 			break;
 		}
 
-		// æ“¾
+		// ï¿½æ“¾
 		pWnd = GetDlgItem(MOTable[i]);
 		ASSERT(pWnd);
 
-		// ‰B‚·
+		// ï¿½Bï¿½ï¿½
 		pWnd->ShowWindow(SW_HIDE);
 	}
 
-	// 128MBEIBMƒtƒH[ƒ}ƒbƒg‚Éƒ`ƒFƒbƒN‚ğ“ü‚ê‚é
+	// 128MBï¿½EIBMï¿½tï¿½Hï¿½[ï¿½}ï¿½bï¿½gï¿½Éƒ`ï¿½Fï¿½bï¿½Nï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 	pButton = (CButton*)GetDlgItem(IDC_DISK_SIZE128);
 	ASSERT(pButton);
 	pButton->SetCheck(1);
@@ -912,18 +912,18 @@ void FASTCALL CDiskDlg::CtrlMO()
 
 //---------------------------------------------------------------------------
 //
-//	ƒtƒ@ƒCƒ‹‘I‘ğ
+	// File browse
 //
 //---------------------------------------------------------------------------
 void CDiskDlg::OnBrowse()
 {
-	// ƒTƒuŠÖ”‚É”C‚¹‚é
+	// ï¿½Tï¿½uï¿½Öï¿½ï¿½É”Cï¿½ï¿½ï¿½ï¿½
 	GetFile();
 }
 
 //---------------------------------------------------------------------------
 //
-//	cƒXƒNƒ[ƒ‹
+//	ï¿½cï¿½Xï¿½Nï¿½ï¿½ï¿½[ï¿½ï¿½
 //
 //---------------------------------------------------------------------------
 void CDiskDlg::OnVScroll(UINT /*nSBCode*/, UINT nPos, CScrollBar* /*pBar*/)
@@ -932,11 +932,11 @@ void CDiskDlg::OnVScroll(UINT /*nSBCode*/, UINT nPos, CScrollBar* /*pBar*/)
 	CString strText;
 	CWnd *pWnd;
 
-	// ‰Šú‰»
+	// Errorï¿½ï¿½
 	ASSERT((nPos >= 0) && (nPos < 4096));
 	nSize = nPos;
 
-	// SASI-HD‚Í“Á•Êˆ—
+	// SASI-HDï¿½Í“ï¿½ï¿½Êï¿½ï¿½ï¿½
 	if (m_nType == 0) {
 		switch (nPos) {
 			// 10MB
@@ -954,17 +954,17 @@ void CDiskDlg::OnVScroll(UINT /*nSBCode*/, UINT nPos, CScrollBar* /*pBar*/)
 				nSize = 40;
 				break;
 
-			// ‚»‚Ì‘¼(‚ ‚è“¾‚È‚¢)
+			// ï¿½ï¿½ï¿½Ì‘ï¿½(ï¿½ï¿½ï¿½è“¾ï¿½È‚ï¿½)
 			default:
 				ASSERT(FALSE);
 				break;
 		}
 	}
 
-	// ƒeƒLƒXƒgì¬
+	// ï¿½eï¿½Lï¿½Xï¿½gï¿½ì¬
 	strText.Format(_T("%u"), nSize);
 
-	// ƒoƒfƒBƒEƒBƒ“ƒhƒE‚Öİ’è
+	// ï¿½oï¿½fï¿½Bï¿½Eï¿½Bï¿½ï¿½ï¿½hï¿½Eï¿½Öİ’ï¿½
 	pWnd = GetDlgItem(IDC_DISK_SIZEE);
 	ASSERT(pWnd);
 	pWnd->SetWindowText(strText);
@@ -972,9 +972,9 @@ void CDiskDlg::OnVScroll(UINT /*nSBCode*/, UINT nPos, CScrollBar* /*pBar*/)
 
 //---------------------------------------------------------------------------
 //
-//	MOƒTƒCƒY•ÏX
-//	¦128MB,230MB,540MB‚ÍIBMƒtƒH[ƒ}ƒbƒg‚ÆSHARPƒtƒH[ƒ}ƒbƒg‚ª‘I‚×‚é‚ª
-//	  640MB‚ÍIBMƒtƒH[ƒ}ƒbƒg‚Ì‚İ‘I‘ğ‰Â”\
+//	MOï¿½Tï¿½Cï¿½Yï¿½ÏX
+//	ï¿½ï¿½128MB,230MB,540MBï¿½ï¿½IBMï¿½tï¿½Hï¿½[ï¿½}ï¿½bï¿½gï¿½ï¿½SHARPï¿½tï¿½Hï¿½[ï¿½}ï¿½bï¿½gï¿½ï¿½ï¿½Iï¿½×‚é‚ª
+//	  640MBï¿½ï¿½IBMï¿½tï¿½Hï¿½[ï¿½}ï¿½bï¿½gï¿½Ì‚İ‘Iï¿½ï¿½ï¿½Â”\
 //
 //---------------------------------------------------------------------------
 void CDiskDlg::OnMOSize()
@@ -982,16 +982,16 @@ void CDiskDlg::OnMOSize()
 	BOOL bCheck;
 	CButton *pButton;
 
-	// ƒ`ƒFƒbƒN‚È‚µ
+	// ï¿½`ï¿½Fï¿½bï¿½Nï¿½È‚ï¿½
 	bCheck = FALSE;
 
-	// 640MO‚ğ¦‚·ƒ‰ƒWƒIƒ{ƒ^ƒ“
+	// 640MOï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Wï¿½Iï¿½{ï¿½^ï¿½ï¿½
 	pButton = (CButton*)GetDlgItem(IDC_DISK_SIZE640);
 	ASSERT(pButton);
 
-	// ƒ`ƒFƒbƒN‚³‚ê‚Ä‚¢‚é‚©
+	// ï¿½`ï¿½Fï¿½bï¿½Nï¿½ï¿½ï¿½ï¿½Ä‚ï¿½ï¿½é‚©
 	if (pButton->GetCheck() != 0) {
-		// SHARPƒtƒH[ƒ}ƒbƒg‚ğ‹Ö~‚µAƒ`ƒFƒbƒN‚³‚ê‚Ä‚¢‚ê‚ÎƒtƒH[ƒ}ƒbƒg–³‚µ‚Ö
+		// SHARPï¿½tï¿½Hï¿½[ï¿½}ï¿½bï¿½gï¿½ï¿½ï¿½Ö~ï¿½ï¿½ï¿½Aï¿½`ï¿½Fï¿½bï¿½Nï¿½ï¿½ï¿½ï¿½Ä‚ï¿½ï¿½ï¿½Îƒtï¿½Hï¿½[ï¿½}ï¿½bï¿½gï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 		pButton = (CButton*)GetDlgItem(IDC_DISK_LOGS);
 		ASSERT(pButton);
 		if (pButton->GetCheck() != 0) {
@@ -1000,7 +1000,7 @@ void CDiskDlg::OnMOSize()
 		}
 		pButton->EnableWindow(FALSE);
 
-		// ƒ`ƒFƒbƒN‚³‚ê‚Ä‚¢‚ê‚Î‹­§•ÏX
+		// ï¿½`ï¿½Fï¿½bï¿½Nï¿½ï¿½ï¿½ï¿½Ä‚ï¿½ï¿½ï¿½Î‹ï¿½ï¿½ï¿½ï¿½ÏX
 		if (bCheck) {
 			pButton = (CButton*)GetDlgItem(IDC_DISK_LOGN);
 			ASSERT(pButton);
@@ -1008,7 +1008,7 @@ void CDiskDlg::OnMOSize()
 		}
 	}
 	else {
-		// 640MOˆÈŠO‚È‚Ì‚ÅASHARPƒtƒH[ƒ}ƒbƒg‚ğ‹–‰Â
+		// 640MOï¿½ÈŠOï¿½È‚Ì‚ÅASHARPï¿½tï¿½Hï¿½[ï¿½}ï¿½bï¿½gï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 		pButton = (CButton*)GetDlgItem(IDC_DISK_LOGS);
 		ASSERT(pButton);
 		pButton->EnableWindow(TRUE);
@@ -1017,7 +1017,7 @@ void CDiskDlg::OnMOSize()
 
 //---------------------------------------------------------------------------
 //
-//	ƒtƒ@ƒCƒ‹‘I‘ğ
+	// File browse
 //
 //---------------------------------------------------------------------------
 BOOL FASTCALL CDiskDlg::GetFile()
@@ -1027,39 +1027,39 @@ BOOL FASTCALL CDiskDlg::GetFile()
 
 	ASSERT(this);
 
-	// ‰Šú‰»
+	// Errorï¿½ï¿½
 	m_szPath[0] = _T('\0');
 
-	// ƒ^ƒCƒv•Ê
+	// ï¿½^ï¿½Cï¿½vï¿½ï¿½
 	switch (m_nType) {
-		// SASI ƒn[ƒhƒfƒBƒXƒN
+		// SASI ï¿½nï¿½[ï¿½hï¿½fï¿½Bï¿½Xï¿½N
 		case 0:
 			bFlag = ::FileSaveDlg(this, m_szPath, _T("hdf"), IDS_SASIOPEN);
 			break;
 
-		// SCSI ƒn[ƒhƒfƒBƒXƒN
+		// SCSI ï¿½nï¿½[ï¿½hï¿½fï¿½Bï¿½Xï¿½N
 		case 1:
 			bFlag = ::FileSaveDlg(this, m_szPath, _T("hds"), IDS_SCSIOPEN);
 			break;
 
-		// SCSI MOƒfƒBƒXƒN
+		// SCSI MOï¿½fï¿½Bï¿½Xï¿½N
 		case 2:
 			bFlag = ::FileSaveDlg(this, m_szPath, _T("mos"), IDS_MOOPEN);
 			break;
 
-		// ‚»‚Ì‘¼(‚ ‚è“¾‚È‚¢)
+		// ï¿½ï¿½ï¿½Ì‘ï¿½(ï¿½ï¿½ï¿½è“¾ï¿½È‚ï¿½)
 		default:
 			ASSERT(FALSE);
 			bFlag = FALSE;
 			break;
 	}
 
-	// Œ‹‰Ê•]‰¿
+	// ï¿½ï¿½ï¿½Ê•]ï¿½ï¿½
 	if (!bFlag) {
 		return FALSE;
 	}
 
-	// ƒtƒ@ƒCƒ‹–¼‚ğİ’è
+	// File nameİ’ï¿½
 	pEdit = (CEdit*)GetDlgItem(IDC_DISK_FILEE);
 	ASSERT(pEdit);
 	pEdit->SetWindowText(m_szPath);
@@ -1077,27 +1077,27 @@ void CDiskDlg::OnOK()
 	Fileio fio;
 	CFrmWnd *pFrmWnd;
 
-	// ƒtƒ@ƒCƒ‹–¼‚ª‚È‚¯‚ê‚ÎI—¹
+	// File nameï¿½È‚ï¿½ï¿½ï¿½ÎIï¿½ï¿½
 	if (_tcslen(m_szPath) == 0) {
-		// Šî–{ƒNƒ‰ƒX
+		// ï¿½ï¿½{ï¿½Nï¿½ï¿½ï¿½X
 		CDialog::OnOK();
 		return;
 	}
 
-	// ƒtƒ@ƒCƒ‹ì¬‚ğ‚İ‚é
+	// ï¿½tï¿½@ï¿½Cï¿½ï¿½ï¿½ì¬ï¿½ï¿½ï¿½ï¿½ï¿½İ‚ï¿½
 	if (!fio.Open(m_szPath, Fileio::WriteOnly)) {
-		// Šî–{ƒNƒ‰ƒX
+		// ï¿½ï¿½{ï¿½Nï¿½ï¿½ï¿½X
 		CDialog::OnOK();
 		return;
 	}
-	// ˆê’U•Â‚¶‚é
+	// ï¿½ï¿½Uï¿½Â‚ï¿½ï¿½ï¿½
 	fio.Close();
 
-	// VM‚ğ~‚ß‚é(ó‘Ô‹L‰¯‚¨‚æ‚ÑÄŠJ‚ÍƒRƒ}ƒ“ƒhƒnƒ“ƒhƒ‰‚Ås‚È‚¤)
+	// VMï¿½ï¿½ï¿½~ï¿½ß‚ï¿½(ï¿½ï¿½Ô‹Lï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ÑÄŠJï¿½ÍƒRï¿½}ï¿½ï¿½ï¿½hï¿½nï¿½ï¿½ï¿½hï¿½ï¿½ï¿½Åsï¿½È‚ï¿½)
 	pFrmWnd = (CFrmWnd*)GetParent();
 	pFrmWnd->GetScheduler()->Enable(FALSE);
 
-	// U‚è•ª‚¯
+	// ï¿½Uï¿½è•ªï¿½ï¿½
 	switch (m_nType) {
 		// SASI-HD
 		case 0:
@@ -1114,19 +1114,19 @@ void CDiskDlg::OnOK()
 			CreateMO();
 			break;
 
-		// ‚»‚Ì‘¼(‚ ‚è“¾‚È‚¢)
+		// ï¿½ï¿½ï¿½Ì‘ï¿½(ï¿½ï¿½ï¿½è“¾ï¿½È‚ï¿½)
 		default:
 			CDialog::OnOK();
 			return;
 	}
 
-	// Šî–{ƒNƒ‰ƒX
+	// ï¿½ï¿½{ï¿½Nï¿½ï¿½ï¿½X
 	CDialog::OnOK();
 }
 
 //---------------------------------------------------------------------------
 //
-//	SASI-HD ì¬
+//	SASI-HD ï¿½ì¬
 //
 //---------------------------------------------------------------------------
 void FASTCALL CDiskDlg::CreateSASI()
@@ -1137,10 +1137,10 @@ void FASTCALL CDiskDlg::CreateSASI()
 
 	ASSERT(this);
 
-	// ƒtƒ@ƒCƒ‹–¼İ’è
+	// ï¿½tï¿½@ï¿½Cï¿½ï¿½ï¿½ï¿½ï¿½İ’ï¿½
 	_tcscpy(dlg.m_szPath, m_szPath);
 
-	// ƒTƒCƒYİ’è
+	// Sizeï¿½İ’ï¿½
 	pSpin = (CSpinButtonCtrl*)GetDlgItem(IDC_DISK_SIZES);
 	switch (LOWORD(pSpin->GetPos())) {
 		// 10MB
@@ -1158,13 +1158,13 @@ void FASTCALL CDiskDlg::CreateSASI()
 			dlg.m_dwSize = 0x2793000;
 			break;
 
-		// ‚»‚Ì‘¼(‚ ‚è“¾‚È‚¢)
+		// ï¿½ï¿½ï¿½Ì‘ï¿½(ï¿½ï¿½ï¿½è“¾ï¿½È‚ï¿½)
 		default:
 			ASSERT(FALSE);
 			return;
 	}
 
-	// ˜_—ƒtƒH[ƒ}ƒbƒgİ’è
+	// Logical formatï¿½İ’ï¿½
 	pButton = (CButton*)GetDlgItem(IDC_DISK_LOGC);
 	ASSERT(pButton);
 	if (pButton->GetCheck() == 1) {
@@ -1174,17 +1174,17 @@ void FASTCALL CDiskDlg::CreateSASI()
 		dlg.m_nFormat = 0;
 	}
 
-	// Às
+	// ï¿½ï¿½ï¿½s
 	dlg.DoModal();
 
-	// Œ‹‰Êæ“¾
+	// ï¿½ï¿½ï¿½Êæ“¾
 	m_bSucceed = dlg.IsSucceeded();
 	m_bCancel = dlg.IsCanceled();
 }
 
 //---------------------------------------------------------------------------
 //
-//	SCSI-HD ì¬
+//	SCSI-HD ï¿½ì¬
 //
 //---------------------------------------------------------------------------
 void FASTCALL CDiskDlg::CreateSCSI()
@@ -1196,7 +1196,7 @@ void FASTCALL CDiskDlg::CreateSCSI()
 
 	ASSERT(this);
 
-	// ƒpƒ‰ƒ[ƒ^‚ğ“n‚·
+	// Parameterï¿½ï¿½nï¿½ï¿½
 	_tcscpy(dlg.m_szPath, m_szPath);
 	pSpin = (CSpinButtonCtrl*)GetDlgItem(IDC_DISK_SIZES);
 	ASSERT(pSpin);
@@ -1204,23 +1204,23 @@ void FASTCALL CDiskDlg::CreateSCSI()
 	dwSize <<= 20;
 	dlg.m_dwSize = dwSize;
 
-	// dwSize‚ª1017ˆÈã‚È‚çŒxƒƒbƒZ[ƒW
+	// dwSizeï¿½ï¿½1017ï¿½Èï¿½È‚ï¿½xï¿½ï¿½ï¿½ï¿½ï¿½bï¿½Zï¿½[ï¿½W
 	if (dwSize >= 0x3f900000) {
 		::GetMsg(IDS_SCHDSIZE, strWarn);
 		MessageBox(strWarn, NULL, MB_ICONINFORMATION | MB_OK);
 	}
 
-	// Às
+	// ï¿½ï¿½ï¿½s
 	dlg.DoModal();
 
-	// Œ‹‰Êæ“¾
+	// ï¿½ï¿½ï¿½Êæ“¾
 	m_bSucceed = dlg.IsSucceeded();
 	m_bCancel = dlg.IsCanceled();
 }
 
 //---------------------------------------------------------------------------
 //
-//	SCSI-MO ì¬
+//	SCSI-MO ï¿½ì¬
 //
 //---------------------------------------------------------------------------
 void FASTCALL CDiskDlg::CreateMO()
@@ -1230,15 +1230,15 @@ void FASTCALL CDiskDlg::CreateMO()
 
 	ASSERT(this);
 
-	// ƒ}ƒEƒ“ƒgƒIƒvƒVƒ‡ƒ“‚ğæ“¾
+	// Driveï¿½Iï¿½vï¿½Vï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½æ“¾
 	pButton = (CButton*)GetDlgItem(IDC_DISK_MOUNTB);
 	ASSERT(pButton);
 	m_bMount = (BOOL)pButton->GetCheck();
 
-	// ƒpƒ‰ƒ[ƒ^‚ğ“n‚·(ƒpƒX)
+	// Parameterï¿½ï¿½nï¿½ï¿½(ï¿½pï¿½X)
 	_tcscpy(dlg.m_szPath, m_szPath);
 
-	// ƒpƒ‰ƒ[ƒ^‚ğ“n‚·(ƒƒfƒBƒAƒTƒCƒY)
+	// Parameterï¿½ï¿½nï¿½ï¿½(ï¿½ï¿½ï¿½fï¿½Bï¿½Aï¿½Tï¿½Cï¿½Y)
 	pButton = (CButton*)GetDlgItem(IDC_DISK_SIZE128);
 	ASSERT(pButton);
 	if (pButton->GetCheck() == 1) {
@@ -1265,32 +1265,32 @@ void FASTCALL CDiskDlg::CreateMO()
 	}
 	ASSERT(dlg.m_dwSize > 0);
 
-	// ƒpƒ‰ƒ[ƒ^‚ğ“n‚·(˜_—ƒtƒH[ƒ}ƒbƒg)
+	// Parameterï¿½ï¿½nï¿½ï¿½(ï¿½_ï¿½ï¿½ï¿½tï¿½Hï¿½[ï¿½}ï¿½bï¿½g)
 	dlg.m_nFormat = 0;
 	pButton = (CButton*)GetDlgItem(IDC_DISK_LOGI);
 	ASSERT(pButton);
 	if (pButton->GetCheck() == 1) {
-		// IBMƒtƒH[ƒ}ƒbƒg
+		// IBMï¿½tï¿½Hï¿½[ï¿½}ï¿½bï¿½g
 		dlg.m_nFormat = 1;
 	}
 	pButton = (CButton*)GetDlgItem(IDC_DISK_LOGS);
 	ASSERT(pButton);
 	if (pButton->GetCheck() == 1) {
-		// SHARPƒtƒH[ƒ}ƒbƒg
+		// SHARPï¿½tï¿½Hï¿½[ï¿½}ï¿½bï¿½g
 		dlg.m_nFormat = 2;
 	}
 
-	// Às
+	// ï¿½ï¿½ï¿½s
 	dlg.DoModal();
 
-	// Œ‹‰Êæ“¾
+	// ï¿½ï¿½ï¿½Êæ“¾
 	m_bSucceed = dlg.IsSucceeded();
 	m_bCancel = dlg.IsCanceled();
 }
 
 //---------------------------------------------------------------------------
 //
-//	SASI-HD IDƒe[ƒuƒ‹
+//	SASI-HD IDï¿½eï¿½[ï¿½uï¿½ï¿½
 //
 //---------------------------------------------------------------------------
 const UINT CDiskDlg::SASITable[] = {
@@ -1308,7 +1308,7 @@ const UINT CDiskDlg::SASITable[] = {
 
 //---------------------------------------------------------------------------
 //
-//	SCSI-HD IDƒe[ƒuƒ‹
+//	SCSI-HD IDï¿½eï¿½[ï¿½uï¿½ï¿½
 //
 //---------------------------------------------------------------------------
 const UINT CDiskDlg::SCSITable[] = {
@@ -1328,7 +1328,7 @@ const UINT CDiskDlg::SCSITable[] = {
 
 //---------------------------------------------------------------------------
 //
-//	SCSI-MO IDƒe[ƒuƒ‹
+//	SCSI-MO IDï¿½eï¿½[ï¿½uï¿½ï¿½
 //
 //---------------------------------------------------------------------------
 const UINT CDiskDlg::MOTable[] = {
@@ -1341,24 +1341,24 @@ const UINT CDiskDlg::MOTable[] = {
 
 //===========================================================================
 //
-//	ƒfƒBƒXƒNƒCƒ[ƒWì¬ƒ_ƒCƒAƒƒO
+//	ï¿½fï¿½Bï¿½Xï¿½Nï¿½Cï¿½ï¿½ï¿½[ï¿½Wï¿½ì¬ï¿½_ï¿½Cï¿½Aï¿½ï¿½ï¿½O
 //
 //===========================================================================
 
 //---------------------------------------------------------------------------
 //
-//	ƒRƒ“ƒXƒgƒ‰ƒNƒ^
+	// Constructor
 //
 //---------------------------------------------------------------------------
 CDiskMakeDlg::CDiskMakeDlg(CWnd *pParent) : CDialog(IDD_DMAKEDLG, pParent)
 {
-	// ‰pŒêŠÂ‹«‚Ö‚Ì‘Î‰
+	// Support for non-Japanese environment
 	if (!::IsJapanese()) {
 		m_lpszTemplateName = MAKEINTRESOURCE(IDD_US_DMAKEDLG);
 		m_nIDHelp = IDD_US_DMAKEDLG;
 	}
 
-	// ƒ[ƒN‚ğƒNƒŠƒA
+	// ï¿½ï¿½ï¿½[ï¿½Nï¿½ï¿½ï¿½Nï¿½ï¿½ï¿½A
 	m_szPath[0] = _T('\0');
 	m_dwSize = 0;
 	m_nFormat = 0;
@@ -1374,7 +1374,7 @@ CDiskMakeDlg::CDiskMakeDlg(CWnd *pParent) : CDialog(IDD_DMAKEDLG, pParent)
 
 //---------------------------------------------------------------------------
 //
-//	ƒƒbƒZ[ƒW ƒ}ƒbƒv
+	// Message map
 //
 //---------------------------------------------------------------------------
 BEGIN_MESSAGE_MAP(CDiskMakeDlg, CDialog)
@@ -1384,7 +1384,7 @@ END_MESSAGE_MAP()
 
 //---------------------------------------------------------------------------
 //
-//	ƒ_ƒCƒAƒƒO‰Šú‰»
+	// Dialog initialization
 //
 //---------------------------------------------------------------------------
 BOOL CDiskMakeDlg::OnInitDialog()
@@ -1397,10 +1397,10 @@ BOOL CDiskMakeDlg::OnInitDialog()
 	ASSERT(_tcslen(m_szPath) > 0);
 	ASSERT(m_dwSize > 0);
 
-	// Šî–{ƒNƒ‰ƒX
+	// ï¿½ï¿½{ï¿½Nï¿½ï¿½ï¿½X
 	CDialog::OnInitDialog();
 
-	// ƒRƒ“ƒgƒ[ƒ‹‰Šú‰»
+	// ï¿½Rï¿½ï¿½ï¿½gï¿½ï¿½ï¿½[ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 	pProgress = (CProgressCtrl*)GetDlgItem(IDC_DMAKE_PROGRESS);
 	ASSERT(pProgress);
 	pProgress->SetRange(0, 100);
@@ -1417,7 +1417,7 @@ BOOL CDiskMakeDlg::OnInitDialog()
 	}
 	pStatic->SetWindowText(strParcent);
 
-	// ì‹Æƒ[ƒN‚ğŠm•Û
+	// ï¿½ï¿½Æƒï¿½ï¿½[ï¿½Nï¿½ï¿½ï¿½mï¿½ï¿½
 	try {
 		m_pBuffer = new BYTE[ 0x100000 ];
 	}
@@ -1430,17 +1430,17 @@ BOOL CDiskMakeDlg::OnInitDialog()
 		return FALSE;
 	}
 
-	// ì‹Æƒ[ƒN‚ğƒNƒŠƒA
+	// ï¿½ï¿½Æƒï¿½ï¿½[ï¿½Nï¿½ï¿½ï¿½Nï¿½ï¿½ï¿½A
 	memset(m_pBuffer, 0, 0x100000);
 
-	// ƒXƒŒƒbƒh‚ğ—§‚Ä‚é
+	// ï¿½Xï¿½ï¿½ï¿½bï¿½hï¿½ğ—§‚Ä‚ï¿½
 	m_pThread = AfxBeginThread(ThreadFunc, this);
 	if (!m_pThread) {
 		EndDialog(IDOK);
 		return FALSE;
 	}
 
-	// ƒ^ƒCƒ}‚ğƒCƒ“ƒXƒg[ƒ‹
+	// ï¿½^ï¿½Cï¿½}ï¿½ï¿½ï¿½Cï¿½ï¿½ï¿½Xï¿½gï¿½[ï¿½ï¿½
 	m_nTimerID = SetTimer(IDD_DMAKEDLG, 200, NULL);
 	if (!m_nTimerID) {
 		EndDialog(IDOK);
@@ -1452,63 +1452,63 @@ BOOL CDiskMakeDlg::OnInitDialog()
 
 //---------------------------------------------------------------------------
 //
-//	ƒ_ƒCƒAƒƒOOK
+//	ï¿½_ï¿½Cï¿½Aï¿½ï¿½ï¿½OOK
 //
 //---------------------------------------------------------------------------
 void CDiskMakeDlg::OnOK()
 {
-	// [ENTER]‚É‚æ‚éI—¹‚ğ—}§
+	// [ENTER]ï¿½É‚ï¿½ï¿½Iï¿½ï¿½ï¿½ï¿½}ï¿½ï¿½
 }
 
 //---------------------------------------------------------------------------
 //
-//	ƒ_ƒCƒAƒƒOƒLƒƒƒ“ƒZƒ‹
+//	ï¿½_ï¿½Cï¿½Aï¿½ï¿½ï¿½Oï¿½Lï¿½ï¿½ï¿½ï¿½ï¿½Zï¿½ï¿½
 //
 //---------------------------------------------------------------------------
 void CDiskMakeDlg::OnCancel()
 {
-	// ƒLƒƒƒ“ƒZƒ‹ƒtƒ‰ƒO‚ğã‚°‚é
+	// ï¿½Lï¿½ï¿½ï¿½ï¿½ï¿½Zï¿½ï¿½ï¿½tï¿½ï¿½ï¿½Oï¿½ï¿½ï¿½ã‚°ï¿½ï¿½
 	m_bCancel = TRUE;
 
-	// Šî–{ƒNƒ‰ƒX
+	// ï¿½ï¿½{ï¿½Nï¿½ï¿½ï¿½X
 	CDialog::OnCancel();
 }
 
 //---------------------------------------------------------------------------
 //
-//	ƒ_ƒCƒAƒƒOíœ
+//	ï¿½_ï¿½Cï¿½Aï¿½ï¿½ï¿½Oï¿½íœ
 //
 //---------------------------------------------------------------------------
 void CDiskMakeDlg::OnDestroy()
 {
-	// ƒXƒŒƒbƒhI—¹
+	// Thread termination
 	if (m_pThread) {
-		// ƒtƒ‰ƒO‚ğã‚°AI—¹‚ğ‘Ò‚Â(–³ŠúŒÀ)
+		// ï¿½tï¿½ï¿½ï¿½Oï¿½ï¿½ï¿½ã‚°ï¿½Aï¿½Iï¿½ï¿½ï¿½ï¿½Ò‚ï¿½(ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½)
 		m_bThread = TRUE;
 		::WaitForSingleObject(m_pThread->m_hThread, INFINITE);
 		m_pThread = NULL;
 	}
 
-	// ƒ^ƒCƒ}I—¹
+	// Timer stop
 	if (m_nTimerID) {
-		// ƒ^ƒCƒ}íœ
+		// ï¿½^ï¿½Cï¿½}ï¿½íœ
 		KillTimer(m_nTimerID);
 		m_nTimerID = NULL;
 	}
 
-	// ƒoƒbƒtƒ@‰ğ•ú
+	// Buffer release
 	if (m_pBuffer) {
 		delete[] m_pBuffer;
 		m_pBuffer = NULL;
 	}
 
-	// Šî–{ƒNƒ‰ƒX
+	// ï¿½ï¿½{ï¿½Nï¿½ï¿½ï¿½X
 	CDialog::OnDestroy();
 }
 
 //---------------------------------------------------------------------------
 //
-//	ƒ^ƒCƒ}
+//	ï¿½^ï¿½Cï¿½}
 //
 //---------------------------------------------------------------------------
 void CDiskMakeDlg::OnTimer(UINT /*nTimerID*/)
@@ -1520,26 +1520,26 @@ void CDiskMakeDlg::OnTimer(UINT /*nTimerID*/)
 	CStatic *pStatic;
 	CProgressCtrl *pProgress;
 
-	// ƒ^ƒCƒ}‚ğÁ‚·
+	// ï¿½^ï¿½Cï¿½}ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 	KillTimer(m_nTimerID);
 	m_nTimerID = NULL;
 
-	// Œ»İ‚Ì‘‚«‚İƒTƒCƒY‚ğæ“¾(ƒNƒŠƒeƒBƒJƒ‹ƒZƒNƒVƒ‡ƒ“‚ğ‹²‚Ş)
+	// ï¿½ï¿½ï¿½İ‚Ìï¿½ï¿½ï¿½ï¿½ï¿½ï¿½İƒTï¿½Cï¿½Yï¿½ï¿½ï¿½æ“¾(ï¿½Nï¿½ï¿½ï¿½eï¿½Bï¿½Jï¿½ï¿½ï¿½Zï¿½Nï¿½Vï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½)
 	m_CSection.Lock();
 	dwCurrent = m_dwCurrent;
 	m_CSection.Unlock();
 
-	// ƒp[ƒZƒ“ƒe[ƒW‚ğì‚é
+	// ï¿½pï¿½[ï¿½Zï¿½ï¿½ï¿½eï¿½[ï¿½Wï¿½ï¿½ï¿½ï¿½ï¿½
 	dwTemp = m_dwSize >> 16;
 	dwParcent = m_dwCurrent >> 16;
 	dwParcent = (dwParcent * 100) / dwTemp;
 
-	// Œ»İ‚Æˆê’v‚µ‚Ä‚¢‚È‚¯‚ê‚ÎXV
+	// ï¿½ï¿½ï¿½İ‚Æˆï¿½vï¿½ï¿½ï¿½Ä‚ï¿½ï¿½È‚ï¿½ï¿½ï¿½ÎXï¿½V
 	if (m_dwParcent != dwParcent) {
-		// ƒ[ƒN‚ğXV
+		// Progress update
 		m_dwParcent = dwParcent;
 
-		// •¶š—ñ‚ğì‚é
+		// Errorï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 		if (m_dwSize & 0xfffff) {
 			strParcent.Format(_T("%dMB / %d.%1dMB (%d%%)"),
 							dwCurrent >> 20,
@@ -1554,21 +1554,21 @@ void CDiskMakeDlg::OnTimer(UINT /*nTimerID*/)
 							dwParcent);
 		}
 
-		// ƒXƒ^ƒeƒBƒbƒN‚ğXV
+		// ï¿½Xï¿½^ï¿½eï¿½Bï¿½bï¿½Nï¿½ï¿½ï¿½Xï¿½V
 		pStatic = (CStatic*)GetDlgItem(IDC_DMAKE_STATIC);
 		ASSERT(pStatic);
 		pStatic->SetWindowText(strParcent);
 
-		// ƒvƒƒOƒŒƒX‚ğXV
+		// ï¿½vï¿½ï¿½ï¿½Oï¿½ï¿½ï¿½Xï¿½ï¿½ï¿½Xï¿½V
 		pProgress = (CProgressCtrl*)GetDlgItem(IDC_DMAKE_PROGRESS);
 		ASSERT(pProgress);
 		pProgress->SetPos(dwParcent);
 	}
 
-	// ‰ü‚ß‚Äƒ^ƒCƒ}‚ğİ’è
+	// ï¿½ï¿½ï¿½ß‚Äƒ^ï¿½Cï¿½}ï¿½ï¿½İ’ï¿½
 	m_nTimerID = SetTimer(IDD_DMAKEDLG, 200, NULL);
 
-	// ƒXƒŒƒbƒh‚ª‚È‚­‚È‚Á‚Ä‚¢‚ê‚ÎAƒ_ƒCƒAƒƒO‚ğI—¹‚³‚¹‚é
+	// ï¿½Xï¿½ï¿½ï¿½bï¿½hï¿½ï¿½ï¿½È‚ï¿½ï¿½È‚ï¿½ï¿½Ä‚ï¿½ï¿½ï¿½ÎAï¿½_ï¿½Cï¿½Aï¿½ï¿½ï¿½Oï¿½ï¿½ï¿½Iï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 	if (!m_pThread) {
 		EndDialog(IDOK);
 	}
@@ -1576,7 +1576,7 @@ void CDiskMakeDlg::OnTimer(UINT /*nTimerID*/)
 
 //---------------------------------------------------------------------------
 //
-//	ƒtƒH[ƒ}ƒbƒg
+//	ï¿½tï¿½Hï¿½[ï¿½}ï¿½bï¿½g
 //
 //---------------------------------------------------------------------------
 BOOL FASTCALL CDiskMakeDlg::Format()
@@ -1586,17 +1586,17 @@ BOOL FASTCALL CDiskMakeDlg::Format()
 
 //---------------------------------------------------------------------------
 //
-//	ƒXƒŒƒbƒhŠÖ”
+//	ï¿½Xï¿½ï¿½ï¿½bï¿½hï¿½Öï¿½
 //
 //---------------------------------------------------------------------------
 UINT CDiskMakeDlg::ThreadFunc(LPVOID lpParam)
 {
 	CDiskMakeDlg *pDiskMakeDlg;
 
-	// ƒpƒ‰ƒ[ƒ^‚ğƒLƒƒƒXƒg
+	// Parameterï¿½ï¿½ï¿½Lï¿½ï¿½ï¿½Xï¿½g
 	pDiskMakeDlg = (CDiskMakeDlg*)lpParam;
 
-	// Run‚ğŒÄ‚Ño‚·
+	// Runï¿½ï¿½ï¿½Ä‚Ñoï¿½ï¿½
 	pDiskMakeDlg->Run();
 
 	return 0;
@@ -1604,7 +1604,7 @@ UINT CDiskMakeDlg::ThreadFunc(LPVOID lpParam)
 
 //---------------------------------------------------------------------------
 //
-//	ƒXƒŒƒbƒhƒƒCƒ“
+//	ï¿½Xï¿½ï¿½ï¿½bï¿½hï¿½ï¿½ï¿½Cï¿½ï¿½
 //
 //---------------------------------------------------------------------------
 void FASTCALL CDiskMakeDlg::Run()
@@ -1617,29 +1617,29 @@ void FASTCALL CDiskMakeDlg::Run()
 	ASSERT(m_dwCurrent == 0);
 	ASSERT(m_pBuffer);
 
-	// ƒtƒ@ƒCƒ‹ì¬
+	// ï¿½tï¿½@ï¿½Cï¿½ï¿½ï¿½ì¬
 	if (!fio.Open(m_szPath, Fileio::WriteOnly)) {
-		// ƒXƒŒƒbƒh‚ğÁ‚·
+		// Thread termination
 		m_pThread = NULL;
 		return;
 	}
 
-	// ‘‚«‚İƒ‹[ƒv
+	// Errorï¿½ï¿½ï¿½İƒï¿½ï¿½[ï¿½v
 	while (m_dwCurrent < m_dwSize) {
-		// I—¹ƒtƒ‰ƒO‚ÅA‘¦I—¹
+		// Exitï¿½tï¿½ï¿½ï¿½Oï¿½ÅAï¿½ï¿½ï¿½ï¿½ï¿½Iï¿½ï¿½
 		if (m_bThread) {
-			// ƒtƒ@ƒCƒ‹ƒNƒ[ƒY
+			// File close
 			fio.Close();
 
-			// ƒtƒ@ƒCƒ‹‚ğÁ‚·
+			// File nameï¿½ï¿½
 			::DeleteFile(m_szPath);
 
-			// ƒXƒŒƒbƒh‚ğÁ‚·
+			// Thread termination
 			m_pThread = NULL;
 			return;
 		}
 
-		// ƒTƒCƒY‚ğŒˆ‚ß‚ÄA‘‚«‚İ
+		// Sizeï¿½ï¿½ï¿½ï¿½ï¿½ß‚ÄAï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 		dwUnit = m_dwSize - m_dwCurrent;
 		if (dwUnit > 0x100000) {
 			dwUnit = 0x100000;
@@ -1649,34 +1649,35 @@ void FASTCALL CDiskMakeDlg::Run()
 			continue;
 		}
 
-		// ƒTƒCƒYXV(ƒNƒŠƒeƒBƒJƒ‹ƒZƒNƒVƒ‡ƒ“‚ğ‹²‚Ş)
+		// Sizeï¿½Xï¿½V(ï¿½Nï¿½ï¿½ï¿½eï¿½Bï¿½Jï¿½ï¿½ï¿½Zï¿½Nï¿½Vï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½)
 		m_CSection.Lock();
 		m_dwCurrent += dwUnit;
 		m_CSection.Unlock();
 	}
 
-	// ƒtƒ@ƒCƒ‹‚ğ‚¢‚Á‚½‚ñ•Â‚¶‚é
+	// File nameï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Â‚ï¿½ï¿½ï¿½
 	fio.Close();
 
-	// ƒtƒH[ƒ}ƒbƒg
+	// ï¿½tï¿½Hï¿½[ï¿½}ï¿½bï¿½g
 	if (Format()) {
-		// ¬Œ÷ƒtƒ‰ƒO‚ğã‚°‚é
+		// Errorï¿½tï¿½ï¿½ï¿½Oï¿½ï¿½ï¿½ã‚°ï¿½ï¿½
 		m_bSucceed = TRUE;
 	}
 
-	// ƒXƒŒƒbƒh‚ğÁ‚·
+	// Thread termination
 	m_pThread = NULL;
 }
 
 //===========================================================================
 //
-//	SASIƒfƒBƒXƒNƒCƒ[ƒWì¬ƒ_ƒCƒAƒƒO
+//	SCSI disk handler (SCHDISK) 1.04
+//	Obtained from Format.x v2.31
 //
 //===========================================================================
 
 //---------------------------------------------------------------------------
 //
-//	ƒRƒ“ƒXƒgƒ‰ƒNƒ^
+	// Constructor
 //
 //---------------------------------------------------------------------------
 CSASIMakeDlg::CSASIMakeDlg(CWnd *pParent) : CDiskMakeDlg(pParent)
@@ -1685,7 +1686,7 @@ CSASIMakeDlg::CSASIMakeDlg(CWnd *pParent) : CDiskMakeDlg(pParent)
 
 //---------------------------------------------------------------------------
 //
-//	ƒtƒH[ƒ}ƒbƒg
+//	ï¿½tï¿½Hï¿½[ï¿½}ï¿½bï¿½g
 //
 //---------------------------------------------------------------------------
 BOOL FASTCALL CSASIMakeDlg::Format()
@@ -1698,7 +1699,7 @@ BOOL FASTCALL CSASIMakeDlg::Format()
 	BYTE header[16];
 	BYTE fat[4];
 
-	// ƒgƒ‰ƒbƒN”‚ğŒˆ’è
+	// ï¿½gï¿½ï¿½ï¿½bï¿½Nï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 	dwTrack = 0;
 	dwFat = 0;
 	dwLast = 0;
@@ -1731,7 +1732,7 @@ BOOL FASTCALL CSASIMakeDlg::Format()
 	ASSERT(dwLast != 0);
 	ASSERT(dwDPB != 0);
 
-	// ƒwƒbƒ_ì¬(˜_—ƒtƒH[ƒ}ƒbƒg‚Ì—L–³‚É‚æ‚ç‚¸A‘‚«‚Ş)
+	// ï¿½wï¿½bï¿½_ï¿½ì¬(ï¿½_ï¿½ï¿½ï¿½tï¿½Hï¿½[ï¿½}ï¿½bï¿½gï¿½Ì—Lï¿½ï¿½ï¿½É‚ï¿½ç‚¸ï¿½Aï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½)
 	header[ 0] = 0x58;
 	header[ 1] = 0x36;
 	header[ 2] = 0x38;
@@ -1749,7 +1750,7 @@ BOOL FASTCALL CSASIMakeDlg::Format()
 	header[14] = (BYTE)(dwTrack >> 8);
 	header[15] = (BYTE)dwTrack;
 
-	// ƒwƒbƒ_‘‚«‚İ
+	// ï¿½wï¿½bï¿½_ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 	if (!fio.Open(m_szPath, Fileio::ReadWrite)) {
 		return FALSE;
 	}
@@ -1760,13 +1761,13 @@ BOOL FASTCALL CSASIMakeDlg::Format()
 		return FALSE;
 	}
 
-	// ˜_—ƒtƒH[ƒ}ƒbƒg‚ğs‚í‚È‚¢‚È‚çA‚±‚±‚Ü‚Å
+	// Logical formatï¿½ï¿½ï¿½sï¿½ï¿½È‚ï¿½ï¿½È‚ï¿½Aï¿½ï¿½ï¿½ï¿½ï¿½Ü‚ï¿½
 	if (m_nFormat == 0) {
 		fio.Close();
 		return TRUE;
 	}
 
-	// ‹N“®ƒƒjƒ…[
+	// ï¿½Nï¿½ï¿½ï¿½ï¿½ï¿½jï¿½ï¿½ï¿½[
 	if (!fio.Seek(0)) {
 		return FALSE;
 	}
@@ -1782,7 +1783,7 @@ BOOL FASTCALL CSASIMakeDlg::Format()
 		return FALSE;
 	}
 
-	// IPLC³(DPB‚Ìˆê•”)
+	// IPLï¿½Cï¿½ï¿½(DPBï¿½Ìˆê•”)
 	fat[0] = (BYTE)(dwDPB >> 24);
 	fat[1] = (BYTE)(dwDPB >> 16);
 	fat[2] = (BYTE)(dwDPB >> 8);
@@ -1794,7 +1795,7 @@ BOOL FASTCALL CSASIMakeDlg::Format()
 		return FALSE;
 	}
 
-	// ƒp[ƒeƒBƒVƒ‡ƒ“ƒe[ƒuƒ‹ì¬
+	// ï¿½pï¿½[ï¿½eï¿½Bï¿½Vï¿½ï¿½ï¿½ï¿½ï¿½eï¿½[ï¿½uï¿½ï¿½ï¿½ì¬
 	strcpy((char*)header, "Human68k");
 	header[ 9] = 0x00;
 	header[10] = 0x00;
@@ -1804,7 +1805,7 @@ BOOL FASTCALL CSASIMakeDlg::Format()
 	header[14] = (BYTE)(dwLast >> 8);
 	header[15] = (BYTE)dwLast;
 
-	// ƒp[ƒeƒBƒVƒ‡ƒ“ƒe[ƒuƒ‹‘‚«‚İ
+	// ï¿½pï¿½[ï¿½eï¿½Bï¿½Vï¿½ï¿½ï¿½ï¿½ï¿½eï¿½[ï¿½uï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 	if (!fio.Seek(0x410)) {
 		return FALSE;
 	}
@@ -1812,13 +1813,13 @@ BOOL FASTCALL CSASIMakeDlg::Format()
 		return FALSE;
 	}
 
-	// FATì¬
+	// FATï¿½ì¬
 	fat[0] = 0xf8;
 	fat[1] = 0xff;
 	fat[2] = 0xff;
 	fat[3] = 0xff;
 
-	// ‘æ1FAT
+	// ï¿½ï¿½1FAT
 	if (!fio.Seek(0x2500)) {
 		return FALSE;
 	}
@@ -1826,7 +1827,7 @@ BOOL FASTCALL CSASIMakeDlg::Format()
 		return FALSE;
 	}
 
-	// ‘æ2FAT
+	// ï¿½ï¿½2FAT
 	if (!fio.Seek(dwFat)) {
 		return FALSE;
 	}
@@ -1834,17 +1835,17 @@ BOOL FASTCALL CSASIMakeDlg::Format()
 		return FALSE;
 	}
 
-	// ƒNƒ[ƒY
+	// ï¿½Nï¿½ï¿½ï¿½[ï¿½Y
 	fio.Close();
 
-	// ¬Œ÷
+	// Error
 	return TRUE;
 }
 
 //---------------------------------------------------------------------------
 //
-//	ƒƒjƒ…[
-//	¦Format.x v2.31‚æ‚èæ“¾
+//	IPL
+//	Obtained from Format.x v2.31
 //
 //---------------------------------------------------------------------------
 const BYTE CSASIMakeDlg::MENU[] = {
@@ -1971,7 +1972,7 @@ const BYTE CSASIMakeDlg::MENU[] = {
 //---------------------------------------------------------------------------
 //
 //	IPL
-//	¦Format.x v2.31‚æ‚èæ“¾
+//	ï¿½ï¿½Format.x v2.31ï¿½ï¿½ï¿½æ“¾
 //
 //---------------------------------------------------------------------------
 const BYTE CSASIMakeDlg::IPL[] = {
@@ -2042,13 +2043,13 @@ const BYTE CSASIMakeDlg::IPL[] = {
 
 //===========================================================================
 //
-//	SCSIƒfƒBƒXƒNƒCƒ[ƒWì¬ƒ_ƒCƒAƒƒO
+//	SCSI disk image creation dialog
 //
 //===========================================================================
 
 //---------------------------------------------------------------------------
 //
-//	ƒRƒ“ƒXƒgƒ‰ƒNƒ^
+	// Constructor
 //
 //---------------------------------------------------------------------------
 CSCSIMakeDlg::CSCSIMakeDlg(CWnd *pParent) : CDiskMakeDlg(pParent)
@@ -2057,31 +2058,31 @@ CSCSIMakeDlg::CSCSIMakeDlg(CWnd *pParent) : CDiskMakeDlg(pParent)
 
 //===========================================================================
 //
-//	MOƒfƒBƒXƒNƒCƒ[ƒWì¬ƒ_ƒCƒAƒƒO
+//	MO disk image creation dialog
 //
 //===========================================================================
 
 //---------------------------------------------------------------------------
 //
-//	ƒRƒ“ƒXƒgƒ‰ƒNƒ^
+	// Constructor
 //
 //---------------------------------------------------------------------------
 CMOMakeDlg::CMOMakeDlg(CWnd *pParent) : CDiskMakeDlg(pParent)
 {
-	// ƒƒfƒBƒAƒ^ƒCƒv‚Í–¢Šm’è
+	// Media type is unknown
 	m_nMedia = -1;
 }
 
 //---------------------------------------------------------------------------
 //
-//	ƒtƒH[ƒ}ƒbƒg
+//	ï¿½tï¿½Hï¿½[ï¿½}ï¿½bï¿½g
 //
 //---------------------------------------------------------------------------
 BOOL FASTCALL CMOMakeDlg::Format()
 {
 	ASSERT(this);
 
-	// ƒƒfƒBƒAƒ^ƒCƒvİ’è
+	// ï¿½ï¿½ï¿½fï¿½Bï¿½Aï¿½^ï¿½Cï¿½vï¿½İ’ï¿½
 	switch (m_dwSize) {
 		// 128MB
 		case 0x797f400:
@@ -2103,19 +2104,19 @@ BOOL FASTCALL CMOMakeDlg::Format()
 			m_nMedia = 3;
 			break;
 
-		// ‚»‚Ì‘¼(‚ ‚è“¾‚È‚¢)
+		// ï¿½ï¿½ï¿½Ì‘ï¿½(ï¿½ï¿½ï¿½è“¾ï¿½È‚ï¿½)
 		default:
 			ASSERT(FALSE);
 			return TRUE;
 	}
 
-	// ƒtƒH[ƒ}ƒbƒg
+	// ï¿½tï¿½Hï¿½[ï¿½}ï¿½bï¿½g
 	switch (m_nFormat) {
-		// IBMƒtƒH[ƒ}ƒbƒg
+		// IBMï¿½tï¿½Hï¿½[ï¿½}ï¿½bï¿½g
 		case 1:
 			return FormatIBM();
 
-		// SHARPƒtƒH[ƒ}ƒbƒg
+		// SHARPï¿½tï¿½Hï¿½[ï¿½}ï¿½bï¿½g
 		case 2:
 			return FormatSHARP();
 	}
@@ -2125,7 +2126,7 @@ BOOL FASTCALL CMOMakeDlg::Format()
 
 //---------------------------------------------------------------------------
 //
-//	IBMƒtƒH[ƒ}ƒbƒg
+	// IBM format
 //
 //---------------------------------------------------------------------------
 BOOL FASTCALL CMOMakeDlg::FormatIBM()
@@ -2137,20 +2138,20 @@ BOOL FASTCALL CMOMakeDlg::FormatIBM()
 	BYTE fatData[4];
 	DWORD dwOffset;
 
-	// BPBƒf[ƒ^ì¬
+	// Create BPB data
 	MakeBPB(bpbData);
 
-	// ƒtƒ@ƒCƒ‹ƒI[ƒvƒ“
+	// ï¿½tï¿½@ï¿½Cï¿½ï¿½ï¿½Iï¿½[ï¿½vï¿½ï¿½
 	if (!fio.Open(m_szPath, Fileio::ReadWrite)) {
 		return FALSE;
 	}
 
-	// BPB‘‚«‚İ
+	// Write BPBï¿½ï¿½
 	if (!fio.Write(bpbData, sizeof(bpbData))) {
 		return FALSE;
 	}
 
-	// ƒ}[ƒJ‘‚«‚İ
+	// Write boot markï¿½
 	markData[0] = 0x55;
 	markData[1] = 0xaa;
 	if (!fio.Seek(0x1fe)) {
@@ -2162,18 +2163,18 @@ BOOL FASTCALL CMOMakeDlg::FormatIBM()
 		return FALSE;
 	}
 
-	// FAT‘‚«‚İƒ‹[ƒv
+	// FATï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½İƒï¿½ï¿½[ï¿½v
 	fatData[0] = bpbData[21];
 	fatData[1] = 0xff;
 	fatData[2] = 0xff;
 	fatData[3] = 0xff;
 	for (i=0; i<bpbData[16]; i++) {
-		// ƒZƒNƒ^ƒIƒtƒZƒbƒg‚ğŒvZ(1FAT“–‚½‚èƒZƒNƒ^”~FATƒCƒ“ƒfƒbƒNƒX+—\–ñƒZƒNƒ^”)
+		// Calculate cluster offset(1FATï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Zï¿½Nï¿½^ï¿½ï¿½ï¿½~FATï¿½Cï¿½ï¿½ï¿½fï¿½bï¿½Nï¿½X+ï¿½\ï¿½ï¿½Zï¿½Nï¿½^ï¿½ï¿½)
 		dwOffset = bpbData[22];
 		dwOffset *= i;
 		dwOffset += bpbData[14];
 
-		// ƒoƒCƒgƒIƒtƒZƒbƒg‚ğŒvZ
+		// Calculate byte offset
 		if (m_nMedia < 3) {
 			ASSERT(m_nMedia >= 0);
 			dwOffset <<= 9;
@@ -2183,7 +2184,7 @@ BOOL FASTCALL CMOMakeDlg::FormatIBM()
 			dwOffset <<= 11;
 		}
 
-		// FAT‘‚«‚İ
+		// FATï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 		if (!fio.Seek(dwOffset)) {
 			fio.Close();
 			return FALSE;
@@ -2194,14 +2195,14 @@ BOOL FASTCALL CMOMakeDlg::FormatIBM()
 		}
 	}
 
-	// ƒNƒ[ƒYA¬Œ÷
+	// Close, done
 	fio.Close();
 	return TRUE;
 }
 
 //---------------------------------------------------------------------------
 //
-//	IBMƒtƒH[ƒ}ƒbƒg(BPBì¬)
+	// IBM format (BPB creation)
 //
 //---------------------------------------------------------------------------
 void FASTCALL CMOMakeDlg::MakeBPB(BYTE *pBPB)
@@ -2213,12 +2214,12 @@ void FASTCALL CMOMakeDlg::MakeBPB(BYTE *pBPB)
 	ASSERT(this);
 	ASSERT(pBPB);
 
-	// ƒu[ƒg•”‚Ö‚ÌƒWƒƒƒ“ƒv(80x86‚Ì–³ŒÀƒ‹[ƒv‚Æ‚·‚é)
+	// Jump to boot (filler for 80x86 loop)(80x86ï¿½Ì–ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½[ï¿½vï¿½Æ‚ï¿½ï¿½ï¿½)
 	pBPB[0] = 0xeb;
 	pBPB[1] = 0xfe;
 	pBPB[2] = 0x90;
 
-	// OEM–¼"XM6 X.XX"
+	// OEM name "XM6 X.XX"
 	pBPB[3] = 0x58;
 	pBPB[4] = 0x4d;
 	pBPB[5] = 0x36;
@@ -2229,109 +2230,109 @@ void FASTCALL CMOMakeDlg::MakeBPB(BYTE *pBPB)
 	pBPB[9] = (BYTE)((dwMinor >> 4) + '0');
 	pBPB[10] = (BYTE)((dwMinor & 0x0f) + '0');
 
-	// 1ƒZƒNƒ^‚ ‚½‚è‚ÌƒoƒCƒg”
+	// Bytes per sector
 	if (m_nMedia < 3) {
-		// 512ƒoƒCƒg/ƒZƒNƒ^
+		// 512ï¿½oï¿½Cï¿½g/ï¿½Zï¿½Nï¿½^
 		pBPB[11] = 0x00;
 		pBPB[12] = 0x02;
 	}
 	else {
-		// 2048ƒoƒCƒg/ƒZƒNƒ^
+		// 2048ï¿½oï¿½Cï¿½g/ï¿½Zï¿½Nï¿½^
 		pBPB[11] = 0x00;
 		pBPB[12] = 0x08;
 	}
 
-	// 1ƒNƒ‰ƒXƒ^‚ ‚½‚è‚ÌƒZƒNƒ^”
+	// 1ï¿½Nï¿½ï¿½ï¿½Xï¿½^ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ÌƒZï¿½Nï¿½^ï¿½ï¿½
 	switch (m_nMedia) {
-		// 128MB ... 4ƒZƒNƒ^/ƒNƒ‰ƒXƒ^
+		// 128MB ... 4ï¿½Zï¿½Nï¿½^/ï¿½Nï¿½ï¿½ï¿½Xï¿½^
 		case 0:
 			pBPB[13] = 0x04;
 			break;
-		// 230MB ... 8ƒZƒNƒ^/ƒNƒ‰ƒXƒ^
+		// 230MB ... 8ï¿½Zï¿½Nï¿½^/ï¿½Nï¿½ï¿½ï¿½Xï¿½^
 		case 1:
 			pBPB[13] = 0x08;
 			break;
-		// 540MB ... 16ƒZƒNƒ^/ƒNƒ‰ƒXƒ^
+		// 540MB ... 16ï¿½Zï¿½Nï¿½^/ï¿½Nï¿½ï¿½ï¿½Xï¿½^
 		case 2:
 			pBPB[13] = 0x10;
 			break;
-		// 640MB ... 8ƒZƒNƒ^/ƒNƒ‰ƒXƒ^
+		// 640MB ... 8ï¿½Zï¿½Nï¿½^/ï¿½Nï¿½ï¿½ï¿½Xï¿½^
 		case 3:
 			pBPB[13] = 0x08;
 			break;
 	}
 
-	// —\–ñƒZƒNƒ^”(1ƒZƒNƒ^)
+	// ï¿½\ï¿½ï¿½Zï¿½Nï¿½^ï¿½ï¿½(1ï¿½Zï¿½Nï¿½^)
 	pBPB[14] = 0x01;
 	pBPB[15] = 0x00;
 
-	// FAT”(‘æ1,‘æ2‚Ì2‚Â)
+	// FATï¿½ï¿½(ï¿½ï¿½1,ï¿½ï¿½2ï¿½ï¿½2ï¿½ï¿½)
 	pBPB[16] = 0x02;
 
-	// ƒ‹[ƒgƒfƒBƒŒƒNƒgƒŠ‚ÌƒGƒ“ƒgƒŠ”(512)
+	// ï¿½ï¿½ï¿½[ï¿½gï¿½fï¿½Bï¿½ï¿½ï¿½Nï¿½gï¿½ï¿½ï¿½ÌƒGï¿½ï¿½ï¿½gï¿½ï¿½ï¿½ï¿½(512)
 	pBPB[17] = 0x00;
 	pBPB[18] = 0x02;
 
-	// ˜_—ƒZƒNƒ^”(32ƒrƒbƒgƒZƒNƒ^ƒAƒhƒŒƒbƒVƒ“ƒO‚È‚Ì‚Å0)
+	// ï¿½_ï¿½ï¿½ï¿½Zï¿½Nï¿½^ï¿½ï¿½(32ï¿½rï¿½bï¿½gï¿½Zï¿½Nï¿½^ï¿½Aï¿½hï¿½ï¿½ï¿½bï¿½Vï¿½ï¿½ï¿½Oï¿½È‚Ì‚ï¿½0)
 	pBPB[19] = 0x00;
 	pBPB[20] = 0x00;
 
-	// ƒƒfƒBƒAIDƒoƒCƒg(F0)
+	// ï¿½ï¿½ï¿½fï¿½Bï¿½AIDï¿½oï¿½Cï¿½g(F0)
 	pBPB[21] = 0xf0;
 
-	// 1FAT“–‚½‚è‚ÌƒZƒNƒ^”
+	// 1FATï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ÌƒZï¿½Nï¿½^ï¿½ï¿½
 	switch (m_nMedia) {
-		// 128MB ... 243ƒZƒNƒ^/FAT
+		// 128MB ... 243ï¿½Zï¿½Nï¿½^/FAT
 		case 0:
 			pBPB[22] = 0xf3;
 			break;
-		// 230MB ... 218ƒZƒNƒ^/FAT
+		// 230MB ... 218ï¿½Zï¿½Nï¿½^/FAT
 		case 1:
 			pBPB[22] = 0xda;
 			break;
-		// 540MB ... 255ƒZƒNƒ^/FAT
+		// 540MB ... 255ï¿½Zï¿½Nï¿½^/FAT
 		case 2:
 			pBPB[22] = 0xff;
 			break;
-		// 640MB ... 38ƒZƒNƒ^/FAT
+		// 640MB ... 38ï¿½Zï¿½Nï¿½^/FAT
 		case 3:
 			pBPB[22] = 0x26;
 			break;
 	}
 	pBPB[23] = 0x00;
 
-	// ƒgƒ‰ƒbƒN“–‚½‚è‚ÌƒZƒNƒ^”
+	// ï¿½gï¿½ï¿½ï¿½bï¿½Nï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ÌƒZï¿½Nï¿½^ï¿½ï¿½
 	switch (m_nMedia) {
-		// 128MB ... 25ƒZƒNƒ^/ƒgƒ‰ƒbƒN
+		// 128MB ... 25ï¿½Zï¿½Nï¿½^/ï¿½gï¿½ï¿½ï¿½bï¿½N
 		case 0:
 			pBPB[24] = 0x19;
 			break;
-		// 230MB ... 32ƒZƒNƒ^/ƒgƒ‰ƒbƒN
+		// 230MB ... 32ï¿½Zï¿½Nï¿½^/ï¿½gï¿½ï¿½ï¿½bï¿½N
 		case 1:
 			pBPB[24] = 0x20;
 			break;
-		// 540MB ... 32ƒZƒNƒ^/ƒgƒ‰ƒbƒN
+		// 540MB ... 32ï¿½Zï¿½Nï¿½^/ï¿½gï¿½ï¿½ï¿½bï¿½N
 		case 2:
 			pBPB[24] = 0x20;
 			break;
-		// 640MB ... 32ƒZƒNƒ^/ƒgƒ‰ƒbƒN
+		// 640MB ... 32ï¿½Zï¿½Nï¿½^/ï¿½gï¿½ï¿½ï¿½bï¿½N
 		case 3:
 			pBPB[24] = 0x20;
 			break;
 	}
 	pBPB[25] = 0x00;
 
-	// ƒwƒbƒh”(1)
+	// ï¿½wï¿½bï¿½hï¿½ï¿½(1)
 	pBPB[26] = 0x01;
 	pBPB[27] = 0x00;
 
-	// ‰B‚µƒZƒNƒ^”(0)
+	// ï¿½Bï¿½ï¿½ï¿½Zï¿½Nï¿½^ï¿½ï¿½(0)
 	pBPB[28] = 0x00;
 	pBPB[29] = 0x00;
 	pBPB[30] = 0x00;
 	pBPB[31] = 0x00;
 
-	// ˜_—ƒZƒNƒ^”(128MB‚Í248826-1ƒZƒNƒ^A230MB‚Í446325-1ƒZƒNƒ^)
+	// ï¿½_ï¿½ï¿½ï¿½Zï¿½Nï¿½^ï¿½ï¿½(128MBï¿½ï¿½248826-1ï¿½Zï¿½Nï¿½^ï¿½A230MBï¿½ï¿½446325-1ï¿½Zï¿½Nï¿½^)
 	dwSectors = m_dwSize;
 	if (m_nMedia < 3) {
 		dwSectors >>= 9;
@@ -2345,26 +2346,26 @@ void FASTCALL CMOMakeDlg::MakeBPB(BYTE *pBPB)
 	pBPB[34] = (BYTE)(dwSectors >> 16);
 	pBPB[35] = 0x00;
 
-	// INT 13ƒhƒ‰ƒCƒu”Ô†(C:0x80)
+	// INT 13ï¿½hï¿½ï¿½ï¿½Cï¿½uï¿½Ôï¿½(C:0x80)
 	pBPB[36] = 0x80;
 
-	// —\–ñ
+	// ï¿½\ï¿½ï¿½
 	pBPB[37] = 0x00;
 
-	// Šg’£ƒu[ƒg¯•ÊƒR[ƒh(0x29)
+	// ï¿½gï¿½ï¿½ï¿½uï¿½[ï¿½gï¿½ï¿½ï¿½ÊƒRï¿½[ï¿½h(0x29)
 	pBPB[38] = 0x29;
 
-	// ƒ{ƒŠƒ…[ƒ€ƒVƒŠƒAƒ‹”Ô†(+39, 40, 41, 42)
+	// ï¿½{ï¿½ï¿½ï¿½ï¿½ï¿½[ï¿½ï¿½ï¿½Vï¿½ï¿½ï¿½Aï¿½ï¿½ï¿½Ôï¿½(+39, 40, 41, 42)
 	MakeSerial(&pBPB[39]);
 
-	// ƒ{ƒŠƒ…[ƒ€ƒ‰ƒxƒ‹Aƒtƒ@ƒCƒ‹ƒVƒXƒeƒ€
+	// ï¿½{ï¿½ï¿½ï¿½ï¿½ï¿½[ï¿½ï¿½ï¿½ï¿½ï¿½xï¿½ï¿½ï¿½Aï¿½tï¿½@ï¿½Cï¿½ï¿½ï¿½Vï¿½Xï¿½eï¿½ï¿½
 	strcpy((char*)(pBPB + 43), "NO NAME    FAT16  ");
 	pBPB[61] = 0x20;
 }
 
 //---------------------------------------------------------------------------
 //
-//	ƒ{ƒŠƒ…[ƒ€ƒVƒŠƒAƒ‹ì¬
+//	ï¿½{ï¿½ï¿½ï¿½ï¿½ï¿½[ï¿½ï¿½ï¿½Vï¿½ï¿½ï¿½Aï¿½ï¿½ï¿½ì¬
 //
 //---------------------------------------------------------------------------
 void FASTCALL CMOMakeDlg::MakeSerial(BYTE *pSerial)
@@ -2374,25 +2375,25 @@ void FASTCALL CMOMakeDlg::MakeSerial(BYTE *pSerial)
 	ASSERT(this);
 	ASSERT(pSerial);
 
-	// Œ»İŠÔ‚ğæ“¾
+	// ï¿½ï¿½ï¿½İï¿½ï¿½Ô‚ï¿½ï¿½æ“¾
 	::GetLocalTime(&st);
 
-	// ƒIƒtƒZƒbƒg3 - ‚Ì•b
+	// ï¿½Iï¿½tï¿½Zï¿½bï¿½g3 - ï¿½ï¿½ï¿½ï¿½ï¿½Ì•b
 	pSerial[3] = (BYTE)st.wSecond;
 
-	// ƒIƒtƒZƒbƒg2 - “ú•t‚Ì“ú
+	// ï¿½Iï¿½tï¿½Zï¿½bï¿½g2 - ï¿½ï¿½ï¿½tï¿½Ì“ï¿½
 	pSerial[2] = (BYTE)st.wDay;
 
-	// ƒIƒtƒZƒbƒg1 - ¼—ï‚ÌãˆÊƒoƒCƒg{
+	// ï¿½Iï¿½tï¿½Zï¿½bï¿½g1 - ï¿½ï¿½ï¿½ï¿½Ìï¿½Êƒoï¿½Cï¿½gï¿½{ï¿½ï¿½
 	pSerial[1] = (BYTE)((st.wYear >> 8) + st.wHour);
 
-	// ƒIƒtƒZƒbƒg0 - ¼—ï‚Ì‰ºˆÊƒoƒCƒg{•ª
+	// ï¿½Iï¿½tï¿½Zï¿½bï¿½g0 - ï¿½ï¿½ï¿½ï¿½Ì‰ï¿½ï¿½Êƒoï¿½Cï¿½gï¿½{ï¿½ï¿½
 	pSerial[0] = (BYTE)((st.wYear & 0xff) + st.wMinute);
 }
 
 //---------------------------------------------------------------------------
 //
-//	SHARPƒtƒH[ƒ}ƒbƒg
+	// SHARP format
 //
 //---------------------------------------------------------------------------
 BOOL FASTCALL CMOMakeDlg::FormatSHARP()
@@ -2407,10 +2408,10 @@ BOOL FASTCALL CMOMakeDlg::FormatSHARP()
 	ASSERT(this);
 	ASSERT(m_nMedia < 3);
 
-	// ƒoƒbƒtƒ@‰Šú‰»
+	// Buffer releaseï¿½ï¿½ï¿½
 	memset(buf, 0, sizeof(buf));
 
-	// SCSIƒwƒbƒ_"X68SCSI1"
+	// SCSIï¿½wï¿½bï¿½_"X68SCSI1"
 	strcpy((char*)buf, "X68SCSI1");
 	buf[8] = 0x02;
 	dwSectors = m_dwSize;
@@ -2422,7 +2423,7 @@ BOOL FASTCALL CMOMakeDlg::FormatSHARP()
 	buf[14] = 0x01;
 	buf[15] = 0x02;
 
-	// ƒtƒH[ƒ}ƒbƒ^ƒ}[ƒJ"XM6 version X.XX"
+	// ï¿½tï¿½Hï¿½[ï¿½}ï¿½bï¿½^ï¿½}ï¿½[ï¿½J"XM6 version X.XX"
 	::GetVM()->GetVersion(dwMajor, dwMinor);
 	strcpy((char*)&buf[0x10], "XM6 version ");
 	buf[28] = (BYTE)(dwMajor + '0');
@@ -2430,18 +2431,18 @@ BOOL FASTCALL CMOMakeDlg::FormatSHARP()
 	buf[30] = (BYTE)((dwMinor >> 4) + '0');
 	buf[31] = (BYTE)((dwMinor & 0x0f) + '0');
 
-	// ƒtƒ@ƒCƒ‹ƒI[ƒvƒ“
+	// ï¿½tï¿½@ï¿½Cï¿½ï¿½ï¿½Iï¿½[ï¿½vï¿½ï¿½
 	if (!fio.Open(m_szPath, Fileio::ReadWrite)) {
 		return FALSE;
 	}
 
-	// SCSIƒwƒbƒ_+ƒtƒH[ƒ}ƒbƒ^ƒ}[ƒJ
+	// SCSIï¿½wï¿½bï¿½_+ï¿½tï¿½Hï¿½[ï¿½}ï¿½bï¿½^ï¿½}ï¿½[ï¿½J
 	if (!fio.Write(buf, 0x20)) {
 		fio.Close();
 		return FALSE;
 	}
 
-	// SCSIƒƒjƒ…[
+	// SCSIï¿½ï¿½ï¿½jï¿½ï¿½ï¿½[
 	if (!fio.Seek(0x400)) {
 		fio.Close();
 		return FALSE;
@@ -2451,7 +2452,7 @@ BOOL FASTCALL CMOMakeDlg::FormatSHARP()
 		return FALSE;
 	}
 
-	// ƒp[ƒeƒBƒVƒ‡ƒ“ƒe[ƒuƒ‹
+	// ï¿½pï¿½[ï¿½eï¿½Bï¿½Vï¿½ï¿½ï¿½ï¿½ï¿½eï¿½[ï¿½uï¿½ï¿½
 	switch (m_nMedia) {
 		// 128MB
 		case 0:
@@ -2475,7 +2476,7 @@ BOOL FASTCALL CMOMakeDlg::FormatSHARP()
 		return FALSE;
 	}
 
-	// ƒp[ƒeƒBƒVƒ‡ƒ“æ“ª
+	// ï¿½pï¿½[ï¿½eï¿½Bï¿½Vï¿½ï¿½ï¿½ï¿½ï¿½æ“ª
 	switch (m_nMedia) {
 		// 128MB
 		case 0:
@@ -2519,7 +2520,7 @@ BOOL FASTCALL CMOMakeDlg::FormatSHARP()
 		return FALSE;
 	}
 
-	// IPLƒpƒbƒ`(—e—Ê‚É‚æ‚èˆá‚¤•”•ª)
+	// IPLï¿½pï¿½bï¿½`(ï¿½eï¿½Ê‚É‚ï¿½ï¿½á‚¤ï¿½ï¿½ï¿½ï¿½)
 	memcpy(buf, IPL, 0x21);
 	switch (m_nMedia) {
 		// 128MB
@@ -2553,19 +2554,19 @@ BOOL FASTCALL CMOMakeDlg::FormatSHARP()
 		return FALSE;
 	}
 
-	// IPLc‚è
+	// IPLï¿½cï¿½ï¿½
 	if (!fio.Write(&IPL[0x21], (0x2c5 - 0x21))) {
 		fio.Close();
 		return FALSE;
 	}
 
-	// FATì¬
+	// FATï¿½ì¬
 	buf[0] = 0xf6;
 	buf[1] = 0xff;
 	buf[2] = 0xff;
 	buf[3] = 0xff;
 
-	// ‘æ1FAT
+	// ï¿½ï¿½1FAT
 	if (!fio.Seek(0x8400)) {
 		fio.Close();
 		return FALSE;
@@ -2575,7 +2576,7 @@ BOOL FASTCALL CMOMakeDlg::FormatSHARP()
 		return FALSE;
 	}
 
-	// ‘æ2FAT
+	// ï¿½ï¿½2FAT
 	dwOffset = (DWORD)buf[0x1d];
 	dwOffset <<= 10;
 	dwOffset += 0x8400;
@@ -2588,14 +2589,14 @@ BOOL FASTCALL CMOMakeDlg::FormatSHARP()
 		return FALSE;
 	}
 
-	// ¬Œ÷
+	// Error
 	fio.Close();
 	return TRUE;
 }
 
 //---------------------------------------------------------------------------
 //
-//	ƒp[ƒeƒBƒVƒ‡ƒ“ƒe[ƒuƒ‹(SHARPƒtƒH[ƒ}ƒbƒgA128MB)
+//	ï¿½pï¿½[ï¿½eï¿½Bï¿½Vï¿½ï¿½ï¿½ï¿½ï¿½eï¿½[ï¿½uï¿½ï¿½(SHARPï¿½tï¿½Hï¿½[ï¿½}ï¿½bï¿½gï¿½A128MB)
 //
 //---------------------------------------------------------------------------
 const BYTE CMOMakeDlg::PartTable128[] = {
@@ -2607,7 +2608,7 @@ const BYTE CMOMakeDlg::PartTable128[] = {
 
 //---------------------------------------------------------------------------
 //
-//	ƒp[ƒeƒBƒVƒ‡ƒ“ƒe[ƒuƒ‹(SHARPƒtƒH[ƒ}ƒbƒgA230MB)
+//	ï¿½pï¿½[ï¿½eï¿½Bï¿½Vï¿½ï¿½ï¿½ï¿½ï¿½eï¿½[ï¿½uï¿½ï¿½(SHARPï¿½tï¿½Hï¿½[ï¿½}ï¿½bï¿½gï¿½A230MB)
 //
 //---------------------------------------------------------------------------
 const BYTE CMOMakeDlg::PartTable230[] = {
@@ -2619,7 +2620,7 @@ const BYTE CMOMakeDlg::PartTable230[] = {
 
 //---------------------------------------------------------------------------
 //
-//	ƒp[ƒeƒBƒVƒ‡ƒ“ƒe[ƒuƒ‹(SHARPƒtƒH[ƒ}ƒbƒgA540MB)
+//	ï¿½pï¿½[ï¿½eï¿½Bï¿½Vï¿½ï¿½ï¿½ï¿½ï¿½eï¿½[ï¿½uï¿½ï¿½(SHARPï¿½tï¿½Hï¿½[ï¿½}ï¿½bï¿½gï¿½A540MB)
 //
 //---------------------------------------------------------------------------
 const BYTE CMOMakeDlg::PartTable540[] = {
@@ -2631,7 +2632,7 @@ const BYTE CMOMakeDlg::PartTable540[] = {
 
 //---------------------------------------------------------------------------
 //
-//	ƒp[ƒeƒBƒVƒ‡ƒ“æ“ª(SHARPƒtƒH[ƒ}ƒbƒgA128MB)
+//	ï¿½pï¿½[ï¿½eï¿½Bï¿½Vï¿½ï¿½ï¿½ï¿½ï¿½æ“ª(SHARPï¿½tï¿½Hï¿½[ï¿½}ï¿½bï¿½gï¿½A128MB)
 //
 //---------------------------------------------------------------------------
 const BYTE CMOMakeDlg::PartTop128[] = {
@@ -2641,7 +2642,7 @@ const BYTE CMOMakeDlg::PartTop128[] = {
 
 //---------------------------------------------------------------------------
 //
-//	ƒp[ƒeƒBƒVƒ‡ƒ“æ“ª(SHARPƒtƒH[ƒ}ƒbƒgA230MB)
+//	ï¿½pï¿½[ï¿½eï¿½Bï¿½Vï¿½ï¿½ï¿½ï¿½ï¿½æ“ª(SHARPï¿½tï¿½Hï¿½[ï¿½}ï¿½bï¿½gï¿½A230MB)
 //
 //---------------------------------------------------------------------------
 const BYTE CMOMakeDlg::PartTop230[] = {
@@ -2651,7 +2652,7 @@ const BYTE CMOMakeDlg::PartTop230[] = {
 
 //---------------------------------------------------------------------------
 //
-//	ƒp[ƒeƒBƒVƒ‡ƒ“æ“ª(SHARPƒtƒH[ƒ}ƒbƒgA540MB)
+//	ï¿½pï¿½[ï¿½eï¿½Bï¿½Vï¿½ï¿½ï¿½ï¿½ï¿½æ“ª(SHARPï¿½tï¿½Hï¿½[ï¿½}ï¿½bï¿½gï¿½A540MB)
 //
 //---------------------------------------------------------------------------
 const BYTE CMOMakeDlg::PartTop540[] = {
@@ -2661,8 +2662,8 @@ const BYTE CMOMakeDlg::PartTop540[] = {
 
 //---------------------------------------------------------------------------
 //
-//	SCSI‹N“®ƒƒjƒ…[
-//	¦Format.x v2.31‚æ‚èæ“¾
+//	SCSIï¿½Nï¿½ï¿½ï¿½ï¿½ï¿½jï¿½ï¿½ï¿½[
+//	ï¿½ï¿½Format.x v2.31ï¿½ï¿½ï¿½æ“¾
 //
 //---------------------------------------------------------------------------
 const BYTE CMOMakeDlg::SCSIMENU[] = {
@@ -2795,8 +2796,8 @@ const BYTE CMOMakeDlg::SCSIMENU[] = {
 
 //---------------------------------------------------------------------------
 //
-//	SCSIƒfƒBƒXƒNƒhƒ‰ƒCƒo(SCHDISK) 1.04
-//	¦Format.x v2.31‚æ‚èæ“¾
+//	SCSIï¿½fï¿½Bï¿½Xï¿½Nï¿½hï¿½ï¿½ï¿½Cï¿½o(SCHDISK) 1.04
+//	ï¿½ï¿½Format.x v2.31ï¿½ï¿½ï¿½æ“¾
 //
 //---------------------------------------------------------------------------
 const BYTE CMOMakeDlg::SCHDISK[] = {
@@ -3260,8 +3261,8 @@ const BYTE CMOMakeDlg::SCHDISK[] = {
 
 //---------------------------------------------------------------------------
 //
-//	SCSIIOCS •â•ƒhƒ‰ƒCƒo
-//	¦Format.x v2.31‚æ‚èæ“¾
+//	SCSIIOCS boot handler
+//	Obtained from Format.x v2.31
 //
 //---------------------------------------------------------------------------
 const BYTE CMOMakeDlg::SCSIIOCS[] = {
@@ -4013,7 +4014,7 @@ const BYTE CMOMakeDlg::SCSIIOCS[] = {
 //---------------------------------------------------------------------------
 //
 //	IPL
-//	¦Format.x v2.31‚æ‚èæ“¾
+//	ï¿½ï¿½Format.x v2.31ï¿½ï¿½ï¿½æ“¾
 //
 //---------------------------------------------------------------------------
 const BYTE CMOMakeDlg::IPL[] = {
@@ -4110,30 +4111,30 @@ const BYTE CMOMakeDlg::IPL[] = {
 
 //===========================================================================
 //
-//	trap #0ƒ_ƒCƒAƒƒO
+//	trap #0 dialog
 //
 //===========================================================================
 
 //---------------------------------------------------------------------------
 //
-//	ƒRƒ“ƒXƒgƒ‰ƒNƒ^
+	// Constructor
 //
 //---------------------------------------------------------------------------
 CTrapDlg::CTrapDlg(CWnd *pParent) : CDialog(IDD_TRAPDLG, pParent)
 {
-	// ‰pŒêŠÂ‹«‚Ö‚Ì‘Î‰
+	// Support for non-Japanese environment
 	if (!::IsJapanese()) {
 		m_lpszTemplateName = MAKEINTRESOURCE(IDD_US_TRAPDLG);
 		m_nIDHelp = IDD_US_TRAPDLG;
 	}
 
-	// ƒR[ƒh‰Šú‰»
+	// Clear code
 	m_dwCode = 0;
 }
 
 //---------------------------------------------------------------------------
 //
-//	ƒƒbƒZ[ƒW ƒ}ƒbƒv
+	// Message map
 //
 //---------------------------------------------------------------------------
 BEGIN_MESSAGE_MAP(CTrapDlg, CDialog)
@@ -4142,23 +4143,23 @@ END_MESSAGE_MAP()
 
 //---------------------------------------------------------------------------
 //
-//	ƒ_ƒCƒAƒƒO‰Šú‰»
+	// Dialog initialization
 //
 //---------------------------------------------------------------------------
 BOOL CTrapDlg::OnInitDialog()
 {
 	CSpinButtonCtrl *pSpin;
 
-	// Šî–{ƒNƒ‰ƒX
+	// ï¿½ï¿½{ï¿½Nï¿½ï¿½ï¿½X
 	CDialog::OnInitDialog();
 
-	// ƒXƒsƒ“ƒRƒ“ƒgƒ[ƒ‹‰Šú‰»
+	// ï¿½Xï¿½sï¿½ï¿½ï¿½Rï¿½ï¿½ï¿½gï¿½ï¿½ï¿½[ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 	pSpin = (CSpinButtonCtrl*)GetDlgItem(IDC_TRAP_D0S);
 	ASSERT(pSpin);
 	pSpin->SetRange(0, 255);
 	pSpin->SetPos(m_dwCode & 0xff);
 
-	// ƒGƒfƒBƒbƒg‰Šú‰»
+	// Edit control update
 	OnVScroll(0, m_dwCode & 0xff, NULL);
 
 	return TRUE;
@@ -4166,7 +4167,7 @@ BOOL CTrapDlg::OnInitDialog()
 
 //---------------------------------------------------------------------------
 //
-//	cƒXƒNƒ[ƒ‹
+//	ï¿½cï¿½Xï¿½Nï¿½ï¿½ï¿½[ï¿½ï¿½
 //
 //---------------------------------------------------------------------------
 void CTrapDlg::OnVScroll(UINT /*nSBCode*/, UINT nPos, CScrollBar* /*pBar*/)
@@ -4174,30 +4175,30 @@ void CTrapDlg::OnVScroll(UINT /*nSBCode*/, UINT nPos, CScrollBar* /*pBar*/)
 	CString strText;
 	CEdit *pEdit;
 
-	// ƒGƒfƒBƒbƒgƒRƒ“ƒgƒ[ƒ‹æ“¾
+	// ï¿½Gï¿½fï¿½Bï¿½bï¿½gï¿½Rï¿½ï¿½ï¿½gï¿½ï¿½ï¿½[ï¿½ï¿½ï¿½æ“¾
 	pEdit = (CEdit*)GetDlgItem(IDC_TRAP_D0E);
 	ASSERT(pEdit);
 
-	// •¶š—ñƒtƒH[ƒ}ƒbƒgAİ’è
+	// Errorï¿½ï¿½tï¿½Hï¿½[ï¿½}ï¿½bï¿½gï¿½Aï¿½İ’ï¿½
 	strText.Format(_T("$%02X"), nPos);
 	pEdit->SetWindowText(strText);
 }
 
 //---------------------------------------------------------------------------
 //
-//	ƒ_ƒCƒAƒƒOOK
+//	ï¿½_ï¿½Cï¿½Aï¿½ï¿½ï¿½OOK
 //
 //---------------------------------------------------------------------------
 void CTrapDlg::OnOK()
 {
 	CSpinButtonCtrl *pSpin;
 
-	// ƒR[ƒhXV
+	// Code update
 	pSpin = (CSpinButtonCtrl*)GetDlgItem(IDC_TRAP_D0S);
 	ASSERT(pSpin);
 	m_dwCode = (DWORD)(LOWORD(pSpin->GetPos()));
 
-	// Šî–{ƒNƒ‰ƒX
+	// ï¿½ï¿½{ï¿½Nï¿½ï¿½ï¿½X
 	CDialog::OnOK();
 }
 

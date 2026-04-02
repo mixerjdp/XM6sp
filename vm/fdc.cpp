@@ -2,7 +2,7 @@
 //
 //	X68000 EMULATOR "XM6"
 //
-//	Copyright (C) 2001-2006 ‚o‚hD(ytanaka@ipc-tokai.or.jp)
+//	Copyright (C) 2001-2006 PI(ytanaka@ipc-tokai.or.jp)
 //	[ FDC(uPD72065) ]
 //
 //---------------------------------------------------------------------------
@@ -28,20 +28,20 @@
 
 //---------------------------------------------------------------------------
 //
-//	ƒRƒ“ƒXƒgƒ‰ƒNƒ^
+//	Constructor
 //
 //---------------------------------------------------------------------------
 FDC::FDC(VM *p) : MemDevice(p)
 {
-	// ƒfƒoƒCƒXID‚ğ‰Šú‰»
+	// Device ID setting
 	dev.id = MAKEID('F', 'D', 'C', ' ');
 	dev.desc = "FDC (uPD72065)";
 
-	// ŠJnƒAƒhƒŒƒXAI—¹ƒAƒhƒŒƒX
+	// Start address, end address
 	memdev.first = 0xe94000;
 	memdev.last = 0xe95fff;
 
-	// ƒIƒuƒWƒFƒNƒg
+	// Object
 	iosc = NULL;
 	dmac = NULL;
 	fdd = NULL;
@@ -49,38 +49,38 @@ FDC::FDC(VM *p) : MemDevice(p)
 
 //---------------------------------------------------------------------------
 //
-//	‰Šú‰»
+//	Initialize
 //
 //---------------------------------------------------------------------------
 BOOL FASTCALL FDC::Init()
 {
 	ASSERT(this);
 
-	// Šî–{ƒNƒ‰ƒX
+	// Base class
 	if (!MemDevice::Init()) {
 		return FALSE;
 	}
 
-	// IOSCæ“¾
+	// Get IOSC
 	iosc = (IOSC*)vm->SearchDevice(MAKEID('I', 'O', 'S', 'C'));
 	ASSERT(iosc);
 
-	// DMACæ“¾
+	// Get DMAC
 	dmac = (DMAC*)vm->SearchDevice(MAKEID('D', 'M', 'A', 'C'));
 	ASSERT(dmac);
 
-	// FDDæ“¾
+	// Get FDD
 	fdd = (FDD*)vm->SearchDevice(MAKEID('F', 'D', 'D', ' '));
 	ASSERT(fdd);
 
-	// ƒCƒxƒ“ƒg‰Šú‰»
+	// Event setting
 	event.SetDevice(this);
 	event.SetDesc("Data Transfer");
 	event.SetUser(0);
 	event.SetTime(0);
 	scheduler->AddEvent(&event);
 
-	// ‚‘¬ƒ‚[ƒhƒtƒ‰ƒOAƒfƒ…ƒAƒ‹ƒhƒ‰ƒCƒuƒtƒ‰ƒO(ApplyCfg)
+	// Fast mode flag, dual drive flag (ApplyCfg)
 	fdc.fast = FALSE;
 	fdc.dual = FALSE;
 
@@ -89,28 +89,28 @@ BOOL FASTCALL FDC::Init()
 
 //---------------------------------------------------------------------------
 //
-//	ƒNƒŠ[ƒ“ƒAƒbƒv
+//	Cleanup
 //
 //---------------------------------------------------------------------------
 void FASTCALL FDC::Cleanup()
 {
 	ASSERT(this);
 
-	// Šî–{ƒNƒ‰ƒX‚Ö
+	// Base class
 	MemDevice::Cleanup();
 }
 
 //---------------------------------------------------------------------------
 //
-//	ƒŠƒZƒbƒg
+//	Reset
 //
 //---------------------------------------------------------------------------
 void FASTCALL FDC::Reset()
 {
 	ASSERT(this);
-	LOG0(Log::Normal, "ƒŠƒZƒbƒg");
+	LOG0(Log::Normal, "Reset");
 
-	// ƒf[ƒ^ƒŒƒWƒXƒ^EƒXƒe[ƒ^ƒXƒŒƒWƒXƒ^
+	// Data register, Status register
 	fdc.dr = 0;
 	fdc.sr = 0;
 	fdc.sr |= sr_rqm;
@@ -118,7 +118,7 @@ void FASTCALL FDC::Reset()
 	fdc.sr &= ~sr_ndm;
 	fdc.sr &= ~sr_cb;
 
-	// ƒhƒ‰ƒCƒuƒZƒŒƒNƒgƒŒƒWƒXƒ^EST0-ST3
+	// Drive select register and ST0-ST3
 	fdc.dcr = 0;
 	fdc.dsr = 0;
 	fdc.st[0] = 0;
@@ -126,7 +126,7 @@ void FASTCALL FDC::Reset()
 	fdc.st[2] = 0;
 	fdc.st[3] = 0;
 
-	// ƒRƒ}ƒ“ƒh‹¤’Êƒpƒ‰ƒ[ƒ^
+	// Command specific parameters
 	fdc.srt = 1 * 2000;
 	fdc.hut = 16 * 2000;
 	fdc.hlt = 2 * 2000;
@@ -141,7 +141,7 @@ void FASTCALL FDC::Reset()
 	fdc.chrn[2] = 0;
 	fdc.chrn[3] = 0;
 
-	// ‚»‚Ì‘¼
+	// Others
 	fdc.eot = 0;
 	fdc.gsl = 0;
 	fdc.dtl = 0;
@@ -157,16 +157,16 @@ void FASTCALL FDC::Reset()
 	fdc.tc = FALSE;
 	fdc.load = FALSE;
 
-	// “]‘—Œn
+	// Transfer
 	fdc.offset = 0;
 	fdc.len = 0;
 	memset(fdc.buffer, 0, sizeof(fdc.buffer));
 
-	// ƒtƒF[ƒYAƒRƒ}ƒ“ƒh
+	// Phase, Command
 	fdc.phase = idle;
 	fdc.cmd = no_cmd;
 
-	// ƒpƒPƒbƒgŠÇ—
+	// Packet management
 	fdc.in_len = 0;
 	fdc.in_cnt = 0;
 	memset(fdc.in_pkt, 0, sizeof(fdc.in_pkt));
@@ -174,21 +174,21 @@ void FASTCALL FDC::Reset()
 	fdc.out_cnt = 0;
 	memset(fdc.out_pkt, 0, sizeof(fdc.out_pkt));
 
-	// ƒCƒxƒ“ƒg’â~
+	// Event stop
 	event.SetTime(0);
 
-	// ƒAƒNƒZƒX’â~(FDD‚àƒŠƒZƒbƒg‚Åfdd.selected=0‚Æ‚È‚é)
+	// Access stop (FDD reset makes fdd.selected=0)
 	fdd->Access(FALSE);
 }
 
 //---------------------------------------------------------------------------
 //
-//	ƒ\ƒtƒgƒEƒFƒAƒŠƒZƒbƒg
+//	Software reset
 //
 //---------------------------------------------------------------------------
 void FASTCALL FDC::SoftReset()
 {
-	// “à•”ƒŒƒWƒXƒ^(FDC)
+	// Data register (FDC)
 	fdc.dr = 0;
 	fdc.sr = 0;
 	fdc.sr |= sr_rqm;
@@ -233,11 +233,11 @@ void FASTCALL FDC::SoftReset()
 	fdc.offset = 0;
 	fdc.len = 0;
 
-	// ƒtƒF[ƒYAƒRƒ}ƒ“ƒh
+	// Phase, Command
 	fdc.phase = idle;
 	fdc.cmd = fdc_reset;
 
-	// ƒpƒPƒbƒgŠÇ—
+	// Packet management
 	fdc.in_len = 0;
 	fdc.in_cnt = 0;
 	memset(fdc.in_pkt, 0, sizeof(fdc.in_pkt));
@@ -245,16 +245,16 @@ void FASTCALL FDC::SoftReset()
 	fdc.out_cnt = 0;
 	memset(fdc.out_pkt, 0, sizeof(fdc.out_pkt));
 
-	// ƒCƒxƒ“ƒg’â~
+	// Event stop
 	event.SetTime(0);
 
-	// ƒAƒNƒZƒX’â~
+	// Access stop
 	fdd->Access(FALSE);
 }
 
 //---------------------------------------------------------------------------
 //
-//	ƒZ[ƒu
+//	Save
 //
 //---------------------------------------------------------------------------
 BOOL FASTCALL FDC::Save(Fileio *fio, int ver)
@@ -264,20 +264,20 @@ BOOL FASTCALL FDC::Save(Fileio *fio, int ver)
 	ASSERT(this);
 	ASSERT(fio);
 
-	LOG0(Log::Normal, "ƒZ[ƒu");
+	LOG0(Log::Normal, "Save");
 
-	// ƒTƒCƒY‚ğƒZ[ƒu
+	// Save size
 	sz = sizeof(fdc_t);
 	if (!fio->Write(&sz, sizeof(sz))) {
 		return FALSE;
 	}
 
-	// –{‘Ì‚ğƒZ[ƒu
+	// Save self
 	if (!fio->Write(&fdc, (int)sz)) {
 		return FALSE;
 	}
 
-	// ƒCƒxƒ“ƒg‚ğƒZ[ƒu
+	// Save event
 	if (!event.Save(fio, ver)) {
 		return FALSE;
 	}
@@ -287,7 +287,7 @@ BOOL FASTCALL FDC::Save(Fileio *fio, int ver)
 
 //---------------------------------------------------------------------------
 //
-//	ƒ[ƒh
+//	Load
 //
 //---------------------------------------------------------------------------
 BOOL FASTCALL FDC::Load(Fileio *fio, int ver)
@@ -297,9 +297,9 @@ BOOL FASTCALL FDC::Load(Fileio *fio, int ver)
 	ASSERT(this);
 	ASSERT(fio);
 
-	LOG0(Log::Normal, "ƒ[ƒh");
+	LOG0(Log::Normal, "Load");
 
-	// ƒTƒCƒY‚ğƒ[ƒhA”äŠr
+	// Read size and check
 	if (!fio->Read(&sz, sizeof(sz))) {
 		return FALSE;
 	}
@@ -307,12 +307,12 @@ BOOL FASTCALL FDC::Load(Fileio *fio, int ver)
 		return FALSE;
 	}
 
-	// –{‘Ì‚ğƒ[ƒh
+	// Read self
 	if (!fio->Read(&fdc, (int)sz)) {
 		return FALSE;
 	}
 
-	// ƒCƒxƒ“ƒg‚ğƒ[ƒh
+	// Load event
 	if (!event.Load(fio, ver)) {
 		return FALSE;
 	}
@@ -322,7 +322,7 @@ BOOL FASTCALL FDC::Load(Fileio *fio, int ver)
 
 //---------------------------------------------------------------------------
 //
-//	İ’è“K—p
+//	Apply config
 //
 //---------------------------------------------------------------------------
 void FASTCALL FDC::ApplyCfg(const Config *config)
@@ -330,34 +330,34 @@ void FASTCALL FDC::ApplyCfg(const Config *config)
 	ASSERT(this);
 	ASSERT(config);
 
-	LOG0(Log::Normal, "İ’è“K—p");
+	LOG0(Log::Normal, "Apply config");
 
-	// ‚‘¬ƒ‚[ƒh
+	// Fast mode
 	fdc.fast = config->floppy_speed;
 #if defined(FDC_LOG)
 	if (fdc.fast) {
-		LOG0(Log::Normal, "‚‘¬ƒ‚[ƒh ON");
+		LOG0(Log::Normal, "Fast mode ON");
 	}
 	else {
-		LOG0(Log::Normal, "‚‘¬ƒ‚[ƒh OFF");
+		LOG0(Log::Normal, "Fast mode OFF");
 	}
 #endif	// FDC_LOG
 
-	// 2DD/2HDŒ“—pƒhƒ‰ƒCƒu
+	// 2DD/2HD drive
 	fdc.dual = config->dual_fdd;
 #if defined(FDC_LOG)
 	if (fdc.dual) {
-		LOG0(Log::Normal, "2DD/2HDŒ“—pƒhƒ‰ƒCƒu");
+		LOG0(Log::Normal, "2DD/2HD dual drive");
 	}
 	else {
-		LOG0(Log::Normal, "2HDê—pƒhƒ‰ƒCƒu");
+		LOG0(Log::Normal, "2HD single drive");
 	}
 #endif	// FDC_LOG
 }
 
 //---------------------------------------------------------------------------
 //
-//	ƒoƒCƒg“Ç‚İ‚İ
+//	Byte read
 //
 //---------------------------------------------------------------------------
 DWORD FASTCALL FDC::ReadByte(DWORD addr)
@@ -370,88 +370,88 @@ DWORD FASTCALL FDC::ReadByte(DWORD addr)
 	ASSERT(this);
 	ASSERT((addr >= memdev.first) && (addr <= memdev.last));
 
-	// Šï”ƒAƒhƒŒƒX‚Ì‚İƒfƒR[ƒh‚³‚ê‚Ä‚¢‚é
+	// Only even addresses are decoded
 	if ((addr & 1) == 0) {
 		return 0xff;
 	}
 
-	// 8ƒoƒCƒg’PˆÊ‚Åƒ‹[ƒv
+	// Loop in 8 byte unit
 	addr &= 0x07;
 	addr >>= 1;
 
-	// ƒEƒFƒCƒg
+	// Wait
 	scheduler->Wait(1);
 
 	switch (addr) {
-		// ƒXƒe[ƒ^ƒXƒŒƒWƒXƒ^
+		// Status register
 		case 0:
 			return fdc.sr;
 
-		// ƒf[ƒ^ƒŒƒWƒXƒ^
+		// Data register
 		case 1:
-			// SEEKŠ®—¹Š„‚è‚İ‚Å‚È‚¯‚ê‚ÎAŠ„‚è‚İƒlƒQ[ƒg
+			// If SEEK pending interrupt not, trigger interrupt
 			if (!fdc.seek) {
 				Interrupt(FALSE);
 			}
 
 			switch (fdc.phase) {
-				// ÀsƒtƒF[ƒY(ER)
+				// Execute phase (ER)
 				case read:
 					fdc.sr &= ~sr_rqm;
 					return Read();
 
-				// ƒŠƒUƒ‹ƒgƒtƒF[ƒY
+				// Result phase
 				case result:
 					ASSERT(fdc.out_cnt >= 0);
 					ASSERT(fdc.out_cnt < 0x10);
 					ASSERT(fdc.out_len > 0);
 
-					// ƒpƒPƒbƒg‚©‚çƒf[ƒ^‚ğæ‚èo‚·
+					// Output packet data
 					data = fdc.out_pkt[fdc.out_cnt];
 					fdc.out_cnt++;
 					fdc.out_len--;
 
-					// c‚èƒŒƒ“ƒOƒX‚ª0‚É‚È‚Á‚½‚çAƒAƒCƒhƒ‹ƒtƒF[ƒY‚Ö
+					// If remaining allocation length becomes 0, go to idle phase
 					if (fdc.out_len == 0) {
 						Idle();
 					}
 					return data;
 			}
-			LOG0(Log::Warning, "FDCƒf[ƒ^ƒŒƒWƒXƒ^“Ç‚İ‚İ–³Œø");
+			LOG0(Log::Warning, "FDC data register read error");
 			return 0xff;
 
-		// ƒhƒ‰ƒCƒuƒXƒe[ƒ^ƒXƒŒƒWƒXƒ^
+		// Drive status register
 		case 2:
 			data = 0;
 			bit = 0x08;
 			for (i=3; i>=0; i--) {
-				// DCR‚Ìƒrƒbƒg‚ª—§‚Á‚Ä‚¢‚é‚©
+				// If DCR bit is set
 				if ((fdc.dcr & bit) != 0) {
-					// ŠY“–ƒhƒ‰ƒCƒu‚ÌƒXƒe[ƒ^ƒX‚ğOR(b7,b6‚Ì‚İ)
+					// OR with drive status (b7,b6 only)
 					status = fdd->GetStatus(i);
 					data |= (DWORD)(status & 0xc0);
 				}
 				bit >>= 1;
 			}
 
-			// FDDŠ„‚è‚İ‚ğ—‚Æ‚·(FDCŠ„‚è‚İ‚Å‚Í‚È‚¢A’ˆÓ)
+			// Clear FDD interrupt (not FDC interrupt, clear)
 			iosc->IntFDD(FALSE);
 			return data;
 
-		// ƒhƒ‰ƒCƒuƒZƒŒƒNƒgƒŒƒWƒXƒ^
+		// Drive select register
 		case 3:
-			LOG0(Log::Warning, "ƒhƒ‰ƒCƒuƒZƒŒƒNƒgƒŒƒWƒXƒ^“Ç‚İ‚İ");
+			LOG0(Log::Warning, "Drive select register read");
 			return 0xff;
 	}
 
-	// ’ÊíA‚±‚±‚É‚Í‚±‚È‚¢
+	// Normal, this should not be
 	ASSERT(FALSE);
 	return 0xff;
 }
 
 //---------------------------------------------------------------------------
 //
-//	ƒ[ƒh“Ç‚İ‚İ
+//	Word read
 //
 //---------------------------------------------------------------------------
 DWORD FASTCALL FDC::ReadWord(DWORD addr)
@@ -465,7 +465,7 @@ DWORD FASTCALL FDC::ReadWord(DWORD addr)
 
 //---------------------------------------------------------------------------
 //
-//	ƒoƒCƒg‘‚«‚İ
+//	Byte write
 //
 //---------------------------------------------------------------------------
 void FASTCALL FDC::WriteByte(DWORD addr, DWORD data)
@@ -476,26 +476,26 @@ void FASTCALL FDC::WriteByte(DWORD addr, DWORD data)
 	ASSERT(this);
 	ASSERT((addr >= memdev.first) && (addr <= memdev.last));
 
-	// Šï”ƒAƒhƒŒƒX‚Ì‚İƒfƒR[ƒh‚³‚ê‚Ä‚¢‚é
+	// Only even addresses are decoded
 	if ((addr & 1) == 0) {
 		return;
 	}
 
-	// 8ƒoƒCƒg’PˆÊ‚Åƒ‹[ƒv
+	// Loop in 8 byte unit
 	addr &= 0x07;
 	addr >>= 1;
 
-	// ƒEƒFƒCƒg
+	// Wait
 	scheduler->Wait(1);
 
 	switch (addr) {
-		// “ÁêƒRƒ}ƒ“ƒhƒŒƒWƒXƒ^
+		// Main command register
 		case 0:
 			switch (data) {
 				// RESET STANDBY
 				case 0x34:
 #if defined(FDC_LOG)
-					LOG0(Log::Normal, "RESET STANDBYƒRƒ}ƒ“ƒh");
+					LOG0(Log::Normal, "RESET STANDBY command");
 #endif	// FDC_LOG
 					fdc.cmd = reset_stdby;
 					Result();
@@ -503,7 +503,7 @@ void FASTCALL FDC::WriteByte(DWORD addr, DWORD data)
 				// SET STANDBY
 				case 0x35:
 #if defined(FDC_LOG)
-					LOG0(Log::Normal, "SET STANDBYƒRƒ}ƒ“ƒh");
+					LOG0(Log::Normal, "SET STANDBY command");
 #endif	// FDC_LOG
 					fdc.cmd = set_stdby;
 					Idle();
@@ -511,77 +511,77 @@ void FASTCALL FDC::WriteByte(DWORD addr, DWORD data)
 				// SOFTWARE RESET
 				case 0x36:
 #if defined(FDC_LOG)
-					LOG0(Log::Normal, "SOFTWARE RESETƒRƒ}ƒ“ƒh");
+					LOG0(Log::Normal, "SOFTWARE RESET command");
 #endif	// FDC_LOG
 					SoftReset();
 					return;
 			}
-			LOG1(Log::Warning, "–³Œø‚È“ÁêƒRƒ}ƒ“ƒh‘‚«‚İ %02X", data);
+			LOG1(Log::Warning, "Invalid main command received %02X", data);
 			return;
 
-		// ƒf[ƒ^ƒŒƒWƒXƒ^
+		// Data register
 		case 1:
-			// SEEKŠ®—¹Š„‚è‚İ‚Å‚È‚¯‚ê‚ÎAŠ„‚è‚İƒlƒQ[ƒg
+			// If SEEK pending interrupt not, trigger interrupt
 			if (!fdc.seek) {
 				Interrupt(FALSE);
 			}
 
 			switch (fdc.phase) {
-				// ƒAƒCƒhƒ‹ƒtƒF[ƒY
+				// Idle phase
 				case idle:
 					Command(data);
 					return;
 
-				// ƒRƒ}ƒ“ƒhƒtƒF[ƒY
+				// Command phase
 				case command:
 					ASSERT(fdc.in_cnt >= 0);
 					ASSERT(fdc.in_cnt < 0x10);
 					ASSERT(fdc.in_len > 0);
 
-					// ƒpƒPƒbƒg‚Éƒf[ƒ^‚ğƒZƒbƒg
+					// Set data to packet
 					fdc.in_pkt[fdc.in_cnt] = data;
 					fdc.in_cnt++;
 					fdc.in_len--;
 
-					// c‚èƒŒƒ“ƒOƒX‚ª0‚É‚È‚Á‚½‚çAÀsƒtƒF[ƒY‚Ö
+					// If remaining allocation length becomes 0, go to execute phase
 					if (fdc.in_len == 0) {
 						Execute();
 					}
 					return;
 
-				// ÀsƒtƒF[ƒY(EW)
+				// Execute phase (EW)
 				case write:
 					fdc.sr &= ~sr_rqm;
 					Write(data);
 					return;
 			}
-			LOG1(Log::Warning, "FDCƒf[ƒ^ƒŒƒWƒXƒ^‘‚«‚İ–³Œø $%02X", data);
+			LOG1(Log::Warning, "FDC data register write error $%02X", data);
 			return;
 
-		// ƒhƒ‰ƒCƒuƒRƒ“ƒgƒ[ƒ‹ƒŒƒWƒXƒ^
+		// Drive control register
 		case 2:
-			// ‰ºˆÊ4bit‚ª1¨0‚É‚È‚Á‚½‚Æ‚±‚ë‚ğ’²‚×‚é
+			// Check which bit changed from 1 to 0
 			bit = 0x01;
 			for (i=0; i<4; i++) {
 				if ((fdc.dcr & bit) != 0) {
 					if ((data & bit) == 0) {
-						// 1¨0‚ÌƒGƒbƒW‚ÅADCR‚ÌãˆÊ4ƒrƒbƒg‚ğ“K—p
+						// At 1 to 0 edge, apply the 4 bits of DCR status
 						fdd->Control(i, fdc.dcr);
 					}
 				}
 				bit <<= 1;
 			}
 
-			// ’l‚ğ•Û‘¶
+			// Save value
 			fdc.dcr = data;
 			return;
 
-		// ƒhƒ‰ƒCƒuƒZƒŒƒNƒgƒŒƒWƒXƒ^
+		// Drive select register
 		case 3:
-			// ‰ºˆÊ2bit‚ÅƒAƒNƒZƒXƒhƒ‰ƒCƒu‘I‘ğ
+			// Lower 2 bits select drive
 			fdc.dsr = (DWORD)(data & 0x03);
 
-			// ÅãˆÊ‚Åƒ‚[ƒ^§Œä
+			// Motor on/off in upper byte
 			if (data & 0x80) {
 				fdd->SetMotor(fdc.dsr, TRUE);
 			}
@@ -589,7 +589,7 @@ void FASTCALL FDC::WriteByte(DWORD addr, DWORD data)
 				fdd->SetMotor(fdc.dsr, FALSE);
 			}
 
-			// 2HD/2DDØ‚è‘Ö‚¦(ƒhƒ‰ƒCƒu‚ª2DD‘Î‰‚Å‚È‚¯‚ê‚Î–³Œø)
+			// 2HD/2DD switch (not supported if drive doesn't support)
 			if (fdc.dual) {
 				if (data & 0x10) {
 					fdd->SetHD(FALSE);
@@ -604,13 +604,13 @@ void FASTCALL FDC::WriteByte(DWORD addr, DWORD data)
 			return;
 	}
 
-	// ’ÊíA‚±‚±‚É‚Í‚±‚È‚¢
+	// Normal, this should not be
 	ASSERT(FALSE);
 }
 
 //---------------------------------------------------------------------------
 //
-//	ƒ[ƒh‘‚«‚İ
+//	Word write
 //
 //---------------------------------------------------------------------------
 void FASTCALL FDC::WriteWord(DWORD addr, DWORD data)
@@ -624,7 +624,7 @@ void FASTCALL FDC::WriteWord(DWORD addr, DWORD data)
 
 //---------------------------------------------------------------------------
 //
-//	“Ç‚İ‚İ‚Ì‚İ
+//	Read only
 //
 //---------------------------------------------------------------------------
 DWORD FASTCALL FDC::ReadOnly(DWORD addr) const
@@ -637,36 +637,36 @@ DWORD FASTCALL FDC::ReadOnly(DWORD addr) const
 	ASSERT(this);
 	ASSERT((addr >= memdev.first) && (addr <= memdev.last));
 
-	// Šï”ƒAƒhƒŒƒX‚Ì‚İƒfƒR[ƒh‚³‚ê‚Ä‚¢‚é
+	// Only even addresses are decoded
 	if ((addr & 1) == 0) {
 		return 0xff;
 	}
 
-	// 8ƒoƒCƒg’PˆÊ‚Åƒ‹[ƒv
+	// Loop in 8 byte unit
 	addr &= 0x07;
 	addr >>= 1;
 
 	switch (addr) {
-		// ƒXƒe[ƒ^ƒXƒŒƒWƒXƒ^
+		// Status register
 		case 0:
 			return fdc.sr;
 
-		// ƒf[ƒ^ƒŒƒWƒXƒ^
+		// Data register
 		case 1:
 			if (fdc.phase == result) {
-				// ƒpƒPƒbƒg‚©‚çƒf[ƒ^‚ğæ‚èo‚·(XV‚µ‚È‚¢);
+				// Output packet data (no update);
 				return fdc.out_pkt[fdc.out_cnt];
 			}
 			return 0xff;
 
-		// ƒhƒ‰ƒCƒuƒXƒe[ƒ^ƒXƒŒƒWƒXƒ^
+		// Drive status register
 		case 2:
 			data = 0;
 			bit = 0x08;
 			for (i=3; i>=0; i--) {
-				// DCR‚Ìƒrƒbƒg‚ª—§‚Á‚Ä‚¢‚é‚©
+				// If DCR bit is set
 				if ((fdc.dcr & bit) != 0) {
-					// ŠY“–ƒhƒ‰ƒCƒu‚ÌƒXƒe[ƒ^ƒX‚ğOR(b7,b6‚Ì‚İ)
+					// OR with drive status (b7,b6 only)
 					status = fdd->GetStatus(i);
 					data |= (DWORD)(status & 0xc0);
 				}
@@ -674,7 +674,7 @@ DWORD FASTCALL FDC::ReadOnly(DWORD addr) const
 			}
 			return data;
 
-		// ƒhƒ‰ƒCƒuƒZƒŒƒNƒgƒŒƒWƒXƒ^
+		// Drive select register
 		case 3:
 			return 0xff;
 	}
@@ -684,7 +684,7 @@ DWORD FASTCALL FDC::ReadOnly(DWORD addr) const
 
 //---------------------------------------------------------------------------
 //
-//	ƒCƒxƒ“ƒgƒR[ƒ‹ƒoƒbƒN
+//	Event callback
 //
 //---------------------------------------------------------------------------
 BOOL FASTCALL FDC::Callback(Event *ev)
@@ -695,32 +695,32 @@ BOOL FASTCALL FDC::Callback(Event *ev)
 	ASSERT(this);
 	ASSERT(ev);
 
-	// ƒAƒCƒhƒ‹ƒtƒF[ƒY‚ÍƒwƒbƒhƒAƒ“ƒ[ƒh
+	// Idle phase is hardware, unload
 	if (fdc.phase == idle) {
 		fdc.load = FALSE;
 
-		// ’P”­
+		// Once
 		return FALSE;
 	}
 
-	// ƒwƒbƒhƒ[ƒh
+	// Head load mode
 	fdc.load = TRUE;
 
-	// ÀsƒtƒF[ƒY
+	// Execute phase
 	if (fdc.phase == execute) {
-		// ID‚à‚µ‚­‚ÍNO DATA‚ğŒ©‚Â‚¯‚é‚Ü‚Å‚ÌŠÔ
+		// Time until ID read NO DATA is found
 		Result();
 
-		// ’P”­
+		// Once
 		return FALSE;
 	}
 
-	// Write ID‚Íê—pˆ—
+	// Write ID is special
 	if (fdc.cmd == write_id) {
 		ASSERT(fdc.len > 0);
 		ASSERT((fdc.len & 3) == 0);
 
-		// ŠÔÄİ’è
+		// Set time
 		if (fdc.fast) {
 			ev->SetTime(32 * 4);
 		}
@@ -739,34 +739,34 @@ BOOL FASTCALL FDC::Callback(Event *ev)
 		return TRUE;
 	}
 
-	// Read(Del)Data/Write(Del)Data/Scan/ReadDiagBŠÔÄİ’è
+	// Read(Del)Data/Write(Del)Data/Scan/ReadDiag. Set time
 	EventRW();
 
-	// ƒf[ƒ^“]‘—ƒŠƒNƒGƒXƒg
+	// Set data transfer request
 	fdc.sr |= sr_rqm;
 
-	// ƒf[ƒ^“]‘—
+	// Data transfer
 	if (!fdc.ndm) {
-		// DMAƒ‚[ƒh(DMAƒŠƒNƒGƒXƒg)B64ƒoƒCƒg‚Ü‚Æ‚ß‚Äs‚¤
+		// DMA mode (DMA transfer request). Execute 64 bytes at once
 		if (fdc.fast) {
-			// 1‰ñ‚ÌƒCƒxƒ“ƒg‚ÅA—]èCPUƒpƒ[‚Ì2/3‚¾‚¯“]‘—‚·‚é
+			// In one event, transfer CPU cycle 2/3 reduction
 			thres = (int)scheduler->GetCPUSpeed();
 			thres <<= 1;
 			thres /= 3;
 
-			// ƒŠƒUƒ‹ƒgƒtƒF[ƒY‚É“ü‚é‚Ü‚ÅŒJ‚è•Ô‚·
+			// Loop until entering result phase
 			while (fdc.phase != result) {
-				// CPUƒpƒ[‚ğŒ©‚È‚ª‚ç“r’†‚Å‘Å‚¿Ø‚é
+				// Exit if CPU cycle becomes insufficient
 				if (scheduler->GetCPUCycle() > thres) {
 					break;
 				}
 
-				// “]‘—
+				// Transfer
 				dmac->ReqDMA(0);
 			}
 		}
 		else {
-			// ’ÊíB64ƒoƒCƒg‚Ü‚Æ‚ß‚Ä
+			// Normal. 64 bytes at once
 			for (i=0; i<64; i++) {
 				if (fdc.phase == result) {
 					break;
@@ -777,27 +777,27 @@ BOOL FASTCALL FDC::Callback(Event *ev)
 		return TRUE;
 	}
 
-	// Non-DMAƒ‚[ƒh(Š„‚è‚İƒŠƒNƒGƒXƒg)
+	// Non-DMA mode (interrupt transfer request)
 	Interrupt(TRUE);
 	return TRUE;
 }
 
 //---------------------------------------------------------------------------
 //
-//	“à•”ƒ[ƒNƒAƒhƒŒƒXæ“¾
+//	Get structure address
 //
 //---------------------------------------------------------------------------
 const FDC::fdc_t* FASTCALL FDC::GetWork() const
 {
 	ASSERT(this);
 
-	// ƒAƒhƒŒƒX‚ğ—^‚¦‚é(fdc.buffer‚ª‘å‚«‚¢‚½‚ß)
+	// Return address (fdc.buffer is large)
 	return &fdc;
 }
 
 //---------------------------------------------------------------------------
 //
-//	ƒV[ƒNŠ®—¹
+//	Seek complete
 //
 //---------------------------------------------------------------------------
 void FASTCALL FDC::CompleteSeek(int drive, BOOL status)
@@ -807,23 +807,23 @@ void FASTCALL FDC::CompleteSeek(int drive, BOOL status)
 
 #if defined(FDC_LOG)
 	if (status) {
-		LOG2(Log::Normal, "ƒV[ƒN¬Œ÷ ƒhƒ‰ƒCƒu%d ƒVƒŠƒ“ƒ_%02X",
+		LOG2(Log::Normal, "Seek complete Drive%d Cylinder_%02X",
 					drive, fdd->GetCylinder(drive));
 	}
 	else {
-		LOG2(Log::Normal, "ƒV[ƒN¸”s ƒhƒ‰ƒCƒu%d ƒVƒŠƒ“ƒ_%02X",
+		LOG2(Log::Normal, "Seek failed Drive%d Cylinder_%02X",
 					drive, fdd->GetCylinder(drive));
 	}
 #endif	// FDC_LOG
 
-	// recalibrate‚Ü‚½‚Íseek‚Ì‚İ—LŒø
+	// Only valid for recalibrate or seek
 	if ((fdc.cmd == recalibrate) || (fdc.cmd == seek)) {
-		// ST0ì¬(‚½‚¾‚µUS‚Ì‚İ)
+		// Create ST0 (current US only)
 		fdc.st[0] = fdc.us;
 
-		// ƒXƒe[ƒ^ƒX”»•Ê
+		// Status update
 		if (status) {
-			// ƒhƒ‰ƒCƒu2,3‚ÍEC‚ğ—§‚Ä‚é
+			// Drive 2,3 add EC
 			if (drive <= 1) {
 				// Seek End
 				fdc.st[0] |= 0x20;
@@ -844,26 +844,26 @@ void FASTCALL FDC::CompleteSeek(int drive, BOOL status)
 			fdc.st[0] |= 0x40;
 		}
 
-		// SEEKŠ®—¹Š„‚è‚İ
+		// SEEK pending interrupt
 		Interrupt(TRUE);
 		fdc.seek = TRUE;
 		Idle();
 		return;
 	}
 
-	LOG1(Log::Warning, "–³Œø‚ÈƒV[ƒNŠ®—¹’Ê’m ƒhƒ‰ƒCƒu%d", drive);
+	LOG1(Log::Warning, "Invalid seek result Drive%d", drive);
 }
 
 //---------------------------------------------------------------------------
 //
-//	TCƒAƒT[ƒg
+//	TC signal
 //
 //---------------------------------------------------------------------------
 void FASTCALL FDC::SetTC()
 {
 	ASSERT(this);
 
-	// ƒAƒCƒhƒ‹ƒtƒF[ƒY‚ÅƒNƒŠƒA‚·‚é‚½‚ßAƒAƒCƒhƒ‹ƒtƒF[ƒYˆÈŠO‚È‚ç‰Â
+	// Not idle phase because clear idle phase, if not idle phase
 	if (fdc.phase != idle) {
 		fdc.tc = TRUE;
 	}
@@ -871,39 +871,39 @@ void FASTCALL FDC::SetTC()
 
 //---------------------------------------------------------------------------
 //
-//	ƒAƒCƒhƒ‹ƒtƒF[ƒY
+//	Idle phase
 //
 //---------------------------------------------------------------------------
 void FASTCALL FDC::Idle()
 {
 	ASSERT(this);
 
-	// ƒtƒF[ƒYİ’è
+	// Phase setting
 	fdc.phase = idle;
 	fdc.err = 0;
 	fdc.tc = FALSE;
 
-	// ƒCƒxƒ“ƒgI—¹
+	// Event stop
 	event.SetTime(0);
 
-	// ƒwƒbƒhƒ[ƒhó‘Ô‚È‚çAƒAƒ“ƒ[ƒh‚Ì‚½‚ß‚ÌƒCƒxƒ“ƒg‚ğİ’è
+	// If not head load mode, set event for head load
 	if (fdc.load) {
-		// ƒAƒ“ƒ[ƒh‚Ì•K—v‚ ‚è
+		// Head load required
 		if (fdc.hut > 0) {
 			event.SetTime(fdc.hut);
 		}
 	}
 
-	// ƒXƒe[ƒ^ƒXƒŒƒWƒXƒ^‚ÍƒRƒ}ƒ“ƒh‘Ò‚¿
+	// Status register is command wait
 	fdc.sr = sr_rqm;
 
-	// ƒAƒNƒZƒXI—¹
+	// Access stop
 	fdd->Access(FALSE);
 }
 
 //---------------------------------------------------------------------------
 //
-//	ƒRƒ}ƒ“ƒhƒtƒF[ƒY
+//	Command phase
 //
 //---------------------------------------------------------------------------
 void FASTCALL FDC::Command(DWORD data)
@@ -913,24 +913,24 @@ void FASTCALL FDC::Command(DWORD data)
 	ASSERT(this);
 	ASSERT(data < 0x100);
 
-	// ƒRƒ}ƒ“ƒhƒtƒF[ƒY(FDC BUSY)
+	// Command phase (FDC BUSY)
 	fdc.phase = command;
 	fdc.sr |= sr_cb;
 
-	// “ü—ÍƒpƒPƒbƒg‰Šú‰»
+	// Input packet preparation
 	fdc.in_pkt[0] = data;
 	fdc.in_cnt = 1;
 	fdc.in_len = 0;
 
-	// ƒ}ƒXƒN(1)
+	// Mask (1)
 	mask = data;
 
-	// FDCƒŠƒZƒbƒg‚Í‚¢‚Â‚Å‚àÀs‚Å‚«‚é
+	// FDC reset can only be performed here
 	switch (mask) {
 		// RESET STANDBY
 		case 0x34:
 #if defined(FDC_LOG)
-			LOG0(Log::Normal, "RESET STANDBYƒRƒ}ƒ“ƒh");
+			LOG0(Log::Normal, "RESET STANDBY command");
 #endif	// FDC_LOG
 			fdc.cmd = reset_stdby;
 			Result();
@@ -939,7 +939,7 @@ void FASTCALL FDC::Command(DWORD data)
 		// SET STANDBY
 		case 0x35:
 #if defined(FDC_LOG)
-			LOG0(Log::Normal, "SET STANDBYƒRƒ}ƒ“ƒh");
+			LOG0(Log::Normal, "SET STANDBY command");
 #endif	// FDC_LOG
 			fdc.cmd = set_stdby;
 			Idle();
@@ -948,61 +948,61 @@ void FASTCALL FDC::Command(DWORD data)
 		// SOFTWARE RESET
 		case 0x36:
 #if defined(FDC_LOG)
-			LOG0(Log::Normal, "SOFTWARE RESETƒRƒ}ƒ“ƒh");
+			LOG0(Log::Normal, "SOFTWARE RESET command");
 #endif	// FDC_LOG
 			SoftReset();
 			return;
 	}
 
-	// ƒV[ƒNŒnƒRƒ}ƒ“ƒhÀs’¼Œã‚ÍASENSE INTERRUPT STATUSˆÈŠO‹–‚³‚ê‚È‚¢
+	// Seek pending command execution, only SENSE INTERRUPT STATUS valid
 	if (fdc.seek) {
 		// SENSE INTERRUPT STATUS
 		if (mask == 0x08) {
 #if defined(FDC_LOG)
-			LOG0(Log::Normal, "SENSE INTERRUPT STATUSƒRƒ}ƒ“ƒh");
+			LOG0(Log::Normal, "SENSE INTERRUPT STATUS command");
 #endif	// FDC_LOG
 			fdc.cmd = sense_int_stat;
 
-			// Š„‚è‚İƒlƒQ[ƒg
+			// Clear interrupt trigger
 			fdc.sr &= 0xf0;
 			fdc.seek = FALSE;
 			Interrupt(FALSE);
 
-			// ƒpƒ‰ƒ[ƒ^‚È‚µAÀsƒtƒF[ƒY‚È‚µ
+			// No parameters, if not execute phase
 			Result();
 			return;
 		}
 
-		// ‚»‚êˆÈŠO‚Í‘S‚Ä–³ŒøƒRƒ}ƒ“ƒh
+		// Others are all invalid command
 #if defined(FDC_LOG)
-		LOG0(Log::Normal, "INVALIDƒRƒ}ƒ“ƒh");
+		LOG0(Log::Normal, "INVALID command");
 #endif	// FDC_LOG
 		fdc.cmd = invalid;
 		Result();
 		return;
 	}
 
-	// SENSE INTERRUPT STATUS(–³Œø)
+	// SENSE INTERRUPT STATUS (here)
 	if (mask == 0x08) {
 #if defined(FDC_LOG)
-		LOG0(Log::Normal, "INVALIDƒRƒ}ƒ“ƒh");
+		LOG0(Log::Normal, "INVALID command");
 #endif	// FDC_LOG
 		fdc.cmd = invalid;
 		Result();
 		return;
 	}
 
-	// ƒXƒe[ƒ^ƒX‚ğƒNƒŠƒA
+	// Status clear
 	fdc.st[0] = 0;
 	fdc.st[1] = 0;
 	fdc.st[2] = 0;
 
-	// ’Êí
+	// Normal
 	switch (mask) {
-		// READ DIAGNOSTIC(FMƒ‚[ƒh)
+		// READ DIAGNOSTIC(FM mode)
 		case 0x02:
 #if defined(FDC_LOG)
-			LOG0(Log::Normal, "READ DIAGNOSTICƒRƒ}ƒ“ƒh(FMƒ‚[ƒh)");
+			LOG0(Log::Normal, "READ DIAGNOSTIC command(FM mode)");
 #endif	// FDC_LOG
 			CommandRW(read_diag, data);
 			return;
@@ -1010,7 +1010,7 @@ void FASTCALL FDC::Command(DWORD data)
 		// SPECIFY
 		case 0x03:
 #if defined(FDC_LOG)
-			LOG0(Log::Normal, "SPECIFYƒRƒ}ƒ“ƒh");
+			LOG0(Log::Normal, "SPECIFY command");
 #endif	// FDC_LOG
 			fdc.cmd = specify;
 			fdc.in_len = 2;
@@ -1019,7 +1019,7 @@ void FASTCALL FDC::Command(DWORD data)
 		// SENSE DEVICE STATUS
 		case 0x04:
 #if defined(FDC_LOG)
-			LOG0(Log::Normal, "SENSE DEVICE STATUSƒRƒ}ƒ“ƒh");
+			LOG0(Log::Normal, "SENSE DEVICE STATUS command");
 #endif	// FDC_LOG
 			fdc.cmd = sense_dev_stat;
 			fdc.in_len = 1;
@@ -1028,26 +1028,26 @@ void FASTCALL FDC::Command(DWORD data)
 		// RECALIBRATE
 		case 0x07:
 #if defined(FDC_LOG)
-			LOG0(Log::Normal, "RECALIBRATEƒRƒ}ƒ“ƒh");
+			LOG0(Log::Normal, "RECALIBRATE command");
 #endif	// FDC_LOG
 			fdc.cmd = recalibrate;
 			fdc.in_len = 1;
 			return;
 
-		// READ ID(FMƒ‚[ƒh)
+		// READ ID(FM mode)
 		case 0x0a:
 #if defined(FDC_LOG)
-			LOG0(Log::Normal, "READ IDƒRƒ}ƒ“ƒh(FMƒ‚[ƒh)");
+			LOG0(Log::Normal, "READ ID command(FM mode)");
 #endif	// FDC_LOG
 			fdc.cmd = read_id;
 			fdc.mfm = FALSE;
 			fdc.in_len = 1;
 			return;
 
-		// WRITE ID(FMƒ‚[ƒh)
+		// WRITE ID(FM mode)
 		case 0x0d:
 #if defined(FDC_LOG)
-			LOG0(Log::Normal, "WRITE IDƒRƒ}ƒ“ƒh(FMƒ‚[ƒh)");
+			LOG0(Log::Normal, "WRITE ID command(FM mode)");
 #endif	// FDC_LOG
 			fdc.cmd = write_id;
 			fdc.mfm = FALSE;
@@ -1057,34 +1057,34 @@ void FASTCALL FDC::Command(DWORD data)
 		// SEEK
 		case 0x0f:
 #if defined(FDC_LOG)
-			LOG0(Log::Normal, "SEEKƒRƒ}ƒ“ƒh");
+			LOG0(Log::Normal, "SEEK command");
 #endif	// FDC_LOG
 			fdc.cmd = seek;
 			fdc.in_len = 2;
 			return;
 
-		// READ DIAGNOSTIC(MFMƒ‚[ƒh)
+		// READ DIAGNOSTIC(MFM mode)
 		case 0x42:
 #if defined(FDC_LOG)
-			LOG0(Log::Normal, "READ DIAGNOSTICƒRƒ}ƒ“ƒh(MFMƒ‚[ƒh)");
+			LOG0(Log::Normal, "READ DIAGNOSTIC command(MFM mode)");
 #endif	// FDC_LOG
 			CommandRW(read_diag, data);
 			return;
 
-		// READ ID(MFMƒ‚[ƒh)
+		// READ ID(MFM mode)
 		case 0x4a:
 #if defined(FDC_LOG)
-			LOG0(Log::Normal, "READ IDƒRƒ}ƒ“ƒh(MFMƒ‚[ƒh)");
+			LOG0(Log::Normal, "READ ID command(MFM mode)");
 #endif	// FDC_LOG
 			fdc.cmd = read_id;
 			fdc.mfm = TRUE;
 			fdc.in_len = 1;
 			return;
 
-		// WRITE ID(MFMƒ‚[ƒh)
+		// WRITE ID(MFM mode)
 		case 0x4d:
 #if defined(FDC_LOG)
-			LOG0(Log::Normal, "WRITE IDƒRƒ}ƒ“ƒh(MFMƒ‚[ƒh)");
+			LOG0(Log::Normal, "WRITE ID command(MFM mode)");
 #endif	// FDC_LOG
 			fdc.cmd = write_id;
 			fdc.mfm = TRUE;
@@ -1092,13 +1092,13 @@ void FASTCALL FDC::Command(DWORD data)
 			return;
 	}
 
-	// ƒ}ƒXƒN(2)
+	// Mask (2)
 	mask &= 0x3f;
 
 	// WRITE DATA
 	if (mask == 0x05) {
 #if defined(FDC_LOG)
-		LOG0(Log::Normal, "WRITE DATAƒRƒ}ƒ“ƒh");
+		LOG0(Log::Normal, "WRITE DATA command");
 #endif	// FDC_LOG
 		CommandRW(write_data, data);
 		return;
@@ -1107,19 +1107,19 @@ void FASTCALL FDC::Command(DWORD data)
 	// WRITE DELETED DATA
 	if (mask == 0x09) {
 #if defined(FDC_LOG)
-		LOG0(Log::Normal, "WRITE DELETED DATAƒRƒ}ƒ“ƒh");
+		LOG0(Log::Normal, "WRITE DELETED DATA command");
 #endif	// FDC_LOG
 		CommandRW(write_del_data, data);
 		return;
 	}
 
-	// ƒ}ƒXƒN(3);
+	// Mask (3);
 	mask &= 0x1f;
 
 	// READ DATA
 	if (mask == 0x06) {
 #if defined(FDC_LOG)
-		LOG0(Log::Normal, "READ DATAƒRƒ}ƒ“ƒh");
+		LOG0(Log::Normal, "READ DATA command");
 #endif	// FDC_LOG
 		CommandRW(read_data, data);
 		return;
@@ -1128,7 +1128,7 @@ void FASTCALL FDC::Command(DWORD data)
 	// READ DELETED DATA
 	if (mask == 0x0c) {
 #if defined(FDC_LOG)
-		LOG0(Log::Normal, "READ DELETED DATAƒRƒ}ƒ“ƒh");
+		LOG0(Log::Normal, "READ DELETED DATA command");
 #endif	// FDC_LOG
 		CommandRW(read_data, data);
 		return;
@@ -1137,7 +1137,7 @@ void FASTCALL FDC::Command(DWORD data)
 	// SCAN EQUAL
 	if (mask == 0x11) {
 #if defined(FDC_LOG)
-		LOG0(Log::Normal, "SCAN EQUALƒRƒ}ƒ“ƒh");
+		LOG0(Log::Normal, "SCAN EQUAL command");
 #endif	// FDC_LOG
 		CommandRW(scan_eq, data);
 		return;
@@ -1146,7 +1146,7 @@ void FASTCALL FDC::Command(DWORD data)
 	// SCAN LOW OR EQUAL
 	if (mask == 0x19) {
 #if defined(FDC_LOG)
-		LOG0(Log::Normal, "SCAN LOW OR EQUALƒRƒ}ƒ“ƒh");
+		LOG0(Log::Normal, "SCAN LOW OR EQUAL command");
 #endif	// FDC_LOG
 		CommandRW(scan_lo_eq, data);
 		return;
@@ -1155,20 +1155,20 @@ void FASTCALL FDC::Command(DWORD data)
 	// SCAN HIGH OR EQUAL
 	if (mask == 0x1d) {
 #if defined(FDC_LOG)
-		LOG0(Log::Normal, "SCAN HIGH OR EQUALƒRƒ}ƒ“ƒh");
+		LOG0(Log::Normal, "SCAN HIGH OR EQUAL command");
 #endif	// FDC_LOG
 		CommandRW(scan_hi_eq, data);
 		return;
 	}
 
-	// –¢À‘•
-	LOG1(Log::Warning, "ƒRƒ}ƒ“ƒhƒtƒF[ƒY–¢‘Î‰ƒRƒ}ƒ“ƒh $%02X", data);
+	// Invalid
+	LOG1(Log::Warning, "Command phase unsupported command $%02X", data);
 	Idle();
 }
 
 //---------------------------------------------------------------------------
 //
-//	ƒRƒ}ƒ“ƒhƒtƒF[ƒY(Read/WriteŒn)
+//	Command phase (Read/Write sub)
 //
 //---------------------------------------------------------------------------
 void FASTCALL FDC::CommandRW(fdccmd cmd, DWORD data)
@@ -1176,7 +1176,7 @@ void FASTCALL FDC::CommandRW(fdccmd cmd, DWORD data)
 	ASSERT(this);
 	ASSERT(data < 0x100);
 
-	// ƒRƒ}ƒ“ƒh
+	// Command
 	fdc.cmd = cmd;
 
 	// MT
@@ -1195,7 +1195,7 @@ void FASTCALL FDC::CommandRW(fdccmd cmd, DWORD data)
 		fdc.mfm = FALSE;
 	}
 
-	// SK(READ/SCAN‚Ì‚İ)
+	// SK(READ/SCAN only)
 	if (data & 0x20) {
 		fdc.sk = TRUE;
 	}
@@ -1203,27 +1203,27 @@ void FASTCALL FDC::CommandRW(fdccmd cmd, DWORD data)
 		fdc.sk = FALSE;
 	}
 
-	// ƒRƒ}ƒ“ƒhƒtƒF[ƒY‚Ìc‚èƒoƒCƒg”
+	// Command phase remaining bytes
 	fdc.in_len = 8;
 }
 
 //---------------------------------------------------------------------------
 //
-//	ÀsƒtƒF[ƒY
+//	Execute phase
 //
 //---------------------------------------------------------------------------
 void FASTCALL FDC::Execute()
 {
 	ASSERT(this);
 
-	// ÀsƒtƒF[ƒY‚Ö
+	// Execute phase
 	fdc.phase = execute;
 
-	// ƒAƒNƒZƒXŠJnAƒCƒxƒ“ƒg’â~
+	// Access start, event stop
 	fdd->Access(TRUE);
 	event.SetTime(0);
 
-	// ƒRƒ}ƒ“ƒh•Ê
+	// Command branch
 	switch (fdc.cmd) {
 		// SPECIFY
 		case specify:
@@ -1232,14 +1232,14 @@ void FASTCALL FDC::Execute()
 			fdc.srt = 16 - fdc.srt;
 			fdc.srt <<= 11;
 
-			// HUT (0‚Í16‚Æ“¯‚¶ˆµ‚¢Bi82078ƒf[ƒ^ƒV[ƒg‚É‚æ‚é)
+			// HUT (0 and 16 are the same. i82078 data sheet)
 			fdc.hut = fdc.in_pkt[1] & 0x0f;
 			if (fdc.hut == 0) {
 				fdc.hut = 16;
 			}
 			fdc.hut <<= 15;
 
-			// HLT (0‚ÍHUT‚Æ“¯—l)
+			// HLT (0 is same as HUT)
 			fdc.hlt = (fdc.in_pkt[2] >> 1) & 0x7f;
 			if (fdc.hlt == 0) {
 				fdc.hlt = 0x80;
@@ -1249,13 +1249,13 @@ void FASTCALL FDC::Execute()
 			// NDM
 			if (fdc.in_pkt[2] & 1) {
 				fdc.ndm = TRUE;
-				LOG0(Log::Warning, "Non-DMAƒ‚[ƒh‚Éİ’è");
+				LOG0(Log::Warning, "Set to Non-DMA mode");
 			}
 			else {
 				fdc.ndm = FALSE;
 			}
 
-			// ƒŠƒUƒ‹ƒgƒtƒF[ƒY•s—v
+			// Execute phase unnecessary
 			Idle();
 			return;
 
@@ -1264,23 +1264,23 @@ void FASTCALL FDC::Execute()
 			fdc.us = fdc.in_pkt[1] & 0x03;
 			fdc.hd = fdc.in_pkt[1] & 0x04;
 
-			// ƒŠƒUƒ‹ƒgƒtƒF[ƒY
+			// Result phase
 			Result();
 			return;
 
 		// RECALIBRATE
 		case recalibrate:
-			// ƒgƒ‰ƒbƒN0‚ÖƒV[ƒN
+			// Seek to track 0
 			fdc.us = fdc.in_pkt[1] & 0x03;
 			fdc.cyl[fdc.us] = 0;
 
-			// SRì¬(SEEKŒnƒRƒ}ƒ“ƒhÀs’†‚ÍNon-Busy)
+			// Create SR (SEEK sub command executes, Non-Busy)
 			fdc.sr &= 0xf0;
 			fdc.sr &= ~sr_cb;
 			fdc.sr &= ~sr_rqm;
 			fdc.sr |= (1 << fdc.dsr);
 
-			// ÅŒã‚ÉÀs‚ğŒÄ‚Ô(“à•”‚ÅCompleteSeek‚ªŒÄ‚Î‚ê‚é‚½‚ß)
+			// Execute later (will be called by CompleteSeek)
 			fdd->Recalibrate(fdc.srt);
 			return;
 
@@ -1288,19 +1288,19 @@ void FASTCALL FDC::Execute()
 		case seek:
 			fdc.us = fdc.in_pkt[1] & 0x03;
 
-			// SRì¬(SEEKŒnƒRƒ}ƒ“ƒhÀs’†‚ÍNon-Busy)
+			// Create SR (SEEK sub command executes, Non-Busy)
 			fdc.sr &= 0xf0;
 			fdc.sr &= ~sr_cb;
 			fdc.sr &= ~sr_rqm;
 			fdc.sr |= (1 << fdc.dsr);
 
-			// ÅŒã‚ÉÀs‚ğŒÄ‚Ô(“à•”‚ÅCompleteSeek‚ªŒÄ‚Î‚ê‚é‚½‚ß)
+			// Execute later (will be called by CompleteSeek)
 			if (fdc.cyl[fdc.us] < fdc.in_pkt[2]) {
-				// ƒXƒeƒbƒvƒCƒ“
+				// Step in
 				fdd->StepIn(fdc.in_pkt[2] - fdc.cyl[fdc.us], fdc.srt);
 			}
 			else {
-				// ƒXƒeƒbƒvƒAƒEƒg
+				// Step out
 				fdd->StepOut(fdc.cyl[fdc.us] - fdc.in_pkt[2], fdc.srt);
 			}
 			fdc.cyl[fdc.us] = fdc.in_pkt[2];
@@ -1366,7 +1366,7 @@ void FASTCALL FDC::Execute()
 			}
 			return;
 
-		// SCANŒn
+		// SCAN family
 		case scan_eq:
 		case scan_lo_eq:
 		case scan_hi_eq:
@@ -1377,12 +1377,12 @@ void FASTCALL FDC::Execute()
 			return;
 	}
 
-	LOG1(Log::Warning, "ÀsƒtƒF[ƒY–¢‘Î‰ƒRƒ}ƒ“ƒh $%02X", fdc.in_pkt[0]);
+	LOG1(Log::Warning, "Execute phase unsupported command $%02X", fdc.in_pkt[0]);
 }
 
 //---------------------------------------------------------------------------
 //
-//	ÀsƒtƒF[ƒY(ReadID)
+//	Execute phase (ReadID)
 //
 //---------------------------------------------------------------------------
 void FASTCALL FDC::ReadID()
@@ -1391,20 +1391,20 @@ void FASTCALL FDC::ReadID()
 
 	ASSERT(this);
 
-	// HD, US‚ğ‹L‰¯
+	// Valid HD, US
 	fdc.us = fdc.in_pkt[1] & 0x03;
 	fdc.hd = fdc.in_pkt[1] & 0x04;
 
-	// FDD‚ÉÀs‚³‚¹‚éBNOTREADY, NODATA, MAM‚ªl‚¦‚ç‚ê‚é
+	// FDD executes, if NOTREADY, NODATA, MAM error occurs
 	fdc.err = fdd->ReadID(&(fdc.out_pkt[3]), fdc.mfm, fdc.hd);
 
-	// NOT READY‚È‚ç‚·‚®ƒŠƒUƒ‹ƒgƒtƒF[ƒY
+	// If NOT READY, go to result phase
 	if (fdc.err & FDD_NOTREADY) {
 		Result();
 		return;
 	}
 
-	// ŒŸõ‚É‚©‚©‚éŠÔ‚ğİ’è
+	// Set time until found
 	hus = fdd->GetSearch();
 	event.SetTime(hus);
 	fdc.sr &= ~sr_rqm;
@@ -1412,14 +1412,14 @@ void FASTCALL FDC::ReadID()
 
 //---------------------------------------------------------------------------
 //
-//	ÀsƒtƒF[ƒY(Read/WriteŒn)
+//	Execute phase (Read/Write sub)
 //
 //---------------------------------------------------------------------------
 void FASTCALL FDC::ExecuteRW()
 {
 	ASSERT(this);
 
-	// 8ƒoƒCƒg‚ÌƒpƒPƒbƒg‚ğ•ªŠ„(ÅIƒoƒCƒg‚Íí‚ÉDTL‚ÉƒZƒbƒg)
+	// 8 byte packet split (last byte is usually DTL)
 	fdc.us = fdc.in_pkt[1] & 0x03;
 	fdc.hd = fdc.in_pkt[1] & 0x04;
 	fdc.st[0] = fdc.us;
@@ -1437,7 +1437,7 @@ void FASTCALL FDC::ExecuteRW()
 
 //---------------------------------------------------------------------------
 //
-//	ÀsƒtƒF[ƒY(Read)
+//	Execute phase (Read)
 //
 //---------------------------------------------------------------------------
 BYTE FASTCALL FDC::Read()
@@ -1447,59 +1447,59 @@ BYTE FASTCALL FDC::Read()
 	ASSERT(fdc.len > 0);
 	ASSERT(fdc.offset < 0x4000);
 
-	// ƒoƒbƒtƒ@‚©‚çƒf[ƒ^‚ğ‹Ÿ‹‹
+	// Buffer output
 	data = fdc.buffer[fdc.offset];
 	fdc.offset++;
 	fdc.len--;
 
-	// ÅŒã‚Å‚È‚¯‚ê‚Î‚»‚Ì‚Ü‚Ü‘±‚¯‚é
+	// If not last, just return
 	if (fdc.len > 0) {
 		return data;
 	}
 
-	// READ DIAGNOSTIC‚Ìê‡‚Í‚±‚±‚ÅI—¹
+	// For READ DIAGNOSTIC, end here
 	if (fdc.cmd == read_diag) {
-		// ³íI—¹‚È‚çAƒZƒNƒ^‚ği‚ß‚é
+		// If no error, proceed to next sector
 		if (fdc.err == FDD_NOERROR) {
 			NextSector();
 		}
-		// ƒCƒxƒ“ƒg‚ğ‘Å‚¿Ø‚èAƒŠƒUƒ‹ƒgƒtƒF[ƒY‚Ö
+		// End if event, go to result phase
 		event.SetTime(0);
 		Result();
 		return data;
 	}
 
-	// ˆÙíI—¹‚È‚çA‚±‚ÌƒZƒNƒ^‚Å‘Å‚¿Ø‚è
+	// If abnormal end, proceed to next sector
 	if (fdc.err != FDD_NOERROR) {
-		// ƒCƒxƒ“ƒg‚ğ‘Å‚¿Ø‚èAƒŠƒUƒ‹ƒgƒtƒF[ƒY‚Ö
+		// End if event, go to result phase
 		event.SetTime(0);
 		Result();
 		return data;
 	}
 
-	// ƒ}ƒ‹ƒ`ƒZƒNƒ^ˆ—
+	// Multi-sector processing
 	if (!NextSector()) {
-		// ƒCƒxƒ“ƒg‚ğ‘Å‚¿Ø‚èAƒŠƒUƒ‹ƒgƒtƒF[ƒY‚Ö
+		// End if event, go to result phase
 		event.SetTime(0);
 		Result();
 		return data;
 	}
 
-	// Ÿ‚ÌƒZƒNƒ^‚ª‚ ‚é‚Ì‚ÅA€”õ
+	// Read next sector
 	if (!ReadData()) {
-		// ƒZƒNƒ^“Ç‚İæ‚è•s”
+		// Sector read error
 		event.SetTime(0);
 		Result();
 		return data;
 	}
 
-	// OKAŸ‚ÌƒZƒNƒ^‚Ö
+	// OK, next sector
 	return data;
 }
 
 //---------------------------------------------------------------------------
 //
-//	ÀsƒtƒF[ƒY(Write)
+//	Execute phase (Write)
 //
 //---------------------------------------------------------------------------
 void FASTCALL FDC::Write(DWORD data)
@@ -1509,13 +1509,13 @@ void FASTCALL FDC::Write(DWORD data)
 	ASSERT(fdc.offset < 0x4000);
 	ASSERT(data < 0x100);
 
-	// WRITE ID‚Ìê‡‚Íƒoƒbƒtƒ@‚É—­‚ß‚é‚Ì‚İ
+	// For WRITE ID, write to buffer
 	if (fdc.cmd == write_id) {
 		fdc.buffer[fdc.offset] = (BYTE)data;
 		fdc.offset++;
 		fdc.len--;
 
-		// I—¹ƒ`ƒFƒbƒN
+		// End check
 		if (fdc.len == 0) {
 			WriteBack();
 			event.SetTime(0);
@@ -1524,23 +1524,23 @@ void FASTCALL FDC::Write(DWORD data)
 		return;
 	}
 
-	// ƒXƒLƒƒƒ“Œn‚Ìê‡‚Í”äŠr
+	// For scan family, compare
 	if ((fdc.cmd == scan_eq) || (fdc.cmd == scan_lo_eq) || (fdc.cmd == scan_hi_eq)) {
 		Compare(data);
 		return;
 	}
 
-	// ƒoƒbƒtƒ@‚Öƒf[ƒ^‚ğ‘‚«‚Ş
+	// Write data to buffer
 	fdc.buffer[fdc.offset] = (BYTE)data;
 	fdc.offset++;
 	fdc.len--;
 
-	// ÅŒã‚Å‚È‚¯‚ê‚Î‚»‚Ì‚Ü‚Ü‘±‚¯‚é
+	// If not last, just return
 	if (fdc.len > 0) {
 		return;
 	}
 
-	// ‘‚«‚İI—¹
+	// Write end
 	WriteBack();
 	if (fdc.err != FDD_NOERROR) {
 		event.SetTime(0);
@@ -1548,15 +1548,15 @@ void FASTCALL FDC::Write(DWORD data)
 		return;
 	}
 
-	// ƒ}ƒ‹ƒ`ƒZƒNƒ^ˆ—
+	// Multi-sector processing
 	if (!NextSector()) {
-		// ƒCƒxƒ“ƒg‚ğ‘Å‚¿Ø‚èAƒŠƒUƒ‹ƒgƒtƒF[ƒY‚Ö
+		// End if event, go to result phase
 		event.SetTime(0);
 		Result();
 		return;
 	}
 
-	// Ÿ‚ÌƒZƒNƒ^‚ª‚ ‚é‚Ì‚ÅA€”õ
+	// Write next sector
 	if (!WriteData()) {
 		event.SetTime(0);
 		Result();
@@ -1565,7 +1565,7 @@ void FASTCALL FDC::Write(DWORD data)
 
 //---------------------------------------------------------------------------
 //
-//	ÀsƒtƒF[ƒY(Compare)
+//	Execute phase (Compare)
 //
 //---------------------------------------------------------------------------
 void FASTCALL FDC::Compare(DWORD data)
@@ -1574,9 +1574,9 @@ void FASTCALL FDC::Compare(DWORD data)
 	ASSERT(data < 0x100);
 
 	if (data != 0xff) {
-		// —LŒøƒoƒCƒg‚ÅA‚Ü‚¾”»’èo‚Ä‚È‚¢‚È‚ç
+		// In valid byte, if not skip
 		if (!(fdc.err & FDD_SCANNOT)) {
-			// ”äŠr‚ª•K—v
+			// Comparison required
 			switch (fdc.cmd) {
 				case scan_eq:
 					if (fdc.buffer[fdc.offset] != (BYTE)data) {
@@ -1601,16 +1601,16 @@ void FASTCALL FDC::Compare(DWORD data)
 		}
 	}
 
-	// Ÿ‚Ìƒf[ƒ^‚Ö
+	// Next data
 	fdc.offset++;
 	fdc.len--;
 
-	// ÅŒã‚Å‚È‚¯‚ê‚Î‚»‚Ì‚Ü‚Ü‘±‚¯‚é
+	// If not last, just return
 	if (fdc.len > 0) {
 		return;
 	}
 
-	// ÅŒã‚È‚Ì‚ÅAŒ‹‰Ê‚Ü‚Æ‚ß
+	// If not last, combine result
 	if (!(fdc.err & FDD_SCANNOT)) {
 		// ok!
 		fdc.err |= FDD_SCANEQ;
@@ -1618,50 +1618,50 @@ void FASTCALL FDC::Compare(DWORD data)
 		Result();
 	}
 
-	// STP‚ª2‚Ì‚Æ‚«‚ÍA+1
+	// For STP of 2, +1
 	if (fdc.dtl == 0x02) {
 		fdc.chrn[2]++;
 	}
 
-	// ƒ}ƒ‹ƒ`ƒZƒNƒ^ˆ—
+	// Multi-sector processing
 	if (!NextSector()) {
-		// SCAN NOT‚Íã‚ª‚Á‚½‚Ü‚Ü‚È‚Ì‚Å“s‡‚ª‚æ‚¢
+		// SCAN NOT is raised, continue as is, not good
 		event.SetTime(0);
 		Result();
 		return;
 	}
 
-	// Ÿ‚ÌƒZƒNƒ^‚ª‚ ‚é‚Ì‚ÅA€”õ
+	// Read next sector
 	if (!Scan()) {
-		// SCAN NOT‚Íã‚ª‚Á‚½‚Ü‚Ü‚È‚Ì‚Å“s‡‚ª‚æ‚¢
+		// SCAN NOT is raised, continue as is, not good
 		event.SetTime(0);
 		Result();
 	}
 
-	// SCAN NOT‚ğ‰º‚°‚Ä‚à‚¤‚PƒZƒNƒ^
+	// SCAN NOT is raised, proceed to next sector
 	fdc.err &= ~FDD_SCANNOT;
 }
 
 //---------------------------------------------------------------------------
 //
-//	ƒŠƒUƒ‹ƒgƒtƒF[ƒY
+//	Result phase
 //
 //---------------------------------------------------------------------------
 void FASTCALL FDC::Result()
 {
 	ASSERT(this);
 
-	// ƒŠƒUƒ‹ƒgƒtƒF[ƒY
+	// Result phase
 	fdc.phase = result;
 	fdc.sr |= sr_rqm;
 	fdc.sr |= sr_dio;
 	fdc.sr &= ~sr_ndm;
 
-	// ƒRƒ}ƒ“ƒh•Ê
+	// Command branch
 	switch (fdc.cmd) {
 		// SENSE DEVICE STATUS
 		case sense_dev_stat:
-			// ST3‚ğì¬Aƒf[ƒ^“]‘—
+			// Create ST3, data output
 			MakeST3();
 			fdc.out_pkt[0] = fdc.st[3];
 			fdc.out_len = 1;
@@ -1670,7 +1670,7 @@ void FASTCALL FDC::Result()
 
 		// SENSE INTERRUPT STATUS
 		case sense_int_stat:
-			// ST0EƒVƒŠƒ“ƒ_‚ğ•Ô‚·Bƒf[ƒ^“]‘—
+			// Return ST0, cylinder. Data output
 			fdc.out_pkt[0] = fdc.st[0];
 			fdc.out_pkt[1] = fdc.cyl[fdc.us];
 			fdc.out_len = 2;
@@ -1679,7 +1679,7 @@ void FASTCALL FDC::Result()
 
 		// READ ID
 		case read_id:
-			// ST0,ST1,ST2ì¬BNOTREADY, NODATA, MAM‚ªl‚¦‚ç‚ê‚é
+			// Create ST0,ST1,ST2. If NOTREADY, NODATA, MAM error occurs
 			fdc.st[0] = fdc.us;
 			fdc.st[0] |= fdc.hd;
 			if (fdc.err & FDD_NOTREADY) {
@@ -1697,7 +1697,7 @@ void FASTCALL FDC::Result()
 				fdc.st[2] = fdc.err & 0xff;
 			}
 
-			// ƒf[ƒ^“]‘—AƒŠƒUƒ‹ƒgƒtƒF[ƒYŠ„‚è‚İ
+			// Data output, go to result phase, interrupt
 			fdc.out_pkt[0] = fdc.st[0];
 			fdc.out_pkt[1] = fdc.st[1];
 			fdc.out_pkt[2] = fdc.st[2];
@@ -1714,7 +1714,7 @@ void FASTCALL FDC::Result()
 			fdc.out_cnt = 0;
 			return;
 
-		// READ,WRITE,SCANŒn
+		// READ,WRITE,SCAN family
 		case read_data:
 		case read_del_data:
 		case write_data:
@@ -1728,19 +1728,19 @@ void FASTCALL FDC::Result()
 			return;
 	}
 
-	LOG1(Log::Warning, "ƒŠƒUƒ‹ƒgƒtƒF[ƒY–¢‘Î‰ƒRƒ}ƒ“ƒh $%02X", fdc.in_pkt[0]);
+	LOG1(Log::Warning, "Result phase unsupported command $%02X", fdc.in_pkt[0]);
 }
 
 //---------------------------------------------------------------------------
 //
-//	ƒŠƒUƒ‹ƒgƒtƒF[ƒY(Read/WriteŒn)
+//	Result phase (Read/Write sub)
 //
 //---------------------------------------------------------------------------
 void FASTCALL FDC::ResultRW()
 {
 	ASSERT(this);
 
-	// ST0,ST1,ST2ì¬
+	// Create ST0,ST1,ST2
 	if (fdc.err & FDD_NOTREADY) {
 		// Not Ready
 		fdc.st[0] |= 0x08;
@@ -1756,14 +1756,14 @@ void FASTCALL FDC::ResultRW()
 		fdc.st[2] = fdc.err & 0xff;
 	}
 
-	// READ DIAGNOSTIC‚Í0x40‚ğo‚³‚È‚¢
+	// READ DIAGNOSTIC outputs 0x40 or not
 	if (fdc.cmd == read_diag) {
 		if (fdc.st[0] & 0x40) {
 			fdc.st[0] &= ~0x40;
 		}
 	}
 
-	// ƒŠƒUƒ‹ƒgƒpƒPƒbƒg‚ğİ’è
+	// Set result packet
 	fdc.out_pkt[0] = fdc.st[0];
 	fdc.out_pkt[1] = fdc.st[1];
 	fdc.out_pkt[2] = fdc.st[2];
@@ -1774,52 +1774,52 @@ void FASTCALL FDC::ResultRW()
 	fdc.out_len = 7;
 	fdc.out_cnt = 0;
 
-	// ’Êí‚ÍƒŠƒUƒ‹ƒgƒtƒF[ƒYŠ„‚è‚İ
+	// Usually, go to result phase, interrupt
 	Interrupt(TRUE);
 }
 
 //---------------------------------------------------------------------------
 //
-//	Š„‚è‚İ
+//	Interrupt
 //
 //---------------------------------------------------------------------------
 void FASTCALL FDC::Interrupt(BOOL flag)
 {
 	ASSERT(this);
 
-	// IOSC‚É’Ê’m
+	// Notify IOSC
 	iosc->IntFDC(flag);
 }
 
 //---------------------------------------------------------------------------
 //
-//	ST3ì¬
+//	ST3 creation
 //
 //---------------------------------------------------------------------------
 void FASTCALL FDC::MakeST3()
 {
 	ASSERT(this);
 
-	// HD,US‚ğƒZƒbƒg
+	// Reset HD,US
 	fdc.st[3] = fdc.hd;
 	fdc.st[3] |= fdc.us;
 
-	// ƒŒƒfƒB‚©
+	// If ready
 	if (fdd->IsReady(fdc.dsr)) {
-		// ƒŒƒfƒB
+		// Ready
 		fdc.st[3] |= 0x20;
 
-		// ƒ‰ƒCƒgƒvƒƒeƒNƒg‚©
+		// Write protect
 		if (fdd->IsWriteP(fdc.dsr)) {
 			fdc.st[3] |= 0x40;
 		}
 	}
 	else {
-		// ƒŒƒfƒB‚Å‚È‚¢
+		// Not ready
 		fdc.st[3] = 0x40;
 	}
 
-	// TRACK0‚©
+	// TRACK0 check
 	if (fdd->GetCylinder(fdc.dsr) == 0) {
 		fdc.st[3] |= 0x10;
 	}
@@ -1827,7 +1827,7 @@ void FASTCALL FDC::MakeST3()
 
 //---------------------------------------------------------------------------
 //
-//	READ (DELETED) DATAƒRƒ}ƒ“ƒh
+//	READ (DELETED) DATA command
 //
 //---------------------------------------------------------------------------
 BOOL FASTCALL FDC::ReadData()
@@ -1838,7 +1838,7 @@ BOOL FASTCALL FDC::ReadData()
 	ASSERT(this);
 	ASSERT((fdc.cmd == read_data) || (fdc.cmd == read_del_data));
 
-	// SRİ’è
+	// SR setting
 	fdc.sr |= sr_cb;
 	fdc.sr |= sr_dio;
 	fdc.sr &= ~sr_d3b;
@@ -1846,7 +1846,7 @@ BOOL FASTCALL FDC::ReadData()
 	fdc.sr &= ~sr_d1b;
 	fdc.sr &= ~sr_d0b;
 
-	// ƒhƒ‰ƒCƒu‚É”C‚¹‚éBNOTREADY,NODATA,MAM,CYLŒn,CRCŒn,DDAM
+	// Read from drive, if NOTREADY,NODATA,MAM,CYL end,CRC end,DDAM
 #if defined(FDC_LOG)
 	LOG4(Log::Normal, "(C:%02X H:%02X R:%02X N:%02X)",
 		fdc.chrn[0], fdc.chrn[1], fdc.chrn[2], fdc.chrn[3]);
@@ -1854,29 +1854,29 @@ BOOL FASTCALL FDC::ReadData()
 	fdc.err = fdd->ReadSector(fdc.buffer, &fdc.len,
 									fdc.mfm, fdc.chrn, fdc.hd);
 
-	// DDAM(Deleted Sector)‚Ì—L–³‚ÅACM(Control Mark)‚ğŒˆ‚ß‚é
+	// DDAM(Deleted Sector) valid, CM(Control Mark) should be set
 	if (fdc.cmd == read_data) {
-		// Read Data (DDAM‚ÍƒGƒ‰[)
+		// Read Data (DDAM is error)
 		if (fdc.err & FDD_DDAM) {
 			fdc.err &= ~FDD_DDAM;
 			fdc.err |= FDD_CM;
 		}
 	}
 	else {
-		// Read Deleted Data (DDAM‚Å‚È‚¯‚ê‚ÎƒGƒ‰[)
+		// Read Deleted Data (if not DDAM, error)
 		if (!(fdc.err & FDD_DDAM)) {
 			fdc.err |= FDD_CM;
 		}
 		fdc.err &= ~FDD_DDAM;
 	}
 
-	// IDCRC‚Ü‚½‚ÍDATACRC‚È‚çADATAERR‚ğæ‚¹‚é
+	// If IDCRC or DATACRC, ADATAERR is expected
 	if ((fdc.err & FDD_IDCRC) || (fdc.err & FDD_DATACRC)) {
 		fdc.err &= ~FDD_IDCRC;
 		fdc.err |= FDD_DATAERR;
 	}
 
-	// N=0‚Å‚ÍN‚Æ‚µ‚ÄDTL‚ğg‚¤
+	// For N=0, use DTL instead
 	if (fdc.chrn[3] == 0) {
 		len = 1 << (fdc.dtl + 7);
 		if (len < fdc.len) {
@@ -1884,47 +1884,47 @@ BOOL FASTCALL FDC::ReadData()
 		}
 	}
 	else {
-		// (MacƒGƒ~ƒ…ƒŒ[ƒ^)
+		// (Mac G3 exception)
 		len = (1 << (fdc.chrn[3] + 7));
 		if (len < fdc.len) {
 			fdc.len = len;
 		}
 	}
 
-	// Not Ready‚ÍƒŠƒUƒ‹ƒgƒtƒF[ƒY‚Ö
+	// Not Ready goes to result phase
 	if (fdc.err & FDD_NOTREADY) {
 		return FALSE;
 	}
 
-	// CM‚ÍSK=1‚È‚çƒŠƒUƒ‹ƒgƒtƒF[ƒY‚Ö(i82078ƒf[ƒ^ƒV[ƒg‚É‚æ‚é)
+	// CM and SK=1, go to result phase (i82078 data sheet)
 	if (fdc.err & FDD_CM) {
 		if (fdc.sk) {
 			return FALSE;
 		}
 	}
 
-	// ŒŸõŠÔ‚ğŒvZ(ƒwƒbƒhƒ[ƒh‚Íl‚¦‚È‚¢)
+	// Calculate remaining time (head load is not considered)
 	hus = fdd->GetSearch();
 
-	// No Data‚Í‚±‚ÌŠÔŒãAƒŠƒUƒ‹ƒgƒtƒF[ƒY‚Ö
+	// No Data goes to previous time, go to result phase
 	if (fdc.err & FDD_NODATA) {
 		EventErr(hus);
 		return TRUE;
 	}
 
-	// ƒIƒtƒZƒbƒg‰Šú‰»AƒCƒxƒ“ƒgƒXƒ^[ƒgAERƒtƒF[ƒYŠJn
+	// Offset reset, event start, ER phase start
 	fdc.offset = 0;
 	EventRW();
 	fdc.phase = read;
 
-	// ŒŸõŠÔ‚ªƒwƒbƒhƒ[ƒhŠÔ‚æ‚è’Z‚¯‚ê‚ÎA‚Pü‘Ò‚¿
+	// If remaining time < head load time, add
 	if (!fdc.load) {
 		if (hus < fdc.hlt) {
 			hus += fdd->GetRotationTime();
 		}
 	}
 
-	// ŠÔ‚ğ‰ÁZ
+	// Time addition
 	if (!fdc.fast) {
 		hus += event.GetTime();
 		event.SetTime(hus);
@@ -1934,7 +1934,7 @@ BOOL FASTCALL FDC::ReadData()
 
 //---------------------------------------------------------------------------
 //
-//	WRITE (DELETED) DATAƒRƒ}ƒ“ƒh
+//	WRITE (DELETED) DATA command
 //
 //---------------------------------------------------------------------------
 BOOL FASTCALL FDC::WriteData()
@@ -1946,7 +1946,7 @@ BOOL FASTCALL FDC::WriteData()
 	ASSERT(this);
 	ASSERT((fdc.cmd == write_data) || (fdc.cmd == write_del_data));
 
-	// SRİ’è
+	// SR setting
 	fdc.sr |= sr_cb;
 	fdc.sr &= ~sr_dio;
 	fdc.sr &= ~sr_d3b;
@@ -1954,7 +1954,7 @@ BOOL FASTCALL FDC::WriteData()
 	fdc.sr &= ~sr_d1b;
 	fdc.sr &= ~sr_d0b;
 
-	// ƒhƒ‰ƒCƒu‚É”C‚¹‚éBNOTREADY,NOTWRITE,NODATA,MAM,CYLŒn,IDCRC,DDAM
+	// Read from drive, if NOTREADY,NOTWRITE,NODATA,MAM,CYL end,IDCRC,DDAM
 	deleted = FALSE;
 	if (fdc.cmd == write_del_data) {
 		deleted = TRUE;
@@ -1967,13 +1967,13 @@ BOOL FASTCALL FDC::WriteData()
 									fdc.mfm, fdc.chrn, fdc.hd, deleted);
 	fdc.err &= ~FDD_DDAM;
 
-	// IDCRC‚È‚çADATAERR‚ğæ‚¹‚é
+	// If IDCRC, ADATAERR is expected
 	if (fdc.err & FDD_IDCRC) {
 		fdc.err &= ~FDD_IDCRC;
 		fdc.err |= FDD_DATAERR;
 	}
 
-	// N=0‚Å‚ÍN‚Æ‚µ‚ÄDTL‚ğg‚¤
+	// For N=0, use DTL instead
 	if (fdc.chrn[3] == 0) {
 		len = 1 << (fdc.dtl + 7);
 		if (len < fdc.len) {
@@ -1987,33 +1987,33 @@ BOOL FASTCALL FDC::WriteData()
 		}
 	}
 
-	// Not Ready, Not Writable‚ÍƒŠƒUƒ‹ƒgƒtƒF[ƒY‚Ö
+	// Not Ready, Not Writable goes to result phase
 	if ((fdc.err & FDD_NOTREADY) || (fdc.err & FDD_NOTWRITE)) {
 		return FALSE;
 	}
 
-	// ŒŸõŠÔ‚ğŒvZ(ƒwƒbƒhƒ[ƒh‚Íl‚¦‚È‚¢)
+	// Calculate remaining time (head load is not considered)
 	hus = fdd->GetSearch();
 
-	// No Data‚ÍÀsŒãƒŠƒUƒ‹ƒg‚Ö
+	// No Data fails, go to result
 	if (fdc.err & FDD_NODATA) {
 		EventErr(hus);
 		return TRUE;
 	}
 
-	// ƒIƒtƒZƒbƒg‰Šú‰»AƒCƒxƒ“ƒgİ’èAEWƒtƒF[ƒYŠJn
+	// Offset reset, event setting, EW phase start
 	fdc.offset = 0;
 	EventRW();
 	fdc.phase = write;
 
-	// ŒŸõŠÔ‚ªƒwƒbƒhƒ[ƒhŠÔ‚æ‚è’Z‚¯‚ê‚ÎA‚Pü‘Ò‚¿
+	// If remaining time < head load time, add
 	if (!fdc.load) {
 		if (hus < fdc.hlt) {
 			hus += fdd->GetRotationTime();
 		}
 	}
 
-	// ŠÔ‚ğ‰ÁZ
+	// Time addition
 	if (!fdc.fast) {
 		hus += event.GetTime();
 		event.SetTime(hus);
@@ -2023,7 +2023,7 @@ BOOL FASTCALL FDC::WriteData()
 
 //---------------------------------------------------------------------------
 //
-//	SCANŒnƒRƒ}ƒ“ƒh
+//	SCAN family command
 //
 //---------------------------------------------------------------------------
 BOOL FASTCALL FDC::Scan()
@@ -2033,7 +2033,7 @@ BOOL FASTCALL FDC::Scan()
 
 	ASSERT(this);
 
-	// SRİ’è
+	// SR setting
 	fdc.sr |= sr_cb;
 	fdc.sr &= ~sr_dio;
 	fdc.sr &= ~sr_d3b;
@@ -2041,7 +2041,7 @@ BOOL FASTCALL FDC::Scan()
 	fdc.sr &= ~sr_d1b;
 	fdc.sr &= ~sr_d0b;
 
-	// ƒhƒ‰ƒCƒu‚É”C‚¹‚éBNOTREADY,NODATA,MAM,CYLŒn,CRCŒn,DDAM
+	// Read from drive, if NOTREADY,NODATA,MAM,CYL end,CRC end,DDAM
 #if defined(FDC_LOG)
 	LOG4(Log::Normal, "(C:%02X H:%02X R:%02X N:%02X)",
 		fdc.chrn[0], fdc.chrn[1], fdc.chrn[2], fdc.chrn[3]);
@@ -2049,19 +2049,19 @@ BOOL FASTCALL FDC::Scan()
 	fdc.err = fdd->ReadSector(fdc.buffer, &fdc.len,
 									fdc.mfm, fdc.chrn, fdc.hd);
 
-	// DDAM(Deleted Sector)‚Ì—L–³‚ÅACM(Control Mark)‚ğŒˆ‚ß‚é
+	// DDAM(Deleted Sector) valid, CM(Control Mark) should be set
 	if (fdc.err & FDD_DDAM) {
 		fdc.err &= ~FDD_DDAM;
 		fdc.err |= FDD_CM;
 	}
 
-	// IDCRC‚Ü‚½‚ÍDATACRC‚È‚çADATAERR‚ğæ‚¹‚é
+	// If IDCRC or DATACRC, ADATAERR is expected
 	if ((fdc.err & FDD_IDCRC) || (fdc.err & FDD_DATACRC)) {
 		fdc.err &= ~FDD_IDCRC;
 		fdc.err |= FDD_DATAERR;
 	}
 
-	// N=0‚Å‚ÍN‚Æ‚µ‚ÄDTL‚ğg‚¤
+	// For N=0, use DTL instead
 	if (fdc.chrn[3] == 0) {
 		len = 1 << (fdc.dtl + 7);
 		if (len < fdc.len) {
@@ -2075,40 +2075,40 @@ BOOL FASTCALL FDC::Scan()
 		}
 	}
 
-	// Not Ready‚ÍƒŠƒUƒ‹ƒgƒtƒF[ƒY‚Ö
+	// Not Ready goes to result phase
 	if (fdc.err & FDD_NOTREADY) {
 		return FALSE;
 	}
 
-	// CM‚ÍSK=1‚È‚çƒŠƒUƒ‹ƒgƒtƒF[ƒY‚Ö(i82078ƒf[ƒ^ƒV[ƒg‚É‚æ‚é)
+	// CM and SK=1, go to result phase (i82078 data sheet)
 	if (fdc.err & FDD_CM) {
 		if (fdc.sk) {
 			return FALSE;
 		}
 	}
 
-	// ŒŸõŠÔ‚ğŒvZ(ƒwƒbƒhƒ[ƒh‚Íl‚¦‚È‚¢)
+	// Calculate remaining time (head load is not considered)
 	hus = fdd->GetSearch();
 
-	// No Data‚Í‚±‚ÌŠÔŒãAƒŠƒUƒ‹ƒgƒtƒF[ƒY‚Ö
+	// No Data goes to previous time, go to result phase
 	if (fdc.err & FDD_NODATA) {
 		EventErr(hus);
 		return TRUE;
 	}
 
-	// ƒIƒtƒZƒbƒg‰Šú‰»AƒCƒxƒ“ƒgƒXƒ^[ƒgAERƒtƒF[ƒYŠJn
+	// Offset reset, event start, ER phase start
 	fdc.offset = 0;
 	EventRW();
 	fdc.phase = write;
 
-	// ŒŸõŠÔ‚ªƒwƒbƒhƒ[ƒhŠÔ‚æ‚è’Z‚¯‚ê‚ÎA‚Pü‘Ò‚¿
+	// If remaining time < head load time, add
 	if (!fdc.load) {
 		if (hus < fdc.hlt) {
 			hus += fdd->GetRotationTime();
 		}
 	}
 
-	// ŠÔ‚ğ‰ÁZ
+	// Time addition
 	if (!fdc.fast) {
 		hus += event.GetTime();
 		event.SetTime(hus);
@@ -2118,7 +2118,7 @@ BOOL FASTCALL FDC::Scan()
 
 //---------------------------------------------------------------------------
 //
-//	READ DIAGNOSTICƒRƒ}ƒ“ƒh
+//	READ DIAGNOSTIC command
 //
 //---------------------------------------------------------------------------
 BOOL FASTCALL FDC::ReadDiag()
@@ -2128,7 +2128,7 @@ BOOL FASTCALL FDC::ReadDiag()
 	ASSERT(this);
 	ASSERT(fdc.cmd == read_diag);
 
-	// SRİ’è
+	// SR setting
 	fdc.sr |= sr_cb;
 	fdc.sr |= sr_dio;
 	fdc.sr &= ~sr_d3b;
@@ -2136,7 +2136,7 @@ BOOL FASTCALL FDC::ReadDiag()
 	fdc.sr &= ~sr_d1b;
 	fdc.sr &= ~sr_d0b;
 
-	// EOT=0‚ÍƒŠƒUƒ‹ƒgƒtƒF[ƒY‚Ö(NO DATA)
+	// EOT=0 goes to result phase (NO DATA)
 	if (fdc.eot == 0) {
 		if (fdd->IsReady(fdc.dsr)) {
 			fdc.err = FDD_NODATA;
@@ -2147,18 +2147,18 @@ BOOL FASTCALL FDC::ReadDiag()
 		return FALSE;
 	}
 
-	// ƒhƒ‰ƒCƒu‚É”C‚¹‚éBNOTREADY,NODATA,MAM,CRCŒn,DDAM
+	// Read from drive, if NOTREADY,NODATA,MAM,CRC end,DDAM
 	fdc.err = fdd->ReadDiag(fdc.buffer, &fdc.len, fdc.mfm,
 								fdc.chrn, fdc.hd);
-	// Not Ready‚ÍƒŠƒUƒ‹ƒgƒtƒF[ƒY‚Ö
+	// Not Ready goes to result phase
 	if (fdc.err & FDD_NOTREADY) {
 		return FALSE;
 	}
 
-	// ŒŸõŠÔ‚ğŒvZ(ƒwƒbƒhƒ[ƒh‚Íl‚¦‚È‚¢)
+	// Calculate remaining time (head load is not considered)
 	hus = fdd->GetSearch();
 
-	// MAM‚È‚çŠÔ‘Ò‚¿ŒãAƒŠƒUƒ‹ƒgƒtƒF[ƒY‚ÖBNODATA‚Å‚à‘±‚¯‚é‚½‚ß
+	// MAM waits for time, go to result phase, NODATA is also error
 	if (fdc.err & FDD_MAM) {
 		EventErr(hus);
 		return TRUE;
@@ -2166,12 +2166,12 @@ BOOL FASTCALL FDC::ReadDiag()
 
 	ASSERT(fdc.len > 0);
 
-	// ƒIƒtƒZƒbƒg‰Šú‰»AƒCƒxƒ“ƒgƒXƒ^[ƒgAERƒtƒF[ƒYŠJn
+	// Offset reset, event start, ER phase start
 	fdc.offset = 0;
 	EventRW();
 	fdc.phase = read;
 
-	// ŠÔ‚ğ‰ÁZ
+	// Time addition
 	if (!fdc.fast) {
 		hus += event.GetTime();
 		event.SetTime(hus);
@@ -2181,7 +2181,7 @@ BOOL FASTCALL FDC::ReadDiag()
 
 //---------------------------------------------------------------------------
 //
-//	WRITE IDƒRƒ}ƒ“ƒh
+//	WRITE ID command
 //
 //---------------------------------------------------------------------------
 BOOL FASTCALL FDC::WriteID()
@@ -2191,7 +2191,7 @@ BOOL FASTCALL FDC::WriteID()
 	ASSERT(this);
 	ASSERT(fdc.cmd == write_id);
 
-	// SRİ’è
+	// SR setting
 	fdc.sr |= sr_cb;
 	fdc.sr &= ~sr_dio;
 	fdc.sr &= ~sr_d3b;
@@ -2199,44 +2199,44 @@ BOOL FASTCALL FDC::WriteID()
 	fdc.sr &= ~sr_d1b;
 	fdc.sr &= ~sr_d0b;
 
-	// SC=0ƒ`ƒFƒbƒN
+	// SC=0 check
 	if (fdc.sc == 0) {
 		fdc.err = 0;
 		return FALSE;
 	}
 
-	// ƒhƒ‰ƒCƒu‚É”C‚¹‚éBNOTREADY,NOTWRITE
+	// Read from drive, if NOTREADY,NOTWRITE
 	fdc.err = fdd->WriteID(NULL, fdc.d, fdc.sc, fdc.mfm, fdc.hd, fdc.gpl);
-	// Not Ready, Not Writable‚ÍƒŠƒUƒ‹ƒgƒtƒF[ƒY‚Ö
+	// Not Ready, Not Writable goes to result phase
 	if ((fdc.err & FDD_NOTREADY) || (fdc.err & FDD_NOTWRITE)) {
 		return FALSE;
 	}
 
-	// ƒIƒtƒZƒbƒg‰Šú‰»
+	// Offset reset
 	fdc.offset = 0;
 	fdc.len = fdc.sc * 4;
 
-	// ƒCƒxƒ“ƒgİ’è
+	// Event setting
 	if (fdc.ndm) {
 		fdc.sr |= sr_ndm;
-		LOG0(Log::Warning, "Non-DMAƒ‚[ƒh‚ÅWrite ID");
+		LOG0(Log::Warning, "Non-DMA mode Write ID");
 	}
 	else {
 		fdc.sr &= ~sr_ndm;
 	}
-	// N‚Í7‚Ü‚Å‚É§ŒÀ(N=7‚Í16KB/sector, ƒAƒ“ƒtƒH[ƒ}ƒbƒg)
+	// N is limited to 7 or less (N=7 is 16KB/sector, alternate format)
 	if (fdc.chrn[3] > 7) {
 		fdc.chrn[3] = 7;
 	}
 
-	// ŠÔ‚ğİ’èB‚Püã‚ğƒZƒNƒ^‚ÅŠ„‚Á‚½”
+	// Time setting. Fill with one sector
 	hus = fdd->GetSearch();
 	hus += (fdd->GetRotationTime() / fdc.sc);
 	if (fdc.fast) {
 		hus = 32 * 4;
 	}
 
-	// ƒCƒxƒ“ƒgƒXƒ^[ƒgARQM‚ğ—‚Æ‚·
+	// Event start, RQM clear
 	event.SetTime(hus);
 	fdc.sr &= ~sr_rqm;
 	fdc.phase = write;
@@ -2246,14 +2246,14 @@ BOOL FASTCALL FDC::WriteID()
 
 //---------------------------------------------------------------------------
 //
-//	ƒCƒxƒ“ƒg(Read/WriteŒn)
+//	Event (Read/Write sub)
 //
 //---------------------------------------------------------------------------
 void FASTCALL FDC::EventRW()
 {
 	DWORD hus;
 
-	// SRİ’è(Non-DMA)
+	// SR setting (Non-DMA)
 	if (fdc.ndm) {
 		fdc.sr |= sr_ndm;
 	}
@@ -2261,9 +2261,9 @@ void FASTCALL FDC::EventRW()
 		fdc.sr &= ~sr_ndm;
 	}
 
-	// ƒCƒxƒ“ƒgì¬
+	// Event creation
 	if (fdc.ndm) {
-		// Non-DMAB16us/32us
+		// Non-DMA. 16us/32us
 		if (fdc.mfm) {
 			hus = 32;
 		}
@@ -2272,7 +2272,7 @@ void FASTCALL FDC::EventRW()
 		}
 	}
 	else {
-		// DMA‚Í64ƒoƒCƒg‚Ü‚Æ‚ß‚Äs‚¤B1024us/2048us
+		// DMA. 64 bytes at once. 1024us/2048us
 		if (fdc.mfm) {
 			hus = 32 * 64;
 		}
@@ -2281,31 +2281,31 @@ void FASTCALL FDC::EventRW()
 		}
 	}
 
-	// DD‚Í‚»‚Ì”{
+	// DD is double
 	if (!fdd->IsHD()) {
 		hus <<= 1;
 	}
 
-	// fast‚Í64usŒÅ’è(DMA‚ÉŒÀ‚é)
+	// fast mode is 64us limit (DMA exception)
 	if (fdc.fast) {
 		if (!fdc.ndm) {
 			hus = 128;
 		}
 	}
 
-	// ƒCƒxƒ“ƒgƒXƒ^[ƒgARQM‚ğ—‚Æ‚·
+	// Event start, RQM clear
 	event.SetTime(hus);
 	fdc.sr &= ~sr_rqm;
 }
 
 //---------------------------------------------------------------------------
 //
-//	ƒCƒxƒ“ƒg(ƒGƒ‰[)
+//	Event (Error)
 //
 //---------------------------------------------------------------------------
 void FASTCALL FDC::EventErr(DWORD hus)
 {
-	// SRİ’è(Non-DMA)
+	// SR setting (Non-DMA)
 	if (fdc.ndm) {
 		fdc.sr |= sr_ndm;
 	}
@@ -2313,7 +2313,7 @@ void FASTCALL FDC::EventErr(DWORD hus)
 		fdc.sr &= ~sr_ndm;
 	}
 
-	// ƒCƒxƒ“ƒgƒXƒ^[ƒgARQM‚ğ—‚Æ‚·
+	// Event start, RQM clear
 	event.SetTime(hus);
 	fdc.sr &= ~sr_rqm;
 	fdc.phase = execute;
@@ -2321,7 +2321,7 @@ void FASTCALL FDC::EventErr(DWORD hus)
 
 //---------------------------------------------------------------------------
 //
-//	‘‚«‚İŠ®—¹
+//	Write back
 //
 //---------------------------------------------------------------------------
 void FASTCALL FDC::WriteBack()
@@ -2346,56 +2346,56 @@ void FASTCALL FDC::WriteBack()
 			return;
 	}
 
-	// ‚ ‚è‚¦‚È‚¢
+	// Should not be reached
 	ASSERT(FALSE);
 }
 
 //---------------------------------------------------------------------------
 //
-//	ŸƒZƒNƒ^
+//	Multi-sector
 //
 //---------------------------------------------------------------------------
 BOOL FASTCALL FDC::NextSector()
 {
-	// TCƒ`ƒFƒbƒN
+	// TC check
 	if (fdc.tc) {
-		// C,H,R,N‚ğˆÚ“®
+		// C,H,R,N direct move
 		if (fdc.chrn[2] < fdc.eot) {
 			fdc.chrn[2]++;
 			return FALSE;
 		}
 		fdc.chrn[2] = 0x01;
-		// MT‚É‚æ‚Á‚Ä•ª‚¯‚é
+		// Side change by MT
 		if (fdc.mt && (!(fdc.chrn[1] & 0x01))) {
-			// ƒTƒCƒh1‚Ö
+			// Side 1
 			fdc.chrn[1] |= 0x01;
 			fdc.hd |= 0x04;
 			return FALSE;
 		}
-		// C+1, R=1‚ÅI—¹
+		// C+1, R=1 end
 		fdc.chrn[0]++;
 		return FALSE;
 	}
 
-	// EOTƒ`ƒFƒbƒN
+	// EOT check
 	if (fdc.chrn[2] < fdc.eot) {
 		fdc.chrn[2]++;
 		return TRUE;
 	}
 
-	// EOTBR=1
+	// EOT, R=1
 	fdc.err |= FDD_EOT;
 	fdc.chrn[2] = 0x01;
 
-	// MT‚É‚æ‚Á‚Ä•ª‚¯‚é
+	// Side change by MT
 	if (fdc.mt && (!(fdc.chrn[1] & 0x01))) {
-		// ƒTƒCƒh1‚Ö
+		// Side 1
 		fdc.chrn[1] |= 0x01;
 		fdc.hd |= 0x04;
 		return TRUE;
 	}
 
-	// C+1, R=1‚ÅI—¹
+	// C+1, R=1 end
 	fdc.chrn[0]++;
 	return FALSE;
 }

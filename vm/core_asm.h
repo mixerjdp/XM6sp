@@ -2,13 +2,15 @@
 //
 //	X68000 EMULATOR "XM6"
 //
-//	Copyright (C) 2001-2004 ‚o‚hD(ytanaka@ipc-tokai.or.jp)
-//	[ ‰¼‘zƒ}ƒVƒ“ƒRƒA ƒAƒZƒ“ƒuƒ‰ƒTƒu ]
+//	Copyright (C) 2001-2004 ï¿½oï¿½hï¿½D(ytanaka@ipc-tokai.or.jp)
+//	[ ï¿½ï¿½ï¿½zï¿½}ï¿½Vï¿½ï¿½ï¿½Rï¿½A ï¿½Aï¿½Zï¿½ï¿½ï¿½uï¿½ï¿½ï¿½Tï¿½u ]
 //
 //---------------------------------------------------------------------------
 
 #if !defined (core_asm_h)
 #define core_asm_h
+
+#include <stdint.h>
 
 //#if _MSC_VER >= 1200
 
@@ -18,31 +20,31 @@ extern "C" {
 
 //---------------------------------------------------------------------------
 //
-//	ƒvƒƒgƒ^ƒCƒvéŒ¾
+//	ï¿½vï¿½ï¿½ï¿½gï¿½^ï¿½Cï¿½vï¿½éŒ¾
 //
 //---------------------------------------------------------------------------
 void MemInitDecode(Memory *mem, MemDevice* list[]);
-										// ƒƒ‚ƒŠƒfƒR[ƒ_‰Šú‰»
+										// ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½fï¿½Rï¿½[ï¿½_ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 DWORD ReadByteC(DWORD addr);
-										// ƒoƒCƒg“Ç‚İ‚İ
+										// ï¿½oï¿½Cï¿½gï¿½Ç‚İï¿½ï¿½ï¿½
 DWORD ReadWordC(DWORD addr);
-										// ƒ[ƒh“Ç‚İ‚İ
+										// ï¿½ï¿½ï¿½[ï¿½hï¿½Ç‚İï¿½ï¿½ï¿½
 void WriteByteC(DWORD addr, DWORD data);
-										// ƒoƒCƒg‘‚«‚İ
+										// ï¿½oï¿½Cï¿½gï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 void WriteWordC(DWORD addr, DWORD data);
-										// ƒ[ƒh‘‚«‚İ
+										// ï¿½ï¿½ï¿½[ï¿½hï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 void ReadErrC(DWORD addr);
-										// ƒoƒXƒGƒ‰[“Ç‚İ‚İ
+										// ï¿½oï¿½Xï¿½Gï¿½ï¿½ï¿½[ï¿½Ç‚İï¿½ï¿½ï¿½
 void WriteErrC(DWORD addr, DWORD data);
-										// ƒoƒXƒGƒ‰[‘‚«‚İ
+										// ï¿½oï¿½Xï¿½Gï¿½ï¿½ï¿½[ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 void NotifyEvent(Event *first);
-										// ƒCƒxƒ“ƒgŒQ w’è
+										// ï¿½Cï¿½xï¿½ï¿½ï¿½gï¿½Q ï¿½wï¿½ï¿½
 DWORD GetMinEvent(DWORD hus);
-										// ƒCƒxƒ“ƒgŒQ Å¬‚Ì‚à‚Ì‚ğ’T‚·
+										// ï¿½Cï¿½xï¿½ï¿½ï¿½gï¿½Q ï¿½Åï¿½ï¿½Ì‚ï¿½ï¿½Ì‚ï¿½Tï¿½ï¿½
 BOOL SubExecEvent(DWORD hus);
-										// ƒCƒxƒ“ƒgŒQ Œ¸Z•Às
-extern BYTE MemDecodeTable[];
-										// ƒƒ‚ƒŠƒfƒR[ƒhƒe[ƒuƒ‹
+										// ï¿½Cï¿½xï¿½ï¿½ï¿½gï¿½Q ï¿½ï¿½ï¿½Zï¿½ï¿½ï¿½ï¿½ï¿½s
+extern uintptr_t MemDecodeTable[];
+										// ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½fï¿½Rï¿½[ï¿½hï¿½eï¿½[ï¿½uï¿½ï¿½
 
 #if defined(__cplusplus)
 }

@@ -71,7 +71,7 @@ public:
         SK_END     = 2,
     };
 
-    typedef struct {
+    struct namests_t {
         BYTE wildcard;
         BYTE drive;
         BYTE path[65];
@@ -81,7 +81,7 @@ public:
 
         void FASTCALL GetCopyPath(BYTE* szPath) const;
         void FASTCALL GetCopyFilename(BYTE* szFilename) const;
-    } namests_t;
+    };
 
     typedef struct {
         BYTE fatr;

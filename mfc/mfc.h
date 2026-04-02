@@ -2,7 +2,7 @@
 //
 //	X68000 EMULATOR "XM6"
 //
-//	Copyright (C) 2001-2006 ＰＩ．(ytanaka@ipc-tokai.or.jp)
+//	Copyright (C) 2001-2006 PI (ytanaka@ipc-tokai.or.jp)
 //	[ MFC ]
 //
 //---------------------------------------------------------------------------
@@ -17,8 +17,8 @@
 //	#include
 //
 //---------------------------------------------------------------------------
-#define WINVER					0x500	// Windows98,Me,2000,XP以降
-#define _WIN32_WINNT			0x410	// Windows98,Me,2000,XP以降
+#define WINVER					0x500
+#define _WIN32_WINNT			0x410
 #define VC_EXTRALEAN
 
 // MFC
@@ -35,9 +35,9 @@
 #include <shlobj.h>
 
 // DirectX
-#define DIRECTSOUND_VERSION		0x500	// DirectX5を指定
+#define DIRECTSOUND_VERSION		0x500	// DirectX5 or higher
 #include <dsound.h>
-#define DIRECTINPUT_VERSION		0x500	// DirectX5を指定
+#define DIRECTINPUT_VERSION		0x500	// DirectX5 or higher
 #include <dinput.h>
 
 // C Runtime
@@ -63,82 +63,82 @@
 
 //---------------------------------------------------------------------------
 //
-//	クラス宣言
+//	Class declaration
 //
 //---------------------------------------------------------------------------
 class VM;
-										// 仮想マシン
+										// Virtual machine
 
 class CApp;
-										// アプリケーション
+										// Application
 class CFrmWnd;
-										// フレームウィンドウ
+										// Frame window
 class CDrawView;
-										// 描画ビュー
+										// Draw view
 class CStatusView;
-										// ステータスビュー
+										// Status view
 
 class CSubWnd;
-										// サブウィンドウ
+										// Sub window
 class CSubTextWnd;
-										// サブウィンドウ(テキスト)
+										// Sub window (text)
 class CSubListWnd;
-										// サブウィンドウ(リストコントロール)
+										// Sub window (list control)
 
 class CComponent;
-										// コンポーネント共通
+										// Component base
 class CConfig;
-										// コンフィグコンポーネント
+										// Config component
 class CScheduler;
-										// スケジュールコンポーネント
+										// Scheduler component
 class CSound;
-										// サウンドコンポーネント
+										// Sound component
 class CInput;
-										// インプットコンポーネント
+										// Input component
 class CPort;
-										// ポートコンポーネント
+										// Port component
 class CMIDI;
-										// MIDIコンポーネント
+										// MIDI component
 class CTKey;
-										// TrueKeyコンポーネント
+										// TrueKey component
 class CHost;
-										// ホストコンポーネント
+										// Host component
 class CInfo;
-										// 情報コンポーネント
+										// Info component
 
 //---------------------------------------------------------------------------
 //
-//	グローバル
+//	Global
 //
 //---------------------------------------------------------------------------
 extern VM *pVM;
-										// 仮想マシン
+										// Virtual machine
 BOOL FASTCALL IsJapanese(void);
-										// 日本語環境の判定
+										// Japanese environment check
 BOOL FASTCALL IsWinNT(void);
-										// WindowsNT環境の判定
+										// Windows NT environment check
 BOOL FASTCALL Support932(void);
-										// CP932サポート有無の判定
+										// CP932 support check
 BOOL FASTCALL IsMMX(void);
-										// MMX環境の判定
+										// MMX environment check
 BOOL FASTCALL IsCMOV(void);
-										// CMOVサポートの判定
+										// CMOV support check
 void FASTCALL GetMsg(UINT uID, CString& string);
-										// メッセージ取得
+										// Get message
 VM* FASTCALL GetVM(void);
-										// 仮想マシンを取得
+										// Get virtual machine
 void FASTCALL LockVM(void);
-										// 仮想マシンをロック
+										// Lock virtual machine
 void FASTCALL UnlockVM(void);
-										// 仮想マシンをアンロック
+										// Unlock virtual machine
 BOOL FASTCALL FileOpenDlg(CWnd *pParent, LPTSTR lpszPath, UINT nFilterID);
-										// ファイルオープンダイアログ
+										// File open dialog
 BOOL FASTCALL FileSaveDlg(CWnd *pParent, LPTSTR lpszPath, LPCTSTR lpszExt, UINT nFilterID);
-										// ファイルセーブダイアログ
+										// File save dialog
 void FASTCALL SetInfoMsg(LPCTSTR lpszBuf, BOOL bRec);
-										// 情報メッセージ保持サブ
+										// Info message holder
 int FASTCALL DrawTextWide(HDC hDC, LPCWSTR lpString, int nCount, LPRECT lpRect, UINT uFormat);
-										// DrawTextWラッパ
+										// DrawTextW wrapper
 
 #endif	// mfc_h
 #endif	// _WIN32

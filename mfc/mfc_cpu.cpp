@@ -1,16 +1,16 @@
-  //---------------------------------------------------------------------------
-  //
-  //	EMULADOR X68000 "XM6"
-  //
-  //	Copyright (C) 2001-2006 PI.(ytanaka@ipc-tokai.or.jp)
-  //	[ Subventana MFC (CPU) ]
-  //
-  //---------------------------------------------------------------------------
+//---------------------------------------------------------------------------
+//
+//	X68000 Emulator "XM6"
+//
+//	Copyright (C) 2001-2006 PI.(ytanaka@ipc-tokai.or.jp)
+//	[MFC subwindow (CPU)]
+//
+//---------------------------------------------------------------------------
 
 #if defined(_WIN32)
 
-#include "os.h"
 #include "mfc.h"
+#include "os.h"
 #include "xm6.h"
 #include "vm.h"
 #include "cpu.h"
@@ -26,52 +26,52 @@
 #include "mfc_res.h"
 #include "mfc_cpu.h"
 
-  //---------------------------------------------------------------------------
-  //
-  //	Comunicacion con cpudebug.c
-  //
-  //---------------------------------------------------------------------------
+//---------------------------------------------------------------------------
+//
+//	Communication with cpudebug.c
+//
+//---------------------------------------------------------------------------
 #if defined(__cplusplus)
 extern "C" {
- #endif	 // __cplusplus
+#endif	// __cplusplus
 
 void cpudebug_disassemble(int n);
- 										 // Desensamblado de 1 linea
+										// Disassemble one line
 extern void (*cpudebug_put)(const char*);
- 										 // Salida de 1 linea
+										// Single-line output
 extern DWORD debugpc;
- 										 // PC de desensamblado
+										// Disassembly PC
 
 #if defined(__cplusplus)
 }
- #endif	 // __cplusplus
+#endif	// __cplusplus
 
 static char debugbuf[0x200];
- 										 // Buffer de salida
+										// Output buffer
 
-  //===========================================================================
-  //
-  //	Dialogo con historial
-  //
-  //===========================================================================
+//===========================================================================
+//
+//	History dialog
+//
+//===========================================================================
 
-  //---------------------------------------------------------------------------
-  //
-  //	Constructor
-  //
-  //---------------------------------------------------------------------------
+//---------------------------------------------------------------------------
+//
+//	Constructor
+//
+//---------------------------------------------------------------------------
 CHistoryDlg::CHistoryDlg(UINT nID, CWnd *pParentWnd) : CDialog(nID, pParentWnd)
 {
- 	 // Inicializacion
+	// Initialization
 	m_dwValue = 0;
 	m_nBit = 32;
 }
 
-  //---------------------------------------------------------------------------
-  //
-  //	Inicializacion de dialogo
-  //
-  //---------------------------------------------------------------------------
+//---------------------------------------------------------------------------
+//
+//	Dialog initialization
+//
+//---------------------------------------------------------------------------
 BOOL CHistoryDlg::OnInitDialog()
 {
 	int i;
@@ -80,33 +80,33 @@ BOOL CHistoryDlg::OnInitDialog()
 	CString strText;
 	CComboBox *pComboBox;
 
- 	 // Clase base
+	// Base class
 	if (!CDialog::OnInitDialog()) {
 		return FALSE;
 	}
 
- 	 // Generacion de mascara
+	// Generate the mask
 	m_dwMask = 0;
 	for (i=0; i<(int)m_nBit; i++) {
 		m_dwMask <<= 1;
 		m_dwMask |= 0x01;
 	}
 
- 	 // Limpiar combo box
+	// Clear the combo box
 	pComboBox = (CComboBox*)GetDlgItem(IDC_ADDR_ADDRE);
 	ASSERT(pComboBox);
 	pComboBox->ResetContent();
 
- 	 // Anadir combo box
+	// Add entries to the combo box
 	nNum = *(int *)GetNumPtr();
 	pData = GetDataPtr();
 	for (i=0; i<nNum; i++) {
 		if (pData[i] > m_dwMask) {
- 			 // Al ser mayor que la mascara, 32 bits esta bien por defecto
+			// If the value exceeds the mask, default to 32 bits
 			strText.Format(_T("%08X"), pData[i]);
 		}
 		else {
- 			 // Menor o igual que la mascara
+			// Less than or equal to the mask
 			switch (m_nBit) {
 				case 8:
 					strText.Format(_T("%02X"), pData[i]);
@@ -122,11 +122,11 @@ BOOL CHistoryDlg::OnInitDialog()
 					break;
 			}
 		}
- 		 // Anadir
+		// Add
 		pComboBox->AddString(strText);
 	}
 
- 	 // dwValue siempre es mascara
+	// m_dwValue is always masked
 	m_dwValue &= m_dwMask;
 	switch (m_nBit) {
 		case 8:
@@ -147,11 +147,11 @@ BOOL CHistoryDlg::OnInitDialog()
 	return TRUE;
 }
 
-  //---------------------------------------------------------------------------
-  //
-  //	Dialogo OK
-  //
-  //---------------------------------------------------------------------------
+//---------------------------------------------------------------------------
+//
+//	Dialog OK
+//
+//---------------------------------------------------------------------------
 void CHistoryDlg::OnOK()
 {
 	CComboBox *pComboBox;
@@ -161,13 +161,13 @@ void CHistoryDlg::OnOK()
 	int nNum;
 	DWORD *pData;
 
- 	 // Obtener valor numerico de entrada
+	// Get the numeric input value
 	pComboBox = (CComboBox*)GetDlgItem(IDC_ADDR_ADDRE);
 	ASSERT(pComboBox);
 	pComboBox->GetWindowText(strText);
 	m_dwValue = _tcstoul((LPCTSTR)strText, NULL, 16);
 
- 	 // Comprobar si es igual a lo ya ingresado
+	// Check whether it matches an existing entry
 	nNum = *(int *)GetNumPtr();
 	pData = GetDataPtr();
 	nHit = -1;
@@ -178,50 +178,50 @@ void CHistoryDlg::OnOK()
 		}
 	}
 
- 	 // Nuevo o adoptado
+	// New or reused
 	if (nHit >= 0) {
- 		 // Igual al existente. Intercambiar lugar
+		// Same as the existing entry. Swap positions
 		for (i=(nHit - 1); i>=0; i--) {
 			pData[i + 1] = pData[i];
 		}
 		pData[0] = m_dwValue;
 	}
 	else {
- 		 // Nuevo. Bajar el existente un nivel
+		// New entry. Shift the existing entries down
 		for (i=9; i>=1; i--) {
 			pData[i] = pData[i - 1];
 		}
 
- 		 // Poner el mas reciente en [0]
+		// Put the most recent entry at [0]
 		pData[0] = m_dwValue;
 
- 		 // Se pueden anadir hasta 10
+		// Up to 10 entries can be added
 		if (nNum < 10) {
 			*(int *)GetNumPtr() = (nNum + 1);
 		}
 	}
 
- 	 // Enmascarar dwValue y OK
+	// Mask m_dwValue and accept
 	m_dwValue &= m_dwMask;
 
- 	 // Clase base
+	// Base class
 	CDialog::OnOK();
 }
 
-  //===========================================================================
-  //
-  //	Dialogo de entrada de direccion
-  //
-  //===========================================================================
+//===========================================================================
+//
+//	Address input dialog
+//
+//===========================================================================
 
-  //---------------------------------------------------------------------------
-  //
-  //	Constructor
-  //
-  //---------------------------------------------------------------------------
+//---------------------------------------------------------------------------
+//
+//	Constructor
+//
+//---------------------------------------------------------------------------
 CAddrDlg::CAddrDlg(CWnd *pParent) : CHistoryDlg(IDD_ADDRDLG, pParent)
 {
- 	 // Soporte para entorno en ingles
+	// Use the English dialog template
 	if (!::IsJapanese()) {
 		m_lpszTemplateName = MAKEINTRESOURCE(IDD_US_ADDRDLG);
 		m_nIDHelp = IDD_US_ADDRDLG;
@@ -230,11 +230,11 @@ CAddrDlg::CAddrDlg(CWnd *pParent) : CHistoryDlg(IDD_ADDRDLG, pParent)
 	m_nBit = 24;
 }
 
-  //---------------------------------------------------------------------------
-  //
-  //	Configuracion de menu
-  //
-  //---------------------------------------------------------------------------
+//---------------------------------------------------------------------------
+//
+//	Menu configuration
+//
+//---------------------------------------------------------------------------
 void CAddrDlg::SetupHisMenu(CMenu *pMenu)
 {
 	int i;
@@ -242,24 +242,24 @@ void CAddrDlg::SetupHisMenu(CMenu *pMenu)
 
 	ASSERT(pMenu);
 
- 	 // Cadena de menu
+	// Menu string
 	for (i=0; i<(int)m_Num; i++) {
 		string.Format("$%06X", m_Data[i]);
 		pMenu->ModifyMenu(IDM_HISTORY_0 + i, MF_BYCOMMAND | MF_STRING,
 							IDM_HISTORY_0 + i, (LPCTSTR)string);
 	}
 
- 	 // Eliminar menu
+	// Delete menu item
 	for (i=m_Num; i<10; i++) {
 		pMenu->DeleteMenu(IDM_HISTORY_0 + i, MF_BYCOMMAND);
 	}
 }
 
-  //---------------------------------------------------------------------------
-  //
-  //	Obtener resultado de menu
-  //
-  //---------------------------------------------------------------------------
+//---------------------------------------------------------------------------
+//
+//	Get menu result
+//
+//---------------------------------------------------------------------------
 DWORD CAddrDlg::GetAddr(UINT nID)
 {
 	DWORD dwAddr;
@@ -267,12 +267,12 @@ DWORD CAddrDlg::GetAddr(UINT nID)
 
 	ASSERT((nID >= IDM_HISTORY_0) && (nID <= IDM_HISTORY_9));
 
- 	 // Obtener direccion
+	// Get address
 	nID -= IDM_HISTORY_0;
 	ASSERT(nID < 10);
 	dwAddr = m_Data[nID];
 
- 	 // Intercambiar lugar
+	// Intercambiar lugar
 	for (i=(int)(nID - 1); i>=0; i--) {
 		m_Data[i + 1] = m_Data[i];
 	}
@@ -281,56 +281,56 @@ DWORD CAddrDlg::GetAddr(UINT nID)
 	return dwAddr;
 }
 
-  //---------------------------------------------------------------------------
-  //
-  //	Obtener puntero de conteo de historial
-  //
-  //---------------------------------------------------------------------------
+//---------------------------------------------------------------------------
+//
+//	Get history count pointer
+//
+//---------------------------------------------------------------------------
 UINT* CAddrDlg::GetNumPtr()
 {
 	return &m_Num;
 }
 
-  //---------------------------------------------------------------------------
-  //
-  //	Obtener puntero de datos de historial
-  //
-  //---------------------------------------------------------------------------
+//---------------------------------------------------------------------------
+//
+//	Get history data pointer
+//
+//---------------------------------------------------------------------------
 DWORD* CAddrDlg::GetDataPtr()
 {
 	return m_Data;
 }
 
-  //---------------------------------------------------------------------------
-  //
-  //	Conteo de historial
-  //
-  //---------------------------------------------------------------------------
+//---------------------------------------------------------------------------
+//
+//	History count
+//
+//---------------------------------------------------------------------------
 UINT CAddrDlg::m_Num = 0;
 
-  //---------------------------------------------------------------------------
-  //
-  //	Datos de historial
-  //
-  //---------------------------------------------------------------------------
+//---------------------------------------------------------------------------
+//
+//	History data
+//
+//---------------------------------------------------------------------------
 DWORD CAddrDlg::m_Data[10] = {
 	0, 0, 0, 0, 0, 0, 0, 0, 0, 0
 };
 
-  //===========================================================================
-  //
-  //	Dialogo de entrada de registros
-  //
-  //===========================================================================
+//===========================================================================
+//
+//	Register input dialog
+//
+//===========================================================================
 
-  //---------------------------------------------------------------------------
-  //
-  //	Constructor
-  //
-  //---------------------------------------------------------------------------
+//---------------------------------------------------------------------------
+//
+//	Constructor
+//
+//---------------------------------------------------------------------------
 CRegDlg::CRegDlg(CWnd *pParent) : CHistoryDlg(IDD_REGDLG, pParent)
 {
- 	 // Soporte para entorno en ingles
+	// Use the English dialog template
 	if (!::IsJapanese()) {
 		m_lpszTemplateName = MAKEINTRESOURCE(IDD_US_REGDLG);
 		m_nIDHelp = IDD_US_REGDLG;
@@ -340,11 +340,11 @@ CRegDlg::CRegDlg(CWnd *pParent) : CHistoryDlg(IDD_REGDLG, pParent)
 	m_nBit = 32;
 }
 
-  //---------------------------------------------------------------------------
-  //
-  //	Inicializacion de dialogo
-  //
-  //---------------------------------------------------------------------------
+//---------------------------------------------------------------------------
+//
+//	Dialog initialization
+//
+//---------------------------------------------------------------------------
 BOOL CRegDlg::OnInitDialog()
 {
 	CWnd *pWnd;
@@ -355,14 +355,14 @@ BOOL CRegDlg::OnInitDialog()
 	ASSERT(this);
 	ASSERT(m_nIndex < 20);
 
- 	 // Obtener registros de CPU
+	// Get CPU registers
 	::LockVM();
 	pCPU = (CPU*)::GetVM()->SearchDevice(MAKEID('C', 'P', 'U', ' '));
 	ASSERT(pCPU);
 	pCPU->GetCPU(&reg);
 	::UnlockVM();
 
- 	 // Crear cadena
+	// Build the string
 	if (m_nIndex <= 7) {
 		strRegister.Format("D%d", m_nIndex);
 		m_dwValue = reg.dreg[m_nIndex];
@@ -372,7 +372,7 @@ BOOL CRegDlg::OnInitDialog()
 		m_dwValue = reg.areg[m_nIndex & 7];
 	}
 	switch (m_nIndex) {
- 		 // USP
+		// USP
 		case 16:
 			strRegister = "USP";
 			if (reg.sr & 0x2000) {
@@ -382,7 +382,7 @@ BOOL CRegDlg::OnInitDialog()
 				m_dwValue = reg.areg[7];
 			}
 			break;
- 		 // SSP
+		// SSP
 		case 17:
 			strRegister = "SSP";
 			if (reg.sr & 0x2000) {
@@ -392,24 +392,24 @@ BOOL CRegDlg::OnInitDialog()
 				m_dwValue = reg.sp;
 			}
 			break;
- 		 // PC
+		// PC
 		case 18:
 			strRegister = "PC";
 			m_dwValue = reg.pc;
 			break;
- 		 // SR
+		// SR
 		case 19:
 			strRegister = "SR";
 			m_dwValue = reg.sr;
 			break;
 	}
 
- 	 // Llamar a la clase base aqui
+	// Call the base class here
 	if (!CHistoryDlg::OnInitDialog()) {
 		return FALSE;
 	}
 
- 	 // Establecer valor
+	// Set value
 	pWnd = GetDlgItem(IDC_ADDR_ADDRL);
 	ASSERT(pWnd);
 	pWnd->SetWindowText(strRegister);
@@ -417,11 +417,11 @@ BOOL CRegDlg::OnInitDialog()
 	return TRUE;
 }
 
-  //---------------------------------------------------------------------------
-  //
-  //	OK
-  //
-  //---------------------------------------------------------------------------
+//---------------------------------------------------------------------------
+//
+//	OK
+//
+//---------------------------------------------------------------------------
 void CRegDlg::OnOK()
 {
 	CComboBox *pComboBox;
@@ -432,19 +432,19 @@ void CRegDlg::OnOK()
 
 	ASSERT(this);
 
- 	 // Obtener valor
+	// Get value
 	pComboBox = (CComboBox*)GetDlgItem(IDC_ADDR_ADDRE);
 	ASSERT(pComboBox);
 	pComboBox->GetWindowText(string);
 	dwValue = ::strtoul((LPCTSTR)string, NULL, 16);
 
- 	 // Bloqueo de VM, obtener registros
+	// Lock the VM and read the registers
 	::LockVM();
 	pCPU = (CPU*)::GetVM()->SearchDevice(MAKEID('C', 'P', 'U', ' '));
 	ASSERT(pCPU);
 	pCPU->GetCPU(&reg);
 
- 	 // Por indice
+	// by indice
 	if (m_nIndex <= 7) {
 		reg.dreg[m_nIndex] = dwValue;
 	}
@@ -452,7 +452,7 @@ void CRegDlg::OnOK()
 		reg.areg[m_nIndex & 7] = dwValue;
 	}
 	switch (m_nIndex) {
- 		 // USP
+		// USP
 		case 16:
 			if (reg.sr & 0x2000) {
 				reg.sp = dwValue;
@@ -461,7 +461,7 @@ void CRegDlg::OnOK()
 				reg.areg[7] = dwValue;
 			}
 			break;
- 		 // SSP
+		// SSP
 		case 17:
 			if (reg.sr & 0x2000) {
 				reg.areg[7] = dwValue;
@@ -470,89 +470,89 @@ void CRegDlg::OnOK()
 				reg.sp = dwValue;
 			}
 			break;
- 		 // PC
+		// PC
 		case 18:
 			reg.pc = dwValue & 0xfffffe;
 			break;
- 		 // SR
+		// SR
 		case 19:
 			reg.sr = (WORD)dwValue;
 			break;
 	}
 
- 	 // Establecer registros, desbloqueo de VM
+	// Set registers, unlock the VM
 	pCPU->SetCPU(&reg);
 	::UnlockVM();
 
- 	 // Clase base
+	// Base class
 	CHistoryDlg::OnOK();
 }
 
-  //---------------------------------------------------------------------------
-  //
-  //	Obtener puntero de conteo de historial
-  //
-  //---------------------------------------------------------------------------
+//---------------------------------------------------------------------------
+//
+//	Get history count pointer
+//
+//---------------------------------------------------------------------------
 UINT* CRegDlg::GetNumPtr()
 {
 	return &m_Num;
 }
 
-  //---------------------------------------------------------------------------
-  //
-  //	Obtener puntero de datos de historial
-  //
-  //---------------------------------------------------------------------------
+//---------------------------------------------------------------------------
+//
+//	Get history data pointer
+//
+//---------------------------------------------------------------------------
 DWORD* CRegDlg::GetDataPtr()
 {
 	return m_Data;
 }
 
-  //---------------------------------------------------------------------------
-  //
-  //	Conteo de historial
-  //
-  //---------------------------------------------------------------------------
+//---------------------------------------------------------------------------
+//
+//	History count
+//
+//---------------------------------------------------------------------------
 UINT CRegDlg::m_Num = 0;
 
-  //---------------------------------------------------------------------------
-  //
-  //	Datos de historial
-  //
-  //---------------------------------------------------------------------------
+//---------------------------------------------------------------------------
+//
+//	History data
+//
+//---------------------------------------------------------------------------
 DWORD CRegDlg::m_Data[10] = {
 	0, 0, 0, 0, 0, 0, 0, 0, 0, 0
 };
 
-  //===========================================================================
-  //
-  //	Dialogo de entrada de datos
-  //
-  //===========================================================================
+//===========================================================================
+//
+//	Data input dialog
+//
+//===========================================================================
 
-  //---------------------------------------------------------------------------
-  //
-  //	Constructor
-  //
-  //---------------------------------------------------------------------------
+//---------------------------------------------------------------------------
+//
+//	Constructor
+//
+//---------------------------------------------------------------------------
 CDataDlg::CDataDlg(CWnd *pParent) : CHistoryDlg(IDD_DATADLG, pParent)
 {
- 	 // Soporte para entorno en ingles
+	// Use the English dialog template
 	if (!::IsJapanese()) {
 		m_lpszTemplateName = MAKEINTRESOURCE(IDD_US_DATADLG);
 		m_nIDHelp = IDD_US_DATADLG;
 	}
 
- 	 // Inicializacion por si acaso
+	// Initialize just in case
 	m_dwAddr = 0;
 	m_nSize = 0;
 }
 
-  //---------------------------------------------------------------------------
-  //
-  //	Inicializacion de dialogo
-  //
-  //---------------------------------------------------------------------------
+//---------------------------------------------------------------------------
+//
+//	Dialog initialization
+//
+//---------------------------------------------------------------------------
 BOOL CDataDlg::OnInitDialog()
 {
 	CWnd *pWnd;
@@ -561,35 +561,35 @@ BOOL CDataDlg::OnInitDialog()
 	ASSERT(this);
 	ASSERT(m_dwAddr < 0x1000000);
 
- 	 // Determinar direccion y numero de bits
+	// Determine the address and bit width
 	switch (m_nSize) {
- 		 // Byte
+		// Byte
 		case 0:
 			string.Format("$%06X (B)", m_dwAddr);
 			m_nBit = 8;
 			break;
- 		 // Word
+		// Word
 		case 1:
 			string.Format("$%06X (W)", m_dwAddr);
 			m_nBit = 16;
 			break;
- 		 // Long
+		// Long
 		case 2:
 			string.Format("$%06X (L)", m_dwAddr);
 			m_nBit = 32;
 			break;
- 		 // Otros
+		// Other
 		default:
 			ASSERT(FALSE);
 			break;
 	}
 
- 	 // Clase base
+	// Base class
 	if (!CHistoryDlg::OnInitDialog()) {
 		return FALSE;
 	}
 
- 	 // Configurar tras establecer la inicializacion
+	// Configure after initialization
 	pWnd = GetDlgItem(IDC_ADDR_ADDRL);
 	ASSERT(pWnd);
 	pWnd->SetWindowText(string);
@@ -597,82 +597,82 @@ BOOL CDataDlg::OnInitDialog()
 	return TRUE;
 }
 
-  //---------------------------------------------------------------------------
-  //
-  //	Obtener puntero de conteo de historial
-  //
-  //---------------------------------------------------------------------------
+//---------------------------------------------------------------------------
+//
+//	Get history count pointer
+//
+//---------------------------------------------------------------------------
 UINT* CDataDlg::GetNumPtr()
 {
 	return &m_Num;
 }
 
-  //---------------------------------------------------------------------------
-  //
-  //	Obtener puntero de datos de historial
-  //
-  //---------------------------------------------------------------------------
+//---------------------------------------------------------------------------
+//
+//	Get history data pointer
+//
+//---------------------------------------------------------------------------
 DWORD* CDataDlg::GetDataPtr()
 {
 	return m_Data;
 }
 
-  //---------------------------------------------------------------------------
-  //
-  //	Conteo de historial
-  //
-  //---------------------------------------------------------------------------
+//---------------------------------------------------------------------------
+//
+//	History count
+//
+//---------------------------------------------------------------------------
 UINT CDataDlg::m_Num = 0;
 
-  //---------------------------------------------------------------------------
-  //
-  //	Datos de historial
-  //
-  //---------------------------------------------------------------------------
+//---------------------------------------------------------------------------
+//
+//	History data
+//
+//---------------------------------------------------------------------------
 DWORD CDataDlg::m_Data[10] = {
 	0, 0, 0, 0, 0, 0, 0, 0, 0, 0
 };
 
-  //===========================================================================
-  //
-  //	Ventana de registros de CPU
-  //
-  //===========================================================================
+//===========================================================================
+//
+//	CPU register window
+//
+//===========================================================================
 
-  //---------------------------------------------------------------------------
-  //
-  //	Constructor
-  //
-  //---------------------------------------------------------------------------
+//---------------------------------------------------------------------------
+//
+//	Constructor
+//
+//---------------------------------------------------------------------------
 CCPURegWnd::CCPURegWnd()
 {
- 	 // Definicion de parametros de ventana
+	// Window parameter definitions
 	m_dwID = MAKEID('M', 'P', 'U', 'R');
 	::GetMsg(IDS_SWND_CPUREG, m_strCaption);
 	m_nWidth = 27;
 	m_nHeight = 10;
 
- 	 // Obtener CPU
+	// Get CPU
 	m_pCPU = (CPU*)::GetVM()->SearchDevice(MAKEID('C', 'P', 'U', ' '));
 	ASSERT(m_pCPU);
 }
 
-  //---------------------------------------------------------------------------
-  //
-  //	Mapa de mensajes
-  //
-  //---------------------------------------------------------------------------
+//---------------------------------------------------------------------------
+//
+//	Message map
+//
+//---------------------------------------------------------------------------
 BEGIN_MESSAGE_MAP(CCPURegWnd, CSubTextWnd)
 	ON_WM_LBUTTONDBLCLK()
 	ON_WM_CONTEXTMENU()
 	ON_COMMAND_RANGE(IDM_REG_D0, IDM_REG_SR, OnReg)
 END_MESSAGE_MAP()
 
-  //---------------------------------------------------------------------------
-  //
-  //	Configuracion
-  //
-  //---------------------------------------------------------------------------
+//---------------------------------------------------------------------------
+//
+//	Configuration
+//
+//---------------------------------------------------------------------------
 void FASTCALL CCPURegWnd::Setup()
 {
 	CPU::cpu_t buf;
@@ -681,13 +681,13 @@ void FASTCALL CCPURegWnd::Setup()
 
 	ASSERT(this);
 
- 	 // Limpiar
+	// Clear
 	Clear();
 
- 	 // Obtener registros de CPU
+	// Get CPU registers
 	m_pCPU->GetCPU(&buf);
 
- 	 // Set (D, A)
+	// Set (D, A)
 	for (i=0; i<8; i++) {
 		string.Format("D%1d  %08X", i, buf.dreg[i]);
 		SetString(0, i, string);
@@ -696,7 +696,7 @@ void FASTCALL CCPURegWnd::Setup()
 		SetString(15, i, string);
 	}
 
- 	 // Set (Stack)
+	// Set (Stack)
 	if (buf.sr & 0x2000) {
 		string.Format("USP %08X", buf.sp);
 		SetString(0, 8, string);
@@ -710,18 +710,18 @@ void FASTCALL CCPURegWnd::Setup()
 		SetString(15, 8, string);
 	}
 
- 	 // Set (Otros)
+	// Set (Other)
 	string.Format("PC    %06X", buf.pc);
 	SetString(0, 9, string);
 	string.Format("SR      %04X", buf.sr);
 	SetString(15, 9, string);
 }
 
-  //---------------------------------------------------------------------------
-  //
-  //	Doble clic con boton izquierdo
-  //
-  //---------------------------------------------------------------------------
+//---------------------------------------------------------------------------
+//
+//	Left double-click
+//
+//---------------------------------------------------------------------------
 void CCPURegWnd::OnLButtonDblClk(UINT nFlags, CPoint point)
 {
 	int x;
@@ -729,18 +729,18 @@ void CCPURegWnd::OnLButtonDblClk(UINT nFlags, CPoint point)
 	int index;
 	CRegDlg dlg(this);
 
- 	 // Calcular x, y
+	// Calcular x, y
 	x = point.x / m_tmWidth;
 	y = point.y / m_tmHeight;
 
- 	 // Obtener indice
+	// Get index
 	if (y < 8) {
 		if (x < 15) {
- 			 // D0-D7
+			// D0-D7
 			index = y;
 		}
 		else {
- 			 // A0-A7
+			// A0-A7
 			index = y + 8;
 		}
 	}
@@ -755,23 +755,23 @@ void CCPURegWnd::OnLButtonDblClk(UINT nFlags, CPoint point)
 
 	printf("%d", nFlags);
 
- 	 // Ejecutar dialogo
+	// Execute dialogo
 	dlg.m_nIndex = index;
 	dlg.DoModal();
 }
 
-  //---------------------------------------------------------------------------
-  //
-  //	Menu de contexto
-  //
-  //---------------------------------------------------------------------------
+//---------------------------------------------------------------------------
+//
+//	Context menu
+//
+//---------------------------------------------------------------------------
 void CCPURegWnd::OnContextMenu(CWnd *pWnd, CPoint point)
 {
 	CRect rect;
 	CMenu menu;
 	CMenu *pMenu;
 
- 	 // Determinar si se presiono dentro del area del cliente
+	// Determinar si se presiono dentro del area del cliente
 	GetClientRect(&rect);
 	ClientToScreen(&rect);
 	if (!rect.PtInRect(point)) {
@@ -779,23 +779,23 @@ void CCPURegWnd::OnContextMenu(CWnd *pWnd, CPoint point)
 		return;
 	}
 
- 	 // Cargar menu
+	// Load menu
 	menu.LoadMenu(IDR_REGMENU);
 	pMenu = menu.GetSubMenu(0);
 
- 	 // Configuracion de menu
+	// Menu configuration
 	SetupRegMenu(pMenu, m_pCPU, TRUE);
 
- 	 // Ejecutar menu
+	// Execute menu
 	pMenu->TrackPopupMenu(TPM_LEFTALIGN | TPM_LEFTBUTTON | TPM_RIGHTBUTTON,
 							point.x, point.y, this);
 }
 
-  //---------------------------------------------------------------------------
-  //
-  //	Configuracion de menu
-  //
-  //---------------------------------------------------------------------------
+//---------------------------------------------------------------------------
+//
+//	Menu configuration
+//
+//---------------------------------------------------------------------------
 void CCPURegWnd::SetupRegMenu(CMenu *pMenu, CPU *pCPU, BOOL bSR)
 {
 	int i;
@@ -805,24 +805,24 @@ void CCPURegWnd::SetupRegMenu(CMenu *pMenu, CPU *pCPU, BOOL bSR)
 	ASSERT(pMenu);
 	ASSERT(pCPU);
 
- 	 // Obtener registros de CPU
+	// Get CPU registers
 	::LockVM();
 	pCPU->GetCPU(&reg);
 	::UnlockVM();
 
- 	 // Configuracion (D)
+	// Configuration (D)
 	for (i=0; i<8; i++) {
 		string.Format("D%1d ($%08X)", i, reg.dreg[i]);
 		pMenu->ModifyMenu(IDM_REG_D0 + i, MF_BYCOMMAND | MF_STRING,
 							IDM_REG_D0 + i, (LPCTSTR)string);
 	}
- 	 // Configuracion (A)
+	// Configuration (A)
 	for (i=0; i<8; i++) {
 		string.Format("A%1d ($%08X)", i, reg.areg[i]);
 		pMenu->ModifyMenu(IDM_REG_A0 + i, MF_BYCOMMAND | MF_STRING,
 							IDM_REG_A0 + i, (LPCTSTR)string);
 	}
- 	 // Configuracion (USP, SSP)
+	// Configuration (USP, SSP)
 	if (reg.sr & 0x2000) {
 		string.Format("USP ($%08X)", reg.sp);
 		pMenu->ModifyMenu(IDM_REG_USP, MF_BYCOMMAND | MF_STRING, IDM_REG_USP, (LPCTSTR)string);
@@ -836,22 +836,22 @@ void CCPURegWnd::SetupRegMenu(CMenu *pMenu, CPU *pCPU, BOOL bSR)
 		pMenu->ModifyMenu(IDM_REG_SSP, MF_BYCOMMAND | MF_STRING, IDM_REG_SSP, (LPCTSTR)string);
 	}
 
- 	 // Configuracion (PC)
+	// Configuration (PC)
 	string.Format("PC ($%06X)", reg.pc);
 	pMenu->ModifyMenu(IDM_REG_PC, MF_BYCOMMAND | MF_STRING, IDM_REG_PC, (LPCTSTR)string);
 
- 	 // Configuracion (SR)
+	// Configuration (SR)
 	if (bSR) {
 		string.Format("SR ($%04X)", reg.sr);
 		pMenu->ModifyMenu(IDM_REG_SR, MF_BYCOMMAND | MF_STRING, IDM_REG_SR, (LPCTSTR)string);
 	}
 }
 
-  //---------------------------------------------------------------------------
-  //
-  //	Obtener valor de registro
-  //
-  //---------------------------------------------------------------------------
+//---------------------------------------------------------------------------
+//
+//	Get register value
+//
+//---------------------------------------------------------------------------
 DWORD CCPURegWnd::GetRegValue(CPU *pCPU, UINT uID)
 {
 	CPU::cpu_t reg;
@@ -859,22 +859,22 @@ DWORD CCPURegWnd::GetRegValue(CPU *pCPU, UINT uID)
 	ASSERT(pCPU);
 	ASSERT((uID >= IDM_REG_D0) && (uID <= IDM_REG_SR));
 
- 	 // Obtener registros de CPU
+	// Get CPU registers
 	::LockVM();
 	pCPU->GetCPU(&reg);
 	::UnlockVM();
 
- 	 // D0 a D7
+	// D0 a D7
 	if (uID <= IDM_REG_D7) {
 		return reg.dreg[uID - IDM_REG_D0];
 	}
 
- 	 // A0 a A7
+	// A0 a A7
 	if (uID <= IDM_REG_A7) {
 		return reg.areg[uID - IDM_REG_A0];
 	}
 
- 	 // USP
+	// USP
 	if (uID == IDM_REG_USP) {
 		if (reg.sr & 0x2000) {
 			return reg.sp;
@@ -884,7 +884,7 @@ DWORD CCPURegWnd::GetRegValue(CPU *pCPU, UINT uID)
 		}
 	}
 
- 	 // SSP
+	// SSP
 	if (uID == IDM_REG_SSP) {
 		if (reg.sr & 0x2000) {
 			return reg.areg[7];
@@ -894,73 +894,73 @@ DWORD CCPURegWnd::GetRegValue(CPU *pCPU, UINT uID)
 		}
 	}
 
- 	 // PC
+	// PC
 	if (uID == IDM_REG_PC) {
 		return reg.pc;
 	}
 
- 	 // SR
+	// SR
 	ASSERT(uID == IDM_REG_SR);
 	return reg.sr;
 }
 
-  //---------------------------------------------------------------------------
-  //
-  //	Comando de registro
-  //
-  //---------------------------------------------------------------------------
+//---------------------------------------------------------------------------
+//
+//	Register command
+//
+//---------------------------------------------------------------------------
 void CCPURegWnd::OnReg(UINT nID)
 {
 	CRegDlg dlg(this);
 
 	ASSERT((nID >= IDM_REG_D0) && (nID <= IDM_REG_SR));
 
- 	 // Convertir
+	// Convert
 	nID -= IDM_REG_D0;
 
- 	 // Dejar a cargo del dialogo
+	// Let the dialog handle it
 	dlg.m_nIndex = nID;
 	dlg.DoModal();
 }
 
-  //===========================================================================
-  //
-  //	Ventana de interrupcion
-  //
-  //===========================================================================
+//===========================================================================
+//
+//	Interrupt window
+//
+//===========================================================================
 
-  //---------------------------------------------------------------------------
-  //
-  //	Constructor
-  //
-  //---------------------------------------------------------------------------
+//---------------------------------------------------------------------------
+//
+//	Constructor
+//
+//---------------------------------------------------------------------------
 CIntWnd::CIntWnd()
 {
- 	 // Definicion de parametros de ventana
+	// Window parameter definitions
 	m_dwID = MAKEID('I', 'N', 'T', ' ');
 	::GetMsg(IDS_SWND_INT, m_strCaption);
 	m_nWidth = 47;
 	m_nHeight = 9;
 
- 	 // Obtener CPU
+	// Get CPU
 	m_pCPU = (CPU*)::GetVM()->SearchDevice(MAKEID('C', 'P', 'U', ' '));
 	ASSERT(m_pCPU);
 }
 
-  //---------------------------------------------------------------------------
-  //
-  //	Mapa de mensajes
-  //
-  //---------------------------------------------------------------------------
+//---------------------------------------------------------------------------
+//
+//	Message map
+//
+//---------------------------------------------------------------------------
 BEGIN_MESSAGE_MAP(CIntWnd, CSubTextWnd)
 	ON_WM_LBUTTONDBLCLK()
 END_MESSAGE_MAP()
 
-  //---------------------------------------------------------------------------
-  //
-  //	Configuracion
-  //
-  //---------------------------------------------------------------------------
+//---------------------------------------------------------------------------
+//
+//	Configuration
+//
+//---------------------------------------------------------------------------
 void FASTCALL CIntWnd::Setup()
 {
 	static const char *desc_table[] = {
@@ -978,123 +978,123 @@ void FASTCALL CIntWnd::Setup()
 	CString string;
 	CPU::cpu_t cpu;
 
- 	 // Obtener datos de CPU
+	// Get CPU data
 	m_pCPU->GetCPU(&cpu);
 	level = (cpu.sr >> 8);
 	level &= 0x07;
 
- 	 // Limpiar
+	// Clear
 	Clear();
 	y = 0;
 
- 	 // Guia
+	// Guide
 	SetString(0, y, "(High)  Device  Mask  Vector     Req        Ack");
 	y++;
 
- 	 // Procesamiento de 7 niveles
+	// Seven-level processing
 	for (i=7; i>=1; i--) {
- 		 // Establecer nombre de interrupcion
+		// Set interrupt name
 		string.Format("Level%1d  ", i);
 		string += desc_table[7 - i];
 		SetString(0, y, string);
 
- 		 // Mascara
+		// Mask
 		if (i < 7) {
 			if (i <= level) {
 				SetString(16, y, "Mask");
 			}
 		}
 
- 		 // Esta en peticion?
+		// Is it pending?
 		if (cpu.intr[0] & 0x80) {
- 			 // Hay peticion. Mostrar vector
+			// If pending, display the vector
 			string.Format("$%02X", cpu.intr[i]);
 			SetString(22, y, string);
 		}
 
- 		 // Contador de peticiones
+		// Request counter
 		string.Format("%10d", cpu.intreq[i]);
 		SetString(26, y, string);
-		
- 		 // Contador de respuestas
+
+		// Response counter
 		string.Format("%10d", cpu.intack[i]);
 		SetString(37, y, string);
 
- 		 // Siguiente
+		// Next
 		y++;
 		cpu.intr[0] <<= 1;
 	}
 
- 	 // Guia
+	// Guide
 	SetString(0, y, "(Low)");
 }
 
-  //---------------------------------------------------------------------------
-  //
-  //	Doble clic con boton izquierdo
-  //
-  //---------------------------------------------------------------------------
+//---------------------------------------------------------------------------
+//
+//	Left double-click
+//
+//---------------------------------------------------------------------------
 void CIntWnd::OnLButtonDblClk(UINT nFlags, CPoint point)
 {
 	int y;
 	int level;
 	CPU::cpu_t cpu;
 
- 	 // Calcular y
+	// Calcular y
 	y = point.y / m_tmHeight;
 
- 	 // y=1,2,3,4,5,6,7 corresponden respectivamente a int7,6,5,4,3,2,1
+	// y=1,2,3,4,5,6,7 corresponden respectivamente a int7,6,5,4,3,2,1
 	level = 8 - y;
 	if ((level < 1) || (level > 7)) {
 		return;
 	}
 
- 	 // Bloqueo, obtener datos
+	// Lock and fetch data
 	::LockVM();
 	m_pCPU->GetCPU(&cpu);
 
- 	 // Limpiar
+	// Clear
 	ASSERT((level >= 1) && (level <= 7));
 	cpu.intreq[level] = 0;
 	cpu.intack[level] = 0;
 
- 	 // Establecer datos, desbloqueo
+	// Set data and unlock
 	m_pCPU->SetCPU(&cpu);
 	printf("%d", nFlags);
 	::UnlockVM();
 }
 
-  //===========================================================================
-  //
-  //	Ventana de desensamblado
-  //
-  //===========================================================================
+//===========================================================================
+//
+//	Disassembly window
+//
+//===========================================================================
 
 #if defined(__cplusplus)
 extern "C" {
 #endif
-  //---------------------------------------------------------------------------
-  //
-  //	cpudebug.c Salida de cadena
-  //
-  //---------------------------------------------------------------------------
+//---------------------------------------------------------------------------
+//
+//	cpudebug.c string output
+//
+//---------------------------------------------------------------------------
 void disasm_put(const char *s)
 {
 	strcpy(debugbuf, s);
 }
 
-  //---------------------------------------------------------------------------
-  //
-  //	Dispositivo de memoria
-  //
-  //---------------------------------------------------------------------------
+//---------------------------------------------------------------------------
+//
+//	Memory device
+//
+//---------------------------------------------------------------------------
 static Memory* cpudebug_memory;
 
-  //---------------------------------------------------------------------------
-  //
-  //	cpudebug.c Lectura de palabra
-  //
-  //---------------------------------------------------------------------------
+//---------------------------------------------------------------------------
+//
+//	cpudebug.c word read
+//
+//---------------------------------------------------------------------------
 WORD cpudebug_fetch(DWORD addr)
 {
 	WORD w;
@@ -1112,27 +1112,27 @@ WORD cpudebug_fetch(DWORD addr)
 };
 #endif
 
-  //---------------------------------------------------------------------------
-  //
-  //	Constructor
-  //
-  //---------------------------------------------------------------------------
+//---------------------------------------------------------------------------
+//
+//	Constructor
+//
+//---------------------------------------------------------------------------
 CDisasmWnd::CDisasmWnd(int index)
 {
- 	 // Hasta 8 tipos de ventanas de desensamblado
+	// Up to 8 disassembly window types
 	ASSERT((index >= 0) && (index <= 0x07));
 
- 	 // Definicion de parametros de ventana
+	// Window parameter definitions
 	m_dwID = MAKEID('D', 'I', 'S', (index + 'A'));
 	::GetMsg(IDS_SWND_DISASM, m_strCaption);
 	m_nWidth = 70;
 	m_nHeight = 16;
 
- 	 // Definicion de parametros de ventana (scroll)
+	// Window parameter definitions (scroll)
 	m_ScrlWidth = 70;
 	m_ScrlHeight = 0x8000;
 
- 	 // La primera ventana tiene sincronizacion con PC, las demas no
+	// The first window is synchronized with the PC; the others are not
 	if (index == 0) {
 		m_bSync = TRUE;
 	}
@@ -1140,12 +1140,12 @@ CDisasmWnd::CDisasmWnd(int index)
 		m_bSync = FALSE;
 	}
 
- 	 // Otros
+	// Other
 	m_pAddrBuf = NULL;
 	m_Caption = m_strCaption;
 	m_CaptionSet = "";
 
- 	 // Obtener dispositivo
+	// Get the device
 	m_pCPU = (CPU*)::GetVM()->SearchDevice(MAKEID('C', 'P', 'U', ' '));
 	ASSERT(m_pCPU);
 	cpudebug_memory = (Memory*)::GetVM()->SearchDevice(MAKEID('M', 'E', 'M', ' '));
@@ -1163,21 +1163,21 @@ CDisasmWnd::CDisasmWnd(int index)
 	m_pIOSC = (IOSC*)::GetVM()->SearchDevice(MAKEID('I', 'O', 'S', 'C'));
 	ASSERT(m_pIOSC);
 
- 	 // Inicializar direccion al PC
+	// Initialize the address to the PC
 	m_dwSetAddr = m_pCPU->GetPC();
 	m_dwAddr = m_dwSetAddr;
 	m_dwAddr = m_dwAddr & 0xff0000;
 	m_dwPC = 0xffffffff;
 
- 	 // Conexion de buffer de desensamblado
+	// Disassembly buffer linkage
 	::cpudebug_put = ::disasm_put;
 }
 
-  //---------------------------------------------------------------------------
-  //
-  //	Mapa de mensajes
-  //
-  //---------------------------------------------------------------------------
+//---------------------------------------------------------------------------
+//
+//	Message map
+//
+//---------------------------------------------------------------------------
 BEGIN_MESSAGE_MAP(CDisasmWnd, CSubTextScrlWnd)
 	ON_WM_CREATE()
 	ON_WM_DESTROY()
@@ -1202,56 +1202,56 @@ BEGIN_MESSAGE_MAP(CDisasmWnd, CSubTextScrlWnd)
 	ON_COMMAND_RANGE(IDM_DIS_IOSC0, IDM_DIS_IOSC3, OnIOSC)
 END_MESSAGE_MAP()
 
-  //---------------------------------------------------------------------------
-  //
-  //	Creacion de ventana
-  //
-  //---------------------------------------------------------------------------
+//---------------------------------------------------------------------------
+//
+//	Window creation
+//
+//---------------------------------------------------------------------------
 int CDisasmWnd::OnCreate(LPCREATESTRUCT lpcs)
 {
 	int i;
 
- 	 // Asegurar el buffer de direcciones primero
+	// Ensure the address buffer first
 	m_pAddrBuf = new DWORD[ m_nHeight ];
 	for (i=0; i<m_nHeight; i++) {
 		m_pAddrBuf[i] = 0xffffffff;
 	}
 
- 	 // Clase base
+	// Base class
 	if (CSubTextScrlWnd::OnCreate(lpcs) != 0) {
 		return -1;
 	}
 
- 	 // Inicializacion de direccion
+	// Address initialization
 	SetAddr(m_dwSetAddr);
 
 	return TRUE;
 }
 
-  //---------------------------------------------------------------------------
-  //
-  //	Eliminacion de ventana
-  //
-  //---------------------------------------------------------------------------
+//---------------------------------------------------------------------------
+//
+//	Window destruction
+//
+//---------------------------------------------------------------------------
 void CDisasmWnd::OnDestroy()
 {
 	m_bEnable = FALSE;
 
- 	 // Liberar buffer de direcciones
+	// Release the address buffer
 	if (m_pAddrBuf) {
 		delete[] m_pAddrBuf;
 		m_pAddrBuf = NULL;
 	}
 
- 	 // A la clase base
+	// Call the base class
 	CSubTextScrlWnd::OnDestroy();
 }
 
-  //---------------------------------------------------------------------------
-  //
-  //	Cambio de tamano
-  //
-  //---------------------------------------------------------------------------
+//---------------------------------------------------------------------------
+//
+//	Resize
+//
+//---------------------------------------------------------------------------
 void CDisasmWnd::OnSize(UINT nType, int cx, int cy)
 {
 	CRect rect;
@@ -1261,7 +1261,7 @@ void CDisasmWnd::OnSize(UINT nType, int cx, int cy)
 	ASSERT(cx >= 0);
 	ASSERT(cy >= 0);
 
- 	 // Liberar buffer de direcciones si existe
+	// Release the address buffer if it exists
 	::LockVM();
 	if (m_pAddrBuf) {
 		delete[] m_pAddrBuf;
@@ -1269,10 +1269,10 @@ void CDisasmWnd::OnSize(UINT nType, int cx, int cy)
 	}
 	::UnlockVM();
 
- 	 // Clase base (dentro de esto, se puede llamar de nuevo a CDisasmWnd::OnSize)
+	// Base class (within this, CDisasmWnd::OnSize can be called again)
 	CSubTextScrlWnd::OnSize(nType, cx, cy);
 
- 	 // Volver a asegurar el buffer de direcciones. Tambien comprobar liberacion
+	// Reacquire the address buffer. Also verify release handling.
 	::LockVM();
 	if (m_pAddrBuf) {
 		delete[] m_pAddrBuf;
@@ -1284,46 +1284,46 @@ void CDisasmWnd::OnSize(UINT nType, int cx, int cy)
 	}
 	::UnlockVM();
 
- 	 // Reestablecer direccion
+	// Restore the address
 	SetAddr(m_dwSetAddr);
 }
 
-  //---------------------------------------------------------------------------
-  //
-  //	Clic izquierdo
-  //
-  //---------------------------------------------------------------------------
+//---------------------------------------------------------------------------
+//
+//	Left click
+//
+//---------------------------------------------------------------------------
 void CDisasmWnd::OnLButtonDown(UINT nFlags, CPoint point)
 {
 	OnLButtonDblClk(nFlags, point);
 }
 
-  //---------------------------------------------------------------------------
-  //
-  //	Doble clic con boton izquierdo
-  //
-  //---------------------------------------------------------------------------
+//---------------------------------------------------------------------------
+//
+//	Left double-click
+//
+//---------------------------------------------------------------------------
 void CDisasmWnd::OnLButtonDblClk(UINT nFlags, CPoint point)
 {
 	int y;
 	DWORD dwAddr;
 
- 	 // Terminar si no hay buffer de direcciones
+	// Abort if there is no address buffer
 	if (!m_pAddrBuf) {
 		return;
 	}
 
- 	 // Obtener direccion, comprobar
+	// Get the address and verify it
 	y = point.y / m_tmHeight;
 	dwAddr = m_pAddrBuf[y];
 	if (dwAddr >= 0x01000000) {
 		return;
 	}
 
- 	 // Bloqueo de VM
+	// Lock the VM
 	::LockVM();
 
- 	 // Si hay direccion, eliminar; si no hay, establecer
+	// If there is an address, clear it; otherwise set it
 	if (m_pScheduler->IsBreak(dwAddr) >= 0) {
 		m_pScheduler->DelBreak(dwAddr);
 	}
@@ -1331,15 +1331,15 @@ void CDisasmWnd::OnLButtonDblClk(UINT nFlags, CPoint point)
 		m_pScheduler->SetBreak(dwAddr);
 	}
 	printf("%d", nFlags);
- 	 // Desbloqueo de VM
+	// Unlock the VM
 	::UnlockVM();
 }
 
-  //---------------------------------------------------------------------------
-  //
-  //	Desplazamiento (vertical)
-  //
-  //---------------------------------------------------------------------------
+//---------------------------------------------------------------------------
+//
+//	Vertical scroll
+//
+//---------------------------------------------------------------------------
 void CDisasmWnd::OnVScroll(UINT nSBCode, UINT nPos, CScrollBar *pBar)
 {
 	SCROLLINFO si;
@@ -1347,32 +1347,32 @@ void CDisasmWnd::OnVScroll(UINT nSBCode, UINT nPos, CScrollBar *pBar)
 	DWORD dwAddr;
 	int i;
 
- 	 // Obtener informacion de desplazamiento
+	// Get scroll information
 	memset(&si, 0, sizeof(si));
 	si.cbSize = sizeof(si);
 	GetScrollInfo(SB_VERT, &si, SIF_ALL);
 
- 	 // Por codigo de barra de desplazamiento
+	// By scroll bar code
 	switch (nSBCode) {
- 		 // Hacia arriba
+		// Up
 		case SB_TOP:
 			m_ScrlY = si.nMin;
 			break;
 
- 		 // Hacia abajo
+		// Down
 		case SB_BOTTOM:
 			m_ScrlY = si.nMax;
 			break;
 
- 		 // 1 linea hacia arriba
+		// 1 line up
 		case SB_LINEUP:
- 			 // Comprobar buffer de direcciones
+			// Check the address buffer
 			if (m_pAddrBuf) {
- 				 // Obtener direccion anterior y calcular diferencia
+				// Get the previous address and compute the difference
 				dwDiff = GetPrevAddr(m_pAddrBuf[0]);
 				dwDiff = m_pAddrBuf[0] - dwDiff;
 
- 				 // Si hay diferencia, disminuir; si no, -1
+				// If there is a difference, decrement; otherwise use -1
 				if (dwDiff > 0) {
 					dwDiff >>= 1;
 					m_ScrlY -= dwDiff;
@@ -1383,9 +1383,9 @@ void CDisasmWnd::OnVScroll(UINT nSBCode, UINT nPos, CScrollBar *pBar)
 			}
 			break;
 
- 		 // 1 linea hacia abajo
+		// 1 line down
 		case SB_LINEDOWN:
- 			 // Mirar buffer de direcciones y avanzar 1 instruccion
+			// Inspect the address buffer and advance one instruction
 			if (m_nHeight >= 2) {
 				if (m_pAddrBuf) {
 					dwDiff = m_pAddrBuf[1] - m_pAddrBuf[0];
@@ -1393,21 +1393,21 @@ void CDisasmWnd::OnVScroll(UINT nSBCode, UINT nPos, CScrollBar *pBar)
 					m_ScrlY += dwDiff;
 				}
 			}
-			
+
 			break;
 
- 		 // 1 pagina hacia arriba
+		// 1 page up
 		case SB_PAGEUP:
- 			 // Comprobar buffer de direcciones
+			// Check the address buffer
 			if (m_pAddrBuf) {
 				dwAddr = m_pAddrBuf[0];
 				for (i=0; i<m_nHeight-1; i++) {
- 					 // Obtener direccion anterior y calcular diferencia
+					// Get the previous address and compute the difference
 					dwDiff = GetPrevAddr(dwAddr);
 					dwDiff = dwAddr - dwDiff;
 					dwAddr -= dwDiff;
 
- 					 // Si hay diferencia, disminuir; si no, -1
+					// If there is a difference, decrement; otherwise use -1
 					if (dwDiff > 0) {
 						dwDiff >>= 1;
 						m_ScrlY -= dwDiff;
@@ -1416,22 +1416,22 @@ void CDisasmWnd::OnVScroll(UINT nSBCode, UINT nPos, CScrollBar *pBar)
 						m_ScrlY--;
 					}
 
- 					 // Comprobar desbordamiento
+					// Check desbordamiento
 					if (m_ScrlY < 0) {
 						m_ScrlY = 0;
 					}
 				}
 
- 				 // Considerar el caso en el que no se pudo volver atras en absoluto
+				// Consider the case where we could not step back at all
 				if (dwAddr == m_pAddrBuf[0]) {
 					m_ScrlY -= si.nPage;
 				}
 			}
 			break;
 
- 		 // 1 pagina hacia abajo
+		// 1 page down
 		case SB_PAGEDOWN:
- 			 // Mirar buffer de direcciones y avanzar m_nHeight instrucciones
+			// Inspect the address buffer and advance m_nHeight instructions
 			if (m_pAddrBuf) {
 				dwDiff = m_pAddrBuf[m_nHeight - 1] - m_pAddrBuf[0];
 				dwDiff >>= 1;
@@ -1439,7 +1439,7 @@ void CDisasmWnd::OnVScroll(UINT nSBCode, UINT nPos, CScrollBar *pBar)
 			}
 			break;
 
- 		 // Mover thumb
+		// Move thumb
 		case SB_THUMBPOSITION:
 			m_ScrlY = nPos;
 			break;
@@ -1448,7 +1448,7 @@ void CDisasmWnd::OnVScroll(UINT nSBCode, UINT nPos, CScrollBar *pBar)
 			break;
 	}
 
- 	 // Comprobar desbordamiento
+	// Check desbordamiento
 	if (m_ScrlY < 0) {
 		m_ScrlY = 0;
 	}
@@ -1457,22 +1457,22 @@ void CDisasmWnd::OnVScroll(UINT nSBCode, UINT nPos, CScrollBar *pBar)
 	}
 
 	pBar = NULL;
- 	 // Set
+	// Set
 	SetupScrlV();
 }
 
-  //---------------------------------------------------------------------------
-  //
-  //	Menu de contexto
-  //
-  //---------------------------------------------------------------------------
+//---------------------------------------------------------------------------
+//
+//	Context menu
+//
+//---------------------------------------------------------------------------
 void CDisasmWnd::OnContextMenu(CWnd *pWnd, CPoint point)
 {
 	CRect rect;
 	CMenu menu;
 	CMenu *pMenu;
 
- 	 // Determinar si se presiono dentro del area del cliente
+	// Determinar si se presiono dentro del area del cliente
 	GetClientRect(&rect);
 	ClientToScreen(&rect);
 	if (!rect.PtInRect(point)) {
@@ -1480,7 +1480,7 @@ void CDisasmWnd::OnContextMenu(CWnd *pWnd, CPoint point)
 		return;
 	}
 
- 	 // Cargar menu
+	// Load menu
 	if (::IsJapanese()) {
 		menu.LoadMenu(IDR_DISMENU);
 	}
@@ -1489,19 +1489,19 @@ void CDisasmWnd::OnContextMenu(CWnd *pWnd, CPoint point)
 	}
 	pMenu = menu.GetSubMenu(0);
 
- 	 // Configuracion
+	// Configuration
 	SetupContext(pMenu);
 
- 	 // Ejecutar menu
+	// Execute menu
 	pMenu->TrackPopupMenu(TPM_LEFTALIGN | TPM_LEFTBUTTON | TPM_RIGHTBUTTON,
 							point.x, point.y, this);
 }
 
-  //---------------------------------------------------------------------------
-  //
-  //	Configuracion de menu de contexto
-  //
-  //---------------------------------------------------------------------------
+//---------------------------------------------------------------------------
+//
+//	Context menu configuration
+//
+//---------------------------------------------------------------------------
 void FASTCALL CDisasmWnd::SetupContext(CMenu *pMenu)
 {
 	CMenu *pSubMenu;
@@ -1509,61 +1509,61 @@ void FASTCALL CDisasmWnd::SetupContext(CMenu *pMenu)
 
 	ASSERT(pMenu);
 
- 	 // Sincronizar con PC
+	// Sync with PC
 	if (m_bSync) {
 		pMenu->CheckMenuItem(IDM_DIS_SYNC, MF_BYCOMMAND | MF_CHECKED);
 	}
 
- 	 // Nueva ventana
+	// New window
 	if (!m_pDrawView->IsNewWindow(TRUE)) {
 		pMenu->EnableMenuItem(IDM_DIS_NEWWIN, MF_BYCOMMAND | MF_GRAYED);
 	}
 
- 	 // Registros de MPU, Stack, Historial de direcciones
+	// MPU registers, Stack, Address history
 	CCPURegWnd::SetupRegMenu(pMenu, m_pCPU, FALSE);
 	CMemoryWnd::SetupStackMenu(pMenu, m_pMemory, m_pCPU);
 	CAddrDlg::SetupHisMenu(pMenu);
 
- 	 // Punto de interrupcion (Breakpoint)
+	// Breakpoint
 	SetupBreakMenu(pMenu, m_pScheduler);
 
- 	 // Bloquear VM
+	// Bloquear VM
 	::LockVM();
 
- 	 // Preparar vectores de interrupcion
+	// Prepare interrupt vectors
 	pSubMenu = pMenu->GetSubMenu(9);
 
- 	 // MPU estandar
+	// Standard MPU
 	SetupVector(pSubMenu, 0, 1, 11);
 
- 	 // trap #x
+	// trap #x
 	SetupVector(pSubMenu, 12, 0x20, 16);
 
- 	 // MFP
+	// MFP
 	SetupVector(pSubMenu, 29, (m_pMFP->GetVR() & 0xf0), 16);
 
- 	 // SCC
+	// SCC
 	for (i=0; i<8; i++) {
 		SetupVector(pSubMenu, 46 + i, m_pSCC->GetVector(i), 1);
 	}
 
- 	 // DMAC
+	// DMAC
 	for (i=0; i<8; i++) {
 		SetupVector(pSubMenu, 55 + i, m_pDMAC->GetVector(i), 1);
 	}
 
- 	 // IOSC
+	// IOSC
 	SetupVector(pSubMenu, 64, m_pIOSC->GetVector(), 4);
 
- 	 // Desbloquear VM
+	// Desbloquear VM
 	::UnlockVM();
 }
 
-  //---------------------------------------------------------------------------
-  //
-  //	Configuracion de vectores de interrupcion
-  //
-  //---------------------------------------------------------------------------
+//---------------------------------------------------------------------------
+//
+//	Interrupt vector configuration
+//
+//---------------------------------------------------------------------------
 void FASTCALL CDisasmWnd::SetupVector(CMenu *pMenu, UINT index, DWORD vector, int num)
 {
 	int i;
@@ -1572,12 +1572,12 @@ void FASTCALL CDisasmWnd::SetupVector(CMenu *pMenu, UINT index, DWORD vector, in
 	ASSERT(pMenu);
 	ASSERT(num > 0);
 
- 	 // Inicializacion de direcciones de vectores de interrupcion
+	// Initialize interrupt vector addresses
 	vector <<= 2;
 
- 	 // Bucle
+	// loop
 	for (i=0; i<num; i++) {
- 		 // Obtener direccion del controlador de interrupcion
+		// Get interrupt controller address
 		handler = (DWORD)m_pMemory->ReadOnly(vector + 1);
 		handler <<= 8;
 		handler |= (DWORD)m_pMemory->ReadOnly(vector + 2);
@@ -1585,17 +1585,17 @@ void FASTCALL CDisasmWnd::SetupVector(CMenu *pMenu, UINT index, DWORD vector, in
 		handler |= (DWORD)m_pMemory->ReadOnly(vector + 3);
 		vector += 4;
 
- 		 // Establecer direccion
+		// Set address
 		SetupAddress(pMenu, index, handler);
 		index++;
 	}
 }
 
-  //---------------------------------------------------------------------------
-  //
-  //	Configuracion de direccion
-  //
-  //---------------------------------------------------------------------------
+//---------------------------------------------------------------------------
+//
+//  Address configuration
+//
+//---------------------------------------------------------------------------
 void FASTCALL CDisasmWnd::SetupAddress(CMenu *pMenu, UINT index, DWORD addr)
 {
 	CString string;
@@ -1606,10 +1606,10 @@ void FASTCALL CDisasmWnd::SetupAddress(CMenu *pMenu, UINT index, DWORD addr)
 	ASSERT(pMenu);
 	ASSERT(addr <= 0xffffff);
 
- 	 // Obtener cadena actual
+	// Get the current string
 	pMenu->GetMenuString(index, string, MF_BYPOSITION);
 
- 	 // Buscar el inicio de los parentesis, y si existe, solo lo posterior
+	// Find the opening parenthesis and keep only the text that follows it
 	ext = string.Find(" : ");
 	if (ext >= 0) {
 		menustr = string.Mid(ext + 3);
@@ -1618,29 +1618,29 @@ void FASTCALL CDisasmWnd::SetupAddress(CMenu *pMenu, UINT index, DWORD addr)
 		menustr = string;
 	}
 
- 	 // Crear cadena ($)
+	// Build the string ($)
 	string.Format("$%06X : ", addr);
 	string += menustr;
 
- 	 // Establecer cadena
+	// Set string
 	id = pMenu->GetMenuItemID(index);
 	pMenu->ModifyMenu(index, MF_BYPOSITION | MF_STRING, id, string);
 }
 
-  //---------------------------------------------------------------------------
-  //
-  //	Nueva ventana
-  //
-  //---------------------------------------------------------------------------
+//---------------------------------------------------------------------------
+//
+//	New window
+//
+//---------------------------------------------------------------------------
 void CDisasmWnd::OnNewWin()
 {
 	CDisasmWnd *pDisasmWnd;
 	DWORD dwAddr;
 
- 	 // Solicitar a la ventana padre la creacion de una nueva ventana
+	// Request the parent window to create a new window
 	pDisasmWnd = (CDisasmWnd*)m_pDrawView->NewWindow(TRUE);
 
- 	 // Si tiene exito, pasar mi propia direccion
+	// If it succeeds, pass my own address
 	if (pDisasmWnd) {
 		dwAddr = m_ScrlY * 2;
 		dwAddr += m_dwAddr;
@@ -1648,51 +1648,51 @@ void CDisasmWnd::OnNewWin()
 	}
 }
 
-  //---------------------------------------------------------------------------
-  //
-  //	Mover al PC
-  //
-  //---------------------------------------------------------------------------
+//---------------------------------------------------------------------------
+//
+//	Move to PC
+//
+//---------------------------------------------------------------------------
 void CDisasmWnd::OnPC()
 {
- 	 // Establecer direccion al PC actual (realiza Refresh internamente)
+	// Set the address to the current PC (Refresh runs internally)
 	SetAddr(m_pCPU->GetPC());
 }
 
-  //---------------------------------------------------------------------------
-  //
-  //	Sincronizar con PC
-  //
-  //---------------------------------------------------------------------------
+//---------------------------------------------------------------------------
+//
+//	Sync with PC
+//
+//---------------------------------------------------------------------------
 void CDisasmWnd::OnSync()
 {
 	m_bSync = (!m_bSync);
 }
 
-  //---------------------------------------------------------------------------
-  //
-  //	Entrada de direccion
-  //
-  //---------------------------------------------------------------------------
+//---------------------------------------------------------------------------
+//
+//	Address input
+//
+//---------------------------------------------------------------------------
 void CDisasmWnd::OnAddr()
 {
 	CAddrDlg dlg(this);
 
- 	 // Ejecutar dialogo
+	// Execute dialogo
 	dlg.m_dwValue = m_dwSetAddr;
 	if (dlg.DoModal() != IDOK) {
 		return;
 	}
 
- 	 // Establecer direccion
+	// Set address
 	SetAddr(dlg.m_dwValue);
 }
 
-  //---------------------------------------------------------------------------
-  //
-  //	Registros MPU
-  //
-  //---------------------------------------------------------------------------
+//---------------------------------------------------------------------------
+//
+//	Registers MPU
+//
+//---------------------------------------------------------------------------
 void CDisasmWnd::OnReg(UINT nID)
 {
 	DWORD dwAddr;
@@ -1703,11 +1703,11 @@ void CDisasmWnd::OnReg(UINT nID)
 	SetAddr(dwAddr);
 }
 
-  //---------------------------------------------------------------------------
-  //
-  //	Stack
-  //
-  //---------------------------------------------------------------------------
+//---------------------------------------------------------------------------
+//
+//	Stack
+//
+//---------------------------------------------------------------------------
 void CDisasmWnd::OnStack(UINT nID)
 {
 	DWORD dwAddr;
@@ -1718,11 +1718,11 @@ void CDisasmWnd::OnStack(UINT nID)
 	SetAddr(dwAddr);
 }
 
-  //---------------------------------------------------------------------------
-  //
-  //	Breakpoint
-  //
-  //---------------------------------------------------------------------------
+//---------------------------------------------------------------------------
+//
+//	Breakpoint
+//
+//---------------------------------------------------------------------------
 void CDisasmWnd::OnBreak(UINT nID)
 {
 	DWORD dwAddr;
@@ -1733,11 +1733,11 @@ void CDisasmWnd::OnBreak(UINT nID)
 	SetAddr(dwAddr);
 }
 
-  //---------------------------------------------------------------------------
-  //
-  //	Historial de direcciones
-  //
-  //---------------------------------------------------------------------------
+//---------------------------------------------------------------------------
+//
+//	Address history
+//
+//---------------------------------------------------------------------------
 void CDisasmWnd::OnHistory(UINT nID)
 {
 	DWORD dwAddr;
@@ -1748,11 +1748,11 @@ void CDisasmWnd::OnHistory(UINT nID)
 	SetAddr(dwAddr);
 }
 
-  //---------------------------------------------------------------------------
-  //
-  //	Vectores de excepcion de CPU
-  //
-  //---------------------------------------------------------------------------
+//---------------------------------------------------------------------------
+//
+//	CPU exception vectors
+//
+//---------------------------------------------------------------------------
 void CDisasmWnd::OnCPUExcept(UINT nID)
 {
 	nID -= IDM_DIS_RESET;
@@ -1760,11 +1760,11 @@ void CDisasmWnd::OnCPUExcept(UINT nID)
 	OnVector(nID + 1);
 }
 
-  //---------------------------------------------------------------------------
-  //
-  //	vectores trap
-  //
-  //---------------------------------------------------------------------------
+//---------------------------------------------------------------------------
+//
+//	trap vectors
+//
+//---------------------------------------------------------------------------
 void CDisasmWnd::OnTrap(UINT nID)
 {
 	nID -= IDM_DIS_TRAP0;
@@ -1772,11 +1772,11 @@ void CDisasmWnd::OnTrap(UINT nID)
 	OnVector(nID + 0x20);
 }
 
-  //---------------------------------------------------------------------------
-  //
-  //	Vectores MFP
-  //
-  //---------------------------------------------------------------------------
+//---------------------------------------------------------------------------
+//
+//	MFP vectors
+//
+//---------------------------------------------------------------------------
 void CDisasmWnd::OnMFP(UINT nID)
 {
 	nID -= IDM_DIS_MFP0;
@@ -1784,11 +1784,11 @@ void CDisasmWnd::OnMFP(UINT nID)
 	OnVector(nID + (m_pMFP->GetVR() & 0xf0));
 }
 
-  //---------------------------------------------------------------------------
-  //
-  //	Vectores SCC
-  //
-  //---------------------------------------------------------------------------
+//---------------------------------------------------------------------------
+//
+//	SCC vectors
+//
+//---------------------------------------------------------------------------
 void CDisasmWnd::OnSCC(UINT nID)
 {
 	DWORD vector;
@@ -1796,7 +1796,7 @@ void CDisasmWnd::OnSCC(UINT nID)
 	nID -= IDM_DIS_SCC0;
 	ASSERT(nID <= 7);
 
- 	 // Obtener numero de vector
+	// Get vector number
 	::LockVM();
 	vector = m_pSCC->GetVector(nID);
 	::UnlockVM();
@@ -1804,11 +1804,11 @@ void CDisasmWnd::OnSCC(UINT nID)
 	OnVector(vector);
 }
 
-  //---------------------------------------------------------------------------
-  //
-  //	Vectores DMAC
-  //
-  //---------------------------------------------------------------------------
+//---------------------------------------------------------------------------
+//
+//	DMAC vectors
+//
+//---------------------------------------------------------------------------
 void CDisasmWnd::OnDMAC(UINT nID)
 {
 	DWORD vector;
@@ -1816,7 +1816,7 @@ void CDisasmWnd::OnDMAC(UINT nID)
 	nID -= IDM_DIS_DMAC0;
 	ASSERT(nID <= 7);
 
- 	 // Obtener numero de vector
+	// Get vector number
 	::LockVM();
 	vector = m_pDMAC->GetVector(nID);
 	::UnlockVM();
@@ -1824,11 +1824,11 @@ void CDisasmWnd::OnDMAC(UINT nID)
 	OnVector(vector);
 }
 
-  //---------------------------------------------------------------------------
-  //
-  //	Vectores IOSC
-  //
-  //---------------------------------------------------------------------------
+//---------------------------------------------------------------------------
+//
+//	IOSC vectors
+//
+//---------------------------------------------------------------------------
 void CDisasmWnd::OnIOSC(UINT nID)
 {
 	DWORD vector;
@@ -1836,7 +1836,7 @@ void CDisasmWnd::OnIOSC(UINT nID)
 	nID -= IDM_DIS_IOSC0;
 	ASSERT(nID <= 3);
 
- 	 // Obtener numero de vector
+	// Get vector number
 	::LockVM();
 	vector = m_pIOSC->GetVector() + nID;
 	::UnlockVM();
@@ -1844,16 +1844,16 @@ void CDisasmWnd::OnIOSC(UINT nID)
 	OnVector(vector);
 }
 
-  //---------------------------------------------------------------------------
-  //
-  //	Especificacion de vector
-  //
-  //---------------------------------------------------------------------------
+//---------------------------------------------------------------------------
+//
+//	Vector specification
+//
+//---------------------------------------------------------------------------
 void FASTCALL CDisasmWnd::OnVector(UINT vector)
 {
 	DWORD addr;
 
- 	 // Lectura de vector
+	// Vector read
 	::LockVM();
 	vector <<= 2;
 	addr = (DWORD)m_pMemory->ReadOnly(vector + 1);
@@ -1863,15 +1863,15 @@ void FASTCALL CDisasmWnd::OnVector(UINT vector)
 	addr |= (DWORD)m_pMemory->ReadOnly(vector + 3);
 	::UnlockVM();
 
- 	 // Especificacion de direccion
+	// Address specification
 	SetAddr(addr);
 }
 
-  //---------------------------------------------------------------------------
-  //
-  //	Especificacion de direccion
-  //
-  //---------------------------------------------------------------------------
+//---------------------------------------------------------------------------
+//
+//	Address specification
+//
+//---------------------------------------------------------------------------
 void FASTCALL CDisasmWnd::SetAddr(DWORD dwAddr)
 {
 	int offset;
@@ -1879,21 +1879,21 @@ void FASTCALL CDisasmWnd::SetAddr(DWORD dwAddr)
 
 	::LockVM();
 
- 	 // Memorizar direccion
+	// Store the address
 	dwAddr &= 0xffffff;
 	m_dwSetAddr = dwAddr;
 	m_dwAddr = dwAddr & 0xff0000;
 
- 	 // Extraer solo la parte baja
+	// Keep only the low part
 	offset = dwAddr & 0x00ffff;
 	offset >>= 1;
 
- 	 // Desplazamiento
+	// scroll
 	m_ScrlY = offset;
 	::UnlockVM();
 	SetScrollPos(SB_VERT, offset, TRUE);
 
- 	 // Actualizar cadena de caption
+	// Update the caption string
 	string.Format(" [%d] ($%06X - $%06X)", (m_dwID & 0xff) - 'A' + 1, m_dwAddr, m_dwAddr + 0xffff);
 	string = m_strCaption + string;
 	if (m_Caption != string) {
@@ -1902,16 +1902,16 @@ void FASTCALL CDisasmWnd::SetAddr(DWORD dwAddr)
 	}
 }
 
-  //---------------------------------------------------------------------------
-  //
-  //	Especificacion de PC
-  //
-  //---------------------------------------------------------------------------
+//---------------------------------------------------------------------------
+//
+//	PC specification
+//
+//---------------------------------------------------------------------------
 void FASTCALL CDisasmWnd::SetPC(DWORD pc)
 {
 	ASSERT(pc <= 0xffffff);
 
- 	 // Si el flag de sincronizacion esta activo, establecer direccion
+	// If the sync flag is set, assign the address
 	if (m_bSync) {
 		m_dwPC = pc;
 	}
@@ -1920,25 +1920,25 @@ void FASTCALL CDisasmWnd::SetPC(DWORD pc)
 	}
 }
 
-  //---------------------------------------------------------------------------
-  //
-  //	Actualizacion desde el hilo de mensajes
-  //
-  //---------------------------------------------------------------------------
+//---------------------------------------------------------------------------
+//
+//	Update from the message thread
+//
+//---------------------------------------------------------------------------
 void FASTCALL CDisasmWnd::Update()
 {
- 	 // Especificacion de PC
+	// PC specification
 	if (m_dwPC < 0x1000000) {
 		SetAddr(m_dwPC);
 		m_dwPC = 0xffffffff;
 	}
 }
 
-  //---------------------------------------------------------------------------
-  //
-  //	Configuracion
-  //
-  //---------------------------------------------------------------------------
+//---------------------------------------------------------------------------
+//
+//	Configuration
+//
+//---------------------------------------------------------------------------
 void FASTCALL CDisasmWnd::Setup()
 {
 	DWORD dwAddr;
@@ -1947,32 +1947,32 @@ void FASTCALL CDisasmWnd::Setup()
 	int j;
 	int k;
 
- 	 // Especificacion de direccion
+	// Address specification
 	dwAddr = (m_dwAddr & 0xff0000);
 	dwAddr |= (DWORD)(m_ScrlY * 2);
 	::debugpc = dwAddr;
 
- 	 // Obtener PC
+	// Get PC
 	dwPC = m_pCPU->GetPC();
 
- 	 // Bucle
+	// loop
 	for (i=0; i<m_nHeight; i++) {
 		dwAddr = ::debugpc;
 
- 		 // Almacenar direccion
+		// Store the address
 		if (m_pAddrBuf) {
 			m_pAddrBuf[i] = dwAddr;
 		}
 
- 		 // Comprobar bucle de direccion (considerar bucle FFFFFFF)
+		// Check for address wraparound (consider FFFFFFF wraparound)
 		if (dwAddr > 0xffffff) {
- 			 // Hubo bucle. Mantener direccion
+			// Wraparound detected. Keep the address
 			ASSERT(i > 0);
 			if (m_pAddrBuf) {
 				m_pAddrBuf[i] = m_pAddrBuf[i - 1];
 			}
 
- 			 // Eliminar
+			// Delete
 			Reverse(FALSE);
 			for (j=0; j<m_nWidth; j++) {
 				SetChr(j, i, ' ');
@@ -1980,7 +1980,7 @@ void FASTCALL CDisasmWnd::Setup()
 			continue;
 		}
 
- 		 // Determinacion de atributos
+		// Determine attributes
 		k = m_pScheduler->IsBreak(dwAddr);
 		if (k >= 0) {
 			Reverse(TRUE);
@@ -1988,15 +1988,15 @@ void FASTCALL CDisasmWnd::Setup()
 		else {
 			Reverse(FALSE);
 		}
- 		 // Relleno
+		// Padding
 		for (j=0; j<m_nWidth; j++) {
 			SetChr(j, i, ' ');
 		}
 
- 		 // Desensamblar
+		// Disassemble
 		::cpudebug_disassemble(1);
 
- 		 // Marca de PC, marca de break
+		// PC marker, break marker
 		if (k >= 0) {
 			::debugbuf[0] = (char)(k + '1');
 		}
@@ -2010,12 +2010,12 @@ void FASTCALL CDisasmWnd::Setup()
 			::debugbuf[1] = ' ';
 		}
 
- 		 // Mostrar
+		// Display
 		if (m_ScrlX < (int)strlen(::debugbuf)) {
 			SetString(0, i, &debugbuf[m_ScrlX]);
 		}
 
- 		 // Soportar caso en el que no es valido por breakpoint
+		// Handle the case where the address is invalid because of a breakpoint
 		k = m_pScheduler->IsBreak(dwAddr, TRUE);
 		if (k >= 0) {
 			Reverse(TRUE);
@@ -2024,11 +2024,11 @@ void FASTCALL CDisasmWnd::Setup()
 	}
 }
 
-  //---------------------------------------------------------------------------
-  //
-  //	Obtener direccion anterior
-  //
-  //---------------------------------------------------------------------------
+//---------------------------------------------------------------------------
+//
+//	Get previous address
+//
+//---------------------------------------------------------------------------
 DWORD FASTCALL CDisasmWnd::GetPrevAddr(DWORD dwAddr)
 {
 	int i;
@@ -2036,39 +2036,39 @@ DWORD FASTCALL CDisasmWnd::GetPrevAddr(DWORD dwAddr)
 
 	ASSERT(dwAddr <= 0xffffff);
 
- 	 // Inicializacion de direccion
+	// Address initialization
 	dwTest = dwAddr;
 
 	for (i=0; i<16; i++) {
- 		 // Disminuir dwTest, comprobar desbordamiento
+		// Decrement dwTest and check for overflow
 		dwTest -= 2;
 		if (dwTest >= 0x01000000) {
 			return dwAddr;
 		}
 
- 		 // Desensamblar desde ahi y ver el incremento de direccion
+		// Disassemble from there and check the address increment
 		::debugpc = dwTest;
 		::cpudebug_disassemble(1);
 
- 		 // Si coincide, comprobar "UNRECOG"
+		// If it matches, check "UNRECOG"
 		if (::debugpc == dwAddr) {
 			if ((::debugbuf[35] == 'U') || (::debugbuf[36] == 'N') || (::debugbuf[37] == 'R')) {
 				continue;
 			}
- 			 // ok, retorno
+			// OK, return
 			return dwTest;
 		}
 	}
 
- 	 // No coincide. Devolver dwAddr
+	// No match. Return dwAddr
 	return dwAddr;
 }
 
-  //---------------------------------------------------------------------------
-  //
-  //	Configuracion de menu de puntos de interrupcion (breakpoints)
-  //
-  //---------------------------------------------------------------------------
+//---------------------------------------------------------------------------
+//
+//	Breakpoint menu configuration
+//
+//---------------------------------------------------------------------------
 void FASTCALL CDisasmWnd::SetupBreakMenu(CMenu *pMenu, Scheduler *pScheduler)
 {
 	int num;
@@ -2079,36 +2079,36 @@ void FASTCALL CDisasmWnd::SetupBreakMenu(CMenu *pMenu, Scheduler *pScheduler)
 	ASSERT(pMenu);
 	ASSERT(pScheduler);
 
- 	 // Limpiar cantidad
+	// Clear the count
 	num = 0;
 
- 	 // Configuracion
+	// Configuration
 	::LockVM();
 	for (i=0; i<Scheduler::BreakMax; i++) {
 		pScheduler->GetBreak(i, &buf);
 		if (buf.use) {
- 			 // Esta en uso, asi que configurar
+			// It is in use, so set it
 			string.Format("%1d : $%06X", num + 1, buf.addr);
 			pMenu->ModifyMenu(IDM_DIS_BREAKP0 + num, MF_BYCOMMAND | MF_STRING,
 				IDM_DIS_BREAKP0 + num, (LPCTSTR)string);
 
- 			 // +1
+			// +1
 			num++;
 		}
 	}
 	::UnlockVM();
 
- 	 // Limpiar el resto
+	// Clear the rest
 	for (i=num; i<Scheduler::BreakMax; i++) {
 		pMenu->DeleteMenu(IDM_DIS_BREAKP0 + i, MF_BYCOMMAND);
 	}
 }
 
-  //---------------------------------------------------------------------------
-  //
-  //	Obtener menu de puntos de interrupcion (breakpoints)
-  //
-  //---------------------------------------------------------------------------
+//---------------------------------------------------------------------------
+//
+//	Get breakpoint menu
+//
+//---------------------------------------------------------------------------
 DWORD FASTCALL CDisasmWnd::GetBreak(UINT nID, Scheduler *pScheduler)
 {
 	int i;
@@ -2118,12 +2118,12 @@ DWORD FASTCALL CDisasmWnd::GetBreak(UINT nID, Scheduler *pScheduler)
 	ASSERT(pScheduler);
 	nID -= IDM_DIS_BREAKP0;
 
- 	 // Bucle de busqueda
+	// Search loop
 	::LockVM();
 	for (i=0; i<Scheduler::BreakMax; i++) {
 		pScheduler->GetBreak(i, &buf);
 		if (buf.use) {
- 			 // Esta en uso, ?es este?
+			// It is in use; is this the one?
 			if (nID == 0) {
 				::UnlockVM();
 				return buf.addr;
@@ -2136,52 +2136,52 @@ DWORD FASTCALL CDisasmWnd::GetBreak(UINT nID, Scheduler *pScheduler)
 	return 0;
 }
 
-  //===========================================================================
-  //
-  //	Ventana de memoria
-  //
-  //===========================================================================
+//===========================================================================
+//
+//	Memory window
+//
+//===========================================================================
 
-  //---------------------------------------------------------------------------
-  //
-  //	Constructor
-  //
-  //---------------------------------------------------------------------------
+//---------------------------------------------------------------------------
+//
+//	Constructor
+//
+//---------------------------------------------------------------------------
 CMemoryWnd::CMemoryWnd(int nWnd)
 {
- 	 // Hasta 8 tipos de ventanas de memoria
+	// Up to 8 memory window types
 	ASSERT((nWnd >= 0) && (nWnd <= 7));
 
- 	 // Definicion de parametros de ventana
+	// Window parameter definitions
 	m_dwID = MAKEID('M', 'E', 'M', (nWnd + 'A'));
 	::GetMsg(IDS_SWND_MEMORY, m_strCaption);
 	m_nWidth = 73;
 	m_nHeight = 16;
 
- 	 // Definicion de parametros de ventana (scroll)
+	// Window parameter definitions (scroll)
 	m_ScrlWidth = 73;
 	m_ScrlHeight = 0x8000;
 
- 	 // Obtener CPU
+	// Get CPU
 	m_pCPU = (CPU*)::GetVM()->SearchDevice(MAKEID('C', 'P', 'U', ' '));
 	ASSERT(m_pCPU);
 
- 	 // Obtener memoria
+	// Get memory
 	m_pMemory = (Memory*)::GetVM()->SearchDevice(MAKEID('M', 'E', 'M', ' '));
 	ASSERT(m_pMemory);
 
- 	 // Otros
+	// Other
 	m_dwAddr = 0;
 	m_nUnit = 0;
 	m_strCaptionReq.Empty();
 	m_strCaptionSet.Empty();
 }
 
-  //---------------------------------------------------------------------------
-  //
-  //	Mapa de mensajes
-  //
-  //---------------------------------------------------------------------------
+//---------------------------------------------------------------------------
+//
+//	Message map
+//
+//---------------------------------------------------------------------------
 BEGIN_MESSAGE_MAP(CMemoryWnd, CSubTextScrlWnd)
 	ON_WM_CREATE()
 	ON_WM_PAINT()
@@ -2197,42 +2197,42 @@ BEGIN_MESSAGE_MAP(CMemoryWnd, CSubTextScrlWnd)
 	ON_COMMAND_RANGE(IDM_STACK_0, IDM_STACK_F, OnStack)
 END_MESSAGE_MAP()
 
-  //---------------------------------------------------------------------------
-  //
-  //	Creacion de ventana
-  //
-  //---------------------------------------------------------------------------
+//---------------------------------------------------------------------------
+//
+//	Window creation
+//
+//---------------------------------------------------------------------------
 int CMemoryWnd::OnCreate(LPCREATESTRUCT lpCreateStruct)
 {
- 	 // Clase base
+	// Base class
 	if (CSubTextScrlWnd::OnCreate(lpCreateStruct) != 0) {
 		return -1;
 	}
 
- 	 // Inicializacion de direccion
+	// Address initialization
 	SetAddr(0);
 	return TRUE;
 }
 
-  //---------------------------------------------------------------------------
-  //
-  //	Dibujo
-  //
-  //---------------------------------------------------------------------------
+//---------------------------------------------------------------------------
+//
+//	Drawing
+//
+//---------------------------------------------------------------------------
 void CMemoryWnd::OnPaint()
 {
- 	 // Clase base
+	// Base class
 	CSubTextScrlWnd::OnPaint();
 
- 	 // Configuracion de caption
+	// Caption configuration
 	SetWindowText(m_strCaption);
 }
 
-  //---------------------------------------------------------------------------
-  //
-  //	Doble clic con boton izquierdo
-  //
-  //---------------------------------------------------------------------------
+//---------------------------------------------------------------------------
+//
+//	Left double-click
+//
+//---------------------------------------------------------------------------
 void CMemoryWnd::OnLButtonDblClk(UINT /*nFlags*/, CPoint point)
 {
 	int x;
@@ -2241,40 +2241,40 @@ void CMemoryWnd::OnLButtonDblClk(UINT /*nFlags*/, CPoint point)
 	DWORD dwData;
 	CDataDlg dlg(this);
 
- 	 // Calcular x, y
+	// Calcular x, y
 	x = point.x / m_tmWidth;
 	y = point.y / m_tmHeight;
 
- 	 // Comprobar x
+	// Check x
 	if (x < 8) {
 		return;
 	}
 	x -= 8;
 
- 	 // Obtener direccion de y
+	// Get y address
 	dwAddr = m_dwAddr | (m_ScrlY << 5);
 	dwAddr += (y << 4);
 	if ((dwAddr - m_dwAddr) >= 0x100000) {
 		return;
 	}
 
- 	 // Obtener direccion de x
+	// Get x address
 	switch (m_nUnit) {
- 		 // Byte
+		// Byte
 		case 0:
 			x /= 3;
 			break;
- 		 // Word
+		// Word
 		case 1:
 			x /= 5;
 			x <<= 1;
 			break;
- 		 // Long
+		// Long
 		case 2:
 			x /= 9;
 			x <<= 2;
 			break;
- 		 // Otros
+		// Other
 		default:
 			ASSERT(FALSE);
 			break;
@@ -2284,20 +2284,20 @@ void CMemoryWnd::OnLButtonDblClk(UINT /*nFlags*/, CPoint point)
 	}
 	dwAddr += x;
 
- 	 // Lectura de datos
+	// Data read
 	::LockVM();
 	switch (m_nUnit) {
- 		 // Byte
+		// Byte
 		case 0:
 			dwData = m_pMemory->ReadOnly(dwAddr);
 			break;
- 		 // Word
+		// Word
 		case 1:
 			dwData = m_pMemory->ReadOnly(dwAddr);
 			dwData <<= 8;
 			dwData |= m_pMemory->ReadOnly(dwAddr + 1);
 			break;
- 		 // Long
+		// Long
 		case 2:
 			dwData = m_pMemory->ReadOnly(dwAddr);
 			dwData <<= 8;
@@ -2307,7 +2307,7 @@ void CMemoryWnd::OnLButtonDblClk(UINT /*nFlags*/, CPoint point)
 			dwData <<= 8;
 			dwData |= m_pMemory->ReadOnly(dwAddr + 3);
 			break;
- 		 // Otros
+		// Other
 		default:
 			dwData = 0;
 			ASSERT(FALSE);
@@ -2315,7 +2315,7 @@ void CMemoryWnd::OnLButtonDblClk(UINT /*nFlags*/, CPoint point)
 	}
 	::UnlockVM();
 
- 	 // Ejecutar dialogo
+	// Execute dialogo
 	dlg.m_dwAddr = dwAddr;
 	dlg.m_dwValue = dwData;
 	dlg.m_nSize = m_nUnit;
@@ -2323,24 +2323,24 @@ void CMemoryWnd::OnLButtonDblClk(UINT /*nFlags*/, CPoint point)
 		return;
 	}
 
- 	 // Escritura
+	// Write
 	dwData = dlg.m_dwValue;
 	::LockVM();
 	switch (m_nUnit) {
- 		 // Byte
+		// Byte
 		case 0:
 			m_pMemory->WriteByte(dwAddr, dwData);
 			break;
- 		 // Word
+		// Word
 		case 1:
 			m_pMemory->WriteWord(dwAddr, dwData);
 			break;
- 		 // Long
+		// Long
 		case 2:
 			m_pMemory->WriteWord(dwAddr, (WORD)(dwData >> 16));
 			m_pMemory->WriteWord(dwAddr + 2, (WORD)dwData);
 			break;
- 		 // Otros
+		// Other
 		default:
 			ASSERT(FALSE);
 			break;
@@ -2348,18 +2348,18 @@ void CMemoryWnd::OnLButtonDblClk(UINT /*nFlags*/, CPoint point)
 	::UnlockVM();
 }
 
-  //---------------------------------------------------------------------------
-  //
-  //	Menu de contexto
-  //
-  //---------------------------------------------------------------------------
+//---------------------------------------------------------------------------
+//
+//	Context menu
+//
+//---------------------------------------------------------------------------
 void CMemoryWnd::OnContextMenu(CWnd *pWnd, CPoint point)
 {
 	CRect rect;
 	CMenu menu;
 	CMenu *pMenu;
 
- 	 // Determinar si se presiono dentro del area del cliente
+	// Determinar si se presiono dentro del area del cliente
 	GetClientRect(&rect);
 	ClientToScreen(&rect);
 	if (!rect.PtInRect(point)) {
@@ -2367,7 +2367,7 @@ void CMemoryWnd::OnContextMenu(CWnd *pWnd, CPoint point)
 		return;
 	}
 
- 	 // Ejecutar menu
+	// Execute menu
 	if (::IsJapanese()) {
 		menu.LoadMenu(IDR_MEMORYMENU);
 	}
@@ -2380,81 +2380,81 @@ void CMemoryWnd::OnContextMenu(CWnd *pWnd, CPoint point)
 							point.x, point.y, this);
 }
 
-  //---------------------------------------------------------------------------
-  //
-  //	Configuracion de menu de contexto
-  //
-  //---------------------------------------------------------------------------
+//---------------------------------------------------------------------------
+//
+//	Context menu configuration
+//
+//---------------------------------------------------------------------------
 void FASTCALL CMemoryWnd::SetupContext(CMenu *pMenu)
 {
 	ASSERT(pMenu);
 
- 	 // Nueva ventana
+	// New window
 	if (!m_pDrawView->IsNewWindow(FALSE)) {
 		pMenu->EnableMenuItem(IDM_MEMORY_NEWWIN, MF_BYCOMMAND | MF_GRAYED);
 	}
 
- 	 // Comprobar tamano
+	// Check size
 	pMenu->CheckMenuRadioItem(IDM_MEMORY_BYTE, IDM_MEMORY_LONG,
 			IDM_MEMORY_BYTE + m_nUnit, MF_BYCOMMAND);
 
- 	 // Comprobar direccion
+	// Check address
 	pMenu->CheckMenuRadioItem(IDM_MEMORY_0, IDM_MEMORY_F,
 			IDM_MEMORY_0 + (m_dwAddr >> 20), MF_BYCOMMAND);
 
- 	 // Registros MPU
+	// Registers MPU
 	CCPURegWnd::SetupRegMenu(pMenu, m_pCPU, FALSE);
 
- 	 // Historial de direcciones
+	// Address history
 	CAddrDlg::SetupHisMenu(pMenu);
 
- 	 // Stack
+	// Stack
 	SetupStackMenu(pMenu, m_pMemory, m_pCPU);
 }
 
-  //---------------------------------------------------------------------------
-  //
-  //	Entrada de direccion
-  //
-  //---------------------------------------------------------------------------
+//---------------------------------------------------------------------------
+//
+//	Address input
+//
+//---------------------------------------------------------------------------
 void CMemoryWnd::OnAddr()
 {
 	CAddrDlg dlg(this);
 
- 	 // Ejecutar dialogo
+	// Execute dialogo
 	dlg.m_dwValue = m_dwAddr | (m_ScrlY * 0x20);
 	if (dlg.DoModal() != IDOK) {
 		return;
 	}
 
- 	 // Establecer direccion
+	// Set address
 	SetAddr(dlg.m_dwValue);
 }
 
-  //---------------------------------------------------------------------------
-  //
-  //	Nueva ventana
-  //
-  //---------------------------------------------------------------------------
+//---------------------------------------------------------------------------
+//
+//	New window
+//
+//---------------------------------------------------------------------------
 void CMemoryWnd::OnNewWin()
 {
 	CMemoryWnd *pWnd;
 
- 	 // Solicitar a la ventana padre la creacion de una nueva ventana
+	// Request the parent window to create a new window
 	pWnd = (CMemoryWnd*)m_pDrawView->NewWindow(FALSE);
 
- 	 // Si se crea, especificar mi misma direccion y tamano
+	// If created, use the same address and size
 	if (pWnd) {
 		pWnd->SetAddr(m_dwAddr | (m_ScrlY * 0x20));
 		pWnd->SetUnit(m_nUnit);
 	}
 }
 
-  //---------------------------------------------------------------------------
-  //
-  //	Especificacion de unidad de visualizacion
-  //
-  //---------------------------------------------------------------------------
+//---------------------------------------------------------------------------
+//
+//	Display unit specification
+//
+//---------------------------------------------------------------------------
 void CMemoryWnd::OnUnit(UINT uID)
 {
 	int unit;
@@ -2465,27 +2465,27 @@ void CMemoryWnd::OnUnit(UINT uID)
 	SetUnit(unit);
 }
 
-  //---------------------------------------------------------------------------
-  //
-  //	Set de unidad de visualizacion
-  //
-  //---------------------------------------------------------------------------
+//---------------------------------------------------------------------------
+//
+//	Set the display unit
+//
+//---------------------------------------------------------------------------
 void FASTCALL CMemoryWnd::SetUnit(int nUnit)
 {
 	ASSERT(this);
 	ASSERT((nUnit >= 0) && (nUnit <= 2));
 
- 	 // Bloqueo, cambio
+	// Lock and switch
 	::LockVM();
 	m_nUnit = nUnit;
 	::UnlockVM();
 }
 
-  //---------------------------------------------------------------------------
-  //
-  //	Especificacion de rango de direcciones
-  //
-  //---------------------------------------------------------------------------
+//---------------------------------------------------------------------------
+//
+//	Address range specification
+//
+//---------------------------------------------------------------------------
 void CMemoryWnd::OnRange(UINT uID)
 {
 	DWORD dwAddr;
@@ -2498,11 +2498,11 @@ void CMemoryWnd::OnRange(UINT uID)
 	SetAddr(dwAddr);
 }
 
-  //---------------------------------------------------------------------------
-  //
-  //	Especificacion de registro
-  //
-  //---------------------------------------------------------------------------
+//---------------------------------------------------------------------------
+//
+//	Register specification
+//
+//---------------------------------------------------------------------------
 void CMemoryWnd::OnReg(UINT uID)
 {
 	DWORD dwAddr;
@@ -2513,11 +2513,11 @@ void CMemoryWnd::OnReg(UINT uID)
 	SetAddr(dwAddr);
 }
 
-  //---------------------------------------------------------------------------
-  //
-  //	Especificacion de area
-  //
-  //---------------------------------------------------------------------------
+//---------------------------------------------------------------------------
+//
+//	Area specification
+//
+//---------------------------------------------------------------------------
 void CMemoryWnd::OnArea(UINT uID)
 {
 	CMenu menu;
@@ -2526,7 +2526,7 @@ void CMemoryWnd::OnArea(UINT uID)
 
 	ASSERT((uID >= IDM_AREA_MPU) && (uID <= IDM_AREA_IPLROM));
 
- 	 // Cargar menu
+	// Load menu
 	if (::IsJapanese()) {
 		menu.LoadMenu(IDR_MEMORYMENU);
 	}
@@ -2534,21 +2534,21 @@ void CMemoryWnd::OnArea(UINT uID)
 		menu.LoadMenu(IDR_US_MEMORYMENU);
 	}
 
- 	 // Obtener cadena de menu del ID especificado
+	// Get the menu string for the specified ID
 	menu.GetMenuString(uID, buf, 0x100, MF_BYCOMMAND);
 
- 	 // Asumir el formato "$000000 : "
+	// Assume the format "$000000 : "
 	buf[0] = _T('0');
 	buf[7] = _T('\0');
 	dwAddr = ::_tcstoul(buf, NULL, 16);
 	SetAddr(dwAddr);
 }
 
-  //---------------------------------------------------------------------------
-  //
-  //	Especificacion de historial
-  //
-  //---------------------------------------------------------------------------
+//---------------------------------------------------------------------------
+//
+//	History specification
+//
+//---------------------------------------------------------------------------
 void CMemoryWnd::OnHistory(UINT uID)
 {
 	DWORD dwAddr;
@@ -2558,11 +2558,11 @@ void CMemoryWnd::OnHistory(UINT uID)
 	SetAddr(dwAddr);
 }
 
-  //---------------------------------------------------------------------------
-  //
-  //	Especificacion de stack
-  //
-  //---------------------------------------------------------------------------
+//---------------------------------------------------------------------------
+//
+//	Stack specification
+//
+//---------------------------------------------------------------------------
 void CMemoryWnd::OnStack(UINT uID)
 {
 	DWORD dwAddr;
@@ -2572,11 +2572,11 @@ void CMemoryWnd::OnStack(UINT uID)
 	SetAddr(dwAddr);
 }
 
-  //---------------------------------------------------------------------------
-  //
-  //	Especificacion de direccion
-  //
-  //---------------------------------------------------------------------------
+//---------------------------------------------------------------------------
+//
+//	Address specification
+//
+//---------------------------------------------------------------------------
 void FASTCALL CMemoryWnd::SetAddr(DWORD dwAddr)
 {
 	int offset;
@@ -2585,18 +2585,18 @@ void FASTCALL CMemoryWnd::SetAddr(DWORD dwAddr)
 	ASSERT(this);
 	ASSERT(dwAddr <= 0x1000000);
 
- 	 // Extraer solo parte superior
+	// Keep only the upper part
 	m_dwAddr = dwAddr & 0xf00000;
 
- 	 // Extraer solo parte inferior
+	// Keep only the lower part
 	offset = dwAddr & 0x0fffff;
 	offset /= 0x20;
 
- 	 // Desplazamiento
+	// scroll
 	m_ScrlY = offset;
 	SetScrollPos(SB_VERT, offset, TRUE);
 
- 	 // Crear cadena de caption
+	// Build the caption string
 	strCap.Format(_T(" [%d] ($%06X - $%06X)"), (m_dwID & 0xff) - 'A' + 1,
 									m_dwAddr, m_dwAddr + 0x0fffff);
 	m_CSection.Lock();
@@ -2604,32 +2604,32 @@ void FASTCALL CMemoryWnd::SetAddr(DWORD dwAddr)
 	m_CSection.Unlock();
 }
 
-  //---------------------------------------------------------------------------
-  //
-  //	Actualizacion desde el hilo de mensajes
-  //
-  //---------------------------------------------------------------------------
+//---------------------------------------------------------------------------
+//
+//	Update from the message thread
+//
+//---------------------------------------------------------------------------
 void FASTCALL CMemoryWnd::Update()
 {
 	CString strCap;
 
- 	 // Obtener cadena de caption
+	// Get the caption string
 	m_CSection.Lock();
 	strCap = m_strCaptionReq;
 	m_CSection.Unlock();
 
- 	 // Comparacion
+	// Comparison
 	if (m_strCaptionSet != strCap) {
 		m_strCaptionSet = strCap;
 		SetWindowText(m_strCaptionSet);
 	}
 }
 
-  //---------------------------------------------------------------------------
-  //
-  //	Configuracion
-  //
-  //---------------------------------------------------------------------------
+//---------------------------------------------------------------------------
+//
+//	Configuration
+//
+//---------------------------------------------------------------------------
 void FASTCALL CMemoryWnd::Setup()
 {
 	int x;
@@ -2640,28 +2640,28 @@ void FASTCALL CMemoryWnd::Setup()
 	DWORD dwOffset;
 	TCHAR szAscii[2];
 
- 	 // Limpiar, inicializar direccion
+	// Clear and initialize the address
 	Clear();
 	dwAddr = (m_dwAddr & 0xf00000);
 	dwOffset = (DWORD)(m_ScrlY << 5);
 	dwAddr |= dwOffset;
 
- 	 // Inicializar cadena
+	// Initialize the string
 	szAscii[1] = _T('\0');
 
- 	 // Bucle y
+	// Y loop
 	for (y=0; y<m_nHeight; y++) {
- 		 // Comprobar desbordamiento
+		// Check desbordamiento
 		if (dwOffset >= 0x100000) {
 			break;
 		}
 
- 		 // Mostrar direccion
+		// Display the address
 		strText.Format(_T("%06X:"), dwAddr);
 
- 		 // Bucle x
+		// X loop
 		switch (m_nUnit) {
- 			 // Byte
+			// Byte
 			case 0:
 				for (x=0; x<16; x++) {
 					strHex.Format(_T(" %02X"), m_pMemory->ReadOnly(dwAddr));
@@ -2669,7 +2669,7 @@ void FASTCALL CMemoryWnd::Setup()
 					dwAddr++;
 				}
 				break;
- 			 // Word
+			// Word
 			case 1:
 				for (x=0; x<8; x++) {
 					strHex.Format(_T(" %02X%02X"),  m_pMemory->ReadOnly(dwAddr),
@@ -2678,7 +2678,7 @@ void FASTCALL CMemoryWnd::Setup()
 					dwAddr += 2;
 				}
 				break;
- 			 // Long
+			// Long
 			case 2:
 				for (x=0; x<4; x++) {
 					strHex.Format(" %02X%02X%02X%02X",  m_pMemory->ReadOnly(dwAddr),
@@ -2689,17 +2689,17 @@ void FASTCALL CMemoryWnd::Setup()
 					dwAddr += 4;
 				}
 				break;
- 			 // Otros (imposible)
+			// Other (not possible)
 			default:
 				ASSERT(FALSE);
 				break;
 		}
 
- 		 // Volver una vez
+		// Step back once
 		dwAddr -= 0x10;
 		dwAddr &= 0xffffff;
 
- 		 // Anadir caracter ASCII
+		// Append ASCII character
 		strText += _T("  ");
 		for (x=0; x<16; x++) {
 			szAscii[0] = (TCHAR)m_pMemory->ReadOnly(dwAddr + x);
@@ -2714,35 +2714,35 @@ void FASTCALL CMemoryWnd::Setup()
 		dwAddr += 0x10;
 		dwAddr &= 0xffffff;
 
- 		 // Avanzar offset
+		// Advance offset
 		dwOffset += 0x10;
 
- 		 // Mostrar
+		// Display
 		if (m_ScrlX < strText.GetLength()) {
 			SetString(0, y, (LPCTSTR)(strText) + m_ScrlX * sizeof(TCHAR));
 		}
 	}
 }
 
-  //---------------------------------------------------------------------------
-  //
-  //	Preparacion de desplazamiento (vertical)
-  //
-  //---------------------------------------------------------------------------
+//---------------------------------------------------------------------------
+//
+//	Prepare vertical scrolling
+//
+//---------------------------------------------------------------------------
 void FASTCALL CMemoryWnd::SetupScrlV()
 {
 	SCROLLINFO si;
 	CRect rect;
 	int height;
 
- 	 // Obtener numero de caracteres de visualizacion vertical
+	// Get the vertical character count
 	GetClientRect(&rect);
 	height = rect.bottom / m_tmHeight;
 
- 	 // Correccion (debido a 2 lineas por unidad de scroll)
+	// Adjustment (because there are 2 lines per scroll unit)
 	height >>= 1;
 
- 	 // Establecer informacion de desplazamiento
+	// Set offset information
 	memset(&si, 0, sizeof(si));
 	si.cbSize = sizeof(si);
 	si.fMask = SIF_ALL;
@@ -2750,7 +2750,7 @@ void FASTCALL CMemoryWnd::SetupScrlV()
 	si.nMax = m_ScrlHeight - 1;
 	si.nPage = height;
 
- 	 // Corregir posicion si es necesario
+	// Adjust the position if necessary
 	si.nPos = m_ScrlY;
 	if (si.nPos + height > m_ScrlHeight) {
 		si.nPos = m_ScrlHeight - height;
@@ -2763,11 +2763,11 @@ void FASTCALL CMemoryWnd::SetupScrlV()
 	SetScrollInfo(SB_VERT, &si, TRUE);
 }
 
-  //---------------------------------------------------------------------------
-  //
-  //	Configuracion de menu de stack
-  //
-  //---------------------------------------------------------------------------
+//---------------------------------------------------------------------------
+//
+//	Stack menu configuration
+//
+//---------------------------------------------------------------------------
 void CMemoryWnd::SetupStackMenu(CMenu *pMenu, Memory *pMemory, CPU *pCPU)
 {
 	int i;
@@ -2780,18 +2780,18 @@ void CMemoryWnd::SetupStackMenu(CMenu *pMenu, Memory *pMemory, CPU *pCPU)
 	ASSERT(pMemory);
 	ASSERT(pCPU);
 
- 	 // Bloqueo de VM, obtener registros
+	// Lock the VM and read the registers
 	::LockVM();
 	pCPU->GetCPU(&reg);
 
- 	 // 16 niveles
+	// 16 levels
 	for (i=0; i<16; i++) {
- 		 // Calcular direccion
+		// Compute the address
 		dwAddr = reg.areg[7];
 		dwAddr += (i << 1);
 		dwAddr &= 0xfffffe;
 
- 		 // Obtener datos
+		// Get data
 		dwValue = pMemory->ReadOnly(dwAddr + 1);
 		dwAddr = (dwAddr + 2) & 0xfffffe;
 		dwValue <<= 8;
@@ -2799,21 +2799,21 @@ void CMemoryWnd::SetupStackMenu(CMenu *pMenu, Memory *pMemory, CPU *pCPU)
 		dwValue <<= 8;
 		dwValue |= pMemory->ReadOnly(dwAddr + 1);
 
- 		 // Actualizar menu
+		// Update menu
 		strMenu.Format(_T("(A7+%1X) : $%06X"), (i << 1), dwValue);
 		pMenu->ModifyMenu(IDM_STACK_0 + i, MF_BYCOMMAND | MF_STRING,
 							IDM_STACK_0 + i, (LPCTSTR)strMenu);
 	}
 
- 	 // Desbloqueo de VM
+	// Unlock the VM
 	::UnlockVM();
 }
 
-  //---------------------------------------------------------------------------
-  //
-  //	Obtener direccion de stack
-  //
-  //---------------------------------------------------------------------------
+//---------------------------------------------------------------------------
+//
+//	Get the stack address
+//
+//---------------------------------------------------------------------------
 DWORD CMemoryWnd::GetStackAddr(UINT nID, Memory *pMemory, CPU *pCPU)
 {
 	CPU::cpu_t reg;
@@ -2824,19 +2824,19 @@ DWORD CMemoryWnd::GetStackAddr(UINT nID, Memory *pMemory, CPU *pCPU)
 	ASSERT(pMemory);
 	ASSERT(pCPU);
 
- 	 // Calcular offset
+	// Compute the offset
 	nID -= IDM_STACK_0;
 	ASSERT(nID <= 15);
 	nID <<= 1;
 
- 	 // Calcular direccion y memoria desde registros de CPU
+	// Compute the address and memory from the CPU registers
 	::LockVM();
 	pCPU->GetCPU(&reg);
 	dwAddr = reg.areg[7];
 	dwAddr += nID;
 	dwAddr &= 0xfffffe;
 
- 	 // Obtener datos
+	// Get data
 	dwValue = pMemory->ReadOnly(dwAddr + 1);
 	dwAddr = (dwAddr + 2) & 0xfffffe;
 	dwValue <<= 8;
@@ -2848,35 +2848,35 @@ DWORD CMemoryWnd::GetStackAddr(UINT nID, Memory *pMemory, CPU *pCPU)
 	return dwValue;
 }
 
-  //===========================================================================
-  //
-  //	Ventana de puntos de interrupcion (breakpoints)
-  //
-  //===========================================================================
+//===========================================================================
+//
+//	Breakpoint window
+//
+//===========================================================================
 
-  //---------------------------------------------------------------------------
-  //
-  //	Constructor
-  //
-  //---------------------------------------------------------------------------
+//---------------------------------------------------------------------------
+//
+//	Constructor
+//
+//---------------------------------------------------------------------------
 CBreakPWnd::CBreakPWnd()
 {
- 	 // Definicion de parametros de ventana
+	// Window parameter definitions
 	m_dwID = MAKEID('B', 'R', 'K', 'P');
 	::GetMsg(IDS_SWND_BREAKP, m_strCaption);
 	m_nWidth = 43;
 	m_nHeight = Scheduler::BreakMax + 1;
 
- 	 // Obtener planificador
+	// Get the scheduler
 	m_pScheduler = (Scheduler*)::GetVM()->SearchDevice(MAKEID('S', 'C', 'H', 'E'));
 	ASSERT(m_pScheduler);
 }
 
-  //---------------------------------------------------------------------------
-  //
-  //	Mapa de mensajes
-  //
-  //---------------------------------------------------------------------------
+//---------------------------------------------------------------------------
+//
+//	Message map
+//
+//---------------------------------------------------------------------------
 BEGIN_MESSAGE_MAP(CBreakPWnd, CSubTextWnd)
 	ON_WM_LBUTTONDBLCLK()
 	ON_WM_CONTEXTMENU()
@@ -2888,48 +2888,48 @@ BEGIN_MESSAGE_MAP(CBreakPWnd, CSubTextWnd)
 	ON_COMMAND(IDM_BREAKP_ALL, OnAll)
 END_MESSAGE_MAP()
 
-  //---------------------------------------------------------------------------
-  //
-  //	Doble clic con boton izquierdo
-  //
-  //---------------------------------------------------------------------------
+//---------------------------------------------------------------------------
+//
+//	Left double-click
+//
+//---------------------------------------------------------------------------
 void CBreakPWnd::OnLButtonDblClk(UINT /*nFlags*/, CPoint point)
 {
 	int y;
 	Scheduler::breakpoint_t buf;
 
- 	 // Obtener y, correccion (-1), comprobar
+	// Get y, adjust (-1), check
 	y = point.y / m_tmHeight;
 	y--;
 	if ((y < 0) || (y >= Scheduler::BreakMax)) {
 		return;
 	}
 
- 	 // Bloqueo, obtener breakpoint
+	// Lock and get the breakpoint
 	::LockVM();
 	m_pScheduler->GetBreak(y, &buf);
 
- 	 // Invertir si esta en uso
+	// Invert if in use
 	if (buf.use) {
 		m_pScheduler->EnableBreak(y, !(buf.enable));
 	}
 
- 	 // Desbloqueo
+	// Unlock
 	::UnlockVM();
 }
 
-  //---------------------------------------------------------------------------
-  //
-  //	Menu de contexto
-  //
-  //---------------------------------------------------------------------------
+//---------------------------------------------------------------------------
+//
+//	Context menu
+//
+//---------------------------------------------------------------------------
 void CBreakPWnd::OnContextMenu(CWnd *pWnd, CPoint point)
 {
 	CRect rect;
 	CMenu menu;
 	CMenu *pMenu;
 
- 	 // Determinar si se presiono dentro del area del cliente
+	// Determinar si se presiono dentro del area del cliente
 	GetClientRect(&rect);
 	ClientToScreen(&rect);
 	if (!rect.PtInRect(point)) {
@@ -2937,10 +2937,10 @@ void CBreakPWnd::OnContextMenu(CWnd *pWnd, CPoint point)
 		return;
 	}
 
- 	 // Memorizar posicion
+	// Store the position
 	m_Point = point;
 
- 	 // Ejecutar menu
+	// Execute menu
 	if (::IsJapanese()) {
 		menu.LoadMenu(IDR_BREAKPMENU);
 	}
@@ -2953,11 +2953,11 @@ void CBreakPWnd::OnContextMenu(CWnd *pWnd, CPoint point)
 							point.x, point.y, this);
 }
 
-  //---------------------------------------------------------------------------
-  //
-  //	Configuracion de menu de contexto
-  //
-  //---------------------------------------------------------------------------
+//---------------------------------------------------------------------------
+//
+//	Context menu configuration
+//
+//---------------------------------------------------------------------------
 void FASTCALL CBreakPWnd::SetupContext(CMenu *pMenu)
 {
 	int y;
@@ -2968,17 +2968,17 @@ void FASTCALL CBreakPWnd::SetupContext(CMenu *pMenu)
 
 	ASSERT(pMenu);
 
- 	 // Inicializacion
+	// Initialization
 	buf.enable = FALSE;
 	buf.use = FALSE;
 
- 	 // Obtener y
+	// Get y
 	point = m_Point;
 	ScreenToClient(&point);
 	y = point.y / m_tmHeight;
 	y--;
 
- 	 // Obtener cantidad de breakpoints en uso y obtener el actual
+	// Get the number of active breakpoints and fetch the current one
 	nCount = 0;
 	::LockVM();
 	for (nBreak=0; nBreak<Scheduler::BreakMax; nBreak++) {
@@ -2993,7 +2993,7 @@ void FASTCALL CBreakPWnd::SetupContext(CMenu *pMenu)
 	}
 	::UnlockVM();
 
- 	 // Eliminar todos
+	// Delete all
 	if (nCount > 0) {
 		pMenu->EnableMenuItem(IDM_BREAKP_ALL, MF_BYCOMMAND | MF_ENABLED);
 	}
@@ -3001,10 +3001,10 @@ void FASTCALL CBreakPWnd::SetupContext(CMenu *pMenu)
 		pMenu->EnableMenuItem(IDM_BREAKP_ALL, MF_BYCOMMAND | MF_GRAYED);
 	}
 
- 	 // Historial de direcciones
+	// Address history
 	CAddrDlg::SetupHisMenu(pMenu);
 
- 	 // Si el actual no esta en uso, deshabilitar los relacionados con cambios
+	// If the current one is not in use, disable the ones affected by changes
 	if (!buf.use) {
 		pMenu->EnableMenuItem(IDM_BREAKP_ENABLE, MF_BYCOMMAND | MF_GRAYED);
 		pMenu->EnableMenuItem(IDM_BREAKP_CLEAR, MF_BYCOMMAND | MF_GRAYED);
@@ -3012,7 +3012,7 @@ void FASTCALL CBreakPWnd::SetupContext(CMenu *pMenu)
 		return;
 	}
 
- 	 // Si esta en uso, comprobar Enable
+	// If it is in use, check Enable
 	if (buf.enable) {
 		pMenu->CheckMenuItem(IDM_BREAKP_ENABLE, MF_BYCOMMAND | MF_CHECKED);
 	}
@@ -3021,25 +3021,25 @@ void FASTCALL CBreakPWnd::SetupContext(CMenu *pMenu)
 	}
 }
 
-  //---------------------------------------------------------------------------
-  //
-  //	Activar/Desactivar
-  //
-  //---------------------------------------------------------------------------
+//---------------------------------------------------------------------------
+//
+//	Enable/disable
+//
+//---------------------------------------------------------------------------
 void CBreakPWnd::OnEnable()
 {
 	int y;
 	CPoint point;
 	Scheduler::breakpoint_t buf;
 
- 	 // Obtener y
+	// Get y
 	point = m_Point;
 	ScreenToClient(&point);
 	y = point.y / m_tmHeight;
 	y--;
 	ASSERT((y >= 0) && (y < Scheduler::BreakMax));
 
- 	 // Invertir breakpoint
+	// Toggle breakpoint
 	::LockVM();
 	m_pScheduler->GetBreak(y, &buf);
 	ASSERT(buf.use);
@@ -3047,48 +3047,48 @@ void CBreakPWnd::OnEnable()
 	::UnlockVM();
 }
 
-  //---------------------------------------------------------------------------
-  //
-  //	Limpiar conteo
-  //
-  //---------------------------------------------------------------------------
+//---------------------------------------------------------------------------
+//
+//	Clear count
+//
+//---------------------------------------------------------------------------
 void CBreakPWnd::OnClear()
 {
 	int y;
 	CPoint point;
 
- 	 // Obtener y
+	// Get y
 	point = m_Point;
 	ScreenToClient(&point);
 	y = point.y / m_tmHeight;
 	y--;
 	ASSERT((y >= 0) && (y < Scheduler::BreakMax));
 
- 	 // Limpiar conteo
+	// Clear count
 	::LockVM();
 	m_pScheduler->ClearBreak(y);
 	::UnlockVM();
 }
 
-  //---------------------------------------------------------------------------
-  //
-  //	Eliminar punto de interrupcion (breakpoint)
-  //
-  //---------------------------------------------------------------------------
+//---------------------------------------------------------------------------
+//
+//	Delete breakpoint
+//
+//---------------------------------------------------------------------------
 void CBreakPWnd::OnDel()
 {
 	int y;
 	CPoint point;
 	Scheduler::breakpoint_t buf;
 
- 	 // Obtener y
+	// Get y
 	point = m_Point;
 	ScreenToClient(&point);
 	y = point.y / m_tmHeight;
 	y--;
 	ASSERT((y >= 0) && (y < Scheduler::BreakMax));
 
- 	 // Limpiar conteo
+	// Clear count
 	::LockVM();
 	m_pScheduler->GetBreak(y, &buf);
 	ASSERT(buf.use);
@@ -3096,11 +3096,11 @@ void CBreakPWnd::OnDel()
 	::UnlockVM();
 }
 
-  //---------------------------------------------------------------------------
-  //
-  //	Especificacion de direccion
-  //
-  //---------------------------------------------------------------------------
+//---------------------------------------------------------------------------
+//
+//	Address specification
+//
+//---------------------------------------------------------------------------
 void CBreakPWnd::OnAddr()
 {
 	int y;
@@ -3111,14 +3111,14 @@ void CBreakPWnd::OnAddr()
 	DWORD dwAddr;
 	CAddrDlg dlg(this);
 
- 	 // Obtener y
+	// Get y
 	point = m_Point;
 	ScreenToClient(&point);
 	y = point.y / m_tmHeight;
 	y--;
 
 	::LockVM();
- 	 // Si apunta a un breakpoint valido, esa direccion
+	// If it points to a valid breakpoint, use that address
 	dwAddr = 0xffffffff;
 	if ((y >= 0) && (y < Scheduler::BreakMax)) {
 		m_pScheduler->GetBreak(y, &buf);
@@ -3126,7 +3126,7 @@ void CBreakPWnd::OnAddr()
 			dwAddr = buf.addr & 0xffffff;
 		}
 	}
- 	 // Si no, el PC
+	// Otherwise, use the PC
 	if (dwAddr == 0xffffffff) {
 		pCPU = (CPU*)::GetVM()->SearchDevice(MAKEID('C', 'P', 'U', ' '));
 		ASSERT(pCPU);
@@ -3136,43 +3136,43 @@ void CBreakPWnd::OnAddr()
 	::UnlockVM();
 	ASSERT(dwAddr <= 0xffffff);
 
- 	 // Dialogo de entrada
+	// Input dialog
 	dlg.m_dwValue = dwAddr;
 	if (dlg.DoModal() != IDOK) {
 		return;
 	}
 
- 	 // Dejar a cargo de la rutina comun
+	// Let the shared routine handle it
 	SetAddr(dlg.m_dwValue);
 }
 
-  //---------------------------------------------------------------------------
-  //
-  //	Historial de direcciones
-  //
-  //---------------------------------------------------------------------------
+//---------------------------------------------------------------------------
+//
+//	Address history
+//
+//---------------------------------------------------------------------------
 void CBreakPWnd::OnHistory(UINT nID)
 {
 	DWORD dwAddr;
 
 	ASSERT((nID >= IDM_HISTORY_0) && (nID <= IDM_HISTORY_9));
 
- 	 // Dejar a cargo de la rutina comun
+	// Let the shared routine handle it
 	dwAddr = CAddrDlg::GetAddr(nID);
 	SetAddr(dwAddr);
 }
 
-  //---------------------------------------------------------------------------
-  //
-  //	Eliminar todos
-  //
-  //---------------------------------------------------------------------------
+//---------------------------------------------------------------------------
+//
+//	Delete all
+//
+//---------------------------------------------------------------------------
 void CBreakPWnd::OnAll()
 {
 	Scheduler::breakpoint_t buf;
 	int i;
 
- 	 // Limpiar todos
+	// Clear all
 	::LockVM();
 	for (i=0; i<Scheduler::BreakMax; i++) {
 		m_pScheduler->GetBreak(i, &buf);
@@ -3183,11 +3183,11 @@ void CBreakPWnd::OnAll()
 	::UnlockVM();
 }
 
-  //---------------------------------------------------------------------------
-  //
-  //	Establecer direccion
-  //
-  //---------------------------------------------------------------------------
+//---------------------------------------------------------------------------
+//
+//	Set address
+//
+//---------------------------------------------------------------------------
 void FASTCALL CBreakPWnd::SetAddr(DWORD dwAddr)
 {
 	int y;
@@ -3196,7 +3196,7 @@ void FASTCALL CBreakPWnd::SetAddr(DWORD dwAddr)
 
 	ASSERT(dwAddr <= 0xffffff);
 
- 	 // Si es una direccion ya registrada, invalido
+	// If the address is already registered, invalidate it
 	::LockVM();
 	for (y=0; y<Scheduler::BreakMax; y++) {
 		m_pScheduler->GetBreak(y, &buf);
@@ -3209,13 +3209,13 @@ void FASTCALL CBreakPWnd::SetAddr(DWORD dwAddr)
 	}
 	::UnlockVM();
 
- 	 // Obtener y
+	// Get y
 	point = m_Point;
 	ScreenToClient(&point);
 	y = point.y / m_tmHeight;
 	y--;
 
- 	 // Si apunta a un breakpoint en uso, reemplazarlo
+	// If it points to an active breakpoint, replace it
 	::LockVM();
 	if ((y >= 0) && (y < Scheduler::BreakMax)) {
 		m_pScheduler->GetBreak(y, &buf);
@@ -3226,16 +3226,16 @@ void FASTCALL CBreakPWnd::SetAddr(DWORD dwAddr)
 		}
 	}
 
- 	 // Si no, configurar como nuevo
+	// Otherwise, configure it as new
 	m_pScheduler->SetBreak(dwAddr);
 	::UnlockVM();
 }
 
-  //---------------------------------------------------------------------------
-  //
-  //	Configuracion
-  //
-  //---------------------------------------------------------------------------
+//---------------------------------------------------------------------------
+//
+//	Configuration
+//
+//---------------------------------------------------------------------------
 void FASTCALL CBreakPWnd::Setup()
 {
 	int i;
@@ -3243,29 +3243,29 @@ void FASTCALL CBreakPWnd::Setup()
 	CString strFmt;
 	Scheduler::breakpoint_t buf;
 
- 	 // Limpiar
+	// Clear
 	Clear();
 
- 	 // Mostrar guia
+	// Show guide
 	SetString(0, 0, _T("No."));
 	SetString(5, 0, _T("Address"));
 	SetString(14, 0, _T("Flag"));
 	SetString(28, 0, _T("Time"));
 	SetString(38, 0, _T("Count"));
 
- 	 // Bucle
+	// loop
 	for (i=0; i<Scheduler::BreakMax; i++) {
- 		 // Numero
+		// Number
 		strText.Format(_T("%2d "), i + 1);
 
- 		 // Obtener, comprobar validez
+		// Get and verify validity
 		m_pScheduler->GetBreak(i, &buf);
 		if (buf.use) {
- 			 // Direccion
+			// Address
 			strFmt.Format(_T("  $%06X "), buf.addr);
 			strText += strFmt;
 
- 			 // Flag
+			// Flag
 			if (buf.enable) {
 				strText += _T(" Enable");
 			}
@@ -3273,20 +3273,20 @@ void FASTCALL CBreakPWnd::Setup()
 				strText += _T("Disable");
 			}
 
- 			 // Tiempo
+			// time
 			if (buf.count > 0) {
 				strFmt.Format(_T(" %7d.%05dms"), (buf.time / 2000), (buf.time % 2000) * 5);
 				strText += strFmt;
 
- 				 // Conteo
+				// count
 				strFmt.Format(_T("   %4d"), buf.count);
 				strText += strFmt;
 			}
 		}
 
- 		 // Set de cadena
+		// Set the string
 		SetString(0, i + 1, strText);
 	}
 }
 
- #endif	 // _WIN32
+#endif	// _WIN32

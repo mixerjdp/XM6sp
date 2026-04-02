@@ -2,7 +2,7 @@
 //
 //	X68000 EMULATOR "XM6"
 //
-//	Copyright (C) 2001-2005 ＰＩ．(ytanaka@ipc-tokai.or.jp)
+//	Copyright (C) 2001-2005 PI(ytanaka@ipc-tokai.or.jp)
 //	[ FDC(uPD72065) ]
 //
 //---------------------------------------------------------------------------
@@ -21,17 +21,17 @@
 class FDC : public MemDevice
 {
 public:
-	// フェーズ定義
+	// Phase definition
 	enum fdcphase {
-		idle,							// アイドルフェーズ
-		command,						// コマンドフェーズ
-		execute,						// 実行フェーズ(通常)
-		read,							// 実行フェーズ(Read)
-		write,							// 実行フェーズ(Write)
-		result							// リザルトフェーズ
+		idle,							// Idle phase
+		command,						// Command phase
+		execute,						// Execute phase (general)
+		read,							// Execute phase (Read)
+		write,							// Execute phase (Write)
+		result							// Result phase
 	};
 
-	// ステータスレジスタ定義
+	// Status register definition
 	enum {
 		sr_rqm = 0x80,					// Request For Master
 		sr_dio = 0x40,					// Data Input / Output
@@ -43,7 +43,7 @@ public:
 		sr_d0b = 0x01					// Drive0 Seek
 	};
 
-	// コマンド定義
+	// Command definition
 	enum fdccmd {
 		read_data,						// READ DATA
 		read_del_data,					// READ DELETED DATA
@@ -53,8 +53,8 @@ public:
 		write_del_data,					// WRITE DELETED DATA
 		read_diag,						// READ DIAGNOSTIC
 		scan_eq,						// SCAN EQUAL
-		scan_lo_eq,						// SCAN LOW OR EQUAL
-		scan_hi_eq, 					// SCAN HIGH OR EQUAL
+		scan_lo_eq,					// SCAN LOW OR EQUAL
+		scan_hi_eq,					// SCAN HIGH OR EQUAL
 		seek,							// SEEK
 		recalibrate,					// RECALIBRATE
 		sense_int_stat,					// SENSE INTERRUPT STATUS
@@ -67,141 +67,141 @@ public:
 		no_cmd							// (NO COMMAND)
 	};
 
-	// 内部ワーク定義
+	// Structure definition
 	typedef struct {
-		fdcphase phase;					// フェーズ
-		fdccmd cmd;						// コマンド
+		fdcphase phase;					// Phase
+		fdccmd cmd;					// Command
 
-		int in_len;						// 入力レングス
-		int in_cnt;						// 入力カウント
-		DWORD in_pkt[0x10];				// 入力パケット
-		int out_len;					// 出力レングス
-		int out_cnt;					// 出力カウント
-		DWORD out_pkt[0x10];			// 出力パケット
+		int in_len;					// Input allocation length
+		int in_cnt;					// Input count
+		DWORD in_pkt[0x10];			// Input packet
+		int out_len;					// Output allocation length
+		int out_cnt;					// Output count
+		DWORD out_pkt[0x10];			// Output packet
 
-		DWORD dcr;						// ドライブコントロールレジスタ
-		DWORD dsr;						// ドライブセレクトレジスタ
-		DWORD sr;						// ステータスレジスタ
-		DWORD dr;						// データレジスタ
+		DWORD dcr;					// Drive control register
+		DWORD dsr;					// Drive select register
+		DWORD sr;					// Status register
+		DWORD dr;					// Data register
 		DWORD st[4];					// ST0-ST3
 
-		DWORD srt;						// SRT
-		DWORD hut;						// HUT
-		DWORD hlt;						// HLT
-		DWORD hd;						// HD
-		DWORD us;						// US
-		DWORD cyl[4];					// 内部トラック
-		DWORD chrn[4];					// 要求されたC,H,R,N
+		DWORD srt;					// SRT
+		DWORD hut;					// HUT
+		DWORD hlt;					// HLT
+		DWORD hd;					// HD
+		DWORD us;					// US
+		DWORD cyl[4];					// Current cylinder
+		DWORD chrn[4];					// Specified C,H,R,N
 
-		DWORD eot;						// EOT
-		DWORD gsl;						// GSL
-		DWORD dtl;						// DTL
-		DWORD sc; 						// SC
-		DWORD gpl;						// GAP3
-		DWORD d;						// フォーマットデータ
-		DWORD err;						// エラーコード
-		BOOL seek;						// シーク系割り込み要求
-		BOOL ndm;						// Non-DMAモード
-		BOOL mfm;						// MFMモード
-		BOOL mt;						// マルチトラック
-		BOOL sk;						// Skip DDAM
-		BOOL tc;						// TC
-		BOOL load;						// ヘッドロード
+		DWORD eot;					// EOT
+		DWORD gsl;					// GSL
+		DWORD dtl;					// DTL
+		DWORD sc; 					// SC
+		DWORD gpl;					// GAP3
+		DWORD d;					// Format data
+		DWORD err;					// Error code
+		BOOL seek;					// Seek interrupt request
+		BOOL ndm;					// Non-DMA mode
+		BOOL mfm;					// MFM mode
+		BOOL mt;					// Multi-track
+		BOOL sk;					// Skip DDAM
+		BOOL tc;					// TC
+		BOOL load;					// Head load
 
-		int offset;						// バッファオフセット
-		int len;						// 残りレングス
-		BYTE buffer[0x4000];			// データバッファ
+		int offset;					// Buffer offset
+		int len;					// Remaining length
+		BYTE buffer[0x4000];			// Data buffer
 
-		BOOL fast;						// 高速モード
-		BOOL dual;						// デュアルドライブ
+		BOOL fast;					// Fast mode
+		BOOL dual;					// Dual drive
 	} fdc_t;
 
 public:
-	// 基本ファンクション
+	// Basic constructor
 	FDC(VM *p);
-										// コンストラクタ
+										// Constructor
 	BOOL FASTCALL Init();
-										// 初期化
+										// Initialize
 	void FASTCALL Cleanup();
-										// クリーンアップ
+										// Cleanup
 	void FASTCALL Reset();
-										// リセット
+										// Reset
 	BOOL FASTCALL Save(Fileio *fio, int ver);
-										// セーブ
+										// Save
 	BOOL FASTCALL Load(Fileio *fio, int ver);
-										// ロード
+										// Load
 	void FASTCALL ApplyCfg(const Config *config);
-										// 設定適用
+										// Apply config
 
-	// メモリデバイス
+	// External device access
 	DWORD FASTCALL ReadByte(DWORD addr);
-										// バイト読み込み
+										// Byte read
 	DWORD FASTCALL ReadWord(DWORD addr);
-										// ワード読み込み
+										// Word read
 	void FASTCALL WriteByte(DWORD addr, DWORD data);
-										// バイト書き込み
+										// Byte write
 	void FASTCALL WriteWord(DWORD addr, DWORD data);
-										// ワード書き込み
+										// Word write
 	DWORD FASTCALL ReadOnly(DWORD addr) const;
-										// 読み込みのみ
+										// Read only
 
-	// 外部API
+	// External API
 	BOOL FASTCALL Callback(Event *ev);
-										// イベントコールバック
+										// Event callback
 	const fdc_t* FASTCALL GetWork() const;
-										// 内部ワークアドレス取得
+										// Get structure address
 	void FASTCALL CompleteSeek(int drive, BOOL result);
-										// シーク完了
+										// Seek complete
 	void FASTCALL SetTC();
-										// TCアサート
+										// TC signal
 
 private:
 	void FASTCALL Idle();
-										// アイドルフェーズ
+										// Idle phase
 	void FASTCALL Command(DWORD data);
-										// コマンドフェーズ
+										// Command phase
 	void FASTCALL CommandRW(fdccmd cmd, DWORD data);
-										// コマンドフェーズ(R/W系)
+										// Command phase (R/W sub)
 	void FASTCALL Execute();
-										// 実行フェーズ
+										// Execute phase
 	void FASTCALL ReadID();
-										// 実行フェーズ(Read ID)
+										// Execute phase (Read ID)
 	void FASTCALL ExecuteRW();
-										// 実行フェーズ(R/W系)
+										// Execute phase (R/W sub)
 	BYTE FASTCALL Read();
-										// 実行フェーズ(Read)
+										// Execute phase (Read)
 	void FASTCALL Write(DWORD data);
-										// 実行フェーズ(Write)
+										// Execute phase (Write)
 	void FASTCALL Compare(DWORD data);
-										// 実行フェーズ(Compare)
+										// Execute phase (Compare)
 	void FASTCALL Result();
-										// リザルトフェーズ
+										// Result phase
 	void FASTCALL ResultRW();
-										// リザルトフェーズ(R/W系)
+										// Result phase (R/W sub)
 	void FASTCALL Interrupt(BOOL flag);
-										// 割り込み
+										// Interrupt
 	void FASTCALL SoftReset();
-										// ソフトウェアリセット
+										// Software reset
 	void FASTCALL MakeST3();
-										// ST3作成
+										// Create ST3
 	BOOL FASTCALL ReadData();
-										// READ (DELETED) DATAコマンド
+										// READ (DELETED) DATA command
 	BOOL FASTCALL WriteData();
-										// WRITE (DELETED) DATAコマンド
+										// WRITE (DELETED) DATA command
 	BOOL FASTCALL ReadDiag();
-										// READ DIAGNOSTICコマンド
+										// READ DIAGNOSTIC command
 	BOOL FASTCALL WriteID();
-										// WRITE IDコマンド
+										// WRITE ID command
 	BOOL FASTCALL Scan();
-										// SCAN系コマンド
+										// SCAN family command
 	void FASTCALL EventRW();
-										// イベント処理(R/W)
+										// Event processing (R/W)
 	void FASTCALL EventErr(DWORD hus);
-										// イベント処理(エラー)
+										// Event processing (Error)
 	void FASTCALL WriteBack();
-										// 書き込み完了
+										// Write back
 	BOOL FASTCALL NextSector();
-										// マルチセクタ処理
+										// Multi-sector processing
 	IOSC *iosc;
 										// IOSC
 	DMAC *dmac;
@@ -209,9 +209,9 @@ private:
 	FDD *fdd;
 										// FDD
 	Event event;
-										// イベント
+										// Event
 	fdc_t fdc;
-										// FDC内部データ
+										// FDC member data
 };
 
 #endif	// fdc_h

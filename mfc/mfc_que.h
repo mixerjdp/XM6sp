@@ -2,8 +2,8 @@
 //
 //	X68000 EMULATOR "XM6"
 //
-//	Copyright (C) 2001-2004 ＰＩ．(ytanaka@ipc-tokai.or.jp)
-//	[ MFC キュー ]
+//	Copyright (C) 2001-2004 ﾅ｡ﾂｰﾃ･窶｢ﾂｽD(ytanaka@ipc-tokai.or.jp)
+//	[ MFC Queue ]
 //
 //---------------------------------------------------------------------------
 
@@ -14,55 +14,55 @@
 
 //===========================================================================
 //
-//	キュー
+//	Queue
 //
 //===========================================================================
 class CQueue : public CObject
 {
 public:
-	// 内部データ定義
+	// Internal data type
 	typedef struct _QUQUEINFO {
-		BYTE *pBuf;						// バッファ
-		DWORD dwSize;					// サイズ
-		DWORD dwMask;					// マスク(サイズ-1)
-		DWORD dwRead;					// Readポインタ
-		DWORD dwWrite;					// Writeポインタ
-		DWORD dwNum;					// 個数
-		DWORD dwTotalRead;				// 合計Read
-		DWORD dwTotalWrite;				// 合計Write
+		BYTE *pBuf;						// Buffer
+		DWORD dwSize;					// Size
+		DWORD dwMask;					// Mask (size-1)
+		DWORD dwRead;					// Read pointer
+		DWORD dwWrite;					// Write pointer
+		DWORD dwNum;					// Count
+		DWORD dwTotalRead;				// Total read
+		DWORD dwTotalWrite;				// Total write
 	} QUEUEINFO, *LPQUEUEINFO;
 
-	// 基本ファンクション
+	// Basic procedures
 	CQueue();
-										// コンストラクタ
+										// Constructor
 	virtual ~CQueue();
-										// デストラクタ
+										// Destructor
 	BOOL FASTCALL Init(DWORD dwSize);
-										// 初期化
+										// Initialization
 
 	// API
 	void FASTCALL Clear();
-										// クリア
+										// Clear
 	BOOL FASTCALL IsEmpty()	const		{ return (BOOL)(m_Queue.dwNum == 0); }
-										// キューが空かチェック
+										// Check if queue is empty
 	DWORD FASTCALL Get(BYTE *pDest);
-										// キュー内のデータをすべて取得
+										// Get all data from queue
 	DWORD FASTCALL Copy(BYTE *pDest) const;
-										// キュー内のデータをすべて取得(キュー進めない)
+										// Get all data from queue (queue unchanged)
 	void FASTCALL Discard(DWORD dwNum);
-										// キューを進める
+										// Discard from queue
 	void FASTCALL Back(DWORD dwNum);
-										// キューを戻す
+										// Put back into queue
 	DWORD FASTCALL GetFree() const;
-										// キューの空き個数を取得
+										// Get free space count
 	BOOL FASTCALL Insert(const BYTE *pSrc, DWORD dwLength);
-										// キューに挿入
+										// Insert into queue
 	void FASTCALL GetQueue(QUEUEINFO *pInfo) const;
-										// キュー情報取得
+										// Get queue
 
 private:
 	QUEUEINFO m_Queue;
-										// 内部ワーク
+										// Internal queue
 };
 
 #endif	// mfc_que_h

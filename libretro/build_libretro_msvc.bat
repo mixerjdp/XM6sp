@@ -33,10 +33,25 @@ if errorlevel 1 (
   exit /b 1
 )
 
+set YMFM_SRC=..\vm\ymfm
+set X68SOUND_SRC=..\vm\x68sound
 set DEFINES=/D__LIBRETRO__ /DXM6CORE_MONOLITHIC /DXM6CORE_STATIC /DXM6_FORCE_DEFAULT_SRAM /DNDEBUG /D_NDEBUG /DMUSASHI_CNF=\"m68kconf_xm6.h\"
 set INCLUDES=/I. /I..\vm /I..\cpu /I..\cpu\Musashi /I..\cpu\Musashi\softfloat
+set YMFM_SOURCES=
+if exist "%YMFM_SRC%\ymfm_opm.cpp" (
+  set DEFINES=%DEFINES% /DXM6CORE_ENABLE_YMFM
+  set INCLUDES=%INCLUDES% /I%YMFM_SRC%
+  set YMFM_SOURCES=..\vm\ymfm_opm_engine.cpp %YMFM_SRC%\ymfm_opm.cpp
+)
+set X68SOUND_SOURCES=
+if exist "%X68SOUND_SRC%\X68Sound.cpp" (
+  set DEFINES=%DEFINES% /DXM6CORE_ENABLE_X68SOUND /DXM6CORE_X68SOUND_RENDER_ONLY
+  set INCLUDES=%INCLUDES% /I%X68SOUND_SRC%
+  set X68SOUND_SOURCES=%X68SOUND_SRC%\X68Sound.cpp
+)
 set COMMONFLAGS=/nologo /LD /O2 /MT /EHsc /std:c++14 /wd4018 /wd4244 /wd4267 /wd4996
-set LINKFLAGS=/link /OUT:%OUT% /OPT:REF /OPT:ICF winmm.lib
+set COMMONFLAGS=%COMMONFLAGS% /Zi /FS
+set LINKFLAGS=/link /OUT:%OUT% /OPT:REF /OPT:ICF /DEBUG:FULL /PDB:%~dp0\%RELEASE_DIR%\xm6_libretro.pdb winmm.lib
 set OBJDIR=build_%ARCH%
 
 if not exist "%OBJDIR%" mkdir "%OBJDIR%"
@@ -74,6 +89,7 @@ set SOURCES=^
   ..\vm\ppi.cpp ^
   ..\vm\printer.cpp ^
   ..\vm\render.cpp ^
+  ..\vm\renderfast_compositor.cpp ^
   ..\vm\rend_soft.cpp ^
   ..\vm\rtc.cpp ^
   ..\vm\sasi.cpp ^
@@ -94,6 +110,7 @@ set SOURCES=^
   ..\vm\xm6core_impl.cpp ^
   ..\vm\xm6core_runtime.cpp ^
   ..\vm\xm6core_stubs.cpp ^
+  ..\vm\x68sound_bridge.cpp ^
   ..\vm\musashi_adapter.cpp ^
   ..\vm\musashi_mem.cpp ^
   ..\cpu\Musashi\softfloat\softfloat.cpp ^
@@ -101,7 +118,7 @@ set SOURCES=^
   ..\cpu\Musashi\m68kops.cpp ^
   ..\cpu\Musashi\m68kdasm.cpp
 
-cl %COMMONFLAGS% %DEFINES% %INCLUDES% /Fo"%OBJDIR%\\" %SOURCES% %LINKFLAGS%
+cl %COMMONFLAGS% %DEFINES% %INCLUDES% /Fo"%OBJDIR%\\" %SOURCES% %YMFM_SOURCES% %X68SOUND_SOURCES% %LINKFLAGS%
 if errorlevel 1 (
   if exist "%OUT%" del /q "%OUT%" >nul 2>nul
   echo Build failed.
@@ -113,6 +130,10 @@ copy /Y "%OUT%" "%RELEASE_DIR%\xm6_libretro.dll" >nul
 if errorlevel 1 (
   echo Failed to copy %OUT% to %RELEASE_DIR%\xm6_libretro.dll
   exit /b 1
+)
+
+if exist "%OUT:.dll=.pdb%" (
+  copy /Y "%OUT:.dll=.pdb%" "%RELEASE_DIR%\xm6_libretro.pdb" >nul
 )
 
 echo Built %OUT%

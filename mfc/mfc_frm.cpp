@@ -1,16 +1,16 @@
-﻿//---------------------------------------------------------------------------
+//---------------------------------------------------------------------------
 //
 //	X68000 EMULATOR "XM6"
 //
-//	Copyright (C) 2001-2006 ‚o‚hD(ytanaka@ipc-tokai.or.jp)
-//	[ MFC Ventana del marco ]
+//	Copyright (C) 2001-2006 Ytanaka (ytanaka@ipc-tokai.or.jp)
+//	[MFC application]
 //
 //---------------------------------------------------------------------------
 
 #if defined(_WIN32)
 
-#include "os.h"
 #include "mfc.h"
+#include "os.h"
 #include "xm6.h"
 #include "vm.h"
 #include "schedule.h"
@@ -61,15 +61,15 @@ static void FASTCALL VMHostMessageCallback(const TCHAR* message, void *user)
 
 //===========================================================================
 //
-//	Ventana del marco
+//	Frame window
 
 //
 //===========================================================================
 
 //---------------------------------------------------------------------------
 //
-//	Definiciones de las constantes de la cascara
-//	Se requiere que sea definido por la aplicacion, no por un archivo de inclusion.
+//	Shell constant definitions
+//	Must be defined by the application, not by an include file.
 //
 //---------------------------------------------------------------------------
 #define SHCNRF_InterruptLevel			0x0001
@@ -83,11 +83,11 @@ static void FASTCALL VMHostMessageCallback(const TCHAR* message, void *user)
 //---------------------------------------------------------------------------
 CFrmWnd::CFrmWnd()
 {
-	// VM y codigos de estado
+	// VM pointer and status codes
 	::pVM = NULL;
 	m_nStatus = -1;
 
-	// Dispositivos
+	// Devices
 	m_pFDD = NULL;
 	m_pSASI = NULL;
 	m_pSCSI = NULL;
@@ -95,7 +95,7 @@ CFrmWnd::CFrmWnd()
 	m_pKeyboard = NULL;
 	m_pMouse = NULL;
 
-	// Componentes
+	// Components
 	m_pFirstComponent = NULL;
 	m_pDrawView = NULL;
 	m_pStatusView = NULL;
@@ -109,7 +109,7 @@ CFrmWnd::CFrmWnd()
 	m_pInfo = NULL;
 	m_pConfig = NULL;
 
-	// Pantalla completa
+	// Full-screen state
 	m_bFullScreen = FALSE;
 	m_bBorderless = FALSE;
 	m_dwPrevStyle = 0;
@@ -121,33 +121,33 @@ CFrmWnd::CFrmWnd()
 	m_nWndTop = 0;
 	m_bVSyncEnabled = TRUE;
 
-	// Subventana
+	// Child window
 	m_strWndClsName.Empty();
 
-	// Barra de estado, menu y subtitulos
+	// Status bar, menu bar, and caption
 	m_bStatusBar = FALSE;
 	m_bMenuBar = TRUE;
 	m_bCaption = TRUE;
 
-	// Notificaciones de la cascara
+	// Shell notifications
 	m_uNotifyId = NULL;
 
-	// Configuracion
+	// Settings
 	m_bMouseMid = TRUE;
 	m_bPopup = FALSE;
 	m_bAutoMouse = TRUE;
 
-	// Otras variables
+	// Other state
 	m_bExit = FALSE;
 	m_bSaved = FALSE;
 	m_nFDDStatus[0] = 0;
 	m_nFDDStatus[1] = 0;
-	m_dwExec = 0;	
+	m_dwExec = 0;
 }
 
 //---------------------------------------------------------------------------
 //
-//	Mapa de mensajes
+//	Message map
 //
 //---------------------------------------------------------------------------
 BEGIN_MESSAGE_MAP(CFrmWnd, CFrameWnd)
@@ -175,7 +175,7 @@ BEGIN_MESSAGE_MAP(CFrmWnd, CFrameWnd)
 #endif
 	ON_WM_ENDSESSION()
 	ON_MESSAGE(WM_SHELLNOTIFY, OnShellNotify)
-		
+
 	ON_COMMAND(ID_FILE_CARGAR40006, OnFastOpen)
 
 	ON_COMMAND(IDM_OPEN, OnOpen)
@@ -328,13 +328,15 @@ BEGIN_MESSAGE_MAP(CFrmWnd, CFrameWnd)
 	ON_UPDATE_COMMAND_UI(IDM_MENU, OnMenuUI)
 	ON_COMMAND(IDM_STATUS, OnStatus)
 	ON_UPDATE_COMMAND_UI(IDM_STATUS, OnStatusUI)
+	ON_COMMAND_RANGE(IDM_SCALE_100, IDM_SCALE_300, OnWindowScale)
+	ON_UPDATE_COMMAND_UI_RANGE(IDM_SCALE_100, IDM_SCALE_300, OnWindowScaleUI)
 	ON_COMMAND(IDM_REFRESH, OnRefresh)
-	ON_COMMAND(IDM_STRETCH, OnStretch)
-	ON_UPDATE_COMMAND_UI(IDM_STRETCH, OnStretchUI)
 	ON_COMMAND(IDM_FULLSCREEN, OnFullScreen)
 	ON_UPDATE_COMMAND_UI(IDM_FULLSCREEN, OnFullScreenUI)
 	ON_COMMAND(IDM_RENDER_FAST, OnRenderFast)
 	ON_UPDATE_COMMAND_UI(IDM_RENDER_FAST, OnRenderFastUI)
+	ON_COMMAND(IDM_YMFM, OnYmfm)
+	ON_UPDATE_COMMAND_UI(IDM_YMFM, OnYmfmUI)
 	ON_COMMAND(IDM_TOGGLE_RENDERER, OnToggleRenderer)
 	ON_COMMAND(IDM_TOGGLE_OSD, OnToggleOSD)
 	ON_COMMAND(IDM_TOGGLE_VSYNC, OnToggleVSync)
@@ -379,12 +381,12 @@ END_MESSAGE_MAP()
 
 //---------------------------------------------------------------------------
 //
-//	Inicializacion
+//	Initialization
 //
 //---------------------------------------------------------------------------
 BOOL CFrmWnd::Init()
 {
-	// Creacion de ventanas
+	// Create the main frame window
 
 	if (!Create(NULL, _T("XM6"),
 			WS_OVERLAPPED | WS_CAPTION | WS_SYSMENU |
@@ -393,23 +395,23 @@ BOOL CFrmWnd::Init()
 		return FALSE;
 	}
 
-	// El resto de la inicializacion se deja en manos de OnCreate.
+	// Leave the rest of initialization to OnCreate.
 	return TRUE;
 }
 
 //---------------------------------------------------------------------------
 //
-//	Preparando la creacion de una ventana
+//	Window creation preprocessing
 //
 //---------------------------------------------------------------------------
 BOOL CFrmWnd::PreCreateWindow(CREATESTRUCT& cs)
 {
-	// Clase basica
+	// Base class processing
 	if (!CFrameWnd::PreCreateWindow(cs)) {
 		return FALSE;
 	}
 
-	// Eliminacion del borde del cliente
+	// Remove client-edge border
 	cs.dwExStyle &= ~WS_EX_CLIENTEDGE;
 
 	return TRUE;
@@ -417,7 +419,7 @@ BOOL CFrmWnd::PreCreateWindow(CREATESTRUCT& cs)
 
 //---------------------------------------------------------------------------
 //
-//	Creacion de ventanas
+//	Window creation
 //
 //---------------------------------------------------------------------------
 int CFrmWnd::OnCreate(LPCREATESTRUCT lpCreateStruct)
@@ -427,28 +429,28 @@ int CFrmWnd::OnCreate(LPCREATESTRUCT lpCreateStruct)
 	UINT nCount;
 	CString string;
 
-	// Clase basica
+	// Base class processing
 	if (CFrameWnd::OnCreate(lpCreateStruct) != 0) {
 		return -1;
 	}
 
-	// Especificacion de los datos del usuario
+	// Set custom user data marker
 	lUser = (LONG)MAKEID('X', 'M', '6', ' ');
 	::SetWindowLong(m_hWnd, GWL_USERDATA, lUser);
 
-	// Acelerador, Icon, IMM
+	// Accelerator, icon, and IME context
 	LoadAccelTable(MAKEINTRESOURCE(IDR_ACCELERATOR));
 	SetIcon(AfxGetApp()->LoadIcon(IDI_APPICON), TRUE);
 	::ImmAssociateContext(m_hWnd, (HIMC)NULL);
 
-	// Menu (ventana)
+	// Window menus
 	if (::IsJapanese()) {
-		// “ú–{Œêƒƒjƒ…[
+		// Japanese menu resources
 		m_Menu.LoadMenu(IDR_MENU);
 		m_PopupMenu.LoadMenu(IDR_MENUPOPUP);
 	}
 	else {
-		// Menu en ingles
+		// English menu resources
 		m_Menu.LoadMenu(IDR_US_MENU);
 		m_PopupMenu.LoadMenu(IDR_US_MENUPOPUP);
 	}
@@ -456,39 +458,39 @@ int CFrmWnd::OnCreate(LPCREATESTRUCT lpCreateStruct)
 	m_bMenuBar = TRUE;
 	m_bPopupMenu = FALSE;
 
-	// Menu (sistema)
+	// System menu
 	::GetMsg(IDS_STDWIN, string);
 	pSysMenu = GetSystemMenu(FALSE);
 	ASSERT(pSysMenu);
 	nCount = pSysMenu->GetMenuItemCount();
 
-	// Insertar "Posicion estandar de la ventana
+	// Insert "Standard window position"
 	pSysMenu->InsertMenu(nCount - 2, MF_BYPOSITION | MF_STRING, IDM_STDWIN, string);
 	pSysMenu->InsertMenu(nCount - 2, MF_BYPOSITION | MF_SEPARATOR);
 
-	// Inicializacion de la ventana infantil
+	// Initialize child views
 	if (!InitChild()) {
 		return -1;
 	}
 
-	// Posicion de la ventana e inicializacion del rectangulo
+	// Initialize window position and rectangle
 	InitPos();
 
-	// Inicializacion de las notificaciones de Shell
+	// Initialize shell notifications
 	InitShell();
 
-	// Inicializacion de la maquina virtual
+	// Initialize virtual machine
 	if (!InitVM()) {
-		// Error de inicializacion de la maquina virtual
+		// VM initialization failed
 		m_nStatus = 1;
 		PostMessage(WM_KICK, 0, 0);
 		return 0;
 	}
 
-	// Transmision de versiones desde los recursos de versiones a las maquinas virtuales
+	// Pass executable version info to the VM
 	InitVer();
 
-	// Almacenamiento de dispositivos
+	// Cache device pointers
 	m_pFDD = (FDD*)::GetVM()->SearchDevice(MAKEID('F', 'D', 'D', ' '));
 	ASSERT(m_pFDD);
 	m_pSASI = (SASI*)::GetVM()->SearchDevice(MAKEID('S', 'A', 'S', 'I'));
@@ -502,27 +504,27 @@ int CFrmWnd::OnCreate(LPCREATESTRUCT lpCreateStruct)
 	m_pMouse = (Mouse*)::GetVM()->SearchDevice(MAKEID('M', 'O', 'U', 'S'));
 	ASSERT(m_pMouse);
 
-	// Creacion e inicializacion de componentes
+	// Create and initialize components
 	if (!InitComponent()) {
-		// Error de inicializacion del componente
+		// Component initialization failed
 		m_nStatus = 2;
 		PostMessage(WM_KICK, 0, 0);
 		return 0;
 	}
 
-	// Aplicar la configuracion (similar a OnOption, con la VM bloqueada)
+	// Apply settings (like OnOption) while VM is locked
 	::LockVM();
 	ApplyCfg();
 	::UnlockVM();
 
-	// Restablecer
+	// Reset VM
 	::GetVM()->Reset();
 
-	// !Reanudar la posicion de la ventana (m_nStatus ! = 0 se anota)
+	// Restore frame state while startup status is non-zero
 	ASSERT(m_nStatus != 0);
 	RestoreFrameWnd(FALSE);
 
-	// Publica tu mensaje y ya esta.
+	// Post kick message and continue startup
 	m_nStatus = 0;
 	PostMessage(WM_KICK, 0, 0);
 	return 0;
@@ -530,7 +532,7 @@ int CFrmWnd::OnCreate(LPCREATESTRUCT lpCreateStruct)
 
 //---------------------------------------------------------------------------
 //
-//	Inicializacion de la ventana infantil
+//	Child view initialization
 //
 //---------------------------------------------------------------------------
 BOOL FASTCALL CFrmWnd::InitChild()
@@ -543,20 +545,27 @@ BOOL FASTCALL CFrmWnd::InitChild()
 	int nWidth;
 	UINT uIndicator[6];
 
-	// Restaurar la configuración del Shader ANTES de inicializar la vista
+	// Restore shader setting before initializing the view
 	Config config;
-	GetConfig()->GetConfig(&config);
+	memset(&config, 0, sizeof(config));
+	if (m_pConfig) {
+		m_pConfig->GetConfig(&config);
+	}
+	else {
+		// Early startup path: config component is not created yet.
+		config.render_shader = FALSE;
+	}
 
-	// Ver creación pasando el estado inicial del shader
+	// Create view with the initial shader state
 	m_pDrawView = new CDrawView;
 	if (!m_pDrawView->Init(this, config.render_shader)) {
 		return FALSE;
 	}
 
-	// Inicializacion del trabajo de la barra de estado
+	// Initialize status bar contents
 	ResetStatus();
 
-	// Creacion de la barra de estado
+	// Create status bar
 	if (!m_StatusBar.Create(this, WS_CHILD | WS_VISIBLE | CBRS_BOTTOM,
 							AFX_IDW_STATUS_BAR)) {
 		return FALSE;
@@ -568,7 +577,7 @@ BOOL FASTCALL CFrmWnd::InitChild()
 	}
 	m_StatusBar.SetIndicators(uIndicator, 6);
 
-	// Obtener la metrica del texto
+	// Get text metrics
 	hDC = ::GetDC(m_hWnd);
 	hFont = (HFONT)::GetStockObject(DEFAULT_GUI_FONT);
 	hDefFont = (HFONT)::SelectObject(hDC, hFont);
@@ -577,7 +586,7 @@ BOOL FASTCALL CFrmWnd::InitChild()
 	::SelectObject(hDC, hDefFont);
 	::ReleaseDC(m_hWnd, hDC);
 
-	// Bucle de ajuste de tamano
+	// Pane width setup loop
 	m_StatusBar.SetPaneInfo(0, 0, SBPS_NOBORDERS | SBPS_STRETCH, 0);
 	nWidth = 0;
 	for (i=1; i<6; i++) {
@@ -606,7 +615,7 @@ BOOL FASTCALL CFrmWnd::InitChild()
 		m_StatusBar.SetPaneInfo(i, i, SBPS_NORMAL | SBPS_OWNERDRAW, nWidth);
 	}
 
-	// Redistribucion
+	// Recalculate layout
 	RecalcLayout();
 
 	return TRUE;
@@ -614,8 +623,8 @@ BOOL FASTCALL CFrmWnd::InitChild()
 
 //---------------------------------------------------------------------------
 //
-//	Inicializacion de la posicion y del rectangulo
-//	Si bStart=FALSE, restaura la posicion cuando bFullScreen=FALSE.
+//	Initialize position and window rectangle
+//	If bStart is FALSE, restore position only in windowed mode.
 //
 //---------------------------------------------------------------------------
 void FASTCALL CFrmWnd::InitPos(BOOL bStart)
@@ -625,15 +634,35 @@ void FASTCALL CFrmWnd::InitPos(BOOL bStart)
 	CRect rect;
 	CRect rectStatus;
 	CRect rectWnd;
+	Config config;
+	int scaleIndex;
+	int scalePercent;
 
 	ASSERT(this);
 
-	// Obtener el tamano de la pantalla y el rectangulo de la ventana
+	// Get screen size and current window rectangle
 	cx = ::GetSystemMetrics(SM_CXSCREEN);
 	cy = ::GetSystemMetrics(SM_CYSCREEN);
 	GetWindowRect(&rectWnd);
+	memset(&config, 0, sizeof(config));
+	if (m_pConfig) {
+		m_pConfig->GetConfig(&config);
+	}
+	else {
+		// Early startup path before component creation.
+		config.window_scale = 0;
+	}
 
-	// 800x600 e inferiores se extienden a tamano de pantalla completa
+	scaleIndex = config.window_scale;
+	if (scaleIndex < 0) {
+		scaleIndex = 0;
+	}
+	if (scaleIndex > 4) {
+		scaleIndex = 4;
+	}
+	scalePercent = 100 + (scaleIndex * 50);
+
+	// On 800x600 or smaller, force full-screen-sized window
 	if ((cx <= 800) || (cy <= 600)) {
 		if ((rectWnd.left != 0) || (rectWnd.top != 0)) {
 			SetWindowPos(&wndTop, 0, 0, cx, cy, SWP_NOZORDER);
@@ -647,34 +676,34 @@ void FASTCALL CFrmWnd::InitPos(BOOL bStart)
 	}
 
 
-	/* ACA SE ESTABLECE TAMAÑO DE VENTANA PRINCIPAL Y DE PANTALLA COMPLETA */
-	// 824x560 (DDP2) se reconoce como el tamano maximo no entrelazado
+	/* Set main-window size and fullscreen size here */
+	// 768x512 is treated as the 1.0x base size.
 	rect.left = 0;
 	rect.top = 0;
 
-	/* Si es pantalla completa  utilizaremos resolucion total */
-	if (m_bFullScreen) 
+	/* In full-screen mode, use full monitor resolution */
+	if (m_bFullScreen)
 	{
 		rect.right = cx;
 		rect.bottom = cy;
 	}
-	else /* Si es ventana en 1024 es suficiente */
+	else /* In windowed mode, 1024x768 is used */
 	{
-		rect.right = 1024;
-		rect.bottom = 768;
+		rect.right = (768 * scalePercent) / 100;
+		rect.bottom = (512 * scalePercent) / 100;
 	}
 	::AdjustWindowRectEx(&rect, GetView()->GetStyle(), FALSE, GetView()->GetExStyle());
 	m_StatusBar.GetWindowRect(&rectStatus);
 	rect.bottom += rectStatus.Height();
 	::AdjustWindowRectEx(&rect, GetStyle(), TRUE, GetExStyle());
 
-	// Parece que rect.left y rect.bottom son negativos (despues de esto, right y bottom indican cx y cy)
+	// rect can become offset; normalize to width/height from origin
 	rect.right -= rect.left;
 	rect.left = 0;
 	rect.bottom -= rect.top;
 	rect.top = 0;
 
-	// Centrado, si hay espacio
+	// Center window when there is room
 	if (rect.right < cx) {
 		rect.left = (cx - rect.right) / 2;
 	}
@@ -682,22 +711,22 @@ void FASTCALL CFrmWnd::InitPos(BOOL bStart)
 		rect.top = (cy - rect.bottom) / 2;
 	}
 
-	// Dividir por bStart (inicio inicial o cambio de ventana a pantalla completa)
+	// Branch by startup vs. runtime fullscreen/window transition
 	if (bStart) {
-		// Guardar la posicion de la ventana una vez (despues de esto hay otra oportunidad de RestoreFrameWnd)
+		// Save initial window position once (RestoreFrameWnd may run later)
 		m_nWndLeft = rect.left;
 		m_nWndTop = rect.top;
 	}
 	else {
-		// Posicion correcta solo en modo ventana
+		// Keep corrected coordinates only in windowed mode
 		if (!m_bFullScreen) {
 			if ((rect.left == 0) && (rect.top == 0)) {
-				// Si recibe un mensaje WM_DISPLAYCHANGE y la ventana se reduce
+				// If WM_DISPLAYCHANGE shrank the window, store new position
 				m_nWndLeft = rect.left;
 				m_nWndTop = rect.top;
 			}
 			else {
-				// Aparte de eso (incluyendo la transicion de estado de pantalla completa a ventana)
+				// Otherwise (including fullscreen->window), restore saved position
 				rect.left = m_nWndLeft;
 				rect.top = m_nWndTop;
 			}
@@ -714,31 +743,41 @@ void FASTCALL CFrmWnd::InitPos(BOOL bStart)
 		return;
 	}
 }
- 
+
 //---------------------------------------------------------------------------
 //
-//	Inicializacion de la cooperacion de Shell
+//	Recompute frame layout for the selected window scale
+//
+//---------------------------------------------------------------------------
+void FASTCALL CFrmWnd::ApplyWindowScale()
+{
+	InitPos(FALSE);
+}
+
+//---------------------------------------------------------------------------
+//
+//	Shell integration initialization
 //
 //---------------------------------------------------------------------------
 void FASTCALL CFrmWnd::InitShell()
 {
 	int nSources;
 
-	// Establecer factores de notificacion
+	// Build shell notification flags
 	if (::IsWinNT()) {
-		// Windows2000/XP: anadir la bandera para utilizar la memoria compartida
+		// Windows 2000/XP: include shared-memory delivery flag
 		nSources = SHCNRF_InterruptLevel | SHCNRF_ShellLevel | SHCNRF_NewDelivery;
 	}
 	else {
-		// Windows9x: la memoria compartida no se utiliza
+		// Windows 9x: shared-memory delivery is not used
 		nSources = SHCNRF_InterruptLevel | SHCNRF_ShellLevel;
 	}
 
-	// Inicializacion de una entrada
+	// Initialize one registration entry
 	m_fsne[0].pidl = NULL;
 	m_fsne[0].fRecursive = FALSE;
 
-	// ƒVƒFƒ‹’Ê’mƒƒbƒZ[ƒW‚ð“o˜^
+	// Register for shell media-change notifications
 	m_uNotifyId = ::SHChangeNotifyRegister(m_hWnd,
 							nSources,
 							SHCNE_MEDIAINSERTED | SHCNE_MEDIAREMOVED | SHCNE_DRIVEADD | SHCNE_DRIVEREMOVED,
@@ -750,7 +789,7 @@ void FASTCALL CFrmWnd::InitShell()
 
 //---------------------------------------------------------------------------
 //
-//	Inicializacion de la maquina virtual
+//	Virtual machine initialization
 //
 //---------------------------------------------------------------------------
 BOOL FASTCALL CFrmWnd::InitVM()
@@ -772,7 +811,7 @@ BOOL FASTCALL CFrmWnd::InitVM()
 
 //---------------------------------------------------------------------------
 //
-//	Inicializacion de los componentes
+//	Component initialization
 //
 //---------------------------------------------------------------------------
 BOOL FASTCALL CFrmWnd::InitComponent()
@@ -791,7 +830,7 @@ BOOL FASTCALL CFrmWnd::InitComponent()
 	ASSERT(!m_pInfo);
 	ASSERT(!m_pConfig);
 
-	// Construcciones (hay que tener en cuenta el orden. Primera configuracion, ultimo programador)
+	// Construct in order (config first, scheduler last)
 	m_pConfig = new CConfig(this);
 	m_pFirstComponent = m_pConfig;
 	m_pSound = new CSound(this);
@@ -811,11 +850,11 @@ BOOL FASTCALL CFrmWnd::InitComponent()
 	m_pSch = new CScheduler(this);
 	m_pFirstComponent->AddComponent(m_pSch);
 
-	// Inicializacion
+	// Initialize all components
 	pComponent = m_pFirstComponent;
 	bSuccess = TRUE;
 
-	// Bucle
+	// Iterate component list
 	while (pComponent) {
 		if (!pComponent->Init()) {
 			bSuccess = FALSE;
@@ -828,7 +867,7 @@ BOOL FASTCALL CFrmWnd::InitComponent()
 
 //---------------------------------------------------------------------------
 //
-//	Inicializacion de la version
+//	Version initialization
 //
 //---------------------------------------------------------------------------
 void FASTCALL CFrmWnd::InitVer()
@@ -844,10 +883,10 @@ void FASTCALL CFrmWnd::InitVer()
 
 	ASSERT(this);
 
-	// Obtenga la ruta
+	// Get executable path
 	::GetModuleFileName(NULL, szPath, _MAX_PATH);
 
-	// Leer la informacion de la version
+	// Read version info block
 	dwLength = GetFileVersionInfoSize(szPath, &dwHandle);
 	if (dwLength == 0) {
 		return;
@@ -858,19 +897,19 @@ void FASTCALL CFrmWnd::InitVer()
 		return;
 	}
 
-	// Recuperacion de la informacion de la version
+	// Query fixed file version info
 	if (::VerQueryValue(pVerInfo, _T("\\"), (LPVOID*)&pFileInfo, &uLength) == 0) {
 		delete[] pVerInfo;
 		return;
 	}
 
-	// Separacion de versiones y notificacion a las maquinas virtuales
+	// Build version numbers and pass them to the VM
 	dwMajor = (DWORD)HIWORD(pFileInfo->dwProductVersionMS);
 	dwMinor = (DWORD)(LOWORD(pFileInfo->dwProductVersionMS) * 16
 					+ HIWORD(pFileInfo->dwProductVersionLS));
 	::GetVM()->SetVersion(dwMajor, dwMinor);
 
-	// I—¹
+	// Done
 	delete[] pVerInfo;
 }
 
@@ -888,39 +927,38 @@ void FASTCALL CFrmWnd::ReadFile(LPCTSTR pszFileName, CString& str)
    CATCH_ALL(e)
    {
       str.Empty();
-      e->ReportError(); // see what's going wrong
+e->ReportError();// see what's going wrong
    }
    END_CATCH_ALL
 }
 
 
 
-//Este codigo construye una cadena que contiene las rutas completas de los archivos
-CString CFrmWnd::ProcesarM3u(CString str)
+CString CFrmWnd::ProcessM3u(CString str)
 {
-	CString nuevaRuta = RutaCompletaArchivoXM6;
-	PathRemoveFileSpecA(nuevaRuta.GetBuffer());
-	nuevaRuta.ReleaseBuffer();
+	CString newPath = m_strXM6FilePath;
+	PathRemoveFileSpecA(newPath.GetBuffer());
+	newPath.ReleaseBuffer();
 
 	int curPos = 0;
 	CString resToken = str.Tokenize(_T("\r\n"), curPos);
-	CString cadTot;
+	CString fullString;
 
 	while (!resToken.IsEmpty())
 	{
-		cadTot += "\"" + nuevaRuta + "\\" + resToken + "\"  ";
+		fullString += "\"" + newPath + "\\" + resToken + "\"  ";
 		resToken = str.Tokenize(_T("\r\n"), curPos);
 	}
 
-	return cadTot;
+	return fullString;
 }
 
 
 
 //---------------------------------------------------------------------------
 //
-//	Procesamiento de la linea de comandos
-//	Comun a la linea de comandos y a WM_DATA
+//	Command-line processing
+//	Shared by startup command line and WM_COPYDATA
 //
 //---------------------------------------------------------------------------
 void FASTCALL CFrmWnd::InitCmd(LPCTSTR lpszCmd)
@@ -932,64 +970,63 @@ void FASTCALL CFrmWnd::InitCmd(LPCTSTR lpszCmd)
 	sz.Format(_T("%s"), lpszCmd);
 	CString fileName = sz.Mid(sz.ReverseFind('\\') + 1);
 
-	RutaCompletaArchivoXM6 = lpszCmd;
-	NombreArchivoXM6 = fileName;
+	m_strXM6FilePath = lpszCmd;
+	m_strXM6FileName = fileName;
 
-	/* AQUÍ SE INICIALIZA CUALQUIER PARÁMETRO DE LA LÍNEA DE COMANDO */
+	/* Parse and apply command-line parameters here */
 
-	// Proceso de obtener la extensión del archivo
-	CString str = RutaCompletaArchivoXM6;
+	CString str = m_strXM6FilePath;
 	CString extensionArchivo = "";
 
 	int curPos = 0;
-	CString resToken = str.Tokenize(_T("."), curPos); // Obtiene la extensión de la ruta completa del archivo
+	CString resToken = str.Tokenize(_T("."), curPos);	// Tokenize full path by dot to get extension
 	while (!resToken.IsEmpty())
 	{
 		extensionArchivo = resToken;
 		resToken = str.Tokenize(_T("."), curPos);
 	}
 
-	/* Si es un archivo M3U, lo analiza y carga */
+	/* If this is an M3U file, parse and expand its entries */
 	if (extensionArchivo.MakeUpper() == "M3U")
 	{
-		CString contenidoM3u, cont2;
-		ReadFile(lpszCmd, contenidoM3u);
-		cont2 = ProcesarM3u(contenidoM3u).Trim();
+		CString m3uContent, cont2;
+		ReadFile(lpszCmd, m3uContent);
+		cont2 = ProcessM3u(m3uContent).Trim();
 		strcpy((char*)lpszCmd, cont2);
 	}
 
-	// lpszCmd es el comando completo con comillas incluidas
-	// Inicialización de punteros y banderas
+	// lpszCmd contains the full command line including quotes
+	// Initialize parsing flags
 	BOOL bReset = FALSE;
 
-	// Crear un objeto CString a partir de lpszCmd
+	// Create CString from command line
 	CString cmdString(lpszCmd);
 
-	// Dividir la cadena en partes
+	// Split command line into parts
 	curPos = 0;
 	CString part = cmdString.Tokenize(_T(" "), curPos);
 	int i = 0;
-	// Procesar cada parte
+	// Process each token
 	while (!part.IsEmpty())
 	{
-		// Si la parte comienza y termina con una comilla doble, eliminar las comillas
+		// Strip surrounding quotes from each token
 		if (part[0] == _T('\"') && part[part.GetLength() - 1] == _T('\"'))
 		{
 			part = part.Mid(1, part.GetLength() - 2);
 		}
 
-		// Convertir la parte a LPCTSTR
+		// Convert token to LPCTSTR
 		LPCTSTR szPath = (LPCTSTR)part;
 
-		// Intentar abrir
+		// Try to open token as media/state input
 		bReset = InitCmdSub(i, szPath);
 
-		// Obtener la siguiente parte
+		// Read next token
 		part = cmdString.Tokenize(_T(" "), curPos);
 		i++;
 	}
 
-	// En caso de reinicio, solicitarlo
+	// Trigger reset if requested by command processing
 	if (bReset)
 	{
 		OnReset();
@@ -1000,8 +1037,8 @@ void FASTCALL CFrmWnd::InitCmd(LPCTSTR lpszCmd)
 
 //---------------------------------------------------------------------------
 //
-//	Procesamiento de la linea de comandos Sub
-//	Comun para la linea de comandos, WM_DATA y arrastrar y soltar
+//	Command-line sub processing
+//	Shared by command line, WM_COPYDATA, and drag-and-drop
 //
 //---------------------------------------------------------------------------
 BOOL FASTCALL CFrmWnd::InitCmdSub(int nDrive, LPCTSTR lpszPath)
@@ -1018,10 +1055,10 @@ BOOL FASTCALL CFrmWnd::InitCmdSub(int nDrive, LPCTSTR lpszPath)
 	ASSERT((nDrive == 0) || (nDrive == 1));
 	ASSERT(lpszPath);
 
-	// Inicializacion de pFDI
+	// Initialize FDI pointer
 	pFDI = NULL;
 
-	// Comprobacion de archivo abierto
+	// Check whether the file can be opened
 	path.SetPath(lpszPath);
 	if (!fio.Open(path, Fileio::ReadOnly)) {
 		return FALSE;
@@ -1029,21 +1066,21 @@ BOOL FASTCALL CFrmWnd::InitCmdSub(int nDrive, LPCTSTR lpszPath)
 	dwSize = fio.GetFileSize();
 	fio.Close();
 
-	// Obtener ruta completa
+	// Resolve absolute path
 	::GetFullPathName(lpszPath, _MAX_PATH, szPath, &lpszFile);
 	path.SetPath(szPath);
 
-	// Bloqueo VM
+	// Lock VM
 	::LockVM();
 
 	// 128MO or 230MO or 540MO or 640MO
 	if ((dwSize == 0x797f400) || (dwSize == 0xd9eea00) ||
 		(dwSize == 0x1fc8b800) || (dwSize == 0x25e28000)) {
-		// Intentar asignar una MO
+		// Try to mount as MO media
 		nDrive = 2;
 
 		if (!m_pSASI->Open(path)) {
-			// Fallo de asignacion de MO
+			// MO mount failed
 			GetScheduler()->Reset();
 			ResetCaption();
 			::UnlockVM();
@@ -1052,32 +1089,32 @@ BOOL FASTCALL CFrmWnd::InitCmdSub(int nDrive, LPCTSTR lpszPath)
 	}
 	else {
 		if (dwSize >= 0x200000) {
-			// Intento de asignar una VM
+			// Try to load as VM state file
 			nDrive = 4;
 
-			// Pretratamiento abierto
+			// Pre-open validation
 			if (!OnOpenPrep(path, FALSE)) {
-				// Archivos que faltan o versiones incorrectas, etc.
+				// Missing files, version mismatch, etc.
 				GetScheduler()->Reset();
 				ResetCaption();
 				::UnlockVM();
 				return FALSE;
 			}
 
-			// Ejecucion de la carga (dejelo en manos de OnOpenSub)
+			// Execute load (handled by OnOpenSub)
 			::UnlockVM();
 			if (OnOpenSub(path)) {
 				Filepath::SetDefaultDir(szPath);
 			}
-			// No hay reinicio
+			// No reset required for this path
 			return FALSE;
 		}
 		else {
-			// Intento de asignar un FD
-			/* ACA SE INICIALIZA IMAGEN DISKETTE DESDE LINEA DE COMANDOS */ 
+			// Try to mount as floppy disk image
+			/* Initialize floppy image from command line */
 
 			if (!m_pFDD->Open(nDrive, path)) {
-				// Fallo de asignacion de FD
+				// Floppy mount failed
 				GetScheduler()->Reset();
 				ResetCaption();
 				::UnlockVM();
@@ -1087,34 +1124,34 @@ BOOL FASTCALL CFrmWnd::InitCmdSub(int nDrive, LPCTSTR lpszPath)
 		}
 	}
 
-	// Restablecimiento y desbloqueo de la maquina virtual
+	// Reset scheduler state and unlock VM
 	GetScheduler()->Reset();
 	ResetCaption();
 	::UnlockVM();
 
-	// El exito. Guardar directorio y anadir MRU
+	// Success: store default directory and add MRU entry
 	Filepath::SetDefaultDir(szPath);
 	GetConfig()->SetMRUFile(nDrive, szPath);
 
-	// Aviso de mala imagen para los disquetes
+	// Warn on invalid floppy image
 	if (pFDI) {
 		if (pFDI->GetID() == MAKEID('B', 'A', 'D', ' ')) {
 			::GetMsg(IDS_BADFDI_WARNING, strMsg);
 			//MessageBox(strMsg, NULL, MB_ICONSTOP | MB_OK);
 		}
 
-		// Se reinicia solo cuando se asigna el disquete
+		// Reset is required only when a floppy is assigned
 		return TRUE;
 	}
 
-	// I—¹
+	// Done
 	return FALSE;
 }
 
 //---------------------------------------------------------------------------
 //
-//	Guardar componente
-//	El programador esta parado, pero CSound y CInput estan funcionando.
+//	Save components
+//	Scheduler is stopped, but CSound and CInput keep running.
 //
 //---------------------------------------------------------------------------
 BOOL FASTCALL CFrmWnd::SaveComponent(const Filepath& path, DWORD dwPos)
@@ -1129,11 +1166,11 @@ BOOL FASTCALL CFrmWnd::SaveComponent(const Filepath& path, DWORD dwPos)
 	ASSERT(this);
 	ASSERT(dwPos > 0);
 
-	// Creacion de informacion sobre la version
+	// Build version information value
 	::GetVM()->GetVersion(dwMajor, dwMinor);
 	nVer = (int)((dwMajor << 8) | dwMinor);
 
-	// Abrir y buscar archivos
+	// Open file and seek to target position
 	if (!fio.Open(path, Fileio::Append)) {
 		return FALSE;
 	}
@@ -1142,49 +1179,49 @@ BOOL FASTCALL CFrmWnd::SaveComponent(const Filepath& path, DWORD dwPos)
 		return FALSE;
 	}
 
-	// Guardar la informacion del componente principal
+	// Write main component marker
 	dwID = MAKEID('M', 'A', 'I', 'N');
 	if (!fio.Write(&dwID, sizeof(dwID))) {
 		fio.Close();
 		return FALSE;
 	}
 
-	// Bucle de componentes
+	// Component loop
 	pComponent = m_pFirstComponent;
 	while (pComponent) {
-		// ID‚ð•Û‘¶
+		// Save component ID
 		dwID = pComponent->GetID();
 		if (!fio.Write(&dwID, sizeof(dwID))) {
 			fio.Close();
 			return FALSE;
 		}
 
-		// Componente especifico
+		// Save component-specific data
 		if (!pComponent->Save(&fio, nVer)) {
 			fio.Close();
 			return FALSE;
 		}
 
-		// ŽŸ‚Ö
+		// Next component
 		pComponent = pComponent->GetNextComponent();
 	}
 
-	// Escritura de terminacion
+	// Write end marker
 	dwID = MAKEID('E', 'N', 'D', ' ');
 	if (!fio.Write(&dwID, sizeof(dwID))) {
 		fio.Close();
 		return FALSE;
 	}
 
-	// Finalizar
+	// Finish
 	fio.Close();
 	return TRUE;
 }
 
 //---------------------------------------------------------------------------
 //
-//	Componentes de carga
-//	El programador esta parado, pero CSound y CInput estan funcionando.
+//	Load components
+//	Scheduler is stopped, but CSound and CInput keep running.
 //
 //---------------------------------------------------------------------------
 BOOL FASTCALL CFrmWnd::LoadComponent(const Filepath& path, DWORD dwPos)
@@ -1198,18 +1235,18 @@ BOOL FASTCALL CFrmWnd::LoadComponent(const Filepath& path, DWORD dwPos)
 	ASSERT(this);
 	ASSERT(dwPos > 0);
 
-	// Archivo abierto
+	// Open file
 	if (!fio.Open(path, Fileio::ReadOnly)) {
 		return FALSE;
 	}
 
-	// Lectura de cabecera
+	// Read header
 	if (!fio.Read(cHeader, sizeof(cHeader))) {
 		fio.Close();
 		return FALSE;
 	}
 
-	// Comprobacion de cabeceras, lectura de la informacion de la version
+	// Validate header and read version information
 	cHeader[0x0a] = '\0';
 	nVer = ::strtoul(&cHeader[0x09], NULL, 16);
 	nVer <<= 8;
@@ -1221,13 +1258,13 @@ BOOL FASTCALL CFrmWnd::LoadComponent(const Filepath& path, DWORD dwPos)
 		return FALSE;
 	}
 
-	// buscar
+	// Seek to component section
 	if (!fio.Seek(dwPos)) {
 		fio.Close();
 		return FALSE;
 	}
 
-	// lectura de los componentes principales
+	// Read main component marker
 	if (!fio.Read(&dwID, sizeof(dwID))) {
 		fio.Close();
 		return FALSE;
@@ -1237,45 +1274,45 @@ BOOL FASTCALL CFrmWnd::LoadComponent(const Filepath& path, DWORD dwPos)
 		return FALSE;
 	}
 
-	// bucle de componentes
+	// Component loop
 	for (;;) {
-		// Lectura de identificacion
+		// Read component ID
 		if (!fio.Read(&dwID, sizeof(dwID))) {
 			fio.Close();
 			return FALSE;
 		}
 
-		// control de salida
+		// End marker check
 		if (dwID == MAKEID('E', 'N', 'D', ' ')) {
 			break;
 		}
 
-		// Buscar componente
+		// Find component instance
 		pComponent = m_pFirstComponent->SearchComponent(dwID);
 		if (!pComponent) {
-			// Los componentes estaban presentes en el momento de la grabacion, pero ahora faltan
+			// Component existed at save time but is missing now
 			fio.Close();
 			return FALSE;
 		}
 
-		// componente especifico
+		// Load component-specific data
 		if (!pComponent->Load(&fio, nVer)) {
 			fio.Close();
 			return FALSE;
 		}
 	}
 
-	//  cerrar
+	// Close file
 	fio.Close();
 
-	// Aplicar la configuracion (se hace con la VM bloqueada).
+	// Apply settings (with VM lock)
 	if (GetConfig()->IsApply()) {
 		::LockVM();
 		ApplyCfg();
 		::UnlockVM();
 	}
 
-	// redistribucion de la ventana
+	// Refresh window content
 	GetView()->Invalidate(FALSE);
 
 	return TRUE;
@@ -1283,7 +1320,7 @@ BOOL FASTCALL CFrmWnd::LoadComponent(const Filepath& path, DWORD dwPos)
 
 //---------------------------------------------------------------------------
 //
-//	Aplicar ajustes
+//	Apply settings
 //
 //---------------------------------------------------------------------------
 void FASTCALL CFrmWnd::ApplyCfg()
@@ -1291,59 +1328,64 @@ void FASTCALL CFrmWnd::ApplyCfg()
 	Config config;
 	CComponent *pComponent;
 
-	// Adquisicion de la configuracion
+	// Retrieve current configuration
 	GetConfig()->GetConfig(&config);
 
-	// Aplicar a VM primero
+	// Apply to VM first
 	::GetVM()->ApplyCfg(&config);
 
-	// A continuacion, aplique al componente
+	// Then apply to each component
 	pComponent = m_pFirstComponent;
 	while (pComponent) {
 		pComponent->ApplyCfg(&config);
 		pComponent = pComponent->GetNextComponent();
 	}
 
-	// A continuacion, aplique para ver
+	// Then apply to the draw view
 	GetView()->ApplyCfg(&config);
 
-	// Ventana enmarcada (emergente)
+	// Sync the top-level window size with the saved scale after the config is applied.
+	// InitPos() runs once before the config component exists, so the initial frame size
+	// can otherwise stay at the 1.0x fallback even when the INI says otherwise.
+	ApplyWindowScale();
+
+	// Popup subwindow mode
 	if (config.popup_swnd != m_bPopup) {
-		// Borrar todas las subventanas.
+		// Clear all subwindows
 		GetView()->ClrSWnd();
 
-		// cambiar
+		// Update flag
 		m_bPopup = config.popup_swnd;
 	}
 
-	
 
-	// Ventana del marco (raton)
+
+	// Frame window mouse options
 	m_bMouseMid = config.mouse_mid;
 	m_bAutoMouse = config.auto_mouse;
 
-	// Aplicar configuracion de VSync
+	// Apply VSync setting
 	m_bVSyncEnabled = config.render_vsync;
 	GetView()->SetVSync(m_bVSyncEnabled);
 
-	// Aplicar configuracion de renderizador (si es diferente)
+	// Apply renderer mode setting
 	GetView()->ApplyRendererConfig(config.render_mode);
 
-	// Para evitar Ruta SaveStates incorrecta *-*
-	if (RutaSaveStates.GetLength() == 0)
-		RutaSaveStates = config.ruta_savestate;
-	//int msgboxID = MessageBox(RutaSaveStates,"rutasave",  2 );	
+	// Keep SaveState path initialized once
+	if (m_strSaveStatePath.GetLength() == 0)
+		m_strSaveStatePath = config.ruta_savestate;
+	//int msgboxID = MessageBox(m_strSaveStatePath,"rutasave",  2 );
 	if (config.mouse_port == 0) {
-		// Modo raton desactivado si no hay conexion con el raton.
+		// Disable mouse-capture mode when no mouse is connected.
 		if (GetInput()->GetMouseMode()) {
-			OnMouseMode(); 
+			OnMouseMode();
 		}
 	}
 }
 
 //---------------------------------------------------------------------------
 //
-//	Patadas
+//	Kick handler
 //
 //---------------------------------------------------------------------------
 LONG CFrmWnd::OnKick(UINT /*uParam*/, LONG /*lParam*/)
@@ -1362,26 +1404,26 @@ LONG CFrmWnd::OnKick(UINT /*uParam*/, LONG /*lParam*/)
 	LPCTSTR lpszCommand;
 	BOOL bFullScreen;
 
-	// Tratamiento de errores en primer lugar
+	// Handle startup errors first
 	switch (m_nStatus) {
-		// VMƒGƒ‰[
+		// VM initialization error
 		case 1:
 			::GetMsg(IDS_INIT_VMERR, strMsg);
 			MessageBox(strMsg, NULL, MB_ICONSTOP | MB_OK);
 			PostMessage(WM_CLOSE, 0, 0);
 			return 0;
 
-		// Error en los componentes
+		// Component initialization error
 		case 2:
 			::GetMsg(IDS_INIT_COMERR, strMsg);
 			MessageBox(strMsg, NULL, MB_ICONSTOP | MB_OK);
 			PostMessage(WM_CLOSE, 0, 0);
 			return 0;
 	}
-	// Si es normal
+	// Normal startup path
 	ASSERT(m_nStatus == 0);
 
-	// Comprobacion de la ROM
+	// Check required ROM data
 	pMemory = (Memory*)::GetVM()->SearchDevice(MAKEID('M', 'E', 'M', ' '));
 	ASSERT(pMemory);
 	if (!pMemory->CheckIPL()) {
@@ -1399,22 +1441,22 @@ LONG CFrmWnd::OnKick(UINT /*uParam*/, LONG /*lParam*/)
 		}
 	}
 
-	// Obtener la configuracion (para el ajuste de power_off)
+	// Read config (power_off startup option)
 	GetConfig()->GetConfig(&config);
 	if (config.power_off) {
-		// “dŒ¹OFF‚Å‹N“®
+		// Start with power switch OFF
 		::GetVM()->SetPower(FALSE);
 		::GetVM()->PowerSW(FALSE);
 	}
 
-	// PLAN G: Bloqueo Maestro de la VM durante toda la inicialización inicial
+	// PLAN G: Hold VM lock across initial bootstrap
 	::LockVM();
 
-	// Preparacion de la subventana
+	// Register child-window class
 	m_strWndClsName = AfxRegisterWndClass(CS_HREDRAW | CS_VREDRAW | CS_DBLCLKS);
 
-	// Activa el componente. Sin embargo, el Programador es configurable.
-	// PLAN G: InicializaciÃ³n AtÃ³mica
+	// Enable components; scheduler is enabled later.
+	// PLAN G: atomic startup sequence
 	GetView()->Enable(TRUE);
 	pComponent = m_pFirstComponent;
 	while (pComponent) {
@@ -1461,46 +1503,46 @@ LONG CFrmWnd::OnKick(UINT /*uParam*/, LONG /*lParam*/)
 	}
 
 	::UnlockVM();
-	// –³ŒÀƒ‹[ƒv
+	// Main loop
 	DWORD dwStartTick = ::GetTickCount();
 	BOOL bAutoResetDone = FALSE;
 	dwTick20 = ::GetTickCount();
 	dwTick40 = dwTick20;
 	dwTick80 = dwTick20;
 	while (!m_bExit) {
-		// ƒƒbƒZ[ƒWƒ`ƒFƒbƒN•ƒ|ƒ“ƒv
+		// Check and pump pending window messages
 		if (::PeekMessage(&msg, NULL, 0, 0, PM_NOREMOVE)) {
 			if (!AfxGetApp()->PumpMessage()) {
 				::PostQuitMessage(0);
 				return 0;
 			}
-			// continue‚·‚é‚±‚Æ‚ÅAWM_DESTROY’¼Œã‚Ìm_bExitƒ`ƒFƒbƒN‚ð•ÛØ
+			// Continue to guarantee m_bExit is checked after WM_DESTROY
 			continue;
 		}
 
-		// ƒXƒŠ[ƒv
+		// Sleep briefly when idle
 		if (!PeekMessage(&msg, NULL, 0, 0, PM_NOREMOVE)) {
 			Sleep(1);
 			if (::PeekMessage(&msg, NULL, 0, 0, PM_NOREMOVE)) {
 				continue;
 			}
 
-			// Info‚ð–ˆ‰ñŽæ‚è’¼‚·
+			// Refresh info pointer each idle tick
 			pInfo = GetInfo();
 			if (!pInfo) {
 				continue;
 			}
 
-			// XVƒJƒEƒ“ƒ^Up
+			// Update periodic timers
 			dwNow = ::GetTickCount();
 
-			
+
 			if ((dwNow - dwTick20) >= 20) {
 				dwTick20 = dwNow;
 				pInfo->UpdateStatus();
 				UpdateExec();
-				
-				// HACK: Auto-reset para sortear el bug del Cold Boot
+
+				// HACK: auto-reset to work around cold-boot bug
 				if (!bAutoResetDone && (dwNow - dwStartTick) >= 90) {
 					bAutoResetDone = TRUE;
 					OnReset();
@@ -1509,13 +1551,13 @@ LONG CFrmWnd::OnKick(UINT /*uParam*/, LONG /*lParam*/)
 
 			if ((dwNow - dwTick40) >= 40) {
 				dwTick40 = dwNow;
-				// ƒrƒ…[‚Í40ms
+				// Update render view every 40ms
 				GetView()->Update();
 			}
 
 			if ((dwNow - dwTick80) >= 80) {
 				dwTick80 = dwNow;
-				// ƒLƒƒƒvƒVƒ‡ƒ“Aî•ñ‚Í80ms
+				// Update caption/info every 80ms
 				pInfo->UpdateCaption();
 				pInfo->UpdateInfo();
 			}
@@ -1527,7 +1569,7 @@ LONG CFrmWnd::OnKick(UINT /*uParam*/, LONG /*lParam*/)
 
 //---------------------------------------------------------------------------
 //
-//	Obtener el nombre de la clase de la ventana
+//	Get window class name
 //
 //---------------------------------------------------------------------------
 LPCTSTR FASTCALL CFrmWnd::GetWndClassName() const
@@ -1540,7 +1582,7 @@ LPCTSTR FASTCALL CFrmWnd::GetWndClassName() const
 
 //---------------------------------------------------------------------------
 //
-//	Pop-up.
+//	Popup mode flag
 //
 //---------------------------------------------------------------------------
 BOOL FASTCALL CFrmWnd::IsPopupSWnd() const
@@ -1551,154 +1593,154 @@ BOOL FASTCALL CFrmWnd::IsPopupSWnd() const
 
 //---------------------------------------------------------------------------
 //
-//	Cierre de ventanas
+//	Window close
 //
 //---------------------------------------------------------------------------
 void CFrmWnd::OnClose()
 {
 	CString strFormat;
 	CString strText;
-	Filepath path;	
+	Filepath path;
 
 	ASSERT(this);
 	ASSERT(!m_bSaved);
 
 
-	//int msgboxID = MessageBox("cerrar", "Ventana a cerrar", 2);
+	//int msgboxID = MessageBox("close", "Window to close", 2);
 
-/*ACA  SE DESACTIVA DIALOGO CONFIRMACION GUARDADO*/
-	// Si hay un archivo de estado valido, pide que se guarde
+/* Save-confirmation dialog is intentionally disabled here */
+	// If a valid state file exists, this is where save prompting would run
 	::LockVM();
 	::GetVM()->GetPath(path);
 	::UnlockVM();
 
-	// Si hay un archivo de estado valido y
+	// If a valid state file exists
 	if (!path.IsClear()) {
-		// Si tiene un historial de funcionamiento de mas de 20ms en el lado de Windows
+		// If runtime activity history is at least 20ms on Windows side
 	/*	if (m_dwExec >= 2) {
-			// Confirmacion
+			// Confirmation dialog
 			::GetMsg(IDS_SAVECLOSE, strFormat);
 			strText.Format(strFormat, path.GetFileExt());
 			nResult = MessageBox(strText, NULL, MB_ICONQUESTION | MB_YESNOCANCEL);
 
-			// Depende de los resultados de la confirmacion
+			// Handle confirmation result
 			switch (nResult) {
 				// YES
 				case IDYES:
-					// Guardar
+					// Save
 					OnSaveSub(path);
 					break;
 
 				// NO
 				case IDNO:
-					// Via libre (sin estado)
+					// Continue without state
 					::GetVM()->Clear();
 					break;
 
-				// ƒLƒƒƒ“ƒZƒ‹
+				// CANCEL
 				case IDCANCEL:
-					// Fingire que no estaba cerrado.
+					// Abort close and keep running
 					return;
 			}
 		}*/
 	}
 
-	// Si ya has inicializado
+	// If initialization already completed
 	if ((m_nStatus == 0) && !m_bSaved) {
-		// Guardar el estado de la ventana y el estado del disco
+		// Save frame and disk resume state
 		SaveFrameWnd();
 		SaveDiskState();
 		m_bSaved = TRUE;
 	}
 
-	// Desactivar en pantalla completa
+	// Exit fullscreen first
 	if (m_bFullScreen) {
 		ASSERT(m_nStatus == 0);
 		OnFullScreen();
 	}
 
-	// Si ya has inicializado
+	// If initialization already completed
 	if (m_nStatus == 0) {
-		// Liberacion del raton
+		// Release mouse capture mode
 		if (GetInput()->GetMouseMode()) {
 			OnMouseMode();
 		}
 	}
 
-	OutputDebugString("\n\nSe ejecutó OnClose...\n\n");
-	// Šî–{ƒNƒ‰ƒX
+	OutputDebugString("\n\nOnClose executed...\n\n");
+	// Base class handling
 	CFrameWnd::OnClose();
 }
 
 //---------------------------------------------------------------------------
 //
-//	Eliminacion de ventanas
+//	Window ofstroy
 //
 //---------------------------------------------------------------------------
 void CFrmWnd::OnDestroy()
 {
 	ASSERT(this);
 
-	// Si ya has inicializado
-	if ((m_nStatus == 0) && !m_bSaved) 
+	// If initialization already completed
+	if ((m_nStatus == 0) && !m_bSaved)
 	{
-		// Guardar el estado de la ventana y el estado del disco
+		// Save frame and disk resume state
 		SaveFrameWnd();
 		SaveDiskState();
 		m_bSaved = TRUE;
 	}
 
-	// Desactivar en pantalla completa
+	// Exit fullscreen first
 	if (m_bFullScreen) {
 		ASSERT(m_nStatus == 0);
 		OnFullScreen();
 	}
 
-	// Limpieza (comun con WM_ENDSESSION)
+	// Shared cleanup path (also used by WM_ENDSESSION)
 	CleanSub();
 
 
-	OutputDebugString("\n\nSe ejecutó OnDestroy...\n\n");
+	OutputDebugString("\n\nOnDestroy executed...\n\n");
 
-	// Šî–{ƒNƒ‰ƒX‚Ö
+	// Base class handling
 	CFrameWnd::OnDestroy();
 }
 
 //---------------------------------------------------------------------------
 //
-//	Fin de la sesion
+//	End session
 //
 //---------------------------------------------------------------------------
 void CFrmWnd::OnEndSession(BOOL bEnding)
 {
 	ASSERT(this);
 
-	// Al salir, limpiar
+	// Cleanup during system logoff/shutdown
 	if (bEnding) {
-		// Si ya has inicializado
+		// If initialization already completed
 		if (m_nStatus == 0) {
-			// Guardar el estado de la ventana y el estado del disco
+			// Save frame and disk resume state
 			if (!m_bSaved) {
 				SaveFrameWnd();
 				SaveDiskState();
 				m_bSaved = TRUE;
 			}
 
-			// Limpieza
+			// Cleanup
 			CleanSub();
 		}
 	}
 
 
-	OutputDebugString("\n\nSe ejecutó OnEndSession...\n\n");
+	OutputDebugString("\n\nOnEndSession executed...\n\n");
 
-	// Šî–{ƒNƒ‰ƒX
+	// Base class handling
 	CFrameWnd::OnEndSession(bEnding);
 }
 
 //---------------------------------------------------------------------------
 //
-//	Limpieza comun
+//	Shared cleanup
 //
 //---------------------------------------------------------------------------
 void FASTCALL CFrmWnd::CleanSub()
@@ -1707,10 +1749,10 @@ void FASTCALL CFrmWnd::CleanSub()
 	CComponent *pNext;
 	int i;
 
-	// I—¹ƒtƒ‰ƒO‚ðã‚°‚é
+	// Set exit flag
 	m_bExit = TRUE;
 
-	// ƒRƒ“ƒ|[ƒlƒ“ƒg‚ðŽ~‚ß‚é
+	// Disable view and all components
 	GetView()->Enable(FALSE);
 	pComponent = m_pFirstComponent;
 	while (pComponent) {
@@ -1718,25 +1760,25 @@ void FASTCALL CFrmWnd::CleanSub()
 		pComponent = pComponent->GetNextComponent();
 	}
 
-	// ƒ}ƒEƒX‰ðœ
+	// Release mouse capture mode
 	if (m_nStatus == 0) {
 		if (GetInput()->GetMouseMode()) {
 			OnMouseMode();
 		}
 	}
 
-	// ƒXƒPƒWƒ…[ƒ‰‚ªŽÀs‚ð‚â‚ß‚é‚Ü‚Å‘Ò‚Â
+	// Wait for scheduler execution to settle
 	for (i=0; i<8; i++) {
 		::LockVM();
 		::UnlockVM();
 	}
 
-	// ƒXƒPƒWƒ…[ƒ‰‚ð’âŽ~(CScheduler)
+	// Stop scheduler (CScheduler)
 	if (m_nStatus == 0) {
 		GetScheduler()->Stop();
 	}
 
-	// ƒRƒ“ƒ|[ƒlƒ“ƒg‚ðíœ
+	// Cleanup and delete all components
 	pComponent = m_pFirstComponent;
 	while (pComponent) {
 		pComponent->Cleanup();
@@ -1749,7 +1791,7 @@ void FASTCALL CFrmWnd::CleanSub()
 		pComponent = pNext;
 	}
 
-	// ‰¼‘zƒ}ƒVƒ“‚ðíœ
+	// Cleanup and destroy VM instance
 	if (::pVM) {
 		::LockVM();
 		::GetVM()->Cleanup();
@@ -1758,7 +1800,7 @@ void FASTCALL CFrmWnd::CleanSub()
 		::UnlockVM();
 	}
 
-	// ƒVƒFƒ‹’Ê’m‚ðíœ
+	// Unregister shell notifications
 	if (m_uNotifyId) {
 		 VERIFY(::SHChangeNotifyDeregister(m_uNotifyId));
 		 m_uNotifyId = NULL;
@@ -1767,7 +1809,7 @@ void FASTCALL CFrmWnd::CleanSub()
 
 //---------------------------------------------------------------------------
 //
-//	Guardar el estado de la ventana
+//	Save frame window state
 //
 //---------------------------------------------------------------------------
 void CFrmWnd::SaveFrameWnd()
@@ -1778,42 +1820,42 @@ void CFrmWnd::SaveFrameWnd()
 	ASSERT(this);
 	ASSERT_VALID(this);
 
-	// Adquisicion de la configuracion
+	// Get config snapshot
 	GetConfig()->GetConfig(&config);
 
-	// Leyenda, menu y barra de estado
+	// Caption/menu/status visibility
 	config.caption = m_bCaption;
 	config.menu_bar = m_bMenuBar;
 	config.status_bar = m_bStatusBar;
 
-	// Rectangulo de la ventana
+	// Window position
 	if (m_bFullScreen) {
-		// En pantalla completa, se conserva la posicion de la ventana
+		// In fullscreen, keep last windowed position
 		config.window_left = m_nWndLeft;
 		config.window_top = m_nWndTop;
 	}
 	else {
-		// En una ventana, se guarda la posicion actual
+		// In windowed mode, save current position
 		GetWindowRect(&rectWnd);
 		config.window_left = rectWnd.left;
 		config.window_top = rectWnd.top;
 	}
 
-	// Pantalla completa
+	// Fullscreen flag
 	config.window_full = m_bFullScreen;
 
-	// Estado del Shader
+	// Shader state
 	if (m_pDrawView) {
 		config.render_shader = m_pDrawView->IsShaderEnabled();
 	}
 
-	// Cambiar la configuracion
+	// Store updated config
 	GetConfig()->SetConfig(&config);
 }
 
 //---------------------------------------------------------------------------
 //
-//	Guardar el estado del disco
+//	Save disk/media state
 //
 //---------------------------------------------------------------------------
 void CFrmWnd::SaveDiskState()
@@ -1825,30 +1867,30 @@ void CFrmWnd::SaveDiskState()
 	ASSERT(this);
 	ASSERT_VALID(this);
 
-	// ƒƒbƒN
+	// Lock VM
 	::LockVM();
 
-	// Ý’èŽæ“¾
+	// Get config snapshot
 	GetConfig()->GetConfig(&config);
 
-	// ƒtƒƒbƒs[ƒfƒBƒXƒN
+	// Floppy disk state
 	for (nDrive=0; nDrive<2; nDrive++) {
-		// ƒŒƒfƒB
+		// Ready state
 		config.resume_fdi[nDrive] = m_pFDD->IsReady(nDrive, FALSE);
 
-		// ƒŒƒfƒB‚Å‚È‚¯‚ê‚ÎAŽŸ‚Ö
+		// If not ready, skip remaining fields
 		if (!config.resume_fdi[nDrive]) {
 			continue;
 		}
 
-		// ƒƒfƒBƒA
+		// Current media type
 		config.resume_fdm[nDrive]  = m_pFDD->GetMedia(nDrive);
 
-		// ƒ‰ƒCƒgƒvƒƒeƒNƒg
+		// Write-protect state
 		config.resume_fdw[nDrive] = m_pFDD->IsWriteP(nDrive);
 	}
 
-	// MOƒfƒBƒXƒN
+	// MO disk state
 	config.resume_mos = m_pSASI->IsReady();
 	if (config.resume_mos) {
 		config.resume_mow = m_pSASI->IsWriteP();
@@ -1857,24 +1899,24 @@ void CFrmWnd::SaveDiskState()
 	// CD-ROM
 	config.resume_iso = m_pSCSI->IsReady(FALSE);
 
-	// ƒXƒe[ƒg
+	// Save-state file availability
 	::GetVM()->GetPath(path);
 	config.resume_xm6 = !path.IsClear();
 
-	// ƒfƒtƒHƒ‹ƒgƒfƒBƒŒƒNƒgƒŠ
+	// Default directory
 	_tcscpy(config.resume_path, Filepath::GetDefaultDir());
 
-	// Ý’è•ÏX
+	// Store updated config
 	GetConfig()->SetConfig(&config);
 
-	// ƒAƒ“ƒƒbƒN
+	// Unlock VM
 	::UnlockVM();
 }
 
 //---------------------------------------------------------------------------
 //
-//	Restaurar el estado de la ventana
-//	OnCreate y OnKick son llamados dos veces.
+//	Restore frame window state
+//	OnCreate and OnKick invoke this twice.
 //
 //---------------------------------------------------------------------------
 BOOL CFrmWnd::RestoreFrameWnd(BOOL bFullScreen)
@@ -1889,36 +1931,36 @@ BOOL CFrmWnd::RestoreFrameWnd(BOOL bFullScreen)
 
 	ASSERT(this);
 
-	// Adquisicion de la configuracion
+	// Get config snapshot
 	GetConfig()->GetConfig(&config);
 
-	// Se ejecuta en el estado por defecto si no se especifica la restauracion de la posicion de la ventana
+	// Keep default placement if window-position restore is disabled
 	if (!config.resume_screen) {
 		return bFullScreen;
 	}
 
-	// Leyenda
+	// Caption
 	m_bCaption = config.caption;
 	ShowCaption();
 
-	// Menu
+	// Menu bar
 	m_bMenuBar = config.menu_bar;
 	ShowMenu();
 
-	// Barra de estado
+	// Status bar
 	m_bStatusBar = config.status_bar;
 	ShowStatus();
 
-	// Obtener el tamano y el origen de la pantalla virtual
+	// Get virtual-screen size and origin
 	nWidth = ::GetSystemMetrics(SM_CXVIRTUALSCREEN);
 	nHeight = ::GetSystemMetrics(SM_CYVIRTUALSCREEN);
 	nLeft = ::GetSystemMetrics(SM_XVIRTUALSCREEN);
 	nTop = ::GetSystemMetrics(SM_YVIRTUALSCREEN);
 
-	// Obtener el rectangulo de la ventana
+	// Get current window rectangle
 	GetWindowRect(&rectWnd);
 
-	// Mueva la posicion de la ventana si esta a su alcance. Compruebe primero
+	// Restore window position only when it is still within visible bounds
 	bValid = TRUE;
 	if (config.window_left < nLeft) {
 		if (config.window_left < nLeft - rectWnd.Width()) {
@@ -1941,18 +1983,18 @@ BOOL CFrmWnd::RestoreFrameWnd(BOOL bFullScreen)
 		}
 	}
 
-	// Mover la posicion de la ventana
+	// Apply restored window position
 	if (bValid) {
 		SetWindowPos(&wndTop, config.window_left, config.window_top, 0, 0, SWP_NOSIZE | SWP_NOZORDER);
 
-		// Cambiar el area de trabajo al mismo tiempo
+		// Update saved work-area position at the same time
 		m_nWndLeft = config.window_left;
 		m_nWndTop = config.window_top;
 	}
 
 
 
-	/*char cadena[20],cadena2[20];	  
+	/*char cadena[20],cadena2[20];
     sprintf(cadena, "%d", nHeight);
 	sprintf(cadena2, "%d", nWidth);
 	 int msgboxID = MessageBox(
@@ -1966,29 +2008,29 @@ BOOL CFrmWnd::RestoreFrameWnd(BOOL bFullScreen)
 
 
 
-	// Esto en cuanto a las maquinas virtuales no inicializadas.
+	// Stop here when VM is not fully initialized.
 	if (m_nStatus != 0) {
 		return FALSE;
 	}
 
 
-	
 
 
-	// Pantalla completa.
+
+	// Fullscreen restore behavior.
 	if (bFullScreen || config.window_full) {
-		// Maximizar el inicio o la ultima vez que estaba a pantalla completa.
+		// Start maximized if requested now or in previous session.
 		return TRUE;
 	}
 	else {
-		// No maximizado, y previamente en vista normal
+		// Stay in normal windowed mode.
 		return FALSE;
 	}
 }
 
 //---------------------------------------------------------------------------
 //
-//	Restaurar el estado del disco
+//	Restore disk/media state
 //
 //---------------------------------------------------------------------------
 void CFrmWnd::RestoreDiskState()
@@ -2001,58 +2043,58 @@ void CFrmWnd::RestoreDiskState()
 
 	ASSERT(this);
 
-	// Ý’èŽæ“¾
+	// Get config snapshot
 	GetConfig()->GetConfig(&config);
 
-	// ƒXƒe[ƒg‚ªŽw’è‚³‚ê‚Ä‚¢‚ê‚ÎA‚±‚ê‚ðæ‚És‚¤
+	// If resume-from-state is enabled, try it first
 	if (config.resume_state) {
-		// ƒXƒe[ƒg‚ª‚ ‚Á‚½
+		// A previous state file exists
 		if (config.resume_xm6) {
-			// ƒpƒXŽæ“¾
+			// Get saved path
 			GetConfig()->GetMRUFile(4, 0, szMRU);
 			path.SetPath(szMRU);
 
-			// ƒI[ƒvƒ“‘Oˆ—
+			// Pre-open validation
 			if (OnOpenPrep(path)) {
-				// ƒI[ƒvƒ“ƒTƒu
+				// Open state via subroutine
 				if (OnOpenSub(path)) {
-					// ¬Œ÷‚È‚Ì‚ÅAƒfƒtƒHƒ‹ƒgƒfƒBƒŒƒNƒgƒŠ‚¾‚¯ˆ—
+					// On success, restore only default directory if configured
 					if (config.resume_dir) {
 						Filepath::SetDefaultDir(config.resume_path);
 					}
 
-					// ‚±‚êˆÈ~‚Íˆ—‚µ‚È‚¢(FD, MO, CD‚ÌƒAƒNƒZƒX’†‚ÉƒZ[ƒu‚µ‚½ê‡)
+					// Stop here after state load (state already contains disk/media state)
 					return;
 				}
 			}
 		}
 	}
 
-	// ƒtƒƒbƒs[ƒfƒBƒXƒN
+	// Floppy disk resume
 	if (config.resume_fd) {
 		for (nDrive=0; nDrive<2; nDrive++) {
-			// ƒfƒBƒXƒN‘}“ü‚³‚ê‚Ä‚¢‚½‚©
+			// Was media inserted at save time?
 			if (!config.resume_fdi[nDrive]) {
-				// ƒfƒBƒXƒN‘}“ü‚³‚ê‚Ä‚¢‚È‚¢BƒXƒLƒbƒv
+				// No inserted media recorded; skip
 				continue;
 			}
 
-			// ƒfƒBƒXƒN‘}“ü
+			// Reinsert media
 			GetConfig()->GetMRUFile(nDrive, 0, szMRU);
 			ASSERT(szMRU[0] != _T('\0'));
 			path.SetPath(szMRU);
 
-			// VMƒƒbƒN‚ðs‚¢AƒfƒBƒXƒNŠ„‚è“–‚Ä‚ðŽŽ‚Ý‚é
+			// Lock VM and attempt media mount
 			::LockVM();
 			bResult = m_pFDD->Open(nDrive, path, config.resume_fdm[nDrive]);
 			::UnlockVM();
 
-			// Š„‚è“–‚Ä‚Å‚«‚È‚¯‚ê‚ÎƒXƒLƒbƒv
+			// If mount fails, skip this drive
 			if (!bResult) {
 				continue;
 			}
 
-			// ‘‚«ž‚Ý‹ÖŽ~
+			// Restore write-protect flag
 			if (config.resume_fdw[nDrive]) {
 				::LockVM();
 				m_pFDD->WriteP(nDrive, TRUE);
@@ -2061,23 +2103,23 @@ void CFrmWnd::RestoreDiskState()
 		}
 	}
 
-	// MOƒfƒBƒXƒN
+	// MO resume
 	if (config.resume_mo) {
-		// ƒfƒBƒXƒN‘}“ü‚³‚ê‚Ä‚¢‚½‚©
+		// Was media inserted at save time?
 		if (config.resume_mos) {
-			// ƒfƒBƒXƒN‘}“ü
+			// Reinsert media
 			GetConfig()->GetMRUFile(2, 0, szMRU);
 			ASSERT(szMRU[0] != _T('\0'));
 			path.SetPath(szMRU);
 
-			// VMƒƒbƒN‚ðs‚¢AƒfƒBƒXƒNŠ„‚è“–‚Ä‚ðŽŽ‚Ý‚é
+			// Lock VM and attempt media mount
 			::LockVM();
 			bResult = m_pSASI->Open(path);
 			::UnlockVM();
 
-			// Š„‚è“–‚Ä‚Å‚«‚ê‚Î
+			// If mount succeeds
 			if (bResult) {
-				// ‘‚«ž‚Ý‹ÖŽ~
+				// Restore write-protect flag
 				if (config.resume_mow) {
 					::LockVM();
 					m_pSASI->WriteP(TRUE);
@@ -2089,21 +2131,21 @@ void CFrmWnd::RestoreDiskState()
 
 	// CD-ROM
 	if (config.resume_cd) {
-		// ƒfƒBƒXƒN‘}“ü‚³‚ê‚Ä‚¢‚½‚©
+		// Was media inserted at save time?
 		if (config.resume_iso) {
-			// ƒfƒBƒXƒN‘}“ü
+			// Reinsert media
 			GetConfig()->GetMRUFile(3, 0, szMRU);
 			ASSERT(szMRU[0] != _T('\0'));
 			path.SetPath(szMRU);
 
-			// VMƒƒbƒN‚ðs‚¢AƒfƒBƒXƒNŠ„‚è“–‚Ä‚ðŽŽ‚Ý‚é
+			// Lock VM and attempt media mount
 			::LockVM();
 			m_pSCSI->Open(path, FALSE);
 			::UnlockVM();
 		}
 	}
 
-	// ƒfƒtƒHƒ‹ƒgƒfƒBƒŒƒNƒgƒŠ
+	// Restore default directory
 	if (config.resume_dir) {
 		Filepath::SetDefaultDir(config.resume_path);
 	}
@@ -2111,7 +2153,7 @@ void CFrmWnd::RestoreDiskState()
 
 //---------------------------------------------------------------------------
 //
-//	Cambio de pantalla
+//	Display change
 //
 //---------------------------------------------------------------------------
 LRESULT CFrmWnd::OnDisplayChange(UINT uParam, LONG lParam)
@@ -2119,15 +2161,15 @@ LRESULT CFrmWnd::OnDisplayChange(UINT uParam, LONG lParam)
 	LRESULT lResult;
 	uParam = 0;
 	lParam = 0;
-	// Clase basica
-	lResult = 0; //CFrameWnd::OnDisplayChange(0, uParam, lParam);
+	// Base class behavior
+	lResult=0;//CFrameWnd::OnDisplayChange(0, uParam, lParam);
 
-	// La minimizacion no hace nada.
+	// Ignore while minimized
 	if (IsIconic()) {
 		return lResult;
 	}
 
-	// Ajuste de la posicion
+	// Recalculate position
 	InitPos(FALSE);
 
 	return lResult;
@@ -2135,30 +2177,30 @@ LRESULT CFrmWnd::OnDisplayChange(UINT uParam, LONG lParam)
 
 //---------------------------------------------------------------------------
 //
-//	Renderizacion del fondo de la ventana
+//	Window background erase
 //
 //---------------------------------------------------------------------------
 BOOL CFrmWnd::OnEraseBkgnd(CDC * /* pDC */)
 {
-	// Suprimir el dibujo de fondo
+	// Suppress background erase to reduce flicker
 	return TRUE;
 }
 
 //---------------------------------------------------------------------------
 //
-//	Representacion de ventanas
+//	Window paint
 //
 //---------------------------------------------------------------------------
 void CFrmWnd::OnPaint()
 {
 	PAINTSTRUCT ps;
 
-	// Hazlo siempre con un candado
+	// Always paint while VM is locked
 	::LockVM();
 
 	BeginPaint(&ps);
 
-	// Restablecer el titulo y la barra de estado si VM esta activado
+	// Refresh caption and status when VM is active
 	if (m_nStatus == 0) {
 		ResetCaption();
 		ResetStatus();
@@ -2166,24 +2208,24 @@ void CFrmWnd::OnPaint()
 
 	EndPaint(&ps);
 
-	// Desbloquear
+	// Unlock VM
 	::UnlockVM();
 }
 
 //---------------------------------------------------------------------------
 //
-//	Movimiento de las ventanas
+//	Window move
 //
 //---------------------------------------------------------------------------
 void CFrmWnd::OnMove(int x, int y)
 {
 	CRect rect;
 
-	// ‰Šú‰»Ï‚Ý‚È‚ç
+	// If initialization already completed
 	if (m_nStatus == 0) {
-		// ƒ}ƒEƒXƒ‚[ƒhƒ`ƒFƒbƒN
+		// Check mouse-capture mode
 		if (GetInput()->GetMouseMode()) {
-			// ƒNƒŠƒbƒv”ÍˆÍ‚ð•ÏX
+			// Rebuild cursor clip rectangle around moved window
 			ClipCursor(NULL);
 			GetWindowRect(&rect);
 			SetCursorPos((rect.left + rect.right) / 2, (rect.top + rect.bottom) / 2);
@@ -2191,13 +2233,13 @@ void CFrmWnd::OnMove(int x, int y)
 		}
 	}
 
-	// Šî–{ƒNƒ‰ƒX
+	// Base class handling
 	CFrameWnd::OnMove(x, y);
 }
 
 //---------------------------------------------------------------------------
 //
-//	Activar
+//	Activation
 //
 //---------------------------------------------------------------------------
 void CFrmWnd::OnActivate(UINT nState, CWnd *pWnd, BOOL bMinimized)
@@ -2205,38 +2247,38 @@ void CFrmWnd::OnActivate(UINT nState, CWnd *pWnd, BOOL bMinimized)
 	CInput *pInput;
 	CScheduler *pScheduler;
 
-	// ‰Šú‰»Ï‚Ý‚È‚ç
+	// If initialization already completed
 	if (m_nStatus == 0) {
-		// ƒCƒ“ƒvƒbƒgAƒXƒPƒWƒ…[ƒ‰‚Ö’Ê’m
+		// Notify input and scheduler about activation change
 		pInput = GetInput();
 		pScheduler = GetScheduler();
 		if (pInput && pScheduler) {
-			// WA_INACTIVE‚©Å¬‰»‚È‚çAƒfƒBƒZ[ƒuƒ‹
+			// On inactive/minimized, deactivate input and slow scheduler
 			if ((nState == WA_INACTIVE) || bMinimized) {
-				// “ü—ÍŽó‚¯•t‚¯‚È‚¢A’á‘¬ŽÀs
+				// Stop accepting input and run at inactive speed
 				pInput->Activate(FALSE);
 				pScheduler->Activate(FALSE);
 
-				// ƒ}ƒEƒXƒ‚[ƒhOFF(POPUPƒEƒBƒ“ƒhƒE‘Îô)
+				// Force mouse mode off (popup-window safety)
 				if (pInput->GetMouseMode()) {
 					OnMouseMode();
 				}
 			}
 			else {
-				// “ü—ÍŽó‚¯•t‚¯‚éA’ÊíŽÀs
+				// Resume input and normal execution speed
 				pInput->Activate(TRUE);
 				pScheduler->Activate(TRUE);
 			}
 		}
 	}
 
-	// Šî–{ƒNƒ‰ƒX‚Ö
+	// Base class handling
 	CFrameWnd::OnActivate(nState, pWnd, bMinimized);
 }
 
 //---------------------------------------------------------------------------
 //
-//	Aplicacion de activacion
+//	Application activation
 //
 //---------------------------------------------------------------------------
 #if _MFC_VER >= 0x700
@@ -2245,23 +2287,23 @@ void CFrmWnd::OnActivateApp(BOOL bActive, DWORD dwThreadID)
 void CFrmWnd::OnActivateApp(BOOL bActive, HTASK hTask)
 #endif
 {
-	// Si ya has inicializado
+	// If initialization already completed
 	if (m_nStatus == 0) {
-		// ƒtƒ‹ƒXƒNƒŠ[ƒ“ê—p
+		// Full-screen-specific handling
 		if (m_bFullScreen) {
 			if (bActive) {
-				// Estoy a punto de ser activo
+				// Becoming active
 				HideTaskBar(TRUE, TRUE);
 				RecalcStatusView();
 			}
 			else {
-				// Fuera de la actividad
+				// Becoming inactive
 				HideTaskBar(FALSE, FALSE);
 			}
 		}
 	}
 
-	// Clase basica
+	// Base class handling
 #if _MFC_VER >= 0x700
 	CFrameWnd::OnActivateApp(bActive, dwThreadID);
 #else
@@ -2271,7 +2313,7 @@ void CFrmWnd::OnActivateApp(BOOL bActive, HTASK hTask)
 
 //---------------------------------------------------------------------------
 //
-//	Comienza el bucle del menu
+//	Enter menu loop
 //
 //---------------------------------------------------------------------------
 void CFrmWnd::OnEnterMenuLoop(BOOL bTrackPopup)
@@ -2279,23 +2321,23 @@ void CFrmWnd::OnEnterMenuLoop(BOOL bTrackPopup)
 	CInput *pInput;
 	CScheduler *pScheduler;
 
-	// Restablecimiento de los subtitulos
+	// Refresh caption before entering menu loop
 	ResetCaption();
 
 	::LockVM();
 
-	// Notificar entradas
+	// Notify input component
 	pInput = GetInput();
 	if (pInput) {
 		pInput->Menu(TRUE);
 	}
 
-	// ƒ}ƒEƒXƒ‚[ƒhFALSE(ƒ}ƒEƒX‚Åƒƒjƒ…[‚ª‘€ì‚Å‚«‚é‚æ‚¤‚É)
+	// Disable mouse mode so menu can be operated normally
 	if (pInput->GetMouseMode()) {
 		OnMouseMode();
 	}
 
-	// ƒXƒPƒWƒ…[ƒ‰‚Ö’Ê’m
+	// Notify scheduler
 	pScheduler = GetScheduler();
 	if (pScheduler) {
 		pScheduler->Menu(TRUE);
@@ -2303,13 +2345,13 @@ void CFrmWnd::OnEnterMenuLoop(BOOL bTrackPopup)
 
 	::UnlockVM();
 
-	// Šî–{ƒNƒ‰ƒX‚Ö
+	// Base class handling
 	CFrameWnd::OnEnterMenuLoop(bTrackPopup);
 }
 
 //---------------------------------------------------------------------------
 //
-//	Fin del bucle del menu
+//	Exit menu loop
 //
 //---------------------------------------------------------------------------
 void CFrmWnd::OnExitMenuLoop(BOOL bTrackPopup)
@@ -2319,13 +2361,13 @@ void CFrmWnd::OnExitMenuLoop(BOOL bTrackPopup)
 
 	::LockVM();
 
-	// ƒCƒ“ƒvƒbƒg‚Ö’Ê’m
+	// Notify input component
 	pInput = GetInput();
 	if (pInput) {
 		pInput->Menu(FALSE);
 	}
 
-	// ƒXƒPƒWƒ…[ƒ‰‚Ö’Ê’m
+	// Notify scheduler
 	pScheduler = GetScheduler();
 	if (pScheduler) {
 		pScheduler->Menu(FALSE);
@@ -2333,30 +2375,30 @@ void CFrmWnd::OnExitMenuLoop(BOOL bTrackPopup)
 
 	::UnlockVM();
 
-	// ƒLƒƒƒvƒVƒ‡ƒ“ƒŠƒZƒbƒg
+	// Refresh caption after leaving menu loop
 	ResetCaption();
 
-	// Šî–{ƒNƒ‰ƒX‚Ö
+	// Base class handling
 	CFrameWnd::OnExitMenuLoop(bTrackPopup);
 }
 
 //---------------------------------------------------------------------------
 //
-//	Notificacion de la ventana de los padres
+//	Parent window notification
 //
 //---------------------------------------------------------------------------
 void CFrmWnd::OnParentNotify(UINT message, LPARAM lParam)
 {
 	CInput *pInput;
 
-	// CInput‚ðŽæ“¾A’Ê’m
+	// Forward middle-button events to CInput
 	if ((message == WM_MBUTTONDOWN) && (m_nStatus == 0)) {
-		// ƒCƒ“ƒvƒbƒg‚ðŽæ“¾
+		// Get input component
 		pInput = GetInput();
 		if (pInput) {
-			// ƒ}ƒEƒX–³Œø‚È‚ç—LŒø‚É‚·‚éB‹t‚Í‚µ‚È‚¢
+			// Only enable mouse mode if it is currently disabled
 			if (!pInput->GetMouseMode()) {
-				// Ý’è‚Å"’†ƒ{ƒ^ƒ“‹ÖŽ~"‚É‚³‚ê‚Ä‚¢‚È‚¢‚±‚Æ‚ªðŒ
+				// Only when middle-button mouse-mode toggle is enabled
 				if (m_bMouseMid) {
 					OnMouseMode();
 				}
@@ -2364,13 +2406,13 @@ void CFrmWnd::OnParentNotify(UINT message, LPARAM lParam)
 		}
 	}
 
-	// Šî–{ƒNƒ‰ƒX‚Ö
+	// Base class handling
 	CFrameWnd::OnParentNotify(message, lParam);
 }
 
 //---------------------------------------------------------------------------
 //
-//	Menu contextual
+//	Context menu
 //
 //---------------------------------------------------------------------------
 void CFrmWnd::OnContextMenu(CWnd * /*pWnd*/, CPoint pos)
@@ -2379,37 +2421,37 @@ void CFrmWnd::OnContextMenu(CWnd * /*pWnd*/, CPoint pos)
 	SHORT sF10;
 	SHORT sShift;
 
-	// ƒL[ƒ{[ƒh‚©‚ç‚Ì“ü—Í‚Ì‚Æ‚«
+	// Handle keyboard-triggered context menu invocation
 	if ((pos.x == -1) && (pos.y == -1)) {
-		// ƒXƒPƒWƒ…[ƒ‰ƒ`ƒFƒbƒNA“ü—Íƒ`ƒFƒbƒN
+		// Check scheduler and input state
 		if (GetScheduler()->IsEnable()) {
 			if (GetInput()->IsActive() && !GetInput()->IsMenu()) {
-				// DIK_APPS‚ªƒ}ƒbƒv‚³‚ê‚Ä‚¢‚é‚©
+				// If DIK_APPS is mapped
 				if (GetInput()->IsKeyMapped(DIK_APPS)) {
-					// SHIFT+F10‚ª‰Ÿ‚³‚ê‚Ä‚¢‚é‚©
+					// Check whether SHIFT+F10 is currently pressed
 					sF10 = ::GetAsyncKeyState(VK_F10);
 					sShift = ::GetAsyncKeyState(VK_SHIFT);
 					if (((sF10 & 0x8000) == 0) || ((sShift & 0x8000) == 0)) {
-						// VK_APPS‚ª‰Ÿ‚³‚ê‚½‚½‚ß‚Æ”»’è
+						// Ignore VK_APPS-generated invocation
 						return;
 					}
 				}
 			}
 		}
 
-		// ƒ}ƒEƒXƒ‚[ƒh‚Å‚ ‚ê‚ÎA‰ðœ(ƒL[ƒ{[ƒh‚©‚ç‚Ìƒƒjƒ…[‹N“®)
+		// If mouse mode is active, release it for keyboard menu invocation
 		if (GetInput()->GetMouseMode()) {
 			OnMouseMode();
 		}
 	}
 	else {
-		// ƒ}ƒEƒXƒ‚[ƒh‚Å‚ ‚ê‚ÎA–³Ž‹(ƒ}ƒEƒX‚©‚ç‚Ìƒƒjƒ…[‹N“®)
+		// Ignore mouse-triggered context menu while mouse mode is active
 		if (GetInput()->GetMouseMode()) {
 			return;
 		}
 	}
 
-	// ƒ|ƒbƒvƒAƒbƒvƒƒjƒ…[
+	// Show popup menu
 	m_bPopupMenu = TRUE;
 	pMenu = m_PopupMenu.GetSubMenu(0);
 	pMenu->TrackPopupMenu(TPM_CENTERALIGN | TPM_LEFTBUTTON | TPM_RIGHTBUTTON,
@@ -2419,14 +2461,14 @@ void CFrmWnd::OnContextMenu(CWnd * /*pWnd*/, CPoint pos)
 
 //---------------------------------------------------------------------------
 //
-//	Notificacion de cambio de potencia
+//	Power change notification
 //
 //---------------------------------------------------------------------------
 LONG CFrmWnd::OnPowerBroadCast(UINT /*uParam*/, LONG /*lParam*/)
 {
-	// ‰Šú‰»Ï‚Ý‚È‚ç
+	// If initialization already completed
 	if (m_nStatus == 0) {
-		// VMƒƒbƒNAŽžŠÔÄÝ’è
+		// Lock VM and refresh timer resolution settings
 		::LockVM();
 		timeEndPeriod(1);
 		timeBeginPeriod(1);
@@ -2438,18 +2480,18 @@ LONG CFrmWnd::OnPowerBroadCast(UINT /*uParam*/, LONG /*lParam*/)
 
 //---------------------------------------------------------------------------
 //
-//	Comandos del sistema
+//	System commands
 //
 //---------------------------------------------------------------------------
 void CFrmWnd::OnSysCommand(UINT nID, LPARAM lParam)
 {
-	// •W€ƒEƒBƒ“ƒhƒEˆÊ’u‚ðƒTƒ|[ƒg
+	// Handle "standard window position" command
 	if ((nID & 0xfff0) == IDM_STDWIN) {
 		InitPos(TRUE);
 		return;
 	}
 
-	// Å‘å‰»‚Íƒtƒ‹ƒXƒNƒŠ[ƒ“
+	// Redirect maximize to fullscreen toggle
 	if ((nID & 0xfff0) == SC_MAXIMIZE) {
 		if (!m_bFullScreen) {
 			PostMessage(WM_COMMAND, IDM_FULLSCREEN);
@@ -2457,13 +2499,13 @@ void CFrmWnd::OnSysCommand(UINT nID, LPARAM lParam)
 		return;
 	}
 
-	// Šî–{ƒNƒ‰ƒX
+	// Base class handling
 	CFrameWnd::OnSysCommand(nID, lParam);
 }
 
 //---------------------------------------------------------------------------
 //
-//	Transferencia de datos
+//	Data transfer
 //
 //---------------------------------------------------------------------------
 #if _MFC_VER >= 0x700
@@ -2474,10 +2516,10 @@ LONG CFrmWnd::OnCopyData(UINT /*uParam*/, LONG pCopyDataStruct)
 {
 	PCOPYDATASTRUCT pCDS;
 
-	// ƒpƒ‰ƒ[ƒ^Žó‚¯Žæ‚è
+	// Get received COPYDATA parameters
 	pCDS = (PCOPYDATASTRUCT)pCopyDataStruct;
 
-	// ƒRƒ}ƒ“ƒhƒ‰ƒCƒ“ˆ—‚Ö
+	// Process forwarded command line
 	InitCmd((LPSTR)pCDS->lpData);
 
 	return TRUE;
@@ -2485,7 +2527,7 @@ LONG CFrmWnd::OnCopyData(UINT /*uParam*/, LONG pCopyDataStruct)
 
 //---------------------------------------------------------------------------
 //
-//	Notificaciones de la cascara
+//	Shell notifications
 //
 //---------------------------------------------------------------------------
 LRESULT CFrmWnd::OnShellNotify(UINT uParam, LONG lParam)
@@ -2498,9 +2540,9 @@ LRESULT CFrmWnd::OnShellNotify(UINT uParam, LONG lParam)
 	TCHAR szPath[_MAX_PATH];
 	CHost *pHost;
 
-	// Windows NT‚©
+	// Branch by Windows platform family
 	if (::IsWinNT()) {
-		// Windows2000/XP‚Ìê‡ASHChangeNotification_Lock‚ÅƒƒbƒN‚·‚é
+		// Windows 2000/XP: lock shell notification payload
 		hMemoryMap = (HANDLE)uParam;
 		dwProcessId = (DWORD)lParam;
 		hLock = ::SHChangeNotification_Lock(hMemoryMap, dwProcessId, &pidls, &nEvent);
@@ -2509,18 +2551,18 @@ LRESULT CFrmWnd::OnShellNotify(UINT uParam, LONG lParam)
 		}
 	}
 	else {
-		// Windows9x‚Ìê‡Apidls‚ÆnEvent‚ÍuParam,lParam‚©‚ç’¼Ú“¾‚é
+		// Windows 9x: PIDLs/event arrive directly in uParam/lParam
 		pidls = (LPITEMIDLIST*)uParam;
 		nEvent = lParam;
 		hLock = NULL;
 	}
 
-	// ŽÀs’†‚ÅACHost‚ª‚ ‚ê‚ÎA’Ê’m
+	// While running, forward notifications to CHost when available
 	if (m_nStatus == 0) {
 		pHost = GetHost();
 
 #if 1
-		// Windrv‚ª‚Ü‚¾•sˆÀ’è‚Ì‚½‚ßAŽÀÛ‚ÉEnable‚É‚³‚ê‚Ä‚¢‚È‚¢ê‡‚Í‰½‚à‚µ‚È‚¢(version2.04)
+		// If WinDRV is not effectively enabled, suppress host notification (v2.04)
 		{
 			Config config;
 			GetConfig()->GetConfig(&config);
@@ -2531,15 +2573,15 @@ LRESULT CFrmWnd::OnShellNotify(UINT uParam, LONG lParam)
 #endif
 
 		if (pHost) {
-			// ƒpƒXŽæ“¾
+			// Resolve path from PIDL
 			::SHGetPathFromIDList(pidls[0], szPath);
 
-			// ’Ê’m
+			// Notify host component
 			pHost->ShellNotify(nEvent, szPath);
 		}
 	}
 
-	// NT‚Ìê‡ASHCnangeNotifcation_Unlock‚ÅƒAƒ“ƒƒbƒN‚·‚é
+	// On NT-class systems, unlock shell notification payload
 	if (::IsWinNT()) {
 		ASSERT(hLock);
 		::SHChangeNotification_Unlock(hLock);
@@ -2550,7 +2592,7 @@ LRESULT CFrmWnd::OnShellNotify(UINT uParam, LONG lParam)
 
 //---------------------------------------------------------------------------
 //
-//	Actualizacion (ejecucion)
+//	Execution counter update
 //
 //---------------------------------------------------------------------------
 void FASTCALL CFrmWnd::UpdateExec()
@@ -2558,7 +2600,7 @@ void FASTCALL CFrmWnd::UpdateExec()
 	ASSERT(this);
 	ASSERT_VALID(this);
 
-	// Si el programador esta activado, aumenta el contador de ejecucion (se borra al guardar)
+	// While scheduler runs, increment execution counter (cleared on save)
 	if (GetScheduler()->IsEnable()) {
 		m_dwExec++;
 		if (m_dwExec == 0) {
@@ -2569,7 +2611,7 @@ void FASTCALL CFrmWnd::UpdateExec()
 
 //---------------------------------------------------------------------------
 //
-//	Cadena de mensajes proporcionada
+//	Provide message string
 //
 //---------------------------------------------------------------------------
 void CFrmWnd::GetMessageString(UINT nID, CString& rMessage) const
@@ -2586,29 +2628,37 @@ void CFrmWnd::GetMessageString(UINT nID, CString& rMessage) const
 	BOOL bValid;
 	CInfo *pInfo;
 
-	// Indicador FALSE
+	// Start as unresolved
 	bValid = FALSE;
 
-	// Haga primero las cadenas de menu (considere el entorno ingles + MRU)
+	// Resolve menu strings first (including English resources + MRU)
 	if ((nID >= IDM_OPEN) && (nID <= IDM_ABOUT)) {
-		// ‰pŒêŠÂ‹«‚©
+		// English environment?
 		if (!::IsJapanese()) {
-			// +5000‚ÅŽŽ‚·
-			if (rMessage.LoadString(nID + 5000)) {
+			// Resolve through safe message loader (handles +5000 fallback safely).
+			::GetMsg(nID, rMessage);
+			if (!rMessage.IsEmpty()) {
 				bValid = TRUE;
 			}
 		}
 	}
 
-	// Excepcion de cadena de menu (IDM_STDWIN)
+	// Special-case menu string (IDM_STDWIN)
 	if (nID == IDM_STDWIN) {
-		// ‰pŒêŠÂ‹«‚©
+		// English environment?
 		if (!::IsJapanese()) {
-			// +5000‚ÅŽŽ‚·
-			if (rMessage.LoadString(nID + 5000)) {
+			// Resolve through safe message loader (handles +5000 fallback safely).
+			::GetMsg(nID, rMessage);
+			if (!rMessage.IsEmpty()) {
 				bValid = TRUE;
 			}
 		}
+	}
+
+	// YMFM runtime toggle
+	if (nID == IDM_YMFM) {
+		rMessage = _T("YMFM runtime audio backend");
+		bValid = TRUE;
 	}
 
 	// MRU0
@@ -2661,7 +2711,7 @@ void CFrmWnd::GetMessageString(UINT nID, CString& rMessage) const
 		bValid = TRUE;
 	}
 
-	// ƒfƒBƒXƒN–¼0
+	// Disk label entry for drive 0
 	if ((nID >= IDM_D0_MEDIA0) && (nID <= IDM_D0_MEDIAF)) {
 		nDisk = nID - IDM_D0_MEDIA0;
 		ASSERT((nDisk >= 0) && (nDisk <= 15));
@@ -2678,7 +2728,7 @@ void CFrmWnd::GetMessageString(UINT nID, CString& rMessage) const
 		bValid = TRUE;
 	}
 
-	// ƒfƒBƒXƒN–¼1
+	// Disk label entry for drive 1
 	if ((nID >= IDM_D1_MEDIA0) && (nID <= IDM_D1_MEDIAF)) {
 		nDisk = nID - IDM_D1_MEDIA0;
 		ASSERT((nDisk >= 0) && (nDisk <= 15));
@@ -2695,18 +2745,18 @@ void CFrmWnd::GetMessageString(UINT nID, CString& rMessage) const
 		bValid = TRUE;
 	}
 
-	// ‚±‚±‚Ü‚Å‚ÅŠm’è‚µ‚Ä‚¢‚È‚¯‚ê‚ÎAŠî–{ƒNƒ‰ƒX
+	// If nothing matched, defer to base class
 	if (!bValid) {
 		CFrameWnd::GetMessageString(nID, rMessage);
 	}
 
-	// Œ‹‰Ê‚ðInfo‚Ö’ñ‹Ÿ(“à•”•ÛŽ—p)
+	// Pass message to Info (internal retention)
 	pInfo = GetInfo();
 	if (pInfo) {
 		pInfo->SetMessageString(rMessage);
 	}
 
-	// Œ‹‰Ê‚ðƒXƒe[ƒ^ƒXƒrƒ…[‚Ö’ñ‹Ÿ
+	// Pass message to status view
 	if (m_pStatusView) {
 		m_pStatusView->SetMenuString(rMessage);
 	}
@@ -2714,13 +2764,13 @@ void CFrmWnd::GetMessageString(UINT nID, CString& rMessage) const
 
 //---------------------------------------------------------------------------
 //
-//	Ocultar la barra de tareas
+//	Hide/show taskbar
 //
 //---------------------------------------------------------------------------
 void FASTCALL CFrmWnd::HideTaskBar(BOOL bHide, BOOL bFore)
 {
 	if (bHide) {
-		// "í‚É‘O–Ê"
+		// Enter always-on-top presentation
 		m_hTaskBar = ::FindWindow(_T("Shell_TrayWnd"), NULL);
 		if (m_hTaskBar) {
 			::ShowWindow(m_hTaskBar, SW_HIDE);
@@ -2728,14 +2778,14 @@ void FASTCALL CFrmWnd::HideTaskBar(BOOL bHide, BOOL bFore)
 		ModifyStyleEx(0, WS_EX_TOPMOST, 0);
 	}
 	else {
-		// "’Êí"
+		// Return to normal z-order
 		ModifyStyleEx(WS_EX_TOPMOST, 0, 0);
 		if (m_hTaskBar) {
 			::ShowWindow(m_hTaskBar, SW_SHOWNA);
 		}
 	}
 
-	// ‘O–ÊƒIƒvƒVƒ‡ƒ“‚ª‚ ‚ê‚Î
+	// Optionally force foreground activation
 	if (bFore) {
 		SetForegroundWindow();
 	}
@@ -2743,64 +2793,64 @@ void FASTCALL CFrmWnd::HideTaskBar(BOOL bHide, BOOL bFore)
 
 //---------------------------------------------------------------------------
 //
-//	Visualizacion de la barra de estado
+//	Status bar visibility
 //
 //---------------------------------------------------------------------------
 void FASTCALL CFrmWnd::ShowStatus()
 {
 	ASSERT(this);
 
-	// •K—v‚È‚çVM‚ðƒƒbƒN
+	// Lock VM when required
 	if (m_nStatus == 0) {
 		::LockVM();
 	}
 
-	// ƒtƒ‹ƒXƒNƒŠ[ƒ“‚©
+	// Fullscreen path
 	if (m_bFullScreen) {
-		// ƒXƒe[ƒ^ƒXƒo[‚Íí‚É”ñ•\Ž¦
+		// Always hide the standard status bar in fullscreen
 		ShowControlBar(&m_StatusBar, FALSE, FALSE);
 
-		// ƒXƒe[ƒ^ƒXƒo[•\Ž¦‚©
+		// If status display is enabled
 		if (m_bStatusBar) {
-			// ƒXƒe[ƒ^ƒXƒrƒ…[‚ª‘¶Ý‚µ‚È‚¯‚ê‚Î
+			// Create fullscreen status view if missing
 			if (!m_pStatusView) {
-				// ì¬‚µ‚Ä
+				// Create it
 				CreateStatusView();
 
-				// Ä”z’u
+				// Recalculate placement
 				if (m_bStatusBar) {
 					RecalcStatusView();
 				}
 			}
 		}
 		else {
-			// ƒXƒe[ƒ^ƒXƒrƒ…[‚ª‘¶Ý‚µ‚Ä‚¢‚ê‚Î
+			// Destroy fullscreen status view when disabled
 			if (m_pStatusView) {
-				// íœ‚µ‚Ä
+				// Destroy it
 				DestroyStatusView();
 
-				// Ä”z’u
+				// Recalculate placement
 				RecalcStatusView();
 			}
 		}
 
-		// •K—v‚ª‚ ‚ê‚ÎƒAƒ“ƒƒbƒN
+		// Unlock VM when needed
 		if (m_nStatus == 0) {
 			::UnlockVM();
 		}
 		return;
 	}
 
-	// ƒXƒe[ƒ^ƒXƒrƒ…[‚Íƒtƒ‹ƒXƒNƒŠ[ƒ“ê—p‚È‚Ì‚ÅAíœ
+	// Status view is fullscreen-only; destroy it in windowed mode
 	if (m_pStatusView) {
 		DestroyStatusView();
 		RecalcLayout();
 	}
 
-	// ƒEƒBƒ“ƒhƒE‚È‚Ì‚ÅAShowControlBar‚Å§Œä
+	// In windowed mode, control visibility through ShowControlBar
 	ShowControlBar(&m_StatusBar, m_bStatusBar, FALSE);
 
-	// •K—v‚ª‚ ‚ê‚ÎƒAƒ“ƒƒbƒN
+	// Unlock VM when needed
 	if (m_nStatus == 0) {
 		::UnlockVM();
 	}
@@ -2808,7 +2858,7 @@ void FASTCALL CFrmWnd::ShowStatus()
 
 //---------------------------------------------------------------------------
 //
-//	Crear vista de estado (en pantalla completa)
+//	Create status view (fullscreen)
 //
 //---------------------------------------------------------------------------
 void FASTCALL CFrmWnd::CreateStatusView()
@@ -2818,18 +2868,18 @@ void FASTCALL CFrmWnd::CreateStatusView()
 	ASSERT(!m_pStatusView);
 
 	if (m_bStatusBar) {
-		// ƒXƒe[ƒ^ƒXƒrƒ…[ì¬(Ä”z’u‚Ís‚í‚È‚¢)
+		// Create status view (layout update handled elsewhere)
 		m_pStatusView = new CStatusView;
 		if (m_pStatusView->Init(this)) {
-			// ì¬¬Œ÷
+			// Creation succeeded
 			pInfo = GetInfo();
 			if (pInfo) {
-				// Info‚ª‘¶Ý‚·‚é‚Ì‚ÅAƒXƒe[ƒ^ƒXƒrƒ…[ì¬‚ð’Ê’m
+				// Inform Info that status view is now available
 				pInfo->SetStatusView(m_pStatusView);
 			}
 		}
 		else {
-			// ì¬Ž¸”s
+			// Creation failed
 			m_bStatusBar = FALSE;
 		}
 	}
@@ -2837,43 +2887,42 @@ void FASTCALL CFrmWnd::CreateStatusView()
 
 //---------------------------------------------------------------------------
 //
-//	Salir de la vista de estado (en pantalla completa)
+//	Destroy status view (fullscreen)
 //
 //---------------------------------------------------------------------------
 void FASTCALL CFrmWnd::DestroyStatusView()
 {
 	CInfo *pInfo;
 
-	// —LŒø‚ÈƒXƒe[ƒ^ƒXƒrƒ…[‚ª‘¶Ý‚·‚éê‡‚Ì‚Ý
+	// Only when a valid status view exists
 	if (m_pStatusView) {
-		// InfoŽæ“¾
+		// Get Info component
 		pInfo = GetInfo();
 		if (pInfo) {
-			// Info‚ª‘¶Ý‚·‚é‚Ì‚ÅAƒXƒe[ƒ^ƒXƒrƒ…[íœ‚ð’Ê’m
+			// Inform Info that status view is being removed
 			pInfo->SetStatusView(NULL);
 		}
 
-		// ƒXƒe[ƒ^ƒXƒrƒ…[íœ(Ä”z’u‚Ís‚í‚È‚¢)
+		// Destroy status view (layout update handled elsewhere)
 		m_pStatusView->DestroyWindow();
 		m_pStatusView = NULL;
 	}
 }
 
 //---------------------------------------------------------------------------
-//¿Qué hace RecalcStatusView ?
-//Es responsable de recalcular y ajustar la posición / tamaño de dos componentes críticos en la ventana principal :
-//Vista de Dibujo(m_pDrawView) : Donde se renderiza la pantalla emulada.
-//Vista de Estado(m_pStatusView) : Una barra de estado personalizada que reemplaza a la barra estándar de Windows en pantalla completa.
+// Recalculates and adjusts positions/sizes for two key child views:
+// Draw view (`m_pDrawView`), where the emulated screen is rendered.
+// Status view (`m_pStatusView`), the custom fullscreen status bar.
 //---------------------------------------------------------------------------
 void CFrmWnd::RecalcStatusView()
 {
 	CRect rectClient;
-	GetClientRect(&rectClient);  // Área cliente actual
+	GetClientRect(&rectClient);// Current client area
 
 	const int clientWidth = rectClient.Width();
 	const int clientHeight = rectClient.Height();
 
-	// Flags comunes para SetWindowPos
+	// Common flags for SetWindowPos
 	const UINT swpFlags = SWP_NOZORDER | SWP_NOACTIVATE;
 
 	if (m_pStatusView && m_pStatusView->GetSafeHwnd())
@@ -2882,10 +2931,10 @@ void CFrmWnd::RecalcStatusView()
 		m_pStatusView->GetWindowRect(&rectStatus);
 		const int statusHeight = rectStatus.Height();
 
-		// Calcular altura para vista de dibujo
+		// Compute draw-view height
 		const int drawHeight = clientHeight - statusHeight;
 
-		// Solo redimensionar si hubieron cambios
+		// Resize only when dimensions changed
 		if (m_pDrawView->GetSafeHwnd())
 		{
 			CRect currentDrawRect;
@@ -2903,7 +2952,7 @@ void CFrmWnd::RecalcStatusView()
 			}
 		}
 
-		// Actualizar vista de estado solo si es necesario
+		// Move/resize status view only when needed
 		if (m_pStatusView->GetSafeHwnd())
 		{
 			CRect currentStatusRect;
@@ -2924,7 +2973,7 @@ void CFrmWnd::RecalcStatusView()
 	}
 	else
 	{
-		// Modo normal sin vista de estado personalizada
+		// Normal mode without custom status view
 		if (m_pDrawView->GetSafeHwnd())
 		{
 			m_pDrawView->SetWindowPos(
@@ -2936,7 +2985,7 @@ void CFrmWnd::RecalcStatusView()
 		}
 	}
 
-	// Forzar actualización visual solo si hay cambios
+	// Force redraw only when client rect is valid
 	if (!rectClient.IsRectEmpty())
 	{
 		m_pDrawView->InvalidateRect(nullptr, FALSE);
@@ -2948,14 +2997,14 @@ void CFrmWnd::RecalcStatusView()
 
 //---------------------------------------------------------------------------
 //
-//	Restablecimiento de la barra de estado
+//	Reset status bar contents
 //
 //---------------------------------------------------------------------------
 void FASTCALL CFrmWnd::ResetStatus()
 {
 	CInfo *pInfo;
 
-	// Info‚ª‚ ‚ê‚ÎƒŠƒZƒbƒg
+	// Reset via Info component when available
 	pInfo = GetInfo();
 	if (pInfo) {
 		pInfo->ResetStatus();
@@ -2964,7 +3013,7 @@ void FASTCALL CFrmWnd::ResetStatus()
 
 //---------------------------------------------------------------------------
 //
-//	Sorteo del propietario
+//	Owner-draw handling
 //
 //---------------------------------------------------------------------------
 void CFrmWnd::OnDrawItem(int nID, LPDRAWITEMSTRUCT lpDIS)
@@ -2974,13 +3023,13 @@ void CFrmWnd::OnDrawItem(int nID, LPDRAWITEMSTRUCT lpDIS)
 	CRect rectDraw;
 	CInfo *pInfo;
 
-	// ƒEƒBƒ“ƒhƒEƒnƒ“ƒhƒ‹‚Ìƒ`ƒFƒbƒN
+	// Ensure this draw request is for the status bar
 	if (lpDIS->hwndItem != m_StatusBar.m_hWnd) {
 		CFrameWnd::OnDrawItem(nID, lpDIS);
 		return;
 	}
 
-	// Ží•ÊADCA‹éŒ`‚ðŽæ“¾
+	// Get pane index, DC, and draw rectangle
 	nPane = lpDIS->itemID;
 	if (nPane == 0) {
 		return;
@@ -2989,22 +3038,22 @@ void CFrmWnd::OnDrawItem(int nID, LPDRAWITEMSTRUCT lpDIS)
 	hDC = lpDIS->hDC;
 	rectDraw = &lpDIS->rcItem;
 
-	// Info‚Ìƒ`ƒFƒbƒN
+	// Check Info component
 	pInfo = GetInfo();
 	if (!pInfo) {
-		// •‚Å“h‚è‚Â‚Ô‚·
+		// Fill black as fallback
 		::SetBkColor(hDC, RGB(0, 0, 0));
 		::ExtTextOut(hDC, 0, 0, ETO_OPAQUE, &rectDraw, NULL, 0, NULL);
 		return;
 	}
 
-	// Info‚ÉŽwŽ¦
+	// Delegate drawing to Info
 	pInfo->DrawStatus(nPane, hDC, rectDraw);
 }
 
 //---------------------------------------------------------------------------
 //
-//	Visualizacion de la barra de menus
+//	Menu bar visibility
 //
 //---------------------------------------------------------------------------
 void FASTCALL CFrmWnd::ShowMenu()
@@ -3013,19 +3062,19 @@ void FASTCALL CFrmWnd::ShowMenu()
 
 	ASSERT(this);
 
-	// •K—v‚Å‚ ‚ê‚ÎVM‚ðƒƒbƒN
+	// Lock VM when required
 	if (m_nStatus == 0) {
 		::LockVM();
 	}
 
-	// Œ»Ý‚Ìƒƒjƒ…[‚ðŽæ“¾
+	// Get currently attached menu
 	hMenu = ::GetMenu(m_hWnd);
 
-	// ƒƒjƒ…[‚ª•s•K—v‚Èê‡
+	// Case: menu should be hidden
 	if (m_bFullScreen || !m_bMenuBar) {
-		// ƒƒjƒ…[‚ª‘¶Ý‚·‚é‚©
+		// If a menu is attached
 		if (hMenu != NULL) {
-			// ƒƒjƒ…[‚ðÁ‹Ž
+			// Detach menu
 			SetMenu(NULL);
 		}
 		if (m_nStatus == 0) {
@@ -3034,11 +3083,11 @@ void FASTCALL CFrmWnd::ShowMenu()
 		return;
 	}
 
-	// ƒƒjƒ…[‚ª•K—v‚Èê‡
+	// Case: menu should be visible
 	if (hMenu != NULL) {
-		// ƒZƒbƒg‚µ‚½‚¢ƒƒjƒ…[‚Æ“¯‚¶‚©
+		// If desired menu is already set
 		if (m_Menu.GetSafeHmenu() == hMenu) {
-			// •ÏX‚Ì•K—v‚Í‚È‚¢
+			// No change needed
 			if (m_nStatus == 0) {
 				::UnlockVM();
 			}
@@ -3046,10 +3095,10 @@ void FASTCALL CFrmWnd::ShowMenu()
 		}
 	}
 
-	// ƒƒjƒ…[‚ðƒZƒbƒg
+	// Attach standard menu
 	SetMenu(&m_Menu);
 
-	// •K—v‚È‚çVM‚ðƒAƒ“ƒƒbƒN
+	// Unlock VM when required
 	if (m_nStatus == 0) {
 		::UnlockVM();
 	}
@@ -3057,7 +3106,7 @@ void FASTCALL CFrmWnd::ShowMenu()
 
 //---------------------------------------------------------------------------
 //
-//	Pantalla de subtitulos
+//	Caption visibility
 //
 //---------------------------------------------------------------------------
 void CFrmWnd::ShowCaption()
@@ -3065,31 +3114,31 @@ void CFrmWnd::ShowCaption()
 	const DWORD dwCaptionStyle = WS_CAPTION | WS_SYSMENU | WS_MINIMIZEBOX | WS_MAXIMIZEBOX;
 	const BOOL bShouldShowCaption = !m_bFullScreen && m_bCaption;
 
-	// 1. Verificar si ya está en el estado deseado
+	// 1) Skip if current style already matches target
 	DWORD dwCurrentStyle = GetStyle();
 	if (bShouldShowCaption == ((dwCurrentStyle & dwCaptionStyle) == dwCaptionStyle)) {
-		return; // No hacer cambios si ya está en el estado correcto
+		return;// No style update needed
 	}
 
-	// 2. Bloquear VM solo si es necesario
+	// 2) Lock VM only when needed
 	const BOOL bVMLockNeeded = (m_nStatus == 0);
 	if (bVMLockNeeded) {
 		::LockVM();
 	}
 
-	// 3. Modificar estilos de manera eficiente
+	// 3) Update window styles
 	ModifyStyle(
-		bShouldShowCaption ? 0 : dwCaptionStyle,  // Estilos a remover
-		bShouldShowCaption ? dwCaptionStyle : 0,  // Estilos a añadir
+		bShouldShowCaption?0:dwCaptionStyle,// Styles to remove
+		bShouldShowCaption?dwCaptionStyle:0,// Styles to add
 		SWP_NOMOVE | SWP_NOZORDER | SWP_FRAMECHANGED
 	);
 
-	// 4. Actualización condicional de la interfaz
+	// 4) Redraw menu bar when needed
 	if (bShouldShowCaption && m_bMenuBar) {
-		DrawMenuBar(); // Redibujar barra de menú si es visible
+		DrawMenuBar();// Redraw menu bar if visible
 	}
 
-	// 5. Desbloquear VM si fue bloqueada
+	// 5) Unlock VM if it was locked
 	if (bVMLockNeeded) {
 		::UnlockVM();
 	}
@@ -3097,14 +3146,14 @@ void CFrmWnd::ShowCaption()
 
 //---------------------------------------------------------------------------
 //
-//	Restablecimiento de los subtitulos
+//	Reset caption text
 //
 //---------------------------------------------------------------------------
 void FASTCALL CFrmWnd::ResetCaption()
 {
 	CInfo *pInfo;
 
-	// Info‚ª‚ ‚ê‚ÎƒŠƒZƒbƒg
+	// Reset through Info when available
 	pInfo = GetInfo();
 	if (pInfo) {
 		pInfo->ResetCaption();
@@ -3113,14 +3162,14 @@ void FASTCALL CFrmWnd::ResetCaption()
 
 //---------------------------------------------------------------------------
 //
-//	Configuracion de la informacion
+//	Set info text
 //
 //---------------------------------------------------------------------------
 void FASTCALL CFrmWnd::SetInfo(CString& strInfo)
 {
 	CInfo *pInfo;
 
-	// Info‚ª‚ ‚ê‚ÎÝ’è
+	// Update through Info when available
 	pInfo = GetInfo();
 	if (pInfo) {
 		pInfo->SetInfo(strInfo);
@@ -3129,7 +3178,7 @@ void FASTCALL CFrmWnd::SetInfo(CString& strInfo)
 
 //---------------------------------------------------------------------------
 //
-//	Obtener la vista del dibujo
+//	Get draw view
 //
 //---------------------------------------------------------------------------
 CDrawView* FASTCALL CFrmWnd::GetView() const
@@ -3142,7 +3191,7 @@ CDrawView* FASTCALL CFrmWnd::GetView() const
 
 //---------------------------------------------------------------------------
 //
-//	Obtener el primer componente
+//	Get first component
 //
 //---------------------------------------------------------------------------
 CComponent* FASTCALL CFrmWnd::GetFirstComponent() const
@@ -3153,7 +3202,7 @@ CComponent* FASTCALL CFrmWnd::GetFirstComponent() const
 
 //---------------------------------------------------------------------------
 //
-//	Adquisicion del programador
+//	Get scheduler
 //
 //---------------------------------------------------------------------------
 CScheduler* FASTCALL CFrmWnd::GetScheduler() const
@@ -3165,7 +3214,7 @@ CScheduler* FASTCALL CFrmWnd::GetScheduler() const
 
 //---------------------------------------------------------------------------
 //
-//	Adquisicion de sonido
+//	Get sound component
 //
 //---------------------------------------------------------------------------
 CSound* FASTCALL CFrmWnd::GetSound() const
@@ -3177,7 +3226,7 @@ CSound* FASTCALL CFrmWnd::GetSound() const
 
 //---------------------------------------------------------------------------
 //
-//	Adquisicion de entradas
+//	Get input component
 //
 //---------------------------------------------------------------------------
 CInput* FASTCALL CFrmWnd::GetInput() const
@@ -3189,7 +3238,7 @@ CInput* FASTCALL CFrmWnd::GetInput() const
 
 //---------------------------------------------------------------------------
 //
-//	Adquisicion de puertos
+//	Get port component
 //
 //---------------------------------------------------------------------------
 CPort* FASTCALL CFrmWnd::GetPort() const
@@ -3201,7 +3250,7 @@ CPort* FASTCALL CFrmWnd::GetPort() const
 
 //---------------------------------------------------------------------------
 //
-//	Adquisicion de MIDI
+//	Get MIDI component
 //
 //---------------------------------------------------------------------------
 CMIDI* FASTCALL CFrmWnd::GetMIDI() const
@@ -3213,7 +3262,7 @@ CMIDI* FASTCALL CFrmWnd::GetMIDI() const
 
 //---------------------------------------------------------------------------
 //
-//	Obtener TrueKey
+//	Get TrueKey component
 //
 //---------------------------------------------------------------------------
 CTKey* FASTCALL CFrmWnd::GetTKey() const
@@ -3225,7 +3274,7 @@ CTKey* FASTCALL CFrmWnd::GetTKey() const
 
 //---------------------------------------------------------------------------
 //
-//	Obtenga un anfitrion
+//	Get host component
 //
 //---------------------------------------------------------------------------
 CHost* FASTCALL CFrmWnd::GetHost() const
@@ -3237,30 +3286,30 @@ CHost* FASTCALL CFrmWnd::GetHost() const
 
 //---------------------------------------------------------------------------
 //
-//	Obtener informacion
+//	Get info component
 //
 //---------------------------------------------------------------------------
 CInfo* FASTCALL CFrmWnd::GetInfo() const
 {
 	ASSERT(this);
 
-	// Info‚ª‘¶Ý‚µ‚È‚¯‚ê‚ÎNULL
+	// Return NULL when Info does not exist
 	if (!m_pInfo) {
 		return NULL;
 	}
 
-	// ’âŽ~’†‚È‚çNULL
+	// Return NULL when Info is disabled
 	if (!m_pInfo->IsEnable()) {
 		return NULL;
 	}
 
-	// “®ì’†BInfo‚ð•Ô‚·
+	// Info is active; return pointer
 	return m_pInfo;
 }
 
 //---------------------------------------------------------------------------
 //
-//	Obtenga la configuracion
+//	Get config component
 //
 //---------------------------------------------------------------------------
 CConfig* FASTCALL CFrmWnd::GetConfig() const
@@ -3330,6 +3379,45 @@ void CFrmWnd::OnRenderFastUI(CCmdUI *pCmdUI)
 	pCmdUI->SetCheck((pRender->GetCompositorMode() == Render::compositor_fast) ? 1 : 0);
 }
 
+void CFrmWnd::OnYmfm()
+{
+	CSound *pSound;
+
+	pSound = GetSound();
+	if (!pSound) {
+		return;
+	}
+
+	pSound->SetYmfm(!pSound->IsYmfm());
+
+	::LockVM();
+	ApplyCfg();
+	::UnlockVM();
+
+	CString info;
+	info.Format(_T("YMFM: %s"), pSound->IsYmfm() ? _T("ON") : _T("OFF"));
+	SetInfo(info);
+}
+
+void CFrmWnd::OnYmfmUI(CCmdUI *pCmdUI)
+{
+	CSound *pSound;
+
+	if (!pCmdUI) {
+		return;
+	}
+
+	pSound = GetSound();
+	if (!pSound) {
+		pCmdUI->Enable(FALSE);
+		pCmdUI->SetCheck(0);
+		return;
+	}
+
+	pCmdUI->Enable(TRUE);
+	pCmdUI->SetCheck(pSound->IsYmfm() ? 1 : 0);
+}
+
 void CFrmWnd::OnToggleRenderer()
 {
 	if (m_pDrawView) {
@@ -3358,27 +3446,27 @@ void CFrmWnd::OnToggleVSync()
 
 //---------------------------------------------------------------------------
 //
-//	Entrar a modo Borderless Fullscreen
+//	Enter borderless fullscreen mode
 //
 //---------------------------------------------------------------------------
 void CFrmWnd::EnterBorderlessFullscreen()
 {
 	if (m_bBorderless) return;
 
-	// Guardar estado actual
+	// Save current window state
 	m_dwPrevStyle = GetWindowLong(m_hWnd, GWL_STYLE);
 	m_dwPrevExStyle = GetWindowLong(m_hWnd, GWL_EXSTYLE);
 	GetWindowPlacement(&m_wpPrev);
 
-	// Obtener el monitor actual
+	// Get current monitor
 	HMONITOR hMonitor = MonitorFromWindow(m_hWnd, MONITOR_DEFAULTTOPRIMARY);
 	MONITORINFO mi = { sizeof(mi) };
 	if (GetMonitorInfo(hMonitor, &mi)) {
-		// Quitar bordes y estilos
+		// Remove border-related styles
 		SetWindowLong(m_hWnd, GWL_STYLE, m_dwPrevStyle & ~(WS_CAPTION | WS_THICKFRAME));
 		SetWindowLong(m_hWnd, GWL_EXSTYLE, m_dwPrevExStyle & ~(WS_EX_DLGMODALFRAME | WS_EX_CLIENTEDGE | WS_EX_STATICEDGE));
 
-		// Expandir rect absoluto de la pantalla
+		// Expand to full monitor bounds
 		SetWindowPos(&wndTop,
 			mi.rcMonitor.left, mi.rcMonitor.top,
 			mi.rcMonitor.right - mi.rcMonitor.left,
@@ -3391,17 +3479,17 @@ void CFrmWnd::EnterBorderlessFullscreen()
 
 //---------------------------------------------------------------------------
 //
-//	Salir de modo Borderless Fullscreen
+//	Exit borderless fullscreen mode
 //
 //---------------------------------------------------------------------------
 void CFrmWnd::ExitBorderlessFullscreen()
 {
 	if (!m_bBorderless) return;
 
-	// Restaurar estilos y rects
+	// Restore saved styles and placement
 	SetWindowLong(m_hWnd, GWL_STYLE, m_dwPrevStyle);
 	SetWindowLong(m_hWnd, GWL_EXSTYLE, m_dwPrevExStyle);
-	
+
 	SetWindowPlacement(&m_wpPrev);
 	SetWindowPos(NULL, 0, 0, 0, 0,
 		SWP_NOMOVE | SWP_NOSIZE | SWP_NOZORDER | SWP_NOOWNERZORDER | SWP_FRAMECHANGED);

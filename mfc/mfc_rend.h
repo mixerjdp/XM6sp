@@ -2,8 +2,8 @@
 //
 //	X68000 EMULATOR "XM6"
 //
-//	Copyright (C) 2001,2002 ＰＩ．(ytanaka@ipc-tokai.or.jp)
-//	[ MFC サブウィンドウ(レンダラ) ]
+//	Copyright (C) 2001,2002 PI (ytanaka@ipc-tokai.or.jp)
+//	[ MFC Subwindow (render) ]
 //
 //---------------------------------------------------------------------------
 
@@ -16,66 +16,66 @@
 
 //===========================================================================
 //
-//	汎用バッファウィンドウ
+//	Render buffer window
 //
 //===========================================================================
 class CRendBufWnd : public CSubBitmapWnd
 {
 public:
 	CRendBufWnd(int nType);
-										// コンストラクタ
+										// Constructor
 	void FASTCALL Setup(int x, int y, int width, int height, BYTE *ptr);
-										// セットアップ
+										// Setup
 	void FASTCALL Update();
-										// メッセージスレッドからの更新
+										// Update from message thread
 
 private:
 	int m_nType;
-										// タイプ
+										// Type
 	const DWORD *m_pRendBuf;
-										// テキストバッファ
+										// Text buffer
 };
 
 //===========================================================================
 //
-//	合成バッファウィンドウ
+//	Composite buffer window
 //
 //===========================================================================
 class CMixBufWnd : public CSubBitmapWnd
 {
 public:
 	CMixBufWnd();
-										// コンストラクタ
+										// Constructor
 	void FASTCALL Setup(int x, int y, int width, int height, BYTE *ptr);
-										// セットアップ
+										// Setup
 	void FASTCALL Update();
-										// メッセージスレッドからの更新
+										// Update from message thread
 
 private:
 	const Render::render_t *m_pRendWork;
-										// レンダラワーク
+										// Renderer work
 };
 
 //===========================================================================
 //
-//	PCGバッファウィンドウ
+//	PCG buffer window
 //
 //===========================================================================
 class CPCGBufWnd : public CSubBitmapWnd
 {
 public:
 	CPCGBufWnd();
-										// コンストラクタ
+										// Constructor
 	void FASTCALL Setup(int x, int y, int width, int height, BYTE *ptr);
-										// セットアップ
+										// Setup
 	void FASTCALL Update();
-										// メッセージスレッドからの更新
+										// Update from message thread
 
 private:
 	const DWORD *m_pPCGBuf;
-										// PCGバッファ実体
+										// PCG buffer address
 	const DWORD *m_dwPCGBuf;
-										// PCGバッファ使用カウンタ
+										// PCG buffer usage counter
 };
 
 #endif	// mfc_rend_h

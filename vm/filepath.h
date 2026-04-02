@@ -2,8 +2,8 @@
 //
 //	X68000 EMULATOR "XM6"
 //
-//	Copyright (C) 2001-2006 ＰＩ．(ytanaka@ipc-tokai.or.jp)
-//	[ ファイルパス ]
+//	Copyright (C) 2001-2006 PI (ytanaka@ipc-tokai.or.jp)
+	// [ File path ]
 //
 //---------------------------------------------------------------------------
 
@@ -13,7 +13,6 @@
 #include "os.h"
 #include "xm6.h"
 
-#if defined(_WIN32)
 
 typedef struct {
 	DWORD low;
@@ -22,116 +21,115 @@ typedef struct {
 
 //---------------------------------------------------------------------------
 //
-//	定数定義
+//	Constants
 //
 //---------------------------------------------------------------------------
 #define FILEPATH_MAX		_MAX_PATH
 
 //===========================================================================
 //
-//	ファイルパス
-//	※代入演算子を用意すること
+//	File path
+//	Class for managing file path operations
 //
 //===========================================================================
 class Filepath
 {
 public:
-	// システムファイル種別
+	// System file type
 	enum SysFileType {
 		IPL,							// IPL(version 1.00)
 		IPLXVI,							// IPL(version 1.10)
 		IPLCompact,						// IPL(version 1.20)
-		IPL030,							// IPL(version 1.30)後半
-		ROM030,							// IPL(version 1.30)前半
+		IPL030,							// IPL(version 1.30) and later
+		ROM030,							// IPL(version 1.30) and earlier
 		CG,								// CG
-		CGTMP,							// CG(Win合成)
-		SCSIInt,						// SCSI(内蔵)
-		SCSIExt,						// SCSI(外付)
+		CGTMP,							// CG(Win temporary)
+		SCSIInt,						// SCSI(internal)
+		SCSIExt,						// SCSI(external)
 		SRAM							// SRAM
 	};
 
 public:
 	Filepath();
-										// コンストラクタ
+										// Constructor
 	virtual ~Filepath();
-										// デストラクタ
+										// Destructor
 	Filepath& operator=(const Filepath& path);
-										// 代入
+										// Assignment
 
 	void FASTCALL Clear();
-										// クリア
+										// Clear
 	void FASTCALL SysFile(SysFileType sys);
-										// ファイル設定(システム)
+										// Set file (system)
 	void FASTCALL SetPath(const TCHAR* lpszPath);
-										// ファイル設定(ユーザ)
+										// Set file (user)
 	void FASTCALL SetBaseDir();
-										// ベースディレクトリ設定
+										// Set base directory
 	void FASTCALL SetBaseFile(const TCHAR* lpszName);
-										// ベースディレクトリ＋ファイル名設定
+										// Set base directory with filename
 
 	BOOL FASTCALL IsClear() const;
-										// クリアされているか
+										// Is cleared
 	const TCHAR* FASTCALL GetPath() const	{ return m_szPath; }
-										// パス名取得
+										// Get path
 	const char* FASTCALL GetShort() const;
-										// ショート名取得(const char*)
+										// Get short path (const char*)
 	const TCHAR* FASTCALL GetFileExt() const;
-										// ショート名取得(LPCTSTR)
+										// Get extension (LPCTSTR)
 	BOOL FASTCALL CmpPath(const Filepath& path) const;
-										// パス比較
+										// Compare path
 
 	static void FASTCALL ClearDefaultDir();
-										// デフォルディレクトリを初期化
+										// Clear default directory
 	static void FASTCALL SetDefaultDir(const TCHAR* lpszPath);
-										// デフォルトディレクトリに設定
+										// Set default directory
 	static const TCHAR* FASTCALL GetDefaultDir();
 	static void FASTCALL ClearSystemDir();
 	static void FASTCALL SetSystemDir(const TCHAR* lpszPath);
 	static const TCHAR* FASTCALL GetSystemDir();
-										// デフォルトディレクトリ取得
+										// Get default directory
 
 	BOOL FASTCALL Save(Fileio *fio, int ver);
-										// セーブ
+										// Save
 	BOOL FASTCALL Load(Fileio *fio, int ver);
-										// ロード
+										// Load
 
 private:
 	void FASTCALL Split();
-										// パス分割
+										// Split path
 	void FASTCALL Make();
-										// パス合成
+										// Make path
 	void FASTCALL SetCurDir();
-										// カレントディレクトリ設定
+										// Set current directory
 	BOOL FASTCALL IsUpdate() const;
-										// セーブ後の更新ありか
+										// Is updated since save
 	void FASTCALL GetUpdateTime(filepath_time_t *pSaved, filepath_time_t *pCurrent ) const;
-										// セーブ後の時間情報を取得
+										// Get update times for save
 	TCHAR m_szPath[_MAX_PATH];
-										// ファイルパス
+										// File path
 	TCHAR m_szDrive[_MAX_DRIVE];
-										// ドライブ
+										// Drive
 	TCHAR m_szDir[_MAX_DIR];
-										// ディレクトリ
+										// Directory
 	TCHAR m_szFile[_MAX_FNAME];
-										// ファイル
+										// File name
 	TCHAR m_szExt[_MAX_EXT];
-										// 拡張子
+										// Extension
 	BOOL m_bUpdate;
-										// セーブ後の更新あり
+										// Update flag since save
 	filepath_time_t m_SavedTime;
-										// セーブ時の日付
+										// Save date/time
 	filepath_time_t m_CurrentTime;
-										// 現在の日付
+										// Current date/time
 	static const TCHAR* SystemFile[];
-										// システムファイル
+										// System file
 	static char ShortName[_MAX_FNAME + _MAX_DIR];
-										// ショート名(char)
+										// Short name (char)
 	static TCHAR FileExt[_MAX_FNAME + _MAX_DIR];
-										// ショート名(TCHAR)
+										// Short name (TCHAR)
 	static TCHAR DefaultDir[_MAX_PATH];
 	static TCHAR SystemDir[_MAX_PATH];
-										// デフォルトディレクトリ
+										// Default directory
 };
 
-#endif	// _WIN32
 #endif	// filepath_h

@@ -10,15 +10,15 @@
 #include "cisc.h"
 
 // ---------------------------------------------------------------------------
-//	出力サンプルの型
+//	Output sample signal type
 //
 #define FM_SAMPLETYPE	int32				// int16 or int32
 
 // ---------------------------------------------------------------------------
-//	定数その１
-//	静的テーブルのサイズ
+//	Constants
+//	Static table sizes
 
-#define FM_LFOBITS		8					// 変更不可
+#define FM_LFOBITS		8					// Changeable
 #define FM_TLBITS		7
 
 // ---------------------------------------------------------------------------
@@ -27,7 +27,7 @@
 #define FM_LFOENTS		(1 << FM_LFOBITS)
 #define FM_TLPOS		(FM_TLENTS/4)
 
-//	サイン波の精度は 2^(1/256)
+//	Digital precision 2^(1/256)
 #define FM_CLENTS		(0x1000 * 2)	// sin + TL + LFO
 
 // ---------------------------------------------------------------------------
@@ -102,13 +102,13 @@ namespace FM
 		uint32	PGCalc();
 		uint32	PGCalcL();
 
-		uint	dp_;		// ΔP
+		uint	dp_;		// DP
 		uint	detune_;		// Detune
 		uint	detune2_;	// DT2
 		uint	multiple_;	// Multiple
-		uint32	pg_count_;	// Phase 現在値
-		uint32	pg_diff_;	// Phase 差分値
-		int32	pg_diff_lfo_;	// Phase 差分値 >> x
+		uint32	pg_count_;	// Phase current
+		uint32	pg_diff_;	// Phase increment
+		int32	pg_diff_lfo_;	// Phase increment >> x
 
 	//	Envelop Generator ---------------------------------------------------
 		enum	EGPhase { next, attack, decay, sustain, release, off };
@@ -123,14 +123,14 @@ namespace FM
 		ISample LogToLin(uint a);
 
 		
-		OpType	type_;		// OP の種類 (M, N...)
+		OpType	type_;		// OP type (M, N...)
 		uint	bn_;		// Block/Note
-		int		eg_level_;	// EG の出力値
-		int		eg_level_on_next_phase_;	// 次の eg_phase_ に移る値
-		int		eg_count_;		// EG の次の変移までの時間
-		int		eg_count_diff_;	// eg_count_ の差分
-		int		eg_out_;		// EG+TL を合わせた出力値
-		int		tl_out_;		// TL 分の出力値
+		int		eg_level_;	// EG output value
+		int		eg_level_on_next_phase_;	// Value to transition to next eg_phase_
+		int		eg_count_;		// EG phase counter until next stage
+		int		eg_count_diff_;	// eg_count_ increment
+		int		eg_out_;		// EG+TL combined output value
+		int		tl_out_;		// TL current output value
 //		int		pm_depth_;		// PM depth
 //		int		am_depth_;		// AM depth
 		int		eg_rate_;
@@ -157,7 +157,7 @@ namespace FM
 
 		bool	keyon_;
 		bool	amon_;		// enable Amplitude Modulation
-		bool	param_changed_;	// パラメータが更新された
+		bool	param_changed_;	// Parameter has been updated
 		bool	mute_;
 		
 	//	Tables ---------------------------------------------------------------
@@ -219,8 +219,8 @@ namespace FM
 		static const uint8 fbtable[8];
 		uint	fb;
 		int		buf[4];
-		int*	in[3];			// 各 OP の入力ポインタ
-		int*	out[3];			// 各 OP の出力ポインタ
+		int*	in[3];			// Each OP input pointer
+		int*	out[3];			// Each OP output pointer
 		int*	pms;
 		int		algo_;
 		Chip*	chip_;

@@ -2,7 +2,7 @@
 //
 //	X68000 EMULATOR "XM6"
 //
-//	Copyright (C) 2001-2006 ‚o‚hD(ytanaka@ipc-tokai.or.jp)
+//	Copyright (C) 2001-2006 ï¿½oï¿½hï¿½D(ytanaka@ipc-tokai.or.jp)
 //	[ FDD(FD55GFR) ]
 //
 //---------------------------------------------------------------------------
@@ -30,16 +30,16 @@
 
 //---------------------------------------------------------------------------
 //
-//	ƒRƒ“ƒXƒgƒ‰ƒNƒ^
+//	Constructor
 //
 //---------------------------------------------------------------------------
 FDD::FDD(VM *p) : Device(p)
 {
-	// ƒfƒoƒCƒXID‚ğ‰Šú‰»
+	// Device ID generation
 	dev.id = MAKEID('F', 'D', 'D', ' ');
 	dev.desc = "Floppy Drive";
 
-	// ƒIƒuƒWƒFƒNƒg
+	// Objects
 	fdc = NULL;
 	iosc = NULL;
 	rtc = NULL;
@@ -47,7 +47,7 @@ FDD::FDD(VM *p) : Device(p)
 
 //---------------------------------------------------------------------------
 //
-//	‰Šú‰»
+//	Initialization
 //
 //---------------------------------------------------------------------------
 BOOL FASTCALL FDD::Init()
@@ -57,28 +57,28 @@ BOOL FASTCALL FDD::Init()
 
 	ASSERT(this);
 
-	// Šî–{ƒNƒ‰ƒX
+	// Base class
 	if (!Device::Init()) {
 		return FALSE;
 	}
 
-	// FDCæ“¾
+	// Get FDC
 	fdc = (FDC*)vm->SearchDevice(MAKEID('F', 'D', 'C', ' '));
 	ASSERT(fdc);
 
-	// IOSCæ“¾
+	// Get IOSC
 	iosc = (IOSC*)vm->SearchDevice(MAKEID('I', 'O', 'S', 'C'));
 	ASSERT(iosc);
 
-	// ƒXƒPƒWƒ…[ƒ‰æ“¾
+	// Get scheduler
 	scheduler = (Scheduler*)vm->SearchDevice(MAKEID('S', 'C', 'H', 'E'));
 	ASSERT(scheduler);
 
-	// RTCæ“¾
+	// Get RTC
 	rtc = (RTC*)vm->SearchDevice(MAKEID('R', 'T', 'C', ' '));
 	ASSERT(rtc);
 
-	// ƒhƒ‰ƒCƒu•Ê‚Ì‰Šú‰»
+	// Drive unit initialization
 	for (i=0; i<4; i++) {
 		drv[i].fdi = new FDI(this);
 		drv[i].next = NULL;
@@ -91,10 +91,10 @@ BOOL FASTCALL FDD::Init()
 		drv[i].access = FALSE;
 	}
 
-	// ApplyCfg•”•ª
+	// ApplyCfg area
 	fdd.fast = FALSE;
 
-	// ‹¤’Ê•”•ª‚Ì‰Šú‰»
+	// Common variable initialization
 	fdd.motor = FALSE;
 	fdd.settle = FALSE;
 	fdd.force = FALSE;
@@ -102,21 +102,21 @@ BOOL FASTCALL FDD::Init()
 	fdd.selected = 0;
 	fdd.hd = TRUE;
 
-	// ƒV[ƒNƒCƒxƒ“ƒg‰Šú‰»
+	// Seek event initialization
 	seek.SetDevice(this);
 	seek.SetDesc("Seek");
 	seek.SetUser(0);
 	seek.SetTime(0);
 	scheduler->AddEvent(&seek);
 
-	// ‰ñ“]”ƒCƒxƒ“ƒg‰Šú‰»(ƒZƒgƒŠƒ“ƒOŒ“—p)
+	// Rotation event initialization (spin-down)
 	rotation.SetDevice(this);
 	rotation.SetDesc("Rotation Stopped");
 	rotation.SetUser(1);
 	rotation.SetTime(0);
 	scheduler->AddEvent(&rotation);
 
-	// ƒCƒWƒFƒNƒgƒCƒxƒ“ƒg‰Šú‰»(Œë‘}“üŒ“—p)
+	// Eject event initialization (media change)
 	eject.SetDevice(this);
 	eject.SetDesc("Eject");
 	eject.SetUser(2);
@@ -128,7 +128,7 @@ BOOL FASTCALL FDD::Init()
 
 //---------------------------------------------------------------------------
 //
-//	ƒNƒŠ[ƒ“ƒAƒbƒv
+//	Cleanup
 //
 //---------------------------------------------------------------------------
 void FASTCALL FDD::Cleanup()
@@ -137,7 +137,7 @@ void FASTCALL FDD::Cleanup()
 
 	ASSERT(this);
 
-	// ƒCƒ[ƒWƒtƒ@ƒCƒ‹‚ğ‰ğ•ú
+	// Delete FDI files
 	for (i=0; i<4; i++) {
 		if (drv[i].fdi) {
 			delete drv[i].fdi;
@@ -149,13 +149,13 @@ void FASTCALL FDD::Cleanup()
 		}
 	}
 
-	// Šî–{ƒNƒ‰ƒX‚Ö
+	// Base class
 	Device::Cleanup();
 }
 
 //---------------------------------------------------------------------------
 //
-//	ƒŠƒZƒbƒg
+//	Reset
 //
 //---------------------------------------------------------------------------
 void FASTCALL FDD::Reset()
@@ -163,16 +163,16 @@ void FASTCALL FDD::Reset()
 	int i;
 
 	ASSERT(this);
-	LOG0(Log::Normal, "ƒŠƒZƒbƒg");
+	LOG0(Log::Normal, "Reset");
 
-	// ƒhƒ‰ƒCƒu•Ê‚ÌƒŠƒZƒbƒg
+	// Drive unit reset
 	for (i=0; i<4; i++) {
 		drv[i].seeking = FALSE;
 		drv[i].eject = TRUE;
 		drv[i].blink = FALSE;
 		drv[i].access = FALSE;
 
-		// next‚ª‚¢‚ê‚ÎAŠiã‚°
+		// If next exists, swap
 		if (drv[i].next) {
 			delete drv[i].fdi;
 			drv[i].fdi = drv[i].next;
@@ -183,7 +183,7 @@ void FASTCALL FDD::Reset()
 			drv[i].invalid = FALSE;
 		}
 
-		// invalid‚È‚çAƒCƒWƒFƒNƒgó‘Ô
+		// If invalid, recreate
 		if (drv[i].invalid) {
 			delete drv[i].fdi;
 			drv[i].fdi = new FDI(this);
@@ -191,12 +191,12 @@ void FASTCALL FDD::Reset()
 			drv[i].invalid = FALSE;
 		}
 
-		// ƒVƒŠƒ“ƒ_0‚ÖƒV[ƒN
+		// Seek to cylinder 0
 		drv[i].cylinder = 0;
 		drv[i].fdi->Seek(0);
 	}
 
-	// ‹¤’Ê•”•ª‚ÌƒŠƒZƒbƒg(selected‚ÍFDC‚ÌDSR‚Æ‡‚í‚¹‚é–)
+	// Common variable reset (selected matches FDC's DSR mapping)
 	fdd.motor = FALSE;
 	fdd.settle = FALSE;
 	fdd.force = FALSE;
@@ -204,20 +204,20 @@ void FASTCALL FDD::Reset()
 	fdd.selected = 0;
 	fdd.hd = TRUE;
 
-	// ƒV[ƒNƒCƒxƒ“ƒg‚È‚µ(seeking=FALSE)
+	// Clear seek event (seeking=FALSE)
 	seek.SetTime(0);
 
-	// ‰ñ“]”EƒZƒgƒŠƒ“ƒOƒCƒxƒ“ƒg‚È‚µ(motor=FALSE, settle=FALSE)
+	// Clear rotation/spindown event (motor=FALSE, settle=FALSE)
 	rotation.SetDesc("Rotation Stopped");
 	rotation.SetTime(0);
 
-	// ƒCƒWƒFƒNƒgƒCƒxƒ“ƒg‚È‚µ(Šiã‚°•invalid)
+	// Clear eject event (swap invalid)
 	eject.SetTime(0);
 }
 
 //---------------------------------------------------------------------------
 //
-//	ƒZ[ƒu
+//	Save
 //
 //---------------------------------------------------------------------------
 BOOL FASTCALL FDD::Save(Fileio *fio, int ver)
@@ -228,22 +228,22 @@ BOOL FASTCALL FDD::Save(Fileio *fio, int ver)
 	ASSERT(this);
 	ASSERT(fio);
 
-	LOG0(Log::Normal, "ƒZ[ƒu");
+	LOG0(Log::Normal, "Save");
 
-	// ƒhƒ‰ƒCƒuŒÂ•Ê•”•ª‚ğƒZ[ƒu
+	// Save drive unit variable
 	for (i=0; i<4; i++) {
-		// ƒTƒCƒY‚ğƒZ[ƒu
+		// Save size
 		sz = sizeof(drv_t);
 		if (!fio->Write(&sz, sizeof(sz))) {
 			return FALSE;
 		}
 
-		// À‘Ì‚ğƒZ[ƒu
+		// Save body
 		if (!fio->Write(&drv[i], (int)sz)) {
 			return FALSE;
 		}
 
-		// ƒCƒ[ƒW•”•ª‚Í”C‚¹‚é
+		// Image data is variable length
 		if (drv[i].fdi) {
 			if (!drv[i].fdi->Save(fio, ver)) {
 				return FALSE;
@@ -256,7 +256,7 @@ BOOL FASTCALL FDD::Save(Fileio *fio, int ver)
 		}
 	}
 
-	// ‹¤’Ê•”•ª‚ğƒZ[ƒu
+	// Save common variable
 	sz = sizeof(fdd);
 	if (!fio->Write(&sz, sizeof(sz))) {
 		return FALSE;
@@ -265,7 +265,7 @@ BOOL FASTCALL FDD::Save(Fileio *fio, int ver)
 		return FALSE;
 	}
 
-	// ƒCƒxƒ“ƒg‚ğƒZ[ƒu
+	// Save event variable
 	if (!seek.Save(fio, ver)) {
 		return FALSE;
 	}
@@ -281,7 +281,7 @@ BOOL FASTCALL FDD::Save(Fileio *fio, int ver)
 
 //---------------------------------------------------------------------------
 //
-//	ƒ[ƒh
+//	Load
 //
 //---------------------------------------------------------------------------
 BOOL FASTCALL FDD::Load(Fileio *fio, int ver)
@@ -298,11 +298,11 @@ BOOL FASTCALL FDD::Load(Fileio *fio, int ver)
 	ASSERT(this);
 	ASSERT(fio);
 
-	LOG0(Log::Normal, "ƒ[ƒh");
+	LOG0(Log::Normal, "Load");
 
-	// ƒhƒ‰ƒCƒuŒÂ•Ê•”•ª‚ğƒZ[ƒu
+	// Save drive unit variable
 	for (i=0; i<4; i++) {
-		// ƒTƒCƒY‚ğƒ[ƒh
+		// Load size
 		if (!fio->Read(&sz, sizeof(sz))) {
 			return FALSE;
 		}
@@ -310,12 +310,12 @@ BOOL FASTCALL FDD::Load(Fileio *fio, int ver)
 			return FALSE;
 		}
 
-		// À‘Ì‚ğƒ[ƒh
+		// Load body
 		if (!fio->Read(&work, (int)sz)) {
 			return FALSE;
 		}
 
-		// Œ»İ‚ÌƒCƒ[ƒW‚ğ‚·‚×‚Äíœ
+		// Delete current image and reconstruct
 		if (drv[i].fdi) {
 			delete drv[i].fdi;
 			drv[i].fdi = NULL;
@@ -325,75 +325,75 @@ BOOL FASTCALL FDD::Load(Fileio *fio, int ver)
 			drv[i].next = NULL;
 		}
 
-		// “]‘—
+		// Assignment
 		drv[i] = work;
 
-		// ƒCƒ[ƒW•”•ª‚ğÄ\’z
+		// Reconstruct image and reconstruct
 		failed = FALSE;
 		if (drv[i].fdi) {
-			// \’z(Œ»İ‚Ìdrv[i].fdi‚ÍˆÓ–¡‚ğ‚à‚½‚È‚¢‚½‚ß)
+			// Reconstruct (current drv[i].fdi has meaningless data)
 			drv[i].fdi = new FDI(this);
 
-			// ƒ[ƒh‚ğ‚İ‚é
+			// Load result
 			success = FALSE;
 			if (drv[i].fdi->Load(fio, ver, &ready, &media, path)) {
-				// ƒŒƒfƒB‚Ìê‡
+				// If ready
 				if (ready) {
-					// ƒI[ƒvƒ“‚ğ‚İ‚é
+					// Open result
 					if (drv[i].fdi->Open(path, media)) {
-						// ¬Œ÷
+						// Seek
 						drv[i].fdi->Seek(drv[i].cylinder);
 						success = TRUE;
 					}
 					else {
-						// ¸”s(ƒZ[ƒu‚·‚é“_‚ÍƒŒƒfƒB‚¾‚Á‚½‚Ì‚ÅAƒCƒWƒFƒNƒg)
+						// Failure (since save time point was ready, eject)
 						failed = TRUE;
 					}
 				}
 				else {
-					// ƒŒƒfƒB‚Å‚È‚¯‚ê‚ÎAƒ[ƒhOK
+					// If not ready, load OK
 					success = TRUE;
 				}
 			}
 
-			// ¸”s‚µ‚½ê‡A”O‚Ì‚½‚ßÄì¬
+			// If failed, create new one
 			if (!success) {
 				delete drv[i].fdi;
 				drv[i].fdi = new FDI(this);
 			}
 		}
 		if (drv[i].next) {
-			// \’z(Œ»İ‚Ìdrv[i].next‚ÍˆÓ–¡‚ğ‚à‚½‚È‚¢‚½‚ß)
+			// Reconstruct (current drv[i].next has meaningless data)
 			drv[i].next = new FDI(this);
 
-			// ƒ[ƒh‚ğ‚İ‚é
+			// Load result
 			success = FALSE;
 			if (drv[i].next->Load(fio, ver, &ready, &media, path)) {
-				// ƒŒƒfƒB‚Ìê‡
+				// If ready
 				if (ready) {
-					// ƒI[ƒvƒ“‚ğ‚İ‚é
+					// Open result
 					if (drv[i].next->Open(path, media)) {
-						// ¬Œ÷
+						// Seek
 						drv[i].next->Seek(drv[i].cylinder);
 						success = TRUE;
 					}
 				}
 			}
 
-			// ¸”s‚µ‚½ê‡‚ÍAdelete‚µ‚Änext‚ğæ‚èŠO‚·
+			// If failed, delete and clear next
 			if (!success) {
 				delete drv[i].next;
 				drv[i].next = NULL;
 			}
 		}
 
-		// –{‘ÌFDI‚ÌÄƒI[ƒvƒ“‚É¸”s‚µ‚½ê‡A‹­§ƒCƒWƒFƒNƒg‚ğ‹N‚±‚·
+		// If main FDI's open failed due to inconsistency, start eject
 		if (failed) {
 			Eject(i, TRUE);
 		}
 	}
 
-	// ‹¤’Ê•”•ª‚ğƒ[ƒh
+	// Load common variable
 	if (!fio->Read(&sz, sizeof(sz))) {
 		return FALSE;
 	}
@@ -404,7 +404,7 @@ BOOL FASTCALL FDD::Load(Fileio *fio, int ver)
 		return FALSE;
 	}
 
-	// ƒCƒxƒ“ƒg‚ğƒ[ƒh
+	// Load event variable
 	if (!seek.Load(fio, ver)) {
 		return FALSE;
 	}
@@ -420,30 +420,30 @@ BOOL FASTCALL FDD::Load(Fileio *fio, int ver)
 
 //---------------------------------------------------------------------------
 //
-//	İ’è“K—p
+//	Apply configuration
 //
 //---------------------------------------------------------------------------
 void FASTCALL FDD::ApplyCfg(const Config *config)
 {
 	ASSERT(this);
 	ASSERT(config);
-	LOG0(Log::Normal, "İ’è“K—p");
+	LOG0(Log::Normal, "Apply configuration");
 
-	// ‚‘¬ƒ‚[ƒh
+	// Fast mode
 	fdd.fast = config->floppy_speed;
 #if defined(FDD_LOG)
 	if (fdd.fast) {
-		LOG0(Log::Normal, "‚‘¬ƒ‚[ƒh ON");
+		LOG0(Log::Normal, "Fast mode ON");
 	}
 	else {
-		LOG0(Log::Normal, "‚‘¬ƒ‚[ƒh OFF");
+		LOG0(Log::Normal, "Fast mode OFF");
 	}
 #endif	// FDD_LOG
 }
 
 //---------------------------------------------------------------------------
 //
-//	ƒhƒ‰ƒCƒuƒ[ƒNæ“¾
+//	Drive unit reference
 //
 //---------------------------------------------------------------------------
 void FASTCALL FDD::GetDrive(int drive, drv_t *buffer) const
@@ -452,13 +452,13 @@ void FASTCALL FDD::GetDrive(int drive, drv_t *buffer) const
 	ASSERT(buffer);
 	ASSERT((drive >= 0) && (drive <= 3));
 
-	// ƒhƒ‰ƒCƒuƒ[ƒN‚ğƒRƒs[
+	// Copy drive unit reference
 	*buffer = drv[drive];
 }
 
 //---------------------------------------------------------------------------
 //
-//	“à•”ƒ[ƒNæ“¾
+//	FDD unit reference
 //
 //---------------------------------------------------------------------------
 void FASTCALL FDD::GetFDD(fdd_t *buffer) const
@@ -466,13 +466,13 @@ void FASTCALL FDD::GetFDD(fdd_t *buffer) const
 	ASSERT(this);
 	ASSERT(buffer);
 
-	// “à•”ƒ[ƒN‚ğƒRƒs[
+	// Copy FDD unit reference
 	*buffer = fdd;
 }
 
 //---------------------------------------------------------------------------
 //
-//	FDIæ“¾
+//	FDI reference
 //
 //---------------------------------------------------------------------------
 FDI* FASTCALL FDD::GetFDI(int drive)
@@ -480,19 +480,19 @@ FDI* FASTCALL FDD::GetFDI(int drive)
 	ASSERT(this);
 	ASSERT((drive == 0) || (drive == 1));
 
-	// next‚ª‚ ‚ê‚ÎAnext‚ğ—Dæ
+	// If next exists, use next
 	if (drv[drive].next) {
 		return drv[drive].next;
 	}
 
-	// fdi‚Í•K‚¸‘¶İ
+	// fdi is always valid
 	ASSERT(drv[drive].fdi);
 	return drv[drive].fdi;
 }
 
 //---------------------------------------------------------------------------
 //
-//	ƒCƒxƒ“ƒgƒR[ƒ‹ƒoƒbƒN
+//	Event callback
 //
 //---------------------------------------------------------------------------
 BOOL FASTCALL FDD::Callback(Event *ev)
@@ -503,51 +503,51 @@ BOOL FASTCALL FDD::Callback(Event *ev)
 	ASSERT(this);
 	ASSERT(ev);
 
-	// ƒ†[ƒUƒf[ƒ^‚ğó‚¯æ‚é
+	// Receive user data
 	user = ev->GetUser();
 
 	switch (user) {
-		// 0:ƒV[ƒN
+		// 0:Seek
 		case 0:
 			for (i=0; i<4; i++) {
-				// ƒV[ƒN’†‚©
+				// If seeking
 				if (drv[i].seeking) {
-					// ƒV[ƒNŠ®—¹
+					// Seek completion
 					drv[i].seeking = FALSE;
 #if defined(FDD_LOG)
-					LOG1(Log::Normal, "ƒV[ƒNŠ®—¹ ƒhƒ‰ƒCƒu%d", i);
+					LOG1(Log::Normal, "Seek completion drive%d", i);
 #endif	// FDD_LOG
 
-					// ƒŒƒfƒBó‘Ô‚É‚æ‚Á‚Ä•ª‚¯‚é
+					// Set ready and proceed
 					fdc->CompleteSeek(i, IsReady(i));
 				}
 			}
-			// ’P”­‚È‚Ì‚Åbreak
+			// Simple, so break
 			break;
 
-		// 1:‰ñ“]EƒZƒgƒŠƒ“ƒO
+		// 1:Rotation/spindown
 		case 1:
-			// ƒXƒ^ƒ“ƒoƒC’†‚È‚ç’P”­
+			// Spindle not started or OFF
 			if (!fdd.settle && !fdd.motor) {
 				return FALSE;
 			}
 
-			// ƒZƒgƒŠƒ“ƒOŠ®—¹‚©
+			// Spindle startup
 			if (fdd.settle) {
 				fdd.settle = FALSE;
 				fdd.motor = TRUE;
 				fdd.first = TRUE;
 
-				// ‰ñ“]
+				// Rotation
 				Rotation();
 			}
-			// Œp‘±
+			// Resume
 			return TRUE;
 
-		// 2:ƒCƒWƒFƒNƒgEŒë‘}“ü
+		// 2:Eject/media change
 		case 2:
 			for (i=0; i<4; i++) {
-				// Next‚ª‚ ‚ê‚ÎA“ü‚ê‘Ö‚¦
+				// If next exists, swap
 				if (drv[i].next) {
 					delete drv[i].fdi;
 					drv[i].fdi = drv[i].next;
@@ -557,27 +557,27 @@ BOOL FASTCALL FDD::Callback(Event *ev)
 					Insert(i);
 				}
 
-				// invalid‚ÅƒCƒWƒFƒNƒg
+				// Eject with invalid
 				if (drv[i].invalid) {
 					Eject(i, TRUE);
 				}
 			}
-			// ’P”­‚È‚Ì‚Åbreak
+			// Simple, so break
 			break;
 
-		// ‚»‚Ì‘¼(‚ ‚è‚¦‚È‚¢)
+		// Others (unreachable)
 		default:
 			ASSERT(FALSE);
 			break;
 	}
 
-	// ’P”­ˆ—
+	// Done
 	return FALSE;
 }
 
 //---------------------------------------------------------------------------
 //
-//	ƒI[ƒvƒ“
+//	Open
 //
 //---------------------------------------------------------------------------
 BOOL FASTCALL FDD::Open(int drive, const Filepath& path, int media)
@@ -589,38 +589,38 @@ BOOL FASTCALL FDD::Open(int drive, const Filepath& path, int media)
 	ASSERT((media >= 0) && (media < 0x10));
 
 #if defined(FDD_LOG)
-	LOG2(Log::Normal, "ƒfƒBƒXƒNƒI[ƒvƒ“ ƒhƒ‰ƒCƒu%d ƒƒfƒBƒA%d", drive, media);
+	LOG2(Log::Normal, "Open media drive%d media,%d", drive, media);
 #endif	// FDD_LOG
 
-	// FDIì¬+ƒI[ƒvƒ“
+	// Create FDI and open
 	fdi = new FDI(this);
 	if (!fdi->Open(path, media)) {
 		delete fdi;
 		return FALSE;
 	}
 
-	// ƒCƒ[ƒW‚¾‚¯æs‚µ‚ÄƒV[ƒN
+	// Seek current image to set cylinder
 	fdi->Seek(drv[drive].cylinder);
 
-	// Šù‚ÉŸƒCƒ[ƒW‚ª—\–ñ‚³‚ê‚Ä‚¢‚éê‡
+	// If current image is set pending
 	if (drv[drive].next) {
-		// ŸƒCƒ[ƒW‚ğíœ‚µ‚ÄÄ“xƒCƒxƒ“ƒg(300ms)
+		// Delete old image and set new one (300ms)
 		delete drv[drive].next;
 		drv[drive].next = fdi;
 		eject.SetTime(300 * 1000 * 2);
 		return TRUE;
 	}
 
-	// ƒƒfƒBƒA‚ª‚ ‚éê‡
+	// If ready, change
 	if (drv[drive].insert && !drv[drive].invalid) {
-		// ŸƒCƒ[ƒW‚ÉƒZƒbƒg‚µ‚ÄƒCƒWƒFƒNƒgAƒCƒxƒ“ƒg”­s(300ms)
+		// Replace with current image and set eject event (300ms)
 		Eject(drive, FALSE);
 		drv[drive].next = fdi;
 		eject.SetTime(300 * 1000 * 2);
 		return TRUE;
 	}
 
-	// ’Êí‚Í‚»‚Ì‚Ü‚ÜƒCƒ“ƒT[ƒg
+	// Normal uses current
 	delete drv[drive].fdi;
 	drv[drive].fdi = fdi;
 	drv[0].fdi->Adjust();
@@ -631,7 +631,7 @@ BOOL FASTCALL FDD::Open(int drive, const Filepath& path, int media)
 
 //---------------------------------------------------------------------------
 //
-//	ƒfƒBƒXƒN‘}“ü
+//	Media insertion
 //
 //---------------------------------------------------------------------------
 void FASTCALL FDD::Insert(int drive)
@@ -640,30 +640,30 @@ void FASTCALL FDD::Insert(int drive)
 	ASSERT((drive >= 0) && (drive <= 3));
 
 #if defined(FDD_LOG)
-	LOG1(Log::Normal, "ƒfƒBƒXƒN‘}“ü ƒhƒ‰ƒCƒu%d", drive);
+	LOG1(Log::Normal, "Media insertion drive%d", drive);
 #endif	// FDD_LOG
 
-	// ƒV[ƒN‚Íˆê’U‰ğœ
+	// If seeking, cancel
 	if (drv[drive].seeking) {
 		drv[drive].seeking = FALSE;
 		fdc->CompleteSeek(drive, FALSE);
 	}
 
-	// ƒfƒBƒXƒN‘}“ü‚ ‚èAŒë‘}“ü‚È‚µ
+	// Media inserted, not invalid
 	drv[drive].insert = TRUE;
 	drv[drive].invalid = FALSE;
 
-	// Œ»İ‚ÌƒVƒŠƒ“ƒ_‚ÖƒV[ƒN
+	// Seek to current cylinder
 	ASSERT(drv[drive].fdi);
 	drv[drive].fdi->Seek(drv[drive].cylinder);
 
-	// Š„‚è‚İ‚ğ‹N‚±‚·
+	// Generate interrupt
 	iosc->IntFDD(TRUE);
 }
 
 //---------------------------------------------------------------------------
 //
-//	ƒfƒBƒXƒNƒCƒWƒFƒNƒg
+//	Media eject
 //
 //---------------------------------------------------------------------------
 void FASTCALL FDD::Eject(int drive, BOOL force)
@@ -671,51 +671,51 @@ void FASTCALL FDD::Eject(int drive, BOOL force)
 	ASSERT(this);
 	ASSERT((drive >= 0) && (drive <= 3));
 
-	// ‹­§ƒtƒ‰ƒO‚ª—§‚Á‚Ä‚¢‚È‚¯‚ê‚ÎAƒCƒWƒFƒNƒg‹Ö~‚ğl—¶
+	// If not set, reject eject
 	if (!force && !drv[drive].eject) {
 		return;
 	}
 
-	// Šù‚ÉƒCƒWƒFƒNƒg‚³‚ê‚Ä‚¢‚ê‚Î•s—v
+	// If already ejected, invalid
 	if (!drv[drive].insert && !drv[drive].invalid) {
 		return;
 	}
 
 #if defined(FDD_LOG)
-	LOG1(Log::Normal, "ƒfƒBƒXƒNƒCƒWƒFƒNƒg ƒhƒ‰ƒCƒu%d", drive);
+	LOG1(Log::Normal, "Media eject drive%d", drive);
 #endif	// FDD_LOG
 
-	// ƒV[ƒN‚Íˆê’U‰ğœ
+	// Cancel seeking
 	if (drv[drive].seeking) {
 		drv[drive].seeking = FALSE;
 		fdc->CompleteSeek(drive, FALSE);
 	}
 
-	// ƒCƒ[ƒWƒtƒ@ƒCƒ‹‚ğFDI‚É“ü‚ê‘Ö‚¦‚é
+	// Replace image file with empty FDI
 	ASSERT(drv[drive].fdi);
 	delete drv[drive].fdi;
 	drv[drive].fdi = new FDI(this);
 
-	// ƒfƒBƒXƒN‘}“ü‚È‚µAŒë‘}“ü‚È‚µ
+	// Not inserted, not invalid
 	drv[drive].insert = FALSE;
 	drv[drive].invalid = FALSE;
 
-	// ƒAƒNƒZƒX‚È‚µ(LEDã‚Ì“s‡)
+	// Not accessible (LED off)
 	drv[drive].access = FALSE;
 
-	// next‚Íˆê’U‰ğœ
+	// Clear next
 	if (drv[drive].next) {
 		delete drv[drive].next;
 		drv[drive].next = NULL;
 	}
 
-	// Š„‚è‚İ‚ğ‹N‚±‚·
+	// Generate interrupt
 	iosc->IntFDD(TRUE);
 }
 
 //---------------------------------------------------------------------------
 //
-//	ƒfƒBƒXƒNŒë‘}“ü
+//	Media invalidation
 //
 //---------------------------------------------------------------------------
 void FASTCALL FDD::Invalid(int drive)
@@ -724,40 +724,40 @@ void FASTCALL FDD::Invalid(int drive)
 	ASSERT((drive >= 0) && (drive <= 3));
 
 #if defined(FDD_LOG)
-	LOG1(Log::Normal, "ƒfƒBƒXƒNŒë‘}“ü ƒhƒ‰ƒCƒu%d", drive);
+	LOG1(Log::Normal, "Media invalidation drive%d", drive);
 #endif	// FDD_LOG
 
-	// Šù‚ÉŒë‘}“ü‚Å‚ ‚ê‚Î•s—v
+	// If already invalidated, invalid
 	if (drv[drive].insert && drv[drive].invalid) {
 		return;
 	}
 
-	// ƒV[ƒN‚Íˆê’U‰ğœ
+	// Cancel seeking
 	if (drv[drive].seeking) {
 		drv[drive].seeking = FALSE;
 		fdc->CompleteSeek(drive, FALSE);
 	}
 
-	// ƒfƒBƒXƒN‘}“ü‚ ‚èAŒë‘}“ü‚ ‚è
+	// Media inserted, invalidated
 	drv[drive].insert = TRUE;
 	drv[drive].invalid = TRUE;
 
-	// next‚Íˆê’U‰ğœ
+	// Clear next
 	if (drv[drive].next) {
 		delete drv[drive].next;
 		drv[drive].next = NULL;
 	}
 
-	// Š„‚è‚İ‚ğ‹N‚±‚·
+	// Generate interrupt
 	iosc->IntFDD(TRUE);
 
-	// ƒCƒxƒ“ƒg‚ğİ’è(300ms)
+	// Set event (300ms)
 	eject.SetTime(300 * 1000 * 2);
 }
 
 //---------------------------------------------------------------------------
 //
-//	ƒhƒ‰ƒCƒuƒRƒ“ƒgƒ[ƒ‹
+//	Drive control
 //
 //---------------------------------------------------------------------------
 void FASTCALL FDD::Control(int drive, DWORD func)
@@ -765,12 +765,12 @@ void FASTCALL FDD::Control(int drive, DWORD func)
 	ASSERT(this);
 	ASSERT((drive >= 0) && (drive <= 3));
 
-	// bit7 - LED§Œä
+	// bit7 - LED blink
 	if (func & 0x80) {
 		if (!drv[drive].blink) {
-			// “_–Å‚È‚µ¨“_–Å‚ ‚è
+			// Blink on
 #if defined(FDD_LOG)
-			LOG1(Log::Normal, "LED“_–Å‚ ‚è ƒhƒ‰ƒCƒu%d", drive);
+			LOG1(Log::Normal, "LED blink on drive%d", drive);
 #endif	// FDD_LOG
 			drv[drive].blink = TRUE;
 		}
@@ -779,11 +779,11 @@ void FASTCALL FDD::Control(int drive, DWORD func)
 		drv[drive].blink = FALSE;
 	}
 
-	// bit6 - ƒCƒWƒFƒNƒg—LŒø
+	// bit6 - Eject inhibit
 	if (func & 0x40) {
 		if (drv[drive].eject) {
 #if defined(FDD_LOG)
-			LOG1(Log::Normal, "ƒCƒWƒFƒNƒg‹Ö~ ƒhƒ‰ƒCƒu%d", drive);
+			LOG1(Log::Normal, "Eject inhibit drive%d", drive);
 #endif	// FDD_LOG
 			drv[drive].eject = FALSE;
 		}
@@ -792,7 +792,7 @@ void FASTCALL FDD::Control(int drive, DWORD func)
 		drv[drive].eject = TRUE;
 	}
 
-	// bit5 - ƒCƒWƒFƒNƒg
+	// bit5 - Eject
 	if (func & 0x20) {
 		Eject(drive, TRUE);
 	}
@@ -800,7 +800,7 @@ void FASTCALL FDD::Control(int drive, DWORD func)
 
 //---------------------------------------------------------------------------
 //
-//	‹­§ƒŒƒfƒB
+//	Force ready
 //
 //---------------------------------------------------------------------------
 void FASTCALL FDD::ForceReady(BOOL flag)
@@ -809,20 +809,20 @@ void FASTCALL FDD::ForceReady(BOOL flag)
 
 #if defined(FDD_LOG)
 	if (flag) {
-		LOG0(Log::Normal, "‹­§ƒŒƒfƒB ON");
+		LOG0(Log::Normal, "Force ready ON");
 	}
 	else {
-		LOG0(Log::Normal, "‹­§ƒŒƒfƒB OFF");
+		LOG0(Log::Normal, "Force ready OFF");
 	}
 #endif	// FDD_LOG
 
-	// ƒZƒbƒg‚Ì‚İ
+	// Reset only
 	fdd.force = flag;
 }
 
 //---------------------------------------------------------------------------
 //
-//	‰ñ“]ˆÊ’uæ“¾
+//	Get rotation position
 //
 //---------------------------------------------------------------------------
 DWORD FASTCALL FDD::GetRotationPos() const
@@ -832,34 +832,34 @@ DWORD FASTCALL FDD::GetRotationPos() const
 
 	ASSERT(this);
 
-	// ’â~‚µ‚Ä‚¢‚ê‚Î0
+	// If stopped, 0
 	if (rotation.GetTime() == 0) {
 		return 0;
 	}
 
-	// ‰ñ“]”‚ğ“¾‚é
+	// Get rotation time
 	hus = GetRotationTime();
 
-	// ƒ_ƒEƒ“ƒJƒEƒ“ƒ^‚ğ“¾‚é
+	// Get countdown counter
 	remain = rotation.GetRemain();
 	if (remain > hus) {
 		remain = 0;
 	}
 
-	// ‹t‡‚É
+	// Return difference
 	return (DWORD)(hus - remain);
 }
 
 //---------------------------------------------------------------------------
 //
-//	‰ñ“]ŠÔæ“¾
+//	Get rotation time
 //
 //---------------------------------------------------------------------------
 DWORD FASTCALL FDD::GetRotationTime() const
 {
 	ASSERT(this);
 
-	// 2HD‚Í360rpmA2DD‚Í300rpm
+	// 2HD is 360rpm, 2DD is 300rpm
 	if (fdd.hd) {
 		return 333333;
 	}
@@ -870,7 +870,7 @@ DWORD FASTCALL FDD::GetRotationTime() const
 
 //---------------------------------------------------------------------------
 //
-//	‰ñ“]
+//	Rotation
 //
 //---------------------------------------------------------------------------
 void FASTCALL FDD::Rotation()
@@ -893,7 +893,7 @@ void FASTCALL FDD::Rotation()
 
 //---------------------------------------------------------------------------
 //
-//	ŒŸõŠÔæ“¾
+//	Get seek time
 //
 //---------------------------------------------------------------------------
 DWORD FASTCALL FDD::GetSearch()
@@ -902,12 +902,12 @@ DWORD FASTCALL FDD::GetSearch()
 
 	ASSERT(this);
 
-	// ‚‘¬ƒ‚[ƒh‚Í64usŒÅ’è
+	// If fast mode, 64us fixed
 	if (fdd.fast) {
 		return 128;
 	}
 
-	// ƒCƒ[ƒWƒtƒ@ƒCƒ‹‚É•·‚­
+	// Ask image file
 	schtime = drv[ fdd.selected ].fdi->GetSearch();
 
 	return schtime;
@@ -915,7 +915,7 @@ DWORD FASTCALL FDD::GetSearch()
 
 //---------------------------------------------------------------------------
 //
-//	HDİ’è
+//	HD setting
 //
 //---------------------------------------------------------------------------
 void FASTCALL FDD::SetHD(BOOL hd)
@@ -928,7 +928,7 @@ void FASTCALL FDD::SetHD(BOOL hd)
 			return;
 		}
 #if defined(FDD_LOG)
-		LOG0(Log::Normal, "ƒhƒ‰ƒCƒu–§“x•ÏX 2HD");
+		LOG0(Log::Normal, "Drive speed change 2HD");
 #endif	// FDD_LOG
 		fdd.hd = TRUE;
 	}
@@ -937,23 +937,23 @@ void FASTCALL FDD::SetHD(BOOL hd)
 			return;
 		}
 #if defined(FDD_LOG)
-		LOG0(Log::Normal, "ƒhƒ‰ƒCƒu–§“x•ÏX 2DD");
+		LOG0(Log::Normal, "Drive speed change 2DD");
 #endif	// FDD_LOG
 		fdd.hd = FALSE;
 	}
 
-	// ƒ‚[ƒ^“®ì’†‚È‚çA‘¬“x•ÏX
+	// If motor off, change speed
 	if (!fdd.motor || fdd.settle) {
 		return;
 	}
 
-	// ‰ñ“]‚ğÄİ’è
+	// Rotate and set
 	Rotation();
 }
 
 //---------------------------------------------------------------------------
 //
-//	HDæ“¾
+//	HD reference
 //
 //---------------------------------------------------------------------------
 BOOL FASTCALL FDD::IsHD() const
@@ -965,7 +965,7 @@ BOOL FASTCALL FDD::IsHD() const
 
 //---------------------------------------------------------------------------
 //
-//	ƒAƒNƒZƒXLEDİ’è
+//	Access LED setting
 //
 //---------------------------------------------------------------------------
 void FASTCALL FDD::Access(BOOL flag)
@@ -974,12 +974,12 @@ void FASTCALL FDD::Access(BOOL flag)
 
 	ASSERT(this);
 
-	// ‚·‚×‚Ä‰º‚ë‚·
+	// All off
 	for (i=0; i<4; i++) {
 		drv[i].access = FALSE;
 	}
 
-	// flag‚ªã‚ª‚Á‚Ä‚¢‚ê‚ÎAƒZƒŒƒNƒgƒhƒ‰ƒCƒu‚ª—LŒø
+	// If flag is on, set selected drive
 	if (flag) {
 		drv[ fdd.selected ].access = TRUE;
 	}
@@ -987,7 +987,7 @@ void FASTCALL FDD::Access(BOOL flag)
 
 //---------------------------------------------------------------------------
 //
-//	ƒŒƒfƒBƒ`ƒFƒbƒN
+//	Ready check
 //
 //---------------------------------------------------------------------------
 BOOL FASTCALL FDD::IsReady(int drive, BOOL fdc) const
@@ -995,31 +995,31 @@ BOOL FASTCALL FDD::IsReady(int drive, BOOL fdc) const
 	ASSERT(this);
 	ASSERT((drive >= 0) && (drive <= 3));
 
-	// FDC‚©‚ç‚ÌƒAƒNƒZƒX‚È‚ç
+	// If FDC side access
 	if (fdc) {
-		// ‹­§ƒŒƒfƒB‚È‚çƒŒƒfƒB
+		// Force ready overrides ready
 		if (fdd.force) {
 			return TRUE;
 		}
 
-		// ƒ‚[ƒ^ƒIƒt‚È‚çƒmƒbƒgƒŒƒfƒB
+		// Motor off means not ready
 		if (!fdd.motor) {
 			return FALSE;
 		}
 	}
 
-	// next‚ª‚ ‚ê‚ÎAnext‚ğ—Dæ
+	// If next exists, use next
 	if (drv[drive].next) {
 		return drv[drive].next->IsReady();
 	}
 
-	// ƒCƒ[ƒWƒtƒ@ƒCƒ‹‚É•·‚­
+	// Ask image file
 	return drv[drive].fdi->IsReady();
 }
 
 //---------------------------------------------------------------------------
 //
-//	‘‚«‚İ‹Ö~ƒ`ƒFƒbƒN
+//	Write protect check
 //
 //---------------------------------------------------------------------------
 BOOL FASTCALL FDD::IsWriteP(int drive) const
@@ -1027,18 +1027,18 @@ BOOL FASTCALL FDD::IsWriteP(int drive) const
 	ASSERT(this);
 	ASSERT((drive >= 0) && (drive <= 3));
 
-	// next‚ª‚ ‚ê‚ÎAnext‚ğ—Dæ
+	// If next exists, use next
 	if (drv[drive].next) {
 		return drv[drive].next->IsWriteP();
 	}
 
-	// ƒCƒ[ƒWƒtƒ@ƒCƒ‹‚É•·‚­
+	// Ask image file
 	return drv[drive].fdi->IsWriteP();
 }
 
 //---------------------------------------------------------------------------
 //
-//	Read Onlyƒ`ƒFƒbƒN
+//	Read only check
 //
 //---------------------------------------------------------------------------
 BOOL FASTCALL FDD::IsReadOnly(int drive) const
@@ -1046,18 +1046,18 @@ BOOL FASTCALL FDD::IsReadOnly(int drive) const
 	ASSERT(this);
 	ASSERT((drive >= 0) && (drive <= 3));
 
-	// next‚ª‚ ‚ê‚ÎAnext‚ğ—Dæ
+	// If next exists, use next
 	if (drv[drive].next) {
 		return drv[drive].next->IsReadOnly();
 	}
 
-	// ƒCƒ[ƒWƒtƒ@ƒCƒ‹‚É•·‚­
+	// Ask image file
 	return drv[drive].fdi->IsReadOnly();
 }
 
 //---------------------------------------------------------------------------
 //
-//	‘‚«‚İ‹Ö~
+//	Write protect
 //
 //---------------------------------------------------------------------------
 void FASTCALL FDD::WriteP(int drive, BOOL flag)
@@ -1065,13 +1065,13 @@ void FASTCALL FDD::WriteP(int drive, BOOL flag)
 	ASSERT(this);
 	ASSERT((drive >= 0) && (drive <= 3));
 
-	// ƒCƒ[ƒWƒtƒ@ƒCƒ‹‚Åˆ—
+	// Set in image file
 	drv[drive].fdi->WriteP(flag);
 }
 
 //---------------------------------------------------------------------------
 //
-//	ƒhƒ‰ƒCƒuƒXƒe[ƒ^ƒXæ“¾
+//	Drive status reference
 //
 //	b7 : Insert
 //	b6 : Invalid Insert
@@ -1089,45 +1089,45 @@ int FASTCALL FDD::GetStatus(int drive) const
 	ASSERT(this);
 	ASSERT((drive >= 0) && (drive <= 3));
 
-	// ƒNƒŠƒA
+	// Clear
 	st = 0;
 
-	// bit7 - ‘}“ü
+	// bit7 - Inserted
 	if (drv[drive].insert) {
 		st |= FDST_INSERT;
 	}
 
-	// bit6 - Œë‘}“ü(‘}“ü‚ğŠÜ‚Ş)
+	// bit6 - Invalid (inserted though)
 	if (drv[drive].invalid) {
 		st |= FDST_INVALID;
 	}
 
-	// bit5 - ƒCƒWƒFƒNƒg‚Å‚«‚é
+	// bit5 - Can eject
 	if (drv[drive].eject) {
 		st |= FDST_EJECT;
 	}
 
-	// bit4 - “_–Å(ƒOƒ[ƒoƒ‹A‘}“ü‚ğŠÜ‚Ü‚È‚¢)
+	// bit4 - Blink (global, not inserted)
 	if (drv[drive].blink && !drv[drive].insert) {
 		st |= FDST_BLINK;
 
-		// bit3 - “_–Å(Œ»İ)
+		// bit3 - Blink (current)
 		if (rtc->GetBlink(drive)) {
 			st |= FDST_CURRENT;
 		}
 	}
 
-	// bit2 - ƒ‚[ƒ^
+	// bit2 - Motor
 	if (fdd.motor) {
 		st |= FDST_MOTOR;
 	}
 
-	// bit1 - ƒZƒŒƒNƒg
+	// bit1 - Select
 	if (drive == fdd.selected) {
 		st |= FDST_SELECT;
 	}
 
-	// bit0 - ƒAƒNƒZƒX
+	// bit0 - Access
 	if (drv[drive].access) {
 		st |= FDST_ACCESS;
 	}
@@ -1137,7 +1137,7 @@ int FASTCALL FDD::GetStatus(int drive) const
 
 //---------------------------------------------------------------------------
 //
-//	ƒ‚[ƒ^İ’è{ƒhƒ‰ƒCƒuƒZƒŒƒNƒg
+//	Motor setting function and drive select
 //
 //---------------------------------------------------------------------------
 void FASTCALL FDD::SetMotor(int drive, BOOL flag)
@@ -1145,58 +1145,58 @@ void FASTCALL FDD::SetMotor(int drive, BOOL flag)
 	ASSERT(this);
 	ASSERT((drive >= 0) && (drive <= 3));
 
-	// flag=FALSE‚È‚çŠÈ’P
+	// flag=FALSE is simple
 	if (!flag) {
-		// ‚·‚Å‚ÉOFF‚È‚ç•K—v‚È‚¢
+		// If already OFF, unnecessary
 		if (!fdd.motor) {
 			return;
 		}
 #if defined(FDD_LOG)
-		LOG0(Log::Normal, "ƒ‚[ƒ^OFF");
+		LOG0(Log::Normal, "Motor OFF");
 #endif	// FDD_LOG
 
-		// ƒ‚[ƒ^’â~
+		// Motor stop
 		fdd.motor = FALSE;
 		fdd.settle = FALSE;
 
-		// ƒZƒŒƒNƒgƒhƒ‰ƒCƒuİ’è
+		// Set selected drive
 		fdd.selected = drive;
 
-		// ƒXƒ^ƒ“ƒoƒCƒCƒxƒ“ƒg‚ğİ’è
+		// Set spindown event
 		rotation.SetDesc("Standby 54000ms");
 		rotation.SetTime(54 * 1000 * 2 * 1000);
 		return;
 	}
 
-	// ƒZƒŒƒNƒgƒhƒ‰ƒCƒuİ’è
+	// Set selected drive
 	fdd.selected = drive;
 
-	// ƒ‚[ƒ^ON‚Ü‚½‚ÍƒZƒgƒŠƒ“ƒO’†‚È‚ç–â‘è‚È‚µ
+	// If motor ON or settling, unnecessary
 	if (fdd.motor || fdd.settle) {
 		return;
 	}
 
 #if defined(FDD_LOG)
-	LOG1(Log::Normal, "ƒ‚[ƒ^ON ƒhƒ‰ƒCƒu%dƒZƒŒƒNƒg", drive);
+	LOG1(Log::Normal, "Motor ON drive%d select", drive);
 #endif	// FDD_LOG
 
-	// ‚±‚±‚ÅƒCƒxƒ“ƒg‚ª“®‚¢‚Ä‚¢‚ê‚ÎAƒXƒ^ƒ“ƒoƒC’†
+	// If event already running, spindle start
 	if (rotation.GetTime() != 0) {
-		// ‘¦ƒ‚[ƒ^ON
+		// Motor ON
 		fdd.settle = FALSE;
 		fdd.motor = TRUE;
 		fdd.first = TRUE;
 
-		// ‰ñ“]
+		// Rotation
 		Rotation();
 		return;
 	}
 
-	// ƒ‚[ƒ^OFFAƒZƒgƒŠƒ“ƒO’†
+	// Motor OFF, settling
 	fdd.motor = FALSE;
 	fdd.settle = TRUE;
 
-	// ƒZƒgƒŠƒ“ƒOƒCƒxƒ“ƒg‚ğİ’è(‚‘¬ƒ‚[ƒh64usA’Êíƒ‚[ƒh384ms)
+	// Set spindown event (settle mode 64us, normal mode 384ms)
 	rotation.SetDesc("Settle 384ms");
 	if (fdd.fast) {
 		rotation.SetTime(128);
@@ -1208,7 +1208,7 @@ void FASTCALL FDD::SetMotor(int drive, BOOL flag)
 
 //---------------------------------------------------------------------------
 //
-//	ƒVƒŠƒ“ƒ_æ“¾
+//	Get cylinder
 //
 //---------------------------------------------------------------------------
 int FASTCALL FDD::GetCylinder(int drive) const
@@ -1216,13 +1216,13 @@ int FASTCALL FDD::GetCylinder(int drive) const
 	ASSERT(this);
 	ASSERT((drive >= 0) && (drive <= 3));
 
-	// ƒ[ƒN‚ğ•Ô‚·
+	// Return cylinder
 	return drv[drive].cylinder;
 }
 
 //---------------------------------------------------------------------------
 //
-//	ƒfƒBƒXƒN–¼æ“¾
+//	Get media name
 //
 //---------------------------------------------------------------------------
 void FASTCALL FDD::GetName(int drive, char *buf, int media) const
@@ -1232,19 +1232,19 @@ void FASTCALL FDD::GetName(int drive, char *buf, int media) const
 	ASSERT(buf);
 	ASSERT((media >= -1) && (media < 0x10));
 
-	// next‚ª‚ ‚ê‚ÎAnext‚ğ—Dæ
+	// If next exists, use next
 	if (drv[drive].next) {
 		drv[drive].next->GetName(buf, media);
 		return;
 	}
 
-	// ƒCƒ[ƒW‚É•·‚­
+	// Ask image
 	drv[drive].fdi->GetName(buf, media);
 }
 
 //---------------------------------------------------------------------------
 //
-//	ƒpƒXæ“¾
+//	Get path
 //
 //---------------------------------------------------------------------------
 void FASTCALL FDD::GetPath(int drive, Filepath& path) const
@@ -1252,19 +1252,19 @@ void FASTCALL FDD::GetPath(int drive, Filepath& path) const
 	ASSERT(this);
 	ASSERT((drive >= 0) && (drive <= 3));
 
-	// next‚ª‚ ‚ê‚ÎAnext‚ğ—Dæ
+	// If next exists, use next
 	if (drv[drive].next) {
 		drv[drive].next->GetPath(path);
 		return;
 	}
 
-	// ƒCƒ[ƒW‚É•·‚­
+	// Ask image
 	drv[drive].fdi->GetPath(path);
 }
 
 //---------------------------------------------------------------------------
 //
-//	ƒfƒBƒXƒN–‡”æ“¾
+//	Get number of sides
 //
 //---------------------------------------------------------------------------
 int FASTCALL FDD::GetDisks(int drive) const
@@ -1272,18 +1272,18 @@ int FASTCALL FDD::GetDisks(int drive) const
 	ASSERT(this);
 	ASSERT((drive >= 0) && (drive <= 3));
 
-	// next‚ª‚ ‚ê‚ÎAnext‚ğ—Dæ
+	// If next exists, use next
 	if (drv[drive].next) {
 		return drv[drive].next->GetDisks();
 	}
 
-	// ƒCƒ[ƒW‚É•·‚­
+	// Ask image
 	return drv[drive].fdi->GetDisks();
 }
 
 //---------------------------------------------------------------------------
 //
-//	ƒJƒŒƒ“ƒgƒƒfƒBƒA”Ô†æ“¾
+//	Get current media type
 //
 //---------------------------------------------------------------------------
 int FASTCALL FDD::GetMedia(int drive) const
@@ -1291,41 +1291,41 @@ int FASTCALL FDD::GetMedia(int drive) const
 	ASSERT(this);
 	ASSERT((drive >= 0) && (drive <= 3));
 
-	// next‚ª‚ ‚ê‚ÎAnext‚ğ—Dæ
+	// If next exists, use next
 	if (drv[drive].next) {
 		return drv[drive].next->GetMedia();
 	}
 
-	// ƒCƒ[ƒW‚É•·‚­
+	// Ask image
 	return drv[drive].fdi->GetMedia();
 }
 
 //---------------------------------------------------------------------------
 //
-//	ƒŠƒLƒƒƒŠƒuƒŒ[ƒg
+//	Recalibrate
 //
 //---------------------------------------------------------------------------
 void FASTCALL FDD::Recalibrate(DWORD srt)
 {
 	ASSERT(this);
 
-	// ˆê’vƒ`ƒFƒbƒN
+	// Validity check
 	if (drv[ fdd.selected ].cylinder == 0) {
 		fdc->CompleteSeek(fdd.selected, IsReady(fdd.selected));
 		return;
 	}
 
 #if defined(FDD_LOG)
-	LOG1(Log::Normal, "ƒŠƒLƒƒƒŠƒuƒŒ[ƒg ƒhƒ‰ƒCƒu%d", fdd.selected);
+	LOG1(Log::Normal, "Recalibrate drive%d", fdd.selected);
 #endif	// FDD_LOG
 
-	// fdd[drive].cylinder‚¾‚¯ƒXƒeƒbƒvƒAƒEƒg
+	// fdd[drive].cylinder from step-out
 	StepOut(drv[ fdd.selected ].cylinder, srt);
 }
 
 //---------------------------------------------------------------------------
 //
-//	ƒXƒeƒbƒvƒCƒ“
+//	Step in
 //
 //---------------------------------------------------------------------------
 void FASTCALL FDD::StepIn(int step, DWORD srt)
@@ -1335,31 +1335,31 @@ void FASTCALL FDD::StepIn(int step, DWORD srt)
 	ASSERT(this);
 	ASSERT((step >= 0) && (step < 256));
 
-	// ƒXƒeƒbƒvƒCƒ“
+	// Step in
 	cylinder = drv[ fdd.selected ].cylinder;
 	cylinder += step;
 	if (cylinder >= 82) {
 		cylinder = 81;
 	}
 
-	// ˆê’vƒ`ƒFƒbƒN
+	// Validity check
 	if (drv[ fdd.selected ].cylinder == cylinder) {
-		// ‚·‚®Š„‚è‚İ‚ğo‚·
+		// Generate seek interrupt
 		fdc->CompleteSeek(fdd.selected, IsReady(fdd.selected));
 		return;
 	}
 
 #if defined(FDD_LOG)
-	LOG2(Log::Normal, "ƒXƒeƒbƒvƒCƒ“ ƒhƒ‰ƒCƒu%d ƒXƒeƒbƒv%d", fdd.selected, step);
+	LOG2(Log::Normal, "Step in drive%d step%d", fdd.selected, step);
 #endif	// FDD_LOG
 
-	// ƒV[ƒN‹¤’Ê‚Ö
+	// Seek execution
 	SeekInOut(cylinder, srt);
 }
 
 //---------------------------------------------------------------------------
 //
-//	ƒXƒeƒbƒvƒAƒEƒg
+//	Step out
 //
 //---------------------------------------------------------------------------
 void FASTCALL FDD::StepOut(int step, DWORD srt)
@@ -1369,30 +1369,30 @@ void FASTCALL FDD::StepOut(int step, DWORD srt)
 	ASSERT(this);
 	ASSERT((step >= 0) && (step < 256));
 
-	// ƒXƒeƒbƒvƒAƒEƒg
+	// Step out
 	cylinder = drv[ fdd.selected ].cylinder;
 	cylinder -= step;
 	if (cylinder < 0) {
 		cylinder = 0;
 	}
 
-	// ˆê’vƒ`ƒFƒbƒN
+	// Validity check
 	if (drv[ fdd.selected ].cylinder == cylinder) {
 		fdc->CompleteSeek(fdd.selected, IsReady(fdd.selected));
 		return;
 	}
 
 #if defined(FDD_LOG)
-	LOG2(Log::Normal, "ƒXƒeƒbƒvƒAƒEƒg ƒhƒ‰ƒCƒu%d ƒXƒeƒbƒv%d", fdd.selected, step);
+	LOG2(Log::Normal, "Step out drive%d step%d", fdd.selected, step);
 #endif	// FDD_LOG
 
-	// ƒV[ƒN‹¤’Ê‚Ö
+	// Seek execution
 	SeekInOut(cylinder, srt);
 }
 
 //---------------------------------------------------------------------------
 //
-//	ƒV[ƒN‹¤’Ê
+//	Seek execution
 //
 //---------------------------------------------------------------------------
 void FASTCALL FDD::SeekInOut(int cylinder, DWORD srt)
@@ -1402,7 +1402,7 @@ void FASTCALL FDD::SeekInOut(int cylinder, DWORD srt)
 	ASSERT(this);
 	ASSERT((cylinder >= 0) && (cylinder < 82));
 
-	// ƒXƒeƒbƒv”‚ğŒvZ
+	// Calculate step count
 	ASSERT(drv[ fdd.selected ].cylinder != cylinder);
 	if (drv[ fdd.selected ].cylinder < cylinder) {
 		step = cylinder - drv[ fdd.selected ].cylinder;
@@ -1411,21 +1411,21 @@ void FASTCALL FDD::SeekInOut(int cylinder, DWORD srt)
 		step = drv[ fdd.selected ].cylinder - cylinder;
 	}
 
-	// æ‚ÉƒV[ƒN“®ì‚ğs‚Á‚Ä‚µ‚Ü‚¤(Às’†ƒtƒ‰ƒO‚Í—§‚Ä‚é)
+	// Seek now (seek flag is left as is)
 	drv[ fdd.selected ].cylinder = cylinder;
 	drv[ fdd.selected ].fdi->Seek(cylinder);
 	drv[ fdd.selected ].seeking = TRUE;
 
-	// ƒCƒxƒ“ƒgİ’è(SRT * ƒXƒeƒbƒv” + 0.64ms)
+	// Set event (SRT * step count + 0.64ms)
 	if (fdd.fast) {
-		// ‚‘¬ƒ‚[ƒh‚Í64usŒÅ’è
+		// Fast mode fixes at 64us
 		seek.SetTime(128);
 	}
 	else {
 		srt *= step;
 		srt += 1280;
 
-		// ƒ‚[ƒ^ONŒã‚Ì‰‰ñ‚Í128ms‚ğ‰Á‚¦‚é
+		// Motor ON additional time is 128ms
 		if (fdd.first) {
 			srt += (128 * 0x800);
 			fdd.first = FALSE;
@@ -1436,13 +1436,13 @@ void FASTCALL FDD::SeekInOut(int cylinder, DWORD srt)
 
 //---------------------------------------------------------------------------
 //
-//	ƒŠ[ƒhID
-//	¦Ÿ‚ÌƒXƒe[ƒ^ƒX‚ğ•Ô‚·(ƒGƒ‰[‚ÍOR‚³‚ê‚é)
-//		FDD_NOERROR		ƒGƒ‰[‚È‚µ
-//		FDD_NOTREADY	ƒmƒbƒgƒŒƒfƒB
-//		FDD_MAM			w’è–§“x‚Å‚ÍƒAƒ“ƒtƒH[ƒ}ƒbƒg
-//		FDD_NODATA		w’è–§“x‚Å‚ÍƒAƒ“ƒtƒH[ƒ}ƒbƒg‚©A
-//						‚Ü‚½‚Í—LŒø‚ÈƒZƒNƒ^‚·‚×‚ÄID CRC
+//	Read ID
+//	Returns status (errors are ORed)
+//		FDD_NOERROR		No error
+//		FDD_NOTREADY	Not ready
+//		FDD_MAM			Address mark not found at specified track
+//		FDD_NODATA		Address mark not found at specified track,
+//						or no valid sector ID found
 //
 //---------------------------------------------------------------------------
 int FASTCALL FDD::ReadID(DWORD *buf, BOOL mfm, int hd)
@@ -1452,27 +1452,28 @@ int FASTCALL FDD::ReadID(DWORD *buf, BOOL mfm, int hd)
 	ASSERT((hd == 0) || (hd == 4));
 
 #if defined(FDD_LOG)
-	LOG2(Log::Normal, "ƒŠ[ƒhID ƒhƒ‰ƒCƒu%d ƒwƒbƒh%d", fdd.selected, hd);
+	LOG2(Log::Normal, "ReadID drive%d head%d", fdd.selected, hd);
 #endif	// FDD_LOG
 
-	// ƒCƒ[ƒW‚É”C‚¹‚é
+	// Delegate to image
 	return drv[ fdd.selected ].fdi->ReadID(buf, mfm, hd);
 }
 
 //---------------------------------------------------------------------------
 //
-//	ƒŠ[ƒhƒZƒNƒ^
-//	¦Ÿ‚ÌƒXƒe[ƒ^ƒX‚ğ•Ô‚·(ƒGƒ‰[‚ÍOR‚³‚ê‚é)
-//		FDD_NOERROR		ƒGƒ‰[‚È‚µ
-//		FDD_NOTREADY	ƒmƒbƒgƒŒƒfƒB
-//		FDD_MAM			w’è–§“x‚Å‚ÍƒAƒ“ƒtƒH[ƒ}ƒbƒg
-//		FDD_NODATA		w’è–§“x‚Å‚ÍƒAƒ“ƒtƒH[ƒ}ƒbƒg‚©A
-//						‚Ü‚½‚Í—LŒø‚ÈƒZƒNƒ^‚ğ‘SŒŸõ‚µ‚ÄR‚ªˆê’v‚µ‚È‚¢
-//		FDD_NOCYL		ŒŸõ’†‚ÉID‚ÌC‚ªˆê’v‚Å‚¸AFF‚Å‚È‚¢ƒZƒNƒ^‚ğŒ©‚Â‚¯‚½
-//		FDD_BADCYL		ŒŸõ’†‚ÉID‚ÌC‚ªˆê’v‚¹‚¸AFF‚Æ‚È‚Á‚Ä‚¢‚éƒZƒNƒ^‚ğŒ©‚Â‚¯‚½
-//		FDD_IDCRC		IDƒtƒB[ƒ‹ƒh‚ÉCRCƒGƒ‰[‚ª‚ ‚é
-//		FDD_DATACRC		DATAƒtƒB[ƒ‹ƒh‚ÉCRCƒGƒ‰[‚ª‚ ‚é
-//		FDD_DDAM		ƒfƒŠ[ƒeƒbƒhƒZƒNƒ^‚Å‚ ‚é
+//	Read sector
+//	Returns status (errors are ORed)
+//		FDD_NOERROR		No error
+//		FDD_NOTREADY	Not ready
+//		FDD_NOTWRITE	Read-only, write disabled
+//		FDD_MAM			Address mark not found at specified track
+//		FDD_NODATA		Address mark not found at specified track,
+//						or no valid sector and CRC error
+//		FDD_NOCYL		Read ID CYL field different from target, and FFh (non-existent) sector not found
+//		FDD_BADCYL		Read ID CYL field different from target, and not FFh (non-existent) sector not found
+//		FDD_IDCRC		ID field CRC error
+//		FDD_DATACRC		DATA field CRC error
+//		FDD_DDAM		Deleted dam sector
 //
 //---------------------------------------------------------------------------
 int FASTCALL FDD::ReadSector(BYTE *buf, int *len, BOOL mfm, DWORD *chrn, int hd)
@@ -1484,28 +1485,28 @@ int FASTCALL FDD::ReadSector(BYTE *buf, int *len, BOOL mfm, DWORD *chrn, int hd)
 	ASSERT((hd == 0) || (hd == 4));
 
 #if defined(FDD_LOG)
-	LOG4(Log::Normal, "ƒŠ[ƒhƒZƒNƒ^ C:%02X H:%02X R:%02X N:%02X",
+	LOG4(Log::Normal, "ReadSector C:%02X H:%02X R:%02X N:%02X",
 						chrn[0], chrn[1], chrn[2], chrn[3]);
 #endif	// FDD_LOG
 
-	// ƒCƒ[ƒW‚É”C‚¹‚é
+	// Delegate to image
 	return drv[ fdd.selected ].fdi->ReadSector(buf, len, mfm, chrn, hd);
 }
 
 //---------------------------------------------------------------------------
 //
-//	ƒ‰ƒCƒgƒZƒNƒ^
-//	¦Ÿ‚ÌƒXƒe[ƒ^ƒX‚ğ•Ô‚·(ƒGƒ‰[‚ÍOR‚³‚ê‚é)
-//		FDD_NOERROR		ƒGƒ‰[‚È‚µ
-//		FDD_NOTREADY	ƒmƒbƒgƒŒƒfƒB
-//		FDD_NOTWRITE	ƒƒfƒBƒA‚Í‘‚«‚İ‹Ö~
-//		FDD_MAM			w’è–§“x‚Å‚ÍƒAƒ“ƒtƒH[ƒ}ƒbƒg
-//		FDD_NODATA		w’è–§“x‚Å‚ÍƒAƒ“ƒtƒH[ƒ}ƒbƒg‚©A
-//						‚Ü‚½‚Í—LŒø‚ÈƒZƒNƒ^‚ğ‘SŒŸõ‚µ‚ÄR‚ªˆê’v‚µ‚È‚¢
-//		FDD_NOCYL		ŒŸõ’†‚ÉID‚ÌC‚ªˆê’v‚Å‚¸AFF‚Å‚È‚¢ƒZƒNƒ^‚ğŒ©‚Â‚¯‚½
-//		FDD_BADCYL		ŒŸõ’†‚ÉID‚ÌC‚ªˆê’v‚¹‚¸AFF‚Æ‚È‚Á‚Ä‚¢‚éƒZƒNƒ^‚ğŒ©‚Â‚¯‚½
-//		FDD_IDCRC		IDƒtƒB[ƒ‹ƒh‚ÉCRCƒGƒ‰[‚ª‚ ‚é
-//		FDD_DDAM		ƒfƒŠ[ƒeƒbƒhƒZƒNƒ^‚Å‚ ‚é
+//	Write sector
+//	Returns status (errors are ORed)
+//		FDD_NOERROR		No error
+//		FDD_NOTREADY	Not ready
+//		FDD_NOTWRITE	Read-only, write disabled
+//		FDD_MAM			Address mark not found at specified track
+//		FDD_NODATA		Address mark not found at specified track,
+//						or no valid sector and CRC error
+//		FDD_NOCYL		Read ID CYL field different from target, and FFh (non-existent) sector not found
+//		FDD_BADCYL		Read ID CYL field different from target, and not FFh (non-existent) sector not found
+//		FDD_IDCRC		ID field CRC error
+//		FDD_DDAM		Deleted dam sector
 //
 //---------------------------------------------------------------------------
 int FASTCALL FDD::WriteSector(const BYTE *buf, int *len, BOOL mfm, DWORD *chrn, int hd, BOOL deleted)
@@ -1516,17 +1517,17 @@ int FASTCALL FDD::WriteSector(const BYTE *buf, int *len, BOOL mfm, DWORD *chrn, 
 	ASSERT((hd == 0) || (hd == 4));
 
 #if defined(FDD_LOG)
-	LOG4(Log::Normal, "ƒ‰ƒCƒgƒZƒNƒ^ C:%02X H:%02X R:%02X N:%02X",
+	LOG4(Log::Normal, "WriteSector C:%02X H:%02X R:%02X N:%02X",
 						chrn[0], chrn[1], chrn[2], chrn[3]);
 #endif	// FDD_LOG
 
-	// ƒCƒ[ƒW‚É”C‚¹‚é
+	// Delegate to image
 	return drv[ fdd.selected ].fdi->WriteSector(buf, len, mfm, chrn, hd, deleted);
 }
 
 //---------------------------------------------------------------------------
 //
-//	ƒŠ[ƒhƒ_ƒCƒAƒO
+//	Read diag
 //
 //---------------------------------------------------------------------------
 int FASTCALL FDD::ReadDiag(BYTE *buf, int *len, BOOL mfm, DWORD *chrn, int hd)
@@ -1537,17 +1538,17 @@ int FASTCALL FDD::ReadDiag(BYTE *buf, int *len, BOOL mfm, DWORD *chrn, int hd)
 	ASSERT((hd == 0) || (hd == 4));
 
 #if defined(FDD_LOG)
-	LOG4(Log::Normal, "ƒŠ[ƒhƒ_ƒCƒAƒO C:%02X H:%02X R:%02X N:%02X",
+	LOG4(Log::Normal, "ReadDiag C:%02X H:%02X R:%02X N:%02X",
 						chrn[0], chrn[1], chrn[2], chrn[3]);
 #endif	// FDD_LOG
 
-	// ƒCƒ[ƒW‚É”C‚¹‚é
+	// Delegate to image
 	return drv[ fdd.selected ].fdi->ReadDiag(buf, len, mfm, chrn, hd);
 }
 
 //---------------------------------------------------------------------------
 //
-//	ƒ‰ƒCƒgID
+//	Write ID
 //
 //---------------------------------------------------------------------------
 int FASTCALL FDD::WriteID(const BYTE *buf, DWORD d, int sc, BOOL mfm, int hd, int gpl)
@@ -1557,10 +1558,10 @@ int FASTCALL FDD::WriteID(const BYTE *buf, DWORD d, int sc, BOOL mfm, int hd, in
 	ASSERT((hd == 0) || (hd == 4));
 
 #if defined(FDD_LOG)
-	LOG3(Log::Normal, "ƒ‰ƒCƒgID ƒhƒ‰ƒCƒu%d ƒVƒŠƒ“ƒ_%d ƒwƒbƒh%d",
+	LOG3(Log::Normal, "WriteID drive%d cylinder%d head%d",
 					fdd.selected, drv[ fdd.selected ].cylinder, hd);
 #endif	// FDD_LOG
 
-	// ƒCƒ[ƒW‚É”C‚¹‚é
+	// Delegate to image
 	return drv[ fdd.selected ].fdi->WriteID(buf, d, sc, mfm, hd, gpl);
 }

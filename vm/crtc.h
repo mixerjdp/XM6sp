@@ -2,7 +2,7 @@
 //
 //	X68000 EMULATOR "XM6"
 //
-//	Copyright (C) 2001-2003 ‚o‚hD(ytanaka@ipc-tokai.or.jp)
+//	Copyright (C) 2001-2005 ï¿½oï¿½hï¿½D(ytanaka@ipc-tokai.or.jp)
 //	[ CRTC(VICON) ]
 //
 //---------------------------------------------------------------------------
@@ -21,147 +21,147 @@
 class CRTC : public MemDevice
 {
 public:
-	// “à•”ƒf[ƒ^’è‹`
+	// Internal data definition
 	typedef struct {
-		BYTE reg[24 * 2];				// CRTCƒŒƒWƒXƒ^
-		BOOL hrl;						// HRL(ƒVƒXƒeƒ€ƒ|[ƒg)
-		BOOL lowres;					// 15kHzƒ‚[ƒh
-		BOOL textres;					// 768~512ƒ‚[ƒh
-		BOOL changed;					// ‰ğ‘œ“x•ÏXƒtƒ‰ƒO
+		BYTE reg[24 * 2];				// CRTC registers
+		BOOL hrl;						// HRL (system port)
+		BOOL lowres;					// 15kHz mode
+		BOOL textres;					// 768x512 mode
+		BOOL changed;					// Resolution change flag
 
-		int h_sync;						// …•½“¯ŠúŠúŠÔ
-		int h_pulse;					// …•½“¯Šúƒpƒ‹ƒX•
-		int h_back;						// …•½ƒoƒbƒNƒ|[ƒ`
-		int h_front;					// …•½ƒtƒƒ“ƒgƒ|[ƒ`
-		int h_dots;						// …•½ƒhƒbƒg”
-		int h_mul;						// …•½”{—¦
-		int hd;							// 256,512,768,–¢’è‹`
+		int h_sync;						// Horizontal sync total
+		int h_pulse;					// Horizontal sync pulse width
+		int h_back;					// Horizontal back porch
+		int h_front;					// Horizontal front porch
+		int h_dots;					// Horizontal dot count
+		int h_mul;					// Horizontal multiplier
+		int hd;						// 256,512,768,etc.
 
-		int v_sync;						// ‚’¼“¯ŠúŠúŠÔ(H’PˆÊ)
-		int v_pulse;					// ‚’¼“¯Šúƒpƒ‹ƒX•(H’PˆÊ)
-		int v_back;						// ‚’¼ƒoƒbƒNƒ|[ƒ`(H’PˆÊ)
-		int v_front;					// ‚’¼ƒtƒƒ“ƒgƒ|[ƒ`(H’PˆÊ)
-		int v_dots;						// ‚’¼ƒhƒbƒg”
-		int v_mul;						// ‚’¼”{—¦(0:interlace)
-		int vd;							// 256,512,–¢’è‹`,–¢’è‹`
+		int v_sync;					// Vertical sync total (H units)
+		int v_pulse;					// Vertical sync pulse width (H units)
+		int v_back;					// Vertical back porch (H units)
+		int v_front;					// Vertical front porch (H units)
+		int v_dots;					// Vertical dot count
+		int v_mul;					// Vertical multiplier (0:interlace)
+		int vd;						// 256,512,etc.,interlace,etc.
 
-		DWORD ns;						// nsƒJƒEƒ“ƒ^
-		DWORD hus;						// husƒJƒEƒ“ƒ^
-		DWORD v_synccnt;				// V-SYNCƒJƒEƒ“ƒ^
-		DWORD v_blankcnt;				// V-BLANKƒJƒEƒ“ƒ^
-		BOOL h_disp;					// …•½•\¦ƒtƒ‰ƒO
-		BOOL v_disp;					// V-DISPƒtƒ‰ƒO
-		BOOL v_blank;					// V-BLANKƒtƒ‰ƒO
-		DWORD v_count;					// V-DISPƒJƒEƒ“ƒ^
-		int v_scan;						// ƒXƒLƒƒƒ“ƒ‰ƒCƒ“
+		DWORD ns;					// ns counter
+		DWORD hus;					// hus counter
+		DWORD v_synccnt;				// V-SYNC counter
+		DWORD v_blankcnt;				// V-BLANK counter
+		BOOL h_disp;					// Horizontal display flag
+		BOOL v_disp;					// V-DISP flag
+		BOOL v_blank;					// V-BLANK flag
+		DWORD v_count;					// V-DISP counter
+		int v_scan;					// Scan line position
 
-		// ˆÈ‰º‚¢‚ç‚È‚¢
-		int h_synctime;					// …•½“¯Šú(hus)
-		int h_disptime;					// …•½•\¦(hus)
-		int v_cycletime;				// ‚’¼üŠú(hus)
-		int v_blanktime;				// ‚’¼ƒuƒ‰ƒ“ƒN(hus)
-		int v_synctime;					// ‚’¼“¯Šú(hus)
-		int v_backtime;					// ‚’¼ƒoƒbƒNƒ|[ƒ`(hus)
+		// Non-display variables
+		int h_synctime;					// Sync time (hus)
+		int h_disptime;					// Display time (hus)
+		int v_cycletime;				// Cycle time (hus)
+		int v_blanktime;				// V-blank time (hus)
+		int v_synctime;					// Sync time (hus)
+		int v_backtime;					// Back porch (hus)
 
-		BOOL tmem;						// ƒeƒLƒXƒgVRAM”ñ•\¦
-		BOOL gmem;						// ƒOƒ‰ƒtƒBƒbƒNVRAM”ñ•\¦
-		DWORD siz;						// ƒOƒ‰ƒtƒBƒbƒNVRAM1024~1024ƒ‚[ƒh
-		DWORD col;						// ƒOƒ‰ƒtƒBƒbƒNVRAMFƒ‚[ƒh
+		BOOL tmem;					// Text VRAM display
+		BOOL gmem;					// Graphic VRAM display
+		DWORD siz;					// Graphic VRAM 1024x1024 mode
+		DWORD col;					// Graphic VRAM color mode
 
-		DWORD text_scrlx;				// ƒeƒLƒXƒgƒXƒNƒ[ƒ‹X
-		DWORD text_scrly;				// ƒeƒLƒXƒgƒXƒNƒ[ƒ‹Y
-		DWORD grp_scrlx[4];				// ƒOƒ‰ƒtƒBƒbƒNƒXƒNƒ[ƒ‹X
-		DWORD grp_scrly[4];				// ƒOƒ‰ƒtƒBƒbƒNƒXƒNƒ[ƒ‹Y
+		DWORD text_scrlx;				// Text scroll X
+		DWORD text_scrly;				// Text scroll Y
+		DWORD grp_scrlx[4];				// Graphic scroll X
+		DWORD grp_scrly[4];				// Graphic scroll Y
 
-		int raster_count;				// ƒ‰ƒXƒ^ƒJƒEƒ“ƒ^
-		int raster_int;					// ƒ‰ƒXƒ^Š„‚è‚İˆÊ’u
-		BOOL raster_copy;				// ƒ‰ƒXƒ^ƒRƒs[ƒtƒ‰ƒO
-		BOOL raster_exec;				// ƒ‰ƒXƒ^ƒRƒs[Àsƒtƒ‰ƒO
-		DWORD fast_clr;					// ƒOƒ‰ƒtƒBƒbƒN‚‘¬ƒNƒŠƒA
+		int raster_count;				// Raster counter
+		int raster_int;					// Raster interrupt position
+		BOOL raster_copy;				// Raster copy flag
+		BOOL raster_exec;				// Raster copy execute flag
+		DWORD fast_clr;					// Graphic clear fast
 	} crtc_t;
 
 public:
-	// Šî–{ƒtƒ@ƒ“ƒNƒVƒ‡ƒ“
+	// Basic functions
 	CRTC(VM *p);
-										// ƒRƒ“ƒXƒgƒ‰ƒNƒ^
+										// Constructor
 	BOOL FASTCALL Init();
-										// ‰Šú‰»
+										// Initialization
 	void FASTCALL Cleanup();
-										// ƒNƒŠ[ƒ“ƒAƒbƒv
+										// Cleanup
 	void FASTCALL Reset();
-										// ƒŠƒZƒbƒg
+										// Reset
 	BOOL FASTCALL Save(Fileio *fio, int ver);
-										// ƒZ[ƒu
+										// Save
 	BOOL FASTCALL Load(Fileio *fio, int ver);
-										// ƒ[ƒh
+										// Load
 	void FASTCALL ApplyCfg(const Config *config);
-										// İ’è“K—p
+										// Apply configuration
 
-	// ƒƒ‚ƒŠƒfƒoƒCƒX
+	// Memory device interface
 	DWORD FASTCALL ReadByte(DWORD addr);
-										// ƒoƒCƒg“Ç‚İ‚İ
+										// Byte read
 	void FASTCALL WriteByte(DWORD addr, DWORD data);
-										// ƒoƒCƒg‘‚«‚İ
+										// Byte write
 	DWORD FASTCALL ReadOnly(DWORD addr) const;
-										// “Ç‚İ‚İ‚Ì‚İ
+										// Read only
 
-	// ŠO•”API
+	// External API
 	void FASTCALL GetCRTC(crtc_t *buffer) const;
-										// “à•”ƒf[ƒ^æ“¾
+										// Get internal data
 	BOOL FASTCALL Callback(Event *ev);
-										// ƒCƒxƒ“ƒgƒR[ƒ‹ƒoƒbƒN
+										// Event callback
 	void FASTCALL SetHRL(BOOL h);
-										// HRLİ’è
+										// Set HRL
 	BOOL FASTCALL GetHRL() const;
-										// HRLæ“¾
+										// Get HRL
 	void FASTCALL GetHVHz(DWORD *h, DWORD *v) const;
-										// •\¦ü”g”æ“¾
+										// Get display frequency
 	DWORD FASTCALL GetDispCount() const	{ return crtc.v_count; }
-										// •\¦ƒJƒEƒ“ƒ^æ“¾
+										// Get display counter
 	const crtc_t* FASTCALL GetWorkAddr() const { return &crtc; }
-										// ƒ[ƒNƒAƒhƒŒƒXæ“¾
+										// Get work address
 
 private:
 	void FASTCALL ReCalc();
-										// ÄŒvZ
+										// Recalculate
 	void FASTCALL HSync();
-										// H-SYNCŠJn
+										// H-SYNC start
 	void FASTCALL HDisp();
-										// H-DISPŠJn
+										// H-DISP start
 	void FASTCALL VSync();
-										// V-SYNCŠJn
+										// V-SYNC start
 	void FASTCALL VBlank();
-										// V-BLANKŠJn
+										// V-BLANK start
 	int FASTCALL Ns2Hus(int ns)			{ return ns / 500; }
-										// ns¨0.5usŠ·Z
+										// ns to 0.5us conversion
 	int FASTCALL Hus2Ns(int hus)		{ return hus * 500; }
-										// 0.5us¨nsŠ·Z
+										// 0.5us to ns conversion
 	void FASTCALL CheckRaster();
-										// ƒ‰ƒXƒ^Š„‚è‚İƒ`ƒFƒbƒN
+										// Raster interrupt check
 	void FASTCALL TextVRAM();
-										// ƒeƒLƒXƒgVRAMŒø‰Ê
+										// Text VRAM setup
 	int FASTCALL Get8DotClock() const;
-										// 8ƒhƒbƒgƒNƒƒbƒN‚ğ“¾‚é
+										// Get 8 dot clock
 	static const int DotClockTable[16];
-										// 8ƒhƒbƒgƒNƒƒbƒNƒe[ƒuƒ‹
+										// 8 dot clock table
 	static const BYTE ResetTable[26];
-										// RESETƒŒƒWƒXƒ^ƒe[ƒuƒ‹
+										// RESET register table
 	crtc_t crtc;
-										// CRTC“à•”ƒf[ƒ^
+										// CRTC internal data
 	Event event;
-										// ƒCƒxƒ“ƒg
+										// Event
 	TVRAM *tvram;
-										// ƒeƒLƒXƒgVRAM
+										// Text VRAM
 	GVRAM *gvram;
-										// ƒOƒ‰ƒtƒBƒbƒNVRAM
+										// Graphic VRAM
 	Sprite *sprite;
-										// ƒXƒvƒ‰ƒCƒgƒRƒ“ƒgƒ[ƒ‰
+										// Sprite controller
 	MFP *mfp;
 										// MFP
 	Render *render;
-										// ƒŒƒ“ƒ_ƒ‰
+										// Renderer
 	Printer *printer;
-										// ƒvƒŠƒ“ƒ^
+										// Printer
 };
 
 #endif	// crtc_h

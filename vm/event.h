@@ -2,8 +2,8 @@
 //
 //	X68000 EMULATOR "XM6"
 //
-//	Copyright (C) 2001-2006 ＰＩ．(ytanaka@ipc-tokai.or.jp)
-//	[ イベント ]
+//	Copyright (C) 2001-2006 PI (ytanaka@ipc-tokai.or.jp)
+//	[ Event ]
 //
 //---------------------------------------------------------------------------
 
@@ -12,94 +12,94 @@
 
 //===========================================================================
 //
-//	イベント
+//	Event
 //
 //===========================================================================
 class Event
 {
 public:
-	// 内部データ定義
+	// Internal data definition
 #if defined(_WIN32)
 #pragma pack(push, 8)
 #endif	// _WIN32
 	typedef struct {
-		DWORD remain;					// 残り時間
-		DWORD time;						// トータル時間
-		DWORD user;						// ユーザ定義データ
-		Device *device;					// 親デバイス
-		Scheduler *scheduler;			// スケジューラ
-		Event *next;					// 次のイベント
-		char desc[0x20];				// 名称
+		DWORD remain;					// Remaining time
+		DWORD time;						// Total time
+		DWORD user;						// User defined data
+		Device *device;					// Parent device
+		Scheduler *scheduler;			// Scheduler
+		Event *next;					// Next event
+		char desc[0x20];				// Description
 	} event_t;
 #if defined(_WIN32)
 #pragma pack(pop)
 #endif	// _WIN32
 
 public:
-	// 基本ファンクション
+	// Basic functions
 	Event();
-										// コンストラクタ
+										// Constructor
 	virtual ~Event();
-										// デストラクタ
+										// Destructor
 #if !defined(NDEBUG)
 	void FASTCALL AssertDiag() const;
-										// 診断
+										// Diagnosis
 #endif	// NDEBUG
 
-	// ロード・セーブ
+	// Load/Save
 	BOOL FASTCALL Save(Fileio *fio, int ver);
-										// セーブ
+										// Save
 	BOOL FASTCALL Load(Fileio *fio, int ver);
-										// ロード
+										// Load
 
-	// プロパティ
+	// Properties
 	void FASTCALL SetDevice(Device *p);
-										// 親デバイス設定
+										// Set parent device
 	Device* FASTCALL GetDevice() const	{ return ev.device; }
-										// 親デバイス取得
+										// Get parent device
 	void FASTCALL SetDesc(const char *desc);
-										// 名称設定
+										// Set description
 	const char* FASTCALL GetDesc() const;
-										// 名称取得
+										// Get description
 	void FASTCALL SetUser(DWORD data)	{ ev.user = data; }
-										// ユーザ定義データ設定
+										// Set user defined data
 	DWORD FASTCALL GetUser() const		{ return ev.user; }
-										// ユーザ定義データ取得
+										// Get user defined data
 
-	// 時間管理
+	// Time management
 	void FASTCALL SetTime(DWORD hus);
-										// 時間周期設定
+										// Set time period
 	DWORD FASTCALL GetTime() const		{ return ev.time; }
-										// 時間周期取得
+										// Get time period
 	DWORD FASTCALL GetRemain() const	{ return ev.remain; }
-										// 残り時間取得
+										// Get remaining time
 	void FASTCALL Exec(DWORD hus);
-										// 時間を進める
+										// Advance time
 
-	// リンク設定・削除
+	// Link setting/removal
 	void FASTCALL SetNextEvent(Event *p) { ev.next = p; }
-										// 次のイベントを設定
+										// Set next event
 	Event* FASTCALL GetNextEvent() const { return ev.next; }
-										// 次のイベントを取得
+										// Get next event
 
 private:
-	// 内部データ定義(Ver2.01まで。enableがある)
+	// Internal data definition (Ver 2.01 and earlier. has enable)
 	typedef struct {
-		Device *device;					// 親デバイス
-		Scheduler *scheduler;			// スケジューラ
-		Event *next;					// 次のイベント
-		char desc[0x20];				// 名称
-		DWORD user;						// ユーザ定義データ
-		BOOL enable;					// イネーブル時間
-		DWORD time;						// トータル時間
-		DWORD remain;					// 残り時間
+		Device *device;					// Parent device
+		Scheduler *scheduler;			// Scheduler
+		Event *next;					// Next event
+		char desc[0x20];				// Description
+		DWORD user;						// User defined data
+		BOOL enable;					// Enable time
+		DWORD time;						// Total time
+		DWORD remain;					// Remaining time
 	} event201_t;
 
 	BOOL FASTCALL Load201(Fileio *fio);
-										// ロード(version 2.01以前)
+										// Load (version 2.01 and earlier)
 public:
 	event_t ev;
-										// 内部ワーク
+										// Internal work area
 };
 
 #endif	// event_h

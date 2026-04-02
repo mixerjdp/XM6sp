@@ -4,7 +4,7 @@ setlocal
 set "ROOT=%~dp0"
 cd /d "%ROOT%"
 
-set "VCVARS32=C:\Program Files (x86)\Microsoft Visual Studio 11.0\VC\bin\vcvars32.bat"
+set "VCVARS32=C:\Program Files\Microsoft Visual Studio\2022\Community\VC\Auxiliary\Build\vcvars32.bat"
 set "CORE_PROJ=main\XM6Core.vcxproj"
 set "CORE_OUT=main\Release_DLL\xm6core.dll"
 set "LIBRETRO_OUT=libretro\xm6_libretro_win32.dll"
@@ -36,7 +36,7 @@ if errorlevel 1 (
 
 call "%VCVARS32%"
 if errorlevel 1 (
-  echo Error: fallo al reinicializar el entorno de Visual Studio 2012.
+  echo Error: fallo al reinicializar el entorno de Visual Studio 2022.
   exit /b 1
 )
 

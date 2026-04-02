@@ -2,8 +2,8 @@
 //
 //	X68000 EMULATOR "XM6"
 //
-//	Copyright (C) 2001-2006 ＰＩ．(ytanaka@ipc-tokai.or.jp)
-//	[ MFC インプット ]
+//	Copyright (C) 2001-2006 ﾅ｡ﾂｰﾃ･窶｢ﾂｽD(ytanaka@ipc-tokai.or.jp)
+//	[ MFC Component ]
 //
 //---------------------------------------------------------------------------
 
@@ -14,227 +14,227 @@
 
 //===========================================================================
 //
-//	インプット
+//	Component
 //
 //===========================================================================
 class CInput : public CComponent
 {
 public:
-	// ジョイスティック定数
+	// Joystick constants
 	enum {
-		JoyDeviceMax = 16,				// サポートデバイス最大数
-		JoyDevices = 2,					// 使用デバイス最大数
-		JoyAxes = 9,					// 軸最大数
-		JoyButtons = 12,				// ボタン最大数
-		JoyRapids = 10,					// 連射レベル数
+		JoyDeviceMax = 16,				// Maximum supported devices
+		JoyDevices = 2,					// Maximum used devices
+		JoyAxes = 9,					// Maximum axes
+		JoyButtons = 12,				// Maximum buttons
+		JoyRapids = 10,					// Auto-repeat speed levels
 	};
-	// ジョイスティック設定
+	// Joystick configuration
 	typedef struct _JOYCFG {
-		int nDevice;					// デバイス番号(1～)、未使用=0
-		DWORD dwAxis[JoyAxes];			// 軸変換 (1～)、未使用=0
-		BOOL bAxis[JoyAxes];			// 軸反転
-		DWORD dwButton[JoyButtons];		// ボタン変換 (1～)、未使用=0
-		DWORD dwRapid[JoyButtons];		// 連射間隔 連射なし=0
-		DWORD dwCount[JoyButtons];		// 連射カウンタ
+		int nDevice;					// Device number (1~), unused=0
+		DWORD dwAxis[JoyAxes];			// Axis mapping (1~), unused=0
+		BOOL bAxis[JoyAxes];			// Axis inversion
+		DWORD dwButton[JoyButtons];		// Button mapping (1~), unused=0
+		DWORD dwRapid[JoyButtons];		// Auto-repeat interval, no repeat=0
+		DWORD dwCount[JoyButtons];		// Auto-repeat counter
 	} JOYCFG, *LPJOYCFG;
 
 	CFrmWnd* xWnd;
 	int joyType[2];
 public:
-	// 基本ファンクション
+	// Basic procedures
 	CInput(CFrmWnd *pWnd);
-										// コンストラクタ
+										// Constructor
 	BOOL FASTCALL Init();
-										// 初期化
+										// Initialization
 	void FASTCALL Cleanup();
-										// クリーンアップ
+										// Cleanup
 	void FASTCALL ApplyCfg(const Config *pConfig);
-										// 設定適用
+										// Apply configuration
 #if defined(_DEBUG)
 	void AssertValid() const;
-										// 診断
+										// Assert
 #endif	// _DEBUG
 
-	// セーブ・ロード
+	// Save/Load
 	BOOL FASTCALL Save(Fileio *pFio, int nVer);
-										// セーブ
+										// Save
 	BOOL FASTCALL Load(Fileio *pFio, int nVer);
-										// ロード
+										// Load
 
-	// 外部API
+	// External API
 	void FASTCALL Process(BOOL bRun);
-										// 進行
+										// Processing
 	void FASTCALL Activate(BOOL bActivate);
-										// アクティブ通知
+										// Active notification
 	BOOL FASTCALL IsActive() const		{ return m_bActive; }
-										// アクティブ状況取得
+										// Get active status
 	void FASTCALL Menu(BOOL bMenu);
-										// メニュー通知
+										// Menu notification
 	BOOL FASTCALL IsMenu() const		{ return m_bMenu; }
-										// メニュー状況取得
+										// Get menu status
 	DWORD FASTCALL GetProcessCount() const	{ return m_dwProcessCount; }
-										// 進行カウンタ取得
+										// Get process count
 	DWORD FASTCALL GetAcquireCount(int nType) const;
-										// 獲得カウンタ取得
+										// Get acquire count
 
-	// キーボード
+	// Keyboard
 	void FASTCALL GetKeyBuf(BOOL *pKeyBuf) const;
-										// キー入力情報取得
+										// Get key buffer
 	void FASTCALL EnableKey(BOOL bEnable);
-										// キー有効化・無効化
+										// Keyboard enable/disable
 	void FASTCALL SetDefaultKeyMap(DWORD *pKeyMap);
-										// デフォルトマップ設定
+										// Set default key map
 	int FASTCALL Key2DirectX(int nKey);
-										// キー変換
+										// Key conversion
 	int FASTCALL Key2X68k(int nDXKey);
-										// キー変換
+										// Key conversion
 	static LPCTSTR FASTCALL GetKeyName(int nKey);
-										// キー名称取得
+										// Get key name
 	static LPCTSTR FASTCALL GetKeyID(int nID);
-										// キーID取得
+										// Get key ID
 	void FASTCALL GetKeyMap(DWORD *pKeyMap);
-										// キーマップ取得
+										// Get key map
 	void FASTCALL SetKeyMap(const DWORD *pKeyMap);
-										// キーマップ設定
+										// Set key map
 	BOOL FASTCALL IsKeyMapped(int nID) const;
-										// キーマップ有無チェック
+										// Key map valid check
 
-	// マウス
+	// Mouse
 	void FASTCALL SetMouseMode(BOOL bMode);
-										// マウスモード設定
+										// Set mouse mode
 	BOOL FASTCALL GetMouseMode() const	{ return m_bMouseMode; }
-										// マウスモード取得
+										// Get mouse mode
 	void FASTCALL GetMouseInfo(int *pPos, BOOL *pBtn) const;
-										// マウス情報取得
+										// Get mouse info
 
-	// ジョイスティック
+	// Joystick
 	static BOOL CALLBACK EnumCb(LPDIDEVICEINSTANCE pDevInst, LPVOID pvRef);
-										// ジョイスティックコールバック
+										// Joystick callback
 	void FASTCALL EnableJoy(BOOL bEnable);
-										// ジョイスティック有効化・無効化
+										// Joystick enable/disable
 	int FASTCALL GetJoyDevice(int nJoy) const;
-										// ジョイスティックデバイス取得
+										// Get joystick device
 	LONG FASTCALL GetJoyAxis(int nJoy, int nAxis) const;
-										// ジョイスティック軸取得
+										// Get joystick axis
 	DWORD FASTCALL GetJoyButton(int nJoy, int nButton) const;
-										// ジョイスティックボタン取得
+										// Get joystick button
 	BOOL FASTCALL GetJoyCaps(int nDevice, CString& strDesc, DIDEVCAPS *pCaps) const;
-										// ジョイスティックCaps取得
+										// Get joystick caps
 	void FASTCALL GetJoyCfg(int nJoy, LPJOYCFG lpJoyCfg) const;
-										// ジョイスティック設定取得
+										// Get joystick config
 	void FASTCALL SetJoyCfg(int nJoy, const LPJOYCFG lpJoyCfg);
-										// ジョイスティック設定セット
+										// Set joystick config
 
 private:
-	// 共通
+	// General
 	LPDIRECTINPUT m_lpDI;
 										// DirectInput
 	BOOL m_bActive;
-										// アクティブフラグ
+										// Active flag
 	BOOL m_bMenu;
-										// メニューフラグ
+										// Menu flag
 	CRTC *m_pCRTC;
 										// CRTC
 	DWORD m_dwDispCount;
-										// CRTC表示カウント
+										// CRTC display count
 	DWORD m_dwProcessCount;
-										// 進行カウント
+										// Process count
 
-	// セーブ・ロード
+	// Save/Load
 	BOOL FASTCALL SaveMain(Fileio *pFio);
-										// セーブ本体
+										// Save main
 	BOOL FASTCALL Load200(Fileio *pFio);
-										// ロード本体 (version2.00)
+										// Load main (version2.00)
 	BOOL FASTCALL Load201(Fileio *pFio);
-										// ロード本体 (version2.01)
+										// Load main (version2.01)
 
-	// キーボード
+	// Keyboard
 	BOOL FASTCALL InitKey();
-										// キーボード初期化
+										// Keyboard initialization
 	void FASTCALL InputKey(BOOL bEnable);
-										// キーボード入力
+										// Keyboard input
 	Keyboard *m_pKeyboard;
-										// キーボード
+										// Keyboard
 	LPDIRECTINPUTDEVICE m_lpDIKey;
-										// キーボードデバイス
+										// Keyboard device
 	DWORD m_dwKeyAcquire;
-										// キーボード獲得カウンタ
+										// Keyboard acquire count
 	BOOL m_bKeyEnable;
-										// キーボード有効フラグ
+										// Keyboard enable flag
 	BOOL m_KeyBuf[0x100];
-										// キーボードバッファ
+										// Keyboard buffer
 	DWORD m_KeyMap[0x100];
-										// キー変換マップ
+										// Key translation map
 	static const DWORD m_KeyMap106[];
-										// デフォルトマップ(106)
+										// Default map (106)
 	static LPCTSTR KeyNameTable[];
-										// キー名称テーブル
+										// Key name table
 	static LPCSTR KeyIDTable[];
-										// DirectXキーIDテーブル
+										// DirectX key ID table
 
-	// マウス
+	// Mouse
 	BOOL FASTCALL InitMouse();
-										// マウス初期化
+										// Mouse initialization
 	void FASTCALL InputMouse(BOOL bEnable);
-										// マウス入力
+										// Mouse input
 	Mouse *m_pMouse;
-										// マウス
+										// Mouse
 	LPDIRECTINPUTDEVICE m_lpDIMouse;
-										// マウスデバイス
+										// Mouse device
 	DWORD m_dwMouseAcquire;
-										// マウス獲得カウンタ
+										// Mouse acquire count
 	BOOL m_bMouseMode;
-										// マウスモードフラグ
+										// Mouse mode flag
 	int m_nMouseX;
-										// マウスx座標
+										// Mouse x coordinate
 	int m_nMouseY;
-										// マウスy座標
+										// Mouse y coordinate
 	BOOL m_bMouseB[2];
-										// マウス左右ボタン
+										// Mouse left/right buttons
 	DWORD m_dwMouseMid;
-										// マウス中央ボタンカウント
+										// Mouse middle button count
 	BOOL m_bMouseMid;
-										// マウス中央ボタン使用フラグ
+										// Mouse middle button enable flag
 
-	// ジョイスティック
+	// Joystick
 	void FASTCALL EnumJoy();
-										// ジョイスティック列挙
+										// Enumerate joysticks
 	BOOL FASTCALL EnumDev(LPDIDEVICEINSTANCE pDevInst);
-										// ジョイスティック追加
+										// Add joystick
 	void FASTCALL InitJoy();
-										// ジョイスティック初期化
+										// Initialize joystick
 	void FASTCALL InputJoy(BOOL bEnable);
-										// ジョイスティック入力
+										// Joystick input
 	void FASTCALL MakeJoy(BOOL bEnable);
-										// ジョイスティック合成
+										// Synthesize joystick
 	PPI *m_pPPI;
 										// PPI
 	BOOL m_bJoyEnable;
-										// ジョイスティック有効・無効
+										// Joystick enable/disable
 	LPDIRECTINPUTDEVICE m_lpDIJoy[JoyDevices];
-										// ジョイスティックデバイス
+										// Joystick device
 	LPDIRECTINPUTDEVICE2 m_lpDIDev2[JoyDevices];
-										// フォースフィードバックデバイス
+										// Extended polled device
 	JOYCFG m_JoyCfg[JoyDevices];
-										// ジョイスティックコンフィグ
+										// Joystick configuration
 	LONG m_lJoyAxisMin[JoyDevices][JoyAxes];
-										// ジョイスティック軸最小値
+										// Joystick axis minimum
 	LONG m_lJoyAxisMax[JoyDevices][JoyAxes];
-										// ジョイスティック軸最大値
+										// Joystick axis maximum
 	DWORD m_dwJoyAcquire[JoyDevices];
-										// ジョイスティック獲得カウンタ
+										// Joystick acquire count
 	DIJOYSTATE m_JoyState[JoyDevices];
-										// ジョイスティック状態
+										// Joystick state
 	DWORD m_dwJoyDevs;
-										// ジョイスティックデバイス数
+										// Number of joystick devices
 	DIDEVCAPS m_JoyDevCaps[JoyDeviceMax];
-										// ジョイスティックCaps
+										// Joystick caps
 	DIDEVICEINSTANCE m_JoyDevInst[JoyDeviceMax];
-										// ジョイスティックインスタンス
+										// Joystick instance
 	static const DWORD JoyAxisOffsetTable[JoyAxes];
-										// ジョイスティック軸オフセットテーブル
+										// Joystick axis offset table
 	static const DWORD JoyRapidTable[JoyRapids + 1];
-										// ジョイスティック連射テーブル
+										// Joystick auto-repeat table
 };
 
 #endif	// mfc_inp_h

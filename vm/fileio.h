@@ -28,9 +28,7 @@ public:
 	BOOL FASTCALL Load(const Filepath& path, void *buffer, int size);
 	BOOL FASTCALL Save(const Filepath& path, void *buffer, int size);
 
-#if defined(_WIN32)
 	BOOL FASTCALL Open(const TCHAR* fname, OpenMode mode);
-#endif	// _WIN32
 	BOOL FASTCALL Open(const Filepath& path, OpenMode mode);
 	BOOL FASTCALL OpenMemoryRead(const void *buffer, unsigned int size);
 	BOOL FASTCALL OpenMemoryWrite(void *buffer, unsigned int size);

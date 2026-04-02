@@ -1,60 +1,103 @@
-//---------------------------------------------------------------------------
+Ôªø//---------------------------------------------------------------------------
 //
 //	X68000 EMULATOR "XM6"
 //
-//	Copyright (C) 2001-2006 ÇoÇhÅD(ytanaka@ipc-tokai.or.jp)
-//	[ ÉtÉ@ÉCÉãÉpÉX ]
+//	[ Filepath ]
 //
 //---------------------------------------------------------------------------
 
 #if defined(_WIN32)
-
 #include <windows.h>
+#endif
 #include "os.h"
 #include "xm6.h"
 #include "filepath.h"
 #include "fileio.h"
 
-//===========================================================================
-//
-//	ÉtÉ@ÉCÉãÉpÉX
-//
-//===========================================================================
+#include <string.h>
+#include <sys/stat.h>
 
-//---------------------------------------------------------------------------
-//
-//	ÉRÉìÉXÉgÉâÉNÉ^
-//
-//---------------------------------------------------------------------------
-Filepath::Filepath()
+#if !defined(_WIN32)
+#include <unistd.h>
+#endif
+
+static uint64_t filepath_pack_time(const filepath_time_t& t)
 {
-	// ÉNÉäÉA
-	Clear();
-
-	// çXêVÇ»Çµ
-	m_bUpdate = FALSE;
+	return (static_cast<uint64_t>(t.high) << 32) | static_cast<uint64_t>(t.low);
 }
 
-//---------------------------------------------------------------------------
-//
-//	ÉfÉXÉgÉâÉNÉ^
-//
-//---------------------------------------------------------------------------
+static filepath_time_t filepath_unpack_time(uint64_t v)
+{
+	filepath_time_t t;
+	t.low = static_cast<DWORD>(v & 0xffffffffu);
+	t.high = static_cast<DWORD>((v >> 32) & 0xffffffffu);
+	return t;
+}
+
+static bool filepath_query_timestamp(const TCHAR* path, filepath_time_t* out)
+{
+	if (!path || !out) {
+		return false;
+	}
+
+	struct stat st;
+	if (stat(path, &st) != 0) {
+		return false;
+	}
+
+	uint64_t ns = static_cast<uint64_t>(st.st_mtime) * 1000000000ULL;
+#if defined(__APPLE__)
+	ns += static_cast<uint64_t>(st.st_mtimespec.tv_nsec);
+#elif defined(__linux__) || defined(__unix__)
+	ns += static_cast<uint64_t>(st.st_mtim.tv_nsec);
+#endif
+
+	*out = filepath_unpack_time(ns);
+	return true;
+}
+
+static bool filepath_get_executable_path(TCHAR* out_path, size_t out_cap)
+{
+	if (!out_path || out_cap == 0) {
+		return false;
+	}
+	out_path[0] = _T('\0');
+
+#if defined(_WIN32)
+	DWORD len = GetModuleFileNameA(NULL, out_path, static_cast<DWORD>(out_cap));
+	if (len == 0 || len >= out_cap) {
+		out_path[0] = _T('\0');
+		return false;
+	}
+	return true;
+#else
+	ssize_t len = readlink("/proc/self/exe", out_path, out_cap - 1);
+	if (len <= 0 || static_cast<size_t>(len) >= out_cap) {
+		return false;
+	}
+	out_path[len] = '\0';
+	return true;
+#endif
+}
+
+Filepath::Filepath()
+{
+	Clear();
+	m_bUpdate = FALSE;
+	m_SavedTime.low = 0;
+	m_SavedTime.high = 0;
+	m_CurrentTime.low = 0;
+	m_CurrentTime.high = 0;
+}
+
 Filepath::~Filepath()
 {
 }
 
-//---------------------------------------------------------------------------
-//
-//	ë„ì¸ââéZéq
-//
-//---------------------------------------------------------------------------
 Filepath& Filepath::operator=(const Filepath& path)
 {
-	// ÉpÉXê›íË(ì‡ïîÇ≈SplitÇ≥ÇÍÇÈ)
 	SetPath(path.GetPath());
 
-	// ì˙ïtãyÇ—çXêVèÓïÒÇéÊìæ
 	m_bUpdate = FALSE;
 	if (path.IsUpdate()) {
 		m_bUpdate = TRUE;
@@ -64,16 +107,10 @@ Filepath& Filepath::operator=(const Filepath& path)
 	return *this;
 }
 
-//---------------------------------------------------------------------------
-//
-//	ÉNÉäÉA
-//
-//---------------------------------------------------------------------------
 void FASTCALL Filepath::Clear()
 {
 	ASSERT(this);
 
-	// ÉpÉXÇ®ÇÊÇ—äeïîï™ÇÉNÉäÉA
 	m_szPath[0] = _T('\0');
 	m_szDrive[0] = _T('\0');
 	m_szDir[0] = _T('\0');
@@ -81,122 +118,76 @@ void FASTCALL Filepath::Clear()
 	m_szExt[0] = _T('\0');
 }
 
-//---------------------------------------------------------------------------
-//
-//	ÉtÉ@ÉCÉãê›íË(ÉVÉXÉeÉÄ)
-//
-//---------------------------------------------------------------------------
 void FASTCALL Filepath::SysFile(SysFileType sys)
 {
 	int nFile;
 
 	ASSERT(this);
 
-	// ÉLÉÉÉXÉg
 	nFile = (int)sys;
-
-	// ÉtÉ@ÉCÉãñºÉRÉsÅ[
 	_tcscpy(m_szPath, SystemFile[nFile]);
-
-	// ï™ó£
 	Split();
 
-	// ÉxÅ[ÉXÉfÉBÉåÉNÉgÉäê›íË
 	if (SystemDir[0] != _T('\0')) {
 		_tsplitpath(SystemDir, m_szDrive, m_szDir, NULL, NULL);
 		Make();
-	}
-	else {
+	} else {
 		SetBaseDir();
 	}
 }
 
-//---------------------------------------------------------------------------
-//
-//	ÉtÉ@ÉCÉãê›íË(ÉÜÅ[ÉU)
-//
-//---------------------------------------------------------------------------
 void FASTCALL Filepath::SetPath(const TCHAR* lpszPath)
 {
 	ASSERT(this);
 	ASSERT(lpszPath);
 	ASSERT(_tcslen(lpszPath) < _MAX_PATH);
 
-	// ÉpÉXñºÉRÉsÅ[
 	_tcscpy(m_szPath, lpszPath);
-
-	// ï™ó£
 	Split();
 
-	// ÉhÉâÉCÉuñîÇÕÉfÉBÉåÉNÉgÉäÇ™ì¸Ç¡ÇƒÇ¢ÇÍÇŒOK
 	if (_tcslen(m_szPath) > 0) {
 		if (_tcslen(m_szDrive) == 0) {
 			if (_tcslen(m_szDir) == 0) {
-				// ÉJÉåÉìÉgÉfÉBÉåÉNÉgÉäê›íË
 				SetCurDir();
 			}
 		}
 	}
 }
 
-//---------------------------------------------------------------------------
-//
-//	ÉpÉXï™ó£
-//
-//---------------------------------------------------------------------------
 void FASTCALL Filepath::Split()
 {
 	ASSERT(this);
 
-	// ÉpÅ[ÉcÇèâä˙âª
 	m_szDrive[0] = _T('\0');
 	m_szDir[0] = _T('\0');
 	m_szFile[0] = _T('\0');
 	m_szExt[0] = _T('\0');
 
-	// ï™ó£
 	_tsplitpath(m_szPath, m_szDrive, m_szDir, m_szFile, m_szExt);
 }
 
-//---------------------------------------------------------------------------
-//
-//	ÉpÉXçáê¨
-//
-//---------------------------------------------------------------------------
 void FASTCALL Filepath::Make()
 {
 	ASSERT(this);
 
-	// çáê¨
 	_tmakepath(m_szPath, m_szDrive, m_szDir, m_szFile, m_szExt);
 }
 
-//---------------------------------------------------------------------------
-//
-//	ÉxÅ[ÉXÉfÉBÉåÉNÉgÉäê›íË
-//
-//---------------------------------------------------------------------------
 void FASTCALL Filepath::SetBaseDir()
 {
 	TCHAR szModule[_MAX_PATH];
 
 	ASSERT(this);
 
-	// ÉÇÉWÉÖÅ[ÉãÇÃÉpÉXñºÇìæÇÈ
-	::GetModuleFileName(NULL, szModule, _MAX_PATH);
+	if (!filepath_get_executable_path(szModule, _MAX_PATH)) {
+		SetCurDir();
+		return;
+	}
 
-	// ï™ó£(ÉtÉ@ÉCÉãñºÇ∆ägí£éqÇÕèëÇ´çûÇ‹Ç»Ç¢)
 	_tsplitpath(szModule, m_szDrive, m_szDir, NULL, NULL);
-
-	// çáê¨
 	Make();
 }
 
-//---------------------------------------------------------------------------
-//
-//	Establecer nombre base para el archivo de configuraciÛn
-//
-//---------------------------------------------------------------------------
 void FASTCALL Filepath::SetBaseFile(const TCHAR* lpszName)
 {
 	TCHAR szModule[_MAX_PATH];
@@ -205,23 +196,15 @@ void FASTCALL Filepath::SetBaseFile(const TCHAR* lpszName)
 	ASSERT(lpszName);
 	ASSERT(_tcslen(m_szPath) > 0);
 
-	// ÉÇÉWÉÖÅ[ÉãÇÃÉpÉXñºÇìæÇÈ
-	::GetModuleFileName(NULL, szModule, _MAX_PATH);
-	
-	// En este lugar se determina el nombre del archivo de configuracion *-*
+	if (!filepath_get_executable_path(szModule, _MAX_PATH)) {
+		SetCurDir();
+	}
+
 	_tsplitpath(szModule, m_szDrive, m_szDir, m_szFile, NULL);
 	_tcscpy(m_szFile, lpszName);
-
-
-	// çáê¨
 	Make();
 }
 
-//---------------------------------------------------------------------------
-//
-//	Establecer el directorio actual
-//
-//---------------------------------------------------------------------------
 void FASTCALL Filepath::SetCurDir()
 {
 	TCHAR szCurDir[_MAX_PATH];
@@ -229,44 +212,33 @@ void FASTCALL Filepath::SetCurDir()
 	ASSERT(this);
 	ASSERT(_tcslen(m_szPath) > 0);
 
-	// ÉJÉåÉìÉgÉfÉBÉåÉNÉgÉäéÊìæ
-	::GetCurrentDirectory(_MAX_PATH, szCurDir);
+#if defined(_WIN32)
+	if (::GetCurrentDirectoryA(_MAX_PATH, szCurDir) == 0) {
+		szCurDir[0] = _T('\0');
+	}
+#else
+	if (!getcwd(szCurDir, _MAX_PATH)) {
+		szCurDir[0] = _T('\0');
+	}
+#endif
 
-	// ï™ó£(ÉtÉ@ÉCÉãñºÇ∆ägí£éqÇÕñ≥Çµ)
 	_tsplitpath(szCurDir, m_szDrive, m_szDir, NULL, NULL);
-
-	// çáê¨
 	Make();
 }
 
-//---------------------------------------------------------------------------
-//
-//	ÉNÉäÉAÇ≥ÇÍÇƒÇ¢ÇÈÇ©
-//
-//---------------------------------------------------------------------------
 BOOL FASTCALL Filepath::IsClear() const
 {
-	// Clear()ÇÃãt
 	if ((m_szPath[0] == _T('\0')) &&
 		(m_szDrive[0] == _T('\0')) &&
 		(m_szDir[0] == _T('\0')) &&
 		(m_szFile[0] == _T('\0')) &&
 		(m_szExt[0] == _T('\0'))) {
-		// ämÇ©Ç…ÅAÉNÉäÉAÇ≥ÇÍÇƒÇ¢ÇÈ
 		return TRUE;
 	}
 
-	// ÉNÉäÉAÇ≥ÇÍÇƒÇ¢Ç»Ç¢
 	return FALSE;
 }
 
-//---------------------------------------------------------------------------
-//
-//	ÉVÉáÅ[ÉgñºéÊìæ
-//	Å¶ï‘Ç≥ÇÍÇÈÉ|ÉCÉìÉ^ÇÕàÍéûìIÇ»Ç‡ÇÃÅBÇ∑ÇÆÉRÉsÅ[Ç∑ÇÈÇ±Ç∆
-//	Å¶FDIDiskÇÃdisk.nameÇ∆ÇÃä÷åWÇ≈ÅAï∂éöóÒÇÕç≈ëÂ59ï∂éö+èIí[Ç∆Ç∑ÇÈÇ±Ç∆
-//
-//---------------------------------------------------------------------------
 const char* FASTCALL Filepath::GetShort() const
 {
 	ASSERT(this);
@@ -291,32 +263,17 @@ const char* FASTCALL Filepath::GetShort() const
 	return (const char*)ShortName;
 }
 
-//---------------------------------------------------------------------------
-//
-//	ÉtÉ@ÉCÉãñºÅ{ägí£éqéÊìæ
-//	Å¶ï‘Ç≥ÇÍÇÈÉ|ÉCÉìÉ^ÇÕàÍéûìIÇ»Ç‡ÇÃÅBÇ∑ÇÆÉRÉsÅ[Ç∑ÇÈÇ±Ç∆
-//
-//---------------------------------------------------------------------------
 const TCHAR* FASTCALL Filepath::GetFileExt() const
 {
 	ASSERT(this);
 
-	// å≈íËÉoÉbÉtÉ@Ç÷çáê¨
 	_tcscpy(FileExt, m_szFile);
 	_tcscat(FileExt, m_szExt);
-
-	// LPCTSTRÇ∆ÇµÇƒï‘Ç∑
 	return (const TCHAR*)FileExt;
 }
 
-//---------------------------------------------------------------------------
-//
-//	ÉpÉXî‰är
-//
-//---------------------------------------------------------------------------
 BOOL FASTCALL Filepath::CmpPath(const Filepath& path) const
 {
-	// ÉpÉXÇ™äÆëSàÍívÇµÇƒÇ¢ÇÍÇŒTRUE
 	if (_tcscmp(path.GetPath(), GetPath()) == 0) {
 		return TRUE;
 	}
@@ -324,21 +281,11 @@ BOOL FASTCALL Filepath::CmpPath(const Filepath& path) const
 	return FALSE;
 }
 
-//---------------------------------------------------------------------------
-//
-//	ÉfÉtÉHÉãÉgÉfÉBÉåÉNÉgÉäèâä˙âª
-//
-//---------------------------------------------------------------------------
 void FASTCALL Filepath::ClearDefaultDir()
 {
-	DefaultDir[0] = _T('\0');	
+	DefaultDir[0] = _T('\0');
 }
 
-//---------------------------------------------------------------------------
-//
-//	ÉfÉtÉHÉãÉgÉfÉBÉåÉNÉgÉäê›íË
-//
-//---------------------------------------------------------------------------
 void FASTCALL Filepath::SetDefaultDir(const TCHAR* lpszPath)
 {
 	TCHAR szDrive[_MAX_DRIVE];
@@ -346,38 +293,21 @@ void FASTCALL Filepath::SetDefaultDir(const TCHAR* lpszPath)
 
 	ASSERT(lpszPath);
 
-	// ó^Ç¶ÇÁÇÍÇΩÉpÉXÇ©ÇÁÅAÉhÉâÉCÉuÇ∆ÉfÉBÉåÉNÉgÉäÇê∂ê¨
 	_tsplitpath(lpszPath, szDrive, szDir, NULL, NULL);
-
-	// ÉhÉâÉCÉuÇ∆ÉfÉBÉåÉNÉgÉäÇÉRÉsÅ[
 	_tcscpy(DefaultDir, szDrive);
 	_tcscat(DefaultDir, szDir);
 }
 
-//---------------------------------------------------------------------------
-//
-//	ÉfÉtÉHÉãÉgÉfÉBÉåÉNÉgÉäéÊìæ
-//
-//---------------------------------------------------------------------------
 const TCHAR* FASTCALL Filepath::GetDefaultDir()
 {
 	return (const TCHAR*)DefaultDir;
 }
 
-//---------------------------------------------------------------------------
-//
-//	?V?X?e???f?B???N?g????????
-//
-//---------------------------------------------------------------------------
 void FASTCALL Filepath::ClearSystemDir()
 {
 	SystemDir[0] = _T('\0');
 }
-//---------------------------------------------------------------------------
-//
-//	?V?X?e???f?B???N?g??????
-//
-//---------------------------------------------------------------------------
+
 void FASTCALL Filepath::SetSystemDir(const TCHAR* lpszPath)
 {
 	TCHAR szDrive[_MAX_DRIVE];
@@ -390,25 +320,16 @@ void FASTCALL Filepath::SetSystemDir(const TCHAR* lpszPath)
 	_tcscpy(SystemDir, szDrive);
 	_tcscat(SystemDir, szDir);
 }
-//---------------------------------------------------------------------------
-//
-//	?V?X?e???f?B???N?g??????
-//
-//---------------------------------------------------------------------------
+
 const TCHAR* FASTCALL Filepath::GetSystemDir()
 {
 	return (const TCHAR*)SystemDir;
 }
 
-//---------------------------------------------------------------------------
-//
-//	ÉZÅ[Éu
-//
-//---------------------------------------------------------------------------
 BOOL FASTCALL Filepath::Save(Fileio *fio, int /*ver*/)
 {
 	TCHAR szPath[_MAX_PATH];
-	FILETIME ft;
+	filepath_time_t saved;
 
 	ASSERT(this);
 	ASSERT(fio);
@@ -420,16 +341,10 @@ BOOL FASTCALL Filepath::Save(Fileio *fio, int /*ver*/)
 		return FALSE;
 	}
 
-	memset(&ft, 0, sizeof(ft));
-	HANDLE hFile = ::CreateFile(szPath, GENERIC_READ, FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
-	if (hFile != INVALID_HANDLE_VALUE) {
-		::GetFileTime(hFile, NULL, NULL, &ft);
-		::CloseHandle(hFile);
-	}
+	saved.low = 0;
+	saved.high = 0;
+	filepath_query_timestamp(szPath, &saved);
 
-	filepath_time_t saved;
-	saved.low = ft.dwLowDateTime;
-	saved.high = ft.dwHighDateTime;
 	if (!fio->Write(&saved, sizeof(saved))) {
 		return FALSE;
 	}
@@ -437,15 +352,9 @@ BOOL FASTCALL Filepath::Save(Fileio *fio, int /*ver*/)
 	return TRUE;
 }
 
-//---------------------------------------------------------------------------
-//
-//	ÉçÅ[Éh
-//
-//---------------------------------------------------------------------------
 BOOL FASTCALL Filepath::Load(Fileio *fio, int /*ver*/)
 {
 	TCHAR szPath[_MAX_PATH];
-	HANDLE hFile;
 
 	ASSERT(this);
 	ASSERT(fio);
@@ -460,69 +369,28 @@ BOOL FASTCALL Filepath::Load(Fileio *fio, int /*ver*/)
 		return FALSE;
 	}
 
-	hFile = ::CreateFile(szPath, GENERIC_READ, FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
-	if (hFile == INVALID_HANDLE_VALUE) {
+	if (!filepath_query_timestamp(szPath, &m_CurrentTime)) {
 		return TRUE;
 	}
-	FILETIME currentTime;
-	if (!::GetFileTime(hFile, NULL, NULL, &currentTime)) {
-		::CloseHandle(hFile);
-		return FALSE;
-	}
-	::CloseHandle(hFile);
 
-	m_CurrentTime.low = currentTime.dwLowDateTime;
-	m_CurrentTime.high = currentTime.dwHighDateTime;
-
-	FILETIME currentCmp;
-	FILETIME savedCmp;
-	currentCmp.dwLowDateTime = m_CurrentTime.low;
-	currentCmp.dwHighDateTime = m_CurrentTime.high;
-	savedCmp.dwLowDateTime = m_SavedTime.low;
-	savedCmp.dwHighDateTime = m_SavedTime.high;
-
-	if (::CompareFileTime(&currentCmp, &savedCmp) <= 0) {
-		m_bUpdate = FALSE;
-	}
-	else {
-		m_bUpdate = TRUE;
-	}
-
+	m_bUpdate = (filepath_pack_time(m_CurrentTime) > filepath_pack_time(m_SavedTime)) ? TRUE : FALSE;
 	return TRUE;
 }
 
-//---------------------------------------------------------------------------
-//
-//	ÉZÅ[Éuå„Ç…çXêVÇ≥ÇÍÇΩÇ©
-//
-//---------------------------------------------------------------------------
 BOOL FASTCALL Filepath::IsUpdate() const
 {
 	ASSERT(this);
-
 	return m_bUpdate;
 }
 
-//---------------------------------------------------------------------------
-//
-//	ÉZÅ[Éuéûä‘èÓïÒÇéÊìæ
-//
-//---------------------------------------------------------------------------
 void FASTCALL Filepath::GetUpdateTime(filepath_time_t *pSaved, filepath_time_t *pCurrent) const
 {
 	ASSERT(this);
 	ASSERT(m_bUpdate);
-
-	// éûä‘èÓïÒÇìnÇ∑
 	*pSaved = m_SavedTime;
 	*pCurrent = m_CurrentTime;
 }
 
-//---------------------------------------------------------------------------
-//
-//	ÉVÉXÉeÉÄÉtÉ@ÉCÉãÉeÅ[ÉuÉã
-//
-//---------------------------------------------------------------------------
 const TCHAR* Filepath::SystemFile[] = {
 	_T("IPLROM.DAT"),
 	_T("IPLROMXV.DAT"),
@@ -536,32 +404,7 @@ const TCHAR* Filepath::SystemFile[] = {
 	_T("SRAM.DAT")
 };
 
-//---------------------------------------------------------------------------
-//
-//	ÉVÉáÅ[Égñº
-//
-//---------------------------------------------------------------------------
 char Filepath::ShortName[_MAX_FNAME + _MAX_DIR];
-
-//---------------------------------------------------------------------------
-//
-//	ÉtÉ@ÉCÉãñºÅ{ägí£éq
-//
-//---------------------------------------------------------------------------
 TCHAR Filepath::FileExt[_MAX_FNAME + _MAX_DIR];
-
-//---------------------------------------------------------------------------
-//
-//	ÉfÉtÉHÉãÉgÉfÉBÉåÉNÉgÉä
-//
-//---------------------------------------------------------------------------
 TCHAR Filepath::DefaultDir[_MAX_PATH];
-
-//---------------------------------------------------------------------------
-//
-//	?V?X?e???f?B???N?g??
-//
-//---------------------------------------------------------------------------
 TCHAR Filepath::SystemDir[_MAX_PATH];
-
-#endif	// WIN32

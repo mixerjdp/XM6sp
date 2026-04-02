@@ -1,11 +1,11 @@
-  //---------------------------------------------------------------------------
-  //
-  //	EMULADOR X68000 "XM6"
-  //
-  //	Copyright (C) 2001-2005 PI.(ytanaka@ipc-tokai.or.jp)
-  //	[ Vista de dibujo MFC ]
-  //
-  //---------------------------------------------------------------------------
+//---------------------------------------------------------------------------
+//
+// X68000 Emulator "XM6"
+//
+//	Copyright (C) 2001-2005 PI.(ytanaka@ipc-tokai.or.jp)
+// [ MFC draw view ]
+//
+//---------------------------------------------------------------------------
 
 #if defined(_WIN32)
 
@@ -14,185 +14,189 @@
 
 #include "mfc_dx9.h"
 
-  //===========================================================================
-  //
-  //	Vista de dibujo
-  //
-  //===========================================================================
+//===========================================================================
+//
+// Draw view
+//
+//===========================================================================
 class CDrawView : public CView
 {
 public:
- 	 // Definicion de trabajo interno
+	// Internal data definition
 	typedef struct _DRAWINFO {
- 		BOOL bPower;					 // Energia
- 		Render *pRender;				 // Renderizador
- 		Render::render_t *pWork;		 // Trabajo del renderizador
-         DWORD dwDrawCount;				 // Conteo de dibujo
+		BOOL bPower;					// Power state
+		Render *pRender;				// Renderer
+		Render::render_t *pWork;		// Renderer work buffer
+		DWORD dwDrawCount;				// Draw count
 
- 		 // Seccion DIB
- 		HBITMAP hBitmap;				 // Seccion DIB
- 		DWORD *pBits;					 // Datos de bits
- 		int nBMPWidth;					 // Ancho BMP
- 		int nBMPHeight;					 // Alto BMP
+		// DIB section
+		HBITMAP hBitmap;				// DIB section
+		DWORD *pBits;					// Bitmap data
+		int nBMPWidth;					// BMP width
+		int nBMPHeight;					// BMP height
 
- 		 // Comunicacion con renderizador
- 		int nRendWidth;					 // Ancho del renderizador
- 		int nRendHeight;				 // Alto del renderizador
- 		int nRendHMul;					 // Multiplicador horizontal del renderizador
- 		int nRendVMul;					 // Multiplicador vertical del renderizador
- 		int nLeft;						 // Margen horizontal
- 		int nTop;						 // Margen vertical
- 		int nWidth;						 // Ancho BitBlt
- 		int nHeight;					 // Alto BitBlt
+		// Renderer communication
+		int nRendWidth;					// Renderer width
+		int nRendHeight;				// Renderer height
+		int nRendHMul;					// Renderer horizontal scale
+		int nRendVMul;					// Renderer vertical scale
+		int nLeft;						// Left margin
+		int nTop;						// Top margin
+		int nWidth;						// BitBlt width
+		int nHeight;					// BitBlt height
 
- 		 // Relacionado con Blt
- 		int nBltTop;					 // Inicio de dibujo Y
- 		int nBltBottom;					 // Fin de dibujo Y
- 		int nBltLeft;					 // Inicio de dibujo X
- 		int nBltRight;					 // Fin de dibujo X
- 		BOOL bBltAll;					 // Bandera de visualizacion completa
- 		BOOL bBltStretch;				 // Estirar para ajustar relacion de aspecto
+		// Blit-related
+		int nBltTop;					// Draw start Y
+		int nBltBottom;				// Draw end Y
+		int nBltLeft;					// Draw start X
+		int nBltRight;				// Draw end X
+		int nScaleIndex;				// Selected scale index
+		BOOL bBltAll;					// Full display flag
+		BOOL bBltStretch;				// Stretch to match aspect ratio
 	} DRAWINFO, *LPDRAWINFO;
 
 public:
- 	 // Funciones basicas
+	// Basic methods
 	CDrawView();
- 										 // Constructor
+										// Constructor
 
-	BOOL m_bShowOSD;					 // Visibilidad del OSD
-	volatile LONG m_lShaderEnabled;		 // Estado del shader (volatile + atomic-safe)
+	BOOL m_bShowOSD;					// OSD visibility
+	volatile LONG m_lShaderEnabled;		// Shader state (volatile + atomic-safe)
 	void FASTCALL Enable(BOOL bEnable);
- 										 // Control de operacion
+										// Enable control
 	BOOL FASTCALL IsEnable() const;
- 										 // Obtencion de bandera de operacion
+										// Get enable state
 	BOOL FASTCALL Init(CWnd *pParent, BOOL bShaderEnabled);
- 										 // Inicializacion
+										// Initialization
 	BOOL PreCreateWindow(CREATESTRUCT& cs);
- 										 // Preparacion de creacion de ventana
+										// Window creation setup
 	void FASTCALL Refresh();
- 										 // Dibujo de refresco
+										// Refresh drawing
 	void FASTCALL Draw(int index);
- 										 // Dibujo (solo ventana especifica)
+										// Draw (specific window only)
 	void FASTCALL Update();
-  										 // Actualizacion desde hilo de mensajes
+										// Update from the message thread
 	void FASTCALL RequestPresent();
-										 // Solicitar frame al hilo UI
+										// Request a frame from the UI thread
 	void FASTCALL SetVSync(BOOL bEnable);
-										 // Actualizar VSync en renderer DX
+										// Update VSync in the DX renderer
 	void FASTCALL ApplyRendererConfig(int nRenderMode);
-										 // Aplicar configuracion de renderizador
+										// Apply renderer settings
 	void FASTCALL ToggleRenderer();
-										 // Alternar entre DX9 y GDI
+										// Toggle between DX9 and GDI
 	void FASTCALL ToggleShader();
-										 // Alternar efecto shader CRT
+										// Toggle CRT shader effect
 	void FASTCALL SetShaderEnabled(BOOL bEnable);
-										 // Activar/desactivar shader
+										// Enable/disable shader
 	BOOL FASTCALL IsShaderEnabled() const;
-										 // Obtener estado de shader
+										// Get shader state
 	BOOL FASTCALL IsDX9Active() const;
-										 // Obtener si está activo modo DX9
+										// Check whether DX9 mode is active
 	void FASTCALL ShowRenderStatusOSD(BOOL bVSync);
-										 // Mostrar renderer activo y estado VSync
+										// Show active renderer and VSync state
 	void FASTCALL ApplyCfg(const Config *pConfig);
- 										 // Aplicar configuracion
+										// Apply settings
 	void FASTCALL GetDrawInfo(LPDRAWINFO pDrawInfo) const;
- 										 // Obtencion de informacion de dibujo
+										// Get drawing information
 
- 	 // Dibujo de renderizado
+	// Rendering
 	void OnDraw(CDC *pDC);
- 										 // Dibujo
-	void FASTCALL Stretch(BOOL bStretch);
- 										 // Modo de aumento
-	BOOL IsStretch() const				{ return m_Info.bBltStretch; }
- 										 // Obtencion de modo de aumento
+										// Draw
+	void FASTCALL SetScaleIndex(int nScaleIndex);
+										// Set window scale
+	int FASTCALL GetScaleIndex() const;
+										// Get window scale index
+	int FASTCALL GetScalePercent() const;
+										// Get window scale percent
 
- 	 // Gestion de subventanas
+	// Subwindow management
 	int FASTCALL GetNewSWnd() const;
- 										 // Obtencion de nuevo indice de subventana
+										// Get next subwindow index
 	void FASTCALL AddSWnd(CSubWnd *pSubWnd);
- 										 // Anadir subventana (llamado desde hijo)
+										// Add subwindow (called from child)
 	void FASTCALL DelSWnd(CSubWnd *pSubWnd);
- 										 // Eliminar subventana (llamado desde hijo)
+										// Delete subwindow (called from child)
 	void FASTCALL ClrSWnd();
- 										 // Eliminar todas las subventanas
+										// Delete all subwindows
 	CSubWnd* FASTCALL GetFirstSWnd() const;
- 										 // Obtener primera subventana
+										// Get first subwindow
 	CSubWnd* FASTCALL SearchSWnd(DWORD dwID) const;
- 										 // Obtener subventana por ID arbitrario
+										// Get subwindow by arbitrary ID
 	CFont* FASTCALL GetTextFont();
- 										 // Obtener fuente de texto
+										// Get text font
 	CSubWnd* FASTCALL NewWindow(BOOL bDis);
- 										 // Crear nueva ventana (Dis, Mem)
+										// Create new window (Dis, Mem)
 	BOOL FASTCALL IsNewWindow(BOOL bDis);
- 										 // Consultar si es posible crear nueva ventana
+										// Check whether a new window can be created
 	int FASTCALL GetSubWndNum() const;
- 										 // Obtener numero de subventanas
+										// Get number of subwindows
 	LPCTSTR FASTCALL GetWndClassName() const;
- 										 // Obtener nombre de clase de ventana
+										// Get window class name
 
 protected:
- 	 // Mensajes WM
+	// WM messages
 	afx_msg int OnCreate(LPCREATESTRUCT lpCreateStruct);
- 										 // Creacion de ventana
+										// Window creation
 	afx_msg void OnDestroy();
- 										 // Eliminacion de ventana
+										// Window destruction
 	afx_msg void OnSize(UINT nType, int cx, int cy);
- 										 // Cambio de tamano de ventana
+										// Window size change
 	afx_msg void OnPaint();
- 										 // Dibujo
+										// Draw
 	afx_msg BOOL OnEraseBkgnd(CDC *pDC);
- 										 // Dibujo de fondo
+										// Background drawing
 	afx_msg LRESULT OnDisplayChange(WPARAM wParam, LPARAM lParam);
- 										 // Cambio de pantalla
+										// Display change
 	afx_msg LRESULT OnPresentFrame(WPARAM wParam, LPARAM lParam);
-										 // Presentacion asincrona de frame
+										// Asynchronous frame presentation
 	afx_msg void OnDropFiles(HDROP hDropInfo);
- 										 // Soltar archivo (File drop)
+										// File drop
 	afx_msg BOOL OnMouseWheel(UINT nFlags, short zDelta, CPoint pt);
- 										 // Rueda del raton
+										// Mouse wheel
 	afx_msg void OnKeyDown(UINT nChar, UINT nRepCnt, UINT nFlags);
- 										 // Tecla pulsada
+										// Key pressed
 	afx_msg void OnSysKeyDown(UINT nChar, UINT nRepCnt, UINT nFlags);
- 										 // Tecla de sistema pulsada
+										// System key pressed
 	afx_msg void OnKeyUp(UINT nChar, UINT nRepCnt, UINT nFlags);
- 										 // Tecla liberada
+										// Key released
 	afx_msg void OnSysKeyUp(UINT nChar, UINT nRepCnt, UINT nFlags);
- 										 // Tecla de sistema liberada
+										// System key released
 	afx_msg void OnMove(int x, int y);
- 										 // Movimiento de ventana
+										// Window move
 
 	BOOL m_bEnable;
- 										 // Bandera de validez
+										// Validity flag
 	CFont m_TextFont;
- 										 // Fuente de texto
+										// Text font
 
 private:
 	void FASTCALL SetupBitmap();
 	void FASTCALL FinishFrame();
 	void FASTCALL DrawOSD(CDC *pDC);
 	void FASTCALL ShowOSD(LPCTSTR lpszText);
-  										 // Preparacion de mapa de bits
+										// Bitmap setup
 	inline void FASTCALL ReCalc(CRect& rect);
- 										 // Recalculo
+										// Recalculate
 	inline void FASTCALL DrawRect(CDC *pDC);
- 										 // Dibujar margen circundante
+										// Draw surrounding border
 	inline BOOL FASTCALL CalcRect();
- 										 // Investigar area necesaria de dibujo
+										// Determine the required drawing area
 	int FASTCALL MakeBits();
- 										 // Creacion de bits
+										// Bitmap creation
 	BOOL FASTCALL KeyUpDown(UINT nChar, UINT nFlags, BOOL bDown);
-  										 // Identificacion de teclas
+										// Key handling
 	CDX9Renderer m_DX9Renderer;
 	BOOL m_bUseDX9;
 	volatile LONG m_lPresentPending;
-	
-	// Variables para hilo de renderizado dedicado
+
+	// Variables for the dedicated rendering thread
 	HANDLE m_hRenderEvent;
 	HANDLE m_hRenderExitEvent;
 	HANDLE m_hRenderAckEvent;
 	CWinThread *m_pRenderThread;
 	volatile LONG m_lRenderCmd;
 	volatile LONG m_lPendingShaderEnable;	// -1: no change, 0: disable, 1: enable
+	volatile LONG m_lScaleIndex;
 	int m_nRenderWidth;
 	int m_nRenderHeight;
 	BOOL m_bRenderVSync;
@@ -210,19 +214,19 @@ private:
 	TCHAR m_szPerfLine[96];
 	TCHAR m_szOSDText[64];
 	CSubWnd *m_pSubWnd;
- 										 // Primera subventana
+										// First subwindow
 	CFrmWnd *m_pFrmWnd;
- 										 // Ventana de marco (Frame window)
+										// Frame window
 	CScheduler *m_pScheduler;
- 										 // Planificador (Scheduler)
+										// Scheduler
 	CInput *m_pInput;
- 										 // Entrada (Input)
+										// Input
 	DRAWINFO m_Info;
- 										 // Trabajo interno
+										// Internal data
 
 	DECLARE_MESSAGE_MAP()
- 										 // Con mapa de mensajes
+										// With message map
 };
 
- #endif	 // mfc_draw_h
- #endif	 // _WIN32
+#endif	// mfc_draw_h
+#endif	// _WIN32

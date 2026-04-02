@@ -1,22 +1,22 @@
-  //---------------------------------------------------------------------------
-  //
-  //	EMULADOR X68000 "XM6"
-  //
-  //	Copyright (C) 2001-2006 PI.(ytanaka@ipc-tokai.or.jp)
-  //	[ Vista de dibujo MFC ]
-  //
-  //---------------------------------------------------------------------------
+//---------------------------------------------------------------------------
+//
+// X68000 Emulator "XM6"
+//
+//	Copyright (C) 2001-2006 PI.(ytanaka@ipc-tokai.or.jp)
+// [ MFC draw view ]
+//
+//---------------------------------------------------------------------------
 
 #if defined(_WIN32)
 
-#include "os.h"
 #include "mfc.h"
+#include "os.h"
 #include "xm6.h"
 #include "vm.h"
 #include "render.h"
 #include "crtc.h"
 #include "config.h"
-#include "mfc_sub.h" 
+#include "mfc_sub.h"
 #include "mfc_frm.h"
 #include "mfc_com.h"
 #include "mfc_sch.h"
@@ -62,20 +62,20 @@ static void WaitRenderAck(HANDLE hEvent, DWORD dwTimeout = 2000)
 	}
 }
 
-  //===========================================================================
-  //
-  //	Vista de dibujo
-  //
-  //===========================================================================
+//===========================================================================
+//
+// Draw view
+//
+//===========================================================================
 
-  //---------------------------------------------------------------------------
-  //
-  //	Constructor
-  //
-  //---------------------------------------------------------------------------
+//---------------------------------------------------------------------------
+//
+//	Constructor
+//
+//---------------------------------------------------------------------------
 CDrawView::CDrawView()
 {
- 	 // Inicializacion de la pieza (basica)
+	// Basic component initialization
 	m_bEnable = FALSE;
 	m_pSubWnd = NULL;
 	m_pFrmWnd = NULL;
@@ -85,7 +85,8 @@ CDrawView::CDrawView()
 	m_hRenderExitEvent = CreateEvent(NULL, FALSE, FALSE, NULL);
 	m_hRenderAckEvent = CreateEvent(NULL, FALSE, FALSE, NULL);
 	m_lRenderCmd = 0;
-	m_lPendingShaderEnable = -1;	// -1: no change
+	m_lPendingShaderEnable=-1;	// -1: no change
+	m_lScaleIndex = 0;
 	m_pRenderThread = AfxBeginThread(RenderThreadFunc, this, THREAD_PRIORITY_ABOVE_NORMAL, 0, CREATE_SUSPENDED);
 	if (m_pRenderThread) {
 		m_pRenderThread->m_bAutoDelete = FALSE;
@@ -95,30 +96,30 @@ CDrawView::CDrawView()
 	m_nStagingWidth = 0;
 	m_nStagingHeight = 0;
 	m_bShowOSD = FALSE;
-	m_lShaderEnabled = 0;	// 0: disabled, 1: enabled (use InterlockedExchange)
+	m_lShaderEnabled=0;	// 0: disabled, 1: enabled (use InterlockedExchange)
 	m_dwOSDUntil = 0;
 	m_dwPerfOSDLastTick = 0;
 	m_nPerfFPS = 0;
 	m_szPerfLine[0] = _T('\0');
 	m_szOSDText[0] = _T('\0');
 
- 	 // Componentes
+	// Components
 	m_pScheduler = NULL;
 	m_pInput = NULL;
 
- 	 // Inicializacion de la pieza (dibujo general)
+	// General drawing component initialization
 	m_Info.bPower = FALSE;
 	m_Info.pRender = NULL;
-	m_Info.pWork = NULL; 
+	m_Info.pWork = NULL;
 	m_Info.dwDrawCount = 0;
 
- 	 // Inicializacion de la pieza (seccion DIB)
+	// DIB section initialization
 	m_Info.hBitmap = NULL;
 	m_Info.pBits = NULL;
 	m_Info.nBMPWidth = 0;
 	m_Info.nBMPHeight = 0;
 
- 	 // Inicializacion de la pieza (ajuste de tamano)
+	// Size adjustment initialization
 	m_Info.nRendWidth = 0;
 	m_Info.nRendHeight = 0;
 	m_Info.nRendHMul = 0;
@@ -128,20 +129,21 @@ CDrawView::CDrawView()
 	m_Info.nWidth = 0;
 	m_Info.nHeight = 0;
 
- 	 // Inicializacion de la pieza (Blt)
+	// Blt initialization
 	m_Info.nBltTop = 0;
 	m_Info.nBltBottom = 0;
 	m_Info.nBltLeft = 0;
 	m_Info.nBltRight = 0;
+	m_Info.nScaleIndex = 0;
 	m_Info.bBltAll = TRUE;
-	m_Info.bBltStretch = FALSE;
+	m_Info.bBltStretch = TRUE;
 }
 
-  //---------------------------------------------------------------------------
-  //
-  //	Mapa de mensajes
-  //
-  //---------------------------------------------------------------------------
+//---------------------------------------------------------------------------
+//
+// Message map
+//
+//---------------------------------------------------------------------------
 BEGIN_MESSAGE_MAP(CDrawView, CView)
 	ON_WM_CREATE()
 	ON_WM_DESTROY()
@@ -153,7 +155,7 @@ BEGIN_MESSAGE_MAP(CDrawView, CView)
 	ON_WM_DROPFILES()
 #if _MFC_VER >= 0x600
 	ON_WM_MOUSEWHEEL()
- #endif	 // _MFC_VER
+#endif	// _MFC_VER
 	ON_WM_KEYDOWN()
 	ON_WM_SYSKEYDOWN()
 	ON_WM_KEYUP()
@@ -161,23 +163,23 @@ BEGIN_MESSAGE_MAP(CDrawView, CView)
 	ON_WM_MOVE()
 END_MESSAGE_MAP()
 
-  //---------------------------------------------------------------------------
-  //
-  //	Inicializacion
-  //
-  //---------------------------------------------------------------------------
+//---------------------------------------------------------------------------
+//
+//	Initialization
+//
+//---------------------------------------------------------------------------
 BOOL FASTCALL CDrawView::Init(CWnd *pParent, BOOL bShaderEnabled)
 {
 	ASSERT(pParent);
 
- 	 // Memoria de la ventana de marco (Frame Window)
+	// Frame window pointer
 	m_pFrmWnd = (CFrmWnd*)pParent;
 
-	// Inicializar estado del shader
+	// Initialize shader state
 	InterlockedExchange(&m_lShaderEnabled, bShaderEnabled ? 1 : 0);
 	InterlockedExchange(&m_lPendingShaderEnable, bShaderEnabled ? 1 : 0);
 
- 	 // Crear como primera vista
+	// Create as the first view
 	if (!Create(NULL, NULL, WS_CHILD | WS_VISIBLE | WS_CLIPCHILDREN,
 				CRect(0, 0, 0, 0), pParent, AFX_IDW_PANE_FIRST, NULL)) {
 		return FALSE;
@@ -191,7 +193,7 @@ BOOL FASTCALL CDrawView::Init(CWnd *pParent, BOOL bShaderEnabled)
 	if (rect.Height() <= 0) {
 		rect.bottom = 480;
 	}
-	
+
 	if (m_bUseDX9 && m_pRenderThread) {
 		m_nRenderWidth = rect.Width();
 		m_nRenderHeight = rect.Height();
@@ -204,45 +206,45 @@ BOOL FASTCALL CDrawView::Init(CWnd *pParent, BOOL bShaderEnabled)
 	return TRUE;
 }
 
-  //---------------------------------------------------------------------------
-  //
-  //	Preparando la creacion de una ventana
-  //
-  //---------------------------------------------------------------------------
+//---------------------------------------------------------------------------
+//
+// Preparing window creation
+//
+//---------------------------------------------------------------------------
 BOOL CDrawView::PreCreateWindow(CREATESTRUCT& cs)
 {
- 	 // Clase base
+	// Base class
 	if (!CView::PreCreateWindow(cs)) {
 		return FALSE;
 	}
 
- 	 // Anadir WS_CLIPCHILDREN
+	// Add WS_CLIPCHILDREN
 	cs.style |= WS_CLIPCHILDREN;
 
- 	 // Anadir un borde de cliente
+	// Add a client edge
 	cs.dwExStyle |= WS_EX_CLIENTEDGE;
 
 	return TRUE;
 }
 
-  //---------------------------------------------------------------------------
-  //
-  //	Creacion de ventanas
-  //
-  //---------------------------------------------------------------------------
+//---------------------------------------------------------------------------
+//
+// Window creation
+//
+//---------------------------------------------------------------------------
 int CDrawView::OnCreate(LPCREATESTRUCT lpCreateStruct)
 {
- 	 // Clase base
+	// Base class
 	if (CView::OnCreate(lpCreateStruct) != 0) {
 		return -1;
 	}
 
- 	 // IME desactivado (off)
+	// Disable IME
 	::ImmAssociateContext(m_hWnd, (HIMC)NULL);
 
- 	 // Creacion de fuentes de texto
+	// Create text fonts
 	if (IsJapanese()) {
- 		 // Entorno de idioma japones
+		// Japanese language environment
 		m_TextFont.CreateFont(14, 0, 0, 0,
 							FW_NORMAL, 0, 0, 0,
 							SHIFTJIS_CHARSET, OUT_DEFAULT_PRECIS,
@@ -250,7 +252,7 @@ int CDrawView::OnCreate(LPCREATESTRUCT lpCreateStruct)
 							FIXED_PITCH, NULL);
 	}
 	else {
- 		 // Entorno de idioma ingles
+		// English language environment
 		m_TextFont.CreateFont(14, 0, 0, 0,
 							FW_NORMAL, 0, 0, 0,
 							DEFAULT_CHARSET, OUT_DEFAULT_PRECIS,
@@ -258,25 +260,25 @@ int CDrawView::OnCreate(LPCREATESTRUCT lpCreateStruct)
 							FIXED_PITCH, NULL);
 	}
 
- 	 // Permiso para arrastrar y soltar (Drag and Drop)
+	// Enable drag and drop
 	DragAcceptFiles(TRUE);
 
 	return 0;
 }
 
-  //---------------------------------------------------------------------------
-  //
-  //	Eliminacion de ventanas
-  //
-  //---------------------------------------------------------------------------
+//---------------------------------------------------------------------------
+//
+// Window destruction
+//
+//---------------------------------------------------------------------------
 void CDrawView::OnDestroy()
 {
 	BOOL bHadRenderThread;
- 	 // Detener operacion
+	// Stop operation
 	Enable(FALSE);
 	bHadRenderThread = (m_pRenderThread != NULL);
 
- 	 // Borrar mapa de bits
+	// Delete bitmap
 	if (m_Info.hBitmap) {
 		::DeleteObject(m_Info.hBitmap);
 		m_Info.hBitmap = NULL;
@@ -299,7 +301,7 @@ void CDrawView::OnDestroy()
 		m_DX9Renderer.Cleanup();
 	}
 
-	 // Borrar fuente de texto
+	// Delete text font
 	m_TextFont.DeleteObject();
 	if (m_pStagingBuffer) {
 		free(m_pStagingBuffer);
@@ -308,18 +310,18 @@ void CDrawView::OnDestroy()
 		m_nStagingHeight = 0;
 	}
 
-	 // A la clase base
+	// Call the base class
 	CView::OnDestroy();
 }
 
-  //---------------------------------------------------------------------------
-  //
-  //	Redimensionar
-  //
-  //---------------------------------------------------------------------------
+//---------------------------------------------------------------------------
+//
+// Resize
+//
+//---------------------------------------------------------------------------
 void CDrawView::OnSize(UINT nType, int cx, int cy)
 {
-	 // Actualizacion del mapa de bits
+	// Update bitmap
 	SetupBitmap();
 	if (m_bUseDX9 && m_pRenderThread) {
 		m_nRenderWidth = cx;
@@ -330,15 +332,15 @@ void CDrawView::OnSize(UINT nType, int cx, int cy)
 		WaitRenderAck(m_hRenderAckEvent);
 	}
 
-	 // Clase base
+	// Base class
 	CView::OnSize(nType, cx, cy);
 }
 
-  //---------------------------------------------------------------------------
-  //
-  //	Dibujo
-  //
-  //---------------------------------------------------------------------------
+//---------------------------------------------------------------------------
+//
+// Draw
+//
+//---------------------------------------------------------------------------
 void CDrawView::OnPaint()
 {
 	Render *pRender;
@@ -347,25 +349,25 @@ void CDrawView::OnPaint()
 	CFrmWnd *pFrmWnd;
 	PAINTSTRUCT ps;
 
- 	 // Bloqueo VM
+	// Lock the VM
 	::LockVM();
 
- 	 // Todas las banderas de dibujo activadas (ON)
+	// Force all drawing flags on
 	m_Info.bBltAll = TRUE;
 
- 	 // Si esta activado y el programador desactivado, crear en buffer Mix (forzado)
+	// If enabled and the scheduler is disabled, render into the mix buffer (forced)
 	if (m_bEnable) {
 		pFrmWnd = (CFrmWnd*)GetParent();
 		ASSERT(pFrmWnd);
 		if (!pFrmWnd->GetScheduler()->IsEnable()) {
- 			 // Render y CRTC presentes si esta activado
+			// If enabled, fetch the renderer and CRTC
 			pRender = (Render*)::GetVM()->SearchDevice(MAKEID('R', 'E', 'N', 'D'));
 			ASSERT(pRender);
 			pCRTC = (CRTC*)::GetVM()->SearchDevice(MAKEID('C', 'R', 'T', 'C'));
 			ASSERT(pCRTC);
 			p = pCRTC->GetWorkAddr();
 
- 			 // Crear
+			// Render the frame
 			m_Info.bPower = ::GetVM()->IsPower();
 			if (m_Info.bPower) {
 				pRender->Complete();
@@ -375,37 +377,37 @@ void CDrawView::OnPaint()
 				pRender->EndFrame();
 			}
 			else {
- 				 // Borrar todos los mapas de bits
+				// Clear all bitmaps
 				memset(m_Info.pBits, 0, m_Info.nBMPWidth * m_Info.nBMPHeight * 4);
 			}
 
- 			 // Dibujo (conectar con CDrawView::OnDraw)
+			// Draw (via CDrawView::OnDraw)
 			CView::OnPaint();
 
- 			 // Desbloqueo VM
+			// Unlock the VM
 			::UnlockVM();
 			return;
 		}
 	}
 
- 	 // Solo obtener DCs
+	// Acquire the DCs only
 	BeginPaint(&ps);
 	EndPaint(&ps);
 
- 	 // Desbloqueo VM
+	// Unlock the VM
 	::UnlockVM();
 }
 
-  //---------------------------------------------------------------------------
-  //
-  //	Dibujo de fondo
-  //
-  //---------------------------------------------------------------------------
+//---------------------------------------------------------------------------
+//
+// Background drawing
+//
+//---------------------------------------------------------------------------
 BOOL CDrawView::OnEraseBkgnd(CDC *pDC)
 {
 	CRect rect;
 
- 	 // Si no esta activado, rellenar con negro
+	// If disabled, fill with black
 	if (!m_bEnable) {
 		GetClientRect(&rect);
 		pDC->FillSolidRect(&rect, RGB(0, 0, 0));
@@ -414,24 +416,24 @@ BOOL CDrawView::OnEraseBkgnd(CDC *pDC)
 	return TRUE;
 }
 
-  //---------------------------------------------------------------------------
-  //
-  //	Cambiar el entorno de visualizacion
-  //
-  //---------------------------------------------------------------------------
+//---------------------------------------------------------------------------
+//
+// Handle display environment changes
+//
+//---------------------------------------------------------------------------
 LRESULT CDrawView::OnDisplayChange(WPARAM /* wParam */, LPARAM /* lParam */)
 {
- 	 // Preparacion del mapa de bits
+	// Prepare the bitmap
 	SetupBitmap();
 
 	return 0;
 }
 
-  //---------------------------------------------------------------------------
-  //
-  //	Soltar archivos (File Drop)
-  //
-  //---------------------------------------------------------------------------
+//---------------------------------------------------------------------------
+//
+// File drop
+//
+//---------------------------------------------------------------------------
 void CDrawView::OnDropFiles(HDROP hDropInfo)
 {
 	TCHAR szPath[_MAX_PATH];
@@ -440,86 +442,97 @@ void CDrawView::OnDropFiles(HDROP hDropInfo)
 	int nFiles;
 	int nDrive;
 
- 	 // Obtener numero de archivos soltados
+	// Get the number of dropped files
 	nFiles = ::DragQueryFile(hDropInfo, 0xffffffff, szPath, _MAX_PATH);
 	ASSERT(nFiles > 0);
 
- 	 // Determinar unidad desde posicion de caida
+	// Determine the drive from the drop position
 	::DragQueryPoint(hDropInfo, &point);
 	GetClientRect(rect);
 	if (point.x < (rect.right >> 1)) {
- 		 // Mitad izquierda (unidad 0)
+		// Left half (drive 0)
 		nDrive = 0;
 	}
 	else {
- 		 // Mitad derecha (unidad 1)
+		// Right half (drive 1)
 		nDrive = 1;
 	}
 
- 	 // Dividir por numero de archivos
+	// Dispatch based on the number of files
 	if (nFiles == 1) {
- 		 // Un solo archivo: mitad izquierda y derecha de la ventana
+		// One file: use the left and right halves of the window
 		::DragQueryFile(hDropInfo, 0, szPath, _MAX_PATH);
 		m_pFrmWnd->InitCmdSub(nDrive, szPath);
 	}
 	else {
- 		 // Dos archivos: 0 y 1 respectivamente
+		// Two files: assign them to 0 and 1 respectively
 		::DragQueryFile(hDropInfo, 0, szPath, _MAX_PATH);
 		m_pFrmWnd->InitCmdSub(0, szPath);
 		::DragQueryFile(hDropInfo, 1, szPath, _MAX_PATH);
 		m_pFrmWnd->InitCmdSub(1, szPath);
 	}
 
- 	 // Fin de procesamiento
+	// Finish processing
 	::DragFinish(hDropInfo);
 
- 	 // Dos archivos se restablecen
+	// Reset when two files are dropped
 	if (nFiles > 1) {
 		m_pFrmWnd->PostMessage(WM_COMMAND, IDM_RESET, 0);
 	}
 }
 
-  //---------------------------------------------------------------------------
-  //
-  //	Rueda del raton
-  //
-  //---------------------------------------------------------------------------
+//---------------------------------------------------------------------------
+//
+// Mouse wheel
+//
+//---------------------------------------------------------------------------
 BOOL CDrawView::OnMouseWheel(UINT /*nFlags*/, short zDelta, CPoint /*pt*/)
 {
 	CConfig *pConfig;
 
- 	 // Obtener configuracion
+	// Get settings
 	pConfig = m_pFrmWnd->GetConfig();
 
- 	 // Bloquear VM
+	// Lock the VM
 	::LockVM();
 
- 	 // Cambia segun la orientacion del eje Z
+	// Depends on the Z-axis direction
 	if (zDelta > 0) {
- 		 // Hacia atras: ampliar
-		Stretch(TRUE);
-		pConfig->SetStretch(TRUE);
+		// Backward: zoom in
+		int nScale = GetScaleIndex();
+		if (nScale < 4) {
+			nScale++;
+		}
+		SetScaleIndex(nScale);
+		pConfig->SetWindowScale(nScale);
 	}
 	else {
- 		 // Hacia adelante: no ampliada
-		Stretch(FALSE);
-		pConfig->SetStretch(FALSE);
+		// Forward: zoom out
+		int nScale = GetScaleIndex();
+		if (nScale > 0) {
+			nScale--;
+		}
+		SetScaleIndex(nScale);
+		pConfig->SetWindowScale(nScale);
 	}
 
- 	 // Desbloqueo VM
+	// Unlock the VM
 	::UnlockVM();
+
+	// Resize outside the VM lock to avoid short audio stalls.
+	m_pFrmWnd->ApplyWindowScale();
 
 	return TRUE;
 }
 
-  //---------------------------------------------------------------------------
-  //
-  //	Tecla pulsada
-  //
-  //---------------------------------------------------------------------------
+//---------------------------------------------------------------------------
+//
+// Key pressed
+//
+//---------------------------------------------------------------------------
 void CDrawView::OnKeyDown(UINT nChar, UINT nRepCnt, UINT nFlags)
 {
-	 // Determinar que teclas excluir
+	// Determine which keys to filter out
 	if (!KeyUpDown(nChar, nFlags, TRUE)) {
 		return;
 	}
@@ -529,63 +542,63 @@ void CDrawView::OnKeyDown(UINT nChar, UINT nRepCnt, UINT nFlags)
 		return;
 	}
 
-	 // Flujo a clase base
+	// Pass to the base class
 	CView::OnKeyDown(nChar, nRepCnt, nFlags);
 }
 
-  //---------------------------------------------------------------------------
-  //
-  //	Tecla de sistema pulsada
-  //
-  //---------------------------------------------------------------------------
+//---------------------------------------------------------------------------
+//
+// System key pressed
+//
+//---------------------------------------------------------------------------
 void CDrawView::OnSysKeyDown(UINT nChar, UINT nRepCnt, UINT nFlags)
 {
- 	 // Determinar que teclas excluir
+	// Determine which keys to filter out
 	if (!KeyUpDown(nChar, nFlags, TRUE)) {
 		return;
 	}
 
- 	 // Flujo a clase base
+	// Pass to the base class
 	CView::OnSysKeyDown(nChar, nRepCnt, nFlags);
 }
 
-  //---------------------------------------------------------------------------
-  //
-  //	Tecla liberada
-  //
-  //---------------------------------------------------------------------------
+//---------------------------------------------------------------------------
+//
+// Key released
+//
+//---------------------------------------------------------------------------
 void CDrawView::OnKeyUp(UINT nChar, UINT nRepCnt, UINT nFlags)
 {
- 	 // Determinar teclas a excluir
+	// Determine which keys to filter out
 	if (!KeyUpDown(nChar, nFlags, FALSE)) {
 		return;
 	}
 
- 	 // Flujo a clase base
+	// Pass to the base class
 	CView::OnKeyUp(nChar, nRepCnt, nFlags);
 }
 
-  //---------------------------------------------------------------------------
-  //
-  //	Tecla de sistema liberada
-  //
-  //---------------------------------------------------------------------------
+//---------------------------------------------------------------------------
+//
+// System key released
+//
+//---------------------------------------------------------------------------
 void CDrawView::OnSysKeyUp(UINT nChar, UINT nRepCnt, UINT nFlags)
 {
- 	 // Determinar que teclas excluir
+	// Determine which keys to filter out
 	if (!KeyUpDown(nChar, nFlags, FALSE)) {
 		return;
 	}
 
- 	 // Flujo a clase base
+	// Pass to the base class
 	CView::OnSysKeyUp(nChar, nRepCnt, nFlags);
 }
 
-  //---------------------------------------------------------------------------
-  //
-  //	Identificacion de teclas
-  //
-  //---------------------------------------------------------------------------
+//---------------------------------------------------------------------------
+//
+// Key handling
+//
+//---------------------------------------------------------------------------
 BOOL FASTCALL CDrawView::KeyUpDown(UINT nChar, UINT nFlags, BOOL bDown)
 {
 #if defined(INPUT_MOUSE) && defined(INPUT_KEYBOARD) && defined(INPUT_HARDWARE)
@@ -594,30 +607,30 @@ BOOL FASTCALL CDrawView::KeyUpDown(UINT nChar, UINT nFlags, BOOL bDown)
 	ASSERT(this);
 	ASSERT(nChar < 0x100);
 
- 	 // Obtener planificador (Scheduler)
+	// Get the scheduler
 	if (!m_pScheduler) {
 		m_pScheduler = m_pFrmWnd->GetScheduler();
 		if (!m_pScheduler) {
- 			 // No existe planificador, no excluir
+			// No scheduler, nothing to filter
 			return TRUE;
 		}
 	}
 
- 	 // Obtener entrada (Input)
+	// Get the input handler
 	if (!m_pInput) {
 		m_pInput = m_pFrmWnd->GetInput();
 		if (!m_pScheduler) {
- 			 // No existe entrada, no excluir
+			// No input handler, nothing to filter
 			return TRUE;
 		}
 	}
 
- 	 // Si el planificador esta detenido, no excluir
+	// If the scheduler is stopped, do not filter
 	if (!m_pScheduler->IsEnable()) {
 		return TRUE;
 	}
 
- 	 // Si la entrada no esta activa o en menu, no excluir
+	// If input is inactive or in menu mode, do not filter
 	if (!m_pInput->IsActive()) {
 		return TRUE;
 	}
@@ -625,22 +638,22 @@ BOOL FASTCALL CDrawView::KeyUpDown(UINT nChar, UINT nFlags, BOOL bDown)
 		return TRUE;
 	}
 
- 	 // Identificacion de tecla
+	// Key lookup
 	switch (nChar) {
- 		 // F10
+		// F10
 		case VK_F10:
 			if (m_pInput->IsKeyMapped(DIK_F10)) {
- 				 // Mapeada
+				// Mapped
 				return FALSE;
 			}
- 			 // No mapeada
+			// Not mapped
 			return TRUE;
 
- 		 // ALT izquierda
+		// Left Alt
 		case VK_LMENU:
 			if (m_pInput->IsKeyMapped(DIK_LMENU)) {
 				if (bDown) {
- 					 // Permitir que otras teclas interrumpan
+					// Allow other keys to interrupt
 					memset(&input, 0, sizeof(input));
 					input.type = INPUT_KEYBOARD;
 					input.ki.wVk = VK_SHIFT;
@@ -651,34 +664,34 @@ BOOL FASTCALL CDrawView::KeyUpDown(UINT nChar, UINT nFlags, BOOL bDown)
 					::SendInput(1, &input, sizeof(INPUT));
 				}
 
- 				 // Mapeada
+				// Mapped
 				return FALSE;
 			}
- 			 // No mapeada
+			// Not mapped
 			return TRUE;
 
- 		 // ALT derecha
+		// Right Alt
 		case VK_RMENU:
 			if (m_pInput->IsKeyMapped(DIK_RMENU)) {
- 				 // Mapeada
+				// Mapped
 				return FALSE;
 			}
- 			 // No mapeada
+			// Not mapped
 			return TRUE;
 
- 		 // ALT comun
+		// Common Alt
 		case VK_MENU:
 			if (m_pInput->IsKeyMapped(DIK_LMENU) || m_pInput->IsKeyMapped(DIK_RMENU)) {
- 				 // Mapeada
+				// Mapped
 				return FALSE;
 			}
- 			 // No mapeada
+			// Not mapped
 			return TRUE;
 
- 		 // Windows izquierda
+		// Left Windows
 		case VK_LWIN:
 			if (m_pInput->IsKeyMapped(DIK_LWIN)) {
- 				 // Mapeada
+				// Mapped
 				if (bDown) {
 					memset(&input, 0, sizeof(input));
 					input.type = INPUT_KEYBOARD;
@@ -691,15 +704,15 @@ BOOL FASTCALL CDrawView::KeyUpDown(UINT nChar, UINT nFlags, BOOL bDown)
 				}
 				return FALSE;
 			}
- 			 // No mapeada
+			// Not mapped
 			return TRUE;
 
- 		 // Windows derecha
+		// Right Windows
 		case VK_RWIN:
 			if (m_pInput->IsKeyMapped(DIK_RWIN)) {
- 				 // Mapeada
+				// Mapped
 				if (bDown) {
- 					 // No bloquear tecla Windows, permitir interrupcion de otras
+					// Do not block the Windows key; allow other keys to interrupt
 					memset(&input, 0, sizeof(input));
 					input.type = INPUT_KEYBOARD;
 					input.ki.wVk = VK_SHIFT;
@@ -711,55 +724,55 @@ BOOL FASTCALL CDrawView::KeyUpDown(UINT nChar, UINT nFlags, BOOL bDown)
 				}
 				return FALSE;
 			}
- 			 // No mapeada
+			// Not mapped
 			return TRUE;
 
- 		 // Otros
+		// Other keys
 		default:
- 			 // ?Es tecla con ALT?
+			// Is this an Alt key?
 			if (nFlags & 0x2000) {
- 				 // ?Estan mapeadas ALT izquierda o derecha?
+				// Are Left/Right Alt mapped?
 				if (m_pInput->IsKeyMapped(DIK_LMENU) || m_pInput->IsKeyMapped(DIK_RMENU)) {
- 					 // Si alguna ALT esta mapeada, desactivar ALT+tecla
+					// If any Alt key is mapped, disable Alt+key
 					return FALSE;
 				}
 			}
 			break;
 	}
- #endif	 // INPUT_MOUSE && INPUT_KEYBOARD && INPUT_HARDWARE
+#endif	// INPUT_MOUSE && INPUT_KEYBOARD && INPUT_HARDWARE
 
- 	 // En otros casos, permitir
+	// Allow in other cases
 	return TRUE;
 }
 
-  //---------------------------------------------------------------------------
-  //
-  //	Movimiento de ventanas
-  //
-  //---------------------------------------------------------------------------
+//---------------------------------------------------------------------------
+//
+// Window move
+//
+//---------------------------------------------------------------------------
 void CDrawView::OnMove(int x, int y)
 {
 	ASSERT(m_pFrmWnd);
 
- 	 // Clase base
+	// Base class
 	CView::OnMove(x, y);
 
- 	 // Solicitar cambio de posicion de la ventana de marco
+	// Request a frame window position change
 	m_pFrmWnd->RecalcStatusView();
 }
 
-  //---------------------------------------------------------------------------
-  //
-  //	Preparacion del mapa de bits
-  //
-  //---------------------------------------------------------------------------
+//---------------------------------------------------------------------------
+//
+// Prepare the bitmap
+//
+//---------------------------------------------------------------------------
 void FASTCALL CDrawView::SetupBitmap()
 {
 	CClientDC *pDC;
 	BITMAPINFOHEADER *p;
 	CRect rect;
 
- 	 // Si hay mapa de bits, liberarlo primero
+	// If a bitmap exists, release it first
 	if (m_Info.hBitmap) {
 		if (m_Info.pRender) {
 			m_Info.pRender->SetMixBuf(NULL, 0, 0);
@@ -769,21 +782,21 @@ void FASTCALL CDrawView::SetupBitmap()
 		m_Info.pBits = NULL;
 	}
 
- 	 // Tratamiento especial para minimizacion
+	// Special handling for minimization
 	GetClientRect(&rect);
 	if ((rect.Width() == 0) || (rect.Height() == 0)) {
 		return;
 	}
-	
 
- 	 // Asignacion de memoria para cabeceras de mapas de bits
+
+	// Allocate memory for bitmap headers
 	p = (BITMAPINFOHEADER*) new BYTE[sizeof(BITMAPINFOHEADER) + sizeof(RGBQUAD)];
 	memset(p, 0, sizeof(BITMAPINFOHEADER) + sizeof(RGBQUAD));
 
- 	 // Creacion de informacion del mapa de bits
+	// Create bitmap information
 	m_Info.nBMPWidth = rect.Width();
 
-	/* ACA SE ESTABLECE LA ALTURA DEL BITMAP A LEER */
+	/* Bitmap height is set here */
 	m_Info.nBMPHeight = (rect.Height() < 512) ? 512 : rect.Height();
 	p->biSize = sizeof(BITMAPINFOHEADER);
 	p->biWidth = m_Info.nBMPWidth;
@@ -793,36 +806,36 @@ void FASTCALL CDrawView::SetupBitmap()
 	p->biCompression = BI_RGB;
 	p->biSizeImage = m_Info.nBMPWidth * m_Info.nBMPHeight * (32 >> 3);
 
- 	 // Obtencion de DC, creacion de seccion DIB
+	// Acquire the DC and create the DIB section
 	pDC = new CClientDC(this);
 	m_Info.hBitmap = ::CreateDIBSection(pDC->m_hDC, (BITMAPINFO*)p, DIB_RGB_COLORS,
 								(void**)&(m_Info.pBits), NULL, 0);
- 	 // Si tiene exito, indicar al renderizador
+	// If successful, notify the renderer
 	if (m_Info.hBitmap && m_Info.pRender) {
 		m_Info.pRender->SetMixBuf(m_Info.pBits, m_Info.nBMPWidth, m_Info.nBMPHeight);
 	}
 	delete pDC;
 	delete[] p;
 
- 	 // Recalculo
+	// Recalculate
 	m_Info.nRendHMul = -1;
 	m_Info.nRendVMul = -1;
 	ReCalc(rect);
 }
 
-  //---------------------------------------------------------------------------
-  //
-//	Control de funcionamiento
+//---------------------------------------------------------------------------
+//
+// Operation control
 //
 //---------------------------------------------------------------------------
 void FASTCALL CDrawView::Enable(BOOL bEnable)
 {
 	CSubWnd* pWnd;
 
- 	 // Memoria de bandera
+	// Flag storage
 	m_bEnable = bEnable;
 
- 	 // Memoria del renderizador si esta habilitado
+	// Renderer storage when enabled
 	if (m_bEnable) {
 		if (!m_Info.pRender) {
 			m_Info.pRender = (Render*)::GetVM()->SearchDevice(MAKEID('R', 'E', 'N', 'D'));
@@ -835,7 +848,7 @@ void FASTCALL CDrawView::Enable(BOOL bEnable)
 		}
 	}
 
- 	 // Instrucciones para subventanas
+	// Subwindow handling
 	pWnd = m_pSubWnd;
 	while (pWnd) {
 		pWnd->Enable(bEnable);
@@ -843,44 +856,44 @@ void FASTCALL CDrawView::Enable(BOOL bEnable)
 	}
 }
 
-  //---------------------------------------------------------------------------
-  //
-  //	Obtencion de banderas de operacion
-  //
-  //---------------------------------------------------------------------------
+//---------------------------------------------------------------------------
+//
+// Get operation flags
+//
+//---------------------------------------------------------------------------
 BOOL FASTCALL CDrawView::IsEnable() const
 {
 	return m_bEnable;
 }
 
-  //---------------------------------------------------------------------------
-  //
-  //	Refresco de dibujo
-  //
-  //---------------------------------------------------------------------------
+//---------------------------------------------------------------------------
+//
+// Refresh drawing
+//
+//---------------------------------------------------------------------------
 void FASTCALL CDrawView::Refresh()
 {
 	CSubWnd *pWnd;
 	CClientDC dc(this);
 
- 	 // Redibujar vista de dibujo
+	// Redraw the draw view
 	OnDraw(&dc);
 
- 	 // Redibujar subventana
+	// Redraw the subwindow
 	pWnd = m_pSubWnd;
 	while (pWnd) {
 		pWnd->Refresh();
 
- 		 // Siguiente subventana
+		// Next subwindow
 		pWnd = pWnd->m_pNextWnd;
 	}
 }
 
-  //---------------------------------------------------------------------------
-  //
-  //	Dibujo (desde el planificador)
-  //
-  //---------------------------------------------------------------------------
+//---------------------------------------------------------------------------
+//
+// Draw (from the scheduler)
+//
+//---------------------------------------------------------------------------
 void FASTCALL CDrawView::Draw(int nChildWnd)
 {
 	CSubWnd *pSubWnd;
@@ -888,7 +901,7 @@ void FASTCALL CDrawView::Draw(int nChildWnd)
 
 	ASSERT(nChildWnd >= -1);
 
-	 // -1 es la vista Draw
+	// -1 selects the Draw view
 	if (nChildWnd < 0) {
 		if (m_bUseDX9) {
 			RequestPresent();
@@ -900,30 +913,30 @@ void FASTCALL CDrawView::Draw(int nChildWnd)
 		return;
 	}
 
- 	 // Subventana a partir de 0
+	// Subwindows start at 0
 	pSubWnd = m_pSubWnd;
 
 	while (nChildWnd > 0) {
- 		 // Siguiente subventana
+		// Next subwindow
 		pSubWnd = pSubWnd->m_pNextWnd;
 		ASSERT(pSubWnd);
 		nChildWnd--;
 	}
 
- 	 // Refresco
+	// Refresh
 	pSubWnd->Refresh();
 }
 
-  //---------------------------------------------------------------------------
-  //
-  //	Actualizacion del hilo de mensajes
-  //
-  //---------------------------------------------------------------------------
+//---------------------------------------------------------------------------
+//
+// Update from the message thread
+//
+//---------------------------------------------------------------------------
 void FASTCALL CDrawView::Update()
 {
 	CSubWnd *pWnd;
 
- 	 // Instrucciones para subventanas
+	// Subwindow handling
 	pWnd = m_pSubWnd;
 	while (pWnd) {
 		pWnd->Update();
@@ -931,11 +944,11 @@ void FASTCALL CDrawView::Update()
 	}
 }
 
-  //---------------------------------------------------------------------------
-  //
-  //	Solicitar presentacion de frame al hilo de UI
-  //
-  //---------------------------------------------------------------------------
+//---------------------------------------------------------------------------
+//
+// Request frame presentation on the UI thread
+//
+//---------------------------------------------------------------------------
 void FASTCALL CDrawView::RequestPresent()
 {
 	if (!m_hWnd) {
@@ -954,11 +967,11 @@ void FASTCALL CDrawView::RequestPresent()
 	}
 }
 
-  //---------------------------------------------------------------------------
-  //
-  //	Actualizar VSync en renderer DX
-  //
-  //---------------------------------------------------------------------------
+//---------------------------------------------------------------------------
+//
+// Update VSync in the DX renderer
+//
+//---------------------------------------------------------------------------
 void FASTCALL CDrawView::SetVSync(BOOL bEnable)
 {
 	if (m_bUseDX9 && m_pRenderThread) {
@@ -973,11 +986,11 @@ void FASTCALL CDrawView::SetVSync(BOOL bEnable)
 	}
 }
 
-  //---------------------------------------------------------------------------
-  //
-  //	Aplicar configuracion de renderizador
-  //
-  //---------------------------------------------------------------------------
+//---------------------------------------------------------------------------
+//
+// Apply renderer settings
+//
+//---------------------------------------------------------------------------
 void FASTCALL CDrawView::ApplyRendererConfig(int nRenderMode)
 {
 	BOOL bWantDX9 = (nRenderMode == 1);
@@ -987,11 +1000,11 @@ void FASTCALL CDrawView::ApplyRendererConfig(int nRenderMode)
 	}
 }
 
-  //---------------------------------------------------------------------------
-  //
-  //	Alternar entre DX9 y GDI
-  //
-  //---------------------------------------------------------------------------
+//---------------------------------------------------------------------------
+//
+// Toggle between DX9 and GDI
+//
+//---------------------------------------------------------------------------
 void FASTCALL CDrawView::ToggleRenderer()
 {
 	m_bUseDX9 = !m_bUseDX9;
@@ -1008,11 +1021,11 @@ void FASTCALL CDrawView::ToggleRenderer()
 	ShowRenderStatusOSD((m_pFrmWnd) ? m_pFrmWnd->m_bVSyncEnabled : TRUE);
 }
 
-  //---------------------------------------------------------------------------
-  //
-  //	Mostrar OSD de estado de renderer/VSync
-  //
-  //---------------------------------------------------------------------------
+//---------------------------------------------------------------------------
+//
+// Show the renderer/VSync status OSD
+//
+//---------------------------------------------------------------------------
 void FASTCALL CDrawView::ShowRenderStatusOSD(BOOL bVSync)
 {
 	CString status;
@@ -1024,32 +1037,32 @@ void FASTCALL CDrawView::ShowRenderStatusOSD(BOOL bVSync)
 	RequestPresent();
 }
 
-  //---------------------------------------------------------------------------
-  //
-  //	Alternar Shader CRT
-  //
-  //---------------------------------------------------------------------------
-  //---------------------------------------------------------------------------
-  //
-  //	Alternar shader CRT (thread-safe)
-  //
-  //---------------------------------------------------------------------------
+//---------------------------------------------------------------------------
+//
+// Toggle CRT shader
+//
+//---------------------------------------------------------------------------
+//---------------------------------------------------------------------------
+//
+// Toggle CRT shader (thread-safe)
+//
+//---------------------------------------------------------------------------
 void FASTCALL CDrawView::ToggleShader()
 {
-	// Toggle seguro con InterlockedCompareExchange
+	// Thread-safe toggle using InterlockedCompareExchange
 	LONG oldValue, newValue;
 	do {
 		oldValue = m_lShaderEnabled;
 		newValue = (oldValue == 0) ? 1 : 0;
 	} while (InterlockedCompareExchange(&m_lShaderEnabled, newValue, oldValue) != oldValue);
-	
+
 	if (m_bUseDX9 && m_pRenderThread) {
-		// Notificar al render thread del cambio de estado
+		// Notify the render thread of the state change
 		InterlockedExchange(&m_lPendingShaderEnable, newValue);
 		InterlockedExchange(&m_lRenderCmd, RENDERCMD_SHADER_APPLY_STATE);
 		SetEvent(m_hRenderEvent);
 	}
-	// Mostrar OSD
+	// Show OSD
 	CString status;
 	status.Format(_T("CRT Shader: %s"), newValue ? _T("ON") : _T("OFF"));
 	m_dwPerfOSDLastTick = 0;
@@ -1057,51 +1070,51 @@ void FASTCALL CDrawView::ToggleShader()
 	RequestPresent();
 }
 
-  //---------------------------------------------------------------------------
-  //
-  //	Activar/Desactivar Shader (thread-safe)
-  //
-  //---------------------------------------------------------------------------
+//---------------------------------------------------------------------------
+//
+// Enable/disable shader (thread-safe)
+//
+//---------------------------------------------------------------------------
 void FASTCALL CDrawView::SetShaderEnabled(BOOL bEnable)
 {
 	LONG newValue = bEnable ? 1 : 0;
 	InterlockedExchange(&m_lShaderEnabled, newValue);
-	
-	// Siempre guardar el valor pendiente para que se aplique cuando el render thread esté listo
+
+	// Always keep the pending value so it can be applied when the render thread is ready
 	InterlockedExchange(&m_lPendingShaderEnable, newValue);
-	
+
 	if (m_bUseDX9 && m_pRenderThread) {
-		// Notificar al render thread del cambio de estado
+		// Notify the render thread of the state change
 		InterlockedExchange(&m_lRenderCmd, RENDERCMD_SHADER_APPLY_STATE);
 		SetEvent(m_hRenderEvent);
 	}
 }
 
-  //---------------------------------------------------------------------------
-  //
-  //	Obtener estado de Shader (thread-safe)
-  //
-  //---------------------------------------------------------------------------
+//---------------------------------------------------------------------------
+//
+// Get shader state (thread-safe)
+//
+//---------------------------------------------------------------------------
 BOOL FASTCALL CDrawView::IsShaderEnabled() const
 {
 	return (m_lShaderEnabled != 0) ? TRUE : FALSE;
 }
 
-  //---------------------------------------------------------------------------
-  //
-  //	Obtener si está activo modo DX9
-  //
-  //---------------------------------------------------------------------------
+//---------------------------------------------------------------------------
+//
+// Check whether DX9 mode is active
+//
+//---------------------------------------------------------------------------
 BOOL FASTCALL CDrawView::IsDX9Active() const
 {
 	return m_bUseDX9 && m_pRenderThread != NULL;
 }
 
-  //---------------------------------------------------------------------------
-  //
-  //	Hilo de Renderizado
-  //
-  //---------------------------------------------------------------------------
+//---------------------------------------------------------------------------
+//
+// Rendering thread
+//
+//---------------------------------------------------------------------------
 UINT CDrawView::RenderThreadFunc(LPVOID pParam)
 {
 	CDrawView* pView = (CDrawView*)pParam;
@@ -1112,7 +1125,7 @@ UINT CDrawView::RenderThreadFunc(LPVOID pParam)
 void FASTCALL CDrawView::RenderLoop()
 {
 	HANDLE hEvents[2] = { m_hRenderExitEvent, m_hRenderEvent };
-	
+
 	while (true) {
 		DWORD dwWait = WaitForMultipleObjects(2, hEvents, FALSE, INFINITE);
 		if (dwWait == WAIT_OBJECT_0) {
@@ -1122,10 +1135,10 @@ void FASTCALL CDrawView::RenderLoop()
 			::InterlockedExchange(&m_lPresentPending, 0);
 			break;
 		}
-		
+
 		if (dwWait == WAIT_OBJECT_0 + 1) {
 			int cmd = InterlockedExchange(&m_lRenderCmd, 0);
-			
+
 			if (cmd == RENDERCMD_INIT) {
 				m_DX9Renderer.Init(m_hWnd, m_nRenderWidth, m_nRenderHeight, TRUE, m_bRenderVSync);
 				SetEvent(m_hRenderAckEvent);
@@ -1139,9 +1152,9 @@ void FASTCALL CDrawView::RenderLoop()
 				SetEvent(m_hRenderAckEvent);
 				continue;
 			}
-			
-			// Procesamiento ROBÚSTO del estado del shader (fuera de comandos específicos)
-			// Esto asegura que INIT, RESET o comandos directos apliquen el shader apenas sea posible.
+
+			// Robust shader-state handling outside specific commands
+			// This ensures that INIT, RESET, or direct commands apply the shader as soon as possible.
 			LONG pendingEnable = InterlockedExchange(&m_lPendingShaderEnable, -1);
 			if (pendingEnable != -1) {
 				if (pendingEnable == 1) {
@@ -1149,7 +1162,7 @@ void FASTCALL CDrawView::RenderLoop()
 					GetModuleFileName(NULL, szShaderPath, MAX_PATH);
 					PathRemoveFileSpec(szShaderPath);
 					PathAppend(szShaderPath, _T("shaders\\crt.hlsl"));
-					
+
 					if (m_DX9Renderer.CreateCRTShader(szShaderPath)) {
 						m_DX9Renderer.SetShaderEnabled(TRUE);
 						InterlockedExchange(&m_lShaderEnabled, 1);
@@ -1168,7 +1181,7 @@ void FASTCALL CDrawView::RenderLoop()
 					m_dwPerfOSDLastTick = 0;
 				}
 			}
-			
+
 			if (InterlockedExchange(&m_lPresentPending, 0) == 1) {
 				BOOL bPresented = FALSE;
 				if (m_bEnable && m_Info.hBitmap && m_Info.pWork && m_Info.pBits) {
@@ -1224,12 +1237,12 @@ void FASTCALL CDrawView::RenderLoop()
 							DrawOSD(NULL);
 							m_DX9Renderer.SetOverlayText(m_bShowOSD ? m_szPerfLine : NULL,
 								(m_szOSDText[0] && (GetTickCount() <= m_dwOSDUntil)) ? m_szOSDText : NULL);
-							if (m_DX9Renderer.PresentFrame(srcWidth, srcHeight, TRUE, FALSE)) {
+							if (m_DX9Renderer.PresentFrame(srcWidth, srcHeight, GetScalePercent())) {
 								bPresented = TRUE;
 							}
 						}
 					}
-					
+
 					if (!bPresented) {
 						m_bUseDX9 = FALSE;
 						if (m_DX9Renderer.IsInitialized()) {
@@ -1243,11 +1256,11 @@ void FASTCALL CDrawView::RenderLoop()
 	}
 }
 
-  //---------------------------------------------------------------------------
-  //
-  //	Presentacion asincrona de frame (hilo UI)
-  //
-  //---------------------------------------------------------------------------
+//---------------------------------------------------------------------------
+//
+// Asynchronous frame presentation (UI thread)
+//
+//---------------------------------------------------------------------------
 LRESULT CDrawView::OnPresentFrame(WPARAM /*wParam*/, LPARAM /*lParam*/)
 {
 	::InterlockedExchange(&m_lPresentPending, 0);
@@ -1262,11 +1275,11 @@ LRESULT CDrawView::OnPresentFrame(WPARAM /*wParam*/, LPARAM /*lParam*/)
 	return 0;
 }
 
-  //---------------------------------------------------------------------------
-  //
-  //	Marcar frame consumido
-  //
-  //---------------------------------------------------------------------------
+//---------------------------------------------------------------------------
+//
+// Mark frame as consumed
+//
+//---------------------------------------------------------------------------
 void FASTCALL CDrawView::FinishFrame()
 {
 	if (!m_Info.pWork) {
@@ -1284,11 +1297,11 @@ void FASTCALL CDrawView::FinishFrame()
 	m_Info.bBltAll = FALSE;
 }
 
-  //---------------------------------------------------------------------------
-  //
-  //	OSD simple
-  //
-  //---------------------------------------------------------------------------
+//---------------------------------------------------------------------------
+//
+// Simple OSD
+//
+//---------------------------------------------------------------------------
 void FASTCALL CDrawView::DrawOSD(CDC *pDC)
 {
 	if (!m_pScheduler && m_pFrmWnd) {
@@ -1345,11 +1358,11 @@ void FASTCALL CDrawView::DrawOSD(CDC *pDC)
 	pDC->SetBkMode(oldBk);
 }
 
-  //---------------------------------------------------------------------------
-  //
-  //	Mostrar OSD
-  //
-  //---------------------------------------------------------------------------
+//---------------------------------------------------------------------------
+//
+// Show OSD
+//
+//---------------------------------------------------------------------------
 void FASTCALL CDrawView::ShowOSD(LPCTSTR lpszText)
 {
 	if (!lpszText) {
@@ -1362,24 +1375,24 @@ void FASTCALL CDrawView::ShowOSD(LPCTSTR lpszText)
 	m_dwOSDUntil = GetTickCount() + 2500;
 }
 
-  //---------------------------------------------------------------------------
-  //
-  //	Aplicar ajustes
-  //
-  //---------------------------------------------------------------------------
+//---------------------------------------------------------------------------
+//
+// Apply settings
+//
+//---------------------------------------------------------------------------
 void FASTCALL CDrawView::ApplyCfg(const Config *pConfig)
 {
 	CSubWnd *pWnd;
 
 	ASSERT(pConfig);
 
- 	 // Estiramiento (Stretch)
-	Stretch(pConfig->aspect_stretch);
+	// Window scale
+	SetScaleIndex(pConfig->window_scale);
 
- 	 // Shader (CRT)
+	// Shader (CRT)
 	SetShaderEnabled(pConfig->render_shader);
 
- 	 // Instrucciones para subventanas
+	// Subwindow handling
 	pWnd = m_pSubWnd;
 	while (pWnd) {
 		pWnd->ApplyCfg(pConfig);
@@ -1387,25 +1400,25 @@ void FASTCALL CDrawView::ApplyCfg(const Config *pConfig)
 	}
 }
 
-  //---------------------------------------------------------------------------
-  //
-  //	Obtencion de informacion de dibujo
-  //
-  //---------------------------------------------------------------------------
+//---------------------------------------------------------------------------
+//
+// Get drawing information
+//
+//---------------------------------------------------------------------------
 void FASTCALL CDrawView::GetDrawInfo(LPDRAWINFO pDrawInfo) const
 {
 	ASSERT(this);
 	ASSERT(pDrawInfo);
 
- 	 // Copiar trabajo interno
+	// Copy internal state
 	*pDrawInfo = m_Info;
 }
 
-  //---------------------------------------------------------------------------
-  //
-  //	Dibujo
-  //
-  //---------------------------------------------------------------------------
+//---------------------------------------------------------------------------
+//
+// Draw
+//
+//---------------------------------------------------------------------------
 void CDrawView::OnDraw(CDC *pDC)
 {
 	CRect rect;
@@ -1415,7 +1428,7 @@ void CDrawView::OnDraw(CDC *pDC)
 	int vmul;
 	int hmul;
 
- 	 // Rellenar si el mapa de bits no esta listo
+	// Fill if the bitmap is not ready
 	GetClientRect(&rect);
 	if (!m_Info.hBitmap || !m_bEnable || !m_Info.pWork) {
 		pDC->FillSolidRect(&rect, RGB(0, 0, 0));
@@ -1423,107 +1436,99 @@ void CDrawView::OnDraw(CDC *pDC)
 		return;
 	}
 
- 	 // Recalculo
+	// Recalculate
 	ReCalc(rect);
 
- 	 // Medidas de desconexion
+	// Disconnect handling
 	if (::GetVM()->IsPower() != m_Info.bPower) {
 		m_Info.bPower = ::GetVM()->IsPower();
 		if (!m_Info.bPower) {
- 			 // Borrar todos los mapas de bits
+			// Clear all bitmaps
 			memset(m_Info.pBits, 0, m_Info.nBMPWidth * m_Info.nBMPHeight * 4);
 			m_Info.bBltAll = TRUE;
 		}
 	}
 
- 	 // Dibujar una esquina
+	// Draw a corner
 	if (m_Info.bBltAll) {
 		DrawRect(pDC);
 	}
 
- 	 // Fijar ampliacion de pantalla final
+	// Set final screen scaling
 	hmul = 1;
 	if (m_Info.nRendHMul == 2) {
- 		 // Res 256, etc.
+		// 256-resolution cases, etc.
 		hmul = 2;
 	}
 
 
-	/* ACA SE ESTABLECE STRETCH HORIZONTAL */
- 	if ( m_Info.bBltStretch) {	 // Si se requiere estiramiento
- 		 // Distinto de 768x512, mismo modo de aspecto especificado
-		int numeroDeMultiplicador = 4;
+	/* Horizontal stretch is set here */
+	if(m_Info.bBltStretch){	// If stretching is required
+		// Stretch to cover the client area instead of stopping at the last fit.
+		int multiplierCount = 4;
 
 
-		/* Mi  Codigo de prueba para calcular stretch  maximo posible con respecto al anfitrion */
-		int mihmul = hmul;				
-		int anchoCalculado = 0;
-		while (anchoCalculado <= rect.Width())
-		{						
-			numeroDeMultiplicador++;
-			mihmul = hmul * numeroDeMultiplicador;			
-			anchoCalculado = (m_Info.nWidth * mihmul) >> 2;						
+		/* Test code for calculating the minimum stretch that reaches the host area */
+		int myHmul = hmul;
+		int calculatedWidth = 0;
+		while (calculatedWidth < rect.Width())
+		{
+			multiplierCount++;
+			myHmul = hmul * multiplierCount;
+			calculatedWidth = (m_Info.nWidth * myHmul) >> 2;
 		}
-		numeroDeMultiplicador--;
-		
 
-		/*CString sz;	
-		sz.Format(_T("numeroDeMultiplicador: %d   \r\n"),  numeroDeMultiplicador);	
-		OutputDebugStringW(CT2W(sz));		*/
-		
-		hmul *= numeroDeMultiplicador;
+		hmul *= multiplierCount;
 
 	}
 	else {
- 		 // Relacion de aspecto no identica. Mismo aumento
+		// Different aspect ratio. Keep the same scaling
 		hmul <<= 2;
 	}
 
-	/* ACA SE ESTABLECE STRETCH VERTICAL   */
+	/* Vertical stretch is set here */
 	vmul = 4;
-	
 
-	/* Mi  Codigo de prueba para calcular stretch vertical m�ximo posible con respecto al anfitrion */
-		if (m_Info.bBltStretch) 
-		{
-			vmul = 1;							
-			int mivmul = vmul;
-			int altoCalculado = 0;
- 			while (altoCalculado < rect.Height())  // Aumentar multiplicadores hasta alcanzar resolucion de pantalla
-			{																	
-				mivmul++;
-				altoCalculado = (m_Info.nRendHeight * mivmul) >> 2;		
+
+	/* Test code for calculating maximum possible vertical stretch relative to the host */
+	if (m_Info.bBltStretch)
+	{
+			vmul = 1;
+			int myVmul = vmul;
+			int calculatedHeight = 0;
+			while(calculatedHeight<rect.Height())// Increase the multipliers until the screen resolution is reached
+			{
+				myVmul++;
+				calculatedHeight = (m_Info.nRendHeight * myVmul) >> 2;
 			}
- 			if (altoCalculado - rect.Height() > 16 )   // Ajustar 256 para 240p si faltan 16 pix
-				mivmul--;
-			vmul = mivmul;				
-			
+			vmul = myVmul;
+
 		}
-		
- 		if (m_Info.nWidth == 512 && m_Info.nHeight == 480)  // Caso especial: Code Zero
+
+		if(m_Info.nWidth==512&&m_Info.nHeight==480)// Special case: Code Zero
 		{
 			if  (m_Info.nRendHeight < m_Info.nHeight)
 				vmul = vmul >> 1;
- 			 // hmul++;
+			// hmul++;
 		}
 
- 		if (m_Info.nWidth == 704 && m_Info.nHeight == 480)  // Caso especial: Carat
+		if(m_Info.nWidth==704&&m_Info.nHeight==480)// Special case: Carat
 		{
 			 hmul++;
- 			 // vmul++;
+			// vmul++;
 		}
 
 		/*
 		CString sv;
-		sv.Format(_T("nWidth: %d nHeight:%d   nRendwidth: %d nRendheight:%d  vmul: %d  rect.height:%d \r\n"), m_Info.nWidth, m_Info.nHeight, m_Info.nRendWidth, m_Info.nRendHeight, vmul, rect.Height());		
+		sv.Format(_T("nWidth: %d nHeight:%d   nRendwidth: %d nRendheight:%d  vmul: %d  rect.height:%d \r\n"), m_Info.nWidth, m_Info.nHeight, m_Info.nRendWidth, m_Info.nRendHeight, vmul, rect.Height());
 		OutputDebugStringW(CT2W(sv));
         */
 
 
 
- 	 // En caso de bBltAll, determinar toda el area
+	// If bBltAll is set, process the entire area
 	if (m_Info.bBltAll) {
- 		 // Creacion y seleccion de memoria DC
+		// Create and select a memory DC
 		hMemDC = CreateCompatibleDC(pDC->m_hDC);
 		if (!hMemDC) {
 			return;
@@ -1534,7 +1539,7 @@ void CDrawView::OnDraw(CDC *pDC)
 			return;
 		}
 
- 		 // Blt
+		// BitBlt
 		if ((hmul == 4) && (vmul == 4)) {
 			::BitBlt(pDC->m_hDC,
 				m_Info.nLeft, m_Info.nTop,
@@ -1543,22 +1548,32 @@ void CDrawView::OnDraw(CDC *pDC)
 				SRCCOPY);
 		}
 		else {
-			::StretchBlt(pDC->m_hDC,
-				m_Info.nLeft, m_Info.nTop,
-				(m_Info.nWidth * hmul) >> 2,
-				(m_Info.nHeight * vmul) >> 2,
-				hMemDC, 0, 0,
-				m_Info.nWidth, m_Info.nHeight,
-				SRCCOPY);
+			if (m_Info.bBltStretch) {
+				::StretchBlt(pDC->m_hDC,
+					0, 0,
+					rect.Width(), rect.Height(),
+					hMemDC, 0, 0,
+					m_Info.nWidth, m_Info.nHeight,
+					SRCCOPY);
+			}
+			else {
+				::StretchBlt(pDC->m_hDC,
+					m_Info.nLeft, m_Info.nTop,
+					(m_Info.nWidth * hmul) >> 2,
+					(m_Info.nHeight * vmul) >> 2,
+					hMemDC, 0, 0,
+					m_Info.nWidth, m_Info.nHeight,
+					SRCCOPY);
+			}
 		}
 		::GdiFlush();
 		m_Info.bBltAll = FALSE;
 
- 		 // Volver al mapa de bits
+		// Switch back to the bitmap
 		SelectObject(hMemDC, hDefBitmap);
 		DeleteDC(hMemDC);
 
- 		 // ?No olvidar bajar la bandera de dibujo!
+		// Don't forget to clear the draw flag!
 		for (i=0; i<m_Info.nHeight * 64; i++) {
 			m_Info.pWork->drawflag[i] = FALSE;
 		}
@@ -1571,14 +1586,14 @@ void CDrawView::OnDraw(CDC *pDC)
 		return;
 	}
 
- 	 // Comprobacion de area de dibujo
+	// Check the draw area
 	if (!CalcRect()) {
 		return;
 	}
 	ASSERT(m_Info.nBltTop <= m_Info.nBltBottom);
 	ASSERT(m_Info.nBltLeft <= m_Info.nBltRight);
 
- 	 // Creacion y seleccion de memoria DC
+	// Create and select a memory DC
 	hMemDC = CreateCompatibleDC(pDC->m_hDC);
 	if (!hMemDC) {
 		m_Info.bBltAll = TRUE;
@@ -1592,7 +1607,7 @@ void CDrawView::OnDraw(CDC *pDC)
 		return;
 	}
 
- 	 // Dibujar solo algunas zonas
+	// Draw only selected areas
 	if ((hmul == 4) && (vmul == 4)) {
 		::BitBlt(pDC->m_hDC,
 			m_Info.nLeft + m_Info.nBltLeft,
@@ -1605,46 +1620,66 @@ void CDrawView::OnDraw(CDC *pDC)
 			SRCCOPY);
 	}
 	else {
-		::StretchBlt(pDC->m_hDC,
-			m_Info.nLeft + ((m_Info.nBltLeft * hmul) >> 2),
-			m_Info.nTop + ((m_Info.nBltTop * vmul) >> 2),
-			((m_Info.nBltRight - m_Info.nBltLeft + 1) * hmul) >> 2,
-			((m_Info.nBltBottom - m_Info.nBltTop + 1) * vmul) >> 2,
-			hMemDC,
-			m_Info.nBltLeft,
-			m_Info.nBltTop,
-			m_Info.nBltRight - m_Info.nBltLeft + 1,
-			m_Info.nBltBottom - m_Info.nBltTop + 1,
-			SRCCOPY);
+		if (m_Info.bBltStretch) {
+			const int destX = MulDiv(m_Info.nBltLeft, rect.Width(), m_Info.nWidth);
+			const int destY = MulDiv(m_Info.nBltTop, rect.Height(), m_Info.nHeight);
+			const int destW = MulDiv(m_Info.nBltRight - m_Info.nBltLeft + 1, rect.Width(), m_Info.nWidth);
+			const int destH = MulDiv(m_Info.nBltBottom - m_Info.nBltTop + 1, rect.Height(), m_Info.nHeight);
+
+			::StretchBlt(pDC->m_hDC,
+				m_Info.nLeft + destX,
+				m_Info.nTop + destY,
+				destW,
+				destH,
+				hMemDC,
+				m_Info.nBltLeft,
+				m_Info.nBltTop,
+				m_Info.nBltRight - m_Info.nBltLeft + 1,
+				m_Info.nBltBottom - m_Info.nBltTop + 1,
+				SRCCOPY);
+		}
+		else {
+			::StretchBlt(pDC->m_hDC,
+				m_Info.nLeft + ((m_Info.nBltLeft * hmul) >> 2),
+				m_Info.nTop + ((m_Info.nBltTop * vmul) >> 2),
+				((m_Info.nBltRight - m_Info.nBltLeft + 1) * hmul) >> 2,
+				((m_Info.nBltBottom - m_Info.nBltTop + 1) * vmul) >> 2,
+				hMemDC,
+				m_Info.nBltLeft,
+				m_Info.nBltTop,
+				m_Info.nBltRight - m_Info.nBltLeft + 1,
+				m_Info.nBltBottom - m_Info.nBltTop + 1,
+				SRCCOPY);
+		}
 	}
 	::GdiFlush();
 
- 	 // Volver al mapa de bits
+	// Switch back to the bitmap
 	SelectObject(hMemDC, hDefBitmap);
 	DeleteDC(hMemDC);
 
-	// La bandera es bajada por CalcRect
+	// CalcRect clears the flag
 	m_Info.dwDrawCount++;
 	DrawOSD(pDC);
 }
 
-  //---------------------------------------------------------------------------
-  //
-  //	Recalculo
-  //
-  //---------------------------------------------------------------------------
+//---------------------------------------------------------------------------
+//
+// Recalculate
+//
+//---------------------------------------------------------------------------
 void FASTCALL CDrawView::ReCalc(CRect& rect)
 {
 	int width;
 	int height;
 	BOOL flag;
 
- 	 // Trabajo del renderizador, volver si no hay mapa de bits
+	// Renderer work; return if no bitmap is available
 	if (!m_Info.pWork || !m_Info.hBitmap) {
 		return;
 	}
 
- 	 // Comparacion
+	// Compare
 	flag = FALSE;
 	if (m_Info.nRendWidth != m_Info.pWork->width) {
 		m_Info.nRendWidth = m_Info.pWork->width;
@@ -1666,24 +1701,24 @@ void FASTCALL CDrawView::ReCalc(CRect& rect)
 		return;
 	}
 
- 	 // Renderizador: tomar el menor de los dos mapas de bits
+	// Renderer: use the smaller of the two bitmaps
 	m_Info.nWidth = m_Info.nRendWidth;
 	if (m_Info.nBMPWidth < m_Info.nWidth) {
 		m_Info.nWidth = m_Info.nBMPWidth;
 	}
 	m_Info.nHeight = m_Info.nRendHeight;
 	if (m_Info.nRendVMul == 0) {
- 		 // Procesamiento para el entrelazado de 15k
+		// 15 kHz interlacing handling
 		m_Info.nHeight <<= 1;
 	}
 	if (m_Info.nBMPHeight < m_Info.nRendHeight) {
 		m_Info.nHeight = m_Info.nBMPHeight;
 	}
 
- 	 // Centrado y margenes calculados teniendo en cuenta el aumento
+	// Centering and margins computed with scaling in mind
 	width = m_Info.nWidth * m_Info.nRendHMul;
- 	if ((m_Info.nRendWidth < 768) && m_Info.bBltStretch) {	 // Si necesita estirar
- 		width = (width * 5) >> 2;   // Relacion de aspecto 5:4
+	if((m_Info.nRendWidth<768)&&m_Info.bBltStretch){	// If stretching is needed
+		width=(width*5)>>2;// 5:4 aspect ratio
 	}
 	height = m_Info.nHeight;
 	if (m_Info.nRendVMul == 2) {
@@ -1691,92 +1726,108 @@ void FASTCALL CDrawView::ReCalc(CRect& rect)
 	}
 
 	int cx = 0, cy = 0;
-	int bordeAncho = 0, bordeAlto = 0;
+	int borderWidth = 0, borderHeight = 0;
 
 	if (m_pFrmWnd->m_bFullScreen)
 	{
 		cx = ::GetSystemMetrics(SM_CXSCREEN);
 		cy = ::GetSystemMetrics(SM_CYSCREEN);
 	}
-	
+
 	if (m_Info.nRendWidth > 256)
 	{
 		if (cx > m_Info.nRendWidth)
-			bordeAncho = cx % m_Info.nRendWidth;
+			borderWidth = cx % m_Info.nRendWidth;
 	}
-	if (m_Info.nRendHeight < 240) 
+	if (m_Info.nRendHeight < 240)
 	{
 		if (cy > m_Info.nRendHeight)
-			bordeAlto = cy % m_Info.nRendHeight;
+			borderHeight = cy % m_Info.nRendHeight;
 	}
 
 
- 	 //CString sz, sz2, sz3, sz4;
- 	 //sz.Format(_T("nRendHmul: %d   nRendVMul: %d \r\n"),  m_Info.nRendHMul,  m_Info.nRendVMul);
- 	 //sz2.Format(_T("width: %d   height: %d   bordeAncho: %d  bordeAlto: %d  \r\n "),  width,  height, bordeAncho, bordeAlto);
- 	 //sz3.Format(_T("nWidth: %d   nHeight: %d   nRendWidth: %d   nRendHeight: %d \r\n"),  m_Info.nWidth,  m_Info.nHeight, m_Info.nRendWidth,  m_Info.nRendHeight);
- 	 //sz4.Format(_T("rect.Width(): %d   rect.Height(): %d  cx:%d cy:%d\r\n\r\n\r\n"),  rect.Width(),  rect.Height(),cx,cy );
- 	 //OutputDebugStringW(CT2W(sz));
- 	 //OutputDebugStringW(CT2W(sz2));
- 	 //OutputDebugStringW(CT2W(sz3));
- 	 //OutputDebugStringW(CT2W(sz4));
-	    
-	
-	/* ACA SE DETERMINAN LAS ESQUINAS SUPERIORES IZQ Y TOP DEL FRAME PRINCIPAL */ 
-	
-		if (m_Info.bBltStretch) 		
-			m_Info.nLeft = (bordeAncho > 0) ? (bordeAncho >> 3) : bordeAncho;
-		else 
+	//CString sz, sz2, sz3, sz4;
+	//sz.Format(_T("nRendHmul: %d   nRendVMul: %d \r\n"),  m_Info.nRendHMul,  m_Info.nRendVMul);
+	//sz2.Format(_T("width: %d   height: %d   bordeAncho: %d  bordeAlto: %d  \r\n "),  width,  height, bordeAncho, bordeAlto);
+	//sz3.Format(_T("nWidth: %d   nHeight: %d   nRendWidth: %d   nRendHeight: %d \r\n"),  m_Info.nWidth,  m_Info.nHeight, m_Info.nRendWidth,  m_Info.nRendHeight);
+	//sz4.Format(_T("rect.Width(): %d   rect.Height(): %d  cx:%d cy:%d\r\n\r\n\r\n"),  rect.Width(),  rect.Height(),cx,cy );
+	//OutputDebugStringW(CT2W(sz));
+	//OutputDebugStringW(CT2W(sz2));
+	//OutputDebugStringW(CT2W(sz3));
+	//OutputDebugStringW(CT2W(sz4));
+
+
+	/* The upper-left corner positions and TOP of the main frame are determined here */
+
+		if (m_Info.bBltStretch)
+			m_Info.nLeft = 0;
+		else
 		    m_Info.nLeft = (rect.Width() - width) >> 1;
-	
-	
-		if (m_Info.bBltStretch) 	
-			m_Info.nTop = (bordeAlto > 0) ? (bordeAlto >> 3) : bordeAlto; 
+
+
+		if (m_Info.bBltStretch)
+			m_Info.nTop = 0;
 		else
 			m_Info.nTop = (rect.Height() - height) >> 1;
-	
 
-
- 	 // Especificar dibujo de la zona
+	// Specify area drawing
 	m_Info.bBltAll = TRUE;
 }
 
-  //---------------------------------------------------------------------------
-  //
-  //	Modo de aumento
-  //
-  //---------------------------------------------------------------------------
-void FASTCALL CDrawView::Stretch(BOOL bStretch)
+//---------------------------------------------------------------------------
+//
+// Window scale
+//
+//---------------------------------------------------------------------------
+void FASTCALL CDrawView::SetScaleIndex(int nScaleIndex)
 {
 	CRect rect;
 
 	ASSERT(this);
 
-	/*char cadena[20];	  
-    sprintf(cadena, "%d", bStretch);
-	 int msgboxID = MessageBox(
-       cadena,"Stretch",
-        2 );*/
+	if (nScaleIndex < 0) {
+		nScaleIndex = 0;
+	}
+	if (nScaleIndex > 4) {
+		nScaleIndex = 4;
+	}
 
- 	 // Si coincide, no hacer nada
-	if (bStretch == m_Info.bBltStretch) {
+	if (nScaleIndex == m_Info.nScaleIndex) {
 		return;
 	}
-	m_Info.bBltStretch = bStretch;
 
- 	 // Recalcular si no es 768x512
- 	if ((m_Info.nRendWidth > 0) && (m_Info.nRendWidth < 768)) {		 // Si se requiere mejora de declaracion
-		m_Info.nRendWidth = m_Info.pWork->width + 1;
+	m_Info.nScaleIndex = nScaleIndex;
+	// Window scale always renders stretched to the client area.
+	m_Info.bBltStretch = TRUE;
+	InterlockedExchange(&m_lScaleIndex, nScaleIndex);
+
+	if (m_Info.pWork) {
 		GetClientRect(&rect);
 		ReCalc(rect);
 	}
+
+	m_Info.bBltAll = TRUE;
+	if (m_hWnd) {
+		Invalidate(FALSE);
+	}
+	RequestPresent();
 }
 
-  //---------------------------------------------------------------------------
-  //
-  //	Dibujar rectangulos de bordes en esquinas
-  //
-  //---------------------------------------------------------------------------
+int FASTCALL CDrawView::GetScaleIndex() const
+{
+	return (int)m_lScaleIndex;
+}
+
+int FASTCALL CDrawView::GetScalePercent() const
+{
+	return 100 + (GetScaleIndex() * 50);
+}
+
+//---------------------------------------------------------------------------
+//
+// Draw border rectangles at the corners
+//
+//---------------------------------------------------------------------------
 void FASTCALL CDrawView::DrawRect(CDC *pDC)
 {
 	CRect crect;
@@ -1785,50 +1836,50 @@ void FASTCALL CDrawView::DrawRect(CDC *pDC)
 	ASSERT(m_Info.bBltAll);
 	ASSERT(pDC);
 
- 	 // Si se usan todos, no se necesitan
+	// If all of them are used, none are needed
 	if ((m_Info.nLeft == 0) && (m_Info.nTop == 0)) {
 		return;
 	}
 
- 	 // Obtener rectangulo del cliente
+	// Get the client rectangle
 	GetClientRect(&crect);
 
 
-	/* ACA SE ESTABLECEN LOS BORDES EXTERIORES DE VENTANA DE JUEGO Y SUS COLORES */
+	/* The outer borders of the game window and their colors are set here */
 	if (m_Info.nLeft > 0) {
- 		 // Mitad izquierda
+		// Left half
 		brect.left = 0;
 		brect.top = 0;
 		brect.right = m_Info.nLeft;
 		brect.bottom = crect.bottom;
 		pDC->FillSolidRect(&brect, RGB(0, 0, 0));
 
- 		 // Mitad derecha
+		// Right half
 		brect.right = crect.right;
 		brect.left = brect.right - m_Info.nLeft - 1;
 		pDC->FillSolidRect(&brect, RGB(0, 0, 0));
 	}
 
 	if (m_Info.nTop > 0) {
- 		 // Mitad superior
+		// Top half
 		brect.left = 0;
 		brect.top = 0;
 		brect.right = crect.right;
 		brect.bottom = m_Info.nTop;
 		pDC->FillSolidRect(&brect, RGB(0, 0, 0));
 
- 		 // Mitad derecha
+		// Right half
 		brect.bottom = crect.bottom;
 		brect.top = brect.bottom - m_Info.nTop - 1;
 		pDC->FillSolidRect(&brect, RGB(0, 0, 0));
 	}
 }
 
-  //---------------------------------------------------------------------------
-  //
-  //	Comprobacion de rango de dibujo
-  //
-  //---------------------------------------------------------------------------
+//---------------------------------------------------------------------------
+//
+// Draw-range check
+//
+//---------------------------------------------------------------------------
 BOOL FASTCALL CDrawView::CalcRect()
 {
 	int i;
@@ -1840,24 +1891,24 @@ BOOL FASTCALL CDrawView::CalcRect()
 	BOOL *p;
 	BOOL flag;
 
- 	 // Inicializacion
+	// Initialization
 	left = 64;
 	top = 2048;
 	right = -1;
 	bottom = -1;
 	p = m_Info.pWork->drawflag;
 
- 	 // Bucle y
+	// Y loop
 	for (i=0; i<m_Info.nHeight; i++) {
 		flag = FALSE;
 
- 		 // Bucle x
+		// X loop
 		for(j=0; j<64; j++) {
 			if (*p) {
- 				 // Borrar
+				// Clear
 				*p = FALSE;
 
- 				 // Estos 16dot necesitan dibujarse
+				// These 16 dots need to be drawn
 				if (left > j) {
 					left = j;
 				}
@@ -1870,7 +1921,7 @@ BOOL FASTCALL CDrawView::CalcRect()
 		}
 
 		if (flag) {
- 			 // Necesario trazar esta linea
+			// This line must be drawn
 			if (top > i) {
 				top = i;
 			}
@@ -1880,19 +1931,19 @@ BOOL FASTCALL CDrawView::CalcRect()
 		}
 	}
 
- 	 // No necesario si y no cambia
+	// Not needed if Y does not change
 	if (bottom < top) {
 		return FALSE;
 	}
 
- 	 // Correccion (x16)
+	// Correction (x16)
 	left <<= 4;
 	right = ((right + 1) << 4) - 1;
 	if (right >= m_Info.nWidth) {
 		right = m_Info.nWidth - 1;
 	}
 
- 	 // Copiar
+	// Copy
 	m_Info.nBltLeft = left;
 	m_Info.nBltTop = top;
 	m_Info.nBltRight = right;
@@ -1901,11 +1952,11 @@ BOOL FASTCALL CDrawView::CalcRect()
 	return TRUE;
 }
 
-  //---------------------------------------------------------------------------
-  //
-  //	Obtener nuevo indice de subventana
-  //
-  //---------------------------------------------------------------------------
+//---------------------------------------------------------------------------
+//
+// Get the next subwindow index
+//
+//---------------------------------------------------------------------------
 int FASTCALL CDrawView::GetNewSWnd() const
 {
 	CSubWnd *pWnd;
@@ -1914,31 +1965,31 @@ int FASTCALL CDrawView::GetNewSWnd() const
 	ASSERT(this);
 	ASSERT_VALID(this);
 
- 	 // ?Es la primera subventana?
+	// Is this the first subwindow?
 	if (!m_pSubWnd) {
 		return 0;
 	}
 
- 	 // Inicializacion
+	// Initialization
 	nSubWnd = 1;
 	pWnd = m_pSubWnd;
 
- 	 // Bucle
+	// Loop
 	while (pWnd->m_pNextWnd) {
 		pWnd = pWnd->m_pNextWnd;
 		nSubWnd++;
 	}
 
- 	 // Devolver indice
+	// Return index
 	return nSubWnd;
 }
 
-  //---------------------------------------------------------------------------
-  //
-  //	Anadir subventana
-  //	Llamada desde CSubWnd que se desea anadir
-  //
-  //---------------------------------------------------------------------------
+//---------------------------------------------------------------------------
+//
+// Add subwindow
+// Called from the CSubWnd being added
+//
+//---------------------------------------------------------------------------
 void FASTCALL CDrawView::AddSWnd(CSubWnd *pSubWnd)
 {
 	CSubWnd *pWnd;
@@ -1947,44 +1998,44 @@ void FASTCALL CDrawView::AddSWnd(CSubWnd *pSubWnd)
 	ASSERT(pSubWnd);
 	ASSERT_VALID(this);
 
- 	 // ?Es la primera subventana?
+	// Is this the first subwindow?
 	if (!m_pSubWnd) {
- 		 // Esta es la primera. Registrar
+		// This is the first one. Register it
 		m_pSubWnd = pSubWnd;
 		ASSERT(!pSubWnd->m_pNextWnd);
 		return;
 	}
 
- 	 // Buscar final
+	// Find the tail
 	pWnd = m_pSubWnd;
 	while (pWnd->m_pNextWnd) {
 		pWnd = pWnd->m_pNextWnd;
 	}
 
- 	 // Anadir despues de pWnd
+	// Insert after pWnd
 	pWnd->m_pNextWnd = pSubWnd;
 	ASSERT(!pSubWnd->m_pNextWnd);
 }
 
-  //---------------------------------------------------------------------------
-  //
-  //	Eliminar subventana
-  //	Llamada desde CSubWnd que se desea eliminar
-  //
-  //---------------------------------------------------------------------------
+//---------------------------------------------------------------------------
+//
+// Delete subwindow
+// Called from the CSubWnd being removed
+//
+//---------------------------------------------------------------------------
 void FASTCALL CDrawView::DelSWnd(CSubWnd *pSubWnd)
 {
 	CSubWnd *pWnd;
 
- 	 // Assert
+	// Assert
 	ASSERT(pSubWnd);
 
- 	 // Bloquear VM
+	// Lock the VM
 	::LockVM();
 
- 	 // ?Es la primera subventana?
+	// Is this the first subwindow?
 	if (m_pSubWnd == pSubWnd) {
- 		 // Si hay siguiente, registrar. Si no, NULL
+		// If there is a next one, link it; otherwise NULL
 		if (pSubWnd->m_pNextWnd) {
 			m_pSubWnd = pSubWnd->m_pNextWnd;
 		}
@@ -1995,25 +2046,25 @@ void FASTCALL CDrawView::DelSWnd(CSubWnd *pSubWnd)
 		return;
 	}
 
- 	 // Buscar subventana que recuerda a pSubWnd
+	// Find the subwindow that precedes pSubWnd
 	pWnd = m_pSubWnd;
 	while (pWnd->m_pNextWnd != pSubWnd) {
 		ASSERT(pWnd->m_pNextWnd);
 		pWnd = pWnd->m_pNextWnd;
 	}
 
- 	 // Vincular pSubWnd->m_pNextWnd a pWnd y saltar
+	// Link pSubWnd->m_pNextWnd to pWnd and skip it
 	pWnd->m_pNextWnd = pSubWnd->m_pNextWnd;
 
- 	 // Desbloquear VM
+	// Unlock the VM
 	::UnlockVM();
 }
 
-  //---------------------------------------------------------------------------
-  //
-  //	Eliminar todas las subventanas
-  //
-  //---------------------------------------------------------------------------
+//---------------------------------------------------------------------------
+//
+// Delete all subwindows
+//
+//---------------------------------------------------------------------------
 void FASTCALL CDrawView::ClrSWnd()
 {
 	CSubWnd *pWnd;
@@ -2021,66 +2072,66 @@ void FASTCALL CDrawView::ClrSWnd()
 
 	ASSERT(this);
 
- 	 // Obtener primera subventana
+	// Get first subwindow
 	pWnd = GetFirstSWnd();
 
- 	 // Bucle
+	// Loop
 	while (pWnd) {
- 		 // Obtener siguiente
+		// Get next
 		pNext = pWnd->m_pNextWnd;
 
- 		 // Eliminar esta ventana
+		// Delete this window
 		pWnd->DestroyWindow();
 
- 		 // Mover
+		// Advance
 		pWnd = pNext;
 	}
 }
 
-  //---------------------------------------------------------------------------
-  //
-  //	Obtener primera subventana
-  //	Si no existe, devuelve NULL
-  //
-  //---------------------------------------------------------------------------
+//---------------------------------------------------------------------------
+//
+// Get first subwindow
+// If none exists, return NULL
+//
+//---------------------------------------------------------------------------
 CSubWnd* FASTCALL CDrawView::GetFirstSWnd() const
 {
 	return m_pSubWnd;
 }
 
-  //---------------------------------------------------------------------------
-  //
-  //	Buscar subventana
-  //	Devuelve NULL si no se encuentra
-  //
-  //---------------------------------------------------------------------------
+//---------------------------------------------------------------------------
+//
+// Search subwindow
+// Return NULL if not found
+//
+//---------------------------------------------------------------------------
 CSubWnd* FASTCALL CDrawView::SearchSWnd(DWORD dwID) const
 {
 	CSubWnd *pWnd;
 
- 	 // Inicializar ventana
+	// Initialize window
 	pWnd = m_pSubWnd;
 
- 	 // Bucle de busqueda
+	// Search loop
 	while (pWnd) {
- 		 // Comprobar si ID coincide
+		// Check whether the ID matches
 		if (pWnd->GetID() == dwID) {
 			return pWnd;
 		}
 
- 		 // Siguiente
+		// Next
 		pWnd = pWnd->m_pNextWnd;
 	}
 
- 	 // No encontrada
+	// Not found
 	return NULL;
 }
 
-  //---------------------------------------------------------------------------
-  //
-  //	Obtener fuente de texto
-  //
-  //---------------------------------------------------------------------------
+//---------------------------------------------------------------------------
+//
+// Get text font
+//
+//---------------------------------------------------------------------------
 CFont* FASTCALL CDrawView::GetTextFont()
 {
 	ASSERT(m_TextFont.m_hObject);
@@ -2088,11 +2139,11 @@ CFont* FASTCALL CDrawView::GetTextFont()
 	return &m_TextFont;
 }
 
-  //---------------------------------------------------------------------------
-  //
-  //	Crear nueva ventana
-  //
-  //---------------------------------------------------------------------------
+//---------------------------------------------------------------------------
+//
+// Create new window
+//
+//---------------------------------------------------------------------------
 CSubWnd* FASTCALL CDrawView::NewWindow(BOOL bDis)
 {
 	DWORD dwID;
@@ -2101,7 +2152,7 @@ CSubWnd* FASTCALL CDrawView::NewWindow(BOOL bDis)
 	CDisasmWnd *pDisWnd;
 	CMemoryWnd *pMemWnd;
 
- 	 // Crear ID base
+	// Create base ID
 	if (bDis) {
 		dwID = MAKEID('D', 'I', 'S', 'A');
 	}
@@ -2109,9 +2160,9 @@ CSubWnd* FASTCALL CDrawView::NewWindow(BOOL bDis)
 		dwID = MAKEID('M', 'E', 'M', 'A');
 	}
 
- 	 // Bucle de 8 iteraciones
+	// Loop for eight iterations
 	for (i=0; i<8; i++) {
-	
+
 		pWnd = SearchSWnd(dwID);
 		if (!pWnd) {
 			if (bDis) {
@@ -2126,26 +2177,26 @@ CSubWnd* FASTCALL CDrawView::NewWindow(BOOL bDis)
 			}
 		}
 
- 		 // Crear siguiente ID de ventana
+		// Create next window ID
 		dwID++;
 	}
 
- 	 // No se pudo crear
+	// Could not create
 	return NULL;
 }
 
-  //---------------------------------------------------------------------------
-  //
-  //	Comprobar si se puede crear nueva ventana
-  //
-  //---------------------------------------------------------------------------
+//---------------------------------------------------------------------------
+//
+// Check whether a new window can be created
+//
+//---------------------------------------------------------------------------
 BOOL FASTCALL CDrawView::IsNewWindow(BOOL bDis)
 {
 	DWORD dwID;
 	int i;
 	CSubWnd *pWnd;
 
- 	 // Crear ID base
+	// Create base ID
 	if (bDis) {
 		dwID = MAKEID('D', 'I', 'S', 'A');
 	}
@@ -2153,54 +2204,54 @@ BOOL FASTCALL CDrawView::IsNewWindow(BOOL bDis)
 		dwID = MAKEID('M', 'E', 'M', 'A');
 	}
 
- 	 // Bucle de 8 iteraciones
+	// Loop for eight iterations
 	for (i=0; i<8; i++) {
- 		 // Si no se encuentra ventana, se puede crear nueva
+		// If no window is found, a new one can be created
 		pWnd = SearchSWnd(dwID);
 		if (!pWnd) {
 			return TRUE;
 		}
 
- 		 // Crear siguiente ID de ventana
+		// Create next window ID
 		dwID++;
 	}
 
- 	 // Todas las ventanas existen -> no se puede crear
+	// All windows already exist -> cannot create
 	return FALSE;
 }
 
-  //---------------------------------------------------------------------------
-  //
-  //	Obtener numero de subventanas
-  //	Devuelve NULL si no se encuentra
-  //
-  //---------------------------------------------------------------------------
+//---------------------------------------------------------------------------
+//
+// Get number of subwindows
+// Return NULL if not found
+//
+//---------------------------------------------------------------------------
 int FASTCALL CDrawView::GetSubWndNum() const
 {
 	CSubWnd *pWnd;
 	int num;
 
- 	 // Inicializacion
+	// Initialization
 	pWnd = m_pSubWnd;
 	num = 0;
 
- 	 // Bucle
+	// Loop
 	while (pWnd) {
- 		 // Cantidad++
+		// Count++
 		num++;
 
- 		 // Siguiente
+		// Next
 		pWnd = pWnd->m_pNextWnd;
 	}
 
 	return num;
 }
 
-  //---------------------------------------------------------------------------
-  //
-  //	Obtener nombre de clase de ventana
-  //
-  //---------------------------------------------------------------------------
+//---------------------------------------------------------------------------
+//
+// Get window class name
+//
+//---------------------------------------------------------------------------
 LPCTSTR FASTCALL CDrawView::GetWndClassName() const
 {
 	ASSERT(this);
@@ -2208,4 +2259,4 @@ LPCTSTR FASTCALL CDrawView::GetWndClassName() const
 	return m_pFrmWnd->GetWndClassName();
 }
 
- #endif	 // _WIN32
+#endif	// _WIN32

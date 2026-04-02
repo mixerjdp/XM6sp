@@ -4,21 +4,21 @@
 // ---------------------------------------------------------------------------
 //	$Id: fmgen.cpp,v 1.49 2003/09/02 14:51:04 cisc Exp $
 // ---------------------------------------------------------------------------
-//	参考:
+//	Basis:
 //		FM sound generator for M.A.M.E., written by Tatsuyuki Satoh.
 //
-// 	謎:
-//		OPNB の CSM モード(仕様がよくわからない)
+//	Note:
+//	OPNB has CSM mode (timing is bad, not well understood)
 //
-//	制限:
-//		・AR!=31 で SSGEC を使うと波形が実際と異なる可能性あり
+//	Caution:
+//	EAR!=31 with SSGEC causes incorrect waveform differences
 //
-//	謝辞:
-//		Tatsuyuki Satoh さん(fm.c)
-//		Hiromitsu Shioya さん(ADPCM-A)
-//		DMP-SOFT. さん(OPNB)
-//		KAJA さん(test program)
-//		ほか掲示板等で様々なご助言，ご支援をお寄せいただいた皆様に
+//	Contact:
+//	Tatsuyuki Satoh - original (fm.c)
+//	Hiromitsu Shioya - ADPCM-A
+//	DMP-SOFT - OPNB
+//	KAJA - test program
+//	Various others who corrected and improved various bugs and specifications
 // ---------------------------------------------------------------------------
 
 #include "os.h"
@@ -28,10 +28,7 @@
 
 #define LOGNAME "fmgen"
 
-// ---------------------------------------------------------------------------
-
 #define FM_EG_BOTTOM 955
-
 // ---------------------------------------------------------------------------
 //	Table/etc
 //
@@ -177,7 +174,7 @@ namespace FM
 {
 
 // ---------------------------------------------------------------------------
-//	テーブル作成
+//	Table creation
 //
 void MakeLFOTable()
 {
@@ -235,14 +232,14 @@ void MakeLFOTable()
 
 
 // ---------------------------------------------------------------------------
-//	チップ内で共通な部分
+//	Various chip-specific functions
 //
 Chip::Chip()
 : ratio_(0), aml_(0), pml_(0), pmv_(0), optype_(typeN)
 {
 }
 
-//	クロック・サンプリングレート比に依存するテーブルを作成
+//	Create tables that depend on Chip/Sound Generator and globals
 void Chip::SetRatio(uint ratio)
 {
 	if (ratio_ != ratio)
@@ -277,7 +274,7 @@ bool FM::Operator::tablehasmade = false;
 uint FM::Operator::sinetable[1024];
 int32 FM::Operator::cltable[FM_CLENTS];
 
-//	構築
+//	Construction
 FM::Operator::Operator()
 : chip_(0)
 {
@@ -301,7 +298,7 @@ FM::Operator::Operator()
 	ms_ = 0;
 }
 
-//	初期化
+//	Setting
 void FM::Operator::Reset()
 {
 	// EG part
@@ -323,7 +320,7 @@ void FM::Operator::Reset()
 
 void Operator::MakeTable()
 {
-	// 対数テーブルの作成
+//	Create individual tables
 	assert(FM_CLENTS >= 256);
 
 	int* p = cltable;
@@ -340,7 +337,7 @@ void Operator::MakeTable()
 		*p++ = p[-512] / 2;
 	}
 
-	// サインテーブルの作成
+//	Create table tables
 	double log2 = log(2.);
 	for (i=0; i<FM_OPSINENTS/2; i++)
 	{
@@ -365,7 +362,7 @@ inline void FM::Operator::SetDPBN(uint dp, uint bn)
 }
 
 
-//	準備
+//	Period
 void Operator::Prepare()
 {
 	if (param_changed_)
@@ -414,7 +411,7 @@ void Operator::Prepare()
 		dbgopout_ = 0;
 	}
 }
-//	envelop の eg_phase_ 変更
+//	Envelope and eg_phase_ change
 void Operator::ShiftPhase(EGPhase nextphase)
 {
 	switch (nextphase)
@@ -493,13 +490,13 @@ void Operator::SetFNum(uint f)
 	PARAMCHANGE(2);
 }
 
-//	１サンプル合成
+//	Per table
 
-//	ISample を envelop count (2π) に変換するシフト量
+//	Shift value to convert ISample to envelope count (2^s)
 #define IS2EC_SHIFT		((20 + FM_PGBITS) - 13)
 
 
-// 入力: s = 20+FM_PGBITS = 29
+// Note: s = 20+FM_PGBITS = 29
 #define Sine(s)	sinetable[((s) >> (20+FM_PGBITS-FM_OPSINBITS))&(FM_OPSINENTS-1)]
 #define SINE(s) sinetable[(s) & (FM_OPSINENTS-1)]
 
@@ -530,10 +527,10 @@ inline void Operator::SetEGRate(uint rate)
 	eg_count_diff_ = decaytable2[rate / 4] * chip_->GetRatio();
 }
 
-//	EG 計算
+//	EG calculation
 void FM::Operator::EGCalc()
 {
-	eg_count_ = (2047 * 3) << FM_RATIOBITS;				// ##この手抜きは再現性を低下させる
+	eg_count_ = (2047 * 3) << FM_RATIOBITS;				// Initial envelope count
 	
 	if (eg_phase_ == attack)
 	{
@@ -583,12 +580,12 @@ inline void FM::Operator::EGStep()
 {
 	eg_count_ -= eg_count_diff_;
 
-	// EG の変化は全スロットで同期しているという噂もある
+//	Note: EG changes may not occur simultaneously across all slots
 	if (eg_count_ <= 0)
 		EGCalc();
 }
 
-//	PG 計算
+//	PG calculation
 //	ret:2^(20+PGBITS) / cycle
 inline uint32 FM::Operator::PGCalc()
 {
@@ -606,8 +603,8 @@ inline uint32 FM::Operator::PGCalcL()
 	return ret /* + pmv * pg_diff_;*/;
 }
 
-//	OP 計算
-//	in: ISample (最大 8π)
+//	OP calculation
+//	in: ISample (max 8x)
 inline FM::ISample FM::Operator::Calc(ISample in)
 {
 	EGStep();
@@ -639,7 +636,7 @@ inline FM::ISample FM::Operator::CalcN(uint noise)
 	
 	int lv = Max(0, 0x3ff - (tl_out_ + eg_level_)) << 1;
 	
-	// noise & 1 ? lv : -lv と等価 
+//	Equivalent to noise & 1 ? lv : -lv
 	noise = (noise & 1) - 1;
 	out_ = (lv + noise) ^ noise;
 
@@ -647,8 +644,8 @@ inline FM::ISample FM::Operator::CalcN(uint noise)
 	return out_;
 }
 
-//	OP (FB) 計算
-//	Self Feedback の変調最大 = 4π
+//	OP (FB) calculation
+//	Maximum self-feedback modulation = 4x
 inline FM::ISample FM::Operator::CalcFB(uint fb)
 {
 	EGStep();
@@ -715,7 +712,7 @@ void Channel4::MakeTable()
 	}
 }
 
-// リセット
+// Reset
 void Channel4::Reset()
 {
 	op[0].Reset();
@@ -724,7 +721,7 @@ void Channel4::Reset()
 	op[3].Reset();
 }
 
-//	Calc の用意
+//	Calc utility
 int Channel4::Prepare()
 {
 	op[0].Prepare();
@@ -738,14 +735,14 @@ int Channel4::Prepare()
 	return key | lfo;
 }
 
-//	F-Number/BLOCK を設定
+//	Set F-Number/BLOCK
 void Channel4::SetFNum(uint f)
 {
 	for (int i=0; i<4; i++)
 		op[i].SetFNum(f);
 }
 
-//	KC/KF を設定
+//	Set KC/KF
 void Channel4::SetKCKF(uint kc, uint kf)
 {
 	const static uint kctable[16] = 
@@ -773,7 +770,7 @@ void Channel4::SetKCKF(uint kc, uint kf)
 //printf(" %.8x\n", dp);
 }
 
-//	キー制御
+//	Key on
 void Channel4::KeyControl(uint key)
 {
 	if (key & 0x1) op[0].KeyOn(); else op[0].KeyOff();
@@ -782,7 +779,7 @@ void Channel4::KeyControl(uint key)
 	if (key & 0x8) op[3].KeyOn(); else op[3].KeyOff();
 }
 
-//	アルゴリズムを設定
+//	Algorithm and feedback setting
 void Channel4::SetAlgorithm(uint algo)
 {
 	static const uint8 table1[8][6] = 
@@ -804,7 +801,7 @@ void Channel4::SetAlgorithm(uint algo)
 	algo_ = algo;
 }
 
-//  合成
+// Reset
 ISample Channel4::Calc()
 {
 	int r = 0;
@@ -862,7 +859,7 @@ ISample Channel4::Calc()
 	return r;
 }
 
-//  合成
+// Reset
 ISample Channel4::CalcL()
 {
 	chip_->SetPMV(pms[chip_->GetPML()]);
@@ -922,7 +919,7 @@ ISample Channel4::CalcL()
 	return r;
 }
 
-//  合成
+// Reset
 ISample Channel4::CalcN(uint noise)
 {
 	buf[1] = buf[2] = buf[3] = 0;
@@ -935,7 +932,7 @@ ISample Channel4::CalcN(uint noise)
 	return *out[2] + o;
 }
 
-//  合成
+// Reset
 ISample Channel4::CalcLN(uint noise)
 {
 	chip_->SetPMV(pms[chip_->GetPML()]);

@@ -2,15 +2,15 @@
 //
 //	X68000 EMULATOR "XM6"
 //
-//	Copyright (C) 2001-2006 ＰＩ．(ytanaka@ipc-tokai.or.jp)
+//	Copyright (C) 2001-2006 PI (ytanaka@ipc-tokai.or.jp)
 //	[ MFC MIDI ]
 //
 //---------------------------------------------------------------------------
 
 #if defined(_WIN32)
 
-#include "os.h"
 #include "mfc.h"
+#include "os.h"
 #include "xm6.h"
 #include "vm.h"
 #include "midi.h"
@@ -28,41 +28,41 @@
 
 //---------------------------------------------------------------------------
 //
-//	MIDIメッセージ定義
+//	MIDI message definitions
 //
 //---------------------------------------------------------------------------
-#define MIDI_NOTEOFF		0x80		// ノートオフ
-#define MIDI_NOTEON			0x90		// ノートオン(一部ノートオフ)
-#define MIDI_PKEYPRS		0xa0		// ポリフォニックキープレッシャー
-#define MIDI_CTRLCHG		0xb0		// コントロールチェンジ
-#define MIDI_PROGCHG		0xc0		// プログラムチェンジ
-#define MIDI_CHPRS			0xd0		// チャネルプレッシャー
-#define MIDI_PITCHCHG		0xe0		// ピッチベンドチェンジ
-#define MIDI_EXSTART		0xf0		// エクスクルーシブ開始
-#define MIDI_QFRAME			0xf1		// タイムコードクォーターフレーム
-#define MIDI_SONGPTR		0xf2		// ソングポジションポインタ
-#define MIDI_SONGSEL		0xf3		// ソングセレクト
-#define MIDI_TUNEREQ		0xf6		// チューンセレクト
-#define MIDI_EXEND			0xf7		// エクスクルーシブ終了
-#define MIDI_TIMINGCLK		0xf8		// タイミングクロック
-#define MIDI_START			0xfa		// スタート
-#define MIDI_CONTINUE		0xfb		// コンティニュー
-#define MIDI_STOP			0xfc		// ストップ
-#define MIDI_ACTSENSE		0xfe		// アクティブセンシング
-#define MIDI_SYSRESET		0xff		// システムリセット
+#define MIDI_NOTEOFF		0x80		// Note off
+#define MIDI_NOTEON			0x90		// Note on (some note off)
+#define MIDI_PKEYPRS		0xa0		// Polyphonic key pressure
+#define MIDI_CTRLCHG		0xb0		// Control change
+#define MIDI_PROGCHG		0xc0		// Program change
+#define MIDI_CHPRS			0xd0		// Channel pressure
+#define MIDI_PITCHCHG		0xe0		// Pitch bend change
+#define MIDI_EXSTART		0xf0		// System exclusive start
+#define MIDI_QFRAME			0xf1		// Quarter frame
+#define MIDI_SONGPTR		0xf2		// Song position pointer
+#define MIDI_SONGSEL		0xf3		// Song select
+#define MIDI_TUNEREQ		0xf6		// Tune request
+#define MIDI_EXEND			0xf7		// System exclusive end
+#define MIDI_TIMINGCLK		0xf8		// Timing clock
+#define MIDI_START			0xfa		// Start
+#define MIDI_CONTINUE		0xfb		// Continue
+#define MIDI_STOP			0xfc		// Stop
+#define MIDI_ACTSENSE		0xfe		// Active sensing
+#define MIDI_SYSRESET		0xff		// System reset
 
 //---------------------------------------------------------------------------
 //
-//	コンストラクタ
+//	Constructor
 //
 //---------------------------------------------------------------------------
 CMIDI::CMIDI(CFrmWnd *pWnd) : CComponent(pWnd)
 {
-	// コンポーネントパラメータ
+	// Component identifier
 	m_dwID = MAKEID('M', 'I', 'D', 'I');
 	m_strDesc = _T("MIDI Driver");
 
-	// オブジェクト
+	// Objects
 	m_pMIDI = NULL;
 	m_pScheduler = NULL;
 	m_pSch = NULL;
@@ -96,37 +96,37 @@ CMIDI::CMIDI(CFrmWnd *pWnd) : CComponent(pWnd)
 
 //---------------------------------------------------------------------------
 //
-//	初期化
+//	Initialization
 //
 //---------------------------------------------------------------------------
 BOOL FASTCALL CMIDI::Init()
 {
 	ASSERT(this);
 
-	// 基本クラス
+	// Base class
 	if (!CComponent::Init()) {
 		return FALSE;
 	}
 
-	// MIDI取得
+	// Get MIDI
 	ASSERT(!m_pMIDI);
 	m_pMIDI = (MIDI*)::GetVM()->SearchDevice(MAKEID('M', 'I', 'D', 'I'));
 	ASSERT(m_pMIDI);
 
-	// スケジューラ取得
+	// Get scheduler
 	ASSERT(!m_pScheduler);
 	m_pScheduler = (Scheduler*)::GetVM()->SearchDevice(MAKEID('S', 'C', 'H', 'E'));
 	ASSERT(m_pScheduler);
 
-	// スケジューラ(Win32)取得
+	// Get scheduler (Win32)
 	ASSERT(!m_pSch);
 	m_pSch = (CScheduler*)SearchComponent(MAKEID('S', 'C', 'H', 'E'));
 	ASSERT(m_pSch);
 
-	// Outデバイス情報
+	// Out device check
 	m_dwOutDevs = ::midiOutGetNumDevs();
 	if (m_dwOutDevs > 0) {
-		// デバイス数だけ、CAPS構造体を確保
+		// Allocate device and CAPS structure
 		try {
 			m_pOutCaps = new MIDIOUTCAPS[m_dwOutDevs];
 		}
@@ -137,14 +137,14 @@ BOOL FASTCALL CMIDI::Init()
 			return FALSE;
 		}
 
-		// CAPSを取得
+		// Get CAPS
 		GetOutCaps();
 	}
 
-	// Inデバイス情報
+	// In device check
 	m_dwInDevs = ::midiInGetNumDevs();
 	if (m_dwInDevs > 0) {
-		// デバイス数だけ、CAPS構造体を確保
+		// Allocate device and CAPS structure
 		try {
 			m_pInCaps = new MIDIINCAPS[m_dwInDevs];
 		}
@@ -155,11 +155,11 @@ BOOL FASTCALL CMIDI::Init()
 			return FALSE;
 		}
 
-		// CAPSを取得
+		// Get CAPS
 		GetInCaps();
 	}
 
-	// Inキュー初期化
+	// In queue initialization
 	if (!m_InQueue.Init(InBufMax)) {
 		return FALSE;
 	}
@@ -169,18 +169,18 @@ BOOL FASTCALL CMIDI::Init()
 
 //---------------------------------------------------------------------------
 //
-//	クリーンアップ
+//	Cleanup
 //
 //---------------------------------------------------------------------------
 void FASTCALL CMIDI::Cleanup()
 {
 	ASSERT(this);
 
-	// クローズ
+	// Cleanup
 	CloseOut();
 	CloseIn();
 
-	// Caps削除
+	// Caps delete
 	if (m_pOutCaps) {
 		delete[] m_pOutCaps;
 		m_pOutCaps = NULL;
@@ -190,13 +190,13 @@ void FASTCALL CMIDI::Cleanup()
 		m_pInCaps = NULL;
 	}
 
-	// 基本クラス
+	// Base class
 	CComponent::Cleanup();
 }
 
 //---------------------------------------------------------------------------
 //
-//	設定適用
+//	Apply configuration
 //
 //---------------------------------------------------------------------------
 void FASTCALL CMIDI::ApplyCfg(const Config* pConfig)
@@ -207,46 +207,46 @@ void FASTCALL CMIDI::ApplyCfg(const Config* pConfig)
 	ASSERT(pConfig);
 	ASSERT_VALID(this);
 
-	// コンフィグコンポーネントを取得
+	// Get config component
 	pComponent = (CConfig*)SearchComponent(MAKEID('C', 'F', 'G', ' '));
 	ASSERT(pComponent);
 
-	// リセットコマンド
+	// Reset command
 	m_nOutReset = pConfig->midi_reset;
 
-	// Outディレイ
+	// Out delay
 	m_dwOutDelay = (DWORD)(pConfig->midiout_delay * 2000);
 
-	// Outデバイス
+	// Out device
 	if (pConfig->midiout_device != (int)m_dwOutDevice) {
-		// 一旦閉じる
+		// Close first
 		CloseOut();
 
-		// 指定デバイスでトライ
+		// Open with specified device
 		if (pConfig->midiout_device > 0) {
 			OpenOut(pConfig->midiout_device);
 		}
 
-		// 成功すれば、コンフィグに反映させる
+		// If successful, set config
 		if (m_dwOutDevice != 0) {
 			pComponent->SetMIDIDevice((int)m_dwOutDevice, FALSE);
 		}
 	}
 
-	// Inディレイ
+	// In delay
 	SetInDelay(pConfig->midiin_delay * 2000);
 
-	// Inデバイス
+	// In device
 	if (pConfig->midiin_device != (int)m_dwInDevice) {
-		// 一旦閉じる
+		// Close first
 		CloseIn();
 
-		// 指定デバイスでトライ
+		// Open with specified device
 		if (pConfig->midiin_device > 0) {
 			OpenIn(pConfig->midiin_device);
 		}
 
-		// 成功すれば、コンフィグに反映させる
+		// If successful, set config
 		if (m_dwInDevice > 0) {
 			pComponent->SetMIDIDevice((int)m_dwInDevice, TRUE);
 		}
@@ -256,12 +256,12 @@ void FASTCALL CMIDI::ApplyCfg(const Config* pConfig)
 #if !defined(NDEBUG)
 //---------------------------------------------------------------------------
 //
-//	診断
+//	Assert
 //
 //---------------------------------------------------------------------------
 void CMIDI::AssertValid() const
 {
-	// 基本クラス
+	// Base class
 	CComponent::AssertValid();
 
 	ASSERT(this);
@@ -279,14 +279,14 @@ void CMIDI::AssertValid() const
 
 //===========================================================================
 //
-//	OUT部分
+//	OUT procedures
 //
 //===========================================================================
 
 //---------------------------------------------------------------------------
 //
-//	Outオープン
-//	※dwDevice=0は割り当てなし、dwDevice=1はMIDIマッパー
+//	Out open
+//	Note dwDevice=0 is not assigned, dwDevice=1 is MIDI mapper
 //
 //---------------------------------------------------------------------------
 void FASTCALL CMIDI::OpenOut(DWORD dwDevice)
@@ -299,22 +299,22 @@ void FASTCALL CMIDI::OpenOut(DWORD dwDevice)
 	ASSERT(!m_pOutThread);
 	ASSERT_VALID(this);
 
-	// 割り当てしないのであればリターン
+	// If not assigned, return
 	if (dwDevice == 0) {
 		return;
 	}
 
-	// デバイスがなければリターン
+	// If no device, return
 	if (m_dwOutDevs == 0) {
 		return;
 	}
 
-	// デバイス数を超えていればMIDIマッパー
+	// If device number exceeds range, set to MIDI mapper
 	if (dwDevice > (m_dwOutDevs + 1)) {
 		dwDevice = 1;
 	}
 
-	// デバイス決定
+	// Device number
 	if (dwDevice == 1) {
 		uDeviceID = MIDI_MAPPER;
 	}
@@ -322,7 +322,7 @@ void FASTCALL CMIDI::OpenOut(DWORD dwDevice)
 		uDeviceID = (UINT)(dwDevice - 2);
 	}
 
-	// オープン
+	// Open
 #if _MFC_VER >= 0x700
 	mmResult = ::midiOutOpen(&m_hOut, uDeviceID,
 							(DWORD_PTR)OutProc, (DWORD_PTR)this, CALLBACK_FUNCTION);
@@ -331,25 +331,25 @@ void FASTCALL CMIDI::OpenOut(DWORD dwDevice)
 							(DWORD)OutProc, (DWORD)this, CALLBACK_FUNCTION);
 #endif
 
-	// 失敗なら終了
+	// If failed, exit
 	if (mmResult != MMSYSERR_NOERROR) {
 		return;
 	}
 
-	// デバイス番号を更新
+	// Update device number
 	m_dwOutDevice = dwDevice;
 
-	// 転送バッファをクリア
+	// Clear buffer
 	m_pMIDI->ClrTransData();
 
-	// スレッドを立てる
+	// Start thread
 	m_bOutThread = FALSE;
 	m_pOutThread = AfxBeginThread(OutThread, this);
 }
 
 //---------------------------------------------------------------------------
 //
-//	Outクローズ
+//	Out close
 //
 //---------------------------------------------------------------------------
 void FASTCALL CMIDI::CloseOut()
@@ -357,33 +357,33 @@ void FASTCALL CMIDI::CloseOut()
 	ASSERT(this);
 	ASSERT_VALID(this);
 
-	// スレッドを止める
+	// Stop thread
 	if (m_pOutThread) {
-		// 終了フラグを上げ
+		// Set exit flag
 		m_bOutThread = TRUE;
 
-		// 終了待ち(無期限)
+		// Wait for exit (infinite)
 		::WaitForSingleObject(m_pOutThread->m_hThread, INFINITE);
 
-		// スレッドなし
+		// No thread
 		m_pOutThread = NULL;
 	}
 
-	// デバイスを閉じる
+	// Close device
 	if (m_dwOutDevice != 0) {
-		// 全てのノートをキーオフして、クローズ
+		// Send all notes off and reset, then close
 		SendAllNoteOff();
 		::midiOutReset(m_hOut);
 		::midiOutClose(m_hOut);
 
-		// オープンデバイスなし
+		// No open device
 		m_dwOutDevice = 0;
 	}
 }
 
 //---------------------------------------------------------------------------
 //
-//	Outスレッド
+//	Out thread
 //
 //---------------------------------------------------------------------------
 void FASTCALL CMIDI::RunOut()
@@ -402,19 +402,19 @@ void FASTCALL CMIDI::RunOut()
 	ASSERT(m_hOut);
 	ASSERT_VALID(this);
 
-	// スケジューラの状態を記憶
+	// Get scheduler status
 	bEnable = m_pSch->IsEnable();
 
-	// エクスクルーシブ送信なし、ヘッダ使用なし
+	// Not sending system exclusive, header not used
 	m_bSendEx = FALSE;
 	m_bSendExHdr = FALSE;
 
-	// カウンタ初期化
+	// Reset counters
 	m_dwShortSend = 0;
 	m_dwExSend = 0;
 	m_dwUnSend = 0;
 
-	// データなし、コマンド初期化、ステートレディ
+	// No data, command reset, state idle
 	pData = NULL;
 	dwCmd = 0;
 	dwLen = 0;
@@ -422,45 +422,45 @@ void FASTCALL CMIDI::RunOut()
 	dwShortMsg = 0;
 	outState = OutReady;
 
-	// リセット
+	// Reset
 	SendReset();
 
-	// アクティブ(有効なデータをMIDI OUTへ送ったか)
+	// Not active (sends valid data to MIDI OUT when active)
 	bActive = FALSE;
 
-	// ループ
+	// Loop
 	while (!m_bOutThread) {
-		// エクスクルーシブ送信中なら待つ
+		// If sending system exclusive, wait
 		if (m_bSendEx) {
 			::Sleep(1);
 			continue;
 		}
 
-		// エクスクルーシブ送信ヘッダを使った後なら、後片付け
+		// If system exclusive header is being used, wait
 		if (m_bSendExHdr) {
-			// ロックして行う
+			// Unlock and execute
 			m_OutSection.Lock();
 			::midiOutUnprepareHeader(m_hOut, &m_ExHdr, sizeof(MIDIHDR));
 			m_OutSection.Unlock();
 
-			// エクスクルーシブヘッダ使用フラグを下ろす
+			// System exclusive header prepared flag clear
 			m_bSendExHdr = FALSE;
 			pData = NULL;
 			outState = OutReady;
 
-			// カウントアップ
+			// Count up
 			m_dwUnSend++;
 		}
 
-		// 無効なら
+		// If disabled
 		if (!m_bEnable) {
-			// アクティブなら、全ノートオフとリセット
+			// If not active, all notes off and reset
 			if (bActive) {
 				SendAllNoteOff();
 				SendReset();
 				bActive = FALSE;
 
-				// 有効データなし
+				// No data
 				outState = OutReady;
 				pData = NULL;
 			}
@@ -469,86 +469,86 @@ void FASTCALL CMIDI::RunOut()
 			continue;
 		}
 
-		// スケジューラが無効なら
+		// If scheduler is stopped
 		if (!m_pSch->IsEnable()) {
-			// それまで有効であったなら
+			// If previously active, cannot continue
 			if (bEnable) {
-				// 全ノートーオフ
+				// All notes off
 				SendAllNoteOff();
 
-				// それ以外の状態はキープ
+				// Other states are invalid
 				bEnable = FALSE;
 			}
 
-			// これまでも無効
+			// Wait until can continue
 			::Sleep(10);
 			continue;
 		}
 
-		// スケジューラは有効
+		// Scheduler is active
 		bEnable = TRUE;
 
-		// MIDIがリセットされたら
+		// If MIDI reset is requested
 		if (m_pMIDI->IsReset()) {
-			// フラグ落として
+			// Clear flag
 			m_pMIDI->ClrReset();
 
-			// 全ノートオフとリセット
+			// All notes off and reset
 			SendAllNoteOff();
 			SendReset();
 			pData = NULL;
 			outState = OutReady;
 		}
 
-		// MIDIがアクティブでなければ何もしない
+		// If MIDI not active, wait
 		if (!m_pMIDI->IsActive()) {
 			::Sleep(10);
 			continue;
 		}
 
-		// MIDI送信バッファの個数を取得。0ならSleep
+		// Get number of MIDI send buffer entries. 0 means Sleep
 		if (!pData) {
 			if (m_pMIDI->GetTransNum() == 0) {
-				// 15ms以上ディレイがあるので、10msウェイト
+				// If delay is 15ms or more, 10ms sleep
 				if (m_dwOutDelay > 30000) {
 					::Sleep(10);
 					continue;
 				}
-				// ディレイは14ms以下。1msウェイト
+				// If delay is 14ms or less, 1ms sleep
 				::Sleep(1);
 				continue;
 			}
 
-			// 送信データの先頭を取得
+			// Get head of send data
 			pData = m_pMIDI->GetTransData(0);
 		}
 
-		// 1バイト以上データがあるので、アクティブとする
+		// If 1 byte or more of data exists, set active
 		bActive = TRUE;
 
-		// レディで、エクスクルーシブコマンドでなければ、時間待ち
+		// Wait, if system exclusive command is not system exclusive, wait
 		if ((outState == OutReady) && (pData->data != MIDI_EXSTART)) {
 			dwTime = m_pScheduler->GetTotalTime() - pData->vtime;
 			if (dwTime < m_dwOutDelay) {
 				if (dwTime > 30000) {
-					// 15ms以上空いていれば、1.5ms待つ
+					// If more than 15ms remaining, 1.5ms wait
 					::Sleep(10);
 					continue;
 				}
 				if (dwTime > 3000) {
-					// 1.5ms以上空いていれば、1.5ms待つ
+					// If more than 1.5ms remaining, 1.5ms wait
 					::Sleep(1);
 					continue;
 				}
-				// 1.5ms未満の待ちはSleep(0)で吸収
+				// Less than 1.5ms remaining, sleep(0) for yield
 				::Sleep(0);
 				continue;
 			}
 		}
 
-		// データ解釈(初回)
+		// Data processing (first)
 		if (outState == OutReady) {
-			// エクスクルーシブ送信中なら、ここで出力(闇の血族)
+			// If sending system exclusive but not this type, output here (error)
 			if ((pData->data & 0x80) && (pData->data != MIDI_EXEND)) {
 				if (outState == OutEx) {
 					m_ExBuf[dwCnt] = MIDI_EXEND;
@@ -558,7 +558,7 @@ void FASTCALL CMIDI::RunOut()
 				}
 			}
 
-			// 初回データ
+			// Channel data
 			if ((pData->data >= MIDI_NOTEOFF) && (pData->data < MIDI_EXSTART)) {
 				// 80-EF
 				outState = OutShort;
@@ -573,31 +573,31 @@ void FASTCALL CMIDI::RunOut()
 				}
 			}
 
-			// コモンメッセージ、リアルタイムメッセージ
+			// Channel messages and real time messages
 			switch (pData->data) {
-				// エクスクルーシブ開始
+				// System exclusive start
 				case MIDI_EXSTART:
 					outState = OutEx;
 					m_ExBuf[0] = (BYTE)pData->data;
 					dwCnt = 1;
 					break;
-				// タイムコードクォーターフレーム
+				// Quarter frame
 				case MIDI_QFRAME:
-				// ソングセレクト
+				// Song select
 				case MIDI_SONGSEL:
 					outState = OutShort;
 					dwCnt = 1;
 					dwShortMsg = pData->data;
 					dwLen = 2;
 					break;
-				// ソングポジションポインタ
+				// Song position pointer
 				case MIDI_SONGPTR:
 					outState = OutShort;
 					dwCnt = 1;
 					dwShortMsg = pData->data;
 					dwLen = 3;
 					break;
-				// チューンリクエスト、リアルタイムメッセージ
+				// Tune request, real time messages
 				case MIDI_TUNEREQ:
 				case MIDI_TIMINGCLK:
 				case MIDI_START:
@@ -605,13 +605,13 @@ void FASTCALL CMIDI::RunOut()
 				case MIDI_STOP:
 				case MIDI_ACTSENSE:
 				case MIDI_SYSRESET:
-					// リアルタイムメッセージの類は出力しない(大魔界村)
+					// These real time messages do not output (error here)
 					m_pMIDI->DelTransData(1);
 					pData = NULL;
 					continue;
 			}
 
-			// ランニングステータス
+			// If running status
 			if (pData->data < MIDI_NOTEOFF) {
 				dwCnt = 2;
 				dwShortMsg = (pData->data << 8) | dwCmd;
@@ -619,32 +619,32 @@ void FASTCALL CMIDI::RunOut()
 			}
 
 #if defined(_DEBUG)
-			// データチェック(DEBUGのみ)
+			// Data check (DEBUG only)
 			if (outState == OutReady) {
-				TRACE("MIDI異常データ検出 $%02X\n", pData->data);
+				TRACE("MIDI abnormal data found $%02X\n", pData->data);
 			}
 #endif	// _DEBUG
 
-			// このデータを削除
+			// Delete this data
 			m_pMIDI->DelTransData(1);
 			pData = NULL;
 
-			// ここで送信できるものに限り、出力
+			// If can send now, send and exit
 			if ((outState == OutShort) && (dwCnt == dwLen)) {
 				m_OutSection.Lock();
 				::midiOutShortMsg(m_hOut, dwShortMsg);
 				m_OutSection.Unlock();
 
-				// カウントアップ
+				// Count up
 				m_dwShortSend++;
 				outState = OutReady;
 			}
 			continue;
 		}
 
-		// データ解釈(2バイト目以降)
+		// Data processing (2nd byte and later)
 		if (pData->data & 0x80) {
-			// エクスクルーシブ送信中なら、ここで出力(闇の血族)
+			// If sending system exclusive but not this type, output here (error)
 			if (pData->data != MIDI_EXEND) {
 				if (outState == OutEx) {
 					m_ExBuf[dwCnt] = MIDI_EXEND;
@@ -668,31 +668,31 @@ void FASTCALL CMIDI::RunOut()
 				}
 			}
 
-			// コモンメッセージ、リアルタイムメッセージ
+			// Channel messages and real time messages
 			switch (pData->data) {
-				// エクスクルーシブ開始
+				// System exclusive start
 				case MIDI_EXSTART:
 					outState = OutEx;
 					m_ExBuf[0] = (BYTE)pData->data;
 					dwCnt = 1;
 					break;
-				// タイムコードクォーターフレーム
+				// Quarter frame
 				case MIDI_QFRAME:
-				// ソングセレクト
+				// Song select
 				case MIDI_SONGSEL:
 					outState = OutShort;
 					dwCnt = 1;
 					dwShortMsg = pData->data;
 					dwLen = 2;
 					break;
-				// ソングポジションポインタ
+				// Song position pointer
 				case MIDI_SONGPTR:
 					outState = OutShort;
 					dwCnt = 1;
 					dwShortMsg = pData->data;
 					dwLen = 3;
 					break;
-				// チューンリクエスト、リアルタイムメッセージ
+				// Tune request, real time messages
 				case MIDI_TUNEREQ:
 				case MIDI_TIMINGCLK:
 				case MIDI_START:
@@ -700,18 +700,18 @@ void FASTCALL CMIDI::RunOut()
 				case MIDI_STOP:
 				case MIDI_ACTSENSE:
 				case MIDI_SYSRESET:
-					// リアルタイムメッセージの類は出力しない(大魔界村)
+					// These real time messages do not output (error here)
 					break;
-				// エクスクルーシブ終了
+				// System exclusive end
 				case MIDI_EXEND:
 					if (outState == OutEx) {
-						// エクスクルーシブ送信中なら、ここで出力
+						// If sending system exclusive, output here
 						m_ExBuf[dwCnt] = (BYTE)pData->data;
 						dwCnt++;
 						SendEx(m_ExBuf);
 						outState = OutReady;
 
-						// このデータを削除
+						// Delete this data
 						m_pMIDI->DelTransData(1);
 						pData = NULL;
 						continue;
@@ -721,7 +721,7 @@ void FASTCALL CMIDI::RunOut()
 		else {
 			// 00-7F
 			if (outState == OutEx) {
-				// エクスクルーシブ
+				// System exclusive
 				m_ExBuf[dwCnt] = (BYTE)pData->data;
 				dwCnt++;
 				if (dwCnt >= sizeof(m_ExBuf)) {
@@ -729,38 +729,38 @@ void FASTCALL CMIDI::RunOut()
 				}
 			}
 			if (outState == OutShort) {
-				// ショートメッセージ
+				// Short message
 				dwShortMsg |= (pData->data << (dwCnt << 3));
 				dwCnt++;
 			}
 		}
 
-		// このデータを削除
+		// Delete this data
 		m_pMIDI->DelTransData(1);
 		pData = NULL;
 
-		// ここで送信できるものに限り、出力
+		// If can send now, send and exit
 		if ((outState == OutShort) && (dwCnt == dwLen)) {
 			m_OutSection.Lock();
 			::midiOutShortMsg(m_hOut, dwShortMsg);
 			m_OutSection.Unlock();
 
-			// カウントアップ
+			// Count up
 			m_dwShortSend++;
 			outState = OutReady;
 		}
 	}
 
-	// エクスクルーシブ送信後のウェイト
+	// Wait for system exclusive send completion
 	SendExWait();
 
-	// 全ノートオフ
+	// All notes off
 	SendAllNoteOff();
 }
 
 //---------------------------------------------------------------------------
 //
-//	Outコールバック
+//	Out callback
 //
 //---------------------------------------------------------------------------
 void FASTCALL CMIDI::CallbackOut(UINT wMsg, DWORD /*dwParam1*/, DWORD /*dwParam2*/)
@@ -768,17 +768,17 @@ void FASTCALL CMIDI::CallbackOut(UINT wMsg, DWORD /*dwParam1*/, DWORD /*dwParam2
 	ASSERT(this);
 	ASSERT_VALID(this);
 
-	// エクスクルーシブ送信完了のみハンドリング
+	// Only handle system exclusive send done messages
 	if (wMsg == MM_MOM_DONE) {
 
-		// エクスクルーシブ送信フラグOFF(BOOLデータのため、同期は取らない)
+		// System exclusive send done flag OFF (only BOOL data, so ignore)
 		m_bSendEx = FALSE;
 	}
 }
 
 //---------------------------------------------------------------------------
 //
-//	OutデバイスCaps取得
+//	Get Out device caps
 //
 //---------------------------------------------------------------------------
 void FASTCALL CMIDI::GetOutCaps()
@@ -790,17 +790,17 @@ void FASTCALL CMIDI::GetOutCaps()
 	UINT uDeviceID;
 #endif	// MFC_VER
 
-	// デバイスID初期化
+	// Device ID initialization
 	uDeviceID = 0;
 
-	// ループ
+	// Loop
 	while ((DWORD)uDeviceID < m_dwOutDevs) {
-		// midiOutGetDevCapsで取得
+		// Get with midiOutGetDevCaps
 		mmResult = ::midiOutGetDevCaps( uDeviceID,
 										&m_pOutCaps[uDeviceID],
 										sizeof(MIDIOUTCAPS));
 
-		// 結果を記録
+		// Record result
 		if (mmResult == MMSYSERR_NOERROR) {
 			m_pOutCaps[uDeviceID].dwSupport = 0;
 		}
@@ -808,33 +808,33 @@ void FASTCALL CMIDI::GetOutCaps()
 			m_pOutCaps[uDeviceID].dwSupport = 1;
 		}
 
-		// デバイスIDを次へ
+		// Device ID increment
 		uDeviceID++;
 	}
 }
 
 //---------------------------------------------------------------------------
 //
-//	Outスレッド
+//	Out thread
 //
 //---------------------------------------------------------------------------
 UINT CMIDI::OutThread(LPVOID pParam)
 {
 	CMIDI *pMIDI;
 
-	// パラメータ受け取り
+	// Receive parameter
 	pMIDI = (CMIDI*)pParam;
 
-	// 実行
+	// Execute
 	pMIDI->RunOut();
 
-	// 終了
+	// Exit
 	return 0;
 }
 
 //---------------------------------------------------------------------------
 //
-//	Outコールバック
+//	Out callback
 //
 //---------------------------------------------------------------------------
 #if _MFC_VER >= 0x700
@@ -847,10 +847,10 @@ void CALLBACK CMIDI::OutProc(HMIDIOUT hOut, UINT wMsg, DWORD dwInstance,
 {
 	CMIDI *pMIDI;
 
-	// パラメータ受け取り
+	// Receive parameter
 	pMIDI = (CMIDI*)dwInstance;
 
-	// 呼び出し
+	// Call back
 	if (hOut == pMIDI->GetOutHandle()) {
 		pMIDI->CallbackOut(wMsg, dwParam1, dwParam2);
 	}
@@ -858,8 +858,8 @@ void CALLBACK CMIDI::OutProc(HMIDIOUT hOut, UINT wMsg, DWORD dwInstance,
 
 //---------------------------------------------------------------------------
 //
-//	エクスクルーシブ送信
-//	※前回の送信が完了し、ヘッダの後片付けが終わってから呼び出すこと
+//	System exclusive send
+//	Called when previous send completes, header preparation wait is finished
 //
 //---------------------------------------------------------------------------
 BOOL FASTCALL CMIDI::SendEx(const BYTE *pExData)
@@ -873,18 +873,18 @@ BOOL FASTCALL CMIDI::SendEx(const BYTE *pExData)
 	ASSERT(!m_bSendExHdr);
 	ASSERT_VALID(this);
 
-	// 個数を数える
+	// Count length
 	dwLength = 1;
 	while (pExData[dwLength - 1] != 0xf7) {
 		ASSERT(dwLength <= sizeof(m_ExBuf));
 		dwLength++;
 	}
 
-	// 改めてデータを検査
+	// Validate data range
 	ASSERT(pExData[0] == 0xf0);
 	ASSERT(pExData[dwLength - 1] == 0xf7);
 
-	// ヘッダ準備
+	// Prepare header
 	memset(&m_ExHdr, 0, sizeof(m_ExHdr));
 	m_ExHdr.lpData = (LPSTR)pExData;
 	m_ExHdr.dwBufferLength = dwLength;
@@ -896,30 +896,30 @@ BOOL FASTCALL CMIDI::SendEx(const BYTE *pExData)
 		return FALSE;
 	}
 
-	// エクスクルーシブヘッダ使用フラグON
+	// System exclusive header prepared flag ON
 	m_bSendExHdr = TRUE;
 
-	// エクスクルーシブ送信フラグを立てる
+	// System exclusive send flag set
 	m_bSendEx = TRUE;
 
-	// LongMsg送信
+	// LongMsg send
 	m_OutSection.Lock();
 	mmResult = ::midiOutLongMsg(m_hOut, &m_ExHdr, sizeof(MIDIHDR));
 	m_OutSection.Unlock();
 	if (mmResult != MMSYSERR_NOERROR) {
-		// 失敗したらフラグ落とす
+		// Failure, clear flag
 		m_bSendEx = FALSE;
 		return FALSE;
 	}
 
-	// 成功
+	// Success
 	m_dwExSend++;
 	return TRUE;
 }
 
 //---------------------------------------------------------------------------
 //
-//	エクスクルーシブ送信完了待ち
+//	Wait for system exclusive send completion
 //
 //---------------------------------------------------------------------------
 BOOL FASTCALL CMIDI::SendExWait()
@@ -931,32 +931,32 @@ BOOL FASTCALL CMIDI::SendExWait()
 	ASSERT(this);
 	ASSERT_VALID(this);
 
-	// フラグは成功
+	// Initialize flag
 	bResult = TRUE;
 
-	// エクスクルーシブ送信中なら
+	// If sending system exclusive
 	if (m_bSendEx) {
-		// 現在時間を取得
+		// Get current time
 		dwTime = ::timeGetTime();
 
-		// 送信完了までウェイト(タイムアウト2000ms)
+		// Wait until send completes (timeout 2000ms)
 		while (m_bSendEx) {
-			// 経過時間を算出
+			// Calculate elapsed time
 			dwDiff = ::timeGetTime();
 			dwDiff -= dwTime;
 
-			// タイムアウトなら失敗として抜ける
+			// If timeout, treat as failure
 			if (dwDiff >= 2000) {
 				bResult = FALSE;
 				break;
 			}
 
-			// スリープ
+			// Sleep
 			::Sleep(1);
 		}
 	}
 
-	// エクスクルーシブ送信ヘッダを使った後なら、後片付け
+	// If system exclusive header is prepared, unlock
 	if (m_bSendExHdr) {
 		m_OutSection.Lock();
 		::midiOutUnprepareHeader(m_hOut, &m_ExHdr, sizeof(MIDIHDR));
@@ -969,7 +969,7 @@ BOOL FASTCALL CMIDI::SendExWait()
 
 //---------------------------------------------------------------------------
 //
-//	全ノートオフ
+//	All notes off
 //
 //---------------------------------------------------------------------------
 void FASTCALL CMIDI::SendAllNoteOff()
@@ -980,7 +980,7 @@ void FASTCALL CMIDI::SendAllNoteOff()
 	ASSERT(this);
 	ASSERT_VALID(this);
 
-	// モードメッセージAll Sound Offを送信
+	// Send All Sound Off for each channel
 	m_OutSection.Lock();
 	for (nCh=0; nCh<16; nCh++) {
 		dwMsg = (DWORD)(0x78b0 + nCh);
@@ -988,7 +988,7 @@ void FASTCALL CMIDI::SendAllNoteOff()
 	}
 	m_OutSection.Unlock();
 
-	// ノートオフ(MT-32対策)
+	// Note off (MT-32 workaround)
 	m_OutSection.Lock();
 	for (nCh=0; nCh<16; nCh++) {
 		::midiOutShortMsg(m_hOut, (DWORD)(0x7bb0 + nCh));
@@ -1000,7 +1000,7 @@ void FASTCALL CMIDI::SendAllNoteOff()
 
 //---------------------------------------------------------------------------
 //
-//	音源リセット
+//	Reset send
 //
 //---------------------------------------------------------------------------
 BOOL FASTCALL CMIDI::SendReset()
@@ -1010,14 +1010,14 @@ BOOL FASTCALL CMIDI::SendReset()
 	ASSERT(this);
 	ASSERT_VALID(this);
 
-	// Reset All Controllerコマンド
+	// Reset All Controller command
 	m_OutSection.Lock();
 	for (nCh=0; nCh<16; nCh++) {
 		::midiOutShortMsg(m_hOut, (DWORD)(0x79b0 + nCh));
 	}
 	m_OutSection.Unlock();
 
-	// リセットタイプ別
+	// Reset type
 	switch (m_nOutReset) {
 		// GM
 		case 0:
@@ -1026,7 +1026,7 @@ BOOL FASTCALL CMIDI::SendReset()
 
 		// GS
 		case 1:
-			// GM->GSの順で送出
+			// Maximum output for GM->GS sequence
 			SendEx(ResetGM);
 			SendExWait();
 			SendEx(ResetGS);
@@ -1034,7 +1034,7 @@ BOOL FASTCALL CMIDI::SendReset()
 
 		// XG
 		case 2:
-			// GM->XGの順で送出
+			// Maximum output for GM->XG sequence
 			SendEx(ResetGM);
 			SendExWait();
 			SendEx(ResetXG);
@@ -1045,16 +1045,16 @@ BOOL FASTCALL CMIDI::SendReset()
 			SendEx(ResetLA);
 			break;
 
-		// その他(あり得ない)
+		// Others (not used)
 		default:
 			ASSERT(FALSE);
 			break;
 	};
 
-	// エクスクルーシブ送信完了を待つ
+	// Wait for system exclusive send completion
 	SendExWait();
 
-	// カウントクリア
+	// Count clear
 	m_dwShortSend = 0;
 	m_dwExSend = 0;
 	m_dwUnSend = 0;
@@ -1064,7 +1064,7 @@ BOOL FASTCALL CMIDI::SendReset()
 
 //---------------------------------------------------------------------------
 //
-//	Outデバイス数を取得
+//	Get Out device count
 //
 //---------------------------------------------------------------------------
 DWORD FASTCALL CMIDI::GetOutDevs() const
@@ -1077,7 +1077,7 @@ DWORD FASTCALL CMIDI::GetOutDevs() const
 
 //---------------------------------------------------------------------------
 //
-//	Outデバイス名称を取得
+//	Get Out device description
 //
 //---------------------------------------------------------------------------
 BOOL FASTCALL CMIDI::GetOutDevDesc(int nDevice, CString& strDesc) const
@@ -1088,13 +1088,13 @@ BOOL FASTCALL CMIDI::GetOutDevDesc(int nDevice, CString& strDesc) const
 	ASSERT(nDevice >= 0);
 	ASSERT_VALID(this);
 
-	// インデックスチェック
+	// Index check
 	if (nDevice >= (int)m_dwOutDevs) {
 		strDesc.Empty();
 		return FALSE;
 	}
 
-	// LPCTSTRへ変換
+	// Convert to LPCTSTR
 	lpstrDesc = A2T(m_pOutCaps[nDevice].szPname);
 	strDesc = lpstrDesc;
 
@@ -1103,7 +1103,7 @@ BOOL FASTCALL CMIDI::GetOutDevDesc(int nDevice, CString& strDesc) const
 
 //---------------------------------------------------------------------------
 //
-//	Outディレイ設定
+//	Set Out delay
 //
 //---------------------------------------------------------------------------
 void FASTCALL CMIDI::SetOutDelay(int nDelay)
@@ -1117,7 +1117,7 @@ void FASTCALL CMIDI::SetOutDelay(int nDelay)
 
 //---------------------------------------------------------------------------
 //
-//	Out音量取得
+//	Get Out volume
 //
 //---------------------------------------------------------------------------
 int FASTCALL CMIDI::GetOutVolume()
@@ -1129,30 +1129,30 @@ int FASTCALL CMIDI::GetOutVolume()
 	ASSERT(this);
 	ASSERT_VALID(this);
 
-	// ハンドルが有効で、スレッドが生きていること
+	// If handle is valid and thread is running
 	if ((m_dwOutDevice > 0) && m_pOutThread) {
-		// クリティカルセクションを挟んで、音量を取得
+		// Get volume with mixer function, get result
 		m_OutSection.Lock();
 		mmResult = ::midiOutGetVolume(m_hOut, &dwVolume);
 		m_OutSection.Unlock();
 
-		// 成功した場合、LOWORD(左)を優先する
+		// If successful, LOWORD (left) is used
 		if (mmResult == MMSYSERR_NOERROR) {
-			// 得られる値は16bit
+			// Volume value is 16bit
 			nVolume = LOWORD(dwVolume);
 
-			// 成功
+			// Return
 			return nVolume;
 		}
 	}
 
-	// MIDIミキサは無効
+	// MIDI mapper returns -1
 	return -1;
 }
 
 //---------------------------------------------------------------------------
 //
-//	Out音量設定
+//	Set Out volume
 //
 //---------------------------------------------------------------------------
 void FASTCALL CMIDI::SetOutVolume(int nVolume)
@@ -1163,14 +1163,14 @@ void FASTCALL CMIDI::SetOutVolume(int nVolume)
 	ASSERT((nVolume >= 0) && (nVolume < 0x10000));
 	ASSERT_VALID(this);
 
-	// ハンドルが有効で、スレッドが生きていること
+	// If handle is valid and thread is running
 	if ((m_dwOutDevice > 0) && m_pOutThread) {
-		// 値を作成
+		// Create value
 		dwVolume = (DWORD)nVolume;
 		dwVolume <<= 16;
 		dwVolume |= (DWORD)nVolume;
 
-		// クリティカルセクションを挟んで、音量を設定
+		// With mixer function, set volume
 		m_OutSection.Lock();
 		::midiOutSetVolume(m_hOut, dwVolume);
 		m_OutSection.Unlock();
@@ -1179,7 +1179,7 @@ void FASTCALL CMIDI::SetOutVolume(int nVolume)
 
 //---------------------------------------------------------------------------
 //
-//	Out情報取得
+//	Get Out info
 //
 //---------------------------------------------------------------------------
 void FASTCALL CMIDI::GetOutInfo(LPMIDIINFO pInfo) const
@@ -1188,21 +1188,21 @@ void FASTCALL CMIDI::GetOutInfo(LPMIDIINFO pInfo) const
 	ASSERT(pInfo);
 	ASSERT_VALID(this);
 
-	// デバイス
+	// Device
 	pInfo->dwDevices = m_dwOutDevs;
 	pInfo->dwDevice = m_dwOutDevice;
 
-	// カウンタ
+	// Counters
 	pInfo->dwShort = m_dwShortSend;
 	pInfo->dwLong = m_dwExSend;
 	pInfo->dwUnprepare = m_dwUnSend;
 
-	// バッファ情報はVMデバイス側が持つので、ここでは設定しない
+	// Buffer count from VM device is available, but not set here
 }
 
 //---------------------------------------------------------------------------
 //
-//	GM音源リセットコマンド
+//	GM reset command
 //
 //---------------------------------------------------------------------------
 const BYTE CMIDI::ResetGM[] = {
@@ -1211,7 +1211,7 @@ const BYTE CMIDI::ResetGM[] = {
 
 //---------------------------------------------------------------------------
 //
-//	GS音源リセットコマンド
+//	GS reset command
 //
 //---------------------------------------------------------------------------
 const BYTE CMIDI::ResetGS[] = {
@@ -1221,7 +1221,7 @@ const BYTE CMIDI::ResetGS[] = {
 
 //---------------------------------------------------------------------------
 //
-//	XG音源リセットコマンド
+//	XG reset command
 //
 //---------------------------------------------------------------------------
 const BYTE CMIDI::ResetXG[] = {
@@ -1231,7 +1231,7 @@ const BYTE CMIDI::ResetXG[] = {
 
 //---------------------------------------------------------------------------
 //
-//	LA音源リセットコマンド
+//	LA reset command
 //
 //---------------------------------------------------------------------------
 const BYTE CMIDI::ResetLA[] = {
@@ -1241,14 +1241,14 @@ const BYTE CMIDI::ResetLA[] = {
 
 //===========================================================================
 //
-//	IN部分
+//	IN procedures
 //
 //===========================================================================
 
 //---------------------------------------------------------------------------
 //
-//	Inオープン
-//	※dwDevice=0は割り当てなし
+//	In open
+//	Note dwDevice=0 is not assigned
 //
 //---------------------------------------------------------------------------
 void FASTCALL CMIDI::OpenIn(DWORD dwDevice)
@@ -1261,26 +1261,26 @@ void FASTCALL CMIDI::OpenIn(DWORD dwDevice)
 	ASSERT(!m_pInThread);
 	ASSERT_VALID(this);
 
-	// 割り当てしないのであればリターン
+	// If not assigned, return
 	if (dwDevice == 0) {
 		return;
 	}
 
-	// デバイスがなければリターン
+	// If no device, return
 	if (m_dwInDevs == 0) {
 		return;
 	}
 
-	// デバイス数を超えていればデバイス0
+	// If device number exceeds range, set to device 0
 	if (dwDevice > m_dwInDevs) {
 		dwDevice = 1;
 	}
 
-	// デバイス決定
+	// Device number
 	ASSERT(dwDevice >= 1);
 	uDeviceID = (UINT)(dwDevice - 1);
 
-	// オープン
+	// Open
 
 #if _MFC_VER >= 0x700
 	mmResult = ::midiInOpen(&m_hIn, uDeviceID,
@@ -1290,22 +1290,22 @@ void FASTCALL CMIDI::OpenIn(DWORD dwDevice)
 							(DWORD)InProc, (DWORD)this, CALLBACK_FUNCTION);
 #endif
 
-	// 失敗なら終了
+	// If failed, exit
 	if (mmResult != MMSYSERR_NOERROR) {
 		return;
 	}
 
-	// デバイス番号を更新
+	// Update device number
 	m_dwInDevice = dwDevice;
 
-	// スレッドを立てる
+	// Start thread
 	m_bInThread = FALSE;
 	m_pInThread = AfxBeginThread(InThread, this);
 }
 
 //---------------------------------------------------------------------------
 //
-//	Inクローズ
+//	In close
 //
 //---------------------------------------------------------------------------
 void FASTCALL CMIDI::CloseIn()
@@ -1313,32 +1313,32 @@ void FASTCALL CMIDI::CloseIn()
 	ASSERT(this);
 	ASSERT_VALID(this);
 
-	// スレッドを止める
+	// Stop thread
 	if (m_pInThread) {
-		// 終了フラグを上げ
+		// Set exit flag
 		m_bInThread = TRUE;
 
-		// 終了待ち(無期限)
+		// Wait for exit (infinite)
 		::WaitForSingleObject(m_pInThread->m_hThread, INFINITE);
 
-		// スレッドなし
+		// No thread
 		m_pInThread = NULL;
 	}
 
-	// デバイスを閉じる
+	// Close device
 	if (m_dwInDevice != 0) {
-		// リセットして、クローズ
+		// Reset and close
 		::midiInReset(m_hIn);
 		::midiInClose(m_hIn);
 
-		// オープンデバイスなし
+		// No open device
 		m_dwInDevice = 0;
 	}
 }
 
 //---------------------------------------------------------------------------
 //
-//	Inスレッド
+//	In thread
 //
 //---------------------------------------------------------------------------
 void FASTCALL CMIDI::RunIn()
@@ -1352,74 +1352,74 @@ void FASTCALL CMIDI::RunIn()
 	ASSERT(m_hIn);
 	ASSERT_VALID(this);
 
-	// 非アクティブ
+	// Not active
 	bActive = FALSE;
 
-	// エクスクルーシブバッファ未使用
+	// System exclusive buffer is used
 	m_InState[0] = InNotUsed;
 	m_InState[1] = InNotUsed;
 
-	// カウンタリセット
+	// Reset counters
 	m_dwShortRecv = 0;
 	m_dwExRecv = 0;
 	m_dwUnRecv = 0;
 
-	// リセット
+	// Reset
 	::midiInReset(m_hIn);
 
-	// ループ
+	// Loop
 	while (!m_bInThread) {
-		// 有効フラグ設定
+		// Set valid flag
 		bValid = FALSE;
 		if (m_pSch->IsEnable()) {
-			// スケジューラ動作中で
+			// Scheduler is running
 			if (m_pMIDI->IsActive()) {
-				// MIDIアクティブなら
+				// MIDI active
 				bValid = TRUE;
 			}
 		}
 
-		// 無効な場合
+		// If not valid
 		if (!bValid) {
 			// Sleep
 			::Sleep(10);
 			continue;
 		}
 
-		// 有効なので、まだスタートしていなければスタート
+		// If valid, start if not started
 		if (!bActive) {
 			StartIn();
 			bActive = TRUE;
 		}
 
-		// メッセージ処理なし
+		// If no message
 		bMsg = FALSE;
 
-		// ロングメッセージの検査
+		// Check long message
 		for (i=0; i<2; i++) {
 			if (m_InState[i] == InDone) {
-				// ロングメッセージ受信済み
+				// Long message received
 				LongIn(i);
 				bMsg = TRUE;
 			}
 		}
 
-		// ショートメッセージの検査
+		// Check short message
 		m_InSection.Lock();
 		if (!m_InQueue.IsEmpty()) {
-			// ショートメッセージ受信済み
+			// Short message received
 			ShortIn();
 			bMsg = TRUE;
 		}
 		m_InSection.Unlock();
 
-		// メッセージ処理なければSleep
+		// If no message, Sleep
 		if (!bMsg) {
 			::Sleep(1);
 		}
 	}
 
-	// 停止
+	// Stop
 	if (bActive) {
 		bActive = FALSE;
 		StopIn();
@@ -1428,7 +1428,7 @@ void FASTCALL CMIDI::RunIn()
 
 //---------------------------------------------------------------------------
 //
-//	In開始
+//	In start
 //
 //---------------------------------------------------------------------------
 BOOL FASTCALL CMIDI::StartIn()
@@ -1440,39 +1440,39 @@ BOOL FASTCALL CMIDI::StartIn()
 	ASSERT(m_hIn);
 	ASSERT_VALID(this);
 
-	// エクスクルーシブバッファを登録
+	// Register system exclusive buffer
 	for (i=0; i<2; i++) {
 		if (m_InState[i] == InNotUsed) {
-			// MIDIヘッダ作成
+			// Create MIDI header
 			memset(&m_InHdr[i], 0, sizeof(MIDIHDR));
 			m_InHdr[i].lpData = (LPSTR)&m_InBuf[i][0];
 			m_InHdr[i].dwBufferLength = InBufMax;
 			m_InHdr[i].dwUser = (DWORD)i;
 
-			// ヘッダ準備
+			// Prepare header
 			mmResult = ::midiInPrepareHeader(m_hIn, &m_InHdr[i], sizeof(MIDIHDR));
 			if (mmResult != MMSYSERR_NOERROR) {
-				// ヘッダ準備失敗
+				// Header preparation failed
 				continue;
 			}
 
-			// ヘッダ追加
+			// Add header
 			mmResult = ::midiInAddBuffer(m_hIn, &m_InHdr[i], sizeof(MIDIHDR));
 			if (mmResult != MMSYSERR_NOERROR) {
-				// ヘッダ追加失敗
+				// Header add failed
 				::midiInUnprepareHeader(m_hIn, &m_InHdr[i], sizeof(MIDIHDR));
 				continue;
 			}
 
-			// ステート設定
+			// Set state
 			m_InState[i] = InReady;
 		}
 	}
 
-	// Inキューをクリア
+	// In queue clear
 	m_InQueue.Clear();
 
-	// MIDI入力開始
+	// Start MIDI receive
 	mmResult = ::midiInStart(m_hIn);
 	if (mmResult != MMSYSERR_NOERROR) {
 		return FALSE;
@@ -1483,7 +1483,7 @@ BOOL FASTCALL CMIDI::StartIn()
 
 //---------------------------------------------------------------------------
 //
-//	In停止(バッファのみ)
+//	In stop (buffer only)
 //
 //---------------------------------------------------------------------------
 void FASTCALL CMIDI::StopIn()
@@ -1494,9 +1494,9 @@ void FASTCALL CMIDI::StopIn()
 	ASSERT(m_hIn);
 	ASSERT_VALID(this);
 
-	// エクスクルーシブバッファを削除
+	// Unregister system exclusive buffer
 	for (i=0; i<2; i++) {
-		// ヘッダ削除
+		// Unprepare header
 		if (m_InState[i] != InNotUsed) {
 			::midiInUnprepareHeader(m_hIn, &m_InHdr[i], sizeof(MIDIHDR));
 			m_InState[i] = InNotUsed;
@@ -1506,7 +1506,7 @@ void FASTCALL CMIDI::StopIn()
 
 //---------------------------------------------------------------------------
 //
-//	Inコールバック
+//	In callback
 //
 //---------------------------------------------------------------------------
 void FASTCALL CMIDI::CallbackIn(UINT wMsg, DWORD dwParam1, DWORD /*dwParam2*/)
@@ -1519,17 +1519,17 @@ void FASTCALL CMIDI::CallbackIn(UINT wMsg, DWORD dwParam1, DWORD /*dwParam2*/)
 	ASSERT_VALID(this);
 
 	switch (wMsg) {
-		// ショートメッセージ
+		// Short message
 		case MIM_DATA:
 		case MIM_MOREDATA:
-			// メッセージを作成
+			// Create message
 			msg[0] = (BYTE)dwParam1;
 			msg[1] = (BYTE)(dwParam1 >> 8);
 			msg[2] = (BYTE)(dwParam1 >> 16);
 
-			// ステータスバイトに応じて長さを決める
+			// Respond to status byte to determine length
 			if (msg[0] < MIDI_NOTEOFF) {
-				// ランニングステータスは無いので、異常データ
+				// Running status is invalid, so abnormal data
 				break;
 			}
 			dwLength = 3;
@@ -1537,72 +1537,72 @@ void FASTCALL CMIDI::CallbackIn(UINT wMsg, DWORD dwParam1, DWORD /*dwParam2*/)
 				dwLength = 2;
 			}
 			if (msg[0] >= MIDI_EXSTART) {
-				// F0以上のメッセージ
+				// F0 or higher messages
 				switch (msg[0]) {
-					// ソングポジションポインタ
+					// Song position pointer
 					case MIDI_SONGPTR:
 						dwLength = 3;
 						break;
 
-					// タイムコードクォーターフレーム
+					// Quarter frame
 					case MIDI_QFRAME:
-					// ソングセレクト
+					// Song select
 					case MIDI_SONGSEL:
 						dwLength = 2;
 						break;
 
-					// チューンセレクト
+					// Tune request
 					case MIDI_TUNEREQ:
-					// タイミングクロック
+					// Timing clock
 					case MIDI_TIMINGCLK:
-					// スタート
+					// Start
 					case MIDI_START:
-					// コンティニュー
+					// Continue
 					case MIDI_CONTINUE:
-					// ストップ
+					// Stop
 					case MIDI_STOP:
-					// アクティブセンシング
+					// Active sensing
 					case MIDI_ACTSENSE:
-					// システムリセット
+					// System reset
 					case MIDI_SYSRESET:
 						dwLength = 1;
 
-					// その他は受け取らない
+					// Other is not received
 					default:
 						dwLength = 0;
 				}
 			}
 
-			// データ追加
+			// Add data
 			if (dwLength > 0) {
-				// ロック
+				// Lock
 				m_InSection.Lock();
 
-				// 挿入
+				// Insert
 				m_InQueue.Insert(msg, dwLength);
 
-				// アンロック
+				// Unlock
 				m_InSection.Unlock();
 
-				// カウントアップ
+				// Count up
 				m_dwShortRecv++;
 			}
 			break;
 
-		// ロングメッセージ
+		// Long message
 		case MIM_LONGDATA:
 		case MIM_LONGERROR:
-			// フラグ変更
+			// Change flag
 			lpMidiHdr = (MIDIHDR*)dwParam1;
 			if (lpMidiHdr->dwUser < 2) {
 				m_InState[lpMidiHdr->dwUser] = InDone;
 
-				// カウントアップ
+				// Count up
 				m_dwExRecv++;
 			}
 			break;
 
-		// その他は処理しない
+		// Other is not processed
 		default:
 			break;
 	}
@@ -1610,8 +1610,8 @@ void FASTCALL CMIDI::CallbackIn(UINT wMsg, DWORD dwParam1, DWORD /*dwParam2*/)
 
 //---------------------------------------------------------------------------
 //
-//	ショートメッセージ受信
-//	※クリティカルセクションはロック状態
+//	Short message receive
+//	Note critical section is locked by caller
 //
 //---------------------------------------------------------------------------
 void FASTCALL CMIDI::ShortIn()
@@ -1623,17 +1623,17 @@ void FASTCALL CMIDI::ShortIn()
 	ASSERT(m_pMIDI);
 	ASSERT_VALID(this);
 
-	// スタック上にすべて取得
+	// Get everything from queue
 	dwReceived = m_InQueue.Get(buf);
 	ASSERT(dwReceived > 0);
 
-	// MIDIデバイスへ送信
+	// Send to MIDI device
 	m_pMIDI->SetRecvData(buf, (int)dwReceived);
 }
 
 //---------------------------------------------------------------------------
 //
-//	ロングメッセージ受信
+//	Long message receive
 //
 //---------------------------------------------------------------------------
 void FASTCALL CMIDI::LongIn(int nHdr)
@@ -1646,43 +1646,43 @@ void FASTCALL CMIDI::LongIn(int nHdr)
 	ASSERT(m_hIn);
 	ASSERT_VALID(this);
 
-	// 正常に受信できたことを確認
+	// Confirm it was received
 	ASSERT(m_InHdr[nHdr].dwFlags & MHDR_DONE);
 
-	// MIDIデバイスへ送信
+	// Send to MIDI device
 	m_pMIDI->SetRecvData((const BYTE*)m_InHdr[nHdr].lpData,
 						 (int)m_InHdr[nHdr].dwBytesRecorded);
 
-	// ヘッダを解放
+	// Unprepare header
 	::midiInUnprepareHeader(m_hIn, &m_InHdr[nHdr], sizeof(MIDIHDR));
 	m_InState[nHdr] = InNotUsed;
 	m_dwUnRecv++;
 
-	// 再スタート
+	// Restart
 	for (i=0; i<2; i++) {
 		if (m_InState[i] == InNotUsed) {
-			// MIDIヘッダ作成
+			// Create MIDI header
 			memset(&m_InHdr[i], 0, sizeof(MIDIHDR));
 			m_InHdr[i].lpData = (LPSTR)&m_InBuf[i][0];
 			m_InHdr[i].dwBufferLength = InBufMax;
 			m_InHdr[i].dwUser = (DWORD)i;
 
-			// ヘッダ準備
+			// Prepare header
 			mmResult = ::midiInPrepareHeader(m_hIn, &m_InHdr[i], sizeof(MIDIHDR));
 			if (mmResult != MMSYSERR_NOERROR) {
-				// ヘッダ準備失敗
+				// Header preparation failed
 				continue;
 			}
 
-			// ヘッダ追加
+			// Add header
 			mmResult = ::midiInAddBuffer(m_hIn, &m_InHdr[i], sizeof(MIDIHDR));
 			if (mmResult != MMSYSERR_NOERROR) {
-				// ヘッダ追加失敗
+				// Header add failed
 				::midiInUnprepareHeader(m_hIn, &m_InHdr[i], sizeof(MIDIHDR));
 				continue;
 			}
 
-			// ステート設定
+			// Set state
 			m_InState[i] = InReady;
 		}
 	}
@@ -1690,7 +1690,7 @@ void FASTCALL CMIDI::LongIn(int nHdr)
 
 //---------------------------------------------------------------------------
 //
-//	InデバイスCaps取得
+//	Get In device caps
 //
 //---------------------------------------------------------------------------
 void FASTCALL CMIDI::GetInCaps()
@@ -1702,17 +1702,17 @@ void FASTCALL CMIDI::GetInCaps()
 	UINT uDeviceID;
 #endif	// MFC_VER
 
-	// デバイスID初期化
+	// Device ID initialization
 	uDeviceID = 0;
 
-	// ループ
+	// Loop
 	while ((DWORD)uDeviceID < m_dwInDevs) {
-		// midiInGetDevCapsで取得
+		// Get with midiInGetDevCaps
 		mmResult = ::midiInGetDevCaps(uDeviceID,
 									  &m_pInCaps[uDeviceID],
 									  sizeof(MIDIINCAPS));
 
-		// 結果を記録
+		// Record result
 		if (mmResult == MMSYSERR_NOERROR) {
 			m_pInCaps[uDeviceID].dwSupport = 0;
 		}
@@ -1720,33 +1720,33 @@ void FASTCALL CMIDI::GetInCaps()
 			m_pInCaps[uDeviceID].dwSupport = 1;
 		}
 
-		// デバイスIDを次へ
+		// Device ID increment
 		uDeviceID++;
 	}
 }
 
 //---------------------------------------------------------------------------
 //
-//	Inスレッド
+//	In thread
 //
 //---------------------------------------------------------------------------
 UINT CMIDI::InThread(LPVOID pParam)
 {
 	CMIDI *pMIDI;
 
-	// パラメータ受け取り
+	// Receive parameter
 	pMIDI = (CMIDI*)pParam;
 
-	// 実行
+	// Execute
 	pMIDI->RunIn();
 
-	// 終了
+	// Exit
 	return 0;
 }
 
 //---------------------------------------------------------------------------
 //
-//	Inコールバック
+//	In callback
 //
 //---------------------------------------------------------------------------
 #if _MFC_VER >= 0x700
@@ -1759,10 +1759,10 @@ void CALLBACK CMIDI::InProc(HMIDIIN hIn, UINT wMsg, DWORD dwInstance,
 {
 	CMIDI *pMIDI;
 
-	// パラメータ受け取り
+	// Receive parameter
 	pMIDI = (CMIDI*)dwInstance;
 
-	// 呼び出し
+	// Call back
 	if (hIn == pMIDI->GetInHandle()) {
 		pMIDI->CallbackIn(wMsg, dwParam1, dwParam2);
 	}
@@ -1770,7 +1770,7 @@ void CALLBACK CMIDI::InProc(HMIDIIN hIn, UINT wMsg, DWORD dwInstance,
 
 //---------------------------------------------------------------------------
 //
-//	Inデバイス数を取得
+//	Get In device count
 //
 //---------------------------------------------------------------------------
 DWORD FASTCALL CMIDI::GetInDevs() const
@@ -1783,7 +1783,7 @@ DWORD FASTCALL CMIDI::GetInDevs() const
 
 //---------------------------------------------------------------------------
 //
-//	Inデバイス名称を取得
+//	Get In device description
 //
 //---------------------------------------------------------------------------
 BOOL FASTCALL CMIDI::GetInDevDesc(int nDevice, CString& strDesc) const
@@ -1794,13 +1794,13 @@ BOOL FASTCALL CMIDI::GetInDevDesc(int nDevice, CString& strDesc) const
 	ASSERT(nDevice >= 0);
 	ASSERT_VALID(this);
 
-	// インデックスチェック
+	// Index check
 	if (nDevice >= (int)m_dwInDevs) {
 		strDesc.Empty();
 		return FALSE;
 	}
 
-	// LPCTSTRへ変換
+	// Convert to LPCTSTR
 	lpstrDesc = A2T(m_pInCaps[nDevice].szPname);
 	strDesc = lpstrDesc;
 
@@ -1809,7 +1809,7 @@ BOOL FASTCALL CMIDI::GetInDevDesc(int nDevice, CString& strDesc) const
 
 //---------------------------------------------------------------------------
 //
-//	Inディレイ設定
+//	Set In delay
 //
 //---------------------------------------------------------------------------
 void FASTCALL CMIDI::SetInDelay(int nDelay)
@@ -1818,13 +1818,13 @@ void FASTCALL CMIDI::SetInDelay(int nDelay)
 	ASSERT(nDelay >= 0);
 	ASSERT_VALID(this);
 
-	// デバイスへ通知
+	// Notify device
 	m_pMIDI->SetRecvDelay(nDelay);
 }
 
 //---------------------------------------------------------------------------
 //
-//	In情報取得
+//	Get In info
 //
 //---------------------------------------------------------------------------
 void FASTCALL CMIDI::GetInInfo(LPMIDIINFO pInfo) const
@@ -1833,16 +1833,16 @@ void FASTCALL CMIDI::GetInInfo(LPMIDIINFO pInfo) const
 	ASSERT(pInfo);
 	ASSERT_VALID(this);
 
-	// デバイス
+	// Device
 	pInfo->dwDevices = m_dwInDevs;
 	pInfo->dwDevice = m_dwInDevice;
 
-	// カウンタ
+	// Counters
 	pInfo->dwShort = m_dwShortRecv;
 	pInfo->dwLong = m_dwExRecv;
 	pInfo->dwUnprepare = m_dwUnRecv;
 
-	// バッファ情報はVMデバイス側が持つので、ここでは設定しない
+	// Buffer count from VM device is available, but not set here
 }
 
 #endif	// _WIN32

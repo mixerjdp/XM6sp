@@ -2,8 +2,8 @@
 //
 //	X68000 EMULATOR "XM6"
 //
-//	Copyright (C) 2001-2004 ＰＩ．(ytanaka@ipc-tokai.or.jp)
-//	[ MFC ポート ]
+//	Copyright (C) 2001-2004 ﾅ｡ﾂｰﾃ･窶｢ﾂｽD(ytanaka@ipc-tokai.or.jp)
+//	[ MFC Port ]
 //
 //---------------------------------------------------------------------------
 
@@ -17,139 +17,139 @@
 
 //===========================================================================
 //
-//	ポート
+//	Port
 //
 //===========================================================================
 class CPort : public CComponent
 {
 public:
-	// 基本ファンクション
+	// Basic procedures
 	CPort(CFrmWnd *pWnd);
-										// コンストラクタ
+										// Constructor
 	BOOL FASTCALL Init();
-										// 初期化
+										// Initialization
 	void FASTCALL Cleanup();
-										// クリーンアップ
+										// Cleanup
 	void FASTCALL ApplyCfg(const Config *pConfig);
-										// 設定適用
+										// Apply configuration
 
-	// 外部API
+	// External API
 	void FASTCALL RunCOM();
-										// COM実行
+										// COM execution
 	BOOL FASTCALL GetCOMInfo(LPTSTR lpszDevFile, DWORD *dwLogFile) const;
-										// COM情報取得
+										// Get COM info
 	void FASTCALL GetTxQueue(CQueue::LPQUEUEINFO lpqi) const;
-										// 送信キュー情報取得
+										// Get Tx queue
 	void FASTCALL GetRxQueue(CQueue::LPQUEUEINFO lpqi) const;
-										// 受信キュー情報取得
+										// Get Rx queue
 	void FASTCALL RunLPT();
-										// LPT実行
+										// LPT execution
 	BOOL FASTCALL GetLPTInfo(LPTSTR lpszDevFile, DWORD *dwLogFile) const;
-										// LPT情報取得
+										// Get LPT info
 	void FASTCALL GetLPTQueue(CQueue::LPQUEUEINFO lpqi) const;
-										// LPTキュー取得
+										// Get LPT queue
 
 private:
-	// シリアルポート
+	// Serial port
 	BOOL FASTCALL OpenCOM();
-										// COMオープン
+										// COM open
 	void FASTCALL AppendCOM();
-										// COMファイル
+										// COM file
 	void FASTCALL CloseCOM();
-										// COMクローズ
+										// COM close
 	void FASTCALL AdjustCOM(DCB *pDCB);
-										// パラメータあわせ
+										// Adjust parameters
 	BOOL FASTCALL MatchCOM(DWORD dwSCC, DWORD dwBase);
-										// ボーレートマッチ
+										// Baudrate match
 	void FASTCALL SignalCOM();
-										// 信号線あわせ
+										// Signal handling
 	void FASTCALL BufCOM();
-										// バッファあわせ
+										// Buffer handling
 	void FASTCALL CtrlCOM();
-										// 信号線制御
+										// Control
 	void FASTCALL OnCTSDSR();
-										// CTS, DSR変化
+										// CTS, DSR change
 	void FASTCALL OnErr();
-										// 受信エラー
+										// Rx error
 	void FASTCALL OnRx();
-										// 受信サブ
+										// Rx subroutine
 	void FASTCALL OnTx();
-										// 送信サブ
+										// Tx subroutine
 	UINT m_nCOM;
-										// COMポート(0で使用しない)
+										// COM port (0 means not used)
 	HANDLE m_hCOM;
-										// ファイルハンドル
+										// File handle
 	CWinThread *m_pCOM;
-										// スレッド
+										// Thread
 	BOOL m_bCOMReq;
-										// スレッド終了要求
+										// Thread exit request
 	BOOL m_bBreak;
-										// X68000送出ブレーク
+										// X68000 break signal
 	BOOL m_bRTS;
-										// RTS(送信)
+										// RTS (Tx)
 	BOOL m_bDTR;
-										// DTR(送信)
+										// DTR (Tx)
 	BOOL m_bCTS;
-										// CTS(受信)
+										// CTS (Rx)
 	BOOL m_bDSR;
-										// DSR(受信)
+										// DSR (Rx)
 	OVERLAPPED m_TxOver;
-										// オーバーラップ
+										// Overlapped
 	CQueue m_TxQueue;
-										// 送信キュー
+										// Tx queue
 	BYTE m_TxBuf[0x1000];
-										// 送信オーバーラップバッファ
+										// Tx overlapped buffer
 	BOOL m_bTxValid;
-										// 送信有効フラグ
+										// Tx valid flag
 	OVERLAPPED m_RxOver;
-										// オーバーラップ
+										// Overlapped
 	CQueue m_RxQueue;
-										// 受信キュー
+										// Rx queue
 	BYTE m_RxBuf[0x1000];
-										// 受信オーバーラップバッファ
+										// Rx overlapped buffer
 	DWORD m_dwErr;
-										// 受信エラー
+										// Rx error
 	TCHAR m_RecvLog[_MAX_PATH];
-										// 受信ログ
+										// Rx log
 	Fileio m_RecvFile;
-										// 受信ログ
+										// Rx log
 	BOOL m_bForce;
-										// 強制38400bpsモード
+										// Force 38400bps mode
 	SCC *m_pSCC;
 										// SCC
 
-	// パラレルポート
+	// Parallel port
 	BOOL FASTCALL OpenLPT();
-										// LPTオープン
+										// LPT open
 	void FASTCALL AppendLPT();
-										// LPTファイル
+										// LPT file
 	void FASTCALL CloseLPT();
-										// LPTクローズ
+										// LPT close
 	void FASTCALL RecvLPT();
-										// LPT受信
+										// LPT receive
 	void FASTCALL SendLPT();
-										// LPT送信
+										// LPT send
 
 	UINT m_nLPT;
-										// LPTポート(0で使用しない)
+										// LPT port (0 means not used)
 	HANDLE m_hLPT;
-										// ファイルハンドル
+										// File handle
 	CWinThread *m_pLPT;
-										// スレッド
+										// Thread
 	BOOL m_bLPTReq;
-										// スレッド終了要求
+										// Thread exit request
 	BOOL m_bLPTValid;
-										// 送信有効フラグ
+										// Tx valid flag
 	OVERLAPPED m_LPTOver;
-										// オーバーラップ
+										// Overlapped
 	CQueue m_LPTQueue;
-										// キュー
+										// Queue
 	TCHAR m_SendLog[_MAX_PATH];
-										// 送信ログ
+										// Tx log
 	Fileio m_SendFile;
-										// 送信ログ
+										// Tx log
 	Printer *m_pPrinter;
-										// プリンタ
+										// Printer
 };
 
 #endif	// mfc_port_h

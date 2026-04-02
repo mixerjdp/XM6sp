@@ -2,15 +2,15 @@
 //
 //	X68000 EMULATOR "XM6"
 //
-//	Copyright (C) 2001-2005 ＰＩ．(ytanaka@ipc-tokai.or.jp)
-//	[ MFC ステータスビュー ]
+//	Copyright (C) 2001-2005 PI.(ytanaka@ipc-tokai.or.jp)
+//	[ MFC status view ]
 //
 //---------------------------------------------------------------------------
 
 #if defined(_WIN32)
 
-#include "os.h"
 #include "mfc.h"
+#include "os.h"
 #include "xm6.h"
 #include "vm.h"
 #include "render.h"
@@ -22,29 +22,29 @@
 
 //===========================================================================
 //
-//	ステータスビュー
+//	Status view
 //
 //===========================================================================
 
 //---------------------------------------------------------------------------
 //
-//	コンストラクタ
+//	Constructor
 //
 //---------------------------------------------------------------------------
 CStatusView::CStatusView()
 {
 	int i;
 
-	// フレームウィンドウ
+	// Frame window
 	m_pFrmWnd = NULL;
 
-	// メッセージ
+	// Messages
 	m_strCaption.Empty();
 	::GetMsg(AFX_IDS_IDLEMESSAGE, m_strIdle);
 	m_strMenu = m_strIdle;
 	m_strInfo.Empty();
 
-	// FDD矩形
+	// FDD rect
 	for (i=0; i<2; i++) {
 		m_rectFDD[i].left = 0;
 		m_rectFDD[i].top = 0;
@@ -52,7 +52,7 @@ CStatusView::CStatusView()
 		m_rectFDD[i].bottom = 0;
 	}
 
-	// LED矩形
+	// LED rect
 	for (i=0; i<3; i++) {
 		m_rectLED[i].left = 0;
 		m_rectLED[i].top = 0;
@@ -63,7 +63,7 @@ CStatusView::CStatusView()
 
 //---------------------------------------------------------------------------
 //
-//	メッセージ マップ
+//	Message map
 //
 //---------------------------------------------------------------------------
 BEGIN_MESSAGE_MAP(CStatusView, CWnd)
@@ -75,7 +75,7 @@ END_MESSAGE_MAP()
 
 //---------------------------------------------------------------------------
 //
-//	初期化
+//	Initialization
 //
 //---------------------------------------------------------------------------
 BOOL FASTCALL CStatusView::Init(CFrmWnd *pFrmWnd)
@@ -85,19 +85,19 @@ BOOL FASTCALL CStatusView::Init(CFrmWnd *pFrmWnd)
 	ASSERT(this);
 	ASSERT(pFrmWnd);
 
-	// フレームウィンドウ記憶
+	// Frame window member
 	m_pFrmWnd = pFrmWnd;
 
-	// フレームウィンドウの矩形を取得
+	// Get frame window rectangle
 	pFrmWnd->GetClientRect(&rectParent);
 
-	// フレームウィンドウの幅のまま、高さを20の矩形をつくる
+	// Frame window rectangle, 20px height
 	m_rectClient.left = 0;
 	m_rectClient.top = 0;
 	m_rectClient.right = rectParent.Width();
 	m_rectClient.bottom = 20;
 
-	// 作成
+	// Create
 	if (!Create(NULL, NULL, WS_CHILD | WS_VISIBLE,
 				m_rectClient, pFrmWnd, IDM_FULLSCREEN, NULL)) {
 		return FALSE;
@@ -108,7 +108,7 @@ BOOL FASTCALL CStatusView::Init(CFrmWnd *pFrmWnd)
 
 //---------------------------------------------------------------------------
 //
-//	ウィンドウ再描画
+//	Window paint
 //
 //---------------------------------------------------------------------------
 void CStatusView::OnPaint()
@@ -117,18 +117,18 @@ void CStatusView::OnPaint()
 	CInfo *pInfo;
 	int i;
 
-	// 最小化なら何もしない
+	// Do nothing if minimized
 	if (IsIconic()) {
 		return;
 	}
 
-	// メッセージ
+	// Message
 	DrawMessage(&dc);
 
-	// ステータス
+	// Status
 	pInfo = m_pFrmWnd->GetInfo();
 	if (pInfo) {
-		// Infoに任せる
+		// Delegate to Info
 		for (i=0; i<2; i++) {
 			// FDD
 			if (m_rectFDD[i].Width() > 0) {
@@ -146,12 +146,12 @@ void CStatusView::OnPaint()
 
 //---------------------------------------------------------------------------
 //
-//	ウィンドウ背景描画
+//	Window background paint
 //
 //---------------------------------------------------------------------------
 BOOL CStatusView::OnEraseBkgnd(CDC *pDC)
 {
-	// 黒を保証する
+	// Fill black
 	pDC->FillSolidRect(&m_rectClient, RGB(0, 0, 0));
 
 	return TRUE;
@@ -159,7 +159,7 @@ BOOL CStatusView::OnEraseBkgnd(CDC *pDC)
 
 //---------------------------------------------------------------------------
 //
-//	ウィンドウサイズ変更
+//	Window size change
 //
 //---------------------------------------------------------------------------
 void CStatusView::OnSize(UINT nType, int cx, int cy)
@@ -171,18 +171,18 @@ void CStatusView::OnSize(UINT nType, int cx, int cy)
 	int i;
 	int nRest;
 
-	// 最小化ならクライアント矩形も最小に
+	// Do nothing if no client area yet
 	if ((cx == 0) || (cy == 0)) {
 		m_rectClient.right = 0;
 		m_rectClient.bottom = 0;
 		return;
 	}
 
-	// クライアント矩形を記憶
+	// Set client area
 	m_rectClient.right = cx;
 	m_rectClient.bottom = cy;
 
-	// テキストメトリックを取得
+	// Get text metrics
 	pDC = new CClientDC(this);
 	hFont = (HFONT)::GetStockObject(DEFAULT_GUI_FONT);
 	hDefFont = (HFONT)::SelectObject(pDC->m_hDC, hFont);
@@ -191,19 +191,19 @@ void CStatusView::OnSize(UINT nType, int cx, int cy)
 	::SelectObject(pDC->m_hDC, hDefFont);
 	delete pDC;
 
-	// テキストメトリックを記憶
+	// Set text metrics
 	m_tmWidth = tm.tmAveCharWidth;
 	m_tmHeight = tm.tmHeight + tm.tmExternalLeading;
 
-	// テキストに対し、クライアント矩形の上下の余り量を求める
+	// Calculate top/bottom ratio for text
 	nRest = cy - m_tmHeight;
 
-	// LED矩形を決める
+	// Calculate LED rectangles
 	for (i=0; i<3; i++) {
 		m_rectLED[i].top = nRest >> 2;
 		m_rectLED[i].bottom = cy - (nRest >> 2);
 
-		// 個々のサイズを設定
+		// Set individual size
 		switch (i) {
 			// HD BUSY
 			case 0:
@@ -223,14 +223,14 @@ void CStatusView::OnSize(UINT nType, int cx, int cy)
 				m_rectLED[i].right = m_rectLED[i].left;
 				m_rectLED[i].right += m_tmWidth * 9;
 				break;
-			// その他(ありえない)
+			// Others (ignore)
 			default:
 				ASSERT(FALSE);
 				break;
 		}
 	}
 
-	// FDD矩形を求める
+	// Calculate FDD rectangles
 	m_rectFDD[0].left = cx * 4 / 10;
 	m_rectFDD[0].right = m_rectLED[0].left - m_tmWidth;
 	m_rectFDD[1].left = m_rectFDD[0].left + m_rectFDD[0].Width() / 2;
@@ -242,43 +242,43 @@ void CStatusView::OnSize(UINT nType, int cx, int cy)
 		m_rectFDD[i].bottom = cy - (nRest >> 2);
 	}
 
-	// 再描画を促す
+	// Redraw
 	Invalidate(FALSE);
 
-	// 基本クラス
+	// Base class
 	CWnd::OnSize(nType, cx, cy);
 }
 
 //---------------------------------------------------------------------------
 //
-//	ウィンドウ移動
+//	Window move
 //
 //---------------------------------------------------------------------------
 void CStatusView::OnMove(int x, int y)
 {
 	ASSERT(m_pFrmWnd);
 
-	// 基本クラス
+	// Base class
 	CWnd::OnMove(x, y);
 
-	// フレームウィンドウの再配置を処理する
+	// Re-layout frame window status view
 	m_pFrmWnd->RecalcStatusView();
 }
 
 //---------------------------------------------------------------------------
 //
-//	ウィンドウ削除完了
+//	Window destruction
 //
 //---------------------------------------------------------------------------
 void CStatusView::PostNcDestroy()
 {
-	// インタフェース要素を削除
+	// Delete interface object
 	delete this;
 }
 
 //---------------------------------------------------------------------------
 //
-//	キャプション文字列
+//	Caption string
 //
 //---------------------------------------------------------------------------
 void FASTCALL CStatusView::SetCaptionString(CString& strCap)
@@ -287,14 +287,14 @@ void FASTCALL CStatusView::SetCaptionString(CString& strCap)
 
 	ASSERT(this);
 
-	// 記憶して表示
+	// Store and draw
 	m_strCaption = strCap;
 	DrawMessage(&dc);
 }
 
 //---------------------------------------------------------------------------
 //
-//	メニュー文字列
+//	Menu string
 //
 //---------------------------------------------------------------------------
 void FASTCALL CStatusView::SetMenuString(CString& strMenu)
@@ -303,14 +303,14 @@ void FASTCALL CStatusView::SetMenuString(CString& strMenu)
 
 	ASSERT(this);
 
-	// 記憶して表示
+	// Store and draw
 	m_strMenu = strMenu;
 	DrawMessage(&dc);
 }
 
 //---------------------------------------------------------------------------
 //
-//	情報文字列
+//	Info string
 //
 //---------------------------------------------------------------------------
 void FASTCALL CStatusView::SetInfoString(CString& strInfo)
@@ -319,14 +319,14 @@ void FASTCALL CStatusView::SetInfoString(CString& strInfo)
 
 	ASSERT(this);
 
-	// 記憶して表示
+	// Store and draw
 	m_strInfo = strInfo;
 	DrawMessage(&dc);
 }
 
 //---------------------------------------------------------------------------
 //
-//	メッセージ描画
+//	Message draw
 //
 //---------------------------------------------------------------------------
 void FASTCALL CStatusView::DrawMessage(CDC *pDC) const
@@ -341,12 +341,12 @@ void FASTCALL CStatusView::DrawMessage(CDC *pDC) const
 
 	ASSERT(pDC);
 
-	// 最小化なら何もしない
+	// Do nothing if no size
 	if ((m_rectClient.Width() == 0) || (m_rectClient.Height() == 0)) {
 		return;
 	}
 
-	// 表示文字列決定(Menuが最高、Infoがその次、Capが最低)
+	// Select string (Menu first, Info second, Cap third)
 	strMsg = m_strMenu;
 	if (strMsg == m_strIdle) {
 		if (m_strInfo.GetLength() > 0) {
@@ -357,35 +357,35 @@ void FASTCALL CStatusView::DrawMessage(CDC *pDC) const
 		}
 	}
 
-	// 矩形を作る(左半分の40%)
+	// Left rect (40% width)
 	rectDraw.left = 0;
 	rectDraw.top = 0;
 	rectDraw.right = m_rectClient.right * 4 / 10;
 	rectDraw.bottom = m_rectClient.bottom;
 
-	// メモリDCと、左半分のビットマップを作成
+	// Create compatible DC and memory bitmap
 	VERIFY(mDC.CreateCompatibleDC(pDC));
 	VERIFY(Bitmap.CreateCompatibleBitmap(pDC, rectDraw.right, rectDraw.bottom));
 	pBitmap = mDC.SelectObject(&Bitmap);
 	ASSERT(pBitmap);
 
-	// フォントをセレクト
+	// Select font
 	hFont = (HFONT)::GetStockObject(DEFAULT_GUI_FONT);
 	hDefFont = (HFONT)::SelectObject(mDC.m_hDC, hFont);
 	ASSERT(hDefFont);
 
-	// 黒でクリア、色を設定
+	// Clear and set color
 	mDC.SetTextColor(RGB(255, 255, 255));
 	mDC.FillSolidRect(&rectDraw, RGB(0, 0, 0));
 
-	// DrawTextで描画
+	// DrawText
 	rectDraw.left = 16;
 	mDC.DrawText(strMsg, &rectDraw, DT_LEFT | DT_VCENTER | DT_SINGLELINE | DT_NOPREFIX);
 
 	// BitBlt
 	pDC->BitBlt(0, 0, rectDraw.right, rectDraw.bottom, &mDC, 0, 0, SRCCOPY);
 
-	// 終了処理
+	// Cleanup
 	::SelectObject(mDC.m_hDC, hDefFont);
 	mDC.SelectObject(pBitmap);
 	VERIFY(Bitmap.DeleteObject());
@@ -394,7 +394,7 @@ void FASTCALL CStatusView::DrawMessage(CDC *pDC) const
 
 //---------------------------------------------------------------------------
 //
-//	ステータス描画
+//	Status draw
 //
 //---------------------------------------------------------------------------
 void FASTCALL CStatusView::DrawStatus(int nPane)
@@ -407,13 +407,13 @@ void FASTCALL CStatusView::DrawStatus(int nPane)
 	ASSERT(nPane >= 0);
 	ASSERT(m_pFrmWnd);
 
-	// Info取得
+	// Get Info
 	pInfo = m_pFrmWnd->GetInfo();
 	if (!pInfo) {
 		return;
 	}
 
-	// 矩形取得
+	// Get rect
 	if (nPane > 2) {
 		rect = m_rectLED[nPane - 2];
 	}
@@ -421,7 +421,7 @@ void FASTCALL CStatusView::DrawStatus(int nPane)
 		rect = m_rectFDD[nPane];
 	}
 
-	// Infoに任せる
+	// Delegate to Info
 	pInfo->DrawStatus(nPane, dc.m_hDC, rect);
 }
 

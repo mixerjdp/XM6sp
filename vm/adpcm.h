@@ -2,8 +2,8 @@
 //
 //	X68000 EMULATOR "XM6"
 //
-//	Copyright (C) 2001-2006 ＰＩ．(ytanaka@ipc-tokai.or.jp)
-//	[ ADPCM(MSM6258V) ]
+//	Copyright (C) 2001-2006 Ytanaka (ytanaka@ipc-tokai.or.jp)
+//	[ ADPCM (MSM6258V) ]
 //
 //---------------------------------------------------------------------------
 
@@ -21,124 +21,150 @@
 class ADPCM : public MemDevice
 {
 public:
-	// 内部データ定義
+	// Sample data definition
 	typedef struct {
-		DWORD panpot;					// パンポット
-		BOOL play;						// 再生モード
-		BOOL rec;						// 録音モード
-		BOOL active;					// アクティブフラグ
-		BOOL started;					// 再生後有為なデータを検出
-		DWORD clock;					// 供給クロック(4 or 8)
-		DWORD ratio;					// クロック比率 (0 or 1 or 2)
-		DWORD speed;					// 進行速度(128,192,256,384,512)
-		DWORD data;						// サンプルデータ(4bit * 2sample)
+		DWORD panpot;					// Panpot
+		BOOL play;						// Play mode
+		BOOL rec;						// Record mode
+		BOOL active;					// Active flag
+		BOOL started;					// Play started, data flag received
+		DWORD clock;					// Master clock (4 or 8)
+		DWORD ratio;					// Clock ratio (0 or 1 or 2)
+		DWORD speed;					// Playback speed (128,192,256,384,512)
+		DWORD data;						// Sample data (4bit * 2sample)
 
-		int offset;						// 合成オフセット (0-48)
-		int sample;						// サンプルデータ
-		int out;						// 出力データ
-		int vol;						// 音量
+		int offset;						// Current offset (0-48)
+		int sample;						// Sample data
+		int out;						// Output data
+		int vol;						// Volume
 
-		BOOL enable;					// イネーブルフラグ
-		BOOL sound;						// ADPCM出力有効フラグ
-		DWORD readpoint;				// バッファ読み込みポイント
-		DWORD writepoint;				// バッファ書き込みポイント
-		DWORD number;					// バッファ有効データ数
-		int wait;						// 合成ウェイト
-		DWORD sync_cnt;					// 同期カウンタ
-		DWORD sync_rate;				// 同期レート(882,960,etc...)
-		DWORD sync_step;				// 同期ステップ(線形補間対応)
-		BOOL interp;					// 補間フラグ
+		BOOL enable;					// Enable flag
+		BOOL sound;						// ADPCM output enable flag
+		DWORD readpoint;				// Buffer read point
+		DWORD writepoint;				// Buffer write point
+		DWORD number;					// Buffer valid data count
+		int wait;						// Internal wait
+		DWORD sync_cnt;					// Internal counter
+		DWORD sync_rate;				// Internal rate (882,960,etc...)
+		DWORD sync_step;				// Internal step (linear interpolation)
+		BOOL interp;					// Interpolation flag
 	} adpcm_t;
 
+	typedef struct {
+		DWORD start_events;
+		DWORD stop_events;
+		DWORD req_total;
+		DWORD req_ok;
+		DWORD req_fail;
+		DWORD decode_calls;
+		DWORD underrun_head_events;
+		DWORD underrun_interp_events;
+		DWORD underrun_linear_events;
+		DWORD silence_fill_events;
+		DWORD stale_nonzero_events;
+		DWORD max_buffer_samples;
+		DWORD last_data;
+	} adpcm_diag_t;
+
 public:
-	// 基本ファンクション
+	// Basic functions
 	ADPCM(VM *p);
-										// コンストラクタ
+										// Constructor
 	BOOL FASTCALL Init();
-										// 初期化
+										// Initialization
 	void FASTCALL Cleanup();
-										// クリーンアップ
+										// Cleanup
 	void FASTCALL Reset();
-										// リセット
+										// Reset
 	BOOL FASTCALL Save(Fileio *fio, int ver);
-										// セーブ
+										// Save
 	BOOL FASTCALL Load(Fileio *fio, int ver);
-										// ロード
+										// Load
 	void FASTCALL ApplyCfg(const Config *config);
-										// 設定適用
+										// Apply config
 #if !defined(NDEBUG)
 	void FASTCALL AssertDiag() const;
-										// 診断
+										// Assertion
 #endif	// NDEBUG
 
-	// メモリデバイス
+	// Memory device
 	DWORD FASTCALL ReadByte(DWORD addr);
-										// バイト読み込み
+										// Byte read
 	DWORD FASTCALL ReadWord(DWORD addr);
-										// ワード読み込み
+										// Word read
 	void FASTCALL WriteByte(DWORD addr, DWORD data);
-										// バイト書き込み
+										// Byte write
 	void FASTCALL WriteWord(DWORD addr, DWORD data);
-										// ワード書き込み
+										// Word write
 	DWORD FASTCALL ReadOnly(DWORD addr) const;
-										// 読み込みのみ
+										// Read only
 
-	// 外部API
+	// External API
 	void FASTCALL GetADPCM(adpcm_t *buffer);
-										// 内部データ取得
+										// Get ADPCM data
 	BOOL FASTCALL Callback(Event *ev);
-										// イベントコールバック
+										// Event callback
 	void FASTCALL SetClock(DWORD clk);
-										// 基準クロック指定
+										// Set master clock
 	void FASTCALL SetRatio(DWORD ratio);
-										// クロック比率指定
+										// Set clock ratio
 	void FASTCALL SetPanpot(DWORD pan);
-										// パンポット指定
+										// Set panpot
 	void FASTCALL Enable(BOOL enable);
-										// 合成イネーブル
+										// Internal enable
 	void FASTCALL InitBuf(DWORD rate);
-										// バッファ初期化
+										// Buffer initialization
 	void FASTCALL GetBuf(DWORD *buffer, int samples);
-										// バッファ取得
+										// Get buffer
 	void FASTCALL Wait(int num);
-										// ウェイト指定
+										// Wait
 	void FASTCALL EnableADPCM(BOOL flag) { adpcm.sound = flag; }
-										// 再生有効
+										// Play enable
 	void FASTCALL SetVolume(int volume);
-										// 音量設定
+										// Volume setting
+	void FASTCALL SetArianshuuLoopFix(BOOL enabled);
+										// Arianshuu: prevents infinite hold on ADPCM drain
+	void FASTCALL GetDiag(adpcm_diag_t *buffer) const;
+										// Internal ADPCM telemetry
+	BOOL FASTCALL IsArianshuuLoopFixEnabled() const { return quirk_arianshuu_loop_fix; }
+										// Arianshuu quirk state
 	void FASTCALL ClrStarted()			{ adpcm.started = FALSE; }
-										// スタートフラグクリア
+										// Clear started flag
 	BOOL FASTCALL IsStarted() const		{ return adpcm.started; }
-										// スタートフラグ取得
+										// Get started flag
 
 private:
 	enum {
-		BufMax = 0x10000				// バッファサイズ
+		BufMax = 0x10000				// Buffer size
 	};
 	void FASTCALL MakeTable();
-										// テーブル作成
+										// Make table
 	void FASTCALL CalcSpeed();
-										// 速度再計算
+										// Recalculate speed
 	void FASTCALL Start(int type);
-										// 録音・再生スタート
+										// Record/play start
 	void FASTCALL Stop();
-										// 録音・再生ストップ
+										// Record/play stop
 	void FASTCALL Decode(int data, int num, BOOL valid);
-										// 4bitデコード
+										// 4bit decode
 	Event event;
-										// タイマーイベント
+										// Timer event
 	adpcm_t adpcm;
-										// 内部データ
+										// Internal data
 	DMAC *dmac;
 										// DMAC
 	DWORD *adpcmbuf;
-										// 合成バッファ
+										// Internal buffer
 	int DiffTable[49 * 16];
-										// 差分テーブル
+										// Diff table
 	static const int NextTable[16];
-										// 変位テーブル
+										// Next table
 	static const int OffsetTable[58];
-										// オフセットテーブル
+										// Offset table
+	BOOL quirk_arianshuu_loop_fix;
+	int quirk_stuck_l;
+	int quirk_stuck_r;
+	adpcm_diag_t diag;
 };
 
 #endif	// adpcm_h

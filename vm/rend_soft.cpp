@@ -1,7 +1,6 @@
-// Compatibilidad con Visual Studio y Windows
-#include <windows.h>
-
 #include "rend_soft.h"
+#include "os.h"
+#include "xm6.h"
 #include <string.h>
 
 #ifndef FASTCALL
@@ -493,7 +492,16 @@ void RendPCGNew(DWORD index, const BYTE *mem, DWORD *buf, DWORD *pal)
 	}
 }
 
-void RendBG8(DWORD **ptr, DWORD *buf, int x, int len, BOOL *ready, const BYTE *mem, DWORD *pcgbuf, DWORD *pal)
+static inline BOOL IsBGPixelVisible(DWORD pixel, BOOL legacy_bg_transparency)
+{
+	if (legacy_bg_transparency) {
+		return (pixel & 0x00FFFFFF) != 0;
+	}
+	return (pixel & 0x80000000) == 0;
+}
+
+void RendBG8(DWORD **ptr, DWORD *buf, int x, int len, BOOL *ready, const BYTE *mem,
+	DWORD *pcgbuf, DWORD *pal, BOOL legacy_bg_transparency)
 {
 	int tiles = (len >> 3) + ((len & 7) ? 1 : 0);
 	DWORD **current_ptr = ptr + (x * 2);
@@ -511,12 +519,11 @@ void RendBG8(DWORD **ptr, DWORD *buf, int x, int len, BOOL *ready, const BYTE *m
 		DWORD* src_pixels = current_ptr[0];
 		if (!(bgdata & 0x4000)) {
 			for (int p = 0; p < 8; p++) {
-				// Honor the explicit transparent flag (REND_COLOR0), not RGB==0.
-				if (!(src_pixels[p] & 0x80000000)) dst[p] = src_pixels[p];
+				if (IsBGPixelVisible(src_pixels[p], legacy_bg_transparency)) dst[p] = src_pixels[p];
 			}
 		} else {
 			for (int p = 0; p < 8; p++) {
-				if (!(src_pixels[p] & 0x80000000)) dst[7 - p] = src_pixels[p];
+				if (IsBGPixelVisible(src_pixels[p], legacy_bg_transparency)) dst[7 - p] = src_pixels[p];
 			}
 		}
 		
@@ -530,12 +537,14 @@ void RendBG8(DWORD **ptr, DWORD *buf, int x, int len, BOOL *ready, const BYTE *m
 	}
 }
 
-void RendBG8C(DWORD **ptr, DWORD *buf, int x, int len, BOOL *ready, const BYTE *mem, DWORD *pcgbuf, DWORD *pal)
+void RendBG8C(DWORD **ptr, DWORD *buf, int x, int len, BOOL *ready, const BYTE *mem,
+	DWORD *pcgbuf, DWORD *pal, BOOL legacy_bg_transparency)
 {
-	RendBG8(ptr, buf, x, len, ready, mem, pcgbuf, pal);
+	RendBG8(ptr, buf, x, len, ready, mem, pcgbuf, pal, legacy_bg_transparency);
 }
 
-void RendBG8P(DWORD **ptr, DWORD *buf, int offset, int length, BOOL *ready, const BYTE *mem, DWORD *pcgbuf, DWORD *pal)
+void RendBG8P(DWORD **ptr, DWORD *buf, int offset, int length, BOOL *ready, const BYTE *mem,
+	DWORD *pcgbuf, DWORD *pal, BOOL legacy_bg_transparency)
 {
 	DWORD bgdata = (DWORD)(size_t)ptr[1];
 	DWORD pcgno = bgdata & 0xfff;
@@ -547,16 +556,17 @@ void RendBG8P(DWORD **ptr, DWORD *buf, int offset, int length, BOOL *ready, cons
 	DWORD* src_pixels = ptr[0];
 	if (!(bgdata & 0x4000)) {
 		for (int p = 0; p < length; p++) {
-			if (!(src_pixels[offset + p] & 0x80000000)) buf[p] = src_pixels[offset + p];
+			if (IsBGPixelVisible(src_pixels[offset + p], legacy_bg_transparency)) buf[p] = src_pixels[offset + p];
 		}
 	} else {
 		for (int p = 0; p < length; p++) {
-			if (!(src_pixels[7 - (offset + p)] & 0x80000000)) buf[p] = src_pixels[7 - (offset + p)];
+			if (IsBGPixelVisible(src_pixels[7 - (offset + p)], legacy_bg_transparency)) buf[p] = src_pixels[7 - (offset + p)];
 		}
 	}
 }
 
-void RendBG16(DWORD **ptr, DWORD *buf, int x, int len, BOOL *ready, const BYTE *mem, DWORD *pcgbuf, DWORD *pal)
+void RendBG16(DWORD **ptr, DWORD *buf, int x, int len, BOOL *ready, const BYTE *mem,
+	DWORD *pcgbuf, DWORD *pal, BOOL legacy_bg_transparency)
 {
 	int tiles = (len >> 4) + ((len & 15) ? 1 : 0);
 	DWORD **current_ptr = ptr + (x * 2);
@@ -574,12 +584,11 @@ void RendBG16(DWORD **ptr, DWORD *buf, int x, int len, BOOL *ready, const BYTE *
 		DWORD* src = current_ptr[0];
 		if (!(bgdata & 0x4000)) {
 			for (int p = 0; p < 16; p++) {
-				// Honor the explicit transparent flag (REND_COLOR0), not RGB==0.
-				if (!(src[p] & 0x80000000)) dst[p] = src[p];
+				if (IsBGPixelVisible(src[p], legacy_bg_transparency)) dst[p] = src[p];
 			}
 		} else {
 			for (int p = 0; p < 16; p++) {
-				if (!(src[p] & 0x80000000)) dst[15 - p] = src[p];
+				if (IsBGPixelVisible(src[p], legacy_bg_transparency)) dst[15 - p] = src[p];
 			}
 		}
 		
@@ -593,12 +602,14 @@ void RendBG16(DWORD **ptr, DWORD *buf, int x, int len, BOOL *ready, const BYTE *
 	}
 }
 
-void RendBG16C(DWORD **ptr, DWORD *buf, int x, int len, BOOL *ready, const BYTE *mem, DWORD *pcgbuf, DWORD *pal)
+void RendBG16C(DWORD **ptr, DWORD *buf, int x, int len, BOOL *ready, const BYTE *mem,
+	DWORD *pcgbuf, DWORD *pal, BOOL legacy_bg_transparency)
 {
-	RendBG16(ptr, buf, x, len, ready, mem, pcgbuf, pal);
+	RendBG16(ptr, buf, x, len, ready, mem, pcgbuf, pal, legacy_bg_transparency);
 }
 
-void RendBG16P(DWORD **ptr, DWORD *buf, int offset, int length, BOOL *ready, const BYTE *mem, DWORD *pcgbuf, DWORD *pal)
+void RendBG16P(DWORD **ptr, DWORD *buf, int offset, int length, BOOL *ready, const BYTE *mem,
+	DWORD *pcgbuf, DWORD *pal, BOOL legacy_bg_transparency)
 {
 	DWORD bgdata = (DWORD)(size_t)ptr[1];
 	DWORD pcgno = bgdata & 0xfff;
@@ -610,11 +621,11 @@ void RendBG16P(DWORD **ptr, DWORD *buf, int offset, int length, BOOL *ready, con
 	DWORD* src = ptr[0];
 	if (!(bgdata & 0x4000)) {
 		for (int p = 0; p < length; p++) {
-			if (!(src[offset + p] & 0x80000000)) buf[p] = src[offset + p];
+			if (IsBGPixelVisible(src[offset + p], legacy_bg_transparency)) buf[p] = src[offset + p];
 		}
 	} else {
 		for (int p = 0; p < length; p++) {
-			if (!(src[15 - (offset + p)] & 0x80000000)) buf[p] = src[15 - (offset + p)];
+			if (IsBGPixelVisible(src[15 - (offset + p)], legacy_bg_transparency)) buf[p] = src[15 - (offset + p)];
 		}
 	}
 }

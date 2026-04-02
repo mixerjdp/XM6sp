@@ -8,17 +8,17 @@
 #define FM_GEN_INL_H
 
 // ---------------------------------------------------------------------------
-//	定数その２
+// Constants
 //	
 #define FM_PI			3.14159265358979323846
 
-#define FM_SINEPRESIS	2			// EGとサイン波の精度の差  0(低)-2(高)
+#define FM_SINEPRESIS	2		// EG and sine table precision offset  0(lo)-2(hi)
 
 
 #define FM_OPSINBITS	10
 #define FM_OPSINENTS	(1 << FM_OPSINBITS)
 
-#define FM_EGCBITS		18			// eg の count のシフト値
+#define FM_EGCBITS		18		// eg count shift value
 #define FM_LFOCBITS		14
 
 #ifdef FM_TUNEBUILD
@@ -26,7 +26,7 @@
  #define FM_RATIOBITS	0
 #else
  #define FM_PGBITS		9		
- #define FM_RATIOBITS	7			// 8-12 くらいまで？
+#define FM_RATIOBITS	7		// 8-12 or more?
 #endif
 
 #define FM_EGBITS		16
@@ -41,13 +41,13 @@ namespace FM
 // ---------------------------------------------------------------------------
 //	Operator
 //
-//	フィードバックバッファをクリア
+//	Feedback buffer clear
 inline void Operator::ResetFB()
 {
 	out_ = out2_ = 0;
 }
 
-//	キーオン
+//	Key on
 inline void Operator::KeyOn()
 {
 	if (!keyon_)
@@ -64,7 +64,7 @@ inline void Operator::KeyOn()
 	}
 }
 
-//	キーオフ
+//	Key off
 inline void	Operator::KeyOff()
 {
 	if (keyon_)
@@ -74,7 +74,7 @@ inline void	Operator::KeyOff()
 	}
 }
 
-//	オペレータは稼働中か？
+//	Is the operator currently active?
 inline int Operator::IsOn()
 {
 	return eg_phase_ - off;
@@ -193,20 +193,20 @@ inline void Operator::SetMS(uint ms)
 // ---------------------------------------------------------------------------
 //	4-op Channel
 
-//	オペレータの種類 (LFO) を設定
+//	Operator type (LFO) setting
 inline void Channel4::SetType(OpType type)
 {
 	for (int i=0; i<4; i++)
 		op[i].type_ = type;
 }
 
-//	セルフ・フィードバックレートの設定 (0-7)
+//	Feedback level setting (0-7)
 inline void Channel4::SetFB(uint feedback)
 {
 	fb = fbtable[feedback];
 }
 
-//	OPNA 系 LFO の設定
+//	OPNA LFO setting
 inline void Channel4::SetMS(uint ms)
 {
 	op[0].SetMS(ms);
@@ -215,14 +215,14 @@ inline void Channel4::SetMS(uint ms)
 	op[3].SetMS(ms);
 }
 
-//	チャンネル・マスク
+//	Operator and channel
 inline void Channel4::Mute(bool m)
 {
 	for (int i=0; i<4; i++)
 		op[i].Mute(m);
 }
 
-//	内部パラメータを再計算
+//	Recalculate various parameters
 inline void Channel4::Refresh()
 {
 	for (int i=0; i<4; i++)
@@ -250,13 +250,13 @@ inline void StoreSample(Sample& dest, ISample data)
 
 
 // ---------------------------------------------------------------------------
-//	AM のレベルを設定
+//	AM depth setting
 inline void Chip::SetAML(uint l)
 {
 	aml_ = l & (FM_LFOENTS - 1);
 }
 
-//	PM のレベルを設定
+//	PM depth setting
 inline void Chip::SetPML(uint l)
 {
 	pml_ = l & (FM_LFOENTS - 1);

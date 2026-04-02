@@ -1,9 +1,9 @@
 //---------------------------------------------------------------------------
 //
-//	X68000 EMULATOR "XM6"
+// X68000 Emulator "XM6"
 //
-//	Copyright (C) 2001-2006 ‚o‚hD(ytanaka@ipc-tokai.or.jp)
-//	[ MFC ƒtƒŒ[ƒ€ƒEƒBƒ“ƒhƒE ]
+// Copyright (C) 2001-2006 PI.(ytanaka@ipc-tokai.or.jp)
+// [ MFC frame window ]
 //
 //---------------------------------------------------------------------------
 
@@ -14,63 +14,65 @@
 
 //---------------------------------------------------------------------------
 //
-//	ƒEƒBƒ“ƒhƒEƒƒbƒZ[ƒW
+// Window messages
 //
 //---------------------------------------------------------------------------
-#define WM_KICK			WM_APP				// ƒGƒ~ƒ…ƒŒ[ƒ^ƒXƒ^[ƒg
-#define WM_SHELLNOTIFY	(WM_USER + 5)		// ƒtƒ@ƒCƒ‹ƒVƒXƒeƒ€ó‘Ô•Ï‰»
+#define WM_KICK			WM_APP				// Emulator kick-start
+#define WM_SHELLNOTIFY	(WM_USER+5)		// Shell notification handling
 
 //===========================================================================
 //
-//	ƒtƒŒ[ƒ€ƒEƒBƒ“ƒhƒE
+// Frame window
 //
 //===========================================================================
 class CFrmWnd : public CFrameWnd
 {
 public:
-	// ‰Šú‰»
+	// Frame window
 	CFrmWnd();
-										// ƒRƒ“ƒXƒgƒ‰ƒNƒ^
+										// Initialization
 	BOOL Init();
-										// ‰Šú‰»
+										// Get View
 
-	// Žæ“¾
+	// Get View
 	CDrawView* FASTCALL GetView() const;
-										// •`‰æƒrƒ…[Žæ“¾
+										// Get First Component
 	CComponent* FASTCALL GetFirstComponent() const;
-										// Å‰‚ÌƒRƒ“ƒ|[ƒlƒ“ƒg‚ðŽæ“¾
+										// Get Scheduler
 	CScheduler* FASTCALL GetScheduler() const;
-										// ƒXƒPƒWƒ…[ƒ‰Žæ“¾
+										// Get Sound
 	CSound* FASTCALL GetSound() const;
-										// ƒTƒEƒ“ƒhŽæ“¾
+										// Get Input
 	CInput* FASTCALL GetInput() const;
-										// ƒCƒ“ƒvƒbƒgŽæ“¾
+										// Get Port
 	CPort* FASTCALL GetPort() const;
-										// ƒ|[ƒgŽæ“¾
+										// Get MIDI
 	CMIDI* FASTCALL GetMIDI() const;
-										// MIDIŽæ“¾
+										// Get T Key
 	CTKey* FASTCALL GetTKey() const;
-										// TrueKeyŽæ“¾
+										// Get Host
 	CHost* FASTCALL GetHost() const;
-										// HostŽæ“¾
+										// Get Info
 	CInfo* FASTCALL GetInfo() const;
-										// InfoŽæ“¾
+	// Get Config
 	CConfig* FASTCALL GetConfig() const;
-										// ƒRƒ“ƒtƒBƒOŽæ“¾
+										// Recalculate status view
+	void FASTCALL ApplyWindowScale();
+										// Recompute the frame size using the selected window scale
 
-	// ƒXƒe[ƒ^ƒXƒrƒ…[ƒTƒ|[ƒg
+	// Status bar support
 	void FASTCALL RecalcStatusView();
-										// ƒXƒe[ƒ^ƒXƒrƒ…[Ä”z’u
+										// Get window class name
 
-	// ƒTƒuƒEƒBƒ“ƒhƒEƒTƒ|[ƒg
+	// Subwindow support
 	LPCTSTR FASTCALL GetWndClassName() const;
-										// ƒEƒBƒ“ƒhƒEƒNƒ‰ƒX–¼Žæ“¾
+										// Check whether this is a popup subwindow
 	BOOL FASTCALL IsPopupSWnd() const;
-										// ƒ|ƒbƒvƒAƒbƒvƒTƒuƒEƒBƒ“ƒhƒE‚©
+										// Initialize the command-line subwindow
 
-	// ƒhƒ‰ƒbƒO•ƒhƒƒbƒvƒTƒ|[ƒg
+	// Drag and drop support
 	BOOL FASTCALL InitCmdSub(int nDrive, LPCTSTR lpszPath);
-									// ƒRƒ}ƒ“ƒhƒ‰ƒCƒ“ˆ— ƒTƒu
+									// Command-line processing subwindow
 	BOOL m_bFullScreen;
 	BOOL m_bBorderless;
 	BOOL m_bVSyncEnabled;
@@ -82,215 +84,216 @@ public:
 	void ExitBorderlessFullscreen();
 	void OnRenderFast();
 	void OnRenderFastUI(CCmdUI *pCmdUI);
+	void OnYmfm();
+	void OnYmfmUI(CCmdUI *pCmdUI);
 	void OnToggleRenderer();
 	void OnToggleVSync();
 	void OnToggleOSD();
 	void OnToggleShader();
 	void OnToggleShaderUI(CCmdUI *pCmdUI);
 
-	// Nombre de Archivo XM6   *-*
-	CString NombreArchivoXM6;
-	CString RutaCompletaArchivoXM6;
-	CString RutaSaveStates;
+	CString m_strXM6FileName;
+	CString m_strXM6FilePath;
+	CString m_strSaveStatePath;
 
-	// Guardar estado de ventana
+	// Save the frame window state
 	void SaveFrameWnd();
-	// Guardar Estado de disco
+	// Save disk state
 	void SaveDiskState();
 
 
 protected:
-	// ƒI[ƒo[ƒ‰ƒCƒh
+	// Override
 	BOOL PreCreateWindow(CREATESTRUCT& cs);
-										// ƒEƒBƒ“ƒhƒEì¬€”õ
+										// Get the message string
 	void GetMessageString(UINT nID, CString& rMessage) const;
-										// ƒƒbƒZ[ƒW•¶Žš—ñ’ñ‹Ÿ
+										// Create
 
-	// WMƒƒbƒZ[ƒW
+	// WM messages
 	afx_msg int OnCreate(LPCREATESTRUCT lpCreateStruct);
-										// ƒEƒBƒ“ƒhƒEì¬
+										// Close
 	afx_msg void OnClose();
-										// ƒEƒBƒ“ƒhƒEƒNƒ[ƒY
+										// Destroy
 	afx_msg void OnDestroy();
-										// ƒEƒBƒ“ƒhƒEíœ
+										// Move
 	afx_msg void OnMove(int x, int y);
-										// ƒEƒBƒ“ƒhƒEˆÚ“®
+										// Display Change
 	afx_msg LRESULT OnDisplayChange(UINT uParam, LONG lParam);
-										// ƒfƒBƒXƒvƒŒƒC•ÏX
+										// Erase Bkgnd
 	afx_msg BOOL OnEraseBkgnd(CDC *pDC);
-										// ƒEƒBƒ“ƒhƒE”wŒi•`‰æ
+										// Paint
 	afx_msg void OnPaint();
-										// ƒEƒBƒ“ƒhƒE•`‰æ
+										// Activate
 	afx_msg void OnActivate(UINT nState, CWnd *pWnd, BOOL bMinimized);
-										// ƒAƒNƒeƒBƒx[ƒg
+										// Activate
 #if _MFC_VER >= 0x700
 	afx_msg void OnActivateApp(BOOL bActive, DWORD dwThreadID);
 #else
 	afx_msg void OnActivateApp(BOOL bActive, HTASK hTask);
 #endif
-										// ƒ^ƒXƒNØ‚è‘Ö‚¦
+										// Enter Menu Loop
 	afx_msg void OnEnterMenuLoop(BOOL bTrackPopup);
-										// ƒƒjƒ…[ƒ‹[ƒvŠJŽn
+										// Exit Menu Loop
 	afx_msg void OnExitMenuLoop(BOOL bTrackPopup);
-										// ƒƒjƒ…[ƒ‹[ƒvI—¹
+										// Parent Notify
 	afx_msg void OnParentNotify(UINT message, LPARAM lParam);
-										// eƒEƒBƒ“ƒhƒE’Ê’m
+										// Kick
 	afx_msg LONG OnKick(UINT uParam, LONG lParam);
-										// ƒLƒbƒN
+										// Draw Item
 	afx_msg void OnDrawItem(int nIDCtl, LPDRAWITEMSTRUCT lpDIS);
-										// ƒI[ƒi[ƒhƒ[
+										// Context Menu
 	afx_msg void OnContextMenu(CWnd *pWnd, CPoint pos);
-										// ƒRƒ“ƒeƒLƒXƒgƒƒjƒ…[
+										// Power Broad Cast
 	afx_msg LONG OnPowerBroadCast(UINT uParam, LONG lParam);
-										// “dŒ¹•ÏX’Ê’m
+										// Sys Command
 	afx_msg void OnSysCommand(UINT nID, LPARAM lParam);
-										// ƒVƒXƒeƒ€ƒRƒ}ƒ“ƒh
+										// Sys Command
 #if _MFC_VER >= 0x700
 	afx_msg BOOL OnCopyData(CWnd* pWnd, COPYDATASTRUCT* pCopyDataStruct);
 #else
 	afx_msg LONG OnCopyData(UINT uParam, LONG lParam);
-										// ƒf[ƒ^“]‘—
+										// Copy Data
 #endif
 	afx_msg void OnEndSession(BOOL bEnding);
-										// ƒZƒbƒVƒ‡ƒ“I—¹
+										// Shell Notify
 	afx_msg LONG OnShellNotify(UINT uParam, LONG lParam);
-										// ƒtƒ@ƒCƒ‹ƒVƒXƒeƒ€ó‘Ô•Ï‰»
+										// Open
 
-	// ƒRƒ}ƒ“ƒhˆ—
+	// Command handling
 	afx_msg void OnOpen();
 
 	afx_msg void OnFastOpen();
-										// ŠJ‚­
+										// Open UI
 	afx_msg void OnOpenUI(CCmdUI *pCmdUI);
-										// ŠJ‚­ UI
+										// Save
 	afx_msg void OnSave();
-										// ã‘‚«•Û‘¶
+										// Save UI
 	afx_msg void OnSaveUI(CCmdUI *pCmdUI);
-										// ã‘‚«•Û‘¶ UI
+										// Save as
 	afx_msg void OnSaveAs();
-										// –¼‘O‚ð•t‚¯‚Ä•Û‘¶
+										// Save as UI
 	afx_msg void OnSaveAsUI(CCmdUI *pCmdUI);
-										// –¼‘O‚ð•t‚¯‚Ä•Û‘¶ UI
+										// Most recently used
 	afx_msg void OnMRU(UINT uID);
 										// MRU
 	afx_msg void OnMRUUI(CCmdUI *pCmdUI);
 										// MRU UI
 	afx_msg void OnReset();
-	afx_msg void OnResetNuevo();
-										// ƒŠƒZƒbƒg
+	afx_msg void OnResetNew();
+										// Reset UI
 	afx_msg void OnResetUI(CCmdUI *pCmdUI);
-										// ƒŠƒZƒbƒg UI
+										// Custom configuration
 
-	afx_msg void OnScc(); // Configuracion personalizada
-	
+	afx_msg void OnScc();	// Custom configuration
+
 	afx_msg void OnSccUI(CCmdUI* pCmdUI);
 
-	afx_msg void OnSgc(); // Configuracion global
-	
+	afx_msg void OnSgc();	// Global configuration
+
 	afx_msg void OnSgcUI(CCmdUI* pCmdUI);
 
-	afx_msg void OnSgcr(); // Configuracion global y reiniciar
+	afx_msg void OnSgcr();	// Global configuration and restart
 
 	afx_msg void OnSgcrUI(CCmdUI* pCmdUI);
 
 	afx_msg void OnInterrupt();
-										// ƒCƒ“ƒ^ƒ‰ƒvƒg
+										// Interrupt UI
 	afx_msg void OnInterruptUI(CCmdUI *pCmdUI);
-										// ƒCƒ“ƒ^ƒ‰ƒvƒg UI
+										// Power toggle
 	afx_msg void OnPower();
-										// “dŒ¹ƒXƒCƒbƒ`
+										// Power toggle UI
 	afx_msg void OnPowerUI(CCmdUI *pCmdUI);
-										// “dŒ¹ƒXƒCƒbƒ` UI
+										// Exit
 	afx_msg void OnExit();
-										// I—¹
+										// Floppy disk command
 
 	afx_msg void OnFD(UINT uID);
-										// ƒtƒƒbƒs[ƒfƒBƒXƒNƒRƒ}ƒ“ƒh
+										// Floppy disk open UI
 	afx_msg void OnFDOpenUI(CCmdUI *pCmdUI);
-										// ƒtƒƒbƒs[ƒI[ƒvƒ“ UI
+										// Floppy disk eject UI
 	afx_msg void OnFDEjectUI(CCmdUI *pCmdUI);
-										// ƒtƒƒbƒs[ƒCƒWƒFƒNƒg UI
+										// Floppy disk write-protect UI
 	afx_msg void OnFDWritePUI(CCmdUI *pCmdUI);
-										// ƒtƒƒbƒs[‘‚«ž‚Ý•ÛŒì UI
+										// Floppy disk force-eject UI
 	afx_msg void OnFDForceUI(CCmdUI *pCmdUI);
-										// ƒtƒƒbƒs[‹­§ƒCƒWƒFƒNƒg UI
+										// Floppy disk invalid-insert UI
 	afx_msg void OnFDInvalidUI(CCmdUI *pCmdUI);
-										// ƒtƒƒbƒs[Œë‘}“ü UI
+										// Floppy disk media UI
 	afx_msg void OnFDMediaUI(CCmdUI *pCmdUI);
-										// ƒtƒƒbƒs[ƒƒfƒBƒA UI
+										// Floppy disk MRU UI
 	afx_msg void OnFDMRUUI(CCmdUI *pCmdUI);
-										// ƒtƒƒbƒs[MRU UI
+										// MO open
 
 	afx_msg void OnMOOpen();
-										// MOƒI[ƒvƒ“
+										// MO open UI
 	afx_msg void OnMOOpenUI(CCmdUI *pCmdUI);
-										// MOƒI[ƒvƒ“ UI
+										// MO eject
 	afx_msg void OnMOEject();
-										// MOƒCƒWƒFƒNƒg
+										// MO eject UI
 	afx_msg void OnMOEjectUI(CCmdUI *pCmdUI);
-										// MOƒCƒWƒFƒNƒg UI
+										// MO write-protect
 	afx_msg void OnMOWriteP();
-										// MO‘‚«ž‚Ý•ÛŒì
+										// MO write-protect UI
 	afx_msg void OnMOWritePUI(CCmdUI *pCmdUI);
-										// MO‘‚«ž‚Ý•ÛŒì UI
+										// MO force-eject
 	afx_msg void OnMOForce();
-										// MO‹­§ƒCƒWƒFƒNƒg
+										// MO force-eject UI
 	afx_msg void OnMOForceUI(CCmdUI *pCmdUI);
-										// MO‹­§ƒCƒWƒFƒNƒg UI
+										// MO MRU
 	afx_msg void OnMOMRU(UINT uID);
 										// MOMRU
 	afx_msg void OnMOMRUUI(CCmdUI *pCmdUI);
 										// MOMRU UI
 
 	afx_msg void OnCDOpen();
-										// CDƒI[ƒvƒ“
+										// CD open UI
 	afx_msg void OnCDOpenUI(CCmdUI *pCmdUI);
-										// CDƒI[ƒvƒ“ UI
+										// CD eject
 	afx_msg void OnCDEject();
-										// CDƒCƒWƒFƒNƒg
+										// CD eject UI
 	afx_msg void OnCDEjectUI(CCmdUI *pCmdUI);
-										// CDƒCƒWƒFƒNƒg UI
+										// CD force-eject
 	afx_msg void OnCDForce();
-										// CD‹­§ƒCƒWƒFƒNƒg
+										// CD force-eject UI
 	afx_msg void OnCDForceUI(CCmdUI *pCmdUI);
-										// CD‹­§ƒCƒWƒFƒNƒg UI
+										// CD MRU
 	afx_msg void OnCDMRU(UINT nID);
 										// CDMRU
 	afx_msg void OnCDMRUUI(CCmdUI *pCmdUI);
 										// CDMRU UI
 
 	afx_msg void OnLog();
-										// ƒƒO
+										// Log
 	afx_msg void OnLogUI(CCmdUI *pCmdUI);
-										// ƒƒO UI
+										// Scheduler
 	afx_msg void OnScheduler();
-										// ƒXƒPƒWƒ…[ƒ‰
+										// Scheduler
 	afx_msg void OnSchedulerUI(CCmdUI *pCmdUI);
-										// ƒXƒPƒWƒ…[ƒ‰ UI
+										// Device
 	afx_msg void OnDevice();
-										// ƒfƒoƒCƒX
+										// Device
 	afx_msg void OnDeviceUI(CCmdUI *pCmdUI);
-										// ƒfƒoƒCƒX UI
+										// CPU registers
 	afx_msg void OnCPUReg();
-										// CPUƒŒƒWƒXƒ^
+										// CPU register
 	afx_msg void OnCPURegUI(CCmdUI *pCmdUI);
-										// CPUƒŒƒWƒXƒ^ UI
+										// Interrupt
 	afx_msg void OnInt();
-										// Š„‚èž‚Ý
+										// Interrupt
 	afx_msg void OnIntUI(CCmdUI *pCmdUI);
-										// Š„‚èž‚Ý UI
+										// Disassembly
 	afx_msg void OnDisasm();
-										// ‹tƒAƒZƒ“ƒuƒ‹
+										// Disassembly
 	afx_msg void OnDisasmUI(CCmdUI *pCmdUI);
-										// ‹tƒAƒZƒ“ƒuƒ‹ UI
+										// Memory
 	afx_msg void OnMemory();
-										// ƒƒ‚ƒŠ
+										// Memory
 	afx_msg void OnMemoryUI(CCmdUI *pCmdUI);
-										// ƒƒ‚ƒŠ UI
+										// Breakpoint
 	afx_msg void OnBreakP();
-										// ƒuƒŒ[ƒNƒ|ƒCƒ“ƒg
+										// Breakpoint
 	afx_msg void OnBreakPUI(CCmdUI *pCmdUI);
-										// ƒuƒŒ[ƒNƒ|ƒCƒ“ƒg UI
+										// MFP
 	afx_msg void OnMFP();
 										// MFP
 	afx_msg void OnMFPUI(CCmdUI *pCmdUI);
@@ -316,9 +319,9 @@ protected:
 	afx_msg void OnOPMUI(CCmdUI *pCmdUI);
 										// OPM UI
 	afx_msg void OnKeyboard();
-										// ƒL[ƒ{[ƒh
+										// Keyboard
 	afx_msg void OnKeyboardUI(CCmdUI *pCmdUI);
-										// ƒL[ƒ{[ƒh UI
+										// FDD
 	afx_msg void OnFDD();
 										// FDD
 	afx_msg void OnFDDUI(CCmdUI *pCmdUI);
@@ -348,252 +351,253 @@ protected:
 	afx_msg void OnSCSIUI(CCmdUI *pCmdUI);
 										// SCSI UI
 	afx_msg void OnTVRAM();
-										// ƒeƒLƒXƒg‰æ–Ê
+										// Text view
 	afx_msg void OnTVRAMUI(CCmdUI *pCmdUI);
-										// ƒeƒLƒXƒg‰æ–Ê UI
+										// Graphics view 1024x1024
 	afx_msg void OnG1024();
-										// ƒOƒ‰ƒtƒBƒbƒN‰æ–Ê1024~1024
+										// Graphics view 1024x1024
 	afx_msg void OnG1024UI(CCmdUI *pCmdUI);
-										// ƒOƒ‰ƒtƒBƒbƒN‰æ–Ê1024~1024 UI
+										// Graphics view 16 colors
 	afx_msg void OnG16(UINT uID);
-										// ƒOƒ‰ƒtƒBƒbƒN‰æ–Ê16F
+										// Graphics view 16 colors
 	afx_msg void OnG16UI(CCmdUI *pCmdUI);
-										// ƒOƒ‰ƒtƒBƒbƒN‰æ–Ê16F UI
+										// Graphics view 256 colors
 	afx_msg void OnG256(UINT uID);
-										// ƒOƒ‰ƒtƒBƒbƒN‰æ–Ê256F
+										// Graphics view 256 colors
 	afx_msg void OnG256UI(CCmdUI *pCmdUI);
-										// ƒOƒ‰ƒtƒBƒbƒN‰æ–Ê256F UI
+										// Graphics view 65536 colors
 	afx_msg void OnG64K();
-										// ƒOƒ‰ƒtƒBƒbƒN‰æ–Ê65536F
+										// Graphics view 65536 colors
 	afx_msg void OnG64KUI(CCmdUI *pCmdUI);
-										// ƒOƒ‰ƒtƒBƒbƒN‰æ–Ê65536F UI
+										// PCG
 	afx_msg void OnPCG();
 										// PCG
 	afx_msg void OnPCGUI(CCmdUI *pCmdUI);
 										// PCG UI
 	afx_msg void OnBG(UINT uID);
-										// BG‰æ–Ê
+										// BG view
 	afx_msg void OnBGUI(CCmdUI *pCmdUI);
-										// BG‰æ–Ê UI
+										// Palette
 	afx_msg void OnPalet();
-										// ƒpƒŒƒbƒg
+										// Palette
 	afx_msg void OnPaletUI(CCmdUI *pCmdUI);
-										// ƒpƒŒƒbƒg UI
+										// Text buffer
 	afx_msg void OnTextBuf();
-										// ƒeƒLƒXƒgƒoƒbƒtƒ@
+										// Text buffer
 	afx_msg void OnTextBufUI(CCmdUI *pCmdUI);
-										// ƒeƒLƒXƒgƒoƒbƒtƒ@ UI
+										// Graphics buffer
 	afx_msg void OnGrpBuf(UINT uID);
-										// ƒOƒ‰ƒtƒBƒbƒNƒoƒbƒtƒ@
+										// Graphics buffer
 	afx_msg void OnGrpBufUI(CCmdUI *pCmdUI);
-										// ƒOƒ‰ƒtƒBƒbƒNƒoƒbƒtƒ@ UI
+										// PCG buffer
 	afx_msg void OnPCGBuf();
-										// PCGƒoƒbƒtƒ@
+										// PCG buffer
 	afx_msg void OnPCGBufUI(CCmdUI *pCmdUI);
-										// PCGƒoƒbƒtƒ@ UI
+										// BG/sprite buffer
 	afx_msg void OnBGSpBuf();
-										// BG/ƒXƒvƒ‰ƒCƒgƒoƒbƒtƒ@
+										// BG/sprite buffer
 	afx_msg void OnBGSpBufUI(CCmdUI *pCmdUI);
-										// BG/ƒXƒvƒ‰ƒCƒgƒoƒbƒtƒ@ UI
+										// Palette buffer
 	afx_msg void OnPaletBuf();
-										// ƒpƒŒƒbƒgƒoƒbƒtƒ@
+										// Palette buffer
 	afx_msg void OnPaletBufUI(CCmdUI *pCmdUI);
-										// ƒpƒŒƒbƒgƒoƒbƒtƒ@ UI
+										// Mixed buffer
 	afx_msg void OnMixBuf();
-										// ‡¬ƒoƒbƒtƒ@
+										// Mixed buffer
 	afx_msg void OnMixBufUI(CCmdUI *pCmdUI);
-										// ‡¬ƒoƒbƒtƒ@ UI
+										// Component
 	afx_msg void OnComponent();
-										// ƒRƒ“ƒ|[ƒlƒ“ƒg
+										// Component
 	afx_msg void OnComponentUI(CCmdUI *pCmdUI);
-										// ƒRƒ“ƒ|[ƒlƒ“ƒg UI
+										// OS information
 	afx_msg void OnOSInfo();
-										// OSî•ñ
+										// OS information
 	afx_msg void OnOSInfoUI(CCmdUI *pCmdUI);
-										// OSî•ñ UI
+										// Sound
 	afx_msg void OnSound();
-										// ƒTƒEƒ“ƒh
+										// Sound
 	afx_msg void OnSoundUI(CCmdUI *pCmdUI);
-										// ƒTƒEƒ“ƒh UI
+										// Input
 	afx_msg void OnInput();
-										// ƒCƒ“ƒvƒbƒg
+										// Input
 	afx_msg void OnInputUI(CCmdUI *pCmdUI);
-										// ƒCƒ“ƒvƒbƒg UI
+										// Port
 	afx_msg void OnPort();
-										// ƒ|[ƒg
+										// Port
 	afx_msg void OnPortUI(CCmdUI *pCmdUI);
-										// ƒ|[ƒg UI
+										// Bitmap
 	afx_msg void OnBitmap();
-										// ƒrƒbƒgƒ}ƒbƒv
+										// Bitmap
 	afx_msg void OnBitmapUI(CCmdUI *pCmdUI);
-										// ƒrƒbƒgƒ}ƒbƒv UI
+										// MIDI driver
 	afx_msg void OnMIDIDrv();
-										// MIDIƒhƒ‰ƒCƒo
+										// MIDI driver
 	afx_msg void OnMIDIDrvUI(CCmdUI *pCmdUI);
-										// MIDIƒhƒ‰ƒCƒo UI
+										// Caption
 	afx_msg void OnCaption();
-										// ƒLƒƒƒvƒVƒ‡ƒ“
+										// Caption
 	afx_msg void OnCaptionUI(CCmdUI *pCmdUI);
-										// ƒLƒƒƒvƒVƒ‡ƒ“ UI
+										// Menu bar
 	afx_msg void OnMenu();
-										// ƒƒjƒ…[ƒo[
+										// Menu bar
 	afx_msg void OnMenuUI(CCmdUI *pCmdUI);
-										// ƒƒjƒ…[ƒo[ UI
+										// Status bar
 	afx_msg void OnStatus();
-										// ƒXƒe[ƒ^ƒXƒo[
+										// Status bar
 	afx_msg void OnStatusUI(CCmdUI *pCmdUI);
-										// ƒXƒe[ƒ^ƒXƒo[ UI
+										// Refresh
 	afx_msg void OnRefresh();
-										// ƒŠƒtƒŒƒbƒVƒ…
-	afx_msg void OnStretch();
-										// Šg‘å
-	afx_msg void OnStretchUI(CCmdUI *pCmdUI);
-										// Šg‘å UI
+										// Refresh
+	afx_msg void OnWindowScale(UINT uID);
+										// Window scale
+	afx_msg void OnWindowScaleUI(CCmdUI *pCmdUI);
+										// Window scale UI
+										// Fullscreen
 	afx_msg void OnFullScreen();
-										// ƒtƒ‹ƒXƒNƒŠ[ƒ“
+										// Fullscreen
 	afx_msg void OnFullScreenUI(CCmdUI *pCmdUI);
-										// ƒtƒ‹ƒXƒNƒŠ[ƒ“UI
+										// Execute
 
 	afx_msg void OnExec();
-										// ŽÀs
+										// Run
 	afx_msg void OnExecUI(CCmdUI *pCmdUI);
-										// ŽÀs UI
+										// Break
 	afx_msg void OnBreak();
-										// ’âŽ~
+										// Stop
 	afx_msg void OnBreakUI(CCmdUI *pCmdUI);
-										// ’âŽ~ UI
+										// Trace
 	afx_msg void OnTrace();
-										// ƒgƒŒ[ƒX
+										// Trace
 	afx_msg void OnTraceUI(CCmdUI *pCmdUI);
-										// ƒgƒŒ[ƒX UI
+										// Mouse mode
 
 	afx_msg void OnMouseMode();
-										// ƒ}ƒEƒXƒ‚[ƒh
+										// Mouse mode
 	afx_msg void OnSoftKey();
-										// ƒ\ƒtƒgƒEƒFƒAƒL[ƒ{[ƒh
+										// Software keyboard
 	afx_msg void OnSoftKeyUI(CCmdUI *pCmdUI);
-										// ƒ\ƒtƒgƒEƒFƒAƒL[ƒ{[ƒh UI
+										// Time adjustment
 	afx_msg void OnTimeAdj();
-										// Žž‡‚í‚¹
+										// Time adjustment
 	afx_msg void OnTrap();
 										// trap#0
 	afx_msg void OnTrapUI(CCmdUI *pCmdUI);
 										// trap#0 UI
 	afx_msg void OnSaveWav();
-										// WAVƒLƒƒƒvƒ`ƒƒ
+										// WAV capture
 	afx_msg void OnSaveWavUI(CCmdUI *pCmdUI);
-										// WAVƒLƒƒƒvƒ`ƒƒ UI
+										// New floppy disk
 	afx_msg void OnNewFD();
-										// V‚µ‚¢ƒtƒƒbƒs[ƒfƒBƒXƒN
+										// New floppy disk
 	afx_msg void OnNewDisk(UINT uID);
-										// V‚µ‚¢‘å—e—ÊƒfƒBƒXƒN
+										// New disk image
 	afx_msg void OnOptions();
-										// ƒIƒvƒVƒ‡ƒ“
+										// Options
 
 	afx_msg void OnCascade();
-										// d‚Ë‚Ä•\Ž¦
+										// Cascade windows
 	afx_msg void OnCascadeUI(CCmdUI *pCmdUI);
-										// d‚Ë‚Ä•\Ž¦ UI
+										// Tile windows
 	afx_msg void OnTile();
-										// •À‚×‚Ä•\Ž¦
+										// Tile windows
 	afx_msg void OnTileUI(CCmdUI *pCmdUI);
-										// •À‚×‚Ä•\Ž¦ UI
+										// Minimize all
 	afx_msg void OnIconic();
-										// ‘S‚ÄƒAƒCƒRƒ“‰»
+										// Minimize all
 	afx_msg void OnIconicUI(CCmdUI *pCmdUI);
-										// ‘S‚ÄƒAƒCƒRƒ“‰» UI
+										// Arrange icons
 	afx_msg void OnArrangeIcon();
-										// ƒAƒCƒRƒ“‚Ì®—ñ
+										// Arrange icons
 	afx_msg void OnArrangeIconUI(CCmdUI *pCmdUI);
-										// ƒAƒCƒRƒ“‚Ì®—ñ UI
+										// Hide all
 	afx_msg void OnHide();
-										// ‘S‚Ä‰B‚·
+										// Hide all
 	afx_msg void OnHideUI(CCmdUI *pCmdUI);
-										// ‘S‚Ä‰B‚· UI
+										// Restore all
 	afx_msg void OnRestore();
-										// ‘S‚Ä•œŒ³
+										// Restore all
 	afx_msg void OnRestoreUI(CCmdUI *pCmdUI);
-										// ‘S‚Ä•œŒ³ UI
+										// Window selection
 	afx_msg void OnWindow(UINT uID);
-										// ƒEƒBƒ“ƒhƒE‘I‘ð
+										// Window selection
 	afx_msg void OnAbout();
-										// ƒo[ƒWƒ‡ƒ“î•ñ
+										// About and version information
 
 private:
-	// ‰Šú‰»
+	// Initialization
 	BOOL FASTCALL InitChild();
-										// ƒ`ƒƒƒCƒ‹ƒhƒEƒBƒ“ƒhƒE‰Šú‰»
+										// Child window initialization
 	void FASTCALL InitPos(BOOL bStart = TRUE);
-										// ˆÊ’uE‹éŒ`‰Šú‰»
+										// Position and rectangle initialization
 	void FASTCALL InitShell();
-										// ƒVƒFƒ‹˜AŒg‰Šú‰»
+										// Shell-link initialization
 	BOOL FASTCALL InitVM();
-										// VM‰Šú‰»
+										// VM initialization
 	BOOL FASTCALL InitComponent();
-										// ƒRƒ“ƒ|[ƒlƒ“ƒg‰Šú‰»
+										// Component initialization
 	void FASTCALL InitVer();
-										// ƒo[ƒWƒ‡ƒ“‰Šú‰»
+										// Version initialization
 	void FASTCALL InitCmd(LPCTSTR lpszCmd);
-										// ƒRƒ}ƒ“ƒhƒ‰ƒCƒ“ˆ—
+										// Command-line processing
 
 	void FASTCALL ReadFile(LPCTSTR pszFileName, CString& str);
-	CString FASTCALL CFrmWnd::ProcesarM3u(CString str);
-	
+	CString FASTCALL ProcessM3u(CString str);
+
 	void FASTCALL ApplyCfg();
-										// Ý’è“K—p
+										// Apply settings
 	void FASTCALL SizeStatus();
-										// ƒXƒe[ƒ^ƒXƒo[ƒTƒCƒY•ÏX
+										// Status bar size change
 	void FASTCALL HideTaskBar(BOOL bHide, BOOL bFore);
-										// ƒ^ƒXƒNƒo[‰B‚·
+										// Hide the taskbar
 	BOOL RestoreFrameWnd(BOOL bFullScreen);
-										// ƒEƒBƒ“ƒhƒE•œŒ³
+										// Restore the window
 	void RestoreDiskState();
-										// ƒfƒBƒXƒNEƒXƒe[ƒg•œŒ³
+										// Disk/state restore
 	int m_nStatus;
-										// ƒXƒe[ƒ^ƒXƒR[ƒh
+										// Status code
 	static const DWORD SigTable[];
-										// SRAMƒVƒOƒlƒ`ƒƒƒe[ƒuƒ‹
+										// SRAM signature table
 
-	
-										// ƒfƒBƒXƒNEƒXƒe[ƒg•Û‘¶
+
+										// Disk/state save
 	void FASTCALL CleanSub();
-										// ƒNƒŠ[ƒ“ƒAƒbƒv
+										// Cleanup
 	BOOL m_bExit;
-										// I—¹ƒtƒ‰ƒO
+										// Exit flag
 	BOOL m_bSaved;
-										// ƒtƒŒ[ƒ€EƒfƒBƒXƒNEƒXƒe[ƒg•Û‘¶ƒtƒ‰ƒO
+										// Frame/disk-state save flag
 
-	// ƒZ[ƒuEƒ[ƒh
+	// Save/load
 	BOOL FASTCALL SaveComponent(const Filepath& path, DWORD dwPos);
-										// ƒZ[ƒu
+										// Save
 	BOOL FASTCALL LoadComponent(const Filepath& path, DWORD dwPos);
-										// ƒ[ƒh
+										// Load
 
-	// ƒRƒ}ƒ“ƒhƒnƒ“ƒhƒ‰ƒTƒu
+	// Command handler subwindow
 	BOOL FASTCALL OnOpenSub(const Filepath& path);
-										// ƒI[ƒvƒ“ƒTƒu
+										// Open subwindow
 	BOOL FASTCALL OnOpenPrep(const Filepath& path, BOOL bWarning = TRUE);
-										// ƒI[ƒvƒ“ƒ`ƒFƒbƒN
+										// Open check
 	void FASTCALL OnSaveSub(const Filepath& path);
-										// •Û‘¶ƒTƒu
+										// Save subwindow
 	void FASTCALL OnFDOpen(int nDrive);
-										// ƒtƒƒbƒs[ƒI[ƒvƒ“
+										// Floppy open
 	void FASTCALL OnFDEject(int nDrive);
-										// ƒtƒƒbƒs[ƒCƒWƒFƒNƒg
+										// Floppy eject
 	void FASTCALL OnFDWriteP(int nDrive);
-										// ƒtƒƒbƒs[‘‚«ž‚Ý•ÛŒì
+										// Floppy write-protect save
 	void FASTCALL OnFDForce(int nDrive);
-										// ƒtƒƒbƒs[‹­§ƒCƒWƒFƒNƒg
+										// Floppy force eject
 	void FASTCALL OnFDInvalid(int nDrive);
-										// ƒtƒƒbƒs[Œë‘}“ü
+										// Floppy invalid insert
 	void FASTCALL OnFDMedia(int nDrive, int nMedia);
-										// ƒtƒƒbƒs[ƒƒfƒBƒA
+										// Floppy media
 	void FASTCALL OnFDMRU(int nDrive, int nMRU);
-										// ƒtƒƒbƒs[MRU
+										// Floppy MRU
 	int m_nFDDStatus[2];
-										// ƒtƒƒbƒs[ƒXƒe[ƒ^ƒX
+										// Floppy status
 
-	// ƒfƒoƒCƒXEƒrƒ…[EƒRƒ“ƒ|[ƒlƒ“ƒg
+	// Device, view, and component
 	FDD *m_pFDD;
 										// FDD
 	SASI *m_pSASI;
@@ -607,17 +611,17 @@ private:
 	Mouse *m_pMouse;
 										// Mouse
 	CDrawView *m_pDrawView;
-										// •`‰æƒrƒ…[
+										// Draw view
 	CComponent *m_pFirstComponent;
-										// Å‰‚ÌƒRƒ“ƒ|[ƒlƒ“ƒg
+										// First component
 	CScheduler *m_pSch;
-										// ƒXƒPƒWƒ…[ƒ‰
+										// Scheduler
 	CSound *m_pSound;
-										// ƒTƒEƒ“ƒh
+										// Sound
 	CInput *m_pInput;
-										// ƒCƒ“ƒvƒbƒg
+										// Input
 	CPort *m_pPort;
-										// ƒ|[ƒg
+										// Port
 	CMIDI *m_pMIDI;
 										// MIDI
 	CTKey *m_pTKey;
@@ -627,88 +631,88 @@ private:
 	CInfo *m_pInfo;
 										// Info
 	CConfig *m_pConfig;
-										// ƒRƒ“ƒtƒBƒO
+										// Configuration
 
-	// ƒtƒ‹ƒXƒNƒŠ[ƒ“
-	
-										// ƒtƒ‹ƒXƒNƒŠ[ƒ“ƒtƒ‰ƒO
+	// Fullscreen
+
+										// Fullscreen flag
 	DEVMODE m_DevMode;
-										// ƒXƒNƒŠ[ƒ“ƒpƒ‰ƒ[ƒ^‹L‰¯
+										// Screen-size memory
 	HWND m_hTaskBar;
-										// ƒ^ƒXƒNƒo[
+										// Taskbar
 	int m_nWndLeft;
-										// ƒEƒBƒ“ƒhƒEƒ‚[ƒhŽžx
+										// Window mode X
 	int m_nWndTop;
-										// ƒEƒBƒ“ƒhƒEƒ‚[ƒhŽžy
+										// Window mode Y
 
-	// ƒTƒuƒEƒBƒ“ƒhƒE
+	// Subwindow
 	CString m_strWndClsName;
-										// ƒEƒBƒ“ƒhƒEƒNƒ‰ƒX–¼
+										// Window class name
 
-	// ƒXƒe[ƒ^ƒXƒrƒ…[
+	// Status view
 	void FASTCALL CreateStatusView();
-										// ƒXƒe[ƒ^ƒXƒrƒ…[ì¬
+										// Status view creation
 	void FASTCALL DestroyStatusView();
-										// ƒXƒe[ƒ^ƒXƒrƒ…[íœ
+										// Status view destruction
 	CStatusView *m_pStatusView;
-										// ƒXƒe[ƒ^ƒXƒrƒ…[
+										// Status view
 
-	// ƒXƒe[ƒ^ƒXƒo[
+	// Status bar
 	void FASTCALL ShowStatus();
-										// ƒXƒe[ƒ^ƒXƒo[•\Ž¦
+										// Status bar display
 	void FASTCALL ResetStatus();
-										// ƒXƒe[ƒ^ƒXƒo[ƒŠƒZƒbƒg
+										// Status bar reset
 	CStatusBar m_StatusBar;
-										// ƒXƒe[ƒ^ƒXƒo[
+										// Status bar
 	BOOL m_bStatusBar;
-										// ƒXƒe[ƒ^ƒXƒo[•\Ž¦ƒtƒ‰ƒO
+										// Status bar display flag
 
-	// ƒƒjƒ…[
+	// Menu
 	void FASTCALL ShowMenu();
-										// ƒƒjƒ…[ƒo[•\Ž¦
+										// Menu bar display
 	CMenu m_Menu;
-										// ƒƒCƒ“ƒƒjƒ…[
+										// Main menu
 	BOOL m_bMenuBar;
-										// ƒƒjƒ…[ƒo[•\Ž¦ƒtƒ‰ƒO
+										// Menu bar display flag
 	CMenu m_PopupMenu;
-										// ƒ|ƒbƒvƒAƒbƒvƒƒjƒ…[
+										// Popup menu
 	BOOL m_bPopupMenu;
-										// ƒ|ƒbƒvƒAƒbƒvƒƒjƒ…[ŽÀs’†
+										// Popup menu execution
 
-	// ƒLƒƒƒvƒVƒ‡ƒ“
+	// Caption
 	void FASTCALL ShowCaption();
-										// ƒLƒƒƒvƒVƒ‡ƒ“•\Ž¦
+										// Caption display
 	void FASTCALL ResetCaption();
-										// ƒLƒƒƒvƒVƒ‡ƒ“ƒŠƒZƒbƒg
+										// Caption reset
 	BOOL m_bCaption;
-										// ƒLƒƒƒvƒVƒ‡ƒ“•\Ž¦ƒtƒ‰ƒO
+										// Caption display flag
 
-	// î•ñ
+	// Info
 	void FASTCALL SetInfo(CString& strInfo);
-										// î•ñ•¶Žš—ñƒZƒbƒg
+										// Info string set
 
-	// ƒVƒFƒ‹˜AŒg
+	// Shell-link
 	ULONG m_uNotifyId;
-										// ƒVƒFƒ‹’Ê’mID
+										// Shell notification ID
 	SHChangeNotifyEntry m_fsne[1];
-										// ƒVƒFƒ‹’Ê’mƒGƒ“ƒgƒŠ
+										// Shell notification entry
 
-	// ƒXƒe[ƒgƒtƒ@ƒCƒ‹
+	// State file
 	void FASTCALL UpdateExec();
-										// XV(ŽÀs)
+										// Update (execute)
 	DWORD m_dwExec;
-										// ƒZ[ƒuŒãŽÀsƒJƒEƒ“ƒ^
+										// Save-after-execute counter
 
-	// ƒRƒ“ƒtƒBƒMƒ…ƒŒ[ƒVƒ‡ƒ“
+	// Configuration
 	BOOL m_bMouseMid;
-										// ƒ}ƒEƒX’†ƒ{ƒ^ƒ“—LŒø
+										// Mouse middle button enabled
 	BOOL m_bPopup;
-										// ƒ|ƒbƒvƒAƒbƒvƒ‚[ƒh
+										// Popup mode
 	BOOL m_bAutoMouse;
-										// Ž©“®ƒ}ƒEƒXƒ‚[ƒh
+										// Automatic mouse mode
 
 	DECLARE_MESSAGE_MAP()
-										// ƒƒbƒZ[ƒW ƒ}ƒbƒv‚ ‚è
+										// Message map
 };
 
 #endif	// mfc_frm_h

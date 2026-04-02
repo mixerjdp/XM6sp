@@ -11,6 +11,7 @@
 #if !defined (core_soft_h)
 #define core_soft_h
 
+#include <stdint.h>
 #include "event.h"
 
 //---------------------------------------------------------------------------
@@ -28,7 +29,7 @@ BOOL SubExecEvent(DWORD hus);
 
 // Memory related
 void MemInitDecode(Device *mem, MemDevice **devarray);
-extern BYTE MemDecodeTable[0x180 * 4];
+extern uintptr_t MemDecodeTable[0x180];
 
 #ifdef __cplusplus
 }

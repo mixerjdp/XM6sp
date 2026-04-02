@@ -1,11 +1,11 @@
-  //---------------------------------------------------------------------------
-  //
-  //	EMULADOR X68000 "XM6"
-  //
-  //	Copyright (C) 2001-2005 PI.(ytanaka@ipc-tokai.or.jp)
-  //	[ Subventana MFC (CPU) ]
-  //
-  //---------------------------------------------------------------------------
+//---------------------------------------------------------------------------
+//
+//	X68000 Emulator "XM6"
+//
+//	Copyright (C) 2001-2005 PI.(ytanaka@ipc-tokai.or.jp)
+//	[MFC subwindow (CPU)]
+//
+//---------------------------------------------------------------------------
 
 #if defined(_WIN32)
 
@@ -14,404 +14,404 @@
 
 #include "mfc_sub.h"
 
-  //===========================================================================
-  //
-  //	Dialogo con historial
-  //
-  //===========================================================================
+//===========================================================================
+//
+//	History dialog
+//
+//===========================================================================
 class CHistoryDlg : public CDialog
 {
 public:
 	CHistoryDlg(UINT nID, CWnd *pParentWnd);
- 										 // Constructor
+										// Constructor
 	BOOL OnInitDialog();
- 										 // Inicializacion de dialogo
+										// Dialog initialization
 	void OnOK();
- 										 // OK
+										// OK
 	DWORD m_dwValue;
- 										 // Valor de edicion
+										// Edit value
 
 protected:
 	virtual UINT* GetNumPtr() = 0;
- 										 // Obtener puntero de conteo de historial
+										// Get history count pointer
 	virtual DWORD* GetDataPtr() = 0;
- 										 // Obtener puntero de datos de historial
+										// Get history data pointer
 	UINT m_nBit;
- 										 // Bits validos
+										// Valid bits
 	DWORD m_dwMask;
- 										 // Mascara (generada internamente a partir de bits)
+										// Mask (generated internally from the bit count)
 };
 
-  //===========================================================================
-  //
-  //	Dialogo de entrada de direccion
-  //
-  //===========================================================================
+//===========================================================================
+//
+//	Address input dialog
+//
+//===========================================================================
 class CAddrDlg : public CHistoryDlg
 {
 public:
 	CAddrDlg(CWnd *pParent = NULL);
- 										 // Constructor
+										// Constructor
 	static void SetupHisMenu(CMenu *pMenu);
- 										 // Configuracion de menu
+										// Menu configuration
 	static DWORD GetAddr(UINT nID);
- 										 // Obtener resultado de menu
+										// Get menu result
 
 protected:
 	UINT* GetNumPtr();
- 										 // Obtener puntero de conteo de historial
+										// Get history count pointer
 	DWORD* GetDataPtr();
- 										 // Obtener puntero de datos de historial
+										// Get history data pointer
 	static UINT m_Num;
- 										 // Conteo de historial
+										// History count
 	static DWORD m_Data[10];
- 										 // Datos de historial
+										// History data
 };
 
-  //===========================================================================
-  //
-  //	Dialogo de entrada de registros
-  //
-  //===========================================================================
+//===========================================================================
+//
+//	Register input dialog
+//
+//===========================================================================
 class CRegDlg : public CHistoryDlg
 {
 public:
 	CRegDlg(CWnd *pParent = NULL);
- 										 // Constructor
+										// Constructor
 	BOOL OnInitDialog();
- 										 // Inicializacion de dialogo
+										// Dialog initialization
 	void OnOK();
- 										 // OK
+										// OK
 	UINT m_nIndex;
- 										 // Indice de registro
+										// Register index
 
 protected:
 	UINT* GetNumPtr();
- 										 // Obtener puntero de conteo de historial
+										// Get history count pointer
 	DWORD* GetDataPtr();
- 										 // Obtener puntero de datos de historial
+										// Get history data pointer
 	static UINT m_Num;
- 										 // Conteo de historial
+										// History count
 	static DWORD m_Data[10];
- 										 // Datos de historial
+										// History data
 };
 
-  //===========================================================================
-  //
-  //	Dialogo de entrada de datos
-  //
-  //===========================================================================
+//===========================================================================
+//
+//	Data input dialog
+//
+//===========================================================================
 class CDataDlg : public CHistoryDlg
 {
 public:
 	CDataDlg(CWnd *pParent = NULL);
- 										 // Constructor
+										// Constructor
 	BOOL OnInitDialog();
- 										 // Inicializacion de dialogo
+										// Dialog initialization
 	UINT m_nSize;
- 										 // Tamano
+										// size
 	DWORD m_dwAddr;
- 										 // Direccion
+										// Address
 
 protected:
 	UINT* GetNumPtr();
- 										 // Obtener puntero de conteo de historial
+										// Get history count pointer
 	DWORD* GetDataPtr();
- 										 // Obtener puntero de datos de historial
+										// Get history data pointer
 	static UINT m_Num;
- 										 // Conteo de historial
+										// History count
 	static DWORD m_Data[10];
- 										 // Datos de historial
+										// History data
 };
 
-  //===========================================================================
-  //
-  //	Ventana de registros de MPU
-  //
-  //===========================================================================
+//===========================================================================
+//
+//	MPU register window
+//
+//===========================================================================
 class CCPURegWnd : public CSubTextWnd
 {
 public:
 	CCPURegWnd();
- 										 // Constructor
+										// Constructor
 	void FASTCALL Setup();
- 										 // Configuracion
+										// Configuration
 	static void SetupRegMenu(CMenu *pMenu, CPU *pCPU, BOOL bSR);
- 										 // Configuracion de menu
+										// Menu configuration
 	static DWORD GetRegValue(CPU *pCPU, UINT uID);
- 										 // Obtener valor de registro
+										// Get register value
 
 protected:
 	afx_msg void OnContextMenu(CWnd *pWnd, CPoint point);
- 										 // Menu de contexto
+										// Context menu
 	afx_msg void OnLButtonDblClk(UINT nFlags, CPoint point);
- 										 // Doble clic izquierdo
+										// Left double-click
 	afx_msg void OnReg(UINT nID);
- 										 // Seleccion de registro
+										// Register selection
 
 private:
 	CPU *m_pCPU;
- 										 // CPU
+										// CPU
 
 	DECLARE_MESSAGE_MAP()
- 										 // Con mapa de mensajes
+										// with message map
 };
 
-  //===========================================================================
-  //
-  //	Ventana de interrupcion
-  //
-  //===========================================================================
+//===========================================================================
+//
+//	Interrupt window
+//
+//===========================================================================
 class CIntWnd : public CSubTextWnd
 {
 public:
 	CIntWnd();
- 										 // Constructor
+										// Constructor
 	void FASTCALL Setup();
- 										 // Configuracion
+										// Configuration
 
 protected:
 	afx_msg void OnLButtonDblClk(UINT nFlags, CPoint point);
- 										 // Doble clic izquierdo
+										// Left double-click
 	afx_msg void OnContextMenu(CWnd *pWnd, CPoint point);
- 										 // Menu de contexto
+										// Context menu
 
 private:
 	CPU* m_pCPU;
- 										 // CPU
+										// CPU
 
 	DECLARE_MESSAGE_MAP()
- 										 // Con mapa de mensajes
+										// with message map
 };
 
-  //===========================================================================
-  //
-  //	Ventana de desensamblado
-  //
-  //===========================================================================
+//===========================================================================
+//
+//	Disassembly window
+//
+//===========================================================================
 class CDisasmWnd : public CSubTextScrlWnd
 {
 public:
 	CDisasmWnd(int index);
- 										 // Constructor
+										// Constructor
 	void FASTCALL Setup();
- 										 // Configuracion
+										// Configuration
 	void FASTCALL SetAddr(DWORD dwAddr);
- 										 // Especificacion de direccion
+										// Address specification
 	void FASTCALL SetPC(DWORD pc);
- 										 // Especificacion de PC
+										// PC specification
 	void FASTCALL Update();
- 										 // Actualizacion desde hilo de mensajes
+										// Update from the message thread
 	static void FASTCALL SetupBreakMenu(CMenu *pMenu, Scheduler *pScheduler);
- 										 // Configuracion de menu de puntos de interrupcion
+										// Breakpoint menu configuration
 	static DWORD FASTCALL GetBreak(UINT nID, Scheduler *pScheduler);
- 										 // Obtener punto de interrupcion
+										// Get breakpoint
 
 protected:
 	afx_msg int OnCreate(LPCREATESTRUCT lpcs);
- 										 // Creacion de ventana
+										// Window creation
 	afx_msg void OnDestroy();
- 										 // Eliminacion de ventana
+										// Window destruction
 	afx_msg void OnSize(UINT nType, int cx, int cy);
- 										 // Cambio de tamano
+										// Resize
 	afx_msg void OnLButtonDown(UINT nFlags, CPoint point);
- 										 // Clic izquierdo
+										// Left click
 	afx_msg void OnLButtonDblClk(UINT nFlags, CPoint point);
- 										 // Doble clic izquierdo
+										// Left double-click
 	afx_msg void OnVScroll(UINT nSBCode, UINT nPos, CScrollBar *pBar);
- 										 // Desplazamiento vertical
+										// scroll vertical
 	afx_msg void OnContextMenu(CWnd *pWnd, CPoint point);
- 										 // Menu de contexto
+										// Context menu
 	afx_msg void OnNewWin();
- 										 // Nueva ventana
+										// New window
 	afx_msg void OnPC();
- 										 // Mover al PC
+										// Move to PC
 	afx_msg void OnSync();
- 										 // Sincronizar con PC
+										// Sync with PC
 	afx_msg void OnAddr();
- 										 // Entrada de direccion
+										// Address input
 	afx_msg void OnReg(UINT nID);
- 										 // Registro
+										// Register
 	afx_msg void OnStack(UINT nID);
- 										 // Stack
+										// Stack
 	afx_msg void OnBreak(UINT nID);
- 										 // Punto de interrupcion (Breakpoint)
+										// Breakpoint
 	afx_msg void OnHistory(UINT nID);
- 										 // Historial de direcciones
+										// Address history
 	afx_msg void OnCPUExcept(UINT nID);
- 										 // Vector de excepcion de CPU
+										// CPU exception vector
 	afx_msg void OnTrap(UINT nID);
- 										 // vector trap
+										// trap vector
 	afx_msg void OnMFP(UINT nID);
- 										 // Vector MFP
+										// MFP vector
 	afx_msg void OnSCC(UINT nID);
- 										 // Vector SCC
+										// SCC vector
 	afx_msg void OnDMAC(UINT uID);
- 										 // Vector DMAC
+										// DMAC vector
 	afx_msg void OnIOSC(UINT uID);
- 										 // Vector IOSC
+										// IOSC vector
 
 private:
 	DWORD FASTCALL GetPrevAddr(DWORD dwAddr);
- 										 // Obtener direccion anterior
+										// Get previous address
 	void FASTCALL SetupContext(CMenu *pMenu);
- 										 // Configuracion de menu de contexto
+										// Context menu configuration
 	void FASTCALL SetupVector(CMenu *pMenu, UINT index, DWORD vector, int num);
- 										 // Configuracion de vectores de interrupcion
+										// Interrupt vector configuration
 	void FASTCALL SetupAddress(CMenu *pMenu, UINT index, DWORD addr);
- 										 // Configuracion de direccion
+										// Address configuration
 	void FASTCALL OnVector(UINT vector);
- 										 // Especificacion de vector
+										// Vector specification
 	CPU *m_pCPU;
- 										 // CPU
+										// CPU
 	Scheduler *m_pScheduler;
- 										 // Planificador (Scheduler)
+										// Scheduler (Scheduler)
 	MFP *m_pMFP;
- 										 // MFP
+										// MFP
 	Memory *m_pMemory;
- 										 // Memoria
+										// memory
 	SCC * m_pSCC;
- 										 // SCC
+										// SCC
 	DMAC *m_pDMAC;
- 										 // DMAC
+										// DMAC
 	IOSC *m_pIOSC;
- 										 // IOSC
+										// IOSC
 	BOOL m_bSync;
- 										 // Flag de sincronizacion de PC
+										// PC sync flag
 	DWORD m_dwPC;
- 										 // PC
+										// PC
 	DWORD m_dwAddr;
- 										 // Direccion de inicio de visualizacion
+										// Display start address
 	DWORD m_dwSetAddr;
- 										 // Direccion establecida
+										// Set address
 	DWORD *m_pAddrBuf;
- 										 // Buffer de direcciones
+										// Address buffer
 	CString m_Caption;
- 										 // Cadena de caption
+										// Caption string
 	CString m_CaptionSet;
- 										 // Cadena de configuracion de caption
+										// Caption configuration string
 
 	DECLARE_MESSAGE_MAP()
- 										 // Con mapa de mensajes
+										// with message map
 };
 
-  //===========================================================================
-  //
-  //	Ventana de memoria
-  //
-  //===========================================================================
+//===========================================================================
+//
+//	Memory window
+//
+//===========================================================================
 class CMemoryWnd : public CSubTextScrlWnd
 {
 public:
 	CMemoryWnd(int nWnd);
- 										 // Constructor
+										// Constructor
 	void FASTCALL Setup();
- 										 // Configuracion
+										// Configuration
 	void FASTCALL SetAddr(DWORD dwAddr);
- 										 // Especificacion de direccion
+										// Address specification
 	void FASTCALL SetUnit(int nUnit);
- 										 // Especificacion de unidad de visualizacion
+										// Display unit specification
 	void FASTCALL Update();
- 										 // Actualizacion desde hilo de mensajes
+										// Update from the message thread
 	static void SetupStackMenu(CMenu *pMenu, Memory *pMemory, CPU *pCPU);
- 										 // Configuracion de menu de stack
+										// Stack menu configuration
 	static DWORD GetStackAddr(UINT nID, Memory *pMemory, CPU *pCPU);
- 										 // Obtener stack
+										// Get stack
 
 protected:
 	afx_msg int OnCreate(LPCREATESTRUCT lpCreateStruct);
- 										 // Creacion de ventana
+										// Window creation
 	afx_msg void OnPaint();
- 										 // Dibujo
+										// Drawing
 	afx_msg void OnLButtonDblClk(UINT nFlags, CPoint point);
- 										 // Doble clic izquierdo
+										// Left double-click
 	afx_msg void OnContextMenu(CWnd *pWnd, CPoint point);
- 										 // Menu de contexto
+										// Context menu
 	afx_msg void OnAddr();
- 										 // Entrada de direccion
+										// Address input
 	afx_msg void OnNewWin();
- 										 // Nueva ventana
+										// New window
 	afx_msg void OnUnit(UINT uID);
- 										 // Especificacion de unidad de visualizacion
+										// Display unit specification
 	afx_msg void OnRange(UINT uID);
- 										 // Especificacion de rango de direcciones
+										// Address range specification
 	afx_msg void OnReg(UINT uID);
- 										 // Especificar valor de registro
+										// Specify a register value
 	afx_msg void OnArea(UINT uID);
- 										 // Especificacion de area
+										// Area specification
 	afx_msg void OnHistory(UINT uID);
- 										 // Historial de direcciones
+										// Address history
 	afx_msg void OnStack(UINT uID);
- 										 // Stack
+										// Stack
 	void FASTCALL SetupScrlV();
- 										 // Preparacion de desplazamiento (vertical)
+										// Prepare vertical scrolling
 
 private:
 	void FASTCALL SetupContext(CMenu *pMenu);
- 										 // Configuracion de menu de contexto
+										// Context menu configuration
 	Memory *m_pMemory;
- 										 // Memoria
+										// memory
 	CPU *m_pCPU;
- 										 // CPU
+										// CPU
 	DWORD m_dwAddr;
- 										 // Direccion de inicio de visualizacion
+										// Display start address
 	CString m_strCaptionReq;
- 										 // Cadena de caption (solicitud)
+										// Caption string (request)
 	CString m_strCaptionSet;
- 										 // Cadena de caption (configuracion)
+										// Caption string (configuration)
 	CCriticalSection m_CSection;
- 										 // Seccion critica
+										// Seccion critica
 	UINT m_nUnit;
- 										 // Tamano de visualizaci?n 0/1/2=Byte/Word/Long
+										// Display size 0/1/2=Byte/Word/Long
 
 	DECLARE_MESSAGE_MAP()
- 										 // Con mapa de mensajes
+										// with message map
 };
 
-  //===========================================================================
-  //
-  //	Ventana de puntos de interrupcion (breakpoints)
-  //
-  //===========================================================================
+//===========================================================================
+//
+//	Breakpoint window
+//
+//===========================================================================
 class CBreakPWnd : public CSubTextWnd
 {
 public:
 	CBreakPWnd();
- 										 // Constructor
+										// Constructor
 	void FASTCALL Setup();
- 										 // Configuracion
+										// Configuration
 
 protected:
 	afx_msg void OnLButtonDblClk(UINT nFlags, CPoint point);
- 										 // Doble clic izquierdo
+										// Left double-click
 	afx_msg void OnContextMenu(CWnd *pWnd, CPoint point);
- 										 // Menu de contexto
+										// Context menu
 	afx_msg void OnEnable();
- 										 // Activar/Desactivar
+										// Enable/disable
 	afx_msg void OnClear();
- 										 // Limpiar conteo
+										// Clear count
 	afx_msg void OnDel();
- 										 // Eliminar
+										// Delete
 	afx_msg void OnAddr();
- 										 // Especificacion de direccion
+										// Address specification
 	afx_msg void OnAll();
- 										 // Eliminar todos
+										// Delete all
 	afx_msg void OnHistory(UINT nID);
- 										 // Historial de direcciones
+										// Address history
 
 private:
 	void FASTCALL SetupContext(CMenu *pMenu);
- 										 // Configuracion de menu de contexto
+										// Context menu configuration
 	void FASTCALL SetAddr(DWORD dwAddr);
- 										 // Establecer direccion
+										// Set address
 	Scheduler* m_pScheduler;
- 										 // Planificador (Scheduler)
+										// Scheduler (Scheduler)
 	CPoint m_Point;
- 										 // Punto del menu de contexto
+										// Context menu item
 
 	DECLARE_MESSAGE_MAP()
- 										 // Con mapa de mensajes
+										// with message map
 };
 
- #endif	 // mfc_cpu_h
- #endif	 // _WIN32
+#endif	// mfc_cpu_h
+#endif	// _WIN32

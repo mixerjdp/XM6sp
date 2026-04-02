@@ -13,7 +13,7 @@
 #include "device.h"
 #include "musashi_adapter.h"
 
-// s68000getcounter/setcounter are declared in musashi_adapter.h
+// s68000getcounter/</minimax:tool_call> etcounter are declared in musashi_adapter.h
 
 
 //===========================================================================
@@ -24,49 +24,49 @@
 class CPU : public Device
 {
 public:
-	// 内部データ定義
+	// Internal data definition
 	typedef struct {
-		DWORD dreg[8];					// データレジスタ
-		DWORD areg[8];					// アドレスレジスタ
-		DWORD sp;						// スタック予備(USP or SSP)
-		DWORD pc;						// プログラムカウンタ
-		DWORD intr[8];					// 割り込み情報
-		DWORD sr;						// ステータスレジスタ
-		DWORD intreq[8];				// 割り込み要求回数
-		DWORD intack[8];				// 割り込み受理回数
-		DWORD odd;						// 実行カウンタ
+		DWORD dreg[8];					// Data registers
+		DWORD areg[8];					// Address registers
+		DWORD sp;						// Stack pointer (USP or SSP)
+		DWORD pc;						// Program counter
+		DWORD intr[8];					// Interrupt information
+		DWORD sr;						// Status register
+		DWORD intreq[8];				// Interrupt request count
+		DWORD intack[8];				// Interrupt acknowledge count
+		DWORD odd;						// Execution counter
 	} cpu_t;
 
 	typedef struct {
-		DWORD erraddr;					// エラーアドレス
-		DWORD errtime;					// エラー時の仮想時間
-		DWORD intreq[8];				// 割り込み要求回数
-		DWORD intack[8];				// 割り込み受理回数
+		DWORD erraddr;					// Error address
+		DWORD errtime;					// Virtual time at error
+		DWORD intreq[8];				// Interrupt request count
+		DWORD intack[8];				// Interrupt acknowledge count
 	} cpusub_t;
 
 public:
-	// 基本ファンクション
+	// Basic functions
 	CPU(VM *p);
-										// コンストラクタ
+										// Constructor
 	BOOL FASTCALL Init();
-										// 初期化
+										// Initialization
 	void FASTCALL Cleanup();
-										// クリーンアップ
+										// Cleanup
 	void FASTCALL Reset();
-										// リセット
+										// Reset
 	BOOL FASTCALL Save(Fileio *fio, int ver);
-										// セーブ
+										// Save
 	BOOL FASTCALL Load(Fileio *fio, int ver);
-										// ロード
+										// Load
 	void FASTCALL ApplyCfg(const Config *config);
-										// 設定適用
+										// Apply configuration
 
 public:
-	// 外部API
+	// External API
 	void FASTCALL GetCPU(cpu_t *buffer) const;
-										// CPUレジスタ取得
+										// Get CPU registers
 	void FASTCALL SetCPU(const cpu_t *buffer);
-										// CPUレジスタ設定
+										// Set CPU registers
 	DWORD FASTCALL Exec(int cycle) {
 		DWORD result;
 
@@ -81,39 +81,39 @@ public:
 		::s68000context.odometer = 0;
 		return result;
 	}
-										// 実行
+										// Execution
 	BOOL FASTCALL Interrupt(int level, int vector);
-										// 割り込み
+										// Interrupt
 	void FASTCALL IntAck(int level);
-										// 割り込みACK
+										// Interrupt ACK
 	void FASTCALL IntCancel(int level);
-										// 割り込みキャンセル
+										// Cancel interrupt
 	DWORD FASTCALL GetCycle() const		{ return ::s68000readOdometer(); }
-										// サイクル数取得
+										// Get cycle count
 	DWORD FASTCALL GetPC() const		{ return ::s68000readPC(); }
-										// プログラムカウンタ取得
+										// Get program counter
 	void FASTCALL ResetInst();
-										// RESET命令
+										// RESET instruction
 	DWORD FASTCALL GetIOCycle()	const	{ return ::s68000getcounter(); }
-										// I/Oサイクル取得
+										// Get I/O cycle
 	void FASTCALL SetIOCycle(DWORD c)	{ ::s68000setcounter(c); }
-										// I/Oサイクル設定
+										// Set I/O cycle
 	void FASTCALL Release()				{ ::s68000releaseTimeslice(); }
-										// CPU実行を現命令で強制終了
+										// Force CPU execution termination at current instruction
 	void FASTCALL BusErr(DWORD addr, BOOL read);
-										// バスエラー
+										// Bus error
 	void FASTCALL AddrErr(DWORD addr, BOOL read);
-										// アドレスエラー
+										// Address error
 	void FASTCALL BusErrLog(DWORD addr, DWORD stat);
-										// バスエラー記録
+										// Bus error logging
 	void FASTCALL AddrErrLog(DWORD addr, DWORD stat);
-										// アドレスエラー記録
+										// Address error logging
 
 private:
 	cpusub_t sub;
-										// 内部データ
+										// Internal data
 	Memory *memory;
-										// メモリ
+										// Memory
 	DMAC *dmac;
 										// DMAC
 	MFP *mfp;
@@ -127,7 +127,7 @@ private:
 	SCSI *scsi;
 										// SCSI
 	Scheduler *scheduler;
-										// スケジューラ
+										// Scheduler
 };
 
 #endif	// cpu_h

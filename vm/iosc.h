@@ -2,8 +2,8 @@
 //
 //	X68000 EMULATOR "XM6"
 //
-//	Copyright (C) 2001-2004 ＰＩ．(ytanaka@ipc-tokai.or.jp)
-//	[ I/Oコントローラ(IOSC-2) ]
+//	Copyright (C) 2001-2004 PI(ytanaka@ipc-tokai.or.jp)
+//	[ I/O Controller (IOSC-2) ]
 //
 //---------------------------------------------------------------------------
 
@@ -14,78 +14,78 @@
 
 //===========================================================================
 //
-//	I/Oコントローラ
+//	I/O Controller
 //
 //===========================================================================
 class IOSC : public MemDevice
 {
 public:
-	// 内部データ定義
+	// Internal data structure
 	typedef struct {
-		BOOL prt_int;					// プリンタ割り込み要求
-		BOOL prt_en;					// プリンタ割り込み許可
-		BOOL fdd_int;					// FDD割り込み要求
-		BOOL fdd_en;					// FDD割り込み許可
-		BOOL fdc_int;					// FDC割り込み要求
-		BOOL fdc_en;					// FDC割り込み許可
-		BOOL hdc_int;					// HDD割り込み要求
-		BOOL hdc_en;					// HDD割り込み許可
-		DWORD vbase;					// ベクタベース
-		int vector;						// 要求中の割り込みベクタ
+		BOOL prt_int;					// Printer interrupt request
+		BOOL prt_en;					// Printer interrupt enable
+		BOOL fdd_int;					// FDD interrupt request
+		BOOL fdd_en;					// FDD interrupt enable
+		BOOL fdc_int;					// FDC interrupt request
+		BOOL fdc_en;					// FDC interrupt enable
+		BOOL hdc_int;					// HDD interrupt request
+		BOOL hdc_en;					// HDD interrupt enable
+		DWORD vbase;					// Vector base
+		int vector;						// Current interrupt vector
 	} iosc_t;
 
 public:
-	// 基本ファンクション
+	// Basic constructor
 	IOSC(VM *p);
-										// コンストラクタ
+										// Constructor
 	BOOL FASTCALL Init();
-										// 初期化
+										// Initialization
 	void FASTCALL Cleanup();
-										// クリーンアップ
+										// Cleanup
 	void FASTCALL Reset();
-										// リセット
+										// Reset
 	BOOL FASTCALL Save(Fileio *fio, int ver);
-										// セーブ
+										// Save
 	BOOL FASTCALL Load(Fileio *fio, int ver);
-										// ロード
+										// Load
 	void FASTCALL ApplyCfg(const Config *config);
-										// 設定適用
+										// Apply config
 
-	// メモリデバイス
+	// Sub device
 	DWORD FASTCALL ReadByte(DWORD addr);
-										// バイト読み込み
+										// Read byte
 	DWORD FASTCALL ReadWord(DWORD addr);
-										// ワード読み込み
+										// Read word
 	void FASTCALL WriteByte(DWORD addr, DWORD data);
-										// バイト書き込み
+										// Write byte
 	void FASTCALL WriteWord(DWORD addr, DWORD data);
-										// ワード書き込み
+										// Write word
 	DWORD FASTCALL ReadOnly(DWORD addr) const;
-										// 読み込みのみ
+										// Read only
 
-	// 外部API
+	// External API
 	void FASTCALL GetIOSC(iosc_t *buffer) const;
-										// 内部データ取得
+										// Get IOSC
 	DWORD FASTCALL GetVector() const	{ return iosc.vbase; }
-										// ベクタベース取得
+										// Get vector base
 	void FASTCALL IntAck();
-										// 割り込み応答
+										// Interrupt acknowledge
 	void FASTCALL IntFDC(BOOL flag);
-										// FDC割り込み
+										// FDC interrupt
 	void FASTCALL IntFDD(BOOL flag);
-										// FDD割り込み
+										// FDD interrupt
 	void FASTCALL IntHDC(BOOL flag);
-										// HDC割り込み
+										// HDC interrupt
 	void FASTCALL IntPRT(BOOL flag);
-										// プリンタ割り込み
+										// Printer interrupt
 
 private:
 	void FASTCALL IntChk();
-										// 割り込みチェック
+										// Interrupt check
 	iosc_t iosc;
-										// 内部データ
+										// Internal data
 	Printer *printer;
-										// プリンタ
+										// Printer
 };
 
 #endif	// iosc_h

@@ -11,7 +11,7 @@
 using namespace FM;
 
 // ---------------------------------------------------------------------------
-//	タイマー制御
+//	Timer control
 //
 void Timer::SetTimerControl(uint data)
 {
@@ -32,7 +32,7 @@ void Timer::SetTimerControl(uint data)
 #if 1
 
 // ---------------------------------------------------------------------------
-//	タイマーA 周期設定
+//	Timer A data setting
 //
 void Timer::SetTimerA(uint addr, uint data)
 {
@@ -44,7 +44,7 @@ void Timer::SetTimerA(uint addr, uint data)
 }
 
 // ---------------------------------------------------------------------------
-//	タイマーB 周期設定
+//	Timer B data setting
 //
 void Timer::SetTimerB(uint data)
 {
@@ -53,7 +53,7 @@ void Timer::SetTimerB(uint data)
 }
 
 // ---------------------------------------------------------------------------
-//	タイマー時間処理
+//	Timer count
 //
 bool Timer::Count(int32 us)
 {
@@ -91,7 +91,7 @@ bool Timer::Count(int32 us)
 }
 
 // ---------------------------------------------------------------------------
-//	次にタイマーが発生するまでの時間を求める
+//	Get time until next timer event
 //
 int32 Timer::GetNextEvent()
 {
@@ -101,7 +101,7 @@ int32 Timer::GetNextEvent()
 }
 
 // ---------------------------------------------------------------------------
-//	タイマー基準値設定
+//	Timer base value setting
 //
 void Timer::SetTimerBase(uint clock)
 {
@@ -111,7 +111,7 @@ void Timer::SetTimerBase(uint clock)
 #else
 
 // ---------------------------------------------------------------------------
-//	タイマーA 周期設定
+//	Timer A data setting
 //
 void Timer::SetTimerA(uint addr, uint data)
 {
@@ -120,7 +120,7 @@ void Timer::SetTimerA(uint addr, uint data)
 }
 
 // ---------------------------------------------------------------------------
-//	タイマーB 周期設定
+//	Timer B data setting
 //
 void Timer::SetTimerB(uint data)
 {
@@ -128,7 +128,7 @@ void Timer::SetTimerB(uint data)
 }
 
 // ---------------------------------------------------------------------------
-//	タイマー時間処理
+//	Timer count
 //
 bool Timer::Count(int32 us)
 {
@@ -168,7 +168,7 @@ bool Timer::Count(int32 us)
 }
 
 // ---------------------------------------------------------------------------
-//	次にタイマーが発生するまでの時間を求める
+//	Get time until next timer event
 //
 int32 Timer::GetNextEvent()
 {
@@ -180,7 +180,7 @@ int32 Timer::GetNextEvent()
 }
 
 // ---------------------------------------------------------------------------
-//	タイマー基準値設定
+//	Timer base value setting
 //
 void Timer::SetTimerBase(uint clock)
 {

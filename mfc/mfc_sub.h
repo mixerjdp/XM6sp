@@ -2,8 +2,8 @@
 //
 //	X68000 EMULATOR "XM6"
 //
-//	Copyright (C) 2001-2005 ＰＩ．(ytanaka@ipc-tokai.or.jp)
-//	[ MFC サブウィンドウ ]
+//	Copyright (C) 2001-2005 PI.(ytanaka@ipc-tokai.or.jp)
+//	[ MFC sub window ]
 //
 //---------------------------------------------------------------------------
 
@@ -14,344 +14,344 @@
 
 //===========================================================================
 //
-//	サブウィンドウ
+//	Sub window
 //
 //===========================================================================
 class CSubWnd : public CWnd
 {
 public:
 	CSubWnd();
-										// コンストラクタ
+										// Constructor
 	BOOL FASTCALL Init(CDrawView *pDrawView);
-										// 初期化
+										// Initialization
 	void FASTCALL Enable(BOOL m_bEnable);
-										// 動作制御
+										// Enable control
 	DWORD FASTCALL GetID() const;
-										// ウィンドウIDを返す
+										// Returns window ID
 	virtual void FASTCALL Refresh() = 0;
-										// リフレッシュ描画
+										// Refresh display
 	virtual void FASTCALL Update();
-										// メッセージスレッドから更新
+										// Message thread update
 	virtual BOOL FASTCALL Save(Fileio *pFio, int nVer);
-										// セーブ
+										// Save
 	virtual BOOL FASTCALL Load(Fileio *pFio, int nVer);
-										// ロード
+										// Load
 	virtual void FASTCALL ApplyCfg(const Config *pConfig);
-										// 設定適用
+										// Apply configuration
 #if !defined(NDEBUG)
 	void AssertValid() const;
-										// 診断
+										// Diagnostics
 #endif	// NDEBUG
 
 	CSubWnd *m_pNextWnd;
-										// 次のウィンドウ
+										// Next window
 
 protected:
 	afx_msg int OnCreate(LPCREATESTRUCT lpCreateStruct);
-										// ウィンドウ作成
+										// Window create
 	afx_msg void OnDestroy();
-										// ウィンドウ削除
+										// Window destroy
 	afx_msg BOOL OnEraseBkgnd(CDC *pDC);
-										// 背景描画
+										// Background draw
 	afx_msg void OnActivate(UINT nState, CWnd *pWnd, BOOL bMinimized);
-										// アクティベート
+										// Activate
 	void PostNcDestroy();
-										// ウィンドウ削除完了
+										// Window destruction
 	CString m_strCaption;
-										// ウィンドウキャプション
+										// Window caption
 	BOOL m_bEnable;
-										// 有効フラグ
+										// Enable flag
 	DWORD m_dwID;
-										// ウィンドウID
+										// Window ID
 	CScheduler *m_pSch;
-										// スケジューラ(Win32)
+										// Scheduler (Win32)
 	CDrawView *m_pDrawView;
-										// Drawビュー
+										// Draw view
 	CFont *m_pTextFont;
-										// テキストフォント
+										// Text font
 	int m_tmWidth;
-										// テキスト幅
+										// Text width
 	int m_tmHeight;
-										// テキスト高さ
+										// Text height
 	int m_nWidth;
-										// ウィンドウ幅(キャラクタ単位)
+										// Window width (character units)
 	int m_nHeight;
-										// ウィンドウ高さ(キャラクタ単位)
+										// Window height (character units)
 	BOOL m_bPopup;
-										// ポップアップタイプ
+										// Popup type
 
 private:
 	void FASTCALL SetupTextFont();
-										// テキストフォントセットアップ
+										// Text font setup
 
 	DECLARE_MESSAGE_MAP()
-										// メッセージ マップあり
+										// Message map
 };
 
 //===========================================================================
 //
-//	サブテキストウィンドウ
+//	Sub text window
 //
 //===========================================================================
 class CSubTextWnd : public CSubWnd
 {
 public:
 	CSubTextWnd();
-										// コンストラクタ
+										// Constructor
 	void FASTCALL Refresh();
-										// リフレッシュ描画
+										// Refresh display
 
 protected:
 	afx_msg int OnCreate(LPCREATESTRUCT lpCreateStruct);
-										// ウィンドウ作成
+										// Window create
 	afx_msg void OnDestroy();
-										// ウィンドウ削除
+										// Window destroy
 	afx_msg void OnPaint();
-										// 描画
+										// Draw
 	afx_msg void OnSize(UINT nType, int cx, int cy);
-										// サイズ変更
+										// Size change
 	virtual void FASTCALL OnDraw(CDC *pDC);
-										// 描画メイン
+										// Draw callback
 	virtual void FASTCALL Setup() = 0;
-										// セットアップ
+										// Setup
 	void FASTCALL Clear();
-										// テキストバッファ消去
+										// Clear text buffer
 	void FASTCALL SetChr(int x, int y, TCHAR ch);
-										// 文字セット
+										// Set character
 	void FASTCALL SetString(int x, int y, LPCTSTR lpszText);
-										// 文字列セット(x, y指定あり)
+										// Set string (x, y specified)
 	void FASTCALL Reverse(BOOL bReverse);
-										// 反転属性セット
+										// Reverse attribute
 	void FASTCALL ReSize(int nWidth, int nHeight);
-										// リサイズ
+										// Resize
 	BOOL m_bReverse;
-										// 反転フラグ
+										// Reverse flag
 	BYTE *m_pTextBuf;
-										// テキストバッファ
+										// Text buffer
 	BYTE *m_pDrawBuf;
-										// 描画バッファ
+										// Draw buffer
 
 	DECLARE_MESSAGE_MAP()
-										// メッセージ マップあり
+										// Message map
 };
 
 //===========================================================================
 //
-//	サブテキスト可変ウィンドウ
+//	Sub text size window
 //
 //===========================================================================
 class CSubTextSizeWnd : public CSubTextWnd
 {
 public:
 	CSubTextSizeWnd();
-										// コンストラクタ
+										// Constructor
 	virtual BOOL PreCreateWindow(CREATESTRUCT& cs);
-										// ウィンドウ作成準備
+										// Window creation preprocessing
 
 protected:
 	virtual void FASTCALL OnDraw(CDC *pDC);
-										// 描画メイン
+										// Draw callback
 };
 
 //===========================================================================
 //
-//	サブテキストスクロールウィンドウ
+//	Sub text scroll window
 //
 //===========================================================================
 class CSubTextScrlWnd : public CSubTextSizeWnd
 {
 public:
 	CSubTextScrlWnd();
-										// コンストラクタ
+										// Constructor
 	virtual BOOL PreCreateWindow(CREATESTRUCT& cs);
-										// ウィンドウ作成準備
+										// Window creation preprocessing
 
 protected:
 	afx_msg int OnCreate(LPCREATESTRUCT lpcs);
-										// ウィンドウ作成
+										// Window create
 	afx_msg void OnSize(UINT nType, int cx, int cy);
-										// サイズ変更
+										// Size change
 	afx_msg void OnHScroll(UINT nSBCode, UINT nPos, CScrollBar *pBar);
-										// 水平スクロール
+										// Horizontal scroll
 	afx_msg void OnVScroll(UINT nSBCode, UINT nPos, CScrollBar *pBar);
-										// 垂直スクロール
+										// Vertical scroll
 	void FASTCALL SetupScrl();
-										// スクロール準備
+										// Scroll setup
 	virtual void FASTCALL SetupScrlH();
-										// スクロール準備(水平)
+										// Scroll setup (horizontal)
 	virtual void FASTCALL SetupScrlV();
-										// スクロール準備(垂直)
+										// Scroll setup (vertical)
 	int m_ScrlWidth;
-										// 仮想画面幅(キャラクタ単位)
+										// Virtual width (character units)
 	int m_ScrlHeight;
-										// 仮想画面高さ(キャラクタ単位)
+										// Virtual height (character units)
 	BOOL m_bScrlH;
-										// 水平スクロールフラグ
+										// Horizontal scroll flag
 	BOOL m_bScrlV;
-										// 垂直スクロールフラグ
+										// Vertical scroll flag
 	int m_ScrlX;
-										// 水平オフセット(キャラクタ単位)
+										// Scroll offset (character units)
 	int m_ScrlY;
-										// 垂直オフセット(キャラクタ単位)
+										// Scroll offset (character units)
 
 	DECLARE_MESSAGE_MAP()
-										// メッセージ マップあり
+										// Message map
 };
 
 //===========================================================================
 //
-//	サブリストウィンドウ
+//	Sub list window
 //
 //===========================================================================
 class CSubListWnd : public CSubWnd
 {
 public:
 	CSubListWnd();
-										// コンストラクタ
+										// Constructor
 	virtual BOOL PreCreateWindow(CREATESTRUCT& cs);
-										// ウィンドウ作成準備
+										// Window creation preprocessing
 	virtual void FASTCALL Refresh() = 0;
-										// リフレッシュ
+										// Refresh
 
 protected:
 	afx_msg int OnCreate(LPCREATESTRUCT lpcs);
-										// ウィンドウ作成
+										// Window create
 	afx_msg void OnSize(UINT nType, int cx, int cy);
-										// サイズ変更
+										// Size change
 	afx_msg void OnDrawItem(int nID, LPDRAWITEMSTRUCT lpDIS);
-										// オーナードロー
+										// Owner draw
 	virtual void FASTCALL InitList() = 0;
-										// リストコントロール初期化
+										// List control initialization
 	CListCtrl m_ListCtrl;
-										// リストコントロール
+										// List control
 
 	DECLARE_MESSAGE_MAP()
-										// メッセージ マップあり
+										// Message map
 };
 
 //===========================================================================
 //
-//	サブBMPウィンドウ
+//	Sub BMP window
 //
 //===========================================================================
 class CSubBMPWnd : public CWnd
 {
 public:
 	CSubBMPWnd();
-										// コンストラクタ
+										// Constructor
 
 	BOOL FASTCALL Init(CDrawView* pDrawView);
 	void FASTCALL Refresh();
 	void FASTCALL Refresh(int nWidth, int nHeight);
-										// 描画
+										// Draw
 #if !defined(NDEBUG)
 	void AssertValid() const;
-										// 診断
+										// Diagnostics
 #endif	// NDEBUG
 
-	// 上位向け
+	// Screen size
 	void FASTCALL GetMaximumRect(LPRECT lpRect, BOOL bScroll);
-										// 最大ウィンドウ矩形取得
+										// Get maximum window rect
 	void FASTCALL GetFitRect(LPRECT lpRect);
-										// フィット矩形取得
+										// Get fit rect
 	void FASTCALL GetDrawRect(LPRECT lpRect);
-										// 描画矩形取得
+										// Get draw rect
 	BYTE* FASTCALL GetBits() const;
-										// ビットポインタ取得
+										// Get bit pointer
 	void FASTCALL DrawBits(CDC *pDC, CPoint point);
-										// 描画
+										// Draw
 
 	int m_nScrlWidth;
-										// 仮想画面幅
+										// Virtual width
 	int m_nScrlHeight;
-										// 仮想画面高さ
+										// Virtual height
 	int m_nScrlX;
-										// 水平オフセット
+										// Scroll offset
 	int m_nScrlY;
-										// 垂直オフセット
+										// Scroll offset
 	int m_nCursorX;
-										// マウスカーソルX
+										// Mouse cursor X
 	int m_nCursorY;
-								        // マウスカーソルY
+										// Mouse cursor Y
 	CDrawView* mx_pDrawView;
 
 protected:
 	afx_msg int OnCreate(LPCREATESTRUCT lpCreateStruct);
-										// ウィンドウ作成
+										// Window create
 	afx_msg void OnDestroy();
-										// ウィンドウ削除
+										// Window destroy
 	afx_msg void OnSize(UINT nType, int cx, int cy);
-										// サイズ変更
+										// Size change
 	afx_msg BOOL OnEraseBkgnd(CDC *pDC);
-										// 背景描画
+										// Background draw
 	afx_msg void OnPaint();
-										// 再描画
+										// Paint
 	afx_msg void OnHScroll(UINT nSBCode, UINT nPos, CScrollBar *pBar);
-										// 水平スクロール
+										// Horizontal scroll
 	afx_msg void OnVScroll(UINT nSBCode, UINT nPos, CScrollBar *pBar);
-										// 垂直スクロール
+										// Vertical scroll
 	afx_msg void OnMouseMove(UINT nFlags, CPoint point);
-										// マウス移動
+										// Mouse move
 	void PostNcDestroy();
-										// ウィンドウ削除完了
+										// Window destruction
 
-	// ビットマップ
+	// Bitmap
 	BITMAPINFOHEADER m_bmi;
-										// ビットマップヘッダ
+										// Bitmap info header
 	HANDLE m_hBitmap;
-										// ビットマップハンドル
+										// Bitmap handle
 	BYTE *m_pBits;
-										// ビットマップビット
+										// Bitmap bits
 	int m_nMul;
-										// 倍率(50%単位)
+										// Multiplier (50% units)
 
-	// スクロール
+	// Scroll
 	void FASTCALL SetupScrlH();
-										// スクロール準備(水平)
+										// Scroll setup (horizontal)
 	void FASTCALL SetupScrlV();
-										// スクロール準備(垂直)
+										// Scroll setup (vertical)
 
 	DECLARE_MESSAGE_MAP()
-										// メッセージ マップあり
+										// Message map
 };
 
 //===========================================================================
 //
-//	サブビットマップウィンドウ
+//	Sub bitmap window
 //
 //===========================================================================
 class CSubBitmapWnd : public CSubWnd
 {
 public:
 	CSubBitmapWnd();
-										// コンストラクタ
+										// Constructor
 	BOOL PreCreateWindow(CREATESTRUCT& cs);
-										// ウィンドウ作成準備
+										// Window creation preprocessing
 	void FASTCALL Refresh();
-										// リフレッシュ
+										// Refresh
 	virtual void FASTCALL Setup(int x, int y, int width, int height, BYTE *ptr) = 0;
-										// セットアップ
+										// Setup
 
 protected:
 	afx_msg int OnCreate(LPCREATESTRUCT lpCreateStruct);
-										// ウィンドウ作成
+										// Window create
 	afx_msg void OnSizing(UINT nSide, LPRECT lpRect);
-										// サイズ変更中
+										// Size change start
 	afx_msg void OnSize(UINT nType, int cx, int cy);
-										// サイズ変更
+										// Size change
 	DWORD FASTCALL ConvPalette(WORD value);
-										// パレット変換
+										// Palette conversion
 	CSubBMPWnd *m_pBMPWnd;
-										// ビットマップウィンドウ
+										// Bitmap window
 	CStatusBar m_StatusBar;
-										// ステータスバー
+										// Status bar
 	int m_nScrlWidth;
-										// 仮想画面幅(ドット単位)
+										// Virtual width (pixel units)
 	int m_nScrlHeight;
-										// 仮想画面高さ(ドット単位)
+										// Virtual height (pixel units)
 
 	DECLARE_MESSAGE_MAP()
-										// メッセージ マップあり
+										// Message map
 };
 
 #endif	// mfc_sub_h

@@ -2,8 +2,8 @@
 //
 //	X68000 EMULATOR "XM6"
 //
-//	Copyright (C) 2001-2005 ＰＩ．(ytanaka@ipc-tokai.or.jp)
-//	[ キーボード ]
+//	Copyright (C) 2001-2005 PI (ytanaka@ipc-tokai.or.jp)
+//	[ Keyboard ]
 //
 //---------------------------------------------------------------------------
 
@@ -20,23 +20,23 @@
 
 //===========================================================================
 //
-//	キーボード
+//	Keyboard
 //
 //===========================================================================
 //#define KEYBOARD_LOG
 
 //---------------------------------------------------------------------------
 //
-//	コンストラクタ
+//	Constructor
 //
 //---------------------------------------------------------------------------
 Keyboard::Keyboard(VM *p) : Device(p)
 {
-	// デバイスIDを初期化
+	// Device ID creation
 	dev.id = MAKEID('K', 'E', 'Y', 'B');
 	dev.desc = "Keyboard";
 
-	// オブジェクト
+	// Objects
 	sync = NULL;
 	mfp = NULL;
 	mouse = NULL;
@@ -44,7 +44,7 @@ Keyboard::Keyboard(VM *p) : Device(p)
 
 //---------------------------------------------------------------------------
 //
-//	初期化
+//	Initialization
 //
 //---------------------------------------------------------------------------
 BOOL FASTCALL Keyboard::Init()
@@ -52,36 +52,36 @@ BOOL FASTCALL Keyboard::Init()
 	int i;
 	Scheduler *scheduler;
 
-	ASSERT(this);
+ ASSERT(this);
 
-	// 基本クラス
+	// Base class
 	if (!Device::Init()) {
 		return FALSE;
 	}
 
-	// Sync作成
+	// Sync creation
 	sync = new Sync;
 
-	// MFP取得
+	// MFP get
 	mfp = (MFP*)vm->SearchDevice(MAKEID('M', 'F', 'P', ' '));
-	ASSERT(mfp);
+ ASSERT(mfp);
 
-	// スケジューラ取得
+	// Scheduler get
 	scheduler = (Scheduler*)vm->SearchDevice(MAKEID('S', 'C', 'H', 'E'));
-	ASSERT(scheduler);
+ ASSERT(scheduler);
 
-	// マウス取得
+	// Mouse get
 	mouse = (Mouse*)vm->SearchDevice(MAKEID('M', 'O', 'U', 'S'));
-	ASSERT(mouse);
+ ASSERT(mouse);
 
-	// イベント追加
+	// Add event
 	event.SetDevice(this);
 	event.SetDesc("Key Repeat");
 	event.SetUser(0);
 	event.SetTime(0);
 	scheduler->AddEvent(&event);
 
-	// ワーク初期化(リセット信号はない。パワーオンリセットのみ)
+	// Internal state clear (No reset message sent. Only power-on reset)
 	keyboard.connect = TRUE;
 	for (i=0; i<0x80; i++) {
 		keyboard.status[i] = FALSE;
@@ -99,7 +99,7 @@ BOOL FASTCALL Keyboard::Init()
 	keyboard.bright = 0;
 	keyboard.led = 0;
 
-	// TrueKey用コマンドキュー
+	// TrueKey command list
 	sync->Lock();
 	keyboard.cmdnum = 0;
 	keyboard.cmdread = 0;
@@ -111,40 +111,40 @@ BOOL FASTCALL Keyboard::Init()
 
 //---------------------------------------------------------------------------
 //
-//	クリーンアップ
+//	Cleanup
 //
 //---------------------------------------------------------------------------
 void FASTCALL Keyboard::Cleanup()
 {
-	ASSERT(this);
+ ASSERT(this);
 
-	// Sync削除
+	// Sync delete
 	if (sync) {
 		delete sync;
 		sync = NULL;
 	}
 
-	// 基本クラスへ
+	// Base class cleanup
 	Device::Cleanup();
 }
 
 //---------------------------------------------------------------------------
 //
-//	リセット
+//	Reset
 //
 //---------------------------------------------------------------------------
 void FASTCALL Keyboard::Reset()
 {
-	ASSERT(this);
-	LOG0(Log::Normal, "リセット");
+ ASSERT(this);
+	LOG0(Log::Normal, "Reset");
 
-	// システムポートがリセットされるので、send_waitも解除される
+	// Since system port resets, send_wait is cleared
 	keyboard.send_wait = FALSE;
 
-	// コマンドを全てクリア
+	// Command all clear
 	ClrCommand();
 
-	// 0xffを送信
+	// Send 0xff
 	if (keyboard.send_en && !keyboard.send_wait && keyboard.connect) {
 		mfp->KeyData(0xff);
 	}
@@ -152,30 +152,30 @@ void FASTCALL Keyboard::Reset()
 
 //---------------------------------------------------------------------------
 //
-//	セーブ
+//	Save
 //
 //---------------------------------------------------------------------------
 BOOL FASTCALL Keyboard::Save(Fileio *fio, int ver)
 {
 	size_t sz;
 
-	ASSERT(this);
-	ASSERT(fio);
+ ASSERT(this);
+ ASSERT(fio);
 
-	LOG0(Log::Normal, "セーブ");
+	LOG0(Log::Normal, "Save");
 
-	// サイズをセーブ
+	// Save size
 	sz = sizeof(keyboard_t);
 	if (!fio->Write(&sz, sizeof(sz))) {
 		return FALSE;
 	}
 
-	// 本体をセーブ
+	// Save main
 	if (!fio->Write(&keyboard, (int)sz)) {
 		return FALSE;
 	}
 
-	// イベントをセーブ
+	// Event save
 	if (!event.Save(fio, ver)) {
 		return FALSE;
 	}
@@ -185,19 +185,19 @@ BOOL FASTCALL Keyboard::Save(Fileio *fio, int ver)
 
 //---------------------------------------------------------------------------
 //
-//	ロード
+//	Load
 //
 //---------------------------------------------------------------------------
 BOOL FASTCALL Keyboard::Load(Fileio *fio, int ver)
 {
 	size_t sz;
 
-	ASSERT(this);
-	ASSERT(fio);
+ ASSERT(this);
+ ASSERT(fio);
 
-	LOG0(Log::Normal, "ロード");
+	LOG0(Log::Normal, "Load");
 
-	// サイズをロード、照合
+	// Load size and verify
 	if (!fio->Read(&sz, sizeof(sz))) {
 		return FALSE;
 	}
@@ -205,12 +205,12 @@ BOOL FASTCALL Keyboard::Load(Fileio *fio, int ver)
 		return FALSE;
 	}
 
-	// 本体をロード
+	// Load main
 	if (!fio->Read(&keyboard, (int)sz)) {
 		return FALSE;
 	}
 
-	// イベントをロード
+	// Event load
 	if (!event.Load(fio, ver)) {
 		return FALSE;
 	}
@@ -220,54 +220,54 @@ BOOL FASTCALL Keyboard::Load(Fileio *fio, int ver)
 
 //---------------------------------------------------------------------------
 //
-//	設定適用
+//	Apply config
 //
 //---------------------------------------------------------------------------
 void FASTCALL Keyboard::ApplyCfg(const Config *config)
 {
-	ASSERT(config);
-	LOG0(Log::Normal, "設定適用");
+ ASSERT(config);
+	LOG0(Log::Normal, "Apply config");
 
-	// 接続
+	// Connect
 	Connect(config->kbd_connect);
 }
 
 //---------------------------------------------------------------------------
 //
-//	接続
+//	Connect
 //
 //---------------------------------------------------------------------------
 void FASTCALL Keyboard::Connect(BOOL connect)
 {
 	int i;
 
-	ASSERT(this);
+ ASSERT(this);
 
-	// 一致していれば問題ない
+	// If already same, do nothing
 	if (keyboard.connect == connect) {
 		return;
 	}
 
 #if defined(KEYBOARD_LOG)
 	if (connect) {
-		LOG0(Log::Normal, "キーボード接続");
+		LOG0(Log::Normal, "Keyboard connect");
 	}
 	else {
-		LOG0(Log::Normal, "キーボード切断");
+		LOG0(Log::Normal, "Keyboard disconnect");
 	}
 #endif	// KEYBOARD_LOG
 
-	// 接続状態を保存
+	// Save connect state
 	keyboard.connect = connect;
 
-	// キーをオフに、イベントを止める
+	// After key off, stop event
 	for (i=0; i<0x80; i++) {
 		keyboard.status[i] = FALSE;
 	}
 	keyboard.rep_code = 0;
 	event.SetTime(0);
 
-	// 接続していればFFを送信
+	// If connected, send 0xff
 	if (keyboard.connect) {
 		mfp->KeyData(0xff);
 	}
@@ -275,90 +275,90 @@ void FASTCALL Keyboard::Connect(BOOL connect)
 
 //---------------------------------------------------------------------------
 //
-//	内部データ取得
+//	Get keyboard
 //
 //---------------------------------------------------------------------------
 void FASTCALL Keyboard::GetKeyboard(keyboard_t *buffer) const
 {
-	ASSERT(this);
-	ASSERT(buffer);
+ ASSERT(this);
+ ASSERT(buffer);
 
-	// バッファへコピー
+	// Copy to buffer
 	*buffer = keyboard;
 }
 
 //---------------------------------------------------------------------------
 //
-//	イベントコールバック
+//	Event callback
 //
 //---------------------------------------------------------------------------
 BOOL FASTCALL Keyboard::Callback(Event *ev)
 {
-	ASSERT(this);
-	ASSERT(ev);
+ ASSERT(this);
+ ASSERT(ev);
 
-	// リピートコードが有効でなければ、中止
+	// If repeat code not active, stop
 	if (keyboard.rep_code == 0) {
 		ev->SetTime(0);
 		return FALSE;
 	}
 
-	// キーボードが抜かれていれば、中止
+	// If keyboard disconnected, stop
 	if (!keyboard.connect) {
 		ev->SetTime(0);
 		return FALSE;
 	}
 
-	// リピートカウントアップ
+	// Repeat count up
 	keyboard.rep_count++;
 
-	// メイクのみ発行(ブレークは出さない:maxim.x)
+	// Only when idle (Don't output burst: maxim.x)
 	if (keyboard.send_en && !keyboard.send_wait) {
 #if defined(KEYBOARD_LOG)
-		LOG2(Log::Normal, "リピート$%02X (%d回目)", keyboard.rep_code, keyboard.rep_count);
+		LOG2(Log::Normal, "Repeat$%02X (%d times)", keyboard.rep_code, keyboard.rep_count);
 #endif	// KEYBOARD_LOG
 
 		mfp->KeyData(keyboard.rep_code);
 	}
 
-	// 次のイベント時間を設定
+	// Set next event time
 	ev->SetTime(keyboard.rep_next);
 	return TRUE;
 }
 
 //---------------------------------------------------------------------------
 //
-//	メイク
+//	Make
 //
 //---------------------------------------------------------------------------
 void FASTCALL Keyboard::MakeKey(DWORD code)
 {
-	ASSERT(this);
-	ASSERT((code >= 0x01) && (code <= 0x73));
+ ASSERT(this);
+ ASSERT((code >= 0x01) && (code <= 0x73));
 
-	// キーボードが抜かれていれば届かない
+	// If keyboard disconnected, do nothing
 	if (!keyboard.connect) {
 		return;
 	}
 
-	// 既にメイクなら、何もしない
+	// If already make, do nothing
 	if (keyboard.status[code]) {
 		return;
 	}
 
 #if defined(KEYBOARD_LOG)
-	LOG1(Log::Normal, "メイク $%02X", code);
+	LOG1(Log::Normal, "Make $%02X", code);
 #endif	// KEYBOARD_LOG
 
-	// ステータス設定
+	// Set status
 	keyboard.status[code] = TRUE;
 
-	// リピートを開始
+	// Start repeat
 	keyboard.rep_code = code;
 	keyboard.rep_count = 0;
 	event.SetTime(keyboard.rep_start);
 
-	// MFPへMakeデータ送信
+	// Send Make data to MFP
 	if (keyboard.send_en && !keyboard.send_wait) {
 		mfp->KeyData(keyboard.rep_code);
 	}
@@ -366,38 +366,38 @@ void FASTCALL Keyboard::MakeKey(DWORD code)
 
 //---------------------------------------------------------------------------
 //
-//	ブレーク
+//	Break
 //
 //---------------------------------------------------------------------------
 void FASTCALL Keyboard::BreakKey(DWORD code)
 {
-	ASSERT(this);
-	ASSERT((code >= 0x01) && (code <= 0x73));
+ ASSERT(this);
+ ASSERT((code >= 0x01) && (code <= 0x73));
 
-	// キーボードが抜かれていれば届かない
+	// If keyboard disconnected, do nothing
 	if (!keyboard.connect) {
 		return;
 	}
 
-	// メイク状態であることが必要。既にブレークなら何もしない
+	// If already break, do nothing
 	if (!keyboard.status[code]) {
 		return;
 	}
 
 #if defined(KEYBOARD_LOG)
-	LOG1(Log::Normal, "ブレーク $%02X", code);
+	LOG1(Log::Normal, "Break $%02X", code);
 #endif	// KEYBOARD_LOG
 
-	// ステータス設定
+	// Set status
 	keyboard.status[code] = FALSE;
 
-	// リピート中のキーなら、リピート取り下げ
+	// If repeat key, stop repeat
 	if (keyboard.rep_code == (DWORD)code) {
 		keyboard.rep_code = 0;
 		event.SetTime(0);
 	}
 
-	// MFPへデータ送信
+	// Send data to MFP
 	code |= 0x80;
 	if (keyboard.send_en && !keyboard.send_wait) {
 		mfp->KeyData(code);
@@ -406,65 +406,65 @@ void FASTCALL Keyboard::BreakKey(DWORD code)
 
 //---------------------------------------------------------------------------
 //
-//	キーデータ送信ウェイト
+//	Key data send wait
 //
 //---------------------------------------------------------------------------
 void FASTCALL Keyboard::SendWait(BOOL flag)
 {
-	ASSERT(this);
+ ASSERT(this);
 
 	keyboard.send_wait = flag;
 }
 
 //---------------------------------------------------------------------------
 //
-//	コマンド
+//	Command
 //
 //---------------------------------------------------------------------------
 void FASTCALL Keyboard::Command(DWORD data)
 {
-	ASSERT(this);
-	ASSERT(data < 0x100);
+ ASSERT(this);
+ ASSERT(data < 0x100);
 
-	// キューチェック
-	ASSERT(sync);
-	ASSERT(keyboard.cmdnum <= 0x10);
-	ASSERT(keyboard.cmdread < 0x10);
-	ASSERT(keyboard.cmdwrite < 0x10);
+	// Queue check
+ ASSERT(sync);
+ ASSERT(keyboard.cmdnum <= 0x10);
+ ASSERT(keyboard.cmdread < 0x10);
+ ASSERT(keyboard.cmdwrite < 0x10);
 
-	// キューへ追加(Syncを行う)
+	// Add to queue (Sync exclusive)
 	sync->Lock();
 	keyboard.cmdbuf[keyboard.cmdwrite] = data;
 	keyboard.cmdwrite = (keyboard.cmdwrite + 1) & 0x0f;
 	keyboard.cmdnum++;
 	if (keyboard.cmdnum > 0x10) {
-		ASSERT(keyboard.cmdnum == 0x11);
+	 ASSERT(keyboard.cmdnum == 0x11);
 		keyboard.cmdnum = 0x10;
 		keyboard.cmdread = (keyboard.cmdwrite + 1) & 0x0f;
 	}
 	sync->Unlock();
 
-	// キーボードが抜かれていれば届かない
+	// If keyboard disconnected, do nothing
 	if (!keyboard.connect) {
 		return;
 	}
 
 #if defined(KEYBOARD_LOG)
-	LOG1(Log::Normal, "コマンド送出 $%02X", data);
+	LOG1(Log::Normal, "Command output $%02X", data);
 #endif	// KEYBOARD_LOG
 
-	// ディスプレイ制御
+	// Dispatcher
 	if (data < 0x40) {
 		return;
 	}
 
-	// キーLED
+	// Key LED
 	if (data >= 0x80) {
 		keyboard.led = ~data;
 		return;
 	}
 
-	// キーリピート開始
+	// Key repeat start
 	if ((data & 0xf0) == 0x60) {
 		keyboard.rep_start = data & 0x0f;
 		keyboard.rep_start *= 100 * 1000 * 2;
@@ -472,7 +472,7 @@ void FASTCALL Keyboard::Command(DWORD data)
 		return;
 	}
 
-	// キーリピート継続
+	// Key repeat interval
 	if ((data & 0xf0) == 0x70) {
 		keyboard.rep_next = data & 0x0f;
 		keyboard.rep_next *= (data & 0x0f);
@@ -484,7 +484,7 @@ void FASTCALL Keyboard::Command(DWORD data)
 	if ((data & 0xf0) == 0x40) {
 		data &= 0x0f;
 		if (data < 0x08) {
-			// MSCTRL制御
+			// MSCTRL setting
 			keyboard.msctrl = data & 0x01;
 			if (keyboard.msctrl) {
 				mouse->MSCtrl(TRUE, 2);
@@ -495,7 +495,7 @@ void FASTCALL Keyboard::Command(DWORD data)
 			return;
 		}
 		else {
-			// キーデータ送出許可・禁止
+			// Key data output enable/disable
 			if (data & 0x01) {
 				keyboard.send_en = TRUE;
 			}
@@ -506,11 +506,11 @@ void FASTCALL Keyboard::Command(DWORD data)
 		}
 	}
 
-	// 後は0x50台
+	// Normal, others
 	data &= 0x0f;
 
 	switch (data >> 2) {
-		// ディスプレイ制御キーモード切り替え
+		// Display mode key latch switch
 		case 0:
 			if (data & 0x01) {
 				keyboard.tv_mode = TRUE;
@@ -520,12 +520,12 @@ void FASTCALL Keyboard::Command(DWORD data)
 			}
 			return;
 
-		// キーLED明るさ
+		// Key LED brightness
 		case 1:
 			keyboard.bright = data & 0x03;
 			return;
 
-		// テレビコントロール有効・無効
+		// Display controller on/off
 		case 2:
 			if (data & 0x01) {
 				keyboard.tv_ctrl = TRUE;
@@ -535,7 +535,7 @@ void FASTCALL Keyboard::Command(DWORD data)
 			}
 			return;
 
-		// OPT2コントロール有効・無効
+		// OPT2 controller on/off
 		case 3:
 			if (data & 0x01) {
 				keyboard.opt2_ctrl = TRUE;
@@ -546,39 +546,39 @@ void FASTCALL Keyboard::Command(DWORD data)
 			return;
 	}
 
-	// 通常、ここにはこない
-	ASSERT(FALSE);
+	// Normal, others
+ ASSERT(FALSE);
 }
 
 //---------------------------------------------------------------------------
 //
-//	コマンド取得
+//	Command get
 //
 //---------------------------------------------------------------------------
 BOOL Keyboard::GetCommand(DWORD& data)
 {
-	ASSERT(this);
-	ASSERT(sync);
-	ASSERT(keyboard.cmdnum <= 0x10);
-	ASSERT(keyboard.cmdread < 0x10);
-	ASSERT(keyboard.cmdwrite < 0x10);
+ ASSERT(this);
+ ASSERT(sync);
+ ASSERT(keyboard.cmdnum <= 0x10);
+ ASSERT(keyboard.cmdread < 0x10);
+ ASSERT(keyboard.cmdwrite < 0x10);
 
-	// ロック
+	// Lock
 	sync->Lock();
 
-	// データがなければFALSE
+	// If no data, FALSE
 	if (keyboard.cmdnum == 0) {
 		sync->Unlock();
 		return FALSE;
 	}
 
-	// データを取得
+	// Get data
 	data = keyboard.cmdbuf[keyboard.cmdread];
 	keyboard.cmdread = (keyboard.cmdread + 1) & 0x0f;
-	ASSERT(keyboard.cmdnum > 0);
+ ASSERT(keyboard.cmdnum > 0);
 	keyboard.cmdnum--;
 
-	// アンロック
+	// Unlock
 	sync->Unlock();
 
 	return TRUE;
@@ -586,25 +586,25 @@ BOOL Keyboard::GetCommand(DWORD& data)
 
 //---------------------------------------------------------------------------
 //
-//	コマンドクリア
+//	Command clear
 //
 //---------------------------------------------------------------------------
 void Keyboard::ClrCommand()
 {
-	ASSERT(this);
-	ASSERT(sync);
-	ASSERT(keyboard.cmdnum <= 0x10);
-	ASSERT(keyboard.cmdread < 0x10);
-	ASSERT(keyboard.cmdwrite < 0x10);
+ ASSERT(this);
+ ASSERT(sync);
+ ASSERT(keyboard.cmdnum <= 0x10);
+ ASSERT(keyboard.cmdread < 0x10);
+ ASSERT(keyboard.cmdwrite < 0x10);
 
-	// ロック
+	// Lock
 	sync->Lock();
 
-	// 初期化
+	// Clear
 	keyboard.cmdnum = 0;
 	keyboard.cmdread = 0;
 	keyboard.cmdwrite = 0;
 
-	// アンロック
+	// Unlock
 	sync->Unlock();
 }

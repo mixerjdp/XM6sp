@@ -2,7 +2,7 @@
 //
 //	X68000 EMULATOR "XM6"
 //
-//	Copyright (C) 2001-2005 �o�h�D(ytanaka@ipc-tokai.or.jp)
+//	Copyright (C) 2001-2005 PI (ytanaka@ipc-tokai.or.jp)
 //	[ CRTC(VICON) ]
 //
 //---------------------------------------------------------------------------
@@ -36,20 +36,20 @@ BOOL g_alt_raster_timing = FALSE;
 
 //---------------------------------------------------------------------------
 //
-//	�R���X�g���N�^
+//	Constructor
 //
 //---------------------------------------------------------------------------
 CRTC::CRTC(VM *p) : MemDevice(p)
 {
-	// �f�o�C�XID��������
+	// Initialize device ID
 	dev.id = MAKEID('C', 'R', 'T', 'C');
 	dev.desc = "CRTC (VICON)";
 
-	// �J�n�A�h���X�A�I���A�h���X
+	// Start address, end address
 	memdev.first = 0xe80000;
 	memdev.last = 0xe81fff;
 
-	// ���̑����[�N
+	// Other members
 	tvram = NULL;
 	gvram = NULL;
 	sprite = NULL;
@@ -60,43 +60,43 @@ CRTC::CRTC(VM *p) : MemDevice(p)
 
 //---------------------------------------------------------------------------
 //
-//	������
+//	Initialization
 //
 //---------------------------------------------------------------------------
 BOOL FASTCALL CRTC::Init()
 {
 	ASSERT(this);
 
-	// ��{�N���X
+	// Base class
 	if (!MemDevice::Init()) {
 		return FALSE;
 	}
 
-	// �e�L�X�gVRAM���擾
+	// Get text VRAM
 	tvram = (TVRAM*)vm->SearchDevice(MAKEID('T', 'V', 'R', 'M'));
 	ASSERT(tvram);
 
-	// �O���t�B�b�NVRAM���擾
+	// Get graphic VRAM
 	gvram = (GVRAM*)vm->SearchDevice(MAKEID('G', 'V', 'R', 'M'));
 	ASSERT(gvram);
 
-	// �X�v���C�g�R���g���[�����擾
+	// Get sprite controller
 	sprite = (Sprite*)vm->SearchDevice(MAKEID('S', 'P', 'R', ' '));
 	ASSERT(sprite);
 
-	// MFP���擾
+	// Get MFP
 	mfp = (MFP*)vm->SearchDevice(MAKEID('M', 'F', 'P', ' '));
 	ASSERT(mfp);
 
-	// �����_�����擾
+	// Get renderer
 	render = (Render*)vm->SearchDevice(MAKEID('R', 'E', 'N', 'D'));
 	ASSERT(render);
 
-	// �v�����^���擾
+	// Get printer
 	printer = (Printer*)vm->SearchDevice(MAKEID('P', 'R', 'N', ' '));
 	ASSERT(printer);
 
-	// �C�x���g������
+	// Event setup
 	event.SetDevice(this);
 	event.SetDesc("H-Sync");
 	event.SetTime(0);
@@ -107,20 +107,20 @@ BOOL FASTCALL CRTC::Init()
 
 //---------------------------------------------------------------------------
 //
-//	�N���[���A�b�v
+//	Cleanup
 //
 //---------------------------------------------------------------------------
 void FASTCALL CRTC::Cleanup()
 {
 	ASSERT(this);
 
-	// ��{�N���X��
+	// To base class
 	MemDevice::Cleanup();
 }
 
 //---------------------------------------------------------------------------
 //
-//	���Z�b�g
+//	Reset
 //
 //---------------------------------------------------------------------------
 void FASTCALL CRTC::Reset()
@@ -128,9 +128,9 @@ void FASTCALL CRTC::Reset()
 	int i;
 
 	ASSERT(this);
-	LOG0(Log::Normal, "���Z�b�g");
+	LOG0(Log::Normal, "Reset");
 
-	// ���W�X�^���N���A
+	// Clear registers
 	memset(crtc.reg, 0, sizeof(crtc.reg));
 	for (i=0; i<18; i++) {
 		crtc.reg[i] = ResetTable[i];
@@ -139,20 +139,20 @@ void FASTCALL CRTC::Reset()
 		crtc.reg[i + 0x28] = ResetTable[i + 18];
 	}
 
-	// �𑜓x
+	// Resolution
 	crtc.hrl = FALSE;
 	crtc.lowres = FALSE;
 	crtc.textres = TRUE;
 	crtc.changed = FALSE;
 
-	// ����@�
+	// Raster
 	crtc.raster_count = 0;
 	crtc.raster_int = 0;
 	crtc.raster_copy = FALSE;
 	crtc.raster_exec = FALSE;
 	crtc.fast_clr = 0;
 
-	// ����
+	// Horizontal
 	crtc.h_sync = 31745;
 	crtc.h_pulse = 3450;
 	crtc.h_back = 4140;
@@ -161,7 +161,7 @@ void FASTCALL CRTC::Reset()
 	crtc.h_mul = 1;
 	crtc.hd = 2;
 
-	// ����
+	// Vertical
 	crtc.v_sync = 568;
 	crtc.v_pulse = 6;
 	crtc.v_back = 35;
@@ -170,7 +170,7 @@ void FASTCALL CRTC::Reset()
 	crtc.v_mul = 1;
 	crtc.vd = 1;
 
-	// �C�x���g
+	// Events
 	crtc.ns = 0;
 	crtc.hus = 0;
 	crtc.v_synccnt = 1;
@@ -181,7 +181,7 @@ void FASTCALL CRTC::Reset()
 	crtc.v_count = 0;
 	crtc.v_scan = 0;
 
-	// �ȉ�����Ȃ�
+	// Non-display variables
 	crtc.h_disptime = 0;
 	crtc.h_synctime = 0;
 	crtc.v_cycletime = 0;
@@ -189,13 +189,13 @@ void FASTCALL CRTC::Reset()
 	crtc.v_backtime = 0;
 	crtc.v_synctime = 0;
 
-	// ���������[�h
+	// Memory mode
 	crtc.tmem = FALSE;
 	crtc.gmem = TRUE;
 	crtc.siz = 0;
 	crtc.col = 3;
 
-	// �X�N���[��
+	// Scroll
 	crtc.text_scrlx = 0;
 	crtc.text_scrly = 0;
 	for (i=0; i<4; i++) {
@@ -203,13 +203,13 @@ void FASTCALL CRTC::Reset()
 		crtc.grp_scrly[i] = 0;
 	}
 
-	// H-Sync�C�x���g��ݒ�(31.5us)
+	// H-Sync event setup (31.5us)
 	event.SetTime(63);
 }
 
 //---------------------------------------------------------------------------
 //
-//	CRTC���Z�b�g�f�[�^
+//	CRTC reset data
 //
 //---------------------------------------------------------------------------
 const BYTE CRTC::ResetTable[] = {
@@ -221,7 +221,7 @@ const BYTE CRTC::ResetTable[] = {
 
 //---------------------------------------------------------------------------
 //
-//	�Z�[�u
+//	Save
 //
 //---------------------------------------------------------------------------
 BOOL FASTCALL CRTC::Save(Fileio *fio, int ver)
@@ -230,20 +230,20 @@ BOOL FASTCALL CRTC::Save(Fileio *fio, int ver)
 
 	ASSERT(this);
 	ASSERT(fio);
-	LOG0(Log::Normal, "�Z�[�u");
+	LOG0(Log::Normal, "Save");
 
-	// �T�C�Y���Z�[�u
+	// Save size
 	sz = sizeof(crtc_t);
 	if (!fio->Write(&sz, sizeof(sz))) {
 		return FALSE;
 	}
 
-	// ���̂��Z�[�u
+	// Save entity
 	if (!fio->Write(&crtc, (int)sz)) {
 		return FALSE;
 	}
 
-	// �C�x���g���Z�[�u
+	// Save event
 	if (!event.Save(fio, ver)) {
 		return FALSE;
 	}
@@ -253,7 +253,7 @@ BOOL FASTCALL CRTC::Save(Fileio *fio, int ver)
 
 //---------------------------------------------------------------------------
 //
-//	���[�h
+//	Load
 //
 //---------------------------------------------------------------------------
 BOOL FASTCALL CRTC::Load(Fileio *fio, int ver)
@@ -262,9 +262,9 @@ BOOL FASTCALL CRTC::Load(Fileio *fio, int ver)
 
 	ASSERT(this);
 	ASSERT(fio);
-	LOG0(Log::Normal, "���[�h");
+	LOG0(Log::Normal, "Load");
 
-	// �T�C�Y�����[�h
+	// Load size
 	if (!fio->Read(&sz, sizeof(sz))) {
 		return FALSE;
 	}
@@ -272,17 +272,17 @@ BOOL FASTCALL CRTC::Load(Fileio *fio, int ver)
 		return FALSE;
 	}
 
-	// ���̂����[�h
+	// Load entity
 	if (!fio->Read(&crtc, (int)sz)) {
 		return FALSE;
 	}
 
-	// �C�x���g�����[�h
+	// Load event
 	if (!event.Load(fio, ver)) {
 		return FALSE;
 	}
 
-	// �����_���֒ʒm
+	// Notify renderer
 	render->TextScrl(crtc.text_scrlx, crtc.text_scrly);
 	render->GrpScrl(0, crtc.grp_scrlx[0], crtc.grp_scrly[0]);
 	render->GrpScrl(1, crtc.grp_scrlx[1], crtc.grp_scrly[1]);
@@ -295,7 +295,7 @@ BOOL FASTCALL CRTC::Load(Fileio *fio, int ver)
 
 //---------------------------------------------------------------------------
 //
-//	�ݒ�K�p
+//	Apply configuration
 //
 //---------------------------------------------------------------------------
 void FASTCALL CRTC::ApplyCfg(const Config *config)
@@ -303,12 +303,12 @@ void FASTCALL CRTC::ApplyCfg(const Config *config)
 	ASSERT(this);
 	ASSERT(config);
 	g_alt_raster_timing = config->alt_raster;
-	LOG0(Log::Normal, "�ݒ�K�p");
+	LOG0(Log::Normal, "Apply configuration");
 }
 
 //---------------------------------------------------------------------------
 //
-//	�o�C�g�ǂݍ���
+//	Byte read
 //
 //---------------------------------------------------------------------------
 DWORD FASTCALL CRTC::ReadByte(DWORD addr)
@@ -318,37 +318,37 @@ DWORD FASTCALL CRTC::ReadByte(DWORD addr)
 	ASSERT(this);
 	ASSERT((addr >= memdev.first) && (addr <= memdev.last));
 
-	// $800�P�ʂŃ��[�v
+	// Loop at $800 boundary
 	addr &= 0x7ff;
 
-	// �E�F�C�g
+	// Wait
 	scheduler->Wait(1);
 
-	// $E80000-$E803FF : ���W�X�^�G���A
+	// $E80000-$E803FF : Register area
 	if (addr < 0x400) {
 		addr &= 0x3f;
 		if (addr >= 0x30) {
 			return 0xff;
 		}
 
-		// R20, R21�̂ݓǂݏ����\�B����ȊO��$00
+		// Only R20, R21 can be read. Others return $00
 		if ((addr < 40) || (addr > 43)) {
 			return 0;
 		}
 
-		// �ǂݍ���(�G���f�B�A���𔽓]������)
+		// Read (invert odd/even)
 		addr ^= 1;
 		return crtc.reg[addr];
 	}
 
-	// $E80480-$E804FF : ����|�[�g
+	// $E80480-$E804FF : Internal port
 	if ((addr >= 0x480) && (addr <= 0x4ff)) {
-		// ��ʃo�C�g�� 0
+		// Even bytes are 0
 		if ((addr & 1) == 0) {
 			return 0;
 		}
 
-		// ���ʃo�C�g�̓��X�^�R�s�[�A�O���t�B�b�N�����N���A�̂�
+		// Odd byte is raster copy, graphic clear reset
 		data = 0;
 		if (crtc.raster_copy) {
 			data |= 0x08;
@@ -359,13 +359,13 @@ DWORD FASTCALL CRTC::ReadByte(DWORD addr)
 		return data;
 	}
 
-	LOG1(Log::Warning, "�������A�h���X�ǂݍ��� $%06X", memdev.first + addr);
+	LOG1(Log::Warning, "Illegal address read $%06X", memdev.first + addr);
 	return 0xff;
 }
 
 //---------------------------------------------------------------------------
 //
-//	�o�C�g��������
+//	Byte write
 //
 //---------------------------------------------------------------------------
 void FASTCALL CRTC::WriteByte(DWORD addr, DWORD data)
@@ -375,27 +375,27 @@ void FASTCALL CRTC::WriteByte(DWORD addr, DWORD data)
 	ASSERT(this);
 	ASSERT((addr >= memdev.first) && (addr <= memdev.last));
 
-	// $800�P�ʂŃ��[�v
+	// Loop at $800 boundary
 	addr &= 0x7ff;
 
-	// �E�F�C�g
+	// Wait
 	scheduler->Wait(1);
 
-	// $E80000-$E803FF : ���W�X�^�G���A
+	// $E80000-$E803FF : Register area
 	if (addr < 0x400) {
 		addr &= 0x3f;
 		if (addr >= 0x30) {
 			return;
 		}
 
-		// ��������(�G���f�B�A���𔽓]������)
+		// Write (invert odd/even)
 		addr ^= 1;
 		if (crtc.reg[addr] == data) {
 			return;
 		}
 		crtc.reg[addr] = (BYTE)data;
 
-		// GVRAM�A�h���X�\��
+		// GVRAM address display
 		if (addr == 0x29) {
 			if (data & 0x10) {
 				crtc.tmem = TRUE;
@@ -412,14 +412,14 @@ void FASTCALL CRTC::WriteByte(DWORD addr, DWORD data)
 			crtc.siz = (data & 4) >> 2;
 			crtc.col = (data & 3);
 
-			// �O���t�B�b�NVRAM�֒ʒm
+			// Notify graphic VRAM
 			gvram->SetType(data & 0x0f);
 			return;
 		}
 
-		// �𑜓x�ύX
+		// Resolution change
 		if ((addr <= 15) || (addr == 40)) {
-			// �X�v���C�g�������̐ڑ��E�ؒf�͏u���ɍs��(OS-9/68000)
+			// Sprite connection/disconnection is done immediately (OS-9/68000)
 			if (addr == 0x28) {
 				if ((crtc.reg[0x28] & 3) >= 2) {
 					sprite->Connect(FALSE);
@@ -429,12 +429,12 @@ void FASTCALL CRTC::WriteByte(DWORD addr, DWORD data)
 				}
 			}
 
-			// ���̎����ōČv�Z
+			// Recalc at next timing
 			crtc.changed = TRUE;
 			return;
 		}
 
-		// ���X�^���荞��
+		// Raster interrupt
 		if ((addr == 18) || (addr == 19)) {
 			crtc.raster_int = (crtc.reg[19] << 8) + crtc.reg[18];
 			crtc.raster_int &= 0x3ff;
@@ -444,7 +444,7 @@ void FASTCALL CRTC::WriteByte(DWORD addr, DWORD data)
 			return;
 		}
 
-		// �e�L�X�g�X�N���[��
+		// Text scroll
 		if ((addr >= 20) && (addr <= 23)) {
 			crtc.text_scrlx = (crtc.reg[21] << 8) + crtc.reg[20];
 			crtc.text_scrlx &= 0x3ff;
@@ -453,12 +453,12 @@ void FASTCALL CRTC::WriteByte(DWORD addr, DWORD data)
 			render->TextScrl(crtc.text_scrlx, crtc.text_scrly);
 
 #if defined(CRTC_LOG)
-			LOG2(Log::Normal, "�e�L�X�g�X�N���[�� x=%d y=%d", crtc.text_scrlx, crtc.text_scrly);
+			LOG2(Log::Normal, "Text scroll x=%d y=%d", crtc.text_scrlx, crtc.text_scrly);
 #endif	// CRTC_LOG
 			return;
 		}
 
-		// �O���t�B�b�N�X�N���[��
+		// Graphic scroll
 		if ((addr >= 24) && (addr <= 39)) {
 			reg = addr & ~3;
 			addr -= 24;
@@ -478,21 +478,21 @@ void FASTCALL CRTC::WriteByte(DWORD addr, DWORD data)
 			return;
 		}
 
-		// �e�L�X�gVRAM
+		// Text VRAM
 		if ((addr >= 42) && (addr <= 47)) {
 			TextVRAM();
 		}
 		return;
 	}
 
-	// $E80480-$E804FF : ����|�[�g
+	// $E80480-$E804FF : Internal port
 	if ((addr >= 0x480) && (addr <= 0x4ff)) {
-		// ��ʃo�C�g�͉����Ȃ�
+		// Even bytes are ignored
 		if ((addr & 1) == 0) {
 			return;
 		}
 
-		// ���ʃo�C�g�̓��X�^�R�s�[�E�����N���A����
+		// Odd byte is raster copy, fast clear reset
 		if (data & 0x08) {
 			crtc.raster_copy = TRUE;
 		}
@@ -500,29 +500,29 @@ void FASTCALL CRTC::WriteByte(DWORD addr, DWORD data)
 			crtc.raster_copy = FALSE;
 		}
 		if (data & 0x02) {
-			// ���X�^�R�s�[�Ƌ��p�A���X�^�R�s�[�D��(��헪III'90)
+			// Raster copy and fast clear (X68030'90)
 			if ((crtc.fast_clr == 0) && !crtc.raster_copy) {
 #if defined(CRTC_LOG)
-				LOG0(Log::Normal, "�O���t�B�b�N�����N���A�w��");
+				LOG0(Log::Normal, "Graphic clear fast enable");
 #endif	// CRTC_LOG
 				crtc.fast_clr = 1;
 			}
 #if defined(CRTC_LOG)
 			else {
-				LOG1(Log::Normal, "�O���t�B�b�N�����N���A�w������ State=%d", crtc.fast_clr);
+				LOG1(Log::Normal, "Graphic clear fast state State=%d", crtc.fast_clr);
 			}
 #endif	//CRTC_LOG
 		}
 		return;
 	}
 
-	LOG2(Log::Warning, "�������A�h���X�������� $%06X <- $%02X",
+	LOG2(Log::Warning, "Illegal address write $%06X <- $%02X",
 							memdev.first + addr, data);
 }
 
 //---------------------------------------------------------------------------
 //
-//	�ǂݍ��݂̂�
+//	Read only
 //
 //---------------------------------------------------------------------------
 DWORD FASTCALL CRTC::ReadOnly(DWORD addr) const
@@ -532,29 +532,29 @@ DWORD FASTCALL CRTC::ReadOnly(DWORD addr) const
 	ASSERT(this);
 	ASSERT((addr >= memdev.first) && (addr <= memdev.last));
 
-	// $800�P�ʂŃ��[�v
+	// Loop at $800 boundary
 	addr &= 0x7ff;
 
-	// $E80000-$E803FF : ���W�X�^�G���A
+	// $E80000-$E803FF : Register area
 	if (addr < 0x400) {
 		addr &= 0x3f;
 		if (addr >= 0x30) {
 			return 0xff;
 		}
 
-		// �ǂݍ���(�G���f�B�A���𔽓]������)
+		// Read (invert odd/even)
 		addr ^= 1;
 		return crtc.reg[addr];
 	}
 
-	// $E80480-$E804FF : ����|�[�g
+	// $E80480-$E804FF : Internal port
 	if ((addr >= 0x480) && (addr <= 0x4ff)) {
-		// ��ʃo�C�g��0
+		// Even bytes are 0
 		if ((addr & 1) == 0) {
 			return 0;
 		}
 
-		// ���ʃo�C�g�̓O���t�B�b�N�����N���A�̂�
+		// Odd byte is raster copy, graphic clear reset
 		data = 0;
 		if (crtc.raster_copy) {
 			data |= 0x08;
@@ -570,27 +570,27 @@ DWORD FASTCALL CRTC::ReadOnly(DWORD addr) const
 
 //---------------------------------------------------------------------------
 //
-//	�����f�[�^�擾
+//	Get internal data
 //
 //---------------------------------------------------------------------------
 void FASTCALL CRTC::GetCRTC(crtc_t *buffer) const
 {
 	ASSERT(buffer);
 
-	// �����f�[�^���R�s�[
+	// Copy internal data
 	*buffer = crtc;
 }
 
 //---------------------------------------------------------------------------
 //
-//	�C�x���g�R�[���o�b�N
+//	Event callback
 //
 //---------------------------------------------------------------------------
 BOOL FASTCALL CRTC::Callback(Event* /*ev*/)
 {
 	ASSERT(this);
 
-	// HSync,HDisp��2���Ăѕ�����
+	// HSync and HDisp are exclusive
 	if (crtc.h_disp) {
 		HSync();
 	}
@@ -603,7 +603,7 @@ BOOL FASTCALL CRTC::Callback(Event* /*ev*/)
 
 //---------------------------------------------------------------------------
 //
-//	H-SYNC�J�n
+//	H-SYNC start
 //
 //---------------------------------------------------------------------------
 void FASTCALL CRTC::HSync()
@@ -612,61 +612,61 @@ void FASTCALL CRTC::HSync()
 
 	ASSERT(this);
 
-	// �v�����^�ɒʒm(����I��BUSY�𗎂Ƃ�����)
+	// Notify printer (ignore busy)
 	ASSERT(printer);
 	printer->HSync();
 
-	// V-SYNC�J�E���g
+	// V-SYNC count
 	crtc.v_synccnt--;
 	if (crtc.v_synccnt == 0) {
 		VSync();
 	}
 
-	// V-BLANK�J�E���g
+	// V-BLANK count
 	crtc.v_blankcnt--;
 	if (crtc.v_blankcnt == 0) {
 		VBlank();
 	}
 
-	// ���̃^�C�~���O(H-DISP�J�n)�܂ł̎��Ԃ�ݒ�
+	// Set time until next timing (H-DISP start)
 	crtc.ns += crtc.h_pulse;
 	hus = Ns2Hus(crtc.ns);
 	hus -= crtc.hus;
 	event.SetTime(hus);
 	crtc.hus += hus;
 
-	// ��������(40ms����)
+	// Adjust (every 40ms)
 	if (crtc.hus >= 80000) {
 		crtc.hus -= 80000;
 		ASSERT(crtc.ns >= 40000000);
 		crtc.ns -= 40000000;
 	}
 
-	// �t���O�ݒ�
+	// Set flag
 	crtc.h_disp = FALSE;
 
-	// GPIP�ݒ�
+	// GPIP set
 	mfp->SetGPIP(7, 1);
 
-	// ���X�^���荞�� (Alt timing)
+	// Raster interrupt (Alt timing)
 	if (g_alt_raster_timing) {
 		CheckRaster();
 	}
 
-	// �`��
+	// Rendering
 	crtc.v_scan++;
 	if (!crtc.v_blank) {
-		// �����_�����O
+		// Renderer sync
 		render->HSync(crtc.v_scan);
 	}
 
-	// �e�L�X�g��ʃ��X�^�R�s�[
+	// Text screen raster copy
 	if (crtc.raster_copy && crtc.raster_exec) {
 		tvram->RasterCopy();
 		crtc.raster_exec = FALSE;
 	}
 
-	// �O���t�B�b�N��ʍ����N���A
+	// Graphic screen fast clear
 	if (crtc.fast_clr == 2) {
 		gvram->FastClr(&crtc);
 	}
@@ -678,7 +678,7 @@ void FASTCALL CRTC::HSync()
 
 //---------------------------------------------------------------------------
 //
-//	H-DISP�J�n
+//	H-DISP start
 //
 //---------------------------------------------------------------------------
 void FASTCALL CRTC::HDisp()
@@ -688,7 +688,7 @@ void FASTCALL CRTC::HDisp()
 
 	ASSERT(this);
 
-	// ���X�^���荞�� (Original timing)
+	// Raster interrupt (Original timing)
 	if (!g_alt_raster_timing) {
 		CheckRaster();
 		crtc.raster_count++;
@@ -697,7 +697,7 @@ void FASTCALL CRTC::HDisp()
 		CheckRaster();
 	}
 
-	// ���̃^�C�~���O(H-SYNC�J�n)�܂ł̎��Ԃ�ݒ�
+	// Set time until next timing (H-SYNC start)
 	ns = crtc.h_sync - crtc.h_pulse;
 	ASSERT(ns > 0);
 	crtc.ns += ns;
@@ -706,65 +706,65 @@ void FASTCALL CRTC::HDisp()
 	event.SetTime(hus);
 	crtc.hus += hus;
 
-	// �t���O�ݒ�
+	// Set flag
 	crtc.h_disp = TRUE;
 
-	// GPIP�ݒ�
+	// GPIP set
 	mfp->SetGPIP(7,0);
 
-	// ���X�^�R�s�[����
+	// Raster copy start
 	crtc.raster_exec = TRUE;
 }
 
 //---------------------------------------------------------------------------
 //
-//	V-SYNC�J�n(V-DISP�J�n���܂�)
+//	V-SYNC start (also starts V-DISP)
 //
 //---------------------------------------------------------------------------
 void FASTCALL CRTC::VSync()
 {
 	ASSERT(this);
 
-	// V-SYNC�I���Ȃ�
+	// V-SYNC not ended yet
 	if (!crtc.v_disp) {
-		// �t���O�ݒ�
+		// Set flag
 		crtc.v_disp = TRUE;
 
-		// ���Ԑݒ�
+		// Set counter
 		crtc.v_synccnt = (crtc.v_sync - crtc.v_pulse);
 		return;
 	}
 
-	// �𑜓x�ύX������΁A�����ŕύX
+	// If resolution changed, recalc now
 	if (crtc.changed) {
 		ReCalc();
 	}
 
-	// V-SYNC�I���܂ł̎��Ԃ�ݒ�
+	// Set time until V-SYNC end
 	crtc.v_synccnt = crtc.v_pulse;
 
-	// V-BLANK�̏�ԂƁA���Ԃ�ݒ�
+	// V-BLANK state and counter setup
 	if (crtc.v_front < 0) {
-		// �܂��\����(����)
+		// Not yet displayed (minus)
 		crtc.v_blank = FALSE;
 		crtc.v_blankcnt = (-crtc.v_front) + 1;
 	}
 	else {
-		// ���łɃu�����N��(�ʏ�)
+		// Already in blank (normal)
 		crtc.v_blank = TRUE;
 		crtc.v_blankcnt = (crtc.v_pulse + crtc.v_back + 1);
 	}
 
-	// �t���O�ݒ�
+	// Set flag
 	crtc.v_disp = FALSE;
 
-	// ���X�^�J�E���g������
+	// Reset raster counter
 	crtc.raster_count = 0;
 }
 
 //---------------------------------------------------------------------------
 //
-//	�Čv�Z
+//	Recalculate
 //
 //---------------------------------------------------------------------------
 void FASTCALL CRTC::ReCalc()
@@ -776,29 +776,29 @@ void FASTCALL CRTC::ReCalc()
 	ASSERT(this);
 	ASSERT(crtc.changed);
 
-	// CRTC���W�X�^0���N���A����Ă���΁A����(Mac�G�~�����[�^)
+	// If CRTC register 0 is not zero, recalc (Mac compatible)
 	if (crtc.reg[0x0] != 0) {
 #if defined(CRTC_LOG)
-		LOG0(Log::Normal, "�Čv�Z");
+		LOG0(Log::Normal, "Recalculate");
 #endif	// CRTC_LOG
 
-		// �h�b�g�N���b�N���擾
+		// Get dot clock
 		dc = Get8DotClock();
 
-		// ����(���ׂ�ns�P��)
+		// Horizontal (all in ns units)
 		crtc.h_sync = (crtc.reg[0x0] + 1) * dc / 100;
 		crtc.h_pulse = (crtc.reg[0x02] + 1) * dc / 100;
 		crtc.h_back = (crtc.reg[0x04] + 5 - crtc.reg[0x02] - 1) * dc / 100;
 		crtc.h_front = (crtc.reg[0x0] + 1 - crtc.reg[0x06] - 5) * dc / 100;
 
-		// ����(���ׂ�H-Sync�P��)
+		// Vertical (all in H-Sync units)
 		p = (WORD *)crtc.reg;
 		crtc.v_sync = ((p[4] & 0x3ff) + 1);
 		crtc.v_pulse = ((p[5] & 0x3ff) + 1);
 		crtc.v_back = ((p[6] & 0x3ff) + 1) - crtc.v_pulse;
 		crtc.v_front = crtc.v_sync - ((p[7] & 0x3ff) + 1);
 
-		// V-FRONT���}�C�i�X������ꍇ�́A1�������ԕ��̂�(�w���n�E���h�A�R�b�g��)
+		// If V-FRONT is negative, 1 is subtracted (interlace, scan doubler)
 		if (crtc.v_front < 0) {
 			over = -crtc.v_front;
 			over -= crtc.v_back;
@@ -807,7 +807,7 @@ void FASTCALL CRTC::ReCalc()
 			}
 		}
 
-		// �h�b�g�����Z�o
+		// Dot count
 		crtc.h_dots = (crtc.reg[0x0] + 1);
 		crtc.h_dots -= (crtc.reg[0x02] + 1);
 		crtc.h_dots -= (crtc.reg[0x04] + 5 - crtc.reg[0x02] - 1);
@@ -816,10 +816,10 @@ void FASTCALL CRTC::ReCalc()
 		crtc.v_dots = crtc.v_sync - crtc.v_pulse - crtc.v_back - crtc.v_front;
 	}
 
-	// �{���ݒ�(����)
+	// Horizontal settings (normal)
 	crtc.hd = (crtc.reg[0x28] & 3);
 	if (crtc.hd == 3) {
-		LOG0(Log::Warning, "���h�b�g��50MHz���[�h(CompactXVI)");
+		LOG0(Log::Warning, "High dot 50MHz mode (CompactXVI)");
 	}
 	if (crtc.hd == 0) {
 		crtc.h_mul = 2;
@@ -828,29 +828,29 @@ void FASTCALL CRTC::ReCalc()
 		crtc.h_mul = 1;
 	}
 
-	// crtc.hd��2�ȏ�̏ꍇ�A�X�v���C�g�͐؂藣�����
+	// If crtc.hd is 2 or more, sprites are disabled
 	if (crtc.hd >= 2) {
-		// 768x512 or VGA���[�h(�X�v���C�g�Ȃ�)
+		// 768x512 or VGA mode (no sprite)
 		sprite->Connect(FALSE);
 		crtc.textres = TRUE;
 	}
 	else {
-		// 256x256 or 512x512���[�h(�X�v���C�g����)
+		// 256x256 or 512x512 mode (sprite enabled)
 		sprite->Connect(TRUE);
 		crtc.textres = FALSE;
 	}
 
-	// �{���ݒ�(����)
+	// Vertical settings (normal)
 	crtc.vd = (crtc.reg[0x28] >> 2) & 3;
 	if (crtc.reg[0x28] & 0x10) {
 		// 31kHz
 		crtc.lowres = FALSE;
 		if (crtc.vd == 3) {
-			// �C���^���[�X1024dot���[�h
+			// Interlace x1024dot mode
 			crtc.v_mul = 0;
 		}
 		else {
-			// �C���^���[�X�A�ʏ�512���[�h(x1)�A�{256dot���[�h(x2)
+			// Interlace, normal 512 mode (x1), normal 256dot mode (x2)
 			crtc.v_mul = 2 - crtc.vd;
 		}
 	}
@@ -858,81 +858,81 @@ void FASTCALL CRTC::ReCalc()
 		// 15kHz
 		crtc.lowres = TRUE;
 		if (crtc.vd == 0) {
-			// �ʏ��256dot���[�h(x2)
+			// Normal 256dot mode (x2)
 			crtc.v_mul = 2;
 		}
 		else {
-			// �C���^���[�X512dot���[�h(x1)
+			// Interlace 512dot mode (x1)
 			crtc.v_mul = 0;
 		}
 	}
 
-	// �����_���֒ʒm
+	// Notify renderer
 	render->SetCRTC();
 
-	// �t���O���낷
+	// Clear flag
 	crtc.changed = FALSE;
 }
 
 
 //---------------------------------------------------------------------------
 //
-//	V-BLANK�J�n(V-SCREEN�J�n���܂�)
+//	V-BLANK start (also starts V-SCREEN)
 //
 //---------------------------------------------------------------------------
 void FASTCALL CRTC::VBlank()
 {
 	ASSERT(this);
 
-	// �\�����ł���΁A�u�����N�J�n
+	// If not displayed, start blank
 	if (!crtc.v_blank) {
-		// �u�����N��Ԃ�ݒ�
+		// Set blank counter
 		crtc.v_blankcnt = crtc.v_pulse + crtc.v_back + crtc.v_front;
 		ASSERT((crtc.v_front < 0) || ((int)crtc.v_synccnt == crtc.v_front));
 
-		// �t���O
+		// Flag
 		crtc.v_blank = TRUE;
 
 		// GPIP
 		mfp->EventCount(0, 0);
 		mfp->SetGPIP(4, 0);
 
-		// �O���t�B�b�N�����N���A
+		// Graphic clear
 		if (crtc.fast_clr == 2) {
 #if defined(CRTC_LOG)
-			LOG0(Log::Normal, "�O���t�B�b�N�����N���A�I��");
+			LOG0(Log::Normal, "Graphic clear end");
 #endif	// CRTC_LOG
 			crtc.fast_clr = 0;
 		}
 
-		// �����_�������I��
+		// Renderer display end
 		render->EndFrame();
 		crtc.v_scan = crtc.v_dots + 1;
 		return;
 	}
 
-	// �\����Ԃ�ݒ�
+	// Set non-display counter
 	crtc.v_blankcnt = crtc.v_sync;
 	crtc.v_blankcnt -= (crtc.v_pulse + crtc.v_back + crtc.v_front);
 
-	// �t���O
+	// Flag
 	crtc.v_blank = FALSE;
 
 	// GPIP
 	mfp->EventCount(0, 1);
 	mfp->SetGPIP(4, 1);
 
-	// �O���t�B�b�N�����N���A
+	// Graphic clear start
 	if (crtc.fast_clr == 1) {
 #if defined(CRTC_LOG)
-		LOG1(Log::Normal, "�O���t�B�b�N�����N���A�J�n data=%02X", crtc.reg[42]);
+		LOG1(Log::Normal, "Graphic clear start data=%02X", crtc.reg[42]);
 #endif	// CRTC_LOG
 		crtc.fast_clr = 2;
 		gvram->FastSet((DWORD)crtc.reg[42]);
 		gvram->FastClr(&crtc);
 	}
 
-	// �����_�������J�n�A�J�E���^�A�b�v
+	// Renderer display start, counter up
 	crtc.v_scan = 0;
 	render->StartFrame();
 	crtc.v_count++;
@@ -940,7 +940,7 @@ void FASTCALL CRTC::VBlank()
 
 //---------------------------------------------------------------------------
 //
-//	�\�����g���擾
+//	Get display frequency
 //
 //---------------------------------------------------------------------------
 void FASTCALL CRTC::GetHVHz(DWORD *h, DWORD *v) const
@@ -952,7 +952,7 @@ void FASTCALL CRTC::GetHVHz(DWORD *h, DWORD *v) const
 	ASSERT(h);
 	ASSERT(v);
 
-	// �`�F�b�N
+	// Check
 	if ((crtc.h_sync == 0) || (crtc.v_sync < 100)) {
 		// NO SIGNAL
 		*h = 0;
@@ -976,7 +976,7 @@ void FASTCALL CRTC::GetHVHz(DWORD *h, DWORD *v) const
 
 //---------------------------------------------------------------------------
 //
-//	8�h�b�g�N���b�N���擾(�~100)
+//	Get 8 dot clock (~100)
 //
 //---------------------------------------------------------------------------
 int FASTCALL CRTC::Get8DotClock() const
@@ -987,11 +987,11 @@ int FASTCALL CRTC::Get8DotClock() const
 
 	ASSERT(this);
 
-	// HF, HD��CRTC R20���擾
+	// Get HF, HD from CRTC R20
 	hf = (crtc.reg[0x28] >> 4) & 1;
 	hd = (crtc.reg[0x28] & 3);
 
-	// �C���f�b�N�X�쐬
+	// Create index
 	index = hf * 4 + hd;
 	if (crtc.hrl) {
 		index += 8;
@@ -1002,8 +1002,8 @@ int FASTCALL CRTC::Get8DotClock() const
 
 //---------------------------------------------------------------------------
 //
-//	8�h�b�g�N���b�N�e�[�u��
-//	(HRL,HF,HD���瓾����l�B0.01ns�P��)
+//	8 dot clock table
+//	(HRL,HF,HD combined values. 0.01ns units)
 //
 //---------------------------------------------------------------------------
 const int CRTC::DotClockTable[16] = {
@@ -1017,13 +1017,13 @@ const int CRTC::DotClockTable[16] = {
 
 //---------------------------------------------------------------------------
 //
-//	HRL�ݒ�
+//	Set HRL
 //
 //---------------------------------------------------------------------------
 void FASTCALL CRTC::SetHRL(BOOL flag)
 {
 	if (crtc.hrl != flag) {
-		// ���̎����ōČv�Z
+		// Recalc at next timing
 		crtc.hrl = flag;
 		crtc.changed = TRUE;
 	}
@@ -1031,7 +1031,7 @@ void FASTCALL CRTC::SetHRL(BOOL flag)
 
 //---------------------------------------------------------------------------
 //
-//	HRL�擾
+//	Get HRL
 //
 //---------------------------------------------------------------------------
 BOOL FASTCALL CRTC::GetHRL() const
@@ -1041,8 +1041,8 @@ BOOL FASTCALL CRTC::GetHRL() const
 
 //---------------------------------------------------------------------------
 //
-//	���X�^���荞�݃`�F�b�N
-//	���C���^���[�X���[�h�ɂ͖��Ή�
+//	Raster interrupt check
+//	Not supported in interlace mode
 //
 //---------------------------------------------------------------------------
 void FASTCALL CRTC::CheckRaster()
@@ -1057,21 +1057,21 @@ void FASTCALL CRTC::CheckRaster()
 	}
 
 	if (hit) {
-		// �v��
+		// Match
 		mfp->SetGPIP(6, 0);
 #if defined(CRTC_LOG)
-		LOG2(Log::Normal, "���X�^���荞�ݗv�� raster=%d scan=%d", crtc.raster_count, crtc.v_scan);
+		LOG2(Log::Normal, "Raster interrupt hit raster=%d scan=%d", crtc.raster_count, crtc.v_scan);
 #endif	// CRTC_LOG
 	}
 	else {
-		// ��艺��
+		// No match
 		mfp->SetGPIP(6, 1);
 	}
 }
 
 //---------------------------------------------------------------------------
 //
-//	�e�L�X�gVRAM����
+//	Text VRAM setup
 //
 //---------------------------------------------------------------------------
 void FASTCALL CRTC::TextVRAM()
@@ -1079,12 +1079,12 @@ void FASTCALL CRTC::TextVRAM()
 	DWORD b;
 	DWORD w;
 
-	// �����A�N�Z�X
+	// Access, multi
 	if (crtc.reg[43] & 1) {
 		b = (DWORD)crtc.reg[42];
 		b >>= 4;
 
-		// b4�̓}���`�t���O
+		// b4 is multi flag
 		b |= 0x10;
 		tvram->SetMulti(b);
 	}
@@ -1092,7 +1092,7 @@ void FASTCALL CRTC::TextVRAM()
 		tvram->SetMulti(0);
 	}
 
-	// �A�N�Z�X�}�X�N
+	// Access mask
 	if (crtc.reg[43] & 2) {
 		w = (DWORD)crtc.reg[47];
 		w <<= 8;
@@ -1103,7 +1103,7 @@ void FASTCALL CRTC::TextVRAM()
 		tvram->SetMask(0);
 	}
 
-	// ���X�^�R�s�[
+	// Raster copy
 	tvram->SetCopyRaster((DWORD)crtc.reg[45], (DWORD)crtc.reg[44],
 						(DWORD)(crtc.reg[42] & 0x0f));
 }

@@ -11,8 +11,9 @@
 // Use the XM6-specific Musashi configuration
 #define MUSASHI_CNF "m68kconf_xm6.h"
 
-#include <windows.h>
 #include <string.h>
+#include "os.h"
+#include "xm6.h"
 
 // Minimal type compatibility (from xm6.h)
 #ifndef FASTCALL

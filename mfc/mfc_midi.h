@@ -2,7 +2,7 @@
 //
 //	X68000 EMULATOR "XM6"
 //
-//	Copyright (C) 2001-2006 ＰＩ．(ytanaka@ipc-tokai.or.jp)
+//	Copyright (C) 2001-2006 PI (ytanaka@ipc-tokai.or.jp)
 //	[ MFC MIDI ]
 //
 //---------------------------------------------------------------------------
@@ -23,215 +23,215 @@
 class CMIDI : public CComponent
 {
 public:
-	// 情報送信型定義
+	// Information transmission type
 	typedef struct _MIDIINFO {
-		DWORD dwDevices;				// デバイス数
-		DWORD dwDevice;					// デバイス番号
-		DWORD dwHandle;					// ハンドル(HMIDI*)
-		CWinThread *pThread;			// スレッド
-		DWORD dwShort;					// ショートメッセージカウンタ
-		DWORD dwLong;					// エクスクルーシブカウンタ
-		DWORD dwUnprepare;				// ヘッダ解放カウンタ
-		DWORD dwBufNum;					// バッファ有効数
-		DWORD dwBufRead;				// バッファ読み取り位置
-		DWORD dwBufWrite;				// バッファ書き込み位置
+		DWORD dwDevices;				// Number of devices
+		DWORD dwDevice;					// Device number
+		DWORD dwHandle;					// Handle (HMIDI*)
+		CWinThread *pThread;			// Thread
+		DWORD dwShort;					// Short message counter
+		DWORD dwLong;					// System exclusive counter
+		DWORD dwUnprepare;				// Header preparation counter
+		DWORD dwBufNum;				// Buffer count
+		DWORD dwBufRead;				// Buffer read position
+		DWORD dwBufWrite;				// Buffer write position
 	} MIDIINFO, *LPMIDIINFO;
 
 public:
-	// 基本ファンクション
+	// Basic procedures
 	CMIDI(CFrmWnd *pWnd);
-										// コンストラクタ
+										// Constructor
 	BOOL FASTCALL Init();
-										// 初期化
+										// Initialization
 	void FASTCALL Cleanup();
-										// クリーンアップ
+										// Cleanup
 	void FASTCALL ApplyCfg(const Config *pConfig);
-										// 設定適用
+										// Apply configuration
 #if !defined(NDEBUG)
 	void AssertValid() const;
-										// 診断
+										// Assert
 #endif	// NDEBUG
 
-	// コールバック向け
+	// Callback procedures
 	HMIDIOUT GetOutHandle() const		{ return m_hOut; }
-										// Outデバイスハンドル取得
+										// Get Out device handle
 	HMIDIIN GetInHandle() const			{ return m_hIn; }
-										// Inデバイスハンドル取得
+										// Get In device handle
 
-	// デバイス
+	// Devices
 	DWORD FASTCALL GetOutDevs() const;
-										// Outデバイス数取得
+										// Get Out device count
 	BOOL FASTCALL GetOutDevDesc(int nDevice, CString& strDesc) const;
-										// Outデバイス名称取得
+										// Get Out device description
 	DWORD FASTCALL GetInDevs() const;
-										// INデバイス数取得
+										// Get IN device count
 	BOOL FASTCALL GetInDevDesc(int nDevice, CString& strDesc) const;
-										// INデバイス名称取得
+										// Get IN device description
 
-	// ディレイ
+	// Delay
 	void FASTCALL SetOutDelay(int nDelay);
-										// Outディレイ設定
+										// Set Out delay
 	void FASTCALL SetInDelay(int nDelay);
-										// Inディレイ設定
+										// Set In delay
 
-	// ミキサ
+	// Volume
 	int FASTCALL GetOutVolume();
-										// Out音量取得
+										// Get Out volume
 	void FASTCALL SetOutVolume(int nVolume);
-										// Out音量設定
+										// Set Out volume
 
-	// 情報取得
+	// Info
 	void FASTCALL GetOutInfo(LPMIDIINFO pInfo) const;
-										// Out情報取得
+										// Get Out info
 	void FASTCALL GetInInfo(LPMIDIINFO pInfo) const;
-										// In情報取得
+										// Get In info
 
 private:
 	MIDI *m_pMIDI;
 										// MIDI
 	Scheduler *m_pScheduler;
-										// スケジューラ
+										// Scheduler
 	CScheduler *m_pSch;
-										// スケジューラ
+										// Scheduler
 
 	// Out
 	enum OutState {
-		OutReady,						// データ待ち状態なし
-		OutEx,							// エクスクルーシブメッセージ出力中
-		OutShort,						// ショートメッセージ出力中
+		OutReady,						// Waiting for data
+		OutEx,							// System exclusive message output
+		OutShort,						// Short message output
 	};
 	void FASTCALL OpenOut(DWORD dwDevice);
-										// Outオープン
+										// Out open
 	void FASTCALL CloseOut();
-										// Outクローズ
+										// Out close
 	void FASTCALL RunOut();
-										// Outスレッド
+										// Out thread
 	void FASTCALL CallbackOut(UINT wMsg, DWORD dwParam1, DWORD dwParam2);
-										// Outコールバック
+										// Out callback
 	void FASTCALL GetOutCaps();
-										// OutデバイスCaps取得
+										// Get Out device caps
 	BOOL FASTCALL SendEx(const BYTE *pExData);
-										// エクスクルーシブ送信
+										// System exclusive send
 	BOOL FASTCALL SendExWait();
-										// エクスクルーシブ完了待ち
+										// System exclusive send wait
 	void FASTCALL SendAllNoteOff();
-										// 全ノートオフ
+										// All note off
 	BOOL FASTCALL SendReset();
-										// リセット送信
+										// Reset send
 	static UINT OutThread(LPVOID pParam);
-										// Outスレッド
+										// Out thread
 #if _MFC_VER >= 0x700
 	static void CALLBACK OutProc(HMIDIOUT hOut, UINT wMsg, DWORD_PTR dwInstance,
-		DWORD dwParam1, DWORD dwParam2);// Outコールバック
+		DWORD dwParam1, DWORD dwParam2);// Out callback
 #else
 	static void CALLBACK OutProc(HMIDIOUT hOut, UINT wMsg, DWORD dwInstance,
-		DWORD dwParam1, DWORD dwParam2);// Outコールバック
+		DWORD dwParam1, DWORD dwParam2);// Out callback
 #endif
 	DWORD m_dwOutDevice;
-										// OutデバイスiD
+										// Out device ID
 	HMIDIOUT m_hOut;
-										// Outデバイスハンドル
+										// Out device handle
 	CWinThread *m_pOutThread;
-										// Outスレッド
+										// Out thread
 	BOOL m_bOutThread;
-										// Outスレッド終了フラグ
+										// Out thread exit flag
 	DWORD m_dwOutDevs;
-										// Outデバイス数
+										// Out device count
 	LPMIDIOUTCAPS m_pOutCaps;
-										// OutデバイスCaps
+										// Out device caps
 	DWORD m_dwOutDelay;
-										// Outディレイ(ms)
+										// Out delay (ms)
 	BOOL m_bSendEx;
-										// エクスクルーシブ送信フラグ
+										// System exclusive send flag
 	BOOL m_bSendExHdr;
-										// エクスクルーシブヘッダ使用フラグ
+										// System exclusive header prepared flag
 	BYTE m_ExBuf[0x2000];
-										// エクスクルーシブバッファ
+										// System exclusive buffer
 	MIDIHDR m_ExHdr;
-										// エクスクルーシブヘッダ
+										// System exclusive header
 	int m_nOutReset;
-										// リセットコマンド種別
+										// Reset command type
 	DWORD m_dwShortSend;
-										// ショートコマンド送信カウンタ
+										// Short command send counter
 	DWORD m_dwExSend;
-										// エクスクルーシブ送信試行カウンタ
+										// System exclusive send fail counter
 	DWORD m_dwUnSend;
-										// ヘッダ解放カウンタ
+										// Header preparation counter
 	CCriticalSection m_OutSection;
-										// クリティカルセクション
+										// Critical section
 	static const BYTE ResetGM[];
-										// GMリセットコマンド
+										// GM reset command
 	static const BYTE ResetGS[];
-										// GSリセットコマンド
+										// GS reset command
 	static const BYTE ResetXG[];
-										// XGリセットコマンド
+										// XG reset command
 	static const BYTE ResetLA[];
-										// LAリセットコマンド
+										// LA reset command
 
 	// In
 	enum InState {
-		InNotUsed,						// 未使用
-		InReady,						// データ待ち
-		InDone							// データあり
+		InNotUsed,						// Not used
+		InReady,						// Waiting for data
+		InDone							// Data ready
 	};
 	enum {
-		InBufMax = 0x800				// バッファサイズ
+		InBufMax = 0x800				// Buffer size
 	};
 	void FASTCALL OpenIn(DWORD dwDevice);
-										// Inオープン
+										// In open
 	void FASTCALL CloseIn();
-										// Inクローズ
+										// In close
 	void FASTCALL RunIn();
-										// Inスレッド
+										// In thread
 	void FASTCALL CallbackIn(UINT wMsg, DWORD dwParam1, DWORD dwParam2);
-										// Inコールバック
+										// In callback
 	void FASTCALL GetInCaps();
-										// InデバイスCaps取得
+										// Get In device caps
 	BOOL FASTCALL StartIn();
-										// In開始
+										// In start
 	void FASTCALL StopIn();
-										// In停止
+										// In stop
 	void FASTCALL ShortIn();
-										// Inショートメッセージ
+										// In short message
 	void FASTCALL LongIn(int nHdr);
-										// Inロングメッセージ
+										// In long message
 	static UINT InThread(LPVOID pParam);
-										// Inスレッド
+										// In thread
 #if _MFC_VER >= 0x700
 	static void CALLBACK InProc(HMIDIIN hIn, UINT wMsg, DWORD_PTR dwInstance,
-		DWORD dwParam1, DWORD dwParam2);// Inコールバック
+		DWORD dwParam1, DWORD dwParam2);// In callback
 #else
 	static void CALLBACK InProc(HMIDIIN hIn, UINT wMsg, DWORD dwInstance,
-		DWORD dwParam1, DWORD dwParam2);// Inコールバック
+		DWORD dwParam1, DWORD dwParam2);// In callback
 #endif
 	DWORD m_dwInDevice;
-										// InデバイスiD
+										// In device ID
 	HMIDIIN m_hIn;
-										// Inデバイスハンドル
+										// In device handle
 	CWinThread *m_pInThread;
-										// InTスレッド
+										// In thread
 	BOOL m_bInThread;
-										// Inスレッド終了フラグ
+										// In thread exit flag
 	DWORD m_dwInDevs;
-										// Inデバイス数
+										// In device count
 	LPMIDIINCAPS m_pInCaps;
-										// InデバイスCaps
+										// In device caps
 	MIDIHDR m_InHdr[2];
-										// エクスクルーシブヘッダ
+										// System exclusive header
 	BYTE m_InBuf[2][InBufMax];
-										// エクスクルーシブバッファ
+										// System exclusive buffer
 	InState m_InState[2];
-										// エクスクルーシブバッファ状態
+										// System exclusive buffer state
 	CQueue m_InQueue;
-										// ショートメッセージ入力キュー
+										// Short message input queue
 	DWORD m_dwShortRecv;
-										// ショートコマンド受信カウンタ
+										// Short command recv counter
 	DWORD m_dwExRecv;
-										// エクスクルーシブ受信カウンタ
+										// System exclusive recv counter
 	DWORD m_dwUnRecv;
-										// ヘッダ解放カウンタ
+										// Header preparation counter
 	CCriticalSection m_InSection;
-										// クリティカルセクション
+										// Critical section
 };
 
 #endif	// mfc_midi_h

@@ -2,15 +2,15 @@
 //
 //	X68000 EMULATOR "XM6"
 //
-//	Copyright (C) 2001-2005 ＰＩ．(ytanaka@ipc-tokai.or.jp)
+//	Copyright (C) 2001-2005 PI.(ytanaka@ipc-tokai.or.jp)
 //	[ MFC TrueKey ]
 //
 //---------------------------------------------------------------------------
 
 #if defined(_WIN32)
 
-#include "os.h"
 #include "mfc.h"
+#include "os.h"
 #include "xm6.h"
 #include "vm.h"
 #include "mfp.h"
@@ -30,63 +30,63 @@
 
 //---------------------------------------------------------------------------
 //
-//	スレッド関数
+//	Thread function
 //
 //---------------------------------------------------------------------------
 static UINT ThreadFunc(LPVOID pParam)
 {
 	CTKey *pTKey;
 
-	// パラメータを受け取る
+	// Receive parameter
 	pTKey = (CTKey*)pParam;
 	ASSERT(pTKey);
 
-	// 実行
+	// Execute
 	pTKey->Run();
 
-	// 終了コードを持ってスレッドを終了
+	// Return exit code and terminate thread
 	return 0;
 }
 
 //---------------------------------------------------------------------------
 //
-//	コンストラクタ
+//	Constructor
 //
 //---------------------------------------------------------------------------
 CTKey::CTKey(CFrmWnd *pWnd) : CComponent(pWnd)
 {
 	int i;
 
-	// コンポーネントパラメータ
+	// Component parameters
 	m_dwID = MAKEID('T', 'K', 'E', 'Y');
 	m_strDesc = _T("TrueKey Module");
 
-	// パラメータ
+	// Parameters
 	m_nMode = 0;
 	m_nCOM = 0;
 	m_bRTS = FALSE;
 	m_bLine = FALSE;
 
-	// ハンドル・スレッド
+	// Handle and thread
 	m_hCOM = INVALID_HANDLE_VALUE;
 	m_pCOM = NULL;
 	m_bReq = FALSE;
 
-	// 送信制御
+	// Transmit
 	m_bTxValid = FALSE;
 	memset(&m_TxOver, 0, sizeof(m_TxOver));
 
-	// 受信制御
+	// Receive
 	memset(&m_RxOver, 0, sizeof(m_RxOver));
 
-	// キーフラグ、テーブル
+	// Key flags and tables
 	for (i=0; i<KeyMax; i++) {
 		m_bKey[i] = FALSE;
 		m_bWin[i] = FALSE;
 		m_nKey[i] = KeyTable[i];
 	}
 
-	// オブジェクト
+	// Objects
 	m_pMFP = NULL;
 	m_pKeyboard = NULL;
 	m_pSch = NULL;
@@ -94,34 +94,34 @@ CTKey::CTKey(CFrmWnd *pWnd) : CComponent(pWnd)
 
 //---------------------------------------------------------------------------
 //
-//	初期化
+//	Initialization
 //
 //---------------------------------------------------------------------------
 BOOL FASTCALL CTKey::Init()
 {
 	ASSERT(this);
 
-	// 基本クラス
+	// Base class
 	if (!CComponent::Init()) {
 		return FALSE;
 	}
 
-	// MFP取得
+	// Get MFP
 	ASSERT(!m_pMFP);
 	m_pMFP = (MFP*)::GetVM()->SearchDevice(MAKEID('M', 'F', 'P', ' '));
 	ASSERT(m_pMFP);
 
-	// キーボード取得
+	// Get keyboard
 	ASSERT(!m_pKeyboard);
 	m_pKeyboard = (Keyboard*)::GetVM()->SearchDevice(MAKEID('K', 'E', 'Y', 'B'));
 	ASSERT(m_pKeyboard);
 
-	// スケジューラ取得
+	// Get scheduler
 	ASSERT(!m_pSch);
 	m_pSch = (CScheduler*)SearchComponent(MAKEID('S', 'C', 'H', 'E'));
 	ASSERT(m_pSch);
 
-	// キュー初期化
+	// Initialize queues
 	if (!m_TxQueue.Init(0x1000)) {
 		return FALSE;
 	}
@@ -129,7 +129,7 @@ BOOL FASTCALL CTKey::Init()
 		return FALSE;
 	}
 
-	// オープン
+	// Open
 	Open();
 
 	return TRUE;
@@ -137,23 +137,23 @@ BOOL FASTCALL CTKey::Init()
 
 //---------------------------------------------------------------------------
 //
-//	クリーンアップ
+//	Cleanup
 //
 //---------------------------------------------------------------------------
 void FASTCALL CTKey::Cleanup()
 {
 	ASSERT(this);
 
-	// クローズ
+	// Close
 	Close();
 
-	// 基本クラス
+	// Base class
 	CComponent::Cleanup();
 }
 
 //---------------------------------------------------------------------------
 //
-//	設定適用
+//	Apply settings
 //
 //---------------------------------------------------------------------------
 void FASTCALL CTKey::ApplyCfg(const Config* pConfig)
@@ -164,40 +164,40 @@ void FASTCALL CTKey::ApplyCfg(const Config* pConfig)
 	ASSERT(this);
 	ASSERT(pConfig);
 
-	// 再設定フラグ初期化
+	// Action flag reset
 	bAction = FALSE;
 
-	// モードが違っているか
+	// If mode changed
 	if (pConfig->tkey_mode != m_nMode) {
 		m_nMode = pConfig->tkey_mode;
 		bAction = TRUE;
 	}
 
-	// ポート番号が違っているか
+	// If port number changed
 	if (pConfig->tkey_com != m_nCOM) {
 		m_nCOM = pConfig->tkey_com;
 		bAction = TRUE;
 	}
 
-	// RTS論理が違っているか
+	// If RTS flag changed
 	if (pConfig->tkey_rts != m_bRTS) {
 		m_bRTS = pConfig->tkey_rts;
 		bAction = TRUE;
 	}
 
-	// 変更点があれば
+	// If change flag is set
 	if (bAction) {
-		// クローズとオープンを行う(ここではVMロックされているが、問題ない)
+		// Close and open execution (VM is in blended state, but necessary)
 		Close();
 
-		// オープンを試みる
+		// If open fails
 		if (!Open()) {
-			// オープン失敗の場合、ポートハンドラにリソースを解放してもらう
+			// If open failed, port handle has resources assigned
 			pPort = (CPort*)SearchComponent(MAKEID('P', 'O', 'R', 'T'));
 			ASSERT(pPort);
 			pPort->ApplyCfg(pConfig);
 
-			// もう一度オープン
+			// Open again
 			Open();
 		}
 	}
@@ -206,8 +206,8 @@ void FASTCALL CTKey::ApplyCfg(const Config* pConfig)
 
 //---------------------------------------------------------------------------
 //
-//	オープン
-//	※VMロック状態
+//	Open
+//	-VM is locked
 //
 //---------------------------------------------------------------------------
 BOOL FASTCALL CTKey::Open()
@@ -218,22 +218,22 @@ BOOL FASTCALL CTKey::Open()
 
 	ASSERT(this);
 
-	// モードが0なら、割り当てない
+	// If mode is 0, do not connect
 	if (m_nMode == 0) {
 		m_hCOM = INVALID_HANDLE_VALUE;
 		return TRUE;
 	}
 
-	// ポートが0なら、割り当てない
+	// If port is 0, do not connect
 	if (m_nCOM == 0) {
 		m_hCOM = INVALID_HANDLE_VALUE;
 		return TRUE;
 	}
 
-	// ファイル名を作成
+	// Create filename
 	strFile.Format(_T("\\\\.\\COM%d"), m_nCOM);
 
-	// オープン
+	// Open
 	m_hCOM = ::CreateFile(  strFile,
 							GENERIC_READ | GENERIC_WRITE,
 							0,
@@ -245,19 +245,19 @@ BOOL FASTCALL CTKey::Open()
 		return FALSE;
 	}
 
-	// バッファサイズ
+	// Buffer size
 	::SetupComm(m_hCOM, 0x1000, 0x1000);
 
-	// 送受信をクリア
+	// Transmit/receive clear
 	m_TxQueue.Clear();
 	m_RxQueue.Clear();
 	::PurgeComm(m_hCOM, PURGE_TXCLEAR);
 	::PurgeComm(m_hCOM, PURGE_RXCLEAR);
 
-	// イベントマスク
+	// Event mask
 	::SetCommMask(m_hCOM, 0);
 
-	// タイムアウト
+	// Timeout
 	::GetCommTimeouts(m_hCOM, &cto);
 	cto.ReadIntervalTimeout = 1;
 	cto.ReadTotalTimeoutMultiplier = 0;
@@ -266,7 +266,7 @@ BOOL FASTCALL CTKey::Open()
 	cto.WriteTotalTimeoutConstant = 10000;
 	::SetCommTimeouts(m_hCOM, &cto);
 
-	// パラメータ
+	// Parameters
 	::GetCommState(m_hCOM, &dcb);
 	dcb.BaudRate = CBR_2400;
 	dcb.fBinary = 0;
@@ -288,7 +288,7 @@ BOOL FASTCALL CTKey::Open()
 	::SetCommState(m_hCOM, &dcb);
 	::EscapeCommFunction(m_hCOM, SETDTR);
 
-	// スレッドを立てる
+	// Thread creation
 	m_bReq = FALSE;
 	m_pCOM = AfxBeginThread(ThreadFunc, this);
 	if (!m_pCOM) {
@@ -301,8 +301,8 @@ BOOL FASTCALL CTKey::Open()
 
 //---------------------------------------------------------------------------
 //
-//	クローズ
-//	※VMロック状態
+//	Close
+//	-VM is locked
 //
 //---------------------------------------------------------------------------
 void FASTCALL CTKey::Close()
@@ -313,61 +313,61 @@ void FASTCALL CTKey::Close()
 
 	ASSERT(this);
 
-	// スレッドを閉じる
+	// Thread termination
 	if (m_pCOM) {
-		// 終了要求を上げ
+		// Send exit flag
 		m_bReq = TRUE;
 
-		// 終了待ち(無期限)
+		// Wait for exit flag (forever)
 		::WaitForSingleObject(m_pCOM->m_hThread, INFINITE);
 
-		// スレッドはm_bAutoDeleteで自動削除される
+		// Thread is deleted next time via m_bAutoDelete
 		m_pCOM = NULL;
 	}
 
-	// ハンドルを閉じる
+	// Handle destruction
 	if (m_hCOM != INVALID_HANDLE_VALUE) {
-		// バッファパージ
+		// Buffer destruction
 		m_TxQueue.Clear();
 		m_RxQueue.Clear();
 		::PurgeComm(m_hCOM, PURGE_TXCLEAR);
 		::PurgeComm(m_hCOM, PURGE_RXCLEAR);
 
-		// 送信中か
+		// Transmit section
 		if (m_bTxValid) {
-			// 送信I/Oが完了しているか
+			// If transmit I/O was running
 			if (!GetOverlappedResult(m_hCOM, &m_TxOver, &dwCompleted, FALSE)) {
-				// まだ保留中なので、キャンセル
+				// Still processing, so ignore
 				CancelIo(m_hCOM);
 			}
 			m_bTxValid = FALSE;
 		}
 
-		// 受信I/Oが完了しているか
+		// Receive I/O was running
 		if (!GetOverlappedResult(m_hCOM, &m_RxOver, &dwCompleted, FALSE)) {
-			// まだ保留中なので、キャンセル
+			// Still processing, so ignore
 			CancelIo(m_hCOM);
 		}
 
-		// クローズ
+		// Close
 		::CloseHandle(m_hCOM);
 		m_hCOM = INVALID_HANDLE_VALUE;
 	}
 
-	// Windowsへの入力があれば、すべて解除
+	// If there was input to Windows, discard all
 	for (i=0; i<KeyMax; i++) {
 		if (m_bWin[i]) {
-			// 構造体を作成
+			// Create structure
 			memset(&input, 0, sizeof(input));
 			input.ki.wVk = (WORD)m_nKey[i];
 			input.ki.wScan = 0;
 			input.ki.dwFlags = KEYEVENTF_KEYUP;
 			input.type = INPUT_KEYBOARD;
 
-			// 入力(キーBreak)
+			// Send (Key Break)
 			::SendInput(1, &input, sizeof(INPUT));
 
-			// フラグOFF
+			// Set flag OFF
 			m_bWin[i] = FALSE;
 		}
 	}
@@ -375,7 +375,7 @@ void FASTCALL CTKey::Close()
 
 //---------------------------------------------------------------------------
 //
-//	実行
+//	Execution
 //
 //---------------------------------------------------------------------------
 void FASTCALL CTKey::Run()
@@ -384,37 +384,37 @@ void FASTCALL CTKey::Run()
 	ASSERT(m_hCOM);
 	ASSERT(m_pKeyboard);
 
-	// キーボード内の送信バッファをクリア
+	// Clear transmit buffer on keyboard side
 	m_pKeyboard->ClrCommand();
 
-	// 初回の受信待ち
+	// Initial receive wait
 	memset(&m_RxOver, 0, sizeof(m_RxOver));
 	::ReadFile(m_hCOM, m_RxBuf, sizeof(m_RxBuf), NULL, &m_RxOver);
 
-	// 送信なし
+	// Not transmitting
 	m_bTxValid = FALSE;
 	memset(&m_TxOver, 0, sizeof(m_TxOver));
 
-	// RTSライン初期化
+	// RTS control start
 	Ctrl(TRUE);
 
-	// 終了フラグが上がるまで
+	// Until exit flag is set
 	while (!m_bReq) {
-		// スリープ
+		// Sleep
 		::Sleep(10);
 
-		// イネーブルに限り
+		// Notify via critical section
 		if (m_bEnable) {
-			// RTS制御
+			// RTS control
 			Ctrl(FALSE);
 
-			// 受信
+			// Receive
 			Rx();
 
-			// 送信
+			// Transmit
 			Tx();
 
-			// バッファ同期
+			// Buffer sync
 			BufSync();
 		}
 	}
@@ -422,7 +422,7 @@ void FASTCALL CTKey::Run()
 
 //---------------------------------------------------------------------------
 //
-//	RTS制御
+//	RTS control
 //
 //---------------------------------------------------------------------------
 void FASTCALL CTKey::Ctrl(BOOL bForce)
@@ -433,31 +433,31 @@ void FASTCALL CTKey::Ctrl(BOOL bForce)
 	ASSERT(m_hCOM);
 	ASSERT(m_pKeyboard);
 
-	// 初期化(送信許可)
+	// Initial value (transmit allowed)
 	bSet = TRUE;
 
-	// Win32制御のみなら、常時送信可とする。それ以外はVMの状態に従う
+	// In Win32 mode, allow transmission; otherwise follow VM state
 	if (m_nMode != 2) {
-		// キーボードから状態を取得
+		// Get keyboard state
 		if (m_pKeyboard->IsSendWait()) {
-			// 送信不可
+			// Cannot transmit
 			bSet = FALSE;
 		}
 	}
 
-	// 反転フラグを考慮
+	// Apply invert flag
 	if (m_bRTS) {
 		bSet ^= TRUE;
 	}
 
-	// 強制でなければ一致チェック
+	// If not forced, check consistency
 	if (!bForce) {
 		if (bSet == m_bLine) {
 			return;
 		}
 	}
 
-	// 設定
+	// Set
 	if (bSet) {
 		::EscapeCommFunction(m_hCOM, CLRRTS);
 		m_bLine = TRUE;
@@ -470,7 +470,7 @@ void FASTCALL CTKey::Ctrl(BOOL bForce)
 
 //---------------------------------------------------------------------------
 //
-//	受信
+//	Receive
 //
 //---------------------------------------------------------------------------
 void FASTCALL CTKey::Rx()
@@ -484,38 +484,38 @@ void FASTCALL CTKey::Rx()
 	ASSERT(this);
 	ASSERT(m_hCOM);
 
-	// 受信完了していなければ何もしない
+	// If not receiving, do not respond
 	dwReceived = 0;
 	if (!GetOverlappedResult(m_hCOM, &m_RxOver, &dwReceived, FALSE)) {
 		return;
 	}
 
-	// Windows送信可能フラグを作成
+	// Create Windows transmit possible flag
 	bWin = FALSE;
 	if (!m_pSch->IsEnable()) {
-		// スケジューラ停止中
+		// Scheduler stopped
 		if (m_nMode & 2) {
-			// Windowsビットが立っている
+			// Windows bit is enabled
 			bWin = TRUE;
 		}
 	}
 
-	// 受信が有効であれば
+	// If received characters are valid
 	if (dwReceived > 0) {
-		// キーを解釈し、フラグをON/OFFする
+		// Toggle key state flags ON/OFF
 		for (dwCount=0; dwCount<dwReceived; dwCount++) {
 			nKey = m_RxBuf[dwCount] & 0x7f;
 			nKey--;
 			if ((nKey >= 0x00) && (nKey < KeyMax)) {
 				if (m_RxBuf[dwCount] & 0x80) {
-					// キー離された
+					// Key released
 					m_bKey[nKey] = FALSE;
 
-					// Windows処理
+					// Windows transmit
 					if (m_bWin[nKey]) {
 						m_bWin[nKey] = FALSE;
 						if (bWin && m_nKey[nKey]) {
-							// Windowsへ送信
+							// Transmit to Windows
 							memset(&input, 0, sizeof(input));
 							input.ki.wVk = (WORD)m_nKey[nKey];
 							input.ki.wScan = 0;
@@ -526,14 +526,14 @@ void FASTCALL CTKey::Rx()
 					}
 				}
 				else {
-					// キー押された
+					// Key pressed
 					m_bKey[nKey] = TRUE;
 
-					// Windows処理
+					// Windows transmit
 					if (!m_bWin[nKey]) {
 						m_bWin[nKey] = TRUE;
 						if (bWin && m_nKey[nKey]) {
-							// Windowsへ送信
+							// Transmit to Windows
 							memset(&input, 0, sizeof(input));
 							input.ki.wVk = (WORD)m_nKey[nKey];
 							input.ki.wScan = 0;
@@ -543,7 +543,7 @@ void FASTCALL CTKey::Rx()
 					}
 					else {
 						if (bWin && m_nKey[nKey]) {
-							// キーリピートエミュレーション
+							// Key repeat suppression
 							memset(&input, 0, sizeof(input));
 							input.ki.wVk = (WORD)m_nKey[nKey];
 							input.ki.wScan = 0;
@@ -561,18 +561,18 @@ void FASTCALL CTKey::Rx()
 			}
 		}
 
-		// キューに挿入
+		// Insert into queue
 		m_RxQueue.Insert(m_RxBuf, dwReceived);
 	}
 
-	// 次の受信を開始
+	// Start next receive
 	memset(&m_RxOver, 0, sizeof(m_RxOver));
 	::ReadFile(m_hCOM, m_RxBuf, sizeof(m_RxBuf), NULL, &m_RxOver);
 }
 
 //---------------------------------------------------------------------------
 //
-//	送信
+//	Transmit
 //
 //---------------------------------------------------------------------------
 void FASTCALL CTKey::Tx()
@@ -583,30 +583,30 @@ void FASTCALL CTKey::Tx()
 	ASSERT(this);
 	ASSERT(m_hCOM);
 
-	// 前回の送信が終わっていなければ、リターン
+	// If previous transmit not complete, return
 	if (m_bTxValid) {
 		if (!GetOverlappedResult(m_hCOM, &m_TxOver, &dwSent, FALSE)) {
 			return;
 		}
 
-		// 送信できた分だけ、送信バッファから進める
+		// If transmitted, discard transmit buffer
 		if (dwSent > 0) {
 			m_TxQueue.Discard(dwSent);
 		}
 
-		// 現状送信なし
+		// Continuous transmit no
 		m_bTxValid = FALSE;
 	}
 
-	// 送信するものがなければ、リターン
+	// If no transmit content, return
 	if (m_TxQueue.IsEmpty()) {
 		return;
 	}
 
-	// 送信キューから取得(ポインタは進めない)
+	// Get from transmit queue (pointer flows through)
 	dwSize = m_TxQueue.Copy(m_TxBuf);
 
-	// 送信開始
+	// Start transmit
 	memset(&m_TxOver, 0, sizeof(m_TxOver));
 	m_bTxValid = TRUE;
 	::WriteFile(m_hCOM, m_TxBuf, dwSize, NULL, &m_TxOver);
@@ -614,7 +614,7 @@ void FASTCALL CTKey::Tx()
 
 //---------------------------------------------------------------------------
 //
-//	バッファ同期
+//	Buffer sync
 //
 //---------------------------------------------------------------------------
 void FASTCALL CTKey::BufSync()
@@ -627,32 +627,32 @@ void FASTCALL CTKey::BufSync()
 
 	ASSERT(this);
 
-	// 受信データを一括取得
+	// Get receive data in bulk
 	dwRx = m_RxQueue.Get(RxBuf);
 
-	// モードのbit0が有効で、かつスケジューラ動作中ならMFPへ
+	// If mode bit0 is enabled, VM side not working MFP side
 	if (m_nMode & 1) {
 		if (m_pSch->IsEnable()) {
-			// 有効なデータはすべてMFPへ送る
+			// All valid data sent to MFP
 			for (i=0; i<dwRx; i++) {
 				m_pMFP->KeyData((DWORD)RxBuf[i]);
 			}
 		}
 	}
 
-	// 送信データがあれば、受け取る
+	// If there is transmit data, accept
 	for (;;) {
-		// バッファがいっぱいなら、これ以上送信しない
+		// If buffer area is not empty, subsequent processing transmit no
 		if (m_TxQueue.GetFree() == 0) {
 			break;
 		}
 
-		// データ取得
+		// Get data
 		if (!m_pKeyboard->GetCommand(dwCommand)) {
 			break;
 		}
 
-		// 送信キューへ挿入
+		// Insert into transmit queue
 		byCommand = (BYTE)dwCommand;
 		m_TxQueue.Insert(&byCommand, 1);
 	}
@@ -660,7 +660,7 @@ void FASTCALL CTKey::BufSync()
 
 //---------------------------------------------------------------------------
 //
-//	送信キュー情報取得
+//	Get transmit queue
 //
 //---------------------------------------------------------------------------
 void FASTCALL CTKey::GetTxQueue(CQueue::LPQUEUEINFO lpqi) const
@@ -673,7 +673,7 @@ void FASTCALL CTKey::GetTxQueue(CQueue::LPQUEUEINFO lpqi) const
 
 //---------------------------------------------------------------------------
 //
-//	受信キュー情報取得
+//	Get receive queue
 //
 //---------------------------------------------------------------------------
 void FASTCALL CTKey::GetRxQueue(CQueue::LPQUEUEINFO lpqi) const
@@ -686,7 +686,7 @@ void FASTCALL CTKey::GetRxQueue(CQueue::LPQUEUEINFO lpqi) const
 
 //---------------------------------------------------------------------------
 //
-//	キーマップ取得
+//	Get keymap
 //
 //---------------------------------------------------------------------------
 void FASTCALL CTKey::GetKeyMap(int *pMap)
@@ -699,7 +699,7 @@ void FASTCALL CTKey::GetKeyMap(int *pMap)
 
 //---------------------------------------------------------------------------
 //
-//	キーマップ設定
+//	Set keymap
 //
 //---------------------------------------------------------------------------
 void FASTCALL CTKey::SetKeyMap(const int *pMap)
@@ -712,8 +712,8 @@ void FASTCALL CTKey::SetKeyMap(const int *pMap)
 
 //---------------------------------------------------------------------------
 //
-//	VK_OEMコード定義
-//	※VK_OEM_CLEAR以外はPlatform SDKでの拡張。Win32SDKでは定義されていない
+//	VK_OEM code definition
+//	 VK_OEM_CLEAR beyond Platform SDK's expansion. Not defined in Win32SDK
 //
 //---------------------------------------------------------------------------
 #if !defined(VK_OEM_NEC_EQUAL)
@@ -734,7 +734,7 @@ void FASTCALL CTKey::SetKeyMap(const int *pMap)
 
 //---------------------------------------------------------------------------
 //
-//	キー変換テーブル
+//	Key translation table
 //
 //---------------------------------------------------------------------------
 const int CTKey::KeyTable[KeyMax] = {
@@ -800,10 +800,10 @@ const int CTKey::KeyTable[KeyMax] = {
 	VK_NEXT,							// 38 [ROLL UP]
 	VK_PRIOR,							// 39 [ROLL DOWN]
 	VK_END,								// 3A [UNDO]
-	VK_LEFT,							// 3B [←]
-	VK_UP,								// 3C [↑]
-	VK_RIGHT,							// 3D [→]
-	VK_DOWN,							// 3E [↓]
+	VK_LEFT,							// 3B [LEFT]
+	VK_UP,								// 3C [UP]
+	VK_RIGHT,							// 3D [RIGHT]
+	VK_DOWN,							// 3E [DOWN]
 
 	VK_CLEAR,							// 3F [CLR]
 	VK_DIVIDE,							// 40 [/]
@@ -825,8 +825,8 @@ const int CTKey::KeyTable[KeyMax] = {
 	VK_OEM_COMMA,						// 50 [.>]
 	VK_DECIMAL,							// 51 [.]
 
-	VK_PRINT,							// 52 [記号入力]
-	VK_SCROLL,							// 53 [登録]
+	VK_PRINT,							// 52 [COPY]
+	VK_SCROLL,							// 53 [ROLL]
 	VK_PAUSE,							// 54 [HELP]
 
 	VK_MENU,							// 55 [XF1]
@@ -835,15 +835,15 @@ const int CTKey::KeyTable[KeyMax] = {
 	VK_NONCONVERT,						// 58 [XF4]
 	VK_KANA,							// 59 [XF5]
 
-	0,									// 5A [かな]
-	0,									// 5B [ローマ字]
-	0,									// 5C [コード入力]
+	0,									// 5A [COPY]
+	0,									// 5B [HELP]
+	0,									// 5C [CLEAR]
 	VK_CAPITAL,							// 5D [CAPS]
 
 	VK_INSERT,							// 5E [INS]
 
-	0,									// 5F [ひらがな]
-	0,									// 60 [全角]
+	0,									// 5F [NFER]
+	0,									// 60 [XFER]
 
 	0,									// 61 [BREAK]
 	0,									// 62 [COPY]
@@ -859,9 +859,9 @@ const int CTKey::KeyTable[KeyMax] = {
 	VK_F9,								// 6B [F9]
 	VK_F10,								// 6C [F10]
 
-	0,									// 6D [空き]
-	0,									// 6E [空き]
-	0,									// 6F [空き]
+	0,									// 6D [F11]
+	0,									// 6E [F12]
+	0,									// 6F [F13]
 
 	VK_SHIFT,							// 70 [SHIFT]
 	VK_CONTROL,							// 71 [CTRL]
@@ -871,7 +871,7 @@ const int CTKey::KeyTable[KeyMax] = {
 
 //---------------------------------------------------------------------------
 //
-//	VKキーID取得
+//	Get VK key ID
 //
 //---------------------------------------------------------------------------
 LPCTSTR CTKey::GetKeyID(int nVK)
@@ -881,32 +881,32 @@ LPCTSTR CTKey::GetKeyID(int nVK)
 	ASSERT(this);
 	ASSERT((nVK >= 0) && (nVK < 0x100));
 
-	// 0はNULL
+	// 0 is NULL
 	if (nVK == 0) {
 		return NULL;
 	}
 
-	// 検索
+	// Search
 	for (i=0; ; i++) {
-		// nVKに0が出れば終端
+		// End if nVK becomes 0
 		if (KeyIDTable[i].nVK == 0) {
 			break;
 		}
 
-		// 一致すればOK
+		// If match, OK
 		if (nVK == KeyIDTable[i].nVK) {
-			// キーID名を返す
+			// Return key ID
 			return KeyIDTable[i].lpszID;
 		}
 	}
 
-	// 見つからなかった
+	// Not found
 	return NULL;
 }
 
 //---------------------------------------------------------------------------
 //
-//	VKキーIDテーブル
+//	VK key ID table
 //
 //---------------------------------------------------------------------------
 const CTKey::VKEYID CTKey::KeyIDTable[] = {

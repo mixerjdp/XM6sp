@@ -2,8 +2,8 @@
 //
 //	X68000 EMULATOR "XM6"
 //
-//	Copyright (C) 2001-2004 ＰＩ．(ytanaka@ipc-tokai.or.jp)
-//	[ キーボード ]
+//	Copyright (C) 2001-2004 PI (ytanaka@ipc-tokai.or.jp)
+//	[ Keyboard ]
 //
 //---------------------------------------------------------------------------
 
@@ -18,87 +18,87 @@ class Mouse;
 class Sync;
 //===========================================================================
 //
-//	キーボード
+//	Keyboard
 //
 //===========================================================================
 class Keyboard : public Device
 {
 public:
-	// 内部データ定義
+	// Internal data structure
 	typedef struct {
-		BOOL connect;					// 接続フラグ
-		BOOL status[0x80];				// 押下ステータス
-		DWORD rep_code;					// リピートコード
-		DWORD rep_count;				// リピートカウンタ
-		DWORD rep_start;				// リピート時間(hus単位)
-		DWORD rep_next;					// リピート時間(hus単位)
-		BOOL send_en;					// キーデータ送信可
-		BOOL send_wait;					// キーデータ送信差し止め
-		DWORD msctrl;					// マウス制御信号
-		BOOL tv_mode;					// X68000テレビモード
-		BOOL tv_ctrl;					// コマンドによるテレビコントロール
-		BOOL opt2_ctrl;					// OPT2によるテレビコントロール
-		DWORD bright;					// キー明るさ
-		DWORD led;						// キーLED(1で点灯)
-		DWORD cmdbuf[0x10];				// コマンドバッファ
-		DWORD cmdread;					// コマンドリードポインタ
-		DWORD cmdwrite;					// コマンドライトポインタ
-		DWORD cmdnum;					// コマンド数
+		BOOL connect;					// Connect flag
+		BOOL status[0x80];				// Key status
+		DWORD rep_code;					// Repeat code
+		DWORD rep_count;				// Repeat counter
+		DWORD rep_start;				// Repeat start(hus unit)
+		DWORD rep_next;					// Repeat interval(hus unit)
+		BOOL send_en;					// Key data send enable
+		BOOL send_wait;				// Key data send wait
+		DWORD msctrl;					// Mouse send enable
+		BOOL tv_mode;					// X68000 display mode
+		BOOL tv_ctrl;					// Display controller on/off by command
+		BOOL opt2_ctrl;					// Display controller on/off by OPT2
+		DWORD bright;					// Key LED brightness
+		DWORD led;						// Key LED(1=off)
+		DWORD cmdbuf[0x10];				// Command buffer
+		DWORD cmdread;					// Command read pointer
+		DWORD cmdwrite;					// Command write pointer
+		DWORD cmdnum;					// Command number
 	} keyboard_t;
 
 public:
-	// 基本ファンクション
+	// Basic constructor
 	Keyboard(VM *p);
-										// コンストラクタ
+										// Constructor
 	BOOL FASTCALL Init();
-										// 初期化
+										// Initialization
 	void FASTCALL Cleanup();
-										// クリーンアップ
+										// Cleanup
 	void FASTCALL Reset();
-										// リセット
+										// Reset
 	BOOL FASTCALL Save(Fileio *fio, int ver);
-										// セーブ
+										// Save
 	BOOL FASTCALL Load(Fileio *fio, int ver);
-										// ロード
+										// Load
 	void FASTCALL ApplyCfg(const Config *config);
-										// 設定適用
+										// Apply config
 
-	// 外部API
+	// External API
 	void FASTCALL Connect(BOOL connect);
-										// 接続
+										// Connect
 	BOOL FASTCALL IsConnect() const		{ return keyboard.connect; }
-										// 接続チェック
+										// Connect check
 	BOOL FASTCALL Callback(Event *ev);
-										// イベントコールバック
+										// Event callback
 	void FASTCALL MakeKey(DWORD code);
-										// メイク
+										// Make
 	void FASTCALL BreakKey(DWORD code);
-										// ブレーク
+										// Break
 	void FASTCALL Command(DWORD data);
-										// コマンド
+										// Command
 	BOOL FASTCALL GetCommand(DWORD& data);
-										// コマンド取得
+										// Command get
 	void FASTCALL ClrCommand();
-										// コマンドクリア
+										// Command clear
 	void FASTCALL SendWait(BOOL flag);
-										// キーデータ送信ウェイト
+										// Key data send wait
 	BOOL FASTCALL IsSendWait() const	{ return keyboard.send_wait; }
-										// キーデータ送信ウェイト取得
+										// Key data send wait get
 	void FASTCALL GetKeyboard(keyboard_t *buffer) const;
-										// 内部データ取得
+										// Get keyboard
 	keyboard_t keyboard;
-	// 内部データ
+										// Internal data
 
 private:
 	MFP *mfp;
 										// MFP
 	Mouse *mouse;
-										// マウス
+										// Mouse
 	
 	Event event;
-										// イベント
+										// Event
 	Sync *sync;
-										// コマンドSync
+										// Command sync
 };
 
 #endif	// keyboard_h

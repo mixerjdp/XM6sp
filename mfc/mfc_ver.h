@@ -2,8 +2,8 @@
 //
 //	X68000 EMULATOR "XM6"
 //
-//	Copyright (C) 2001-2006 ÇoÇhÅD(ytanaka@ipc-tokai.or.jp)
-//	[ MFC ÉoÅ[ÉWÉáÉìèÓïÒÉ_ÉCÉAÉçÉO ]
+//	Copyright (C) 2001-2006 ÔøΩoÔøΩhÔøΩD(ytanaka@ipc-tokai.or.jp)
+//	[ MFC ÔøΩoÔøΩ[ÔøΩWÔøΩÔøΩÔøΩÔøΩÔøΩÔøΩÔøΩ_ÔøΩCÔøΩAÔøΩÔøΩÔøΩO ]
 //
 //---------------------------------------------------------------------------
 
@@ -14,66 +14,66 @@
 
 //===========================================================================
 //
-//	ÉoÅ[ÉWÉáÉìèÓïÒÉ_ÉCÉAÉçÉO
+//	Version information dialog
 //
 //===========================================================================
 class CAboutDlg : public CDialog
 {
 public:
 	CAboutDlg(CWnd *pParent = NULL);
-										// ÉRÉìÉXÉgÉâÉNÉ^
+										// Constructor
 	BOOL OnInitDialog();
-										// É_ÉCÉAÉçÉOèâä˙âª
+										// Dialog initialization
 	void OnOK();
 										// OK
 	void OnCancel();
-										// ÉLÉÉÉìÉZÉã
+										// Cancel
 
 protected:
 	afx_msg void OnPaint();
-										// ï`âÊ
+										// Paint
 #if _MFC_VER >= 0x800
 	afx_msg LRESULT OnNcHitTest(CPoint point);
-										// ÉqÉbÉgÉeÉXÉg
+										// Hit test
 #else
 	afx_msg UINT OnNcHitTest(CPoint point);
-										// ÉqÉbÉgÉeÉXÉg
+										// Hit test
 #endif	// _MFC_VER
 	afx_msg BOOL OnSetCursor(CWnd *pWnd, UINT nHitTest, UINT message);
-										// ÉJÅ[É\ÉãÉZÉbÉg
+										// Set cursor
 #if _MFC_VER >= 0x700
 	afx_msg void OnTimer(UINT_PTR nTimerID);
-										// É^ÉCÉ}
+										// Timer
 #else
 	afx_msg void OnTimer(UINT nTimerID);
-										// É^ÉCÉ}
+										// Timer
 #endif	// _MFC_VER
 
 private:
 	void FASTCALL DrawURL(CDC *pDC);
-										// URLï`âÊ
+										// URL draw
 	void FASTCALL DrawCRT(CDC *pDC);
-										// CRTï`âÊ
+										// CRT draw
 	void FASTCALL DrawX68k(CDC *pDC);
-										// X68kï`âÊ
+										// X68k draw
 	void FASTCALL DrawLED(int x, int y, CDC *pDC);
-										// LEDï`âÊ
+										// LED draw
 	void FASTCALL DrawView(int x, int y, CDC *pDC);
-										// ÉrÉÖÅ[ï`âÊ
+										// View draw
 	CString m_URLString;
-										// URLï∂éöóÒ
+										// URL string
 	CRect m_URLRect;
-										// URLãÈå`
+										// URL rectangle
 	BOOL m_bURLHit;
-										// URLÉqÉbÉgÉtÉâÉO
+										// URL hit flag
 	CRect m_IconRect;
-										// ÉAÉCÉRÉìãÈå`
+										// Icon rectangle
 #if _MFC_VER >= 0x700
 	UINT_PTR m_nTimerID;
-										// É^ÉCÉ}ID
+										// ÔøΩ^ÔøΩCÔøΩ}ID
 #else
 	UINT m_nTimerID;
-										// É^ÉCÉ}ID
+										// ÔøΩ^ÔøΩCÔøΩ}ID
 #endif
 	RTC *m_pRTC;
 										// RTC
@@ -82,14 +82,14 @@ private:
 	FDD *m_pFDD;
 										// FDD
 	CDrawView *m_pDrawView;
-										// ï`âÊÉrÉÖÅ[
+										// Draw view
 	BOOL m_bFloppyLED;
-										// ÉtÉçÉbÉsÅ[LEDÉÇÅ[Éh
+										// Floppy LED mode
 	BOOL m_bPowerLED;
-										// ìdåπLEDÉÇÅ[Éh
+										// Power LED mode
 
 	DECLARE_MESSAGE_MAP()
-										// ÉÅÉbÉZÅ[ÉW É}ÉbÉvÇ†ÇË
+										// Message map declaration
 };
 
 #endif	// mfc_ver_h

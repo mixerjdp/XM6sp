@@ -2,15 +2,15 @@
 //
 //	X68000 EMULATOR "XM6"
 //
-//	Copyright (C) 2001-2005 ‚o‚hD(ytanaka@ipc-tokai.or.jp)
-//	[ MFC ƒTƒuƒEƒBƒ“ƒhƒE(Win32) ]
+//	Copyright (C) 2001-2005 ï¼°ï¼©ï¼(ytanaka@ipc-tokai.or.jp)
+//	[ MFC Sub-window (Win32) ]
 //
 //---------------------------------------------------------------------------
 
 #if defined(_WIN32)
 
-#include "os.h"
 #include "mfc.h"
+#include "os.h"
 #include "xm6.h"
 #include "vm.h"
 #include "schedule.h"
@@ -35,26 +35,26 @@
 
 //===========================================================================
 //
-//	ƒRƒ“ƒ|[ƒlƒ“ƒgƒEƒBƒ“ƒhƒE
+//	Component window
 //
 //===========================================================================
 
 //---------------------------------------------------------------------------
 //
-//	ƒRƒ“ƒXƒgƒ‰ƒNƒ^
+//	Constructor
 //
 //---------------------------------------------------------------------------
 CComponentWnd::CComponentWnd()
 {
 	CFrmWnd *pFrmWnd;
 
-	// ƒEƒBƒ“ƒhƒEƒpƒ‰ƒ[ƒ^’è‹`
+	// Window parameter definition
 	m_dwID = MAKEID('C', 'O', 'M', 'P');
 	::GetMsg(IDS_SWND_COMPONENT, m_strCaption);
 	m_nWidth = 58;
 	m_nHeight = 10;
 
-	// Å‰‚ÌƒRƒ“ƒ|[ƒlƒ“ƒg‚ğæ“¾
+	// Get the first component
 	pFrmWnd = (CFrmWnd*)AfxGetApp()->m_pMainWnd;
 	ASSERT(pFrmWnd);
 	m_pComponent = pFrmWnd->GetFirstComponent();
@@ -63,7 +63,7 @@ CComponentWnd::CComponentWnd()
 
 //---------------------------------------------------------------------------
 //
-//	ƒZƒbƒgƒAƒbƒv
+//	Setup
 //
 //---------------------------------------------------------------------------
 void FASTCALL CComponentWnd::Setup()
@@ -75,10 +75,10 @@ void FASTCALL CComponentWnd::Setup()
 
 	ASSERT(this);
 
-	// ƒNƒŠƒA
+	// Clear
 	Clear();
 
-	// ƒKƒCƒh
+	// Guide
 	SetString(0, 0, _T("No."));
 	SetString(5, 0, _T("ID"));
 	SetString(10, 0, _T("Flag"));
@@ -87,11 +87,11 @@ void FASTCALL CComponentWnd::Setup()
 	SetString(36, 0, _T("Next"));
 	SetString(45, 0, _T("Description"));
 
-	// ‰Šú‰»
+	// Initialization
 	pComponent = m_pComponent;
 	nComponent = 1;
 
-	// ƒ‹[ƒv
+	// Loop
 	while (pComponent) {
 		// No.
 		strText.Format(_T("%2d"), nComponent);
@@ -106,28 +106,28 @@ void FASTCALL CComponentWnd::Setup()
 			dwID & 0xff);
 		SetString(4, nComponent, strText);
 
-		// ƒCƒl[ƒuƒ‹
+		// Enable
 		if (pComponent->IsEnable()) {
 			SetString(9, nComponent,_T("Enable"));
 		}
 
-		// ƒ|ƒCƒ“ƒ^
+		// Pointer
 		strText.Format(_T("%08X"), pComponent);
 		SetString(16, nComponent, strText);
 
-		// ‘O‚Ìƒ|ƒCƒ“ƒ^
+		// Previous pointer
 		strText.Format(_T("%08X"), pComponent->GetPrevComponent());
 		SetString(25, nComponent, strText);
 
-		// Ÿ‚Ìƒ|ƒCƒ“ƒ^
+		// Next pointer
 		strText.Format(_T("%08X"), pComponent->GetNextComponent());
 		SetString(34, nComponent, strText);
 
-		// –¼Ì
+		// Name
 		pComponent->GetDesc(strText);
 		SetString(43, nComponent, strText);
 
-		// Ÿ‚Ö
+		// Next
 		pComponent = pComponent->GetNextComponent();
 		nComponent++;
 	}
@@ -135,18 +135,18 @@ void FASTCALL CComponentWnd::Setup()
 
 //===========================================================================
 //
-//	OSî•ñƒEƒBƒ“ƒhƒE
+//	OS info window
 //
 //===========================================================================
 
 //---------------------------------------------------------------------------
 //
-//	ƒRƒ“ƒXƒgƒ‰ƒNƒ^
+//	Constructor
 //
 //---------------------------------------------------------------------------
 COSInfoWnd::COSInfoWnd()
 {
-	// ƒEƒBƒ“ƒhƒEƒpƒ‰ƒ[ƒ^’è‹`
+	// Window parameter definition
 	m_dwID = MAKEID('O', 'S', 'I', 'N');
 	::GetMsg(IDS_SWND_OSINFO, m_strCaption);
 	m_nWidth = 30;
@@ -155,7 +155,7 @@ COSInfoWnd::COSInfoWnd()
 
 //---------------------------------------------------------------------------
 //
-//	ƒZƒbƒgƒAƒbƒv
+//	Setup
 //
 //---------------------------------------------------------------------------
 void FASTCALL COSInfoWnd::Setup()
@@ -168,17 +168,17 @@ void FASTCALL COSInfoWnd::Setup()
 
 	ASSERT(this);
 
-	// ƒNƒŠƒA
+	// Clear
 	Clear();
 	x = 25;
 	y = 0;
 
-	// OSƒo[ƒWƒ‡ƒ“æ“¾
+	// Get OS version
 	memset(&ovi, 0, sizeof(ovi));
 	ovi.dwOSVersionInfoSize = sizeof(ovi);
 	VERIFY(GetVersionEx(&ovi));
 
-	// ‡ŸƒZƒbƒg
+	// Set sequentially
 	SetString(0, y, _T("MajorVersion"));
 	strText.Format(_T("%5u"), ovi.dwMajorVersion);
 	SetString(x, y, strText);
@@ -213,23 +213,23 @@ void FASTCALL COSInfoWnd::Setup()
 	SetString(x + 5 - strText.GetLength(), y, strText);
 	y++;
 
-	// Œ¾Œêî•ñ
+	// Language information
 	SetString(0, y, _T("System LangID"));
 	strText.Format(_T("0x%04X"), ::GetSystemDefaultLangID());
 	SetString(x - 1, y, strText);
 	y++;
 
-	// Œ¾Œêî•ñ
+	// Language information
 	SetString(0, y, _T("User LangID"));
 	strText.Format(_T("0x%04X"), ::GetUserDefaultLangID());
 	SetString(x - 1, y, strText);
 	y++;
 
-	// ƒVƒXƒeƒ€î•ñæ“¾
+	// Get system information
 	memset(&si, 0, sizeof(si));
 	::GetSystemInfo(&si);
 
-	// ‡ŸƒZƒbƒg
+	// Set sequentially
 	SetString(0, y, _T("Number of Processor"));
 	strText.Format(_T("%5u"), si.dwNumberOfProcessors);
 	SetString(x, y, strText);
@@ -272,38 +272,38 @@ void FASTCALL COSInfoWnd::Setup()
 
 //===========================================================================
 //
-//	ƒTƒEƒ“ƒhƒEƒBƒ“ƒhƒE
+//	Sound window
 //
 //===========================================================================
 
 //---------------------------------------------------------------------------
 //
-//	ƒRƒ“ƒXƒgƒ‰ƒNƒ^
+//	Constructor
 //
 //---------------------------------------------------------------------------
 CSoundWnd::CSoundWnd()
 {
 	CFrmWnd *pFrmWnd;
 
-	// ƒEƒBƒ“ƒhƒEƒpƒ‰ƒ[ƒ^’è‹`
+	// Window parameter definition
 	m_dwID = MAKEID('S', 'N', 'D', ' ');
 	::GetMsg(IDS_SWND_SOUND, m_strCaption);
 	m_nWidth = 25;
 	m_nHeight = 14;
 
-	// ƒXƒPƒWƒ…[ƒ‰‚ğæ“¾
+	// Get scheduler
 	m_pScheduler = (Scheduler*)::GetVM()->SearchDevice(MAKEID('S', 'C', 'H', 'E'));
 	ASSERT(m_pScheduler);
 
-	// OPM‚ğæ“¾
+	// Get OPM
 	m_pOPMIF = (OPMIF*)::GetVM()->SearchDevice(MAKEID('O', 'P', 'M', ' '));
 	ASSERT(m_pOPMIF);
 
-	// ADPCM‚ğæ“¾
+	// Get ADPCM
 	m_pADPCM = (ADPCM*)::GetVM()->SearchDevice(MAKEID('A', 'P', 'C', 'M'));
 	ASSERT(m_pADPCM);
 
-	// ƒTƒEƒ“ƒhƒRƒ“ƒ|[ƒlƒ“ƒg‚ğæ“¾
+	// Get sound component
 	pFrmWnd = (CFrmWnd*)AfxGetApp()->m_pMainWnd;
 	ASSERT(pFrmWnd);
 	m_pSound = pFrmWnd->GetSound();
@@ -312,7 +312,7 @@ CSoundWnd::CSoundWnd()
 
 //---------------------------------------------------------------------------
 //
-//	ƒZƒbƒgƒAƒbƒv
+//	Setup
 //
 //---------------------------------------------------------------------------
 void FASTCALL CSoundWnd::Setup()
@@ -329,22 +329,22 @@ void FASTCALL CSoundWnd::Setup()
 	ASSERT(m_pOPMIF);
 	ASSERT(m_pSound);
 
-	// ƒNƒŠƒA
+	// Clear
 	Clear();
 	x = 20;
 	y = 0;
 
-	// ƒTƒEƒ“ƒhŠÔ
+	// Sound time
 	dwTime = m_pScheduler->GetSoundTime();
 	SetString(0, y, _T("Sound Time"));
 	strText.Format(_T("%3d.%03dms"), dwTime / 2000, (dwTime % 2000) / 2);
 	SetString(x - 4, y, strText);
 	y++;
 
-	// ƒoƒbƒtƒ@î•ñ‚ğ‚Ü‚Æ‚ß‚Ä“¾‚é
+	// Get all buffer information
 	m_pOPMIF->GetBufInfo(&opmbuf);
 
-	// ƒoƒbƒtƒ@î•ñ‚ğ•\¦
+	// Display buffer information
 	SetString(0, y, _T("Buffer Max"));
 	strText.Format(_T("%5u"), opmbuf.max);
 	SetString(x, y, strText);
@@ -378,7 +378,7 @@ void FASTCALL CSoundWnd::Setup()
 	SetString(x, y, strText);
 	y++;
 
-	// ADPCM‚Ìî•ñ‚ğ“¾‚é
+	// Get ADPCM information
 	m_pADPCM->GetADPCM(&adpcm);
 
 	SetString(0, y, _T("ADPCM Sample"));
@@ -408,26 +408,26 @@ void FASTCALL CSoundWnd::Setup()
 
 //===========================================================================
 //
-//	ƒCƒ“ƒvƒbƒgƒEƒBƒ“ƒhƒE
+//	Input window
 //
 //===========================================================================
 
 //---------------------------------------------------------------------------
 //
-//	ƒRƒ“ƒXƒgƒ‰ƒNƒ^
+//	Constructor
 //
 //---------------------------------------------------------------------------
 CInputWnd::CInputWnd()
 {
 	CFrmWnd *pFrmWnd;
 
-	// ƒEƒBƒ“ƒhƒEƒpƒ‰ƒ[ƒ^’è‹`
+	// Window parameter definition
 	m_dwID = MAKEID('I', 'N', 'P', ' ');
 	::GetMsg(IDS_SWND_INPUT, m_strCaption);
 	m_nWidth = 46;
 	m_nHeight = 33;
 
-	// ƒCƒ“ƒvƒbƒgƒRƒ“ƒ|[ƒlƒ“ƒg‚ğæ“¾
+	// Get input component
 	pFrmWnd = (CFrmWnd*)AfxGetApp()->m_pMainWnd;
 	ASSERT(pFrmWnd);
 	m_pInput = pFrmWnd->GetInput();
@@ -436,7 +436,7 @@ CInputWnd::CInputWnd()
 
 //---------------------------------------------------------------------------
 //
-//	ƒZƒbƒgƒAƒbƒv
+//	Setup
 //
 //---------------------------------------------------------------------------
 void FASTCALL CInputWnd::Setup()
@@ -446,30 +446,30 @@ void FASTCALL CInputWnd::Setup()
 
 	ASSERT(this);
 
-	// ƒNƒŠƒA
+	// Clear
 	Clear();
 
-	// “ü—ÍŒn‘S”Ê
+	// General input
 	x = 0;
 	y = 0;
 	SetupInput(x, y);
 
-	// ƒ}ƒEƒX
+	// Mouse
 	x = 0;
 	y = 4;
 	SetupMouse(x, y);
 
-	// ƒL[ƒ{[ƒh
+	// Keyboard
 	x = 26;
 	y = 0;
 	SetupKey(x, y);
 
-	// ƒWƒ‡ƒCƒXƒeƒBƒbƒNA
+	// Joystick A
 	x = 0;
 	y = 11;
 	SetupJoy(x, y, 0);
 
-	// ƒWƒ‡ƒCƒXƒeƒBƒbƒNB
+	// Joystick B
 	x = 25;
 	y = 11;
 	SetupJoy(x, y, 1);
@@ -477,7 +477,7 @@ void FASTCALL CInputWnd::Setup()
 
 //---------------------------------------------------------------------------
 //
-//	ƒZƒbƒgƒAƒbƒv(ˆê”Ê)
+//	Setup (General)
 //
 //---------------------------------------------------------------------------
 void FASTCALL CInputWnd::SetupInput(int x, int y)
@@ -489,13 +489,13 @@ void FASTCALL CInputWnd::SetupInput(int x, int y)
 	ASSERT((x >= 0) && (x < m_nWidth));
 	ASSERT((y >= 0) && (y < m_nHeight));
 
-	// ÀsƒJƒEƒ“ƒ^
+	// Process counter
 	SetString(x, y, _T("Input Counter"));
 	strText.Format(_T("%6u"), m_pInput->GetProcessCount());
 	SetString(x + 16, y, strText);
 	y++;
 
-	// ƒAƒNƒeƒBƒu
+	// Active
 	SetString(x, y, _T("Active"));
 	if (m_pInput->IsActive()) {
 		SetString(x + 16, y, _T("Active"));
@@ -505,7 +505,7 @@ void FASTCALL CInputWnd::SetupInput(int x, int y)
 	}
 	y++;
 
-	// ƒƒjƒ…[
+	// Menu
 	SetString(x, y, _T("Menu"));
 	if (m_pInput->IsMenu()) {
 		SetString(x + 18, y, _T("Menu"));
@@ -517,7 +517,7 @@ void FASTCALL CInputWnd::SetupInput(int x, int y)
 
 //---------------------------------------------------------------------------
 //
-//	ƒZƒbƒgƒAƒbƒv(ƒ}ƒEƒX)
+//	Setup(Mouse)
 //
 //---------------------------------------------------------------------------
 void FASTCALL CInputWnd::SetupMouse(int x, int y)
@@ -547,7 +547,7 @@ void FASTCALL CInputWnd::SetupMouse(int x, int y)
 	}
 	y++;
 
-	// î•ñæ“¾
+	// Get information
 	m_pInput->GetMouseInfo(nPos, bBtn);
 
 	// X
@@ -562,7 +562,7 @@ void FASTCALL CInputWnd::SetupMouse(int x, int y)
 	SetString(x + 16, y, strText);
 	y++;
 
-	// ƒ{ƒ^ƒ“¶
+	// Button (L)
 	SetString(x, y, _T("Mouse Button(L)"));
 	if (bBtn[0]) {
 		SetString(x + 18, y, _T("Down"));
@@ -572,7 +572,7 @@ void FASTCALL CInputWnd::SetupMouse(int x, int y)
 	}
 	y++;
 
-	// ƒ{ƒ^ƒ“‰E
+	// Button (R)
 	SetString(x, y, _T("Mouse Button(R)"));
 	if (bBtn[1]) {
 		SetString(x + 18, y, _T("Down"));
@@ -585,7 +585,7 @@ void FASTCALL CInputWnd::SetupMouse(int x, int y)
 
 //---------------------------------------------------------------------------
 //
-//	ƒZƒbƒgƒAƒbƒv(ƒL[ƒ{[ƒh)
+//	Setup(Keyboard)
 //
 //---------------------------------------------------------------------------
 void FASTCALL CInputWnd::SetupKey(int x, int y)
@@ -607,26 +607,26 @@ void FASTCALL CInputWnd::SetupKey(int x, int y)
 	SetString(x + 14, y, strText);
 	y++;
 
-	// ƒL[ƒoƒbƒtƒ@æ“¾
+	// Get key buffer
 	m_pInput->GetKeyBuf(buf);
 
-	// ƒJƒEƒ“ƒgİ’è
+	// Count setting
 	nCount = 0;
 
-	// ƒL[ƒ‹[ƒv
+	// Key loop
 	for (i=0; i<0x100; i++) {
-		// ƒI[ƒo[ƒ`ƒFƒbƒN
+		// Overflow check
 		if (nCount >= 9) {
 			break;
 		}
 
-		// ‰Ÿ‰ºƒ`ƒFƒbƒN
+		// Press check
 		if (buf[i]) {
-			// –¼Ìæ“¾
+			// Get name
 			lpszID = m_pInput->GetKeyID(i);
 			ASSERT(lpszID);
 
-			// •\¦
+			// Display
 			SetString(x, y, lpszID);
 			nCount++;
 			y++;
@@ -636,7 +636,7 @@ void FASTCALL CInputWnd::SetupKey(int x, int y)
 
 //---------------------------------------------------------------------------
 //
-//	ƒZƒbƒgƒAƒbƒv(ƒWƒ‡ƒCƒXƒeƒBƒbƒN)
+//	Setup (Joystick)
 //
 //---------------------------------------------------------------------------
 void FASTCALL CInputWnd::SetupJoy(int x, int y, int nJoy)
@@ -654,7 +654,7 @@ void FASTCALL CInputWnd::SetupJoy(int x, int y, int nJoy)
 	ASSERT((y >= 0) && (y < m_nHeight));
 	ASSERT((nJoy >= 0) && (nJoy < 2));
 
-	// Joy-A or Joy-B ì¬
+	// Joy-A or Joy-B creation
 	if (nJoy == 0) {
 		strJoy = _T("Joy-A");
 	}
@@ -662,7 +662,7 @@ void FASTCALL CInputWnd::SetupJoy(int x, int y, int nJoy)
 		strJoy = _T("Joy-B");
 	}
 
-	// ƒfƒoƒCƒX
+	// Device
 	SetString(x, y, strJoy);
 	SetString(x + 6, y, _T("Device"));
 	nDevice = m_pInput->GetJoyDevice(nJoy);
@@ -685,47 +685,47 @@ void FASTCALL CInputWnd::SetupJoy(int x, int y, int nJoy)
 	SetString(x + 15, y, strText);
 	y++;
 
-	// ²
+	// Axis
 	for (i=0; i<8; i++) {
 		SetString(x, y, strJoy);
 		strText.Format(_T("Axis%d"), i + 1);
 		SetString(x + 6, y, strText);
 
-		// ƒf[ƒ^æ“¾
+		// Get data
 		lAxis = m_pInput->GetJoyAxis(nJoy, i);
 
 		if (lAxis >= 0x10000) {
-			// ²‚ª‘¶İ‚µ‚È‚¢
+			// Axis does not exist
 			SetString(x + 16, y, _T("-----"));
 		}
 		else {
-			// ²ƒf[ƒ^‚ğ•\¦
+			// Display axis data
 			strText.Format(_T("%5d"), lAxis);
 			SetString(x + 16, y, strText);
 		}
 		y++;
 	}
 
-	// ƒ{ƒ^ƒ“
+	// Button
 	for (i=0; i<12; i++) {
 		SetString(x, y, strJoy);
 		strText.Format(_T("Button%d"), i + 1);
 		SetString(x + 6, y, strText);
 
-		// ƒf[ƒ^æ“¾
+		// Get data
 		dwButton = m_pInput->GetJoyButton(nJoy, i);
 
 		if (dwButton >= 0x10000) {
-			// ƒ{ƒ^ƒ“‚ª‘¶İ‚µ‚È‚¢
+			// Button does not exist
 			SetString(x + 18, y, _T("---"));
 		}
 		else {
 			if (dwButton & 0x80) {
-				// ‰Ÿ‚³‚ê‚Ä‚¢‚é
+				// On
 				SetString(x + 19, y, _T("On"));
 			}
 			else {
-				// ‰Ÿ‚³‚ê‚Ä‚¢‚È‚¢
+				// Off
 				SetString(x + 18, y, _T("Off"));
 			}
 		}
@@ -735,26 +735,26 @@ void FASTCALL CInputWnd::SetupJoy(int x, int y, int nJoy)
 
 //===========================================================================
 //
-//	ƒ|[ƒgƒEƒBƒ“ƒhƒE
+//	Port window
 //
 //===========================================================================
 
 //---------------------------------------------------------------------------
 //
-//	ƒRƒ“ƒXƒgƒ‰ƒNƒ^
+//	Constructor
 //
 //---------------------------------------------------------------------------
 CPortWnd::CPortWnd()
 {
 	CFrmWnd *pFrmWnd;
 
-	// ƒEƒBƒ“ƒhƒEƒpƒ‰ƒ[ƒ^’è‹`
+	// Window parameter definition
 	m_dwID = MAKEID('P', 'O', 'R', 'T');
 	::GetMsg(IDS_SWND_PORT, m_strCaption);
 	m_nWidth = 23;
 	m_nHeight = 18;
 
-	// ƒ|[ƒgƒRƒ“ƒ|[ƒlƒ“ƒg‚ğæ“¾
+	// Get port component
 	pFrmWnd = (CFrmWnd*)AfxGetApp()->m_pMainWnd;
 	ASSERT(pFrmWnd);
 	m_pPort = pFrmWnd->GetPort();
@@ -763,7 +763,7 @@ CPortWnd::CPortWnd()
 
 //---------------------------------------------------------------------------
 //
-//	ƒZƒbƒgƒAƒbƒv
+//	Setup
 //
 //---------------------------------------------------------------------------
 void FASTCALL CPortWnd::Setup()
@@ -778,15 +778,15 @@ void FASTCALL CPortWnd::Setup()
 
 	ASSERT(this);
 
-	// ‰Šú‰»
+	// Initialization
 	Clear();
 	x = 15;
 	y = 0;
 
-	// COMî•ñæ“¾
+	// Get COM information
 	bRun = m_pPort->GetCOMInfo(szDevice, &dwHandle);
 
-	// COMƒXƒŒƒbƒh
+	// COM thread
 	SetString(0, y, _T("COM Thread"));
 	if (bRun) {
 		SetString(x + 5, y, _T("Run"));
@@ -796,18 +796,18 @@ void FASTCALL CPortWnd::Setup()
 	}
 	y++;
 
-	// COMƒtƒ@ƒCƒ‹
+	// COM file
 	SetString(0, y, _T("COM Device"));
 	SetString(x, y, szDevice);
 	y++;
 
-	// COMƒƒO
+	// COM Log
 	SetString(0, y, _T("COM Log"));
 	strText.Format(_T("%08X"), dwHandle);
 	SetString(x, y, strText);
 	y++;
 
-	// TxƒLƒ…[î•ñæ“¾
+	// TxGet queue information
 	m_pPort->GetTxQueue(&qi);
 
 	// Tx Read
@@ -834,7 +834,7 @@ void FASTCALL CPortWnd::Setup()
 	SetString(x + 1, y, strText);
 	y++;
 
-	// RxƒLƒ…[î•ñæ“¾
+	// RxGet queue information
 	m_pPort->GetRxQueue(&qi);
 
 	// Rx Read
@@ -861,10 +861,10 @@ void FASTCALL CPortWnd::Setup()
 	SetString(x + 1, y, strText);
 	y++;
 
-	// LPTî•ñæ“¾
+	// LPTGet information
 	bRun = m_pPort->GetLPTInfo(szDevice, &dwHandle);
 
-	// LPTƒXƒŒƒbƒh
+	// LPT Thread
 	SetString(0, y, _T("LPT Thread"));
 	if (bRun) {
 		SetString(x + 5, y, _T("Run"));
@@ -874,18 +874,18 @@ void FASTCALL CPortWnd::Setup()
 	}
 	y++;
 
-	// LPTƒtƒ@ƒCƒ‹
+	// LPT Device
 	SetString(0, y, _T("LPT Device"));
 	SetString(x, y, szDevice);
 	y++;
 
-	// LPTƒƒO
+	// LPT Log
 	SetString(0, y, _T("LPT Log"));
 	strText.Format(_T("%08X"), dwHandle);
 	SetString(x, y, strText);
 	y++;
 
-	// LPTƒLƒ…[î•ñæ“¾
+	// LPTGet queue information
 	m_pPort->GetLPTQueue(&qi);
 
 	// LPT Read
@@ -915,26 +915,26 @@ void FASTCALL CPortWnd::Setup()
 
 //===========================================================================
 //
-//	ƒrƒbƒgƒ}ƒbƒvƒEƒBƒ“ƒhƒE
+//	Bitmap window
 //
 //===========================================================================
 
 //---------------------------------------------------------------------------
 //
-//	ƒRƒ“ƒXƒgƒ‰ƒNƒ^
+//	Constructor
 //
 //---------------------------------------------------------------------------
 CBitmapWnd::CBitmapWnd()
 {
 	CFrmWnd *pFrmWnd;
 
-	// ƒEƒBƒ“ƒhƒEƒpƒ‰ƒ[ƒ^’è‹`
+	// Window parameter definition
 	m_dwID = MAKEID('B', 'M', 'A', 'P');
 	::GetMsg(IDS_SWND_BITMAP, m_strCaption);
 	m_nWidth = 46;
 	m_nHeight = 8;
 
-	// •`‰æƒEƒBƒ“ƒhƒE‚ğæ“¾
+	// Get drawing window
 	pFrmWnd = (CFrmWnd*)AfxGetApp()->m_pMainWnd;
 	ASSERT(pFrmWnd);
 	m_pView = pFrmWnd->GetView();
@@ -943,7 +943,7 @@ CBitmapWnd::CBitmapWnd()
 
 //---------------------------------------------------------------------------
 //
-//	ƒZƒbƒgƒAƒbƒv
+//	Setup
 //
 //---------------------------------------------------------------------------
 void FASTCALL CBitmapWnd::Setup()
@@ -953,15 +953,15 @@ void FASTCALL CBitmapWnd::Setup()
 	CString string;
 	CDrawView::DRAWINFO info;
 
-	// ƒf[ƒ^‚ğæ“¾
+	// Get data
 	m_pView->GetDrawInfo(&info);
 
-	// ƒNƒŠƒA
+	// Clear
 	Clear();
 	x = 0;
 	y = 0;
 
-	// ƒrƒbƒgƒ}ƒbƒv
+	// Bitmap
 	SetString(x, y, "Bitmap Width");
 	string.Format("%4d", info.nBMPWidth);
 	SetString(x + 17, y, string);
@@ -993,20 +993,31 @@ void FASTCALL CBitmapWnd::Setup()
 	SetString(x + 17, y, string);
 	y++;
 
-	// ƒtƒ‰ƒO
-	SetString(x, y, "BitBlt Stretch");
-	if (info.bBltStretch) {
-		SetString(x + 18, y, "Yes");
-	}
-	else {
-		SetString(x + 19, y, "No");
+	// Flags
+	SetString(x, y, "Window Scale");
+	switch (info.nScaleIndex) {
+	case 0:
+		SetString(x + 18, y, "1.0x");
+		break;
+	case 1:
+		SetString(x + 18, y, "1.5x");
+		break;
+	case 2:
+		SetString(x + 18, y, "2.0x");
+		break;
+	case 3:
+		SetString(x + 18, y, "2.5x");
+		break;
+	default:
+		SetString(x + 18, y, "3.0x");
+		break;
 	}
 
-	// ‰E‘¤‚Ö
+	// Move to right side
 	x = 25;
 	y = 0;
 
-	// ƒrƒbƒgƒ}ƒbƒv
+	// Bitmap
 	SetString(x, y, "Bitmap Height");
 	string.Format("%4d", info.nBMPHeight);
 	SetString(x + 17, y, string);
@@ -1038,7 +1049,7 @@ void FASTCALL CBitmapWnd::Setup()
 	SetString(x + 17, y, string);
 	y++;
 
-	// ‰ñ”
+	// Count
 	SetString(x, y, "BitBlt Count");
 	string.Format("%7d", info.dwDrawCount);
 	SetString(x + 14, y, string);
@@ -1046,30 +1057,30 @@ void FASTCALL CBitmapWnd::Setup()
 
 //===========================================================================
 //
-//	MIDIƒhƒ‰ƒCƒoƒEƒBƒ“ƒhƒE
+//	MIDI driver window
 //
 //===========================================================================
 
 //---------------------------------------------------------------------------
 //
-//	ƒRƒ“ƒXƒgƒ‰ƒNƒ^
+//	Constructor
 //
 //---------------------------------------------------------------------------
 CMIDIDrvWnd::CMIDIDrvWnd()
 {
 	CFrmWnd *pFrmWnd;
 
-	// ƒEƒBƒ“ƒhƒEƒpƒ‰ƒ[ƒ^’è‹`
+	// Window parameter definition
 	m_dwID = MAKEID('M', 'D', 'R', 'V');
 	::GetMsg(IDS_SWND_MIDIDRV, m_strCaption);
 	m_nWidth = 38;
 	m_nHeight = 11;
 
-	// MIDIƒfƒoƒCƒX‚ğæ“¾
+	// Get MIDI device
 	m_pMIDI = (MIDI*)::GetVM()->SearchDevice(MAKEID('M', 'I', 'D', 'I'));
 	ASSERT(m_pMIDI);
 
-	// MIDIƒRƒ“ƒ|[ƒlƒ“ƒg‚ğæ“¾
+	// Get MIDI component
 	pFrmWnd = (CFrmWnd*)AfxGetApp()->m_pMainWnd;
 	ASSERT(pFrmWnd);
 	m_pMIDIDrv = pFrmWnd->GetMIDI();
@@ -1078,7 +1089,7 @@ CMIDIDrvWnd::CMIDIDrvWnd()
 
 //---------------------------------------------------------------------------
 //
-//	ƒZƒbƒgƒAƒbƒv
+//	Setup
 //
 //---------------------------------------------------------------------------
 void FASTCALL CMIDIDrvWnd::Setup()
@@ -1094,13 +1105,13 @@ void FASTCALL CMIDIDrvWnd::Setup()
 	ASSERT(m_pMIDI);
 	ASSERT(m_pMIDIDrv);
 
-	// ƒfƒoƒCƒXƒ[ƒNæ“¾
+	// Get device work
 	m_pMIDI->GetMIDI(&midi);
 
-	// ƒNƒŠƒA
+	// Clear
 	Clear();
 
-	// •¶š—ñ•\¦
+	// String display
 	y = 1;
 	for (i=0;; i++) {
 		if (!DescTable[i]) {
@@ -1119,7 +1130,7 @@ void FASTCALL CMIDIDrvWnd::Setup()
 	mi.dwBufWrite = midi.recvwrite;
 	SetupInfo(19, 1, &mi);
 
-	// IN(ƒGƒNƒXƒNƒ‹[ƒVƒuƒJƒEƒ“ƒ^)
+	// IN (exclusive counter)
 	dwStart = m_pMIDI->GetExCount(2);
 	dwEnd = m_pMIDI->GetExCount(3);
 	SetupExCnt(19, 1, dwStart, dwEnd);
@@ -1132,7 +1143,7 @@ void FASTCALL CMIDIDrvWnd::Setup()
 	mi.dwBufWrite = midi.transwrite;
 	SetupInfo(30, 1, &mi);
 
-	// OUT(ƒGƒNƒXƒNƒ‹[ƒVƒuƒJƒEƒ“ƒ^)
+	// OUT (exclusive counter)
 	dwStart = m_pMIDI->GetExCount(0);
 	dwEnd = m_pMIDI->GetExCount(1);
 	SetupExCnt(30, 1, dwStart, dwEnd);
@@ -1140,7 +1151,7 @@ void FASTCALL CMIDIDrvWnd::Setup()
 
 //---------------------------------------------------------------------------
 //
-//	ƒZƒbƒgƒAƒbƒv(ƒTƒu)
+	// Setup (sub)
 //
 //---------------------------------------------------------------------------
 void FASTCALL CMIDIDrvWnd::SetupInfo(int x, int y, CMIDI::LPMIDIINFO pInfo)
@@ -1152,49 +1163,49 @@ void FASTCALL CMIDIDrvWnd::SetupInfo(int x, int y, CMIDI::LPMIDIINFO pInfo)
 	ASSERT((y >= 0) && (y < m_nHeight));
 	ASSERT(pInfo);
 
-	// ƒfƒoƒCƒX‘”
+	// Device total
 	strText.Format(_T("%8d"), pInfo->dwDevices);
 	SetString(x, y, strText);
 	y++;
 
-	// ƒJƒŒƒ“ƒgƒfƒoƒCƒX
+	// Current device
 	strText.Format(_T("%8d"), pInfo->dwDevice);
 	SetString(x, y, strText);
 	y++;
 
-	// ƒVƒ‡[ƒgƒƒbƒZ[ƒW
+	// Short message
 	strText.Format(_T("%8d"), pInfo->dwShort);
 	SetString(x, y, strText);
 	y++;
 
-	// ƒƒ“ƒOƒƒbƒZ[ƒW
+	// Long message
 	strText.Format(_T("%8d"), pInfo->dwLong);
 	SetString(x, y, strText);
 	y++;
 
-	// ƒwƒbƒ_‰ğ•ú
+	// Header release
 	strText.Format(_T("%8d"), pInfo->dwUnprepare);
 	SetString(x, y, strText);
 	y++;
 
-	// ƒoƒbƒtƒ@—LŒø”
+	// Buffer available
 	strText.Format(_T("%8d"), pInfo->dwBufNum);
 	SetString(x, y, strText);
 	y++;
 
-	// ƒoƒbƒtƒ@Read
+	// Buffer Read
 	strText.Format(_T("%8d"), pInfo->dwBufRead);
 	SetString(x, y, strText);
 	y++;
 
-	// ƒoƒbƒtƒ@Write
+	// Buffer Write
 	strText.Format(_T("%8d"), pInfo->dwBufWrite);
 	SetString(x, y, strText);
 }
 
 //---------------------------------------------------------------------------
 //
-//	ƒZƒbƒgƒAƒbƒv(ƒGƒNƒXƒNƒ‹[ƒVƒuƒJƒEƒ“ƒ^)
+	// Setup (exclusive counter)
 //
 //---------------------------------------------------------------------------
 void FASTCALL CMIDIDrvWnd::SetupExCnt(int x, int y, DWORD dwStart, DWORD dwEnd)
@@ -1205,15 +1216,15 @@ void FASTCALL CMIDIDrvWnd::SetupExCnt(int x, int y, DWORD dwStart, DWORD dwEnd)
 	ASSERT((x >= 0) && (x < m_nWidth));
 	ASSERT((y >= 0) && (y < m_nHeight));
 
-	// y•â³
+	// y adjustment
 	y += 8;
 
-	// ƒGƒNƒXƒNƒ‹[ƒVƒuŠJn(F0)”
+	// Exclusive start (F0) count
 	strText.Format(_T("%8d"), dwStart);
 	SetString(x, y, strText);
 	y++;
 
-	// ƒGƒNƒXƒNƒ‹[ƒVƒuI—¹(F7)”
+	// Exclusive end (F7) count
 	strText.Format(_T("%8d"), dwEnd);
 	SetString(x, y, strText);
 	y++;
@@ -1221,7 +1232,7 @@ void FASTCALL CMIDIDrvWnd::SetupExCnt(int x, int y, DWORD dwStart, DWORD dwEnd)
 
 //---------------------------------------------------------------------------
 //
-//	•¶š—ñƒe[ƒuƒ‹
+//	String table
 //
 //---------------------------------------------------------------------------
 LPCTSTR CMIDIDrvWnd::DescTable[] = {
@@ -1240,24 +1251,24 @@ LPCTSTR CMIDIDrvWnd::DescTable[] = {
 
 //===========================================================================
 //
-//	ƒL[ƒ{[ƒhƒfƒBƒXƒvƒŒƒCƒEƒBƒ“ƒhƒE
+//	Keyboard display window
 //
 //===========================================================================
 
 //---------------------------------------------------------------------------
 //
-//	ƒRƒ“ƒXƒgƒ‰ƒNƒ^
+//	Constructor
 //
 //---------------------------------------------------------------------------
 CKeyDispWnd::CKeyDispWnd()
 {
-	// ˜_—ƒ[ƒN
+	// Logical work
 	m_nMode = 0;
 	memset(m_nKey, 0, sizeof(m_nKey));
 	memset(m_bKey, 0, sizeof(m_bKey));
 	m_nPoint = 0;
 
-	// •\¦ƒ[ƒN
+	// Display work
 	m_pCG = NULL;
 	m_pBits = NULL;
 	m_hBitmap = NULL;
@@ -1268,7 +1279,7 @@ CKeyDispWnd::CKeyDispWnd()
 
 //---------------------------------------------------------------------------
 //
-//	ƒƒbƒZ[ƒW ƒ}ƒbƒv
+//	Message map
 //
 //---------------------------------------------------------------------------
 BEGIN_MESSAGE_MAP(CKeyDispWnd, CWnd)
@@ -1287,7 +1298,7 @@ END_MESSAGE_MAP()
 
 //---------------------------------------------------------------------------
 //
-//	ƒEƒBƒ“ƒhƒEì¬
+//	Window creation
 //
 //---------------------------------------------------------------------------
 int CKeyDispWnd::OnCreate(LPCREATESTRUCT lpCreateStruct)
@@ -1295,21 +1306,21 @@ int CKeyDispWnd::OnCreate(LPCREATESTRUCT lpCreateStruct)
 	Memory *pMemory;
 	CRect rectWnd;
 
-	// Šî–{ƒNƒ‰ƒX
+	// Base class
 	if (CWnd::OnCreate(lpCreateStruct) != 0) {
 		return -1;
 	}
 
-	// IMEƒIƒt
+	// Disable IME
 	::ImmAssociateContext(m_hWnd, (HIMC)NULL);
 
-	// CGROMæ“¾
+	// Get CGROM
 	pMemory = (Memory*)::GetVM()->SearchDevice(MAKEID('M', 'E', 'M', ' '));
 	ASSERT(pMemory);
 	m_pCG = pMemory->GetCG();
 	ASSERT(m_pCG);
 
-	// ƒŠƒTƒCƒY
+	// Resize
 	rectWnd.left = 0;
 	rectWnd.top = 0;
 	rectWnd.right = 616;
@@ -1317,7 +1328,7 @@ int CKeyDispWnd::OnCreate(LPCREATESTRUCT lpCreateStruct)
 	CalcWindowRect(&rectWnd);
 	SetWindowPos(&wndTop, 0, 0, rectWnd.Width(), rectWnd.Height(), SWP_NOMOVE);
 
-	// ƒrƒbƒgƒ}ƒbƒvì¬
+	// Bitmapä½œæˆ
 	SetupBitmap();
 
 	return 0;
@@ -1325,25 +1336,25 @@ int CKeyDispWnd::OnCreate(LPCREATESTRUCT lpCreateStruct)
 
 //---------------------------------------------------------------------------
 //
-//	ƒEƒBƒ“ƒhƒEíœ
+//	ã‚¦ã‚£ãƒ³ãƒ‰ã‚¦å‰Šé™¤
 //
 //---------------------------------------------------------------------------
 void CKeyDispWnd::OnDestroy()
 {
-	// ƒrƒbƒgƒ}ƒbƒv‰ğ•ú
+	// Release bitmap
 	if (m_hBitmap) {
 		::DeleteObject(m_hBitmap);
 		m_hBitmap = NULL;
 		m_pBits = NULL;
 	}
 
-	// Šî–{ƒNƒ‰ƒX
+	// Base class
 	CWnd::OnDestroy();
 }
 
 //---------------------------------------------------------------------------
 //
-//	ƒEƒBƒ“ƒhƒEíœŠ®—¹
+//	ã‚¦ã‚£ãƒ³ãƒ‰ã‚¦å‰Šé™¤å®Œäº†
 //
 //---------------------------------------------------------------------------
 void CKeyDispWnd::PostNcDestroy()
@@ -1352,27 +1363,27 @@ void CKeyDispWnd::PostNcDestroy()
 	ASSERT(!m_hBitmap);
 	ASSERT(!m_pBits);
 
-	// ƒCƒ“ƒ^ƒtƒF[ƒX—v‘f‚ğíœ
+	// Delete interface elements
 	delete this;
 }
 
 //---------------------------------------------------------------------------
 //
-//	ƒEƒBƒ“ƒhƒEƒTƒCƒY•ÏX
+//	ã‚¦ã‚£ãƒ³ãƒ‰ã‚¦ã‚µã‚¤ã‚ºå¤‰æ›´
 //
 //---------------------------------------------------------------------------
 void CKeyDispWnd::OnSize(UINT nType, int cx, int cy)
 {
-	// Šî–{ƒNƒ‰ƒX‚ğæ‚ÉÀs
+	// Base classã‚’å…ˆã«å®Ÿè¡Œ
 	CWnd::OnSize(nType, cx, cy);
 
-	// ƒrƒbƒgƒ}ƒbƒvì¬
+	// Bitmapä½œæˆ
 	SetupBitmap();
 }
 
 //---------------------------------------------------------------------------
 //
-//	ƒrƒbƒgƒ}ƒbƒvì¬
+	// Create bitmap
 //
 //---------------------------------------------------------------------------
 void FASTCALL CKeyDispWnd::SetupBitmap()
@@ -1384,43 +1395,43 @@ void FASTCALL CKeyDispWnd::SetupBitmap()
 
 	ASSERT(this);
 
-	// Å¬‰»‚È‚çƒrƒbƒgƒ}ƒbƒvì¬‚µ‚È‚¢
+	// If minimized, don't create bitmap
 	if (IsIconic()) {
 		return;
 	}
 
-	// ƒNƒ‰ƒCƒAƒ“ƒg‹éŒ`æ“¾
+	// Get client rectangle
 	GetClientRect(&rectClient);
 	ASSERT((rectClient.Width() != 0) || (rectClient.Height() != 0));
 
-	// ƒrƒbƒgƒ}ƒbƒv‚ª‘¶İ‚µ‚Ä
+	// If bitmap exists
 	if (m_hBitmap) {
-		// ƒfƒBƒƒ“ƒWƒ‡ƒ“‚ª“¯‚¶‚È‚ç
+		// If dimensions are the same
 		if (m_nBMPWidth == (UINT)rectClient.Width()) {
 			if (m_nBMPHeight == (UINT)rectClient.Height()) {
-				// ‰½‚à‚µ‚È‚¢
+				// Do nothing
 				return;
 			}
 		}
 	}
 
-	// VMƒƒbƒN
+	// VMãƒ­ãƒƒã‚¯
 	::LockVM();
 
-	// ƒrƒbƒgƒ}ƒbƒv‰ğ•ú
+	// Release bitmap
 	if (m_hBitmap) {
 		::DeleteObject(m_hBitmap);
 		m_hBitmap = NULL;
 		m_pBits = NULL;
 	}
 
-	// ƒrƒbƒgƒ}ƒbƒvî•ñ‹L‰¯
+	// Bitmapæƒ…å ±è¨˜æ†¶
 	m_nBMPWidth = rectClient.Width();
 	m_nBMPHeight = rectClient.Height();
 	m_nBMPMul = (m_nBMPWidth + 3) >> 2;
 	m_nBMPMul <<= 2;
 
-	// ƒrƒbƒgƒ}ƒbƒvî•ñì¬(256FƒpƒŒƒbƒg‚Â‚«ƒrƒbƒgƒ}ƒbƒv)
+	// Bitmapæƒ…å ±ä½œæˆ(256è‰²ãƒ‘ãƒ¬ãƒƒãƒˆã¤ããƒ“ãƒƒãƒˆãƒãƒƒãƒ—)
 	memset(&bmi, 0, sizeof(bmi));
 	bmi.biSize = sizeof(BITMAPINFOHEADER);
 	bmi.biWidth = m_nBMPWidth;
@@ -1431,45 +1442,45 @@ void FASTCALL CKeyDispWnd::SetupBitmap()
 	bmi.biCompression = BI_RGB;
 	bmi.biSizeImage = m_nBMPMul * m_nBMPHeight;
 
-	// DCæ“¾ADIBƒZƒNƒVƒ‡ƒ“ì¬
+	// DCå–å¾—ã€DIBã‚»ã‚¯ã‚·ãƒ§ãƒ³ä½œæˆ
 	m_hBitmap = ::CreateDIBSection(dc.m_hDC, (BITMAPINFO*)&bmi, DIB_RGB_COLORS,
 									(void**)&m_pBits, NULL, 0);
 	ASSERT(m_hBitmap);
 	ASSERT(m_pBits);
 
-	// ƒrƒbƒgƒ}ƒbƒvƒNƒŠƒA
+	// BitmapClear
 	if (m_hBitmap) {
 		memset(m_pBits, 0, bmi.biSizeImage);
 	}
 
-	// •\¦“à—e‚Í•s’è
+	// Displayå†…å®¹ã¯ä¸å®š
 	for (i=0; i<0x80; i++) {
 		m_nKey[i] = 0;
 	}
 
-	// VMƒAƒ“ƒƒbƒN
+	// VMã‚¢ãƒ³ãƒ­ãƒƒã‚¯
 	::UnlockVM();
 
-	// Ä•`‰æ‚ğ‹N‚±‚·
+	// Redrawã‚’èµ·ã“ã™
 	Invalidate(FALSE);
 }
 
 //---------------------------------------------------------------------------
 //
-//	ƒEƒBƒ“ƒhƒE”wŒi•`‰æ
+//	ã‚¦ã‚£ãƒ³ãƒ‰ã‚¦èƒŒæ™¯æç”»
 //
 //---------------------------------------------------------------------------
 BOOL CKeyDispWnd::OnEraseBkgnd(CDC* /*pDC*/)
 {
 	ASSERT(this);
 
-	// ‰½‚à‚¹‚¸ATRUE‚ğ•Ô‚·
+	// Return TRUE without doing anything
 	return TRUE;
 }
 
 //---------------------------------------------------------------------------
 //
-//	ƒEƒBƒ“ƒhƒEÄ•`‰æ
+//	ã‚¦ã‚£ãƒ³ãƒ‰ã‚¦Redraw
 //
 //---------------------------------------------------------------------------
 void CKeyDispWnd::OnPaint()
@@ -1479,18 +1490,18 @@ void CKeyDispWnd::OnPaint()
 
 	ASSERT(this);
 
-	// ‘S‚Ä‚ÌƒL[‚ğ–¢’èó‘Ô‚É
+	// Reset all keys to undefined state
 	for (i=0; i<0x80; i++) {
 		m_nKey[i] = 0;
 	}
 
-	// •`‰æ
+	// Draw
 	OnDraw(&dc);
 }
 
 //---------------------------------------------------------------------------
 //
-//	¶ƒ{ƒ^ƒ“‰Ÿ‰º
+//	å·¦ButtonæŠ¼ä¸‹
 //
 //---------------------------------------------------------------------------
 void CKeyDispWnd::OnLButtonDown(UINT /*nFlags*/, CPoint point)
@@ -1498,15 +1509,15 @@ void CKeyDispWnd::OnLButtonDown(UINT /*nFlags*/, CPoint point)
 	CWnd *pWnd;
 	int nKey;
 
-	// Point‚©‚çƒL[ƒCƒ“ƒfƒbƒNƒXæ“¾
+	// Pointã‹ã‚‰ã‚­ãƒ¼ã‚¤ãƒ³ãƒ‡ãƒƒã‚¯ã‚¹å–å¾—
 	nKey = PtInKey(point);
 
-	// “ü‚Á‚Ä‚¢‚È‚¯‚ê‚Î‰½‚à‚µ‚È‚¢
+	// If not in range, do nothing
 	if (nKey == 0) {
 		return;
 	}
 
-	// eƒEƒBƒ“ƒhƒE‚ÉƒƒbƒZ[ƒW‚ğ‘—M
+	// Send message to parent window
 	pWnd = GetParent();
 	if (pWnd) {
 		pWnd->PostMessage(WM_APP, (WPARAM)nKey, (LPARAM)WM_LBUTTONDOWN);
@@ -1515,7 +1526,7 @@ void CKeyDispWnd::OnLButtonDown(UINT /*nFlags*/, CPoint point)
 
 //---------------------------------------------------------------------------
 //
-//	¶ƒ{ƒ^ƒ“—£‚µ‚½
+//	å·¦Buttoné›¢ã—ãŸ
 //
 //---------------------------------------------------------------------------
 void CKeyDispWnd::OnLButtonUp(UINT /*nFlags*/, CPoint point)
@@ -1523,10 +1534,10 @@ void CKeyDispWnd::OnLButtonUp(UINT /*nFlags*/, CPoint point)
 	CWnd *pWnd;
 	int nKey;
 
-	// Point‚©‚çƒL[ƒCƒ“ƒfƒbƒNƒXæ“¾
+	// Pointã‹ã‚‰ã‚­ãƒ¼ã‚¤ãƒ³ãƒ‡ãƒƒã‚¯ã‚¹å–å¾—
 	nKey = PtInKey(point);
 
-	// eƒEƒBƒ“ƒhƒE‚ÉƒƒbƒZ[ƒW‚ğ‘—M
+	// Send message to parent window
 	pWnd = GetParent();
 	if (pWnd) {
 		pWnd->PostMessage(WM_APP, (WPARAM)nKey, (LPARAM)WM_LBUTTONUP);
@@ -1535,7 +1546,7 @@ void CKeyDispWnd::OnLButtonUp(UINT /*nFlags*/, CPoint point)
 
 //---------------------------------------------------------------------------
 //
-//	‰Eƒ{ƒ^ƒ“‰Ÿ‰º
+//	å³ButtonæŠ¼ä¸‹
 //
 //---------------------------------------------------------------------------
 void CKeyDispWnd::OnRButtonDown(UINT /*nFlags*/, CPoint point)
@@ -1543,15 +1554,15 @@ void CKeyDispWnd::OnRButtonDown(UINT /*nFlags*/, CPoint point)
 	CWnd *pWnd;
 	int nKey;
 
-	// Point‚©‚çƒL[ƒCƒ“ƒfƒbƒNƒXæ“¾
+	// Pointã‹ã‚‰ã‚­ãƒ¼ã‚¤ãƒ³ãƒ‡ãƒƒã‚¯ã‚¹å–å¾—
 	nKey = PtInKey(point);
 
-	// “ü‚Á‚Ä‚¢‚È‚¯‚ê‚Î‰½‚à‚µ‚È‚¢
+	// If not in range, do nothing
 	if (nKey == 0) {
 		return;
 	}
 
-	// eƒEƒBƒ“ƒhƒE‚ÉƒƒbƒZ[ƒW‚ğ‘—M
+	// Send message to parent window
 	pWnd = GetParent();
 	if (pWnd) {
 		pWnd->PostMessage(WM_APP, (WPARAM)nKey, (LPARAM)WM_RBUTTONDOWN);
@@ -1560,7 +1571,7 @@ void CKeyDispWnd::OnRButtonDown(UINT /*nFlags*/, CPoint point)
 
 //---------------------------------------------------------------------------
 //
-//	‰Eƒ{ƒ^ƒ“—£‚µ‚½
+//	å³Buttoné›¢ã—ãŸ
 //
 //---------------------------------------------------------------------------
 void CKeyDispWnd::OnRButtonUp(UINT /*nFlags*/, CPoint point)
@@ -1568,10 +1579,10 @@ void CKeyDispWnd::OnRButtonUp(UINT /*nFlags*/, CPoint point)
 	CWnd *pWnd;
 	int nKey;
 
-	// Point‚©‚çƒL[ƒCƒ“ƒfƒbƒNƒXæ“¾
+	// Pointã‹ã‚‰ã‚­ãƒ¼ã‚¤ãƒ³ãƒ‡ãƒƒã‚¯ã‚¹å–å¾—
 	nKey = PtInKey(point);
 
-	// eƒEƒBƒ“ƒhƒE‚ÉƒƒbƒZ[ƒW‚ğ‘—M
+	// Send message to parent window
 	pWnd = GetParent();
 	if (pWnd) {
 		pWnd->PostMessage(WM_APP, (WPARAM)nKey, (LPARAM)WM_RBUTTONUP);
@@ -1580,7 +1591,7 @@ void CKeyDispWnd::OnRButtonUp(UINT /*nFlags*/, CPoint point)
 
 //---------------------------------------------------------------------------
 //
-//	ƒ}ƒEƒXˆÚ“®
+//	Mouse move
 //
 //---------------------------------------------------------------------------
 void CKeyDispWnd::OnMouseMove(UINT /*nFlags*/, CPoint point)
@@ -1588,18 +1599,18 @@ void CKeyDispWnd::OnMouseMove(UINT /*nFlags*/, CPoint point)
 	CWnd *pWnd;
 	int nKey;
 
-	// Point‚©‚çƒL[ƒCƒ“ƒfƒbƒNƒXæ“¾
+	// Pointã‹ã‚‰ã‚­ãƒ¼ã‚¤ãƒ³ãƒ‡ãƒƒã‚¯ã‚¹å–å¾—
 	nKey = PtInKey(point);
 
-	// Œ»ó‚Æˆê’v‚µ‚Ä‚¢‚ê‚ÎOK
+	// If current matches, OK
 	if (m_nPoint == nKey) {
 		return;
 	}
 
-	// XV‚µ‚Ä
+	// Updateã—ã¦
 	m_nPoint = nKey;
 
-	// eƒEƒBƒ“ƒhƒE‚ÉƒƒbƒZ[ƒW‚ğ‘—M
+	// Send message to parent window
 	pWnd = GetParent();
 	if (pWnd) {
 		pWnd->PostMessage(WM_APP, (WPARAM)nKey, (LPARAM)WM_MOUSEMOVE);
@@ -1608,8 +1619,8 @@ void CKeyDispWnd::OnMouseMove(UINT /*nFlags*/, CPoint point)
 
 //---------------------------------------------------------------------------
 //
-//	ƒ_ƒCƒAƒƒOƒR[ƒhæ“¾
-//	¦ƒ_ƒCƒAƒƒO“à‚Ìƒ`ƒƒƒCƒ‹ƒhƒEƒBƒ“ƒhƒE‚Æ‚µ‚Äg‚í‚ê‚½ê‡‚Ì‚İ
+//	ãƒ€ã‚¤ã‚¢ãƒ­ã‚°ã‚³ãƒ¼ãƒ‰å–å¾—
+//	â€»ãƒ€ã‚¤ã‚¢ãƒ­ã‚°å†…ã®ãƒãƒ£ã‚¤ãƒ«ãƒ‰ã‚¦ã‚£ãƒ³ãƒ‰ã‚¦ã¨ã—ã¦ä½¿ã‚ã‚ŒãŸå ´åˆã®ã¿
 //
 //---------------------------------------------------------------------------
 UINT CKeyDispWnd::OnGetDlgCode()
@@ -1619,7 +1630,7 @@ UINT CKeyDispWnd::OnGetDlgCode()
 
 //---------------------------------------------------------------------------
 //
-//	‹éŒ`“àƒL[æ“¾
+//	çŸ©å½¢å†…Get key
 //
 //---------------------------------------------------------------------------
 int FASTCALL CKeyDispWnd::PtInKey(CPoint& point)
@@ -1630,20 +1641,20 @@ int FASTCALL CKeyDispWnd::PtInKey(CPoint& point)
 
 	ASSERT(this);
 
-	// ‰Šú‰»
+	// Initialization
 	nKey = -1;
 
-	// ‹éŒ`“à‚É“ü‚Á‚Ä‚¢‚é‚©”»’è
+	// Check if inside rectangle
 	for (i=0; i<=0x74; i++) {
 		rect = RectTable[i];
 		if (rect.top != 0) {
-			// “à‘¤‚ÉŠñ‚¹‚é
+			// Move inside
 			rect.top++;
 			rect.left++;
 			rect.right--;
 			rect.bottom--;
 
-			// ”»’è
+			// Check
 			if (rect.PtInRect(point)) {
 				nKey = i;
 				break;
@@ -1651,9 +1662,9 @@ int FASTCALL CKeyDispWnd::PtInKey(CPoint& point)
 		}
 	}
 
-	// “ü‚Á‚Ä‚¢‚È‚¯‚ê‚Î
+	// If not in range
 	if (nKey < 0) {
-		// CR‚Ì”»’è
+		// CRã®åˆ¤å®š
 		rect.top = RectTable[0x1c].top + 1;
 		rect.bottom = RectTable[0x29].bottom - 1;
 		rect.left = RectTable[0x1c].right + 1;
@@ -1662,12 +1673,12 @@ int FASTCALL CKeyDispWnd::PtInKey(CPoint& point)
 			nKey = 0x1d;
 		}
 		else {
-			// ‚»‚Ì‘¼‚Í0
+			// Others are 0
 			nKey = 0;
 		}
 	}
 
-	// SHIFTƒL[“Áêˆ—
+	// SHIFTã‚­ãƒ¼ç‰¹æ®Šå‡¦ç†
 	if (nKey == 0x74) {
 		nKey = 0x70;
 	}
@@ -1677,16 +1688,16 @@ int FASTCALL CKeyDispWnd::PtInKey(CPoint& point)
 
 //---------------------------------------------------------------------------
 //
-//	ƒVƒtƒgƒ‚[ƒhw’è
+//	ã‚·ãƒ•ãƒˆãƒ¢ãƒ¼ãƒ‰æŒ‡å®š
 //
 //	b7	SHIFT
 //	b6	CTRL
-//	b5	(–¢g—p)
-//	b4	(–¢g—p)
+//	b5	(æœªä½¿ç”¨)
+//	b4	(æœªä½¿ç”¨)
 //	b3	CAPS
-//	b2	ƒR[ƒh“ü—Í
-//	b1	ƒ[ƒ}š
-//	b0	‚©‚È
+//	b2	ã‚³ãƒ¼ãƒ‰å…¥åŠ›
+//	b1	ãƒ­ãƒ¼ãƒå­—
+//	b0	ã‹ãª
 //
 //---------------------------------------------------------------------------
 void FASTCALL CKeyDispWnd::SetShiftMode(UINT nMode)
@@ -1696,18 +1707,18 @@ void FASTCALL CKeyDispWnd::SetShiftMode(UINT nMode)
 	ASSERT(this);
 	ASSERT(nMode < 0x100);
 
-	// QÆ•ª‚¾‚¯ƒ}ƒXƒN
+	// Mask reference bits
 	nMode &= 0x89;
 
-	// ƒ‚[ƒh‚ª•Ï‰»‚µ‚Ä‚¢‚È‚¯‚ê‚ÎA‰½‚à‚µ‚È‚¢
+	// If mode hasn't changed, do nothing
 	if (m_nMode == nMode) {
 		return;
 	}
 
-	// ƒ‚[ƒhXV
+	// Update mode
 	m_nMode = nMode;
 
-	// ‘S‚Ä‚ÌƒL[‚ğ–¢’èó‘Ô‚É(•`‰æ‚Í‚µ‚È‚¢)
+	// Reset all keys to undefined (without drawing)
 	for (i=0; i<0x80; i++) {
 		m_nKey[i] = 0;
 	}
@@ -1715,7 +1726,7 @@ void FASTCALL CKeyDispWnd::SetShiftMode(UINT nMode)
 
 //---------------------------------------------------------------------------
 //
-//	ƒŠƒtƒŒƒbƒVƒ…
+//	ãƒªãƒ•ãƒ¬ãƒƒã‚·ãƒ¥
 //
 //---------------------------------------------------------------------------
 void FASTCALL CKeyDispWnd::Refresh(const BOOL *pKey)
@@ -1728,15 +1739,15 @@ void FASTCALL CKeyDispWnd::Refresh(const BOOL *pKey)
 	ASSERT(this);
 	ASSERT(pKey);
 
-	// •ÏXƒtƒ‰ƒO‰Šú‰»
+	// Change flag initialization
 	bFlag = FALSE;
 
-	// ƒ‹[ƒv
+	// Loop
 	for (i=0; i<0x80; i++) {
-		// ‚Ü‚¸ƒRƒs[
+		// First copy
 		m_bKey[i] = pKey[i];
 
-		// ”’l‰»‚µ‚Ä”äŠr
+		// Convert to number and compare
 		if (m_bKey[i]) {
 			nCode = 2;
 		}
@@ -1744,25 +1755,25 @@ void FASTCALL CKeyDispWnd::Refresh(const BOOL *pKey)
 			nCode = 1;
 		}
 
-		// ˆÙ‚È‚Á‚Ä‚¢‚ê‚Îƒtƒ‰ƒO—§‚ÄA”²‚¯‚é
+		// If different, set flag and break
 		if (m_nKey[i] != nCode) {
 			bFlag = TRUE;
 			break;
 		}
 	}
 
-	// ƒtƒ‰ƒO~‚è‚Ä‚¢‚ê‚Î‚±‚±‚Ü‚Å
+	// If flag is down, stop here
 	if (!bFlag) {
 		return;
 	}
 
-	// •`‰æ
+	// Draw
 	OnDraw(&dc);
 }
 
 //---------------------------------------------------------------------------
 //
-//  ƒL[ˆêŠ‡İ’è
+//  ã‚­ãƒ¼Batch setting
 //
 //---------------------------------------------------------------------------
 void FASTCALL CKeyDispWnd::SetKey(const BOOL* pKey)
@@ -1770,13 +1781,13 @@ void FASTCALL CKeyDispWnd::SetKey(const BOOL* pKey)
 	ASSERT(this);
 	ASSERT(pKey);
 
-	// ƒL[î•ñ‚ğƒRƒs[
+	// Copy key information
 	memcpy(m_bKey, pKey, sizeof(m_bKey));
 }
 
 //---------------------------------------------------------------------------
 //
-//	ƒEƒBƒ“ƒhƒE•`‰æ
+//	ã‚¦ã‚£ãƒ³ãƒ‰ã‚¦æç”»
 //
 //---------------------------------------------------------------------------
 void FASTCALL CKeyDispWnd::OnDraw(CDC *pDC)
@@ -1789,14 +1800,14 @@ void FASTCALL CKeyDispWnd::OnDraw(CDC *pDC)
 
 	ASSERT(this);
 
-	// ƒrƒbƒgƒ}ƒbƒv‚ª‚Å‚«‚Ä‚¢‚È‚¯‚ê‚ÎA‰½‚à‚µ‚È‚¢
+	// BitmapãŒã§ãã¦ã„ãªã‘ã‚Œã°ã€ä½•ã‚‚ã—ãªã„
 	if (!m_hBitmap) {
 		return;
 	}
 
-	// •¨—ƒL[ƒ‹[ƒv
+	// Physical key loop
 	for (i=0; i<0x80; i++) {
-		// ”’l‰»‚µ‚Ä
+		// Convert to number
 		if (m_bKey[i]) {
 			nCode = 2;
 		}
@@ -1804,12 +1815,12 @@ void FASTCALL CKeyDispWnd::OnDraw(CDC *pDC)
 			nCode = 1;
 		}
 
-		// ”äŠr
+		// Compare
 		if (m_nKey[i] != nCode) {
-			// ˆÙ‚È‚Á‚Ä‚¢‚é‚Ì‚Å•Û‘¶‚µ‚Ä
+			// Different, so save and draw
 			m_nKey[i] = nCode;
 
-			// •`‰æ
+			// Draw
 			if (nCode == 2) {
 				DrawKey(i, TRUE);
 			}
@@ -1819,32 +1830,32 @@ void FASTCALL CKeyDispWnd::OnDraw(CDC *pDC)
 		}
 	}
 
-	// ƒƒ‚ƒŠDCì¬
+	// Create memory DC
 	ASSERT(m_pBits);
 	VERIFY(mDC.CreateCompatibleDC(pDC));
 	GetClientRect(&rect);
 
-	// ƒrƒbƒgƒ}ƒbƒvƒZƒŒƒNƒg
+	// Bitmapã‚»ãƒ¬ã‚¯ãƒˆ
 	hBitmap = (HBITMAP)::SelectObject(mDC.m_hDC, m_hBitmap);
 	if (hBitmap) {
-		// DIBƒJƒ‰[ƒe[ƒuƒ‹İ’è
+		// DIBã‚«ãƒ©ãƒ¼ãƒ†ãƒ¼ãƒ–ãƒ«è¨­å®š
 		::SetDIBColorTable(mDC.m_hDC, 0, 16, PalTable);
 
 		// BitBlt
 		::BitBlt(pDC->m_hDC, 0, 0, rect.Width(), rect.Height(),
 					mDC.m_hDC, 0, 0, SRCCOPY);
 
-		// •œŒ³
+		// Restore
 		::SelectObject(mDC.m_hDC, hBitmap);
 	}
 
-	// ƒƒ‚ƒŠDCíœ
+	// Delete memory DC
 	mDC.DeleteDC();
 }
 
 //---------------------------------------------------------------------------
 //
-//	ƒL[•¶š—ñæ“¾
+//	ã‚­ãƒ¼æ–‡å­—åˆ—å–å¾—
 //
 //---------------------------------------------------------------------------
 LPCTSTR FASTCALL CKeyDispWnd::GetKeyString(int nKey)
@@ -1855,19 +1866,19 @@ LPCTSTR FASTCALL CKeyDispWnd::GetKeyString(int nKey)
 	ASSERT(this);
 	ASSERT((nKey >= 0) && (nKey < 0x80));
 
-	// ƒI[ƒo[ƒ`ƒFƒbƒN
+	// Overflow check
 	if (nKey > 0x74) {
 		return NULL;
 	}
 
-	// ‚Ü‚¸Šî–{’l‚ğ‘ã“ü
+	// First assign base value
 	lpszString = NormalTable[nKey];
 
-	// ‚©‚Èƒ`ƒFƒbƒN
+	// Kana check
 	if (m_nMode & 1) {
-		// ‚©‚ÈƒL[”ÍˆÍ
+		// Kana key range
 		if ((nKey >= 2) && (nKey <= 0x34)) {
-			// SHIFT‚É‚æ‚è•ª‚¯‚é
+			// SHIFTã«ã‚ˆã‚Šåˆ†ã‘ã‚‹
 			if (m_nMode & 0x80) {
 				return KanaShiftTable[nKey - 2];
 			}
@@ -1877,18 +1888,18 @@ LPCTSTR FASTCALL CKeyDispWnd::GetKeyString(int nKey)
 		}
 	}
 
-	// SHIFTƒ`ƒFƒbƒN
+	// SHIFTãƒã‚§ãƒƒã‚¯
 	if (m_nMode & 0x80) {
 		if ((nKey >= 2) && (nKey <= 0x0e)) {
 			return MarkTable[nKey - 2];
 		}
 	}
 
-	// ‰p”ƒ‚[ƒhì¬
+	// Create alphanumeric mode
 	nModeXor = m_nMode >> 4;
 	nModeXor ^= m_nMode;
 	if ((nModeXor & 0x08) == 0) {
-		// ‰p”¬•¶š‚Ì‚½‚ßA“ü‚ê‘Ö‚¦
+		// For lowercase alphanumeric, swap
 		if ((nKey >= 0x11) && (nKey <= 0x1a)) {
 			lpszString = AnotherTable[nKey - 0x11];
 		}
@@ -1900,7 +1911,7 @@ LPCTSTR FASTCALL CKeyDispWnd::GetKeyString(int nKey)
 		}
 	}
 
-	// ‹L†‚ÍSHIFT‚Å“ü‚ê‘Ö‚í‚é
+	// Symbols are swapped with SHIFT
 	if (m_nMode & 0x80) {
 		if ((nKey >= 0x1b) && (nKey <= 0x1d)) {
 			lpszString = AnotherTable[nKey - 0x11];
@@ -1918,7 +1929,7 @@ LPCTSTR FASTCALL CKeyDispWnd::GetKeyString(int nKey)
 
 //---------------------------------------------------------------------------
 //
-//	ƒL[•`‰æ
+//	ã‚­ãƒ¼æç”»
 //
 //---------------------------------------------------------------------------
 void FASTCALL CKeyDispWnd::DrawKey(int nKey, BOOL bDown)
@@ -1935,10 +1946,10 @@ void FASTCALL CKeyDispWnd::DrawKey(int nKey, BOOL bDown)
 	ASSERT(this);
 	ASSERT((nKey >= 0) && (nKey < 0x80));
 
-	// •¶š—ñæ“¾
+	// Get string
 	lpszKey = GetKeyString(nKey);
 	if (!lpszKey) {
-		// CR‚Ì“Á—á‚ğ“ü‚ê‚é
+		// CRã®ç‰¹ä¾‹ã‚’å…¥ã‚Œã‚‹
 		if (nKey == 0x1d) {
 			// CR
 			rectKey.left = RectTable[0x1c].right - 1;
@@ -1946,7 +1957,7 @@ void FASTCALL CKeyDispWnd::DrawKey(int nKey, BOOL bDown)
 			rectKey.right = RectTable[0x0f].right;
 			rectKey.bottom = RectTable[0x29].bottom;
 
-			// CR•`‰æ
+			// CRæç”»
 			if (bDown) {
 				DrawCRBox(10, 11, rectKey);
 				DrawCRChar(rectKey.left, rectKey.top, 12);
@@ -1959,11 +1970,11 @@ void FASTCALL CKeyDispWnd::DrawKey(int nKey, BOOL bDown)
 		return;
 	}
 
-	// ‹éŒ`æ“¾
+	// Get rectangle
 	ASSERT(nKey <= 0x74);
 	rectKey = RectTable[nKey];
 
-	// ‹éŒ`•`‰æ
+	// Draw rectangle
 	if (bDown) {
 		DrawBox(10, 11, rectKey);
 		nColor = 12;
@@ -1973,11 +1984,11 @@ void FASTCALL CKeyDispWnd::DrawKey(int nKey, BOOL bDown)
 		nColor = 9;
 	}
 
-	// •¶š”‚ğ”‚¦Aƒhƒbƒg‰»
+	// Count characters and convert to dots
 	nWidth = (int)strlen(lpszKey);
 	nWidth <<= 3;
 
-	// ƒZƒ“ƒ^ƒŠƒ“ƒO
+	// Centering
 	x = 0;
 	if (nWidth < rectKey.Width()) {
 		x = (rectKey.Width() >> 1);
@@ -1989,17 +2000,17 @@ void FASTCALL CKeyDispWnd::DrawKey(int nKey, BOOL bDown)
 		y -= (15 >> 1);
 	}
 
-	// •¶š•`‰æ
+	// Draw character
 	for (i=0;; i++) {
-		// I—¹ƒ`ƒFƒbƒN
+		// End check
 		if (lpszKey[i] == '\0') {
 			break;
 		}
 
-		// 1•¶šæ“¾
+		// 1æ–‡å­—å–å¾—
 		dwChar = (DWORD)(lpszKey[i] & 0xff);
 
-		// ”¼Šp”»’è
+		// Half-width check
 		if (dwChar < 0x80) {
 			DrawChar(rectKey.left + x, rectKey.top + y + 1, nColor, dwChar);
 			x += 8;
@@ -2011,7 +2022,7 @@ void FASTCALL CKeyDispWnd::DrawKey(int nKey, BOOL bDown)
 			continue;
 		}
 
-		// ‘SŠp
+		// Full-width
 		dwChar <<= 8;
 		dwChar |= (DWORD)(lpszKey[i + 1] & 0xff);
 		i++;
@@ -2023,7 +2034,7 @@ void FASTCALL CKeyDispWnd::DrawKey(int nKey, BOOL bDown)
 
 //---------------------------------------------------------------------------
 //
-//	ƒ{ƒbƒNƒX•`‰æ
+//	ãƒœãƒƒã‚¯ã‚¹æç”»
 //
 //---------------------------------------------------------------------------
 void FASTCALL CKeyDispWnd::DrawBox(int nColorOut, int nColorIn, RECT& rect)
@@ -2042,23 +2053,23 @@ void FASTCALL CKeyDispWnd::DrawBox(int nColorOut, int nColorIn, RECT& rect)
 	ASSERT(rect.left >= 0);
 	ASSERT(rect.left <= rect.right);
 
-	// ‰ŠúˆÊ’uŒvZ
+	// Calculate initial position
 	p = m_pBits;
 	p += (m_nBMPMul * rect.top);
 	p += rect.left;
 
-	// ã(¶‰E1dot’PˆÊ‚Å‚ ‚¯‚é)
+	// Top (leave 1 dot on left and right)
 	memset(p + 1, nColorOut, (rect.right - rect.left - 2));
 	p += m_nBMPMul;
 
-	// €”õ
+	// Prepare
 	x = rect.right - rect.left;
 	x -= 2;
 	rect.bottom -= 2;
 
-	// yƒ‹[ƒv
+	// yLoop
 	for (y=rect.top; y<rect.bottom; y++) {
-		// ƒ‰ƒCƒ“‚²‚Æ
+		// Per line
 		p[0] = (BYTE)nColorOut;
 		memset(p + 1, nColorIn, x);
 		p[x + 1] = (BYTE)nColorOut;
@@ -2066,13 +2077,13 @@ void FASTCALL CKeyDispWnd::DrawBox(int nColorOut, int nColorIn, RECT& rect)
 		p += m_nBMPMul;
 	}
 
-	// ÅŒã(¶‰E1dot’PˆÊ‚Å‚ ‚¯‚é)
+	// Last (leave 1 dot on left and right)
 	memset(p + 1, nColorOut, (rect.right - rect.left - 2));
 }
 
 //---------------------------------------------------------------------------
 //
-//	CRƒ{ƒbƒNƒX•`‰æ
+//	CRãƒœãƒƒã‚¯ã‚¹æç”»
 //
 //---------------------------------------------------------------------------
 void FASTCALL CKeyDispWnd::DrawCRBox(int nColorOut, int nColorIn, RECT& rect)
@@ -2092,30 +2103,30 @@ void FASTCALL CKeyDispWnd::DrawCRBox(int nColorOut, int nColorIn, RECT& rect)
 	ASSERT(rect.left >= 0);
 	ASSERT(rect.left <= rect.right);
 
-	// ‰ŠúˆÊ’uŒvZ
+	// Calculate initial position
 	p = m_pBits;
 	p += (m_nBMPMul * rect.top);
 	p += rect.left;
 
-	// ã(¶‰E1dot’PˆÊ‚Å‚ ‚¯‚é)
+	// Top (leave 1 dot on left and right)
 	memset(p + 1, nColorOut, (rect.right - rect.left - 2));
 	p += m_nBMPMul;
 
-	// €”õ
+	// Prepare
 	x = rect.right - rect.left;
 	x -= 2;
 	rect.bottom -= 2;
 
-	// yƒ‹[ƒv
+	// yLoop
 	for (y=rect.top; y<rect.bottom; y++) {
 		if ((y - rect.top) < 19) {
-			// ’Êí
+			// Normal
 			p[0] = (BYTE)nColorOut;
 			memset(p + 1, nColorIn, x);
 			p[x + 1] = (BYTE)nColorOut;
 		}
 		else {
-			// ‰º‘¤
+			// Bottom side
 			p[10] = (BYTE)nColorOut;
 			memset(p + 11, nColorIn, 41);
 			p[x + 1] = (BYTE)nColorOut;
@@ -2124,12 +2135,12 @@ void FASTCALL CKeyDispWnd::DrawCRBox(int nColorOut, int nColorIn, RECT& rect)
 		p += m_nBMPMul;
 	}
 
-	// ˆê”Ô‰º‚ÍÈ—ª(0x74:SHIFT‚É”C‚¹‚é)
+	// Skip bottom (leave to 0x74:SHIFT)
 }
 
 //---------------------------------------------------------------------------
 //
-//	ƒLƒƒƒ‰ƒNƒ^•`‰æ
+//	ã‚­ãƒ£ãƒ©ã‚¯ã‚¿æç”»
 //
 //---------------------------------------------------------------------------
 void FASTCALL CKeyDispWnd::DrawChar(int x, int y, int nColor, DWORD dwChar)
@@ -2151,30 +2162,30 @@ void FASTCALL CKeyDispWnd::DrawChar(int x, int y, int nColor, DWORD dwChar)
 	ASSERT(dwChar <= 0x10000);
 	ASSERT(m_pCG);
 
-	// ƒtƒHƒ“ƒgƒAƒhƒŒƒXZo
+	// Calculate font address
 	if (dwChar < 0x100) {
-		// ”¼Šp
+		// Half-width
 		nWidth = 1;
 		pCG = m_pCG + 0x3a800;
 		pCG += (dwChar << 4);
 	}
 	else {
-		// ‘SŠp
+		// Full-width
 		nWidth = 2;
 		pCG = m_pCG;
 		pCG += CalcCGAddr(dwChar);
 	}
 
-	// ƒrƒbƒgˆÊ’uZo
+	// Calculate bit position
 	pBits = m_pBits;
 	pBits += (m_nBMPMul * y);
 	pBits += x;
 
-	// ƒIƒtƒZƒbƒgZo
+	// Calculate offset
 	nOffset = m_nBMPMul - (nWidth << 3);
 
 	if (nWidth == 1) {
-		// ”¼Šp
+		// Half-width
 		for (i=0; i<8; i++) {
 			// +1
 			dwPattern = (DWORD)pCG[1];
@@ -2203,7 +2214,7 @@ void FASTCALL CKeyDispWnd::DrawChar(int x, int y, int nColor, DWORD dwChar)
 		}
 	}
 	else {
-		// ‘SŠp
+		// Full-width
 		for (i=0; i<16; i++) {
 			// +1
 			dwPattern = (DWORD)pCG[1];
@@ -2234,7 +2245,7 @@ void FASTCALL CKeyDispWnd::DrawChar(int x, int y, int nColor, DWORD dwChar)
 
 //---------------------------------------------------------------------------
 //
-//	CRƒLƒƒƒ‰ƒNƒ^•`‰æ
+//	CRã‚­ãƒ£ãƒ©ã‚¯ã‚¿æç”»
 //
 //---------------------------------------------------------------------------
 void FASTCALL CKeyDispWnd::DrawCRChar(int x, int y, int nColor)
@@ -2248,7 +2259,7 @@ void FASTCALL CKeyDispWnd::DrawCRChar(int x, int y, int nColor)
 	ASSERT((y >= 0) && (y < (int)m_nBMPHeight));
 	ASSERT((nColor >= 0) && (nColor < 0x100));
 
-	// c‘¤
+	// Vertical side
 	pBits = m_pBits;
 	pBits += ((y + 7) * m_nBMPMul);
 	pBits += (x + 34);
@@ -2265,7 +2276,7 @@ void FASTCALL CKeyDispWnd::DrawCRChar(int x, int y, int nColor)
 		pBits += m_nBMPMul;
 	}
 
-	// ‰¡‘¤
+	// Horizontal side
 	pBits = m_pBits;
 	pBits += ((y + 27) * m_nBMPMul);
 	pBits += (x + 27);
@@ -2273,7 +2284,7 @@ void FASTCALL CKeyDispWnd::DrawCRChar(int x, int y, int nColor)
 	pBits += (m_nBMPMul * 3);
 	memset(pBits, (BYTE)nColor, 11);
 
-	// –îˆó
+	// Arrow
 	pBits = m_pBits;
 	pBits += ((y + 28) * m_nBMPMul);
 	pBits += (x + 20);
@@ -2299,7 +2310,7 @@ void FASTCALL CKeyDispWnd::DrawCRChar(int x, int y, int nColor)
 
 //---------------------------------------------------------------------------
 //
-//	‘SŠpCGROMƒAƒhƒŒƒXZo
+//	å…¨è§’CGROMã‚¢ãƒ‰ãƒ¬ã‚¹ç®—å‡º
 //
 //---------------------------------------------------------------------------
 int FASTCALL CKeyDispWnd::CalcCGAddr(DWORD dwChar)
@@ -2310,13 +2321,13 @@ int FASTCALL CKeyDispWnd::CalcCGAddr(DWORD dwChar)
 	ASSERT(m_pCG);
 	ASSERT((dwChar >= 0x8000) && (dwChar < 0x10000));
 
-	// ƒVƒtƒgJIS¨JIS•ÏŠ·(1)
+	// ShiftJIS to JIS conversion (1)
 	dwLow = (dwChar & 0xff);
 	dwChar &= 0x3f00;
 	dwChar <<= 1;
 	dwChar += 0x1f00;
 
-	// ƒVƒtƒgJIS¨JIS•ÏŠ·(2)
+	// ShiftJIS to JIS conversion (2)
 	if (dwLow < 0x7f) {
 		dwLow -= 0x1f;
 	}
@@ -2330,7 +2341,7 @@ int FASTCALL CKeyDispWnd::CalcCGAddr(DWORD dwChar)
 		}
 	}
 
-	// ƒAƒhƒŒƒXZo(ãˆÊ)
+	// Calculate address (upper)
 	dwChar >>= 8;
 	if (dwChar >= 0x30) {
 		dwChar -= 7;
@@ -2339,11 +2350,11 @@ int FASTCALL CKeyDispWnd::CalcCGAddr(DWORD dwChar)
 	dwChar -= 0x21;
 	dwChar *= 0x5e;
 
-	// ƒAƒhƒŒƒXZo(‰ºˆÊ)
+	// Calculate address (lower)
 	ASSERT(dwLow >= 0x21);
 	dwLow -= 0x21;
 
-	// ƒAƒhƒŒƒXZo(‡¬)
+	// Calculate address (combined)
 	dwChar += dwLow;
 	dwChar <<= 5;
 
@@ -2352,32 +2363,32 @@ int FASTCALL CKeyDispWnd::CalcCGAddr(DWORD dwChar)
 
 //---------------------------------------------------------------------------
 //
-//	ƒpƒŒƒbƒgƒe[ƒuƒ‹
+//	ãƒ‘ãƒ¬ãƒƒãƒˆãƒ†ãƒ¼ãƒ–ãƒ«
 //
 //---------------------------------------------------------------------------
 RGBQUAD CKeyDispWnd::PalTable[0x10] = {
-	{ 0x50, 0x50, 0x50, 0x00 },			//  0:”wŒiF
-	{ 0xff, 0x00, 0x00, 0x00 },			//  1:Â
-	{ 0x00, 0x00, 0xff, 0x00 },			//  2:Ô
-	{ 0xff, 0x00, 0xff, 0x00 },			//  3:‡
-	{ 0x00, 0xff, 0x00, 0x00 },			//  4:—Î
-	{ 0xff, 0xff, 0x00, 0x00 },			//  5:…F
-	{ 0x00, 0xff, 0xff, 0x00 },			//  6:‰©
-	{ 0xff, 0xff, 0xff, 0x00 },			//  7:”’
+	{ 0x50, 0x50, 0x50, 0x00 },			//  0:èƒŒæ™¯è‰²
+	{ 0xff, 0x00, 0x00, 0x00 },			//  1:é’
+	{ 0x00, 0x00, 0xff, 0x00 },			//  2:èµ¤
+	{ 0xff, 0x00, 0xff, 0x00 },			//  3:ç´«
+	{ 0x00, 0xff, 0x00, 0x00 },			//  4:ç·‘
+	{ 0xff, 0xff, 0x00, 0x00 },			//  5:æ°´è‰²
+	{ 0x00, 0xff, 0xff, 0x00 },			//  6:é»„
+	{ 0xff, 0xff, 0xff, 0x00 },			//  7:ç™½
 
-	{ 0xd0, 0xd0, 0xd0, 0x00 },			//  8:ƒL[“à•”F
-	{ 0x08, 0x08, 0x08, 0x00 },			//  9:ƒL[•¶šF
-	{ 0x00, 0x00, 0x00, 0x00 },			// 10:ƒL[ŠOüF
-	{ 0x1f, 0x1f, 0xd0, 0x00 },			// 11:ƒL[“à•”F(‰Ÿ‰º)
-	{ 0xf8, 0xf8, 0xf8, 0x00 },			// 12:ƒL[•¶šF(‰Ÿ‰º)
-	{ 0x00, 0x00, 0x00, 0x00 },			// 13:–¢g—p
-	{ 0x00, 0x00, 0x00, 0x00 },			// 14:–¢g—p
-	{ 0x00, 0x00, 0x00, 0x00 }			// 15:–¢g—p
+	{ 0xd0, 0xd0, 0xd0, 0x00 },			//  8:ã‚­ãƒ¼å†…éƒ¨è‰²
+	{ 0x08, 0x08, 0x08, 0x00 },			//  9:ã‚­ãƒ¼æ–‡å­—è‰²
+	{ 0x00, 0x00, 0x00, 0x00 },			// 10:ã‚­ãƒ¼å¤–å‘¨è‰²
+	{ 0x1f, 0x1f, 0xd0, 0x00 },			// 11:ã‚­ãƒ¼å†…éƒ¨è‰²(æŠ¼ä¸‹)
+	{ 0xf8, 0xf8, 0xf8, 0x00 },			// 12:ã‚­ãƒ¼æ–‡å­—è‰²(æŠ¼ä¸‹)
+	{ 0x00, 0x00, 0x00, 0x00 },			// 13:æœªä½¿ç”¨
+	{ 0x00, 0x00, 0x00, 0x00 },			// 14:æœªä½¿ç”¨
+	{ 0x00, 0x00, 0x00, 0x00 }			// 15:æœªä½¿ç”¨
 };
 
 //---------------------------------------------------------------------------
 //
-//	ˆÊ’uƒe[ƒuƒ‹
+//	ä½ç½®ãƒ†ãƒ¼ãƒ–ãƒ«
 //
 //---------------------------------------------------------------------------
 const RECT CKeyDispWnd::RectTable[0x75] = {
@@ -2502,7 +2513,7 @@ const RECT CKeyDispWnd::RectTable[0x75] = {
 
 //---------------------------------------------------------------------------
 //
-//	•¶š—ñƒe[ƒuƒ‹(’Êí)
+//	æ–‡å­—åˆ—ãƒ†ãƒ¼ãƒ–ãƒ«(é€šå¸¸)
 //
 //---------------------------------------------------------------------------
 LPCTSTR CKeyDispWnd::NormalTable[] = {
@@ -2569,10 +2580,10 @@ LPCTSTR CKeyDispWnd::NormalTable[] = {
 	_T("RLUP"),
 	_T("RLDN"),
 	_T("UNDO"),
-	_T("©"),
-	_T("ª"),
-	_T("¨"),
-	_T("«"),
+	_T("â†"),
+	_T("â†‘"),
+	_T("â†’"),
+	_T("â†“"),
 
 	_T("CLR"),
 	_T("/"),
@@ -2594,8 +2605,8 @@ LPCTSTR CKeyDispWnd::NormalTable[] = {
 	_T(","),
 	_T("."),
 
-	_T("‹L†"),
-	_T("“o˜^"),
+	_T("è¨˜å·"),
+	_T("ç™»éŒ²"),
 	_T("HELP"),
 
 	_T("XF1"),
@@ -2604,13 +2615,13 @@ LPCTSTR CKeyDispWnd::NormalTable[] = {
 	_T("XF4"),
 	_T("XF5"),
 
-	_T("‚©‚È"),
-	_T("Û°Ï"),
-	_T("º°ÄŞ"),
+	_T("ã‹ãª"),
+	_T("ï¾›ï½°ï¾"),
+	_T("ï½ºï½°ï¾„ï¾"),
 	_T("CAPS"),
 	_T("INS"),
-	_T("‚Ğ‚ç"),
-	_T("‘SŠp"),
+	_T("ã²ã‚‰"),
+	_T("å…¨è§’"),
 
 	_T("BRK"),
 	_T("CPY"),
@@ -2638,131 +2649,131 @@ LPCTSTR CKeyDispWnd::NormalTable[] = {
 
 //---------------------------------------------------------------------------
 //
-//	•¶š—ñƒe[ƒuƒ‹(‚©‚ÈA’Êí)
+//	æ–‡å­—åˆ—ãƒ†ãƒ¼ãƒ–ãƒ«(ã‹ãªã€é€šå¸¸)
 //
 //---------------------------------------------------------------------------
 LPCTSTR CKeyDispWnd::KanaTable[] = {
-	_T("Ç"),
-	_T("Ì"),
-	_T("±"),
-	_T("³"),
-	_T("´"),
-	_T("µ"),
-	_T("Ô"),
-	_T("Õ"),
-	_T("Ö"),
-	_T("Ü"),
-	_T("Î"),
-	_T("Í"),
-	_T("°"),
+	_T("ï¾‡"),
+	_T("ï¾Œ"),
+	_T("ï½±"),
+	_T("ï½³"),
+	_T("ï½´"),
+	_T("ï½µ"),
+	_T("ï¾”"),
+	_T("ï¾•"),
+	_T("ï¾–"),
+	_T("ï¾œ"),
+	_T("ï¾"),
+	_T("ï¾"),
+	_T("ï½°"),
 	_T("BS"),
 
 	_T("TAB"),
-	_T("À"),
-	_T("Ã"),
-	_T("²"),
-	_T("½"),
-	_T("¶"),
-	_T("İ"),
-	_T("Å"),
-	_T("Æ"),
-	_T("×"),
-	_T("¾"),
-	_T("Ş"),
-	_T("ß"),
+	_T("ï¾€"),
+	_T("ï¾ƒ"),
+	_T("ï½²"),
+	_T("ï½½"),
+	_T("ï½¶"),
+	_T("ï¾"),
+	_T("ï¾…"),
+	_T("ï¾†"),
+	_T("ï¾—"),
+	_T("ï½¾"),
+	_T("ï¾"),
+	_T("ï¾Ÿ"),
 	NULL,
 
-	_T("Á"),
-	_T("Ä"),
-	_T("¼"),
-	_T("Ê"),
-	_T("·"),
-	_T("¸"),
-	_T("Ï"),
-	_T("É"),
-	_T("Ø"),
-	_T("Ú"),
-	_T("¹"),
-	_T("Ñ"),
+	_T("ï¾"),
+	_T("ï¾„"),
+	_T("ï½¼"),
+	_T("ï¾Š"),
+	_T("ï½·"),
+	_T("ï½¸"),
+	_T("ï¾"),
+	_T("ï¾‰"),
+	_T("ï¾˜"),
+	_T("ï¾š"),
+	_T("ï½¹"),
+	_T("ï¾‘"),
 
-	_T("Â"),
-	_T("»"),
-	_T("¿"),
-	_T("Ë"),
-	_T("º"),
-	_T("Ğ"),
-	_T("Ó"),
-	_T("È"),
-	_T("Ù"),
-	_T("Ò"),
-	_T("Û")
+	_T("ï¾‚"),
+	_T("ï½»"),
+	_T("ï½¿"),
+	_T("ï¾‹"),
+	_T("ï½º"),
+	_T("ï¾"),
+	_T("ï¾“"),
+	_T("ï¾ˆ"),
+	_T("ï¾™"),
+	_T("ï¾’"),
+	_T("ï¾›")
 };
 
 //---------------------------------------------------------------------------
 //
-//	•¶š—ñƒe[ƒuƒ‹(‚©‚ÈASHIFT)
+//	æ–‡å­—åˆ—ãƒ†ãƒ¼ãƒ–ãƒ«(ã‹ãªã€SHIFT)
 //
 //---------------------------------------------------------------------------
 LPCTSTR CKeyDispWnd::KanaShiftTable[] = {
-	_T("Ç"),
-	_T("Ì"),
-	_T("§"),
-	_T("©"),
-	_T("ª"),
-	_T("«"),
-	_T("¬"),
-	_T("­"),
-	_T("®"),
-	_T("¦"),
-	_T("Î"),
-	_T("Í"),
-	_T("°"),
+	_T("ï¾‡"),
+	_T("ï¾Œ"),
+	_T("ï½§"),
+	_T("ï½©"),
+	_T("ï½ª"),
+	_T("ï½«"),
+	_T("ï½¬"),
+	_T("ï½­"),
+	_T("ï½®"),
+	_T("ï½¦"),
+	_T("ï¾"),
+	_T("ï¾"),
+	_T("ï½°"),
 	_T("BS"),
 
 	_T("TAB"),
-	_T("À"),
-	_T("Ã"),
-	_T("²"),
-	_T("½"),
-	_T("¶"),
-	_T("İ"),
-	_T("Å"),
-	_T("Æ"),
-	_T("×"),
-	_T("¾"),
-	_T("Ş"),
-	_T("¢"),
+	_T("ï¾€"),
+	_T("ï¾ƒ"),
+	_T("ï½²"),
+	_T("ï½½"),
+	_T("ï½¶"),
+	_T("ï¾"),
+	_T("ï¾…"),
+	_T("ï¾†"),
+	_T("ï¾—"),
+	_T("ï½¾"),
+	_T("ï¾"),
+	_T("ï½¢"),
 	NULL,
 
-	_T("Á"),
-	_T("Ä"),
-	_T("¼"),
-	_T("Ê"),
-	_T("·"),
-	_T("¸"),
-	_T("Ï"),
-	_T("É"),
-	_T("Ø"),
-	_T("Ú"),
-	_T("¹"),
-	_T("£"),
+	_T("ï¾"),
+	_T("ï¾„"),
+	_T("ï½¼"),
+	_T("ï¾Š"),
+	_T("ï½·"),
+	_T("ï½¸"),
+	_T("ï¾"),
+	_T("ï¾‰"),
+	_T("ï¾˜"),
+	_T("ï¾š"),
+	_T("ï½¹"),
+	_T("ï½£"),
 
-	_T("¯"),
-	_T("»"),
-	_T("¿"),
-	_T("Ë"),
-	_T("º"),
-	_T("Ğ"),
-	_T("Ó"),
-	_T("¤"),
-	_T("¡"),
-	_T("¥"),
+	_T("ï½¯"),
+	_T("ï½»"),
+	_T("ï½¿"),
+	_T("ï¾‹"),
+	_T("ï½º"),
+	_T("ï¾"),
+	_T("ï¾“"),
+	_T("ï½¤"),
+	_T("ï½¡"),
+	_T("ï½¥"),
 	_T(" ")
 };
 
 //---------------------------------------------------------------------------
 //
-//	•¶š—ñƒe[ƒuƒ‹(‹L†)
+//	æ–‡å­—åˆ—ãƒ†ãƒ¼ãƒ–ãƒ«(è¨˜å·)
 //
 //---------------------------------------------------------------------------
 LPCTSTR CKeyDispWnd::MarkTable[] = {
@@ -2783,7 +2794,7 @@ LPCTSTR CKeyDispWnd::MarkTable[] = {
 
 //---------------------------------------------------------------------------
 //
-//	•¶š—ñƒe[ƒuƒ‹(‚»‚Ì‘¼)
+//	æ–‡å­—åˆ—ãƒ†ãƒ¼ãƒ–ãƒ«(ãã®ä»–)
 //
 //---------------------------------------------------------------------------
 LPCTSTR CKeyDispWnd::AnotherTable[] = {
@@ -2829,44 +2840,44 @@ LPCTSTR CKeyDispWnd::AnotherTable[] = {
 
 //===========================================================================
 //
-//	ƒ\ƒtƒgƒEƒFƒAƒL[ƒ{[ƒhƒEƒBƒ“ƒhƒE
+//	Software keyboard window
 //
 //===========================================================================
 
 //---------------------------------------------------------------------------
 //
-//	ƒRƒ“ƒXƒgƒ‰ƒNƒ^
+//	Constructor
 //
 //---------------------------------------------------------------------------
 CSoftKeyWnd::CSoftKeyWnd()
 {
 	CFrmWnd *pWnd;
 
-	// ƒEƒBƒ“ƒhƒEƒpƒ‰ƒ[ƒ^’è‹`
+	// Window parameter definition
 	m_dwID = MAKEID('S', 'K', 'E', 'Y');
 	::GetMsg(IDS_SWND_SOFTKEY, m_strCaption);
 
-	// ‰æ–ÊƒTƒCƒY
+	// Screen size
 	m_nWidth = 88;
 	m_nHeight = 10;
 
-	// ƒL[ƒ{[ƒhæ“¾
+	// Keyboardå–å¾—
 	m_pKeyboard = (Keyboard*)::GetVM()->SearchDevice(MAKEID('K', 'E', 'Y', 'B'));
 	ASSERT(m_pKeyboard);
 
-	// ƒCƒ“ƒvƒbƒgæ“¾
+	// Get input
 	pWnd = (CFrmWnd*)AfxGetApp()->m_pMainWnd;
 	ASSERT(pWnd);
 	m_pInput = pWnd->GetInput();
 
-	// ƒ[ƒN‰Šú‰»
+	// Work initialization
 	m_nSoftKey = 0;
 	m_pDispWnd = NULL;
 }
 
 //---------------------------------------------------------------------------
 //
-//	ƒƒbƒZ[ƒW ƒ}ƒbƒv
+//	ãƒ¡ãƒƒã‚»ãƒ¼ã‚¸ ãƒãƒƒãƒ—
 //
 //---------------------------------------------------------------------------
 BEGIN_MESSAGE_MAP(CSoftKeyWnd, CSubWnd)
@@ -2878,7 +2889,7 @@ END_MESSAGE_MAP()
 
 //---------------------------------------------------------------------------
 //
-//	ƒEƒBƒ“ƒhƒEì¬
+//	Window creation
 //
 //---------------------------------------------------------------------------
 int CSoftKeyWnd::OnCreate(LPCREATESTRUCT lpCreateStruct)
@@ -2890,56 +2901,56 @@ int CSoftKeyWnd::OnCreate(LPCREATESTRUCT lpCreateStruct)
 
 	ASSERT(this);
 
-	// Šî–{ƒNƒ‰ƒX
+	// Base class
 	if (CSubWnd::OnCreate(lpCreateStruct) != 0) {
 		return -1;
 	}
 
-	// ƒXƒe[ƒ^ƒXƒo[ì¬
+	// Create status bar
 	uID = 0;
 	m_StatusBar.Create(this);
 	m_StatusBar.SetIndicators(&uID, 1);
 	m_StatusBar.SetPaneInfo(0, 0, SBPS_STRETCH, 0);
 
-	// •A‚‚³ŒvZ(ƒTƒCƒY‚ÍƒtƒHƒ“ƒg‚É‚æ‚ç‚È‚¢ŒÅ’è’l)
+	// Calculate width and height (fixed size regardless of font)
 	size = m_StatusBar.CalcFixedLayout(TRUE, TRUE);
 	rect.left = 0;
 	rect.top = 0;
 	rect.right = 616;
 	rect.bottom = 140 + size.cy;
 
-	// Å“K‚ÈƒEƒBƒ“ƒhƒEƒTƒCƒY‚ğZo‚µAƒTƒCƒY•ÏX
+	// Calculate optimal window size and resize
 	CalcWindowRect(&rect);
 	SetWindowPos(&wndTop, 0, 0, rect.Width(), rect.Height(), SWP_NOMOVE);
 
-	// ƒXƒe[ƒ^ƒXƒo[ˆÚ“®
+	// Move status bar
 	GetClientRect(&rect);
 	rect.bottom -= size.cy;
 	m_StatusBar.MoveWindow(0, rect.bottom, rect.Width(), size.cy);
 
-	// BMPƒEƒBƒ“ƒhƒE
+	// BMPã‚¦ã‚£ãƒ³ãƒ‰ã‚¦
 	m_pDispWnd = new CKeyDispWnd;
 	m_pDispWnd->Create(NULL, NULL, WS_CHILD | WS_VISIBLE,
 						rect, this, 0, NULL);
 
-	// ‰Šúİ’è(‰‰ñ•\¦‚©‚çAŒ»İ‚Ìó‘Ô‚ğ‚»‚Ì‚Ü‚Ü•\¦‚·‚é)
+	// Initial setup (from first display, display current state as is)
 	m_pKeyboard->GetKeyboard(&kbd);
 	Analyze(&kbd);
 	m_pDispWnd->SetKey(kbd.status);
 
-	// ¬Œ÷
+	// Success
 	return 0;
 }
 
 //---------------------------------------------------------------------------
 //
-//	ƒEƒBƒ“ƒhƒEíœ
+//	ã‚¦ã‚£ãƒ³ãƒ‰ã‚¦å‰Šé™¤
 //
 //---------------------------------------------------------------------------
 void CSoftKeyWnd::OnDestroy()
 {
-	// ƒGƒ~ƒ…ƒŒ[ƒVƒ‡ƒ“’†‚ÌƒL[‚ª‚ ‚ê‚ÎABreak
-	// ‚½‚¾‚µVM‚ª¶‚«‚Ä‚¢‚éê‡‚Ì‚İ
+	// If there is an emulated key, break it
+	// Only if VM is alive
 	if (m_nSoftKey != 0) {
 		if (::GetVM()) {
 			ASSERT(m_pKeyboard);
@@ -2948,34 +2959,34 @@ void CSoftKeyWnd::OnDestroy()
 		}
 	}
 
-	// qƒEƒBƒ“ƒhƒE‚Æ‚ÌƒŠƒ“ƒN‚ğØ‚é
+	// Unlink from child window
 	m_pDispWnd = NULL;
 
-	// Šî–{ƒNƒ‰ƒX
+	// Base class
 	CSubWnd::OnDestroy();
 }
 
 //---------------------------------------------------------------------------
 //
-//	ƒAƒNƒeƒBƒx[ƒg
+//	ã‚¢ã‚¯ãƒ†ã‚£ãƒ™ãƒ¼ãƒˆ
 //
 //---------------------------------------------------------------------------
 void CSoftKeyWnd::OnActivate(UINT nState, CWnd *pWnd, BOOL bMinimized)
 {
-	// Šî–{ƒNƒ‰ƒX
+	// Base class
 	CSubWnd::OnActivate(nState, pWnd, bMinimized);
 
-	// ƒ|ƒbƒvƒAƒbƒvƒEƒBƒ“ƒhƒE‚È‚ç
+	// If popup window
 	if (m_bPopup) {
 		ASSERT(m_pInput);
 
-		// ƒtƒH[ƒJƒXA“ü—Í‚ğ‹–‰ÂB”ñƒtƒH[ƒJƒX‚Í“ü—Í‹–‰Â‚µ‚È‚¢
+		// On focus, allow input. On non-focus, disallow input
 		if (nState == WA_INACTIVE) {
-			// “ü—Í‹–‰Â‚µ‚È‚¢
+			// Disallow input
 			m_pInput->Activate(FALSE);
 		}
 		else {
-			// “ü—Í‹–‰Â‚·‚é
+			// Allow input
 			m_pInput->Activate(TRUE);
 		}
 	}
@@ -2983,8 +2994,8 @@ void CSoftKeyWnd::OnActivate(UINT nState, CWnd *pWnd, BOOL bMinimized)
 
 //---------------------------------------------------------------------------
 //
-//	ƒ†[ƒU
-//	¦qƒEƒBƒ“ƒhƒE‚©‚ç‚Ì’Ê’m
+//	User
+//	Notifry from Subwindow
 //
 //---------------------------------------------------------------------------
 LONG CSoftKeyWnd::OnApp(UINT uParam, LONG lParam)
@@ -2996,39 +3007,39 @@ LONG CSoftKeyWnd::OnApp(UINT uParam, LONG lParam)
 	ASSERT(this);
 	ASSERT(uParam <= 0x73);
 
-	// ƒL[ƒ{[ƒhæ“¾
+	// Keyboardå–å¾—
 	ASSERT(m_pKeyboard);
 	m_pKeyboard->GetKeyboard(&kbd);
 
-	// U‚è•ª‚¯
+	// Dispatch
 	switch (lParam) {
-		// ¶ƒ{ƒ^ƒ“‰Ÿ‚µ‚½
+		// Left button pressed
 		case WM_LBUTTONDOWN:
-			// Šù‚ÉƒGƒ~ƒ…ƒŒ[ƒVƒ‡ƒ“’†‚ÌƒL[‚ª‚ ‚ê‚ÎA—£‚·
+			// If there is already an emulated key, release it
 			if (m_nSoftKey != 0) {
 				m_pKeyboard->BreakKey(m_nSoftKey);
 				m_nSoftKey = 0;
 			}
 
-			// ‚»‚ÌƒL[‚ª—£‚³‚ê‚Ä‚¢‚ê‚ÎA‰Ÿ‚·
+			// If that key is released, press it
 			if (!kbd.status[uParam]) {
 				m_pKeyboard->MakeKey(uParam);
 
-				// SHIFT,CTRLˆÈŠO‚Å‚ ‚ê‚Î‹L˜^
+				// SHIFT,CTRLä»¥å¤–ã§ã‚ã‚Œã°è¨˜éŒ²
 				if ((uParam != 0x70) && (uParam != 0x71)) {
 					m_nSoftKey = uParam;
 				}
 			}
 			else {
-				// ‰Ÿ‚³‚ê‚Ä‚¢‚éBSHIFT,CTRL‚Å‚ ‚ê‚Î—£‚µ‚Ä‚â‚é
+				// Onã€‚SHIFT,CTRLã§ã‚ã‚Œã°é›¢ã—ã¦ã‚„ã‚‹
 				if ((uParam == 0x70) || (uParam == 0x71)) {
 					m_pKeyboard->BreakKey(uParam);
 				}
 				else {
-					// ˆø‚«‘±‚«‰Ÿ‚·
+					// Continue pressing
 					m_pKeyboard->MakeKey(uParam);
 
-					// SHIFT,CTRLˆÈŠO‚Å‚ ‚ê‚Î‹L˜^
+					// SHIFT,CTRLä»¥å¤–ã§ã‚ã‚Œã°è¨˜éŒ²
 					if ((uParam != 0x70) && (uParam != 0x71)) {
 						m_nSoftKey = uParam;
 					}
@@ -3036,29 +3047,29 @@ LONG CSoftKeyWnd::OnApp(UINT uParam, LONG lParam)
 			}
 			break;
 
-		// ¶ƒ{ƒ^ƒ“—£‚µ‚½
+		// Left button released
 		case WM_LBUTTONUP:
-			// Šù‚ÉƒGƒ~ƒ…ƒŒ[ƒVƒ‡ƒ“’†‚ÌƒL[‚ª‚ ‚ê‚ÎA—£‚·
+			// If there is already an emulated key, release it
 			if (m_nSoftKey != 0) {
 				m_pKeyboard->BreakKey(m_nSoftKey);
 				m_nSoftKey = 0;
 			}
 			break;
 
-		// ‰Eƒ{ƒ^ƒ“‰Ÿ‚µ‚½
+		// Right button pressed
 		case WM_RBUTTONDOWN:
-			// Šù‚ÉƒGƒ~ƒ…ƒŒ[ƒVƒ‡ƒ“’†‚ÌƒL[‚ª‚ ‚ê‚ÎA—£‚·
+			// If there is already an emulated key, release it
 			if (m_nSoftKey != 0) {
 				m_pKeyboard->BreakKey(m_nSoftKey);
 				m_nSoftKey = 0;
 			}
 
-			// ‚»‚ÌƒL[‚ª—£‚³‚ê‚Ä‚¢‚ê‚ÎA‰Ÿ‚·
+			// If that key is released, press it
 			if (!kbd.status[uParam]) {
 				m_pKeyboard->MakeKey(uParam);
 			}
 			else {
-				// ‰Ÿ‚³‚ê‚Ä‚¢‚éB—£‚µ‚Ä‚â‚é
+				// Onã€‚é›¢ã—ã¦ã‚„ã‚‹
 				m_pKeyboard->BreakKey(uParam);
 				if (m_nSoftKey == uParam) {
 					m_nSoftKey = 0;
@@ -3066,11 +3077,11 @@ LONG CSoftKeyWnd::OnApp(UINT uParam, LONG lParam)
 			}
 			break;
 
-		// ‰Eƒ{ƒ^ƒ“—£‚µ‚½
+		// Right button released
 		case WM_RBUTTONUP:
 			break;
 
-		// ƒ}ƒEƒXˆÚ“®
+		// Mouse move
 		case WM_MOUSEMOVE:
 			strStatus.Empty();
 			if (uParam != 0) {
@@ -3082,7 +3093,7 @@ LONG CSoftKeyWnd::OnApp(UINT uParam, LONG lParam)
 			m_StatusBar.SetPaneText(0, strStatus);
 			break;
 
-		// ‚»‚Ì‘¼(‚ ‚è‚¦‚È‚¢)
+		// Others (impossible)
 		default:
 			ASSERT(FALSE);
 			break;
@@ -3093,7 +3104,7 @@ LONG CSoftKeyWnd::OnApp(UINT uParam, LONG lParam)
 
 //---------------------------------------------------------------------------
 //
-//	ƒŠƒtƒŒƒbƒVƒ…
+//	ãƒªãƒ•ãƒ¬ãƒƒã‚·ãƒ¥
 //
 //---------------------------------------------------------------------------
 void FASTCALL CSoftKeyWnd::Refresh()
@@ -3102,24 +3113,24 @@ void FASTCALL CSoftKeyWnd::Refresh()
 
 	ASSERT(this);
 
-	// ó‘Ôƒ`ƒFƒbƒN
+	// Status check
 	if (!m_pDispWnd || !m_pKeyboard) {
 		return;
 	}
 
-	// ƒL[ƒ{[ƒhƒf[ƒ^æ“¾
+	// KeyboardGet data
 	m_pKeyboard->GetKeyboard(&kbd);
 
-	// ƒf[ƒ^‰ğÍAİ’è
+	// Data analysis and setup
 	Analyze(&kbd);
 
-	// •\¦
+	// Display
 	m_pDispWnd->Refresh(kbd.status);
 }
 
 //---------------------------------------------------------------------------
 //
-//	ƒL[ƒ{[ƒhƒf[ƒ^‰ğÍ
+//	Keyboardãƒ‡ãƒ¼ã‚¿è§£æ
 //
 //---------------------------------------------------------------------------
 void FASTCALL CSoftKeyWnd::Analyze(Keyboard::keyboard_t *pKbd)
@@ -3131,7 +3142,7 @@ void FASTCALL CSoftKeyWnd::Analyze(Keyboard::keyboard_t *pKbd)
 	ASSERT(this);
 	ASSERT(pKbd);
 
-	// ƒVƒtƒgƒ‚[ƒh’lì¬A’Ê’m
+	// Create and notify shift mode value
 	nMode = pKbd->led & 0x0f;
 	if (pKbd->status[0x70]) {
 		nMode |= 0x80;
@@ -3141,20 +3152,20 @@ void FASTCALL CSoftKeyWnd::Analyze(Keyboard::keyboard_t *pKbd)
 	}
 	m_pDispWnd->SetShiftMode(nMode);
 
-	// SHIFTƒL[ˆÚA
+	// SHIFTã‚­ãƒ¼ç§»æ¤
 	pKbd->status[0x74] = pKbd->status[0x70];
 
-	// LEDƒL[‚©‚çó‘Ô‚ğ“¾‚éê‡
+	// LEDã‚­ãƒ¼ã‹ã‚‰çŠ¶æ…‹ã‚’å¾—ã‚‹å ´åˆ
 	dwLed = pKbd->led;
 	for (i=0; i<7; i++) {
-		// LED‚ª“_“”‚µ‚Ä‚¢‚ê‚ÎONA‚»‚¤‚Å‚È‚¯‚ê‚ÎOFF
+		// LEDãŒç‚¹ç¯ã—ã¦ã„ã‚Œã°ONã€ãã†ã§ãªthen OFF
 		if (dwLed & 1) {
 			pKbd->status[i + 0x5a] = TRUE;
 		}
 		else {
 			pKbd->status[i + 0x5a] = FALSE;
 		}
-		// Ÿ‚Ö
+		// Next
 		dwLed >>= 1;
 	}
 }

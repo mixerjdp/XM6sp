@@ -2,8 +2,8 @@
 //
 //	X68000 EMULATOR "XM6"
 //
-//	Copyright (C) 2001-2005 ＰＩ．(ytanaka@ipc-tokai.or.jp)
-//	[ デバイス共通 ]
+//	Copyright (C) 2001-2005 PI (ytanaka@ipc-tokai.or.jp)
+//	[ Device class ]
 //
 //---------------------------------------------------------------------------
 
@@ -12,117 +12,117 @@
 
 //===========================================================================
 //
-//	デバイス
+//	Device
 //
 //===========================================================================
 class Device
 {
 public:
-	// 内部データ定義
+	// Internal data definition
 	typedef struct {
 		DWORD id;						// ID
-		const char *desc;				// 名称
-		Device* next;					// 次のデバイス
+		const char *desc;				// Description
+		Device* next;					// Next device
 	} device_t;
 
 public:
-	// 基本ファンクション
+	// Basic functions
 	Device(VM *p);
-										// コンストラクタ
+										// Constructor
 	virtual ~Device();
-										// デストラクタ
+										// Destructor
 	virtual BOOL FASTCALL Init();
-										// 初期化
+										// Initialization
 	virtual void FASTCALL Cleanup();
-										// クリーンアップ
+										// Cleanup
 	virtual void FASTCALL Reset();
-										// リセット
+										// Reset
 	virtual BOOL FASTCALL Save(Fileio *fio, int ver);
-										// セーブ
+										// Save
 	virtual BOOL FASTCALL Load(Fileio *fio, int ver);
-										// ロード
+										// Load
 	virtual void FASTCALL ApplyCfg(const Config *config);
-										// 設定適用
+										// Apply configuration
 #if !defined(NDEBUG)
 	void FASTCALL AssertDiag() const;
-										// 診断
+										// Assert
 #endif	// NDEBUG
 
-	// 外部API
+	// External API
 	Device* FASTCALL GetNextDevice() const { return dev.next; }
-										// 次のデバイスを取得
+										// Get next device
 	void FASTCALL SetNextDevice(Device *p) { dev.next = p; }
-										// 次のデバイスを設定
+										// Set next device
 	DWORD FASTCALL GetID() const		{ return dev.id; }
-										// デバイスID取得
+										// Get device ID
 	const char* FASTCALL GetDesc() const { return dev.desc; }
-										// デバイス名称取得
+										// Get device name
 	VM* FASTCALL GetVM() const			{ return vm; }
-										// VM取得
+										// Get VM
 	virtual BOOL FASTCALL Callback(Event *ev);
-										// イベントコールバック
+										// Event callback
 
 protected:
 	Log* FASTCALL GetLog() const		{ return log; }
-										// ログ取得
+										// Get log
 	device_t dev;
-										// 内部データ
+										// Internal data
 	VM *vm;
-										// 仮想マシン本体
+										// Virtual machine
 	Log *log;
-										// ログ
+										// Log
 };
 
 //===========================================================================
 //
-//	メモリマップドデバイス
+//	Memory mapped device
 //
 //===========================================================================
 class MemDevice : public Device
 {
 public:
-	// 内部データ定義
+	// Internal data definition
 	typedef struct {
-		DWORD first;					// 開始アドレス
-		DWORD last;						// 最終アドレス
+		DWORD first;					// Start address
+		DWORD last;						// End address
 	} memdev_t;
 
 public:
-	// 基本ファンクション
+	// Basic functions
 	MemDevice(VM *p);
-										// コンストラクタ
+										// Constructor
 	virtual BOOL FASTCALL Init();
-										// 初期化
+										// Initialization
 
-	// メモリデバイス
+	// Memory device interface
 	virtual DWORD FASTCALL ReadByte(DWORD addr);
-										// バイト読み込み
+										// Byte read
 	virtual DWORD FASTCALL ReadWord(DWORD addr);
-										// ワード読み込み
+										// Word read
 	virtual void FASTCALL WriteByte(DWORD addr, DWORD data);
-										// バイト書き込み
+										// Byte write
 	virtual void FASTCALL WriteWord(DWORD addr, DWORD data);
-										// ワード書き込み
+										// Word write
 	virtual DWORD FASTCALL ReadOnly(DWORD addr) const;
-										// 読み込みのみ
+										// Read only
 #if !defined(NDEBUG)
 	void FASTCALL AssertDiag() const;
-										// 診断
+										// Assert
 #endif	// NDEBUG
 
-	// 外部API
+	// External API
 	DWORD FASTCALL GetFirstAddr() const	{ return memdev.first; }
-										// 最初のアドレスを取得
+										// Get first address
 	DWORD FASTCALL GetLastAddr() const	{ return memdev.last; }
-										// 最後のアドレスを取得
+										// Get last address
 
 protected:
 	memdev_t memdev;
-										// 内部データ
+										// Internal data
 	CPU *cpu;
 										// CPU
 	Scheduler *scheduler;
-										// スケジューラ
+										// Scheduler
 };
 
 #endif	// device_h

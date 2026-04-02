@@ -2,8 +2,8 @@
 //
 //	X68000 EMULATOR "XM6"
 //
-//	Copyright (C) 2001-2006 ＰＩ．(ytanaka@ipc-tokai.or.jp)
-//	[ ログ ]
+//	Copyright (C) 2001-2006 PI (ytanaka@ipc-tokai.or.jp)
+//	[ Log ]
 //
 //---------------------------------------------------------------------------
 
@@ -18,25 +18,25 @@
 
 //===========================================================================
 //
-//	ログ
+//	Log
 //
 //===========================================================================
 //#define LOG_WIN32
 
 //---------------------------------------------------------------------------
 //
-//	コンストラクタ
+//	Constructor
 //
 //---------------------------------------------------------------------------
 Log::Log()
 {
-	// 管理ワークをクリア
+	// Management ring clear
 	logtop = 0;
 	lognum = 0;
 	memset(logdata, 0, sizeof(logdata));
 	logcount = 1;
 
-	// デバイスなし
+	// No device
 	cpu = NULL;
 	scheduler = NULL;
 	sync = NULL;
@@ -44,47 +44,47 @@ Log::Log()
 
 //---------------------------------------------------------------------------
 //
-//	初期化
+//	Initialization
 //
 //---------------------------------------------------------------------------
 BOOL FASTCALL Log::Init(VM *vm)
 {
-	ASSERT(this);
-	ASSERT(vm);
+ ASSERT(this);
+ ASSERT(vm);
 
-	// CPUを取得
-	ASSERT(!cpu);
+	// Get CPU
+ ASSERT(!cpu);
 	cpu = (CPU *)vm->SearchDevice(MAKEID('C', 'P', 'U', ' '));
-	ASSERT(cpu);
+ ASSERT(cpu);
 
-	// スケジューラを取得
-	ASSERT(!scheduler);
+	// Get Scheduler
+ ASSERT(!scheduler);
 	scheduler = (Scheduler *)vm->SearchDevice(MAKEID('S', 'C', 'H', 'E'));
-	ASSERT(scheduler);
+ ASSERT(scheduler);
 
-	// 同期オブジェクト作成
-	ASSERT(!sync);
+	// Create sync object
+ ASSERT(!sync);
 	sync = new Sync;
-	ASSERT(sync);
+ ASSERT(sync);
 
 	return TRUE;
 }
 
 //---------------------------------------------------------------------------
 //
-//	クリーンアップ
+//	Cleanup
 //
 //---------------------------------------------------------------------------
 void FASTCALL Log::Cleanup()
 {
-	ASSERT(this);
+ ASSERT(this);
 
-	// データを全てクリア(Init成功時のみ)
+	// Clear all data (if initialized)
 	if (sync) {
 		Clear();
 	}
 
-	// 同期オブジェクトを削除
+	// Delete sync object
 	if (sync) {
 		delete sync;
 		sync = NULL;
@@ -93,41 +93,41 @@ void FASTCALL Log::Cleanup()
 
 //---------------------------------------------------------------------------
 //
-//	リセット
+//	Reset
 //
 //---------------------------------------------------------------------------
 void FASTCALL Log::Reset()
 {
-	ASSERT(this);
-	ASSERT_DIAG();
+ ASSERT(this);
+ ASSERT_DIAG();
 
-	// データを全てクリア
+	// Clear all data
 	Clear();
 }
 
 #if !defined(NDEBUG)
 //---------------------------------------------------------------------------
 //
-//	診断
+//	Assert
 //
 //---------------------------------------------------------------------------
 void FASTCALL Log::AssertDiag() const
 {
-	ASSERT(this);
-	ASSERT(cpu);
-	ASSERT(cpu->GetID() == MAKEID('C', 'P', 'U', ' '));
-	ASSERT(scheduler);
-	ASSERT(scheduler->GetID() == MAKEID('S', 'C', 'H', 'E'));
-	ASSERT(sync);
-	ASSERT((logtop >= 0) && (logtop < LogMax));
-	ASSERT((lognum >= 0) && (lognum <= LogMax));
-	ASSERT(logcount >= 1);
+ ASSERT(this);
+ ASSERT(cpu);
+ ASSERT(cpu->GetID() == MAKEID('C', 'P', 'U', ' '));
+ ASSERT(scheduler);
+ ASSERT(scheduler->GetID() == MAKEID('S', 'C', 'H', 'E'));
+ ASSERT(sync);
+ ASSERT((logtop >= 0) && (logtop < LogMax));
+ ASSERT((lognum >= 0) && (lognum <= LogMax));
+ ASSERT(logcount >= 1);
 }
 #endif	// NDEBUG
 
 //---------------------------------------------------------------------------
 //
-//	クリア
+//	Clear
 //
 //---------------------------------------------------------------------------
 void FASTCALL Log::Clear()
@@ -135,42 +135,42 @@ void FASTCALL Log::Clear()
 	int i;
 	int index;
 
-	ASSERT(this);
+ ASSERT(this);
 
-	// ロック
+	// Lock
 	sync->Lock();
 
 	index = logtop;
 	for (i=0; i<lognum; i++) {
-		// データがあれば
+		// If data exists
 		if (logdata[index]) {
-			// 文字列ポインタを解放
+			// Delete string pointer
 			delete[] logdata[index]->string;
 
-			// データ本体を解放
+			// Delete data body
 			delete logdata[index];
 
-			// NULLに
+			// NULL set
 			logdata[index] = NULL;
 		}
 
-		// インデックス移動
+		// Move index
 		index++;
 		index &= (LogMax - 1);
 	}
 
-	// 管理ワークをクリア
+	// Management ring clear
 	logtop = 0;
 	lognum = 0;
 	logcount = 1;
 
-	// アンロック
+	// Unlock
 	sync->Unlock();
 }
 
 //---------------------------------------------------------------------------
 //
-//	フォーマット(...)
+//	Format(...)
 //
 //---------------------------------------------------------------------------
 void Log::Format(loglevel level, const Device *device, char *format, ...)
@@ -179,77 +179,77 @@ void Log::Format(loglevel level, const Device *device, char *format, ...)
 	va_list args;
 	va_start(args, format);
 
-	ASSERT(this);
-	ASSERT(device);
-	ASSERT_DIAG();
+ ASSERT(this);
+ ASSERT(device);
+ ASSERT_DIAG();
 
-	// フォーマット
+	// Format
 	vsprintf(buffer, format, args);
 
-	// 可変長引数終了
+	// Variable argument end
 	va_end(args);
 
-	// メッセージ追加
+	// Add message
 	AddString(device->GetID(), level, buffer);
 }
 
 //---------------------------------------------------------------------------
 //
-//	フォーマット(va)
+//	Format(va)
 //
 //---------------------------------------------------------------------------
 void Log::vFormat(loglevel level, const Device *device, char *format, va_list args)
 {
 	char buffer[0x200];
 
-	ASSERT(this);
-	ASSERT(device);
-	ASSERT_DIAG();
+ ASSERT(this);
+ ASSERT(device);
+ ASSERT_DIAG();
 
-	// フォーマット
+	// Format
 	vsprintf(buffer, format, args);
 
-	// メッセージ追加
+	// Add message
 	AddString(device->GetID(), level, buffer);
 }
 
 //---------------------------------------------------------------------------
 //
-//	データを追加
+//	Add data
 //
 //---------------------------------------------------------------------------
 void FASTCALL Log::AddString(DWORD id, loglevel level, char *string)
 {
 	int index;
 
-	ASSERT(this);
-	ASSERT(string);
-	ASSERT_DIAG();
+ ASSERT(this);
+ ASSERT(string);
+ ASSERT_DIAG();
 
-	// ロック
+	// Lock
 	sync->Lock();
 
-	// 追加する位置を決める
+	// Find add position
 	if (lognum < LogMax) {
-		ASSERT(logtop == 0);
+	 ASSERT(logtop == 0);
 		index = lognum;
-		ASSERT(logdata[index] == NULL);
+	 ASSERT(logdata[index] == NULL);
 		lognum++;
 	}
 	else {
-		ASSERT(lognum == LogMax);
+	 ASSERT(lognum == LogMax);
 		index = logtop;
 		logtop++;
 		logtop &= (LogMax - 1);
 	}
 
-	// 既に存在すれば解放
+	// If already exists, release
 	if (logdata[index]) {
 		delete[] logdata[index]->string;
 		delete logdata[index];
 	}
 
-	// 構造体を配置
+	// Allocate structure
 	logdata[index] = new logdata_t;
 	logdata[index]->number = logcount++;
 	logdata[index]->time = 0;
@@ -258,20 +258,20 @@ void FASTCALL Log::AddString(DWORD id, loglevel level, char *string)
 	logdata[index]->id = id;
 	logdata[index]->level = level;
 
-	// 文字列処理
+	// String copy
 	logdata[index]->string = new char[strlen(string) + 1];
 	strcpy(logdata[index]->string, string);
 
 #if defined(LOG_WIN32)
-	// Win32メッセージとして出力
+	// Output as Win32 message
 	OutputDebugString(string);
 	OutputDebugString(_T("\n"));
 #endif	// LOG_WIN32
 
-	// アンロック
+	// Unlock
 	sync->Unlock();
 
-	// ログが増えすぎたら、自動的に一度クリア(約16億件を目安とする)
+	// If log count overflow, clear (every 16M or so)
 	if (logcount >= 0x60000000) {
 		Clear();
 	}
@@ -279,67 +279,67 @@ void FASTCALL Log::AddString(DWORD id, loglevel level, char *string)
 
 //---------------------------------------------------------------------------
 //
-//	データ数を取得
+//	Get data count
 //
 //---------------------------------------------------------------------------
 int FASTCALL Log::GetNum() const
 {
-	ASSERT(this);
-	ASSERT_DIAG();
+ ASSERT(this);
+ ASSERT_DIAG();
 
 	return lognum;
 }
 
 //---------------------------------------------------------------------------
 //
-//	ログ最大記録数を取得
+//	Get max log count
 //
 //---------------------------------------------------------------------------
 int FASTCALL Log::GetMax() const
 {
-	ASSERT(this);
-	ASSERT_DIAG();
+ ASSERT(this);
+ ASSERT_DIAG();
 
 	return LogMax;
 }
 
 //---------------------------------------------------------------------------
 //
-//	データを取得
+//	Get data
 //
 //---------------------------------------------------------------------------
 BOOL FASTCALL Log::GetData(int index, logdata_t *ptr)
 {
 	char *string;
 
-	ASSERT(this);
-	ASSERT(index >= 0);
-	ASSERT(ptr);
-	ASSERT_DIAG();
+ ASSERT(this);
+ ASSERT(index >= 0);
+ ASSERT(ptr);
+ ASSERT_DIAG();
 
-	// ロック
+	// Lock
 	sync->Lock();
 
-	// 存在チェック
+	// Current check
 	if (index >= lognum) {
 		sync->Unlock();
 		return FALSE;
 	}
 
-	// インデックス算出
+	// Index calculate
 	index += logtop;
 	index &= (LogMax - 1);
 
-	// コピー(文字列ポインタ以外)
-	ASSERT(logdata[index]);
+	// Copy(exclude string pointer)
+ ASSERT(logdata[index]);
 	*ptr = *logdata[index];
 
-	// コピー(文字列ポインタ)
+	// Copy(string pointer)
 	string = ptr->string;
 	ptr->string = new char[strlen(string) + 1];
 	strcpy(ptr->string, string);
 
-	// アンロック
+	// Unlock
 	sync->Unlock();
 	return TRUE;
 }

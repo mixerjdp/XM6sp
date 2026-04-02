@@ -3,7 +3,7 @@
 //	X68000 EMULATOR "XM6"
 //
 //	Copyright (C) 2001-2005 ＰＩ．(ytanaka@ipc-tokai.or.jp)
-//	[ エリアセット ]
+// [ Area Set ]
 //
 //---------------------------------------------------------------------------
 
@@ -18,45 +18,45 @@
 
 //===========================================================================
 //
-//	エリアセット
+// Area Set
 //
 //===========================================================================
 //#define AREASET_LOG
 
 //---------------------------------------------------------------------------
 //
-//	コンストラクタ
+// Constructor
 //
 //---------------------------------------------------------------------------
 AreaSet::AreaSet(VM *p) : MemDevice(p)
 {
-	// デバイスIDを初期化
+// Initialize the device ID
 	dev.id = MAKEID('A', 'R', 'E', 'A');
 	dev.desc = "Area Set";
 
-	// 開始アドレス、終了アドレス
+// Start and end addresses
 	memdev.first = 0xe86000;
 	memdev.last = 0xe87fff;
 
-	// オブジェクト
+// Object
 	memory = NULL;
 }
 
 //---------------------------------------------------------------------------
 //
-//	初期化
+// Initialization
 //
 //---------------------------------------------------------------------------
 BOOL FASTCALL AreaSet::Init()
 {
 	ASSERT(this);
 
-	// 基本クラス
+// Base class
 	if (!MemDevice::Init()) {
 		return FALSE;
 	}
 
-	// メモリ取得
+// Acquire memory
 	memory = (Memory*)vm->SearchDevice(MAKEID('M', 'E', 'M', ' '));
 	ASSERT(memory);
 
@@ -65,21 +65,21 @@ BOOL FASTCALL AreaSet::Init()
 
 //---------------------------------------------------------------------------
 //
-//	クリーンアップ
+// Cleanup
 //
 //---------------------------------------------------------------------------
 void FASTCALL AreaSet::Cleanup()
 {
 	ASSERT(this);
 
-	// 基本クラスへ
+// Back to base class
 	MemDevice::Cleanup();
 }
 
 //---------------------------------------------------------------------------
 //
-//	リセット
-//	※正規の順序でなく、Memory::MakeContextから呼ばれる
+// Reset
+// Called from Memory::MakeContext, not through the normal sequence.
 //
 //---------------------------------------------------------------------------
 void FASTCALL AreaSet::Reset()
@@ -91,13 +91,13 @@ void FASTCALL AreaSet::Reset()
 	LOG0(Log::Normal, "エリアセット設定 $00");
 #endif	// AREASET_LOG
 
-	// エリア指定初期化
+// Initialize area selection
 	area = 0;
 }
 
 //---------------------------------------------------------------------------
 //
-//	セーブ
+// Save
 //
 //---------------------------------------------------------------------------
 BOOL FASTCALL AreaSet::Save(Fileio *fio, int /*ver*/)
@@ -107,13 +107,13 @@ BOOL FASTCALL AreaSet::Save(Fileio *fio, int /*ver*/)
 	ASSERT(this);
 	LOG0(Log::Normal, "セーブ");
 
-	// サイズをセーブ
+// Save size
 	sz = sizeof(area);
 	if (!fio->Write(&sz, (int)sizeof(sz))) {
 		return FALSE;
 	}
 
-	// エリア情報をセーブ
+// Save area information
 	if (!fio->Write(&area, (int)sizeof(area))) {
 		return FALSE;
 	}
@@ -123,7 +123,7 @@ BOOL FASTCALL AreaSet::Save(Fileio *fio, int /*ver*/)
 
 //---------------------------------------------------------------------------
 //
-//	ロード
+// Load
 //
 //---------------------------------------------------------------------------
 BOOL FASTCALL AreaSet::Load(Fileio *fio, int /*ver*/)
@@ -133,22 +133,22 @@ BOOL FASTCALL AreaSet::Load(Fileio *fio, int /*ver*/)
 	ASSERT(this);
 	LOG0(Log::Normal, "ロード");
 
-	// サイズをロード
+// Load size
 	if (!fio->Read(&sz, (int)sizeof(sz))) {
 		return FALSE;
 	}
 
-	// サイズを比較
+// Compare size
 	if (sz != sizeof(area)) {
 		return FALSE;
 	}
 
-	// エリア情報をロード
+// Load area information
 	if (!fio->Read(&area, (int)sizeof(area))) {
 		return FALSE;
 	}
 
-	// 適用
+// Apply
 	memory->MakeContext(FALSE);
 
 	return TRUE;
@@ -156,7 +156,7 @@ BOOL FASTCALL AreaSet::Load(Fileio *fio, int /*ver*/)
 
 //---------------------------------------------------------------------------
 //
-//	設定適用
+// Apply settings
 //
 //---------------------------------------------------------------------------
 void FASTCALL AreaSet::ApplyCfg(const Config* /*config*/)
@@ -167,7 +167,7 @@ void FASTCALL AreaSet::ApplyCfg(const Config* /*config*/)
 
 //---------------------------------------------------------------------------
 //
-//	バイト読み込み
+// Byte read
 //
 //---------------------------------------------------------------------------
 DWORD FASTCALL AreaSet::ReadByte(DWORD addr)
@@ -175,14 +175,14 @@ DWORD FASTCALL AreaSet::ReadByte(DWORD addr)
 	ASSERT(this);
 	ASSERT((addr >= memdev.first) && (addr <= memdev.last));
 
-	// 常にバスエラー
+// Always bus error
 	cpu->BusErr(addr, TRUE);
 	return 0xff;
 }
 
 //---------------------------------------------------------------------------
 //
-//	バイト書き込み
+// Byte write
 //
 //---------------------------------------------------------------------------
 void FASTCALL AreaSet::WriteByte(DWORD addr, DWORD data)
@@ -190,27 +190,27 @@ void FASTCALL AreaSet::WriteByte(DWORD addr, DWORD data)
 	ASSERT(this);
 	ASSERT((addr >= memdev.first) && (addr <= memdev.last));
 
-	// 2バイトおきにマップ
+// Map every other byte
 	addr &= 1;
 
-	// 奇数アドレスはエリアセット
+// Odd addresses are area set
 	if (addr & 1) {
 		LOG1(Log::Detail, "エリアセット設定 $%02X", data);
 
-		// データ記憶
+// Store data
 		area = data;
 
-		// メモリマップ再構築
+// Rebuild memory map
 		memory->MakeContext(FALSE);
 		return;
 	}
 
-	// 偶数アドレスはデコードされていない
+// Even addresses are not decoded
 }
 
 //---------------------------------------------------------------------------
 //
-//	読み込みのみ
+// Read only
 //
 //---------------------------------------------------------------------------
 DWORD FASTCALL AreaSet::ReadOnly(DWORD addr) const
@@ -218,7 +218,7 @@ DWORD FASTCALL AreaSet::ReadOnly(DWORD addr) const
 	ASSERT(this);
 	ASSERT((addr >= memdev.first) && (addr <= memdev.last));
 
-	// EVENは0xff、ODDは設定値を返す
+// EVEN returns 0xff; ODD returns the configured value
 	if (addr & 1) {
 		return area;
 	}
@@ -227,7 +227,7 @@ DWORD FASTCALL AreaSet::ReadOnly(DWORD addr) const
 
 //---------------------------------------------------------------------------
 //
-//	エリアセット取得
+// Get area set
 //
 //---------------------------------------------------------------------------
 DWORD FASTCALL AreaSet::GetArea() const

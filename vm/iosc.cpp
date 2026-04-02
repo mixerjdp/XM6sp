@@ -2,8 +2,8 @@
 //
 //	X68000 EMULATOR "XM6"
 //
-//	Copyright (C) 2001-2006 ＰＩ．(ytanaka@ipc-tokai.or.jp)
-//	[ I/Oコントローラ(IOSC-2) ]
+//	Copyright (C) 2001-2006 PI (ytanaka@ipc-tokai.or.jp)
+//	[ I/O Controller (IOSC-2) ]
 //
 //---------------------------------------------------------------------------
 
@@ -26,38 +26,38 @@
 
 //---------------------------------------------------------------------------
 //
-//	コンストラクタ
+//	Constructor
 //
 //---------------------------------------------------------------------------
 IOSC::IOSC(VM *p) : MemDevice(p)
 {
-	// デバイスIDを初期化
+	// Device ID creation
 	dev.id = MAKEID('I', 'O', 'S', 'C');
 	dev.desc = "I/O Ctrl (IOSC-2)";
 
-	// 開始アドレス、終了アドレス
+	// Start address, I/O address
 	memdev.first = 0xe9c000;
 	memdev.last = 0xe9dfff;
 
-	// その他
+	// Others
 	printer = NULL;
 }
 
 //---------------------------------------------------------------------------
 //
-//	初期化
+//	Initialization
 //
 //---------------------------------------------------------------------------
 BOOL FASTCALL IOSC::Init()
 {
 	ASSERT(this);
 
-	// 基本クラス
+	// Base class
 	if (!MemDevice::Init()) {
 		return FALSE;
 	}
 
-	// プリンタを取得
+	// Get printer
 	printer = (Printer*)vm->SearchDevice(MAKEID('P', 'R', 'N', ' '));
 	ASSERT(printer);
 
@@ -66,27 +66,27 @@ BOOL FASTCALL IOSC::Init()
 
 //---------------------------------------------------------------------------
 //
-//	クリーンアップ
+//	Cleanup
 //
 //---------------------------------------------------------------------------
 void FASTCALL IOSC::Cleanup()
 {
-	ASSERT(this);
+ ASSERT(this);
 
-	// 基本クラスへ
+	// Base class cleanup
 	MemDevice::Cleanup();
 }
 
 //---------------------------------------------------------------------------
 //
-//	リセット
+//	Reset
 //
 //---------------------------------------------------------------------------
 void FASTCALL IOSC::Reset()
 {
-	LOG0(Log::Normal, "リセット");
+	LOG0(Log::Normal, "Reset");
 
-	// ワーク初期化
+	// Internal state clear
 	iosc.prt_int = FALSE;
 	iosc.prt_en = FALSE;
 	iosc.fdd_int = FALSE;
@@ -97,30 +97,30 @@ void FASTCALL IOSC::Reset()
 	iosc.hdc_en = FALSE;
 	iosc.vbase = 0;
 
-	// 要求中のベクタなし
+	// Vector none
 	iosc.vector = -1;
 }
 
 //---------------------------------------------------------------------------
 //
-//	セーブ
+//	Save
 //
 //---------------------------------------------------------------------------
 BOOL FASTCALL IOSC::Save(Fileio *fio, int /*ver*/)
 {
 	size_t sz;
 
-	ASSERT(this);
-	ASSERT(fio);
-	LOG0(Log::Normal, "セーブ");
+ ASSERT(this);
+ ASSERT(fio);
+	LOG0(Log::Normal, "Save");
 
-	// サイズをセーブ
+	// Save size
 	sz = sizeof(iosc_t);
 	if (!fio->Write(&sz, sizeof(sz))) {
 		return FALSE;
 	}
 
-	// 実体をセーブ
+	// Save data
 	if (!fio->Write(&iosc, sizeof(iosc))) {
 		return FALSE;
 	}
@@ -130,18 +130,18 @@ BOOL FASTCALL IOSC::Save(Fileio *fio, int /*ver*/)
 
 //---------------------------------------------------------------------------
 //
-//	ロード
+//	Load
 //
 //---------------------------------------------------------------------------
 BOOL FASTCALL IOSC::Load(Fileio *fio, int /*ver*/)
 {
 	size_t sz;
 
-	ASSERT(this);
-	ASSERT(fio);
-	LOG0(Log::Normal, "ロード");
+ ASSERT(this);
+ ASSERT(fio);
+	LOG0(Log::Normal, "Load");
 
-	// サイズをロード、照合
+	// Load size and verify
 	if (!fio->Read(&sz, sizeof(sz))) {
 		return FALSE;
 	}
@@ -149,7 +149,7 @@ BOOL FASTCALL IOSC::Load(Fileio *fio, int /*ver*/)
 		return FALSE;
 	}
 
-	// 実体をロード
+	// Load data
 	if (!fio->Read(&iosc, sizeof(iosc))) {
 		return FALSE;
 	}
@@ -159,37 +159,37 @@ BOOL FASTCALL IOSC::Load(Fileio *fio, int /*ver*/)
 
 //---------------------------------------------------------------------------
 //
-//	設定適用
+//	Apply config
 //
 //---------------------------------------------------------------------------
 void FASTCALL IOSC::ApplyCfg(const Config* /*config*/)
 {
-	ASSERT(this);
-	LOG0(Log::Normal, "設定適用");
+ ASSERT(this);
+	LOG0(Log::Normal, "Apply config");
 }
 
 //---------------------------------------------------------------------------
 //
-//	バイト読み込み
+//	Read byte
 //
 //---------------------------------------------------------------------------
 DWORD FASTCALL IOSC::ReadByte(DWORD addr)
 {
 	DWORD data;
 
-	ASSERT(this);
-	ASSERT((addr >= memdev.first) && (addr <= memdev.last));
+ ASSERT(this);
+ ASSERT((addr >= memdev.first) && (addr <= memdev.last));
 
-	// 16バイト単位でループ
+	// 16-byte unit loop
 	addr &= 0x0f;
 
-	// 奇数アドレスのみデコードされている
+	// Only odd addresses are decoded
 	if ((addr & 1) != 0) {
 
-		// ウェイト
+		// Wait
 		scheduler->Wait(2);
 
-		// $E9C001 割り込みステータス
+		// $E9C001 Interrupt status
 		if (addr == 1) {
 			data = 0;
 			if (iosc.fdc_int) {
@@ -214,12 +214,12 @@ DWORD FASTCALL IOSC::ReadByte(DWORD addr)
 				data |= 0x01;
 			}
 
-			// プリンタはREADYの表示
+			// Printer READY display
 			if (printer->IsReady()) {
 				data |= 0x20;
 			}
 
-			// プリンタ割り込みはこの時点で降ろす
+			// Printer interrupt is cleared at this point
 			if (iosc.prt_int) {
 				iosc.prt_int = FALSE;
 				IntChk();
@@ -227,54 +227,54 @@ DWORD FASTCALL IOSC::ReadByte(DWORD addr)
 			return data;
 		}
 
-		// $E9C003 割り込みベクタ
+		// $E9C003 Interrupt vector
 		if (addr == 3) {
 			return 0xff;
 		}
 
-		LOG1(Log::Warning, "未実装レジスタ読み込み $%06X", memdev.first + addr);
+		LOG1(Log::Warning, "Undefined I/O register read $%06X", memdev.first + addr);
 		return 0xff;
 	}
 
-	// バスエラーは発生しない
+	// Upper errors are ignored
 	return 0xff;
 }
 
 //---------------------------------------------------------------------------
 //
-//	ワード読み込み
+//	Read word
 //
 //---------------------------------------------------------------------------
 DWORD FASTCALL IOSC::ReadWord(DWORD addr)
 {
-	ASSERT(this);
-	ASSERT((addr >= memdev.first) && (addr <= memdev.last));
-	ASSERT((addr & 1) == 0);
+ ASSERT(this);
+ ASSERT((addr >= memdev.first) && (addr <= memdev.last));
+ ASSERT((addr & 1) == 0);
 
 	return (0xff00 | ReadByte(addr + 1));
 }
 
 //---------------------------------------------------------------------------
 //
-//	バイト書き込み
+//	Write byte
 //
 //---------------------------------------------------------------------------
 void FASTCALL IOSC::WriteByte(DWORD addr, DWORD data)
 {
-	ASSERT(this);
-	ASSERT((addr >= memdev.first) && (addr <= memdev.last));
-	ASSERT(data < 0x100);
+ ASSERT(this);
+ ASSERT((addr >= memdev.first) && (addr <= memdev.last));
+ ASSERT(data < 0x100);
 
-	// 16バイト単位でループ
+	// 16-byte unit loop
 	addr &= 0x0f;
 
-	// 奇数アドレスのみデコードされている
+	// Only odd addresses are decoded
 	if ((addr & 1) != 0) {
 
-		// ウェイト
+		// Wait
 		scheduler->Wait(2);
 
-		// $E9C001 割り込みマスク
+		// $E9C001 Interrupt mask
 		if (addr == 1) {
 			if (data & 0x01) {
 				iosc.prt_en = TRUE;
@@ -301,23 +301,23 @@ void FASTCALL IOSC::WriteByte(DWORD addr, DWORD data)
 				iosc.hdc_en = FALSE;
 			}
 
-			// 割り込みチェック(FORMULA 68K)
+			// Interrupt check (FORMULA 68K)
 			IntChk();
 			return;
 		}
 
-		// $E9C003 割り込みベクタ
+		// $E9C003 Interrupt vector
 		if (addr == 3) {
 			data &= 0xfc;
 			iosc.vbase &= 0x03;
 			iosc.vbase |= data;
 
-			LOG1(Log::Detail, "割り込みベクタベース $%02X", iosc.vbase);
+			LOG1(Log::Detail, "Interrupt vector base $%02X", iosc.vbase);
 			return;
 		}
 
-		// 未定義
-		LOG2(Log::Warning, "未実装レジスタ書き込み $%06X <- $%02X",
+		// Invalid
+		LOG2(Log::Warning, "Undefined I/O register write $%06X <- $%02X",
 										memdev.first + addr, data);
 		return;
 	}
@@ -325,38 +325,38 @@ void FASTCALL IOSC::WriteByte(DWORD addr, DWORD data)
 
 //---------------------------------------------------------------------------
 //
-//	ワード書き込み
+//	Write word
 //
 //---------------------------------------------------------------------------
 void FASTCALL IOSC::WriteWord(DWORD addr, DWORD data)
 {
-	ASSERT(this);
-	ASSERT((addr >= memdev.first) && (addr <= memdev.last));
-	ASSERT((addr & 1) == 0);
-	ASSERT(data < 0x10000);
+ ASSERT(this);
+ ASSERT((addr >= memdev.first) && (addr <= memdev.last));
+ ASSERT((addr & 1) == 0);
+ ASSERT(data < 0x10000);
 
 	WriteByte(addr + 1, (BYTE)data);
 }
 
 //---------------------------------------------------------------------------
 //
-//	読み込みのみ
+//	Read only
 //
 //---------------------------------------------------------------------------
 DWORD FASTCALL IOSC::ReadOnly(DWORD addr) const
 {
 	DWORD data;
 
-	ASSERT(this);
-	ASSERT((addr >= memdev.first) && (addr <= memdev.last));
+ ASSERT(this);
+ ASSERT((addr >= memdev.first) && (addr <= memdev.last));
 
-	// 16バイト単位でループ
+	// 16-byte unit loop
 	addr &= 0x0f;
 
-	// 奇数アドレスのみデコードされている
+	// Only odd addresses are decoded
 	if ((addr & 1) != 0) {
 
-		// $E9C001 割り込みステータス
+		// $E9C001 Interrupt status
 		if (addr == 1) {
 			data = 0;
 			if (iosc.fdc_int) {
@@ -386,189 +386,189 @@ DWORD FASTCALL IOSC::ReadOnly(DWORD addr) const
 			return data;
 		}
 
-		// $E9C003 割り込みベクタ
+		// $E9C003 Interrupt vector
 		if (addr == 3) {
 			return 0xff;
 		}
 
-		// 未定義アドレス
+		// Invalid address
 		return 0xff;
 	}
 
-	// 偶数アドレス
+	// Even address
 	return 0xff;
 }
 
 //---------------------------------------------------------------------------
 //
-//	内部データ取得
+//	Get IOSC
 //
 //---------------------------------------------------------------------------
 void FASTCALL IOSC::GetIOSC(iosc_t *buffer) const
 {
-	ASSERT(this);
-	ASSERT(buffer);
+ ASSERT(this);
+ ASSERT(buffer);
 
-	// 内部ワークをコピー
+	// Copy internal state
 	*buffer = iosc;
 }
 
 //---------------------------------------------------------------------------
 //
-//	割り込みチェック
+//	Interrupt check
 //
 //---------------------------------------------------------------------------
 void FASTCALL IOSC::IntChk()
 {
 	int v;
 
-	ASSERT(this);
+ ASSERT(this);
 
-	// 割り込み無し
+	// Clear interrupt pending
 	v = -1;
 
-	// プリンタ割り込み
+	// Printer interrupt
 	if (iosc.prt_int && iosc.prt_en) {
 		v = iosc.vbase + 3;
 	}
 
-	// HDC割り込み
+	// HDC interrupt
 	if (iosc.hdc_int && iosc.hdc_en) {
 		v = iosc.vbase + 2;
 	}
 
-	// FDD割り込み
+	// FDD interrupt
 	if (iosc.fdd_int && iosc.fdd_en) {
 		v = iosc.vbase + 1;
 	}
 
-	// FDC割り込み
+	// FDC interrupt
 	if (iosc.fdc_int && iosc.fdc_en) {
 		v = iosc.vbase;
 	}
 
-	// 要求したい割り込みがない場合
+	// If no devices requesting interrupt
 	if (v < 0) {
-		// 割り込み要求中でなければ、OK
+		// If no interrupt requested, OK
 		if (iosc.vector < 0) {
 			return;
 		}
 
-		// 何らかの割り込みを要求しているので、割り込みキャンセル
+		// Since other interrupts are being requested, cancel interrupt
 #if defined(IOSC_LOG)
-		LOG1(Log::Normal, "割り込みキャンセル ベクタ$%02X", iosc.vector);
+		LOG1(Log::Normal, "Interrupt cancel vector$%02X", iosc.vector);
 #endif	// IOSC_LOG
 		cpu->IntCancel(1);
 		iosc.vector = -1;
 		return;
 	}
 
-	// 既に要求しているベクタと同じであれば、OK
+	// If same vector as currently requested, OK
 	if (iosc.vector == v) {
 		return;
 	}
 
-	// 違うので、要求中なら一度キャンセル
+	// Different, so cancel pending
 	if (iosc.vector >= 0) {
 #if defined(IOSC_LOG)
-		LOG1(Log::Normal, "割り込みキャンセル ベクタ$%02X", iosc.vector);
+		LOG1(Log::Normal, "Interrupt cancel vector$%02X", iosc.vector);
 #endif	// IOSC_LOG
 		cpu->IntCancel(1);
 		iosc.vector = -1;
 	}
 
-	// 割り込み要求
+	// Interrupt request
 #if defined(IOSC_LOG)
-	LOG1(Log::Normal, "割り込み要求 ベクタ$%02X", v);
+	LOG1(Log::Normal, "Interrupt request vector$%02X", v);
 #endif	// IOSC_LOG
 	cpu->Interrupt(1, (BYTE)v);
 
-	// 記憶
+	// Save
 	iosc.vector = v;
 }
 
 //---------------------------------------------------------------------------
 //
-//	割り込み応答
+//	Interrupt acknowledge
 //
 //---------------------------------------------------------------------------
 void FASTCALL IOSC::IntAck()
 {
-	ASSERT(this);
+ ASSERT(this);
 
-	// リセット直後に、CPUから割り込みが間違って入る場合がある
-	// または他のデバイス
+	// After reset, if CPU acknowledges interrupt before device
+	// Or other devices
 	if (iosc.vector < 0) {
 #if defined(IOSC_LOG)
-		LOG0(Log::Warning, "要求していない割り込み");
+		LOG0(Log::Warning, "Unexpected interrupt acknowledge");
 #endif	// IOSC_LOG
 		return;
 	}
 
 #if defined(IOSC_LOG)
-	LOG1(Log::Normal, "割り込みACK ベクタ$%02X", iosc.vector);
+	LOG1(Log::Normal, "Interrupt ACK vector$%02X", iosc.vector);
 #endif	// IOSC_LOG
 
-	// 割り込みなし
+	// Clear interrupt
 	iosc.vector = -1;
 }
 
 //---------------------------------------------------------------------------
 //
-//	FDC割り込み
+//	FDC interrupt
 //
 //---------------------------------------------------------------------------
 void FASTCALL IOSC::IntFDC(BOOL flag)
 {
-	ASSERT(this);
+ ASSERT(this);
 
 	iosc.fdc_int = flag;
 
-	// 割り込みチェック
+	// Interrupt check
 	IntChk();
 }
 
 //---------------------------------------------------------------------------
 //
-//	FDD割り込み
+//	FDD interrupt
 //
 //---------------------------------------------------------------------------
 void FASTCALL IOSC::IntFDD(BOOL flag)
 {
-	ASSERT(this);
+ ASSERT(this);
 
 	iosc.fdd_int = flag;
 
-	// 割り込みチェック
+	// Interrupt check
 	IntChk();
 }
 
 //---------------------------------------------------------------------------
 //
-//	HDC割り込み
+//	HDC interrupt
 //
 //---------------------------------------------------------------------------
 void FASTCALL IOSC::IntHDC(BOOL flag)
 {
-	ASSERT(this);
+ ASSERT(this);
 
 	iosc.hdc_int = flag;
 
-	// 割り込みチェック
+	// Interrupt check
 	IntChk();
 }
 
 //---------------------------------------------------------------------------
 //
-//	プリンタ割り込み
+//	Printer interrupt
 //
 //---------------------------------------------------------------------------
 void FASTCALL IOSC::IntPRT(BOOL flag)
 {
-	ASSERT(this);
+ ASSERT(this);
 
 	iosc.prt_int = flag;
 
-	// 割り込みチェック
+	// Interrupt check
 	IntChk();
 }

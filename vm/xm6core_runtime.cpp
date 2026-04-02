@@ -6,8 +6,11 @@
 #include "opm.h"
 #include "adpcm.h"
 #include "ppi.h"
+#include "dmac.h"
 #include "config.h"
 #include "midi.h"
+#include <cstring>
+#include <new>
 
 struct XM6ContextRuntimeShim {
 	VM *vm;
@@ -26,7 +29,38 @@ struct XM6ContextRuntimeShim {
 	DWORD *adpcm_buf;
 	unsigned int audio_rate;
 	unsigned int audio_buf_frames;
+	BOOL surround_enabled;
+	BOOL hq_adpcm_enabled;
+	int reverb_level;
+	int eq_sub_bass_level;
+	int eq_bass_level;
+	int eq_mid_level;
+	int eq_presence_level;
+	int eq_treble_level;
+	int eq_air_level;
 	Config runtime_config;
+	int surround_prev_l;
+	int surround_prev_r;
+	int *reverb_buf;
+	unsigned int reverb_buf_frames;
+	unsigned int reverb_buf_pos;
+	int reverb_lp_l;
+	int reverb_lp_r;
+	int eq_sub_bass_l;
+	int eq_sub_bass_r;
+	int eq_bass_l;
+	int eq_bass_r;
+	int eq_mid_l;
+	int eq_mid_r;
+	int eq_presence_l;
+	int eq_presence_r;
+	int eq_air_l;
+	int eq_air_r;
+	int eq_sub_bass_coeff_q14;
+	int eq_bass_coeff_q14;
+	int eq_mid_coeff_q14;
+	int eq_presence_coeff_q14;
+	int eq_air_coeff_q14;
 };
 
 extern "C" XM6CORE_API int XM6CORE_CALL xm6_set_joy_type(XM6Handle handle, int port, int type)
@@ -117,6 +151,43 @@ static int clamp_volume(int volume)
 	return volume;
 }
 
+static bool ensure_reverb_buffer(XM6ContextRuntimeShim *ctx)
+{
+	if (!ctx || ctx->audio_rate == 0) {
+		return false;
+	}
+
+	const unsigned int wanted_frames = ((ctx->audio_rate * 90u) / 1000u) + 1u;
+	if (wanted_frames == 0u) {
+		return false;
+	}
+
+	if (ctx->reverb_buf && ctx->reverb_buf_frames == wanted_frames) {
+		memset(ctx->reverb_buf, 0, ctx->reverb_buf_frames * 2u * sizeof(int));
+		ctx->reverb_buf_pos = 0;
+		ctx->reverb_lp_l = 0;
+		ctx->reverb_lp_r = 0;
+		return true;
+	}
+
+	delete[] ctx->reverb_buf;
+	ctx->reverb_buf = new(std::nothrow) int[wanted_frames * 2u];
+	if (!ctx->reverb_buf) {
+		ctx->reverb_buf_frames = 0;
+		ctx->reverb_buf_pos = 0;
+		ctx->reverb_lp_l = 0;
+		ctx->reverb_lp_r = 0;
+		return false;
+	}
+
+	ctx->reverb_buf_frames = wanted_frames;
+	ctx->reverb_buf_pos = 0;
+	ctx->reverb_lp_l = 0;
+	ctx->reverb_lp_r = 0;
+	memset(ctx->reverb_buf, 0, ctx->reverb_buf_frames * 2u * sizeof(int));
+	return true;
+}
+
 extern "C" XM6CORE_API int XM6CORE_CALL xm6_set_master_volume(XM6Handle handle, int volume)
 {
 	if (!handle) {
@@ -167,6 +238,240 @@ extern "C" XM6CORE_API int XM6CORE_CALL xm6_set_adpcm_volume(XM6Handle handle, i
 	if (ctx->adpcm) {
 		ctx->adpcm->SetVolume(volume);
 	}
+	return XM6CORE_OK;
+}
+
+extern "C" XM6CORE_API int XM6CORE_CALL xm6_set_adpcm_interp(XM6Handle handle, int enabled)
+{
+	if (!handle) {
+		return XM6CORE_ERR_INVALID_HANDLE;
+	}
+
+	XM6ContextRuntimeShim *ctx = reinterpret_cast<XM6ContextRuntimeShim*>(handle);
+	if (!ctx->vm || !ctx->adpcm) {
+		return XM6CORE_ERR_INVALID_HANDLE;
+	}
+
+	ctx->runtime_config.adpcm_interp = enabled ? TRUE : FALSE;
+	ctx->adpcm->ApplyCfg(&ctx->runtime_config);
+	return XM6CORE_OK;
+}
+
+extern "C" XM6CORE_API int XM6CORE_CALL xm6_set_surround_enabled(XM6Handle handle, int enabled)
+{
+	if (!handle) {
+		return XM6CORE_ERR_INVALID_HANDLE;
+	}
+
+	XM6ContextRuntimeShim *ctx = reinterpret_cast<XM6ContextRuntimeShim*>(handle);
+	if (!ctx->vm) {
+		return XM6CORE_ERR_INVALID_HANDLE;
+	}
+
+	if (!ctx->surround_enabled && enabled) {
+		ctx->surround_prev_l = 0;
+		ctx->surround_prev_r = 0;
+	}
+	ctx->surround_enabled = enabled ? TRUE : FALSE;
+	return XM6CORE_OK;
+}
+
+extern "C" XM6CORE_API int XM6CORE_CALL xm6_set_hq_adpcm_enabled(XM6Handle handle, int enabled)
+{
+	if (!handle) {
+		return XM6CORE_ERR_INVALID_HANDLE;
+	}
+
+	XM6ContextRuntimeShim *ctx = reinterpret_cast<XM6ContextRuntimeShim*>(handle);
+	if (!ctx->vm) {
+		return XM6CORE_ERR_INVALID_HANDLE;
+	}
+
+	ctx->hq_adpcm_enabled = enabled ? TRUE : FALSE;
+	return XM6CORE_OK;
+}
+
+extern "C" XM6CORE_API int XM6CORE_CALL xm6_set_reverb_level(XM6Handle handle, int level)
+{
+	if (!handle) {
+		return XM6CORE_ERR_INVALID_HANDLE;
+	}
+
+	XM6ContextRuntimeShim *ctx = reinterpret_cast<XM6ContextRuntimeShim*>(handle);
+	if (!ctx->vm) {
+		return XM6CORE_ERR_INVALID_HANDLE;
+	}
+
+	level = clamp_volume(level);
+	if (level > 100) {
+		level = 100;
+	}
+	ctx->reverb_level = level;
+	if (level <= 0) {
+		delete[] ctx->reverb_buf;
+		ctx->reverb_buf = NULL;
+		ctx->reverb_buf_frames = 0;
+		ctx->reverb_buf_pos = 0;
+		ctx->reverb_lp_l = 0;
+		ctx->reverb_lp_r = 0;
+		return XM6CORE_OK;
+	}
+
+	if (!ensure_reverb_buffer(ctx)) {
+		ctx->reverb_buf_pos = 0;
+		ctx->reverb_lp_l = 0;
+		ctx->reverb_lp_r = 0;
+	}
+	return XM6CORE_OK;
+}
+
+extern "C" XM6CORE_API int XM6CORE_CALL xm6_set_eq_bass_level(XM6Handle handle, int level)
+{
+	if (!handle) {
+		return XM6CORE_ERR_INVALID_HANDLE;
+	}
+
+	XM6ContextRuntimeShim *ctx = reinterpret_cast<XM6ContextRuntimeShim*>(handle);
+	if (!ctx->vm) {
+		return XM6CORE_ERR_INVALID_HANDLE;
+	}
+
+	ctx->eq_sub_bass_level = clamp_volume(level);
+	ctx->eq_sub_bass_l = 0;
+	ctx->eq_sub_bass_r = 0;
+	ctx->eq_bass_l = 0;
+	ctx->eq_bass_r = 0;
+	ctx->eq_mid_l = 0;
+	ctx->eq_mid_r = 0;
+	ctx->eq_presence_l = 0;
+	ctx->eq_presence_r = 0;
+	ctx->eq_air_l = 0;
+	ctx->eq_air_r = 0;
+	return XM6CORE_OK;
+}
+
+extern "C" XM6CORE_API int XM6CORE_CALL xm6_set_eq_bass2_level(XM6Handle handle, int level)
+{
+	if (!handle) {
+		return XM6CORE_ERR_INVALID_HANDLE;
+	}
+
+	XM6ContextRuntimeShim *ctx = reinterpret_cast<XM6ContextRuntimeShim*>(handle);
+	if (!ctx->vm) {
+		return XM6CORE_ERR_INVALID_HANDLE;
+	}
+
+	ctx->eq_bass_level = clamp_volume(level);
+	ctx->eq_sub_bass_l = 0;
+	ctx->eq_sub_bass_r = 0;
+	ctx->eq_bass_l = 0;
+	ctx->eq_bass_r = 0;
+	ctx->eq_mid_l = 0;
+	ctx->eq_mid_r = 0;
+	ctx->eq_presence_l = 0;
+	ctx->eq_presence_r = 0;
+	ctx->eq_air_l = 0;
+	ctx->eq_air_r = 0;
+	return XM6CORE_OK;
+}
+
+extern "C" XM6CORE_API int XM6CORE_CALL xm6_set_eq_mid_level(XM6Handle handle, int level)
+{
+	if (!handle) {
+		return XM6CORE_ERR_INVALID_HANDLE;
+	}
+
+	XM6ContextRuntimeShim *ctx = reinterpret_cast<XM6ContextRuntimeShim*>(handle);
+	if (!ctx->vm) {
+		return XM6CORE_ERR_INVALID_HANDLE;
+	}
+
+	ctx->eq_mid_level = clamp_volume(level);
+	ctx->eq_sub_bass_l = 0;
+	ctx->eq_sub_bass_r = 0;
+	ctx->eq_bass_l = 0;
+	ctx->eq_bass_r = 0;
+	ctx->eq_mid_l = 0;
+	ctx->eq_mid_r = 0;
+	ctx->eq_presence_l = 0;
+	ctx->eq_presence_r = 0;
+	ctx->eq_air_l = 0;
+	ctx->eq_air_r = 0;
+	return XM6CORE_OK;
+}
+
+extern "C" XM6CORE_API int XM6CORE_CALL xm6_set_eq_presence_level(XM6Handle handle, int level)
+{
+	if (!handle) {
+		return XM6CORE_ERR_INVALID_HANDLE;
+	}
+
+	XM6ContextRuntimeShim *ctx = reinterpret_cast<XM6ContextRuntimeShim*>(handle);
+	if (!ctx->vm) {
+		return XM6CORE_ERR_INVALID_HANDLE;
+	}
+
+	ctx->eq_presence_level = clamp_volume(level);
+	ctx->eq_sub_bass_l = 0;
+	ctx->eq_sub_bass_r = 0;
+	ctx->eq_bass_l = 0;
+	ctx->eq_bass_r = 0;
+	ctx->eq_mid_l = 0;
+	ctx->eq_mid_r = 0;
+	ctx->eq_presence_l = 0;
+	ctx->eq_presence_r = 0;
+	ctx->eq_air_l = 0;
+	ctx->eq_air_r = 0;
+	return XM6CORE_OK;
+}
+
+extern "C" XM6CORE_API int XM6CORE_CALL xm6_set_eq_air_level(XM6Handle handle, int level)
+{
+	if (!handle) {
+		return XM6CORE_ERR_INVALID_HANDLE;
+	}
+
+	XM6ContextRuntimeShim *ctx = reinterpret_cast<XM6ContextRuntimeShim*>(handle);
+	if (!ctx->vm) {
+		return XM6CORE_ERR_INVALID_HANDLE;
+	}
+
+	ctx->eq_air_level = clamp_volume(level);
+	ctx->eq_sub_bass_l = 0;
+	ctx->eq_sub_bass_r = 0;
+	ctx->eq_bass_l = 0;
+	ctx->eq_bass_r = 0;
+	ctx->eq_mid_l = 0;
+	ctx->eq_mid_r = 0;
+	ctx->eq_presence_l = 0;
+	ctx->eq_presence_r = 0;
+	ctx->eq_air_l = 0;
+	ctx->eq_air_r = 0;
+	return XM6CORE_OK;
+}
+
+extern "C" XM6CORE_API int XM6CORE_CALL xm6_set_eq_treble_level(XM6Handle handle, int level)
+{
+	if (!handle) {
+		return XM6CORE_ERR_INVALID_HANDLE;
+	}
+
+	XM6ContextRuntimeShim *ctx = reinterpret_cast<XM6ContextRuntimeShim*>(handle);
+	if (!ctx->vm) {
+		return XM6CORE_ERR_INVALID_HANDLE;
+	}
+
+	ctx->eq_treble_level = clamp_volume(level);
+	ctx->eq_sub_bass_l = 0;
+	ctx->eq_sub_bass_r = 0;
+	ctx->eq_bass_l = 0;
+	ctx->eq_bass_r = 0;
+	ctx->eq_mid_l = 0;
+	ctx->eq_mid_r = 0;
+	ctx->eq_presence_l = 0;
+	ctx->eq_presence_r = 0;
+	ctx->eq_air_l = 0;
+	ctx->eq_air_r = 0;
 	return XM6CORE_OK;
 }
 
@@ -242,11 +547,97 @@ extern "C" XM6CORE_API int XM6CORE_CALL xm6_set_render_mode(XM6Handle handle, in
 		return XM6CORE_ERR_INVALID_ARGUMENT;
 	}
 
-	ctx->runtime_config.alt_raster = (mode == XM6CORE_RENDER_MODE_FAST) ? TRUE : FALSE;
-	ctx->vm->ApplyCfg(&ctx->runtime_config);
-
 	if (ctx->render) {
 		ctx->render->Complete();
+	}
+	return XM6CORE_OK;
+}
+
+extern "C" XM6CORE_API int XM6CORE_CALL xm6_set_legacy_dmac_cnt(XM6Handle handle, int enabled)
+{
+	if (!handle) {
+		return XM6CORE_ERR_INVALID_HANDLE;
+	}
+
+	XM6ContextRuntimeShim *ctx = reinterpret_cast<XM6ContextRuntimeShim*>(handle);
+	if (!ctx->vm) {
+		return XM6CORE_ERR_INVALID_HANDLE;
+	}
+
+	DMAC *dmac = (DMAC*)ctx->vm->SearchDevice(MAKEID('D', 'M', 'A', 'C'));
+	if (!dmac) {
+		return XM6CORE_ERR_NOT_READY;
+	}
+
+	dmac->SetLegacyCntMode(enabled ? TRUE : FALSE);
+	return XM6CORE_OK;
+}
+
+extern "C" XM6CORE_API int XM6CORE_CALL xm6_set_alt_raster(XM6Handle handle, int enabled)
+{
+	if (!handle) {
+		return XM6CORE_ERR_INVALID_HANDLE;
+	}
+
+	XM6ContextRuntimeShim *ctx = reinterpret_cast<XM6ContextRuntimeShim*>(handle);
+	if (!ctx->vm) {
+		return XM6CORE_ERR_INVALID_HANDLE;
+	}
+
+	ctx->runtime_config.alt_raster = enabled ? TRUE : FALSE;
+	ctx->vm->ApplyCfg(&ctx->runtime_config);
+	return XM6CORE_OK;
+}
+
+extern "C" XM6CORE_API int XM6CORE_CALL xm6_set_render_bg0(XM6Handle handle, int enabled)
+{
+	if (!handle) {
+		return XM6CORE_ERR_INVALID_HANDLE;
+	}
+
+	XM6ContextRuntimeShim *ctx = reinterpret_cast<XM6ContextRuntimeShim*>(handle);
+	if (!ctx->vm) {
+		return XM6CORE_ERR_INVALID_HANDLE;
+	}
+
+	Render *render = ctx->render;
+	if (!render) {
+		render = (Render*)ctx->vm->SearchDevice(MAKEID('R', 'E', 'N', 'D'));
+		ctx->render = render;
+	}
+
+	if (render) {
+		render->SetOriginalBG0RenderEnabled(enabled ? TRUE : FALSE);
+		render->ForceRecompose();
+		render->Complete();
+	}
+
+	return XM6CORE_OK;
+}
+
+extern "C" XM6CORE_API int XM6CORE_CALL xm6_set_transparency_enabled(XM6Handle handle, int enabled)
+{
+	if (!handle) {
+		return XM6CORE_ERR_INVALID_HANDLE;
+	}
+
+	XM6ContextRuntimeShim *ctx = reinterpret_cast<XM6ContextRuntimeShim*>(handle);
+	if (!ctx->vm) {
+		return XM6CORE_ERR_INVALID_HANDLE;
+	}
+
+	Render *render = ctx->render;
+	if (!render) {
+		render = (Render*)ctx->vm->SearchDevice(MAKEID('R', 'E', 'N', 'D'));
+		ctx->render = render;
+	}
+
+	if (render) {
+		render->SetTransparencyEnabled(enabled ? TRUE : FALSE);
+		// Force a full recomposite so the option takes effect immediately
+		// without requiring a content reset.
+		render->ForceRecompose();
+		render->Complete();
 	}
 	return XM6CORE_OK;
 }

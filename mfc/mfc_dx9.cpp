@@ -1,19 +1,19 @@
-#include "os.h"
 #include "mfc.h"
+#include "os.h"
 #include "mfc_dx9.h"
 
-// Compilación moderna de shaders HLSL con D3DCompiler (no legacy D3DX9)
+// Modern HLSL shader compilation with D3DCompiler (no legacy D3DX9)
 #pragma comment(lib, "d3d9.lib")
 #pragma comment(lib, "d3dcompiler.lib")
 
 #include <d3dcompiler.h>
 #define USE_D3DCOMPILER 1
 
-// Definición para cargar D3D9Ex dinámicamente si está en Win7+
+// Definition for loading D3D9Ex dynamically when available on Win7+
 typedef HRESULT(WINAPI* LPFNDIRECT3DCREATE9EX)(UINT, IDirect3D9Ex**);
 
 CDX9Renderer::CDX9Renderer()
-    : m_hD3D9(NULL), m_pD3D(NULL), m_pD3DEx(NULL), m_pDevice(NULL), m_pDeviceEx(NULL), 
+    : m_hD3D9(NULL), m_pD3D(NULL), m_pD3DEx(NULL), m_pDevice(NULL), m_pDeviceEx(NULL),
       m_pTexture(NULL), m_pOverlayTexture(NULL), m_pVertexBuffer(NULL), m_pCRTShader(NULL), m_hWnd(NULL), m_bInitialized(FALSE), m_bDeviceLost(FALSE),
       m_bIsEx(FALSE), m_bShaderEnabled(FALSE), m_dwOwnerThreadId(0), m_TexWidth(0), m_TexHeight(0), m_OverlayWidth(384), m_OverlayHeight(48),
       m_bOverlayEnabled(FALSE), m_bOverlayDirty(FALSE), m_hOverlayDC(NULL), m_hOverlayBitmap(NULL),
@@ -25,19 +25,19 @@ CDX9Renderer::CDX9Renderer()
 	m_szCRTShaderPath[0] = _T('\0');
 }
 
-CDX9Renderer::~CDX9Renderer() 
+CDX9Renderer::~CDX9Renderer()
 {
     Cleanup();
 }
 
-BOOL CDX9Renderer::Init(HWND hWnd, int width, int height, BOOL bWindowed, BOOL bVSync) 
+BOOL CDX9Renderer::Init(HWND hWnd, int width, int height, BOOL bWindowed, BOOL bVSync)
 {
     if (m_bInitialized) return TRUE;
 
     m_dwOwnerThreadId = GetCurrentThreadId();
     m_hWnd = hWnd;
 
-    // LoadLibrary permite correr en versiones sin d3d9 si fuera el caso
+// LoadLibrary lets us run on systems without d3d9 if needed
     m_hD3D9 = LoadLibrary("d3d9.dll");
     if (!m_hD3D9) return FALSE;
 
@@ -51,7 +51,7 @@ BOOL CDX9Renderer::Init(HWND hWnd, int width, int height, BOOL bWindowed, BOOL b
         if (!m_pD3D) {
             FreeLibrary(m_hD3D9);
             m_hD3D9 = NULL;
-            return FALSE; // Fallback GDI directo
+        return FALSE;	// Fallback to GDI
         }
     }
 
@@ -91,7 +91,7 @@ BOOL CDX9Renderer::Init(HWND hWnd, int width, int height, BOOL bWindowed, BOOL b
         );
     }
 
-    // Si fallamos usando HARDWARE_VERTEXPROCESSING, caemos a SOFTWARE (GPUs muy viejas)
+// If HARDWARE_VERTEXPROCESSING fails, fall back to SOFTWARE (very old GPUs)
     if (FAILED(hr)) {
         dwBehaviorFlags = D3DCREATE_SOFTWARE_VERTEXPROCESSING;
         if (m_bIsEx) {
@@ -113,7 +113,7 @@ BOOL CDX9Renderer::Init(HWND hWnd, int width, int height, BOOL bWindowed, BOOL b
     return TRUE;
 }
 
-void CDX9Renderer::Cleanup() 
+void CDX9Renderer::Cleanup()
 {
     if (m_dwOwnerThreadId != 0) {
         ASSERT(GetCurrentThreadId() == m_dwOwnerThreadId);
@@ -138,7 +138,7 @@ void CDX9Renderer::Cleanup()
 	m_bOverlayDirty = FALSE;
 }
 
-BOOL CDX9Renderer::CreateTexture(int width, int height) 
+BOOL CDX9Renderer::CreateTexture(int width, int height)
 {
     if (!m_pDevice) return FALSE;
     if (width < 1) width = 1;
@@ -204,7 +204,7 @@ void CDX9Renderer::SetupDeviceStates()
     m_pDevice->SetSamplerState(0, D3DSAMP_ADDRESSV, D3DTADDRESS_CLAMP);
 }
 
-void CDX9Renderer::ReleaseTexture() 
+void CDX9Renderer::ReleaseTexture()
 {
     if (m_pTexture) {
         m_pTexture->Release();
@@ -229,7 +229,7 @@ void CDX9Renderer::ReleaseOverlayTexture()
 		m_pOverlayTexture = NULL;
 	}
 
-	// Si el device se resetea, forzar regeneracion del overlay.
+	// If the device resets, force overlay regeneration.
 	m_bOverlayDirty = TRUE;
 }
 
@@ -352,7 +352,7 @@ BOOL CDX9Renderer::UpdateOverlayTexture()
 		return FALSE;
 	}
 
-	// Fondo transparente inicialmente
+	// Transparent background initially
 	memset(m_pOverlayBits, 0, m_OverlayWidth * m_OverlayHeight * sizeof(DWORD));
 
 	RECT rc = { 0, 0, m_OverlayWidth, m_OverlayHeight };
@@ -366,7 +366,7 @@ BOOL CDX9Renderer::UpdateOverlayTexture()
 		DrawText(m_hOverlayDC, m_szOverlayLine2, -1, &rc2, DT_LEFT | DT_VCENTER | DT_SINGLELINE | DT_NOPREFIX);
 	}
 
-	// Aplicar alpha: fondo semitransparente + texto opaco
+	// Apply alpha: semi-transparent background plus opaque text
 	for (int y = rc.top; y < rc.bottom; y++) {
 		DWORD *pLine = m_pOverlayBits + (y * m_OverlayWidth);
 		for (int x = rc.left; x < rc.right; x++) {
@@ -397,10 +397,12 @@ BOOL CDX9Renderer::UpdateOverlayTexture()
 	return bOk;
 }
 
-BOOL CDX9Renderer::UpdateSurface(const DWORD* pSrcBuffer, int srcWidth, int srcHeight, int srcPitchPixels) 
+BOOL CDX9Renderer::UpdateSurface(const DWORD* pSrcBuffer, int srcWidth, int srcHeight, int srcPitchPixels)
 {
-    ASSERT(GetCurrentThreadId() == m_dwOwnerThreadId);
     if (!m_bInitialized || m_bDeviceLost || !m_pDevice || !pSrcBuffer) return FALSE;
+    if (m_dwOwnerThreadId != 0) {
+        ASSERT(GetCurrentThreadId() == m_dwOwnerThreadId);
+    }
 
     if (!CreateTexture(srcWidth, srcHeight)) return FALSE;
 
@@ -418,10 +420,12 @@ BOOL CDX9Renderer::UpdateSurface(const DWORD* pSrcBuffer, int srcWidth, int srcH
     return FALSE;
 }
 
-BOOL CDX9Renderer::ResetDevice(int width, int height, BOOL bWindowed, BOOL bVSync) 
+BOOL CDX9Renderer::ResetDevice(int width, int height, BOOL bWindowed, BOOL bVSync)
 {
-    ASSERT(GetCurrentThreadId() == m_dwOwnerThreadId);
     if (!m_bInitialized || !m_pDevice) return FALSE;
+    if (m_dwOwnerThreadId != 0) {
+        ASSERT(GetCurrentThreadId() == m_dwOwnerThreadId);
+    }
 
     ReleaseTexture();
     ReleaseOverlayTexture();
@@ -444,14 +448,14 @@ BOOL CDX9Renderer::ResetDevice(int width, int height, BOOL bWindowed, BOOL bVSyn
 
     if (SUCCEEDED(hr)) {
         SetupDeviceStates();
-        // Recargar shader si estaba habilitado
+// Reload the shader if it was enabled
         if (m_bShaderEnabled && m_szCRTShaderPath[0] != _T('\0')) {
             CreateCRTShader(m_szCRTShaderPath);
         }
         m_bDeviceLost = FALSE;
         return TRUE;
     }
-    
+
     if (hr == D3DERR_DEVICELOST) {
         m_bDeviceLost = TRUE;
     }
@@ -459,10 +463,13 @@ BOOL CDX9Renderer::ResetDevice(int width, int height, BOOL bWindowed, BOOL bVSyn
     return FALSE;
 }
 
-BOOL CDX9Renderer::PresentFrame(int srcWidth, int srcHeight, BOOL fillWindow, BOOL keepAspect) 
+BOOL CDX9Renderer::PresentFrame(int srcWidth, int srcHeight, int scalePercent)
 {
-    ASSERT(GetCurrentThreadId() == m_dwOwnerThreadId);
     if (!m_bInitialized || !m_pDevice) return FALSE;
+    if (m_dwOwnerThreadId != 0) {
+        ASSERT(GetCurrentThreadId() == m_dwOwnerThreadId);
+    }
+    (void)scalePercent;
 
     if (m_bDeviceLost) {
         HRESULT hrTest = m_bIsEx ? m_pDeviceEx->CheckDeviceState(m_hWnd) : m_pDevice->TestCooperativeLevel();
@@ -480,37 +487,23 @@ BOOL CDX9Renderer::PresentFrame(int srcWidth, int srcHeight, BOOL fillWindow, BO
             return FALSE;
         }
 
+        if (FAILED(m_pDevice->Clear(0, NULL, D3DCLEAR_TARGET, D3DCOLOR_ARGB(255, 0, 0, 0), 1.0f, 0))) {
+            return FALSE;
+        }
         m_pDevice->BeginScene();
 
         float bw = (float)m_d3dpp.BackBufferWidth;
         float bh = (float)m_d3dpp.BackBufferHeight;
-        float offset = -0.5f; // DirectX 9 texel mapping offset
-        
+        float offset = -0.5f;	// DirectX 9 texel mapping offset
+
         float uMax = (float)srcWidth / (float)m_TexWidth;
         float vMax = (float)srcHeight / (float)m_TexHeight;
 
-        float destW, destH, destX = 0, destY = 0;
-        if (fillWindow) {
-            if (keepAspect) {
-                float srcAspect = (float)srcWidth / (float)srcHeight;
-                float backAspect = bw / bh;
-                if (srcAspect > backAspect) {
-                    destW = bw;
-                    destH = bw / srcAspect;
-                } else {
-                    destH = bh;
-                    destW = bh * srcAspect;
-                }
-                destX = (bw - destW) / 2.0f;
-                destY = (bh - destH) / 2.0f;
-            } else {
-                destW = bw;
-                destH = bh;
-            }
-        } else {
-            destW = (float)srcWidth;
-            destH = (float)srcHeight;
-        }
+        // Always stretch to the full client/backbuffer area.
+        float destW = bw;
+        float destH = bh;
+        float destX = 0.0f;
+        float destY = 0.0f;
 
         Vertex *pVertices = NULL;
         if (FAILED(m_pVertexBuffer->Lock(0, 0, (void**)&pVertices, D3DLOCK_DISCARD | D3DLOCK_NOSYSLOCK))) {
@@ -551,20 +544,20 @@ BOOL CDX9Renderer::PresentFrame(int srcWidth, int srcHeight, BOOL fillWindow, BO
         m_pDevice->SetFVF(D3DFVF_XYZRHW | D3DFVF_TEX1);
         m_pDevice->SetStreamSource(0, m_pVertexBuffer, 0, sizeof(Vertex));
         m_pDevice->SetTexture(0, m_pTexture);
-        
-        // Aplicar CRT shader si está habilitado
+
+// Apply the CRT shader if it is enabled
         if (m_bShaderEnabled && m_pCRTShader) {
             m_pDevice->SetPixelShader(m_pCRTShader);
         }
-        
+
         m_pDevice->DrawPrimitive(D3DPT_TRIANGLESTRIP, 0, 2);
-        
-        // Desactivar shader global antes de renderizar OSD (para que sea nítido)
+
+// Disable the global shader before rendering the OSD so it stays crisp
         if (m_bShaderEnabled && m_pCRTShader) {
             m_pDevice->SetPixelShader(NULL);
         }
 
-		// OSD por hardware (DX9)
+		// Hardware OSD (DX9)
 		if (m_bOverlayEnabled) {
 			if (m_bOverlayDirty && !UpdateOverlayTexture()) {
 				m_bOverlayEnabled = FALSE;
@@ -644,51 +637,53 @@ BOOL CDX9Renderer::PresentFrame(int srcWidth, int srcHeight, BOOL fillWindow, BO
 }
 
 //---------------------------------------------------------------------------
-// Crear CRT Shader desde archivo HLSL (usando D3DCompiler moderno)
+// Create the CRT shader from an HLSL file using the modern D3DCompiler
 //---------------------------------------------------------------------------
 BOOL CDX9Renderer::CreateCRTShader(LPCTSTR szPath)
 {
-    ASSERT(GetCurrentThreadId() == m_dwOwnerThreadId);
     if (!m_pDevice || !szPath || szPath[0] == _T('\0'))
         return FALSE;
+    if (m_dwOwnerThreadId != 0) {
+        ASSERT(GetCurrentThreadId() == m_dwOwnerThreadId);
+    }
 
-    // Liberar shader anterior si existe
+// Release the previous shader if one exists
     ReleaseCRTShader();
 
 #if USE_D3DCOMPILER
     ID3DBlob* pBytecode = NULL;
     ID3DBlob* pErrors = NULL;
 
-    // Verificar si el archivo existe
+// Check whether the file exists
     WIN32_FIND_DATA findData;
     HANDLE hFind = FindFirstFile(szPath, &findData);
     if (hFind == INVALID_HANDLE_VALUE) {
         TCHAR szDebug[512];
-        _sntprintf_s(szDebug, _countof(szDebug), _TRUNCATE, 
+        _sntprintf_s(szDebug, _countof(szDebug), _TRUNCATE,
                      _T("CRT Shader: File not found at %s\n"), szPath);
         OutputDebugString(szDebug);
         return FALSE;
     }
     FindClose(hFind);
 
-    // Convertir szPath a LPCWSTR (D3DCompileFromFile siempre requiere Unicode)
+// Convert szPath to LPCWSTR (D3DCompileFromFile always requires Unicode)
     wchar_t szPathW[MAX_PATH];
     #ifdef _UNICODE
         wcscpy_s(szPathW, MAX_PATH, szPath);
     #else
-        // Convertir de ANSI a Unicode si es necesario
+// Convert from ANSI to Unicode if needed
         MultiByteToWideChar(CP_ACP, 0, szPath, -1, szPathW, MAX_PATH);
     #endif
 
-    // Compilar shader HLSL con D3DCompiler (moderno, sin D3DX9 legacy)
+// Compile the HLSL shader with D3DCompiler (modern, without legacy D3DX9)
     HRESULT hr = D3DCompileFromFile(
         szPathW,
-        NULL,                           // pDefines
-        D3D_COMPILE_STANDARD_FILE_INCLUDE,  // dwIncludeFlags
-        "main",                         // pEntrypoint
-        "ps_2_0",                       // pTarget (compatible con GPUs viejas)
-        0,                              // Flags1
-        0,                              // Flags2
+NULL,// pDefines
+D3D_COMPILE_STANDARD_FILE_INCLUDE,// dwIncludeFlags
+"main",// pEntrypoint
+"ps_2_0",// pTarget (compatible with older GPUs)
+0,// Flags1
+0,// Flags2
         &pBytecode,
         &pErrors
     );
@@ -709,7 +704,7 @@ BOOL CDX9Renderer::CreateCRTShader(LPCTSTR szPath)
         return FALSE;
     }
 
-    // Crear pixel shader desde bytecode compilado
+// Create the pixel shader from the compiled bytecode
     hr = m_pDevice->CreatePixelShader(
         (DWORD*)pBytecode->GetBufferPointer(),
         &m_pCRTShader
@@ -727,19 +722,19 @@ BOOL CDX9Renderer::CreateCRTShader(LPCTSTR szPath)
         return FALSE;
     }
 
-    // Éxito: guardar ruta para recarga futura (ej. en ResetDevice)
+// Success: store the path for future reloads, such as in ResetDevice
     _tcsncpy_s(m_szCRTShaderPath, MAX_PATH, szPath, _TRUNCATE);
     OutputDebugString(_T("CRT Shader loaded successfully\n"));
     return TRUE;
 #else
-    // D3DCompiler no disponible; shader deshabilitado
+// D3DCompiler is not available; the shader is disabled
     OutputDebugStringA("Warning: D3DCompiler no disponible; shader CRT desabilitado\n");
     return FALSE;
 #endif
 }
 
 //---------------------------------------------------------------------------
-// Liberar CRT Shader
+// Release the CRT shader
 //---------------------------------------------------------------------------
 void CDX9Renderer::ReleaseCRTShader()
 {

@@ -2,7 +2,7 @@
 //
 //	X68000 EMULATOR "XM6"
 //
-//	Copyright (C) 2001-2006 ‚o‚hD(ytanaka@ipc-tokai.or.jp)
+//	Copyright (C) 2001-2006 ï¿½oï¿½hï¿½D(ytanaka@ipc-tokai.or.jp)
 //	[ FDD(FD55GFR) ]
 //
 //---------------------------------------------------------------------------
@@ -16,41 +16,41 @@
 
 //---------------------------------------------------------------------------
 //
-//	ƒGƒ‰[’è‹`
-//	¦ãˆÊST1, ‰ºˆÊST2, ‹ó‚«ƒrƒbƒgˆê•”g—p
+//	Error definition
+//	Partially uses ST1, ST2, and abnormal bits
 //
 //---------------------------------------------------------------------------
-#define FDD_NOERROR			0x0000		// ƒGƒ‰[–³‚µ
-#define FDD_EOT				0x8000		// EOTƒI[ƒo[
-#define FDD_DDAM			0x4000		// DDAMƒZƒNƒ^
-#define FDD_DATAERR			0x2000		// IDCRC‚Ü‚½‚Íƒf[ƒ^CRC(ReadID‚ğœ‚­)
-#define FDD_OVERRUN			0x1000		// ƒI[ƒo[ƒ‰ƒ“(ƒƒXƒgƒf[ƒ^)
-#define FDD_IDCRC			0x0800		// IDƒtƒB[ƒ‹ƒhCRC
-#define FDD_NODATA			0x0400		// —LŒø‚ÈƒZƒNƒ^‚È‚µ
-#define FDD_NOTWRITE		0x0200		// ‘‚«‚İ‹Ö~M†‚ğŒŸo
-#define FDD_MAM				0x0100		// ƒAƒhƒŒƒXƒ}[ƒN‚È‚µ
-#define FDD_NOTREADY		0x0080		// ƒmƒbƒgƒŒƒfƒB
-#define FDD_CM				0x0040		// DDAM‚Ü‚½‚ÍDAM‚ğŒŸo
-#define FDD_DATACRC			0x0020		// ƒf[ƒ^CRC
-#define FDD_NOCYL			0x0010		// ƒVƒŠƒ“ƒ_‚ªˆÙ‚È‚é
-#define FDD_SCANEQ			0x0008		// SCAN‚Åˆê’v‚µ‚½
-#define FDD_SCANNOT			0x0004		// SCAN‚Åˆê’v‚·‚é‚à‚Ì‚ª‚È‚¢
-#define FDD_BADCYL			0x0002		// ƒVƒŠƒ“ƒ_‚ª•s³
-#define FDD_MDAM			0x0001		// DAM‚ªŒ©‚Â‚©‚ç‚È‚¢
+#define FDD_NOERROR			0x0000		// No error
+#define FDD_EOT				0x8000		// EOT overrun
+#define FDD_DDAM			0x4000		// DDAM sector
+#define FDD_DATAERR			0x2000		// IDCRC or data CRC (ReadId exception)
+#define FDD_OVERRUN			0x1000		// Overrun (sense data)
+#define FDD_IDCRC			0x0800		// ID field CRC
+#define FDD_NODATA			0x0400		// No valid sector
+#define FDD_NOTWRITE		0x0200		// Write protect and write error
+#define FDD_MAM				0x0100		// Address mark not found
+#define FDD_NOTREADY		0x0080		// Drive not ready
+#define FDD_CM				0x0040		// DDAM or DAM detected
+#define FDD_DATACRC			0x0020		// Data CRC
+#define FDD_NOCYL			0x0010		// Cylinder not found
+#define FDD_SCANEQ			0x0008		// SCAN equal
+#define FDD_SCANNOT			0x0004		// SCAN not equal
+#define FDD_BADCYL			0x0002		// Cylinder ID error
+#define FDD_MDAM			0x0001		// DAM not found
 
 //---------------------------------------------------------------------------
 //
-//	ƒhƒ‰ƒCƒuƒXƒe[ƒ^ƒX’è‹`
+//	Drive status definition
 //
 //---------------------------------------------------------------------------
-#define FDST_INSERT			0x80		// ‘}“ü(Œë‘}“üŠÜ‚Ş)
-#define FDST_INVALID		0x40		// Œë‘}“ü
-#define FDST_EJECT			0x20		// ƒCƒWƒFƒNƒg‚Å‚«‚é
-#define FDST_BLINK			0x10		// “_–Åó‘Ô
-#define FDST_CURRENT		0x08		// “_–Å‚Ì‚Ç‚¿‚ç‚©‚Ìó‘Ô‚ğ¦‚·
-#define FDST_MOTOR			0x04		// ƒ‚[ƒ^ˆÀ’è‰ñ“]’†
-#define FDST_SELECT			0x02		// ƒZƒŒƒNƒg’†
-#define FDST_ACCESS			0x01		// ƒAƒNƒZƒX’†
+#define FDST_INSERT			0x80		// Inserted (or ejected)
+#define FDST_INVALID		0x40		// Invalid
+#define FDST_EJECT			0x20		// Eject possible
+#define FDST_BLINK			0x10		// Blink
+#define FDST_CURRENT		0x08		// Current blink status
+#define FDST_MOTOR			0x04		// Motor rotation
+#define FDST_SELECT			0x02		// Selected
+#define FDST_ACCESS			0x01		// Access LED
 
 //===========================================================================
 //
@@ -60,131 +60,131 @@
 class FDD : public Device
 {
 public:
-	// ƒhƒ‰ƒCƒuƒf[ƒ^’è‹`
+	// Drive data definition
 	typedef struct {
-		FDI *fdi;						// ƒtƒƒbƒs[ƒfƒBƒXƒNƒCƒ[ƒW
-		FDI *next;						// Ÿ‚É‘}“ü‚·‚éƒCƒ[ƒW
-		BOOL seeking;					// ƒV[ƒN’†
-		int cylinder;					// ƒVƒŠƒ“ƒ_
-		BOOL insert;					// ‘}“ü
-		BOOL invalid;					// Œë‘}“ü
-		BOOL eject;						// ƒCƒWƒFƒNƒg‚Å‚«‚é
-		BOOL blink;						// ‘}“ü‚³‚ê‚Ä‚¢‚È‚¯‚ê‚Î“_–Å
-		BOOL access;					// ƒAƒNƒZƒX’†
+		FDI *fdi;						// Floppy disk image
+		FDI *next;						// Next image to be inserted
+		BOOL seeking;					// Seeking
+		int cylinder;					// Cylinder
+		BOOL insert;					// Inserted
+		BOOL invalid;					// Invalid
+		BOOL eject;					// Eject possible
+		BOOL blink;					// Blinking while not inserted
+		BOOL access;					// Access LED
 	} drv_t;
 
-	// “à•”ƒf[ƒ^’è‹`
+	// Local data definition
 	typedef struct {
-		BOOL motor;						// ƒ‚[ƒ^ƒtƒ‰ƒO
-		BOOL settle;					// ƒZƒgƒŠƒ“ƒO’†
-		BOOL force;						// ‹­§ƒŒƒfƒBƒtƒ‰ƒO
-		int selected;					// ƒZƒŒƒNƒgƒhƒ‰ƒCƒu
-		BOOL first;						// ƒ‚[ƒ^ONŒã‚Ì‰‰ñƒV[ƒN
-		BOOL hd;						// HDƒtƒ‰ƒO
+		BOOL motor;					// Motor flag
+		BOOL settle;					// Settling time
+		BOOL force;					// Force ready flag
+		int selected;					// Selected drive
+		BOOL first;					// First seek after motor ON
+		BOOL hd;					// HD flag
 
-		BOOL fast;						// ‚‘¬ƒ‚[ƒh
+		BOOL fast;					// Fast mode
 	} fdd_t;
 
 public:
-	// Šî–{ƒtƒ@ƒ“ƒNƒVƒ‡ƒ“
+	// Basic constructor
 	FDD(VM *p);
-										// ƒRƒ“ƒXƒgƒ‰ƒNƒ^
+										// Constructor
 	BOOL FASTCALL Init();
-										// ‰Šú‰»
+										// Initialize
 	void FASTCALL Cleanup();
-										// ƒNƒŠ[ƒ“ƒAƒbƒv
+										// Cleanup
 	void FASTCALL Reset();
-										// ƒŠƒZƒbƒg
+										// Reset
 	BOOL FASTCALL Save(Fileio *fio, int ver);
-										// ƒZ[ƒu
+										// Save
 	BOOL FASTCALL Load(Fileio *fio, int ver);
-										// ƒ[ƒh
+										// Load
 	void FASTCALL ApplyCfg(const Config *config);
-										// İ’è“K—p
+										// Apply config
 
-	// ŠO•”API
+	// External API
 	void FASTCALL GetDrive(int drive, drv_t *buffer) const;
-										// ƒhƒ‰ƒCƒuƒ[ƒNæ“¾
+										// Get drive structure
 	void FASTCALL GetFDD(fdd_t *buffer) const;
-										// “à•”ƒ[ƒNæ“¾
+										// Get local structure
 	FDI* FASTCALL GetFDI(int drive);
-										// FDIæ“¾
+										// Get FDI
 	BOOL FASTCALL Callback(Event *ev);
-										// ƒCƒxƒ“ƒgƒR[ƒ‹ƒoƒbƒN
+										// Event callback
 	void FASTCALL ForceReady(BOOL flag);
-										// ‹­§ƒŒƒfƒB
+										// Force ready
 	DWORD FASTCALL GetRotationPos() const;
-										// ‰ñ“]ˆÊ’uæ“¾
+										// Get rotation position
 	DWORD FASTCALL GetRotationTime() const;
-										// ‰ñ“]ŠÔæ“¾
+										// Get rotation time
 	DWORD FASTCALL GetSearch();
-										// ŒŸõŠÔæ“¾
+										// Get search time
 	void FASTCALL SetHD(BOOL hd);
-										// HDƒtƒ‰ƒOİ’è
+										// Set HD flag
 	BOOL FASTCALL IsHD() const;
-										// HDƒtƒ‰ƒOæ“¾
+										// Get HD flag
 	void FASTCALL Access(BOOL flag);
-										// ƒAƒNƒZƒXLEDİ’è
+										// Set access LED
 
-	// ƒhƒ‰ƒCƒu•Ê
+	// Drive control
 	BOOL FASTCALL Open(int drive, const Filepath& path, int media = 0);
-										// ƒCƒ[ƒWƒI[ƒvƒ“
+										// Image open
 	void FASTCALL Insert(int drive);
-										// ƒCƒ“ƒT[ƒg
+										// Media insert
 	void FASTCALL Eject(int drive, BOOL force);
-										// ƒCƒWƒFƒNƒg
+										// Eject
 	void FASTCALL Invalid(int drive);
-										// Œë‘}“ü
+										// Invalid
 	void FASTCALL Control(int drive, DWORD func);
-										// ƒhƒ‰ƒCƒuƒRƒ“ƒgƒ[ƒ‹
+										// Drive control
 	BOOL FASTCALL IsReady(int drive, BOOL fdc = TRUE) const;
-										// ƒŒƒfƒBƒ`ƒFƒbƒN
+										// Ready check
 	BOOL FASTCALL IsWriteP(int drive) const;
-										// ‘‚«‚İ‹Ö~ƒ`ƒFƒbƒN
+										// Write protect check
 	BOOL FASTCALL IsReadOnly(int drive) const;
-										// Read Onlyƒ`ƒFƒbƒN
+										// Read Only check
 	void FASTCALL WriteP(int drive, BOOL flag);
-										// ‘‚«‚İ‹Ö~İ’è
+										// Write protect setting
 	int FASTCALL GetStatus(int drive) const;
-										// ƒhƒ‰ƒCƒuƒXƒe[ƒ^ƒXæ“¾
+										// Get drive status
 	void FASTCALL SetMotor(int drive, BOOL flag);
-										// ƒ‚[ƒ^İ’è{ƒhƒ‰ƒCƒuƒZƒŒƒNƒg
+										// Motor setting + drive select
 	int FASTCALL GetCylinder(int drive) const;
-										// ƒVƒŠƒ“ƒ_æ“¾
+										// Get cylinder
 	void FASTCALL GetName(int drive, char *buf, int media = -1) const;
-										// ƒfƒBƒXƒN–¼æ“¾
+										// Get disk name
 	void FASTCALL GetPath(int drive, Filepath& path) const;
-										// ƒpƒXæ“¾
+										// Get path
 	int FASTCALL GetDisks(int drive) const;
-										// ƒCƒ[ƒW“àƒfƒBƒXƒN–‡”æ“¾
+										// Get disk count
 	int FASTCALL GetMedia(int drive) const;
-										// ƒCƒ[ƒW“àƒJƒŒƒ“ƒgƒƒfƒBƒAæ“¾
+										// Get media type
 
-	// ƒV[ƒN
+	// Seek
 	void FASTCALL Recalibrate(DWORD srt);
-										// ƒŠƒLƒƒƒŠƒuƒŒ[ƒg
+										// Restore to track 0
 	void FASTCALL StepIn(int step, DWORD srt);
-										// ƒXƒeƒbƒvƒCƒ“
+										// Step in
 	void FASTCALL StepOut(int step, DWORD srt);
-										// ƒXƒeƒbƒvƒAƒEƒg
+										// Step out
 
-	// “Ç‚İ‚İE‘‚«‚İ
+	// Read/Write
 	int FASTCALL ReadID(DWORD *buf, BOOL mfm, int hd);
-										// ƒŠ[ƒhID
+										// Read ID
 	int FASTCALL ReadSector(BYTE *buf, int *len, BOOL mfm, DWORD *chrn, int hd);
-										// ƒŠ[ƒhƒZƒNƒ^
+										// Read sector
 	int FASTCALL WriteSector(const BYTE *buf, int *len, BOOL mfm, DWORD *chrn, int hd, BOOL deleted);
-										// ƒ‰ƒCƒgƒZƒNƒ^
+										// Write sector
 	int FASTCALL ReadDiag(BYTE *buf, int *len, BOOL mfm, DWORD *chrn, int hd);
-										// ƒŠ[ƒhƒ_ƒCƒAƒO
+										// Read diagonal
 	int FASTCALL WriteID(const BYTE *buf, DWORD d, int sc, BOOL mfm, int hd, int gpl);
-										// ƒ‰ƒCƒgID
+										// Write ID
 
 private:
 	void FASTCALL SeekInOut(int cylinder, DWORD srt);
-										// ƒV[ƒN‹¤’Ê
+										// Seek processing
 	void FASTCALL Rotation();
-										// ƒ‚[ƒ^‰ñ“]
+										// Motor rotation
 	FDC *fdc;
 										// FDC
 	IOSC *iosc;
@@ -192,15 +192,15 @@ private:
 	RTC *rtc;
 										// RTC
 	drv_t drv[4];
-										// ƒhƒ‰ƒCƒuƒf[ƒ^
+										// Drive data
 	fdd_t fdd;
-										// “à•”ƒf[ƒ^
+										// Local data
 	Event eject;
-										// ƒCƒWƒFƒNƒgƒCƒxƒ“ƒg
+										// Eject event
 	Event seek;
-										// ƒV[ƒNƒCƒxƒ“ƒg
+										// Seek event
 	Event rotation;
-										// ‰ñ“]”ƒCƒxƒ“ƒg
+										// Rotation event
 };
 
 #endif	// fdd_h

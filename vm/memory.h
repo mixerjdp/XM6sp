@@ -3,7 +3,7 @@
 //	X68000 EMULATOR "XM6"
 //
 //	Copyright (C) 2001-2006 ＰＩ．(ytanaka@ipc-tokai.or.jp)
-//	[ メモリ ]
+//	[ Memory ]
 //
 //---------------------------------------------------------------------------
 
@@ -15,136 +15,136 @@
 
 //===========================================================================
 //
-//	外部関数
+//	External functions
 //
 //===========================================================================
 #if defined(__cplusplus)
 extern "C" {
 #endif	// __cplusplus
 void ReadBusErr(DWORD addr);
-										// 読み込みバスエラー
+										// Read bus error
 void WriteBusErr(DWORD addr);
-										// 書き込みバスエラー
+										// Write bus error
 #if defined(__cplusplus)
 }
 #endif	// __cplusplus
 
 //===========================================================================
 //
-//	メモリ
+//	Memory
 //
 //===========================================================================
 class Memory : public MemDevice
 {
 public:
-	// メモリ種別(=システム種別)
+	// Memory type (= system type)
 	enum memtype {
-		None,							// ロードされていない
-		SASI,							// v1.00-SASI(初代/ACE/EXPERT/PRO)
-		SCSIInt,						// v1.00-SCSI内蔵(SUPER)
-		SCSIExt,						// v1.00-SCSI外付ボード(初代/ACE/EXPERT/PRO)
-		XVI,							// v1.10-SCSI内蔵(XVI)
-		Compact,						// v1.20-SCSI内蔵(Compact)
-		X68030							// v1.50-SCSI内蔵(X68030)
+		None,							// Not loaded
+		SASI,							// v1.00-SASI(first/ACE/EXPERT/PRO)
+		SCSIInt,						// v1.00-SCSI internal(SUPER)
+		SCSIExt,						// v1.00-SCSI external board(first/ACE/EXPERT/PRO)
+		XVI,							// v1.10-SCSI internal(XVI)
+		Compact,						// v1.20-SCSI internal(Compact)
+		X68030							// v1.50-SCSI internal(X68030)
 	};
 
-	// 内部データ定義
+	// Internal data definition
 	typedef struct {
-		MemDevice* table[0x180];		// ジャンプテーブル
-		int size;						// RAMサイズ(2,4,6,8,10,12)
-		int config;						// RAM設定値(0～5)
-		DWORD length;					// RAM最終バイト+1
-		BYTE *ram;						// メインRAM
+		MemDevice* table[0x180];		// Jump table
+		int size;						// RAM size(2,4,6,8,10,12)
+		int config;						// RAM setting value(0~5)
+		DWORD length;					// RAM last byte+1
+		BYTE *ram;						// Main RAM
 		BYTE *ipl;						// IPL ROM (128KB)
 		BYTE *cg;						// CG ROM(768KB)
 		BYTE *scsi;						// SCSI ROM (8KB)
-		memtype type;					// メモリ種別(リセット後)
-		memtype now;					// メモリ種別(カレント)
-		BOOL memsw;						// メモリスイッチ自動更新
+		memtype type;					// Memory type(after reset)
+		memtype now;					// Memory type(current)
+		BOOL memsw;						// Memory switch auto update
 	} memory_t;
 
 public:
-	// 基本ファンクション
+	// Basic functions
 	Memory(VM *p);
-										// コンストラクタ
+										// Constructor
 	BOOL FASTCALL Init();
-										// 初期化
+										// Initialization
 	void FASTCALL Cleanup();
-										// クリーンアップ
+										// Cleanup
 	void FASTCALL Reset();
-										// リセット
+										// Reset
 	BOOL FASTCALL Save(Fileio *fio, int ver);
-										// セーブ
+										// Save
 	BOOL FASTCALL Load(Fileio *fio, int ver);
-										// ロード
+										// Load
 	void FASTCALL ApplyCfg(const Config *config);
-										// 設定適用
+										// Apply config
 
-	// メモリデバイス
+	// Memory device
 	DWORD FASTCALL ReadByte(DWORD addr);
-										// バイト読み込み
+										// Byte read
 	DWORD FASTCALL ReadWord(DWORD addr);
-										// ワード読み込み
+										// Word read
 	void FASTCALL WriteByte(DWORD addr, DWORD data);
-										// バイト書き込み
+										// Byte write
 	void FASTCALL WriteWord(DWORD addr, DWORD data);
-										// ワード書き込み
+										// Word write
 	DWORD FASTCALL ReadOnly(DWORD addr) const;
-										// 読み込みのみ
+										// Read only
 
-	// 外部API
+	// External API
 	void FASTCALL MakeContext(BOOL reset);
-										// メモリコンテキスト作成
+										// Memory context create
 	BOOL FASTCALL CheckIPL() const;
-										// IPLバージョンチェック
+										// IPL version check
 	BOOL FASTCALL CheckCG() const;
-										// CGチェック
+										// CG check
 	const BYTE* FASTCALL GetCG() const;
-										// CG取得
+										// CG get
 	const BYTE* FASTCALL GetSCSI() const;
-										// SCSI取得
+										// SCSI get
 	memtype FASTCALL GetMemType() const { return mem.now; }
-										// メモリ種別取得
+										// Memory type get
 	BYTE* FASTCALL GetRAM() const { return mem.ram; }
 	DWORD FASTCALL GetRAMSize() const { return mem.length; }
 
 private:
 	BOOL FASTCALL LoadROM(memtype target);
-										// ROMロード
+										// ROM load
 	void FASTCALL InitTable();
-										// デコードテーブル初期化
+										// Decode table init
 	void FASTCALL TerminateProgramRegion(int index, STARSCREAM_PROGRAMREGION *spr);
-										// プログラムリージョン終了
+										// Program region terminate
 	void FASTCALL TerminateDataRegion(int index, STARSCREAM_DATAREGION *sdr);
-										// データリージョン終了
+										// Data region terminate
 	AreaSet *areaset;
-										// エリアセット
+										// Area set
 	SRAM *sram;
 										// SRAM
 	memory_t mem;
-										// 内部データ
+										// Internal data
 
-	// リージョン (Starscream特有)
+	// Region (Starscream specific)
 	STARSCREAM_PROGRAMREGION u_pgr[10];
-										// プログラムリージョン(User)
+										// Program region(User)
 	STARSCREAM_PROGRAMREGION s_pgr[10];
-										// プログラムリージョン(Super)
+										// Program region(Super)
 	STARSCREAM_DATAREGION u_rbr[10];
-										// Read Byteリージョン(User)
+										// Read Byte region(User)
 	STARSCREAM_DATAREGION s_rbr[10];
-										// Read Byteリージョン(Super)
+										// Read Byte region(Super)
 	STARSCREAM_DATAREGION u_rwr[10];
-										// Read Wordリージョン(User)
+										// Read Word region(User)
 	STARSCREAM_DATAREGION s_rwr[10];
-										// Read Wordリージョン(Super)
+										// Read Word region(Super)
 	STARSCREAM_DATAREGION u_wbr[10];
-										// Write Byteリージョン(User)
+										// Write Byte region(User)
 	STARSCREAM_DATAREGION s_wbr[10];
-										// Write Byteリージョン(Super)
+										// Write Byte region(Super)
 	STARSCREAM_DATAREGION u_wwr[10];
-										// Write Wordリージョン(User)
+										// Write Word region(User)
 	STARSCREAM_DATAREGION s_wwr[10];
-										// Write Wordリージョン(Super)
+										// Write Word region(Super)
 };
 
 #endif	// memory_h

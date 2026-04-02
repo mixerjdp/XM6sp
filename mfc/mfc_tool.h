@@ -2,8 +2,8 @@
 //
 //	X68000 EMULATOR "XM6"
 //
-//	Copyright (C) 2001-2004 ＰＩ．(ytanaka@ipc-tokai.or.jp)
-//	[ MFC 補助ツール ]
+//	Copyright (C) 2001-2004 PI.(ytanaka@ipc-tokai.or.jp)
+//	[ MFC Tools ]
 //
 //---------------------------------------------------------------------------
 
@@ -14,169 +14,169 @@
 
 //===========================================================================
 //
-//	フロッピーディスクイメージ作成ダイアログ
+//	Floppy disk image creation dialog
 //
 //===========================================================================
 class CFDIDlg : public CDialog
 {
 public:
 	CFDIDlg(CWnd *pParent);
-										// コンストラクタ
+										// Constructor
 	BOOL OnInitDialog();
-										// ダイアログ初期化
+										// Dialog initialization
 	void OnOK();
-										// ダイアログOK
+										// Dialog OK
 	void OnCancel();
-										// ダイアログキャンセル
+										// Dialog cancel
 
 	TCHAR m_szFileName[_MAX_PATH];
-										// ファイル名
+										// Filename
 	TCHAR m_szDiskName[60];
-										// ディスク名
+										// Disk name
 	DWORD m_dwType;
-										// ファイル形式(2HD,DIM,D68)
+										// File type (2HD,DIM,D68)
 	DWORD m_dwPhysical;
-										// 物理フォーマット
+										// Physical format
 	BOOL m_bLogical;
-										// 論理フォーマット
+										// Logical format
 	int m_nDrive;
-										// マウントドライブ(-1でマウントしない)
+										// Drive (-1 means no mount)
 
 protected:
 	afx_msg void OnBrowse();
-										// ファイル選択
+										// File selection
 	afx_msg void OnPhysical();
-										// 物理フォーマットクリック
+										// Physical format radio
 
 private:
 	void FASTCALL MaskName();
-										// ディスク名称マスク
+										// Disk name mask
 	void FASTCALL SetPhysical();
-										// 物理フォーマット設定
+										// Physical format set
 	void FASTCALL GetPhysical();
-										// 物理フォーマット取得
+										// Physical format get
 	void FASTCALL MaskPhysical();
-										// 物理フォーマットマスク
+										// Physical format mask
 	void FASTCALL SetLogical();
-										// 論理フォーマット設定
+										// Logical format set
 	void FASTCALL GetLogical();
-										// 論理フォーマット取得
+										// Logical format get
 	void FASTCALL MaskLogical();
-										// 論理フォーマットマスク
+										// Logical format mask
 	static const DWORD IDTable[16];
-										// 物理フォーマットIDテーブル
+										// Physical format ID table
 	BOOL FASTCALL GetFile();
-	 									// ファイル名取得
+										// Get filename
 
 	DECLARE_MESSAGE_MAP()
-										// メッセージ マップあり
+										// Message map
 };
 
 //===========================================================================
 //
-//	大容量ディスクイメージ作成ダイアログ
+//	Hard disk image creation dialog
 //
 //===========================================================================
 class CDiskDlg : public CDialog
 {
 public:
 	CDiskDlg(CWnd *pParent);
-										// コンストラクタ
+										// Constructor
 	BOOL OnInitDialog();
-										// ダイアログ初期化
+										// Dialog initialization
 	void OnOK();
-										// ダイアログOK
+										// Dialog OK
 	BOOL FASTCALL IsSucceeded() const	{ return m_bSucceed; }
-										// 作成に成功したか
+										// Creation succeeded flag
 	BOOL FASTCALL IsCanceled() const	{ return m_bCancel; }
-										// キャンセルしたか
+										// Canceled flag
 	LPCTSTR FASTCALL GetPath() const	{ return m_szPath; }
-										// パス名取得
+										// Get path
 	int m_nType;
-										// 種別(0:SASI-HD 1:SCSI-HD 2:SCSI-MO)
+										// Type (0:SASI-HD 1:SCSI-HD 2:SCSI-MO)
 	BOOL m_bMount;
-										// マウントフラグ(SCSI-MOのみ)
+										// Mount flag (SCSI-MO only)
 
 protected:
 	afx_msg void OnBrowse();
-										// ファイル選択
+										// File selection
 	afx_msg void OnVScroll(UINT nSBCode, UINT nPos, CScrollBar* pBar);
-										// 縦スクロール
+										// Vertical scroll
 	afx_msg void OnMOSize();
-										// MOサイズ変更
+										// MO size change
 
 private:
 	void FASTCALL CtrlSASI();
-										// SASI-HD コントロール初期化
+										// SASI-HD control
 	void FASTCALL CtrlSCSI();
-										// SCSI-HD コントロール初期化
+										// SCSI-HD control
 	void FASTCALL CtrlMO();
-										// SCSI-MO コントロール初期化
+										// SCSI-MO control
 	BOOL FASTCALL GetFile();
-										// ファイル選択
+										// File selection
 	void FASTCALL CreateSASI();
-										// SASI-HD ディスク作成
+										// SASI-HD create
 	void FASTCALL CreateSCSI();
-										// SCSI-HD ディスク作成
+										// SCSI-HD create
 	void FASTCALL CreateMO();
-										// SCSI-MO ディスク作成
+										// SCSI-MO create
 
 	TCHAR m_szPath[_MAX_PATH];
-										// パス名
+										// Path
 	BOOL m_bSucceed;
-										// 作成に成功したか
+										// Creation succeeded flag
 	BOOL m_bCancel;
-										// キャンセルしたか
+										// Canceled flag
 	UINT m_nSize;
-										// ディスクサイズ(MB)
+										// Disk size (MB)
 	UINT m_nFormat;
-										// 論理フォーマット
+										// Logical format
 	static const UINT SASITable[];
-										// SASI-HD IDテーブル
+										// SASI-HD ID table
 	static const UINT SCSITable[];
-										// SCSI-HD IDテーブル
+										// SCSI-HD ID table
 	static const UINT MOTable[];
-										// SCSI-MO IDテーブル
+										// SCSI-MO ID table
 
 	DECLARE_MESSAGE_MAP()
-										// メッセージ マップあり
+										// Message map
 };
 
 //===========================================================================
 //
-//	ディスクイメージ作成ダイアログ
+//	Disk image creation dialog
 //
 //===========================================================================
 class CDiskMakeDlg : public CDialog
 {
 public:
-	// 基本ファンクション
+	// Basic methods
 	CDiskMakeDlg(CWnd *pParent);
-										// コンストラクタ
+										// Constructor
 	BOOL OnInitDialog();
-										// ダイアログ初期化
+										// Dialog initialization
 	void OnOK();
-										// ダイアログOK
+										// Dialog OK
 	void OnCancel();
-										// ダイアログキャンセル
+										// Dialog cancel
 
 	// API
 	BOOL FASTCALL IsSucceeded() const	{ return m_bSucceed; }
-										// 作成に成功したか
+										// Creation succeeded flag
 	BOOL FASTCALL IsCanceled() const	{ return m_bCancel; }
-										// キャンセルしたか
+										// Canceled flag
 	static UINT ThreadFunc(LPVOID lpParam);
-										// スレッド関数
+										// Thread function
 	void FASTCALL Run();
-										// スレッドメイン
+										// Thread execution
 
-	// パラメータ
+	// Parameters
 	DWORD m_dwSize;
-										// ディスクサイズ
+										// Disk size
 	TCHAR m_szPath[_MAX_PATH];
-										// パス名
+										// Path
 	int m_nFormat;
-										// 論理フォーマット種別
+										// Format type
 
 protected:
 #if _MFC_VER >= 0x700
@@ -184,145 +184,145 @@ protected:
 #else
 	afx_msg void OnTimer(UINT nTimerID);
 #endif
-										// タイマ
+										// Timer
 	afx_msg void OnDestroy();
-										// ダイアログ削除
+										// Dialog destruction
 	virtual BOOL FASTCALL Format();
-										// 論理フォーマット
+										// Format
 	DWORD m_dwCurrent;
-										// 作成管理
+										// Creation progress
 
 private:
 	CWinThread *m_pThread;
-										// 作成スレッド
+										// Creation thread
 	BOOL m_bThread;
-										// スレッド終了フラグ
+										// Thread termination flag
 	CCriticalSection m_CSection;
-										// クリティカルセクション
+										// Critical section
 	BYTE *m_pBuffer;
-										// バッファ
+										// Buffer
 #if _MFC_VER >= 0x700
 	UINT_PTR m_nTimerID;
 #else
 	UINT m_nTimerID;
 #endif
-										// タイマID
+										// Timer ID
 	DWORD m_dwParcent;
-										// 進行パーセント
+										// Progress percent
 	BOOL m_bSucceed;
-										// 成功フラグ
+										// Success flag
 	BOOL m_bCancel;
-										// キャンセルフラグ
+										// Cancel flag
 
 	DECLARE_MESSAGE_MAP()
-										// メッセージ マップあり
+										// Message map
 };
 
 //===========================================================================
 //
-//	SASIディスクイメージ作成ダイアログ
+//	SASI disk image creation dialog
 //
 //===========================================================================
 class CSASIMakeDlg : public CDiskMakeDlg
 {
 public:
 	CSASIMakeDlg(CWnd *pParent);
-										// コンストラクタ
+										// Constructor
 
 protected:
 	BOOL FASTCALL Format();
-										// フォーマット
+										// Format
 
 private:
 	static const BYTE MENU[];
-										// メニュー
+										// Menu
 	static const BYTE IPL[];
 										// IPL
 };
 
 //===========================================================================
 //
-//	SCSIディスクイメージ作成ダイアログ
+//	SCSI disk image creation dialog
 //
 //===========================================================================
 class CSCSIMakeDlg : public CDiskMakeDlg
 {
 public:
 	CSCSIMakeDlg(CWnd *pParent);
-										// コンストラクタ
+										// Constructor
 };
 
 //===========================================================================
 //
-//	MOディスクイメージ作成ダイアログ
+//	MO disk image creation dialog
 //
 //===========================================================================
 class CMOMakeDlg : public CDiskMakeDlg
 {
 public:
 	CMOMakeDlg(CWnd *pParent);
-										// コンストラクタ
+										// Constructor
 
 protected:
 	BOOL FASTCALL Format();
-										// フォーマット
+										// Format
 
 private:
 	int m_nMedia;
-										// メディアタイプ(0:128MB...3:640MB)
+										// Media type (0:128MB...3:640MB)
 	BOOL FASTCALL FormatIBM();
-										// IBMフォーマット
+										// IBM format
 	void FASTCALL MakeBPB(BYTE *pBPB);
-										// IBMフォーマットBPB作成
+										// IBM format BPB create
 	void FASTCALL MakeSerial(BYTE *pSerial);
-										// ボリュームシリアル作成
+										// Serial number create
 	BOOL FASTCALL FormatSHARP();
-										// SHARPフォーマット
+										// SHARP format
 	static const BYTE PartTable128[];
-										// パーティションテーブル(128MB)
+										// Partition table (128MB)
 	static const BYTE PartTable230[];
-										// パーティションテーブル(230MB)
+										// Partition table (230MB)
 	static const BYTE PartTable540[];
-										// パーティションテーブル(540MB)
+										// Partition table (540MB)
 	static const BYTE PartTop128[];
-										// 第1パーティション(128MB)
+										// Partition top (128MB)
 	static const BYTE PartTop230[];
-										// 第1パーティション(230MB)
+										// Partition top (230MB)
 	static const BYTE PartTop540[];
-										// 第1パーティション(540MB)
+										// Partition top (540MB)
 	static const BYTE SCSIMENU[];
-										// SCSIパーティション選択メニュー
+										// SCSI partition menu
 	static const BYTE SCHDISK[];
-										// SCSIディスクドライバ
+										// SCSI disk header
 	static const BYTE SCSIIOCS[];
-										// SCSIIOCS補助ドライバ
+										// SCSIIOCS tool header
 	static const BYTE IPL[];
 										// Human68k IPL
 };
 
 //===========================================================================
 //
-//	trap #0ダイアログ
+//	trap #0 dialog
 //
 //===========================================================================
 class CTrapDlg : public CDialog
 {
 public:
 	CTrapDlg(CWnd *pParent);
-										// コンストラクタ
+										// Constructor
 	BOOL OnInitDialog();
-										// ダイアログ初期化
+										// Dialog initialization
 	void OnOK();
-										// ダイアログOK
+										// Dialog OK
 	DWORD m_dwCode;
-										// コード値
+										// Code value
 
 protected:
 	afx_msg void OnVScroll(UINT nSBCode, UINT nPos, CScrollBar *pBar);
-										// 縦スクロール
+										// Vertical scroll
 
 	DECLARE_MESSAGE_MAP()
-										// メッセージ マップあり
+										// Message map
 };
 
 #endif	// mfc_tool_h

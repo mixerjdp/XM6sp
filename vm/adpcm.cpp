@@ -2,8 +2,8 @@
 //
 //	X68000 EMULATOR "XM6"
 //
-//	Copyright (C) 2001-2006 ＰＩ．(ytanaka@ipc-tokai.or.jp)
-//	[ ADPCM(MSM6258V) ]
+//	Copyright (C) 2001-2006 Ytanaka (ytanaka@ipc-tokai.or.jp)
+//	[ ADPCM (MSM6258V) ]
 //
 //---------------------------------------------------------------------------
 
@@ -16,6 +16,7 @@
 #include "fileio.h"
 #include "config.h"
 #include "adpcm.h"
+#include "x68sound_bridge.h"
 
 //===========================================================================
 //
@@ -26,20 +27,20 @@
 
 //---------------------------------------------------------------------------
 //
-//	コンストラクタ
+//	Constructor
 //
 //---------------------------------------------------------------------------
 ADPCM::ADPCM(VM *p) : MemDevice(p)
 {
-	// デバイスIDを初期化
+	// Device ID
 	dev.id = MAKEID('A', 'P', 'C', 'M');
 	dev.desc = "ADPCM (MSM6258V)";
 
-	// 開始アドレス、終了アドレス
+	// Memory map
 	memdev.first = 0xe92000;
 	memdev.last = 0xe93fff;
 
-	// その他、コンストラクタで初期化すべきワーク
+	// Reset any extra state the constructor does not cover
 	memset(&adpcm, 0, sizeof(adpcm));
 	adpcm.sync_rate = 882;
 	adpcm.sync_step = 0x9c4000 / 882;
@@ -48,28 +49,32 @@ ADPCM::ADPCM(VM *p) : MemDevice(p)
 	adpcm.sound = TRUE;
 	dmac = NULL;
 	adpcmbuf = NULL;
+	quirk_arianshuu_loop_fix = FALSE;
+	quirk_stuck_l = 0;
+	quirk_stuck_r = 0;
+	memset(&diag, 0, sizeof(diag));
 }
 
 //---------------------------------------------------------------------------
 //
-//	初期化
+//	Initialization
 //
 //---------------------------------------------------------------------------
 BOOL FASTCALL ADPCM::Init()
 {
 	ASSERT(this);
 
-	// 基本クラス
+	// Base class initialization
 	if (!MemDevice::Init()) {
 		return FALSE;
 	}
 
-	// DMAC取得
+	// Locate the DMAC
 	ASSERT(!dmac);
 	dmac = (DMAC*)vm->SearchDevice(MAKEID('D', 'M', 'A', 'C'));
 	ASSERT(dmac);
 
-	// バッファ確保
+	// Allocate the buffer
 	try {
 		adpcmbuf = new DWORD[ BufMax * 2 ];
 	}
@@ -81,29 +86,29 @@ BOOL FASTCALL ADPCM::Init()
 	}
 	memset(adpcmbuf, 0, sizeof(DWORD) * (BufMax * 2));
 
-	// イベント作成
+	// Create the sampling event
 	event.SetDevice(this);
 	event.SetDesc("Sampling");
 	event.SetUser(0);
 	event.SetTime(0);
 	scheduler->AddEvent(&event);
 
-	// 線形補間パラメータ初期化
+	// Reset interpolation parameters
 	adpcm.interp = FALSE;
 
-	// リセット時OPMIFからCTが初期化されるため、ここで初期化しておく
+	// Reset the default table and runtime state
 	adpcm.ratio = 0;
 	adpcm.speed = 0x400;
 	adpcm.clock = 8;
 
-	// テーブル作成、音量設定
+	// Build the lookup table and apply the default settings
 	MakeTable();
-	SetVolume(52);
+	SetVolume(50);
 
-	// バッファ初期化
+	// Initialize the audio buffer
 	InitBuf(adpcm.sync_rate * 50);
 
-	// 速度初期化
+	// Recalculate speed parameters
 	CalcSpeed();
 
 	return TRUE;
@@ -111,26 +116,26 @@ BOOL FASTCALL ADPCM::Init()
 
 //---------------------------------------------------------------------------
 //
-//	クリーンアップ
+//	Cleanup
 //
 //---------------------------------------------------------------------------
 void FASTCALL ADPCM::Cleanup()
 {
 	ASSERT(this);
 
-	// バッファ削除
+	// Free the audio buffer
 	if (adpcmbuf) {
 		delete[] adpcmbuf;
 		adpcmbuf = NULL;
 	}
 
-	// 基本クラスへ
+	// Cleanup base class
 	MemDevice::Cleanup();
 }
 
 //---------------------------------------------------------------------------
 //
-//	リセット
+//	Reset
 //
 //---------------------------------------------------------------------------
 void FASTCALL ADPCM::Reset()
@@ -138,9 +143,9 @@ void FASTCALL ADPCM::Reset()
 	ASSERT(this);
 	ASSERT_DIAG();
 
-	LOG0(Log::Normal, "リセット");
+	LOG0(Log::Normal, "Reset");
 
-	// 内部ワーク初期化
+	// Clear playback registers
 	adpcm.play = FALSE;
 	adpcm.rec = FALSE;
 	adpcm.active = FALSE;
@@ -154,11 +159,13 @@ void FASTCALL ADPCM::Reset()
 	adpcm.sample = 0;
 	adpcm.clock = 8;
 	CalcSpeed();
+	quirk_stuck_l = 0;
+	quirk_stuck_r = 0;
 
-	// バッファ初期化
+	// Buffer initialization
 	InitBuf(adpcm.sync_rate * 50);
 
-	// イベントを止める
+	// Stop event
 	event.SetUser(0);
 	event.SetTime(0);
 	event.SetDesc("Sampling");
@@ -166,7 +173,7 @@ void FASTCALL ADPCM::Reset()
 
 //---------------------------------------------------------------------------
 //
-//	セーブ
+//	Save
 //
 //---------------------------------------------------------------------------
 BOOL FASTCALL ADPCM::Save(Fileio *fio, int ver)
@@ -177,20 +184,20 @@ BOOL FASTCALL ADPCM::Save(Fileio *fio, int ver)
 	ASSERT(fio);
 	ASSERT_DIAG();
 
-	LOG0(Log::Normal, "セーブ");
+	LOG0(Log::Normal, "Save");
 
-	// サイズをセーブ
+	// Save size
 	sz = sizeof(adpcm_t);
 	if (!fio->Write(&sz, sizeof(sz))) {
 		return FALSE;
 	}
 
-	// 実体をセーブ
+	// Save this data
 	if (!fio->Write(&adpcm, (int)sz)) {
 		return FALSE;
 	}
 
-	// イベントをセーブ
+	// Save event data
 	if (!event.Save(fio, ver)) {
 		return FALSE;
 	}
@@ -200,7 +207,7 @@ BOOL FASTCALL ADPCM::Save(Fileio *fio, int ver)
 
 //---------------------------------------------------------------------------
 //
-//	ロード
+//	Load
 //
 //---------------------------------------------------------------------------
 BOOL FASTCALL ADPCM::Load(Fileio *fio, int ver)
@@ -211,9 +218,9 @@ BOOL FASTCALL ADPCM::Load(Fileio *fio, int ver)
 	ASSERT(fio);
 	ASSERT_DIAG();
 
-	LOG0(Log::Normal, "ロード");
+	LOG0(Log::Normal, "Load");
 
-	// サイズをロード、照合
+	// Load size and verify
 	if (!fio->Read(&sz, sizeof(sz))) {
 		return FALSE;
 	}
@@ -221,12 +228,12 @@ BOOL FASTCALL ADPCM::Load(Fileio *fio, int ver)
 		return FALSE;
 	}
 
-	// 実体をロード
+	// Load this data
 	if (!fio->Read(&adpcm, (int)sz)) {
 		return FALSE;
 	}
 
-	// イベントをロード
+	// Load event data
 	if (!event.Load(fio, ver)) {
 		return FALSE;
 	}
@@ -236,7 +243,7 @@ BOOL FASTCALL ADPCM::Load(Fileio *fio, int ver)
 
 //---------------------------------------------------------------------------
 //
-//	設定適用
+//	Apply config
 //
 //---------------------------------------------------------------------------
 void FASTCALL ADPCM::ApplyCfg(const Config *config)
@@ -245,21 +252,21 @@ void FASTCALL ADPCM::ApplyCfg(const Config *config)
 	ASSERT(config);
 	ASSERT_DIAG();
 
-	LOG0(Log::Normal, "設定適用");
+	LOG0(Log::Normal, "Apply config");
 
-	// 線形補間
+	// Interpolation
 	adpcm.interp = config->adpcm_interp;
 }
 
 #if !defined(NDEBUG)
 //---------------------------------------------------------------------------
 //
-//	診断
+//	Assertion
 //
 //---------------------------------------------------------------------------
 void FASTCALL ADPCM::AssertDiag() const
 {
-	// 基本クラス
+	// Base class
 	MemDevice::AssertDiag();
 
 	ASSERT(this);
@@ -292,7 +299,7 @@ void FASTCALL ADPCM::AssertDiag() const
 
 //---------------------------------------------------------------------------
 //
-//	バイト読み込み
+//	Byte read
 //
 //---------------------------------------------------------------------------
 DWORD FASTCALL ADPCM::ReadByte(DWORD addr)
@@ -301,42 +308,48 @@ DWORD FASTCALL ADPCM::ReadByte(DWORD addr)
 	ASSERT((addr >= memdev.first) && (addr <= memdev.last));
 	ASSERT_DIAG();
 
-	// 奇数アドレスのみデコードされている
+	// Only odd addresses are decoded
 	if ((addr & 1) != 0) {
-		// 4バイト単位でループ
+		// Loop at 4 byte boundary
 		addr &= 3;
 
-		// ウェイト
+		// Wait
 		scheduler->Wait(1);
 
-		// アドレス振り分け
+		// Upper address
 		if (addr == 3) {
-			// データレジスタ
+			// Data register
 			if (adpcm.rec && adpcm.active) {
-				// 録音データとして0x80を返す
+				// Returns 0x80 as talk data
 				return 0x80;
 			}
 			return adpcm.data;
 		}
 
-		// ステータスレジスタ
+		// Status register
 		if (adpcm.play) {
-			// 再生中、または再生完了後
+			if (quirk_arianshuu_loop_fix) {
+				return 0xc0;
+			}
+			// Playing, or playing stopped
 			return 0x7f;
 		}
 		else {
-			// 録音モード、または再生指示なし
+			if (quirk_arianshuu_loop_fix) {
+				return 0x40;
+			}
+			// Talk mode, or playback not allowed
 			return 0xff;
 		}
 	}
 
-	// 偶数アドレスはデコードされていない
+	// Even addresses are not decoded
 	return 0xff;
 }
 
 //---------------------------------------------------------------------------
 //
-//	ワード読み込み
+//	Word read
 //
 //---------------------------------------------------------------------------
 DWORD FASTCALL ADPCM::ReadWord(DWORD addr)
@@ -351,7 +364,7 @@ DWORD FASTCALL ADPCM::ReadWord(DWORD addr)
 
 //---------------------------------------------------------------------------
 //
-//	バイト書き込み
+//	Byte write
 //
 //---------------------------------------------------------------------------
 void FASTCALL ADPCM::WriteByte(DWORD addr, DWORD data)
@@ -361,51 +374,98 @@ void FASTCALL ADPCM::WriteByte(DWORD addr, DWORD data)
 	ASSERT(data < 0x100);
 	ASSERT_DIAG();
 
-	// 奇数アドレスのみデコードされている
+	// Only odd addresses are decoded
 	if ((addr & 1) != 0) {
-		// 4バイト単位でループ
+		// Loop at 4 byte boundary
 		addr &= 3;
 
-		// ウェイト
+		// Wait
 		scheduler->Wait(1);
 
-		// アドレス振り分け
+		// Upper address
 		if (addr == 3) {
-			// データレジスタ
+			// Data register
 			adpcm.data = data;
 			return;
 		}
 
 #if defined(ADPCM_LOG)
-		LOG1(Log::Normal, "ADPCMコマンド $%02X", data);
+		LOG1(Log::Normal, "ADPCM Command $%02X", data);
 #endif	// ADPCM_LOG
 
-		// コマンドレジスタ
+		// Command register
+		if (quirk_arianshuu_loop_fix) {
+			// PCM8A/MCDRV compatible: STOP bit takes priority (treats 0x03 as STOP)
+			if (data & 1) {
+				Stop();
+				Xm6X68Sound::WriteAdpcm(static_cast<unsigned char>(data));
+				return;
+			}
+			if (data & 2) {
+				// PCM8A compatible: START resets boundary even during playback
+				adpcm.offset = 0;
+				adpcm.sample = 0;
+				adpcm.out = 0;
+				adpcm.sync_cnt = 0;
+				adpcm.number = 0;
+				adpcm.readpoint = adpcm.writepoint;
+				quirk_stuck_l = 0;
+				quirk_stuck_r = 0;
+				if (adpcmbuf) {
+					const DWORD right = (adpcm.readpoint + 1) & (BufMax - 1);
+					adpcmbuf[adpcm.readpoint] = 0;
+					adpcmbuf[right] = 0;
+				}
+
+				if (!adpcm.play || !adpcm.active) {
+					adpcm.play = TRUE;
+					Start(0);
+				}
+				Xm6X68Sound::WriteAdpcm(static_cast<unsigned char>(data));
+				return;
+			}
+			if (data & 4) {
+				adpcm.number = 0;
+				adpcm.readpoint = adpcm.writepoint;
+				if (!adpcm.rec || !adpcm.active) {
+					adpcm.rec = TRUE;
+					Start(1);
+				}
+				Xm6X68Sound::WriteAdpcm(static_cast<unsigned char>(data));
+				return;
+			}
+			Xm6X68Sound::WriteAdpcm(static_cast<unsigned char>(data));
+			return;
+		}
+
 		if (data & 1) {
-			// 動作停止
+			// Stop
 			Stop();
 		}
 		if (data & 2) {
-			// 再生スタート
+			// Play start
 			adpcm.play = TRUE;
 			Start(0);
+			Xm6X68Sound::WriteAdpcm(static_cast<unsigned char>(data));
 			return;
 		}
 		if (data & 4) {
-			// 録音スタート
+			// Talk start
 			adpcm.rec = TRUE;
 			Start(1);
+			Xm6X68Sound::WriteAdpcm(static_cast<unsigned char>(data));
 			return;
 		}
+		Xm6X68Sound::WriteAdpcm(static_cast<unsigned char>(data));
 		return;
 	}
 
-	// 偶数アドレスはデコードされていない
+	// Even addresses are not decoded
 }
 
 //---------------------------------------------------------------------------
 //
-//	ワード書き込み
+//	Word write
 //
 //---------------------------------------------------------------------------
 void FASTCALL ADPCM::WriteWord(DWORD addr, DWORD data)
@@ -421,7 +481,7 @@ void FASTCALL ADPCM::WriteWord(DWORD addr, DWORD data)
 
 //---------------------------------------------------------------------------
 //
-//	読み込みのみ
+//	Read only
 //
 //---------------------------------------------------------------------------
 DWORD FASTCALL ADPCM::ReadOnly(DWORD addr) const
@@ -430,27 +490,33 @@ DWORD FASTCALL ADPCM::ReadOnly(DWORD addr) const
 	ASSERT((addr >= memdev.first) && (addr <= memdev.last));
 	ASSERT_DIAG();
 
-	// 奇数アドレスのみデコードされている
+	// Only odd addresses are decoded
 	if (addr & 1) {
-		// 4バイト単位でループ
+		// Loop at 4 byte boundary
 		addr &= 3;
 
-		// アドレス振り分け
+		// Upper address
 		if (addr == 3) {
-			// データレジスタ
+			// Data register
 			if (adpcm.rec && adpcm.active) {
 				return 0x80;
 			}
 			return adpcm.data;
 		}
 
-		// ステータスレジスタ
+		// Status register
 		if (adpcm.play) {
-			// 再生中、または再生完了後
+			if (quirk_arianshuu_loop_fix) {
+				return 0xc0;
+			}
+			// Playing, or playing stopped
 			return 0x7f;
 		}
 		else {
-			// 録音モード、または再生指示なし
+			if (quirk_arianshuu_loop_fix) {
+				return 0x40;
+			}
+			// Talk mode, or playback not allowed
 			return 0xff;
 		}
 	}
@@ -460,7 +526,7 @@ DWORD FASTCALL ADPCM::ReadOnly(DWORD addr) const
 
 //---------------------------------------------------------------------------
 //
-//	内部データ取得
+//	ADPCM data get
 //
 //---------------------------------------------------------------------------
 void FASTCALL ADPCM::GetADPCM(adpcm_t *buffer)
@@ -469,13 +535,13 @@ void FASTCALL ADPCM::GetADPCM(adpcm_t *buffer)
 	ASSERT(buffer);
 	ASSERT_DIAG();
 
-	// 内部データをコピー
+	// Copy ADPCM data
 	*buffer = adpcm;
 }
 
 //---------------------------------------------------------------------------
 //
-//	イベントコールバック
+//	Event callback
 //
 //---------------------------------------------------------------------------
 BOOL FASTCALL ADPCM::Callback(Event *ev)
@@ -488,34 +554,43 @@ BOOL FASTCALL ADPCM::Callback(Event *ev)
 	ASSERT(ev);
 	ASSERT_DIAG();
 
-	// ウェイトがあれば合成せず、次の時間まで引き延ばす
+	// If wait is finished, process now, otherwise continue counting down
 	if (adpcm.wait <= 0) {
 		while (adpcm.wait <= 0) {
-			// インアクティブまたはReqDMA失敗の場合、80とする
+			// If inactive or ReqDMA fails, set 0x80
 			adpcm.data = 0x80;
 			valid = FALSE;
+			diag.req_total++;
 
-			// 1回のイベントで1バイト(2サンプル)の処理を行う
+			// Process 1 event = 1 byte (2 samples) of data
 			if (adpcm.active) {
 				if (dmac->ReqDMA(3)) {
-					// DMA転送成功
+					// DMA transfer success
 					valid = TRUE;
+					diag.req_ok++;
+				}
+				else {
+					diag.req_fail++;
 				}
 			}
+			else {
+				diag.req_fail++;
+			}
+			diag.last_data = adpcm.data;
 
-			// 再生か
+			// Playback
 			if (ev->GetUser() == 0) {
-				// 0x88,0x80,0x00以外はスタートフラグON
+				// 0x88,0x80,0x00 are flags
 				if ((adpcm.data != 0x88) && (adpcm.data != 0x80) && (adpcm.data != 0x00)) {
 #if defined(ADPCM_LOG)
 					if (!adpcm.started) {
-						LOG0(Log::Normal, "初回有効データ検出");
+						LOG0(Log::Normal, "First valid data detected");
 					}
 #endif	// ADPCM_LOG
 					adpcm.started = TRUE;
 				}
 
-				// ADPCM→PCM変換、バッファへストア
+				// ADPCM to PCM conversion, send to buffer
 				num = adpcm.speed;
 				num >>= 7;
 				ASSERT((num >= 2) && (num <= 16));
@@ -526,10 +601,10 @@ BOOL FASTCALL ADPCM::Callback(Event *ev)
 			adpcm.wait++;
 		}
 
-		// ウェイトをリセット
+		// Reset wait counter
 		adpcm.wait = 0;
 
-		// 速度変更に対応
+		// Adapt to speed change
 		if (ev->GetTime() == adpcm.speed) {
 			return TRUE;
 		}
@@ -539,10 +614,10 @@ BOOL FASTCALL ADPCM::Callback(Event *ev)
 		return TRUE;
 	}
 
-	// ウェイトを減らす
+	// Decrement wait counter
 	adpcm.wait--;
 
-	// 速度変更に対応
+	// Adapt to speed change
 	if (ev->GetTime() == adpcm.speed) {
 		return TRUE;
 	}
@@ -554,7 +629,7 @@ BOOL FASTCALL ADPCM::Callback(Event *ev)
 
 //---------------------------------------------------------------------------
 //
-//	基準クロック指定
+//	Master clock setting
 //
 //---------------------------------------------------------------------------
 void FASTCALL ADPCM::SetClock(DWORD clk)
@@ -564,17 +639,17 @@ void FASTCALL ADPCM::SetClock(DWORD clk)
 	ASSERT_DIAG();
 
 #if defined(ADPCM_LOG)
-	LOG1(Log::Normal, "クロック %dMHz", clk);
+	LOG1(Log::Normal, "Clock %dMHz", clk);
 #endif	// ADPCM_LOG
 
-	// 速度を再計算
+	// Recalculate speed
 	adpcm.clock = clk;
 	CalcSpeed();
 }
 
 //---------------------------------------------------------------------------
 //
-//	クロック比率指定
+//	Clock ratio setting
 //
 //---------------------------------------------------------------------------
 void FASTCALL ADPCM::SetRatio(DWORD ratio)
@@ -584,16 +659,16 @@ void FASTCALL ADPCM::SetRatio(DWORD ratio)
 	ASSERT_DIAG();
 
 #if defined(ADPCM_LOG)
-	LOG1(Log::Normal, "速度比率 %d", ratio);
+	LOG1(Log::Normal, "Speed ratio %d", ratio);
 #endif	// ADPCM_LOG
 
-	// ratio=3は2とみなす
+	// ratio=3 is treated as 2
 	if (ratio == 3) {
-		LOG0(Log::Warning, "未定義レート指定 $03");
+		LOG0(Log::Warning, "Illegal ratio setting $03");
 		ratio = 2;
 	}
 
-	// 速度を再計算
+	// Recalculate speed
 	if (adpcm.ratio != ratio) {
 		adpcm.ratio = ratio;
 		CalcSpeed();
@@ -602,7 +677,7 @@ void FASTCALL ADPCM::SetRatio(DWORD ratio)
 
 //---------------------------------------------------------------------------
 //
-//	パンポット指定
+//	Panpot setting
 //
 //---------------------------------------------------------------------------
 void FASTCALL ADPCM::SetPanpot(DWORD panpot)
@@ -612,7 +687,7 @@ void FASTCALL ADPCM::SetPanpot(DWORD panpot)
 	ASSERT_DIAG();
 
 #if defined(ADPCM_LOG)
-	LOG1(Log::Normal, "パンポット指定 %d", panpot);
+	LOG1(Log::Normal, "Panpot setting %d", panpot);
 #endif	// ADPCM_LOG
 
 	adpcm.panpot = panpot;
@@ -620,19 +695,19 @@ void FASTCALL ADPCM::SetPanpot(DWORD panpot)
 
 //---------------------------------------------------------------------------
 //
-//	速度再計算
+//	Speed recalculation
 //
 //---------------------------------------------------------------------------
 void FASTCALL ADPCM::CalcSpeed()
 {
 	ASSERT(this);
 
-	// 速い方から順に、2, 3, 4をつくる
+	// First, 2, 3, 4 are possible
 	adpcm.speed = 2 - adpcm.ratio;
 	ASSERT(adpcm.speed <= 2);
 	adpcm.speed += 2;
 
-	// クロック4MHzなら256、8MHzなら128を乗ずる
+	// Clock 4MHz: 256, Clock 8MHz: 128
 	adpcm.speed <<= 7;
 	if (adpcm.clock == 4) {
 		adpcm.speed <<= 1;
@@ -641,7 +716,7 @@ void FASTCALL ADPCM::CalcSpeed()
 
 //---------------------------------------------------------------------------
 //
-//	録音・再生開始
+//	Record/playback start
 //
 //---------------------------------------------------------------------------
 void FASTCALL ADPCM::Start(int type)
@@ -651,52 +726,66 @@ void FASTCALL ADPCM::Start(int type)
 	ASSERT(this);
 	ASSERT((type == 0) || (type == 1));
 	ASSERT_DIAG();
+	diag.start_events++;
 
 #if defined(ADPCM_LOG)
-	LOG1(Log::Normal, "再生開始 %d", type);
+	LOG1(Log::Normal, "Playback start %d", type);
 #endif	// ADPCM_LOG
 
-	// アクティブフラグを上げる
+	// Set active flag
 	adpcm.active = TRUE;
 
-	// データを初期化
+	// Reset data position
 	adpcm.offset = 0;
 
-	// イベントを設定
+	// Set event user
 	event.SetUser(type);
 
-	// ここで必ず時間設定(実機とは異なる可能性があるが、FM音源との同期を優先)
+	// Set sampling rate (different from FM which is interrupt priority)
 	sprintf(string, "Sampling %dHz", (2 * 1000 * 1000) / adpcm.speed);
 	event.SetDesc(string);
 	event.SetTime(adpcm.speed);
 
-	// 初回のイベントをここで実行(FM音源との同期をとる特別措置)
+	// Run this event immediately (unlike FM which is interrupt priority)
 	Callback(&event);
 }
 
 //---------------------------------------------------------------------------
 //
-//	録音・再生停止
+//	Record/playback stop
 //
 //---------------------------------------------------------------------------
 void FASTCALL ADPCM::Stop()
 {
 	ASSERT(this);
 	ASSERT_DIAG();
+	diag.stop_events++;
 
 #if defined(ADPCM_LOG)
-	LOG0(Log::Normal, "停止");
+	LOG0(Log::Normal, "Stop");
 #endif	// ADPCM_LOG
 
-	// フラグを降ろす
+	// Stop flags
 	adpcm.active = FALSE;
 	adpcm.play = FALSE;
 	adpcm.rec = FALSE;
+
+	if (quirk_arianshuu_loop_fix) {
+		adpcm.number = 0;
+		adpcm.readpoint = adpcm.writepoint;
+		quirk_stuck_l = 0;
+		quirk_stuck_r = 0;
+		if (adpcmbuf) {
+			const DWORD right = (adpcm.readpoint + 1) & (BufMax - 1);
+			adpcmbuf[adpcm.readpoint] = 0;
+			adpcmbuf[right] = 0;
+		}
+	}
 }
 
 //---------------------------------------------------------------------------
 //
-//	変位テーブル
+//	Next table
 //
 //---------------------------------------------------------------------------
 const int ADPCM::NextTable[] = {
@@ -706,7 +795,7 @@ const int ADPCM::NextTable[] = {
 
 //---------------------------------------------------------------------------
 //
-//	オフセットテーブル
+//	Offset table
 //
 //---------------------------------------------------------------------------
 const int ADPCM::OffsetTable[] = {
@@ -723,7 +812,7 @@ const int ADPCM::OffsetTable[] = {
 
 //---------------------------------------------------------------------------
 //
-//	デコード
+//	Decode
 //
 //---------------------------------------------------------------------------
 void FASTCALL ADPCM::Decode(int data, int num, BOOL valid)
@@ -738,29 +827,30 @@ void FASTCALL ADPCM::Decode(int data, int num, BOOL valid)
 	ASSERT((data >= 0) && (data < 0x100));
 	ASSERT(num >= 2);
 	ASSERT_DIAG();
+	diag.decode_calls++;
 
-	// ディセーブルなら何もしない
+	// Ignore if disabled
 	if (!adpcm.enable) {
 		return;
 	}
 
-	// データをマスク
+	// Mask data
 	data &= 0x0f;
 
-	// 差分テーブルから得る
+	// Build diff table index
 	i = adpcm.offset << 4;
 	i |= data;
 	sample = DiffTable[i];
 
-	// 次のオフセットを求めておく
+	// Return next offset
 	adpcm.offset += NextTable[data];
 	adpcm.offset = OffsetTable[adpcm.offset + 1];
 
-	// ストアデータを演算
+	// Scale sample data
 	store = (sample << 8) + (adpcm.sample * 245);
 	store >>= 8;
 
-	// 音量処理＋値記憶
+	// Calculate base value
 	base = adpcm.sample;
 	base *= adpcm.vol;
 	base >>= 9;
@@ -769,7 +859,7 @@ void FASTCALL ADPCM::Decode(int data, int num, BOOL valid)
 	store >>= 9;
 	adpcm.out = store;
 
-	// 有効なデータが来ていないなら、サンプルを上げる
+	// If no valid data yet, gradually increase sample
 	if (!valid) {
 		if (adpcm.sample < 0) {
 			adpcm.sample++;
@@ -779,17 +869,17 @@ void FASTCALL ADPCM::Decode(int data, int num, BOOL valid)
 		}
 	}
 
-	// 「ピー」音の消去
+	// Flattening operation
 	if ((adpcm.sample == 0) || (adpcm.sample == -1) || (adpcm.sample == 1)) {
 		store = 0;
 	}
 
-	// 差分を得る
+	// Get diff
 	diff = store - base;
 
-	// 音量を考慮して、numだけサンプルをストア
+	// Calculate and output num interpolated samples
 	switch (adpcm.panpot) {
-		// 左右とも出力
+		// Output both
 		case 0:
 			for (i=0; i<num; i++) {
 				store = base + (diff * (i + 1)) / num;
@@ -799,7 +889,7 @@ void FASTCALL ADPCM::Decode(int data, int num, BOOL valid)
 			}
 			break;
 
-		// 左のみ出力
+		// Left only output
 		case 1:
 			for (i=0; i<num; i++) {
 				store = base + (diff * (i + 1)) / num;
@@ -809,7 +899,7 @@ void FASTCALL ADPCM::Decode(int data, int num, BOOL valid)
 			}
 			break;
 
-		// 右のみ出力
+		// Right only output
 		case 2:
 			for (i=0; i<num; i++) {
 				store = base + (diff * (i + 1)) / num;
@@ -819,7 +909,7 @@ void FASTCALL ADPCM::Decode(int data, int num, BOOL valid)
 			}
 			break;
 
-		// 両方オフ
+		// Mute
 		case 3:
 			for (i=0; i<num; i++) {
 				adpcmbuf[adpcm.writepoint++] = 0;
@@ -828,25 +918,29 @@ void FASTCALL ADPCM::Decode(int data, int num, BOOL valid)
 			}
 			break;
 
-		// 通常、あり得ない
+		// Default, should not occur
 		default:
 			ASSERT(FALSE);
 	}
 
-	// 個数を更新
+	// Update sample count
 	adpcm.number += (num << 1);
 	if (adpcm.number >= BufMax) {
 #if defined(ADPCM_LOG)
-		LOG0(Log::Warning, "ADPCMバッファ オーバーラン");
+		LOG0(Log::Warning, "ADPCM buffer overflow");
 #endif	// ADPCM_LOG
 		adpcm.number = BufMax;
 		adpcm.readpoint = adpcm.writepoint;
+	}
+
+	if (adpcm.number > diag.max_buffer_samples) {
+		diag.max_buffer_samples = adpcm.number;
 	}
 }
 
 //---------------------------------------------------------------------------
 //
-//	合成イネーブル
+//	Internal enable
 //
 //---------------------------------------------------------------------------
 void FASTCALL ADPCM::Enable(BOOL enable)
@@ -859,7 +953,7 @@ void FASTCALL ADPCM::Enable(BOOL enable)
 
 //---------------------------------------------------------------------------
 //
-//	バッファ初期化
+//	Buffer initialization
 //
 //---------------------------------------------------------------------------
 void FASTCALL ADPCM::InitBuf(DWORD rate)
@@ -869,10 +963,10 @@ void FASTCALL ADPCM::InitBuf(DWORD rate)
 	ASSERT((rate % 100) == 0);
 
 #if defined(ADPCM_LOG)
-	LOG0(Log::Normal, "バッファ初期化");
+	LOG0(Log::Normal, "Buffer initialization");
 #endif	// ADPCM_LOG
 
-	// カウンタ、ポインタ
+	// Counter, pointers
 	adpcm.number = 0;
 	adpcm.readpoint = 0;
 	adpcm.writepoint = 0;
@@ -880,17 +974,38 @@ void FASTCALL ADPCM::InitBuf(DWORD rate)
 	adpcm.sync_cnt = 0;
 	adpcm.sync_rate = rate / 50;
 	adpcm.sync_step = 0x9c4000 / adpcm.sync_rate;
+	quirk_stuck_l = 0;
+	quirk_stuck_r = 0;
 
-	// 最初のデータに0をセット
+	// Set first data to 0
 	if (adpcmbuf) {
 		adpcmbuf[0] = 0;
 		adpcmbuf[1] = 0;
 	}
 }
 
+void FASTCALL ADPCM::SetArianshuuLoopFix(BOOL enabled)
+{
+	quirk_arianshuu_loop_fix = enabled ? TRUE : FALSE;
+	quirk_stuck_l = 0;
+	quirk_stuck_r = 0;
+}
+
+void FASTCALL ADPCM::GetDiag(adpcm_diag_t *buffer) const
+{
+	ASSERT(this);
+	ASSERT(buffer);
+
+	if (!buffer) {
+		return;
+	}
+
+	*buffer = diag;
+}
+
 //---------------------------------------------------------------------------
 //
-//	バッファからデータ取得
+//	Buffer audio data get
 //
 //---------------------------------------------------------------------------
 void FASTCALL ADPCM::GetBuf(DWORD *buffer, int samples)
@@ -907,20 +1022,42 @@ void FASTCALL ADPCM::GetBuf(DWORD *buffer, int samples)
 	ASSERT(samples >= 0);
 	ASSERT_DIAG();
 
-	// 無効、またはチャネルカットの場合は、バッファクリア
+	// If disabled or mono mode, clear buffer
 	if (!adpcm.enable || !adpcm.sound) {
 		ASSERT(adpcm.sync_rate != 0);
 		InitBuf(adpcm.sync_rate * 50);
 		return;
 	}
 
-	// 初期化
+	// Output
 	ptr = (int*)buffer;
 
-	// バッファに何もないときは、最後のデータを続けて入れる
+	// If buffer cannot keep up, repeat last data
 	if (adpcm.number <= 2) {
+		diag.underrun_head_events++;
 		l = adpcmbuf[adpcm.readpoint];
 		r = adpcmbuf[adpcm.readpoint + 1];
+		if ((l > 8) || (l < -8) || (r > 8) || (r < -8)) {
+			diag.stale_nonzero_events++;
+		}
+
+		if (quirk_arianshuu_loop_fix) {
+			diag.silence_fill_events++;
+			for (i=samples; i>0; i--) {
+				*ptr += 0;
+				ptr++;
+				*ptr += 0;
+				ptr++;
+			}
+			quirk_stuck_l = 0;
+			quirk_stuck_r = 0;
+			adpcmbuf[adpcm.readpoint] = 0;
+			adpcmbuf[adpcm.readpoint + 1] = 0;
+			return;
+		}
+
+		quirk_stuck_l = l;
+		quirk_stuck_r = r;
 		for (i=samples; i>0; i--) {
 			*ptr += l;
 			ptr++;
@@ -930,18 +1067,18 @@ void FASTCALL ADPCM::GetBuf(DWORD *buffer, int samples)
 		return;
 	}
 
-	// 線形補間の有無で分ける
+	// Valid interpolation
 	if (adpcm.interp) {
 
-		// 補間あり
+		// Main loop
 		for (i=samples; i>0; i--) {
-			// ステップUp
+			// Step up
 			adpcm.sync_cnt += adpcm.sync_step;
 			if (adpcm.sync_cnt >= 0x4000) {
-				// 同期処理
+				// Wrap
 				adpcm.sync_cnt &= 0x3fff;
 
-				// 次へ
+				// Advance
 				if (adpcm.number >= 4) {
 					adpcm.readpoint += 2;
 					adpcm.readpoint &= (BufMax - 1);
@@ -949,26 +1086,38 @@ void FASTCALL ADPCM::GetBuf(DWORD *buffer, int samples)
 				}
 			}
 
-			// 次のデータがあるか
+			// Check remaining data
 			if (adpcm.number < 4 ) {
-				// 次のデータがないので、今のデータをそのまま入れる
+				diag.underrun_interp_events++;
+				if (quirk_arianshuu_loop_fix) {
+					diag.silence_fill_events++;
+					*ptr += 0;
+					ptr++;
+					*ptr += 0;
+					ptr++;
+					quirk_stuck_l = 0;
+					quirk_stuck_r = 0;
+					continue;
+				}
+
+				// No data left, repeat last data
 				*ptr += adpcmbuf[adpcm.readpoint];
 				ptr++;
 				*ptr += adpcmbuf[adpcm.readpoint + 1];
 				ptr++;
 			}
 			else {
-				// 次のポイントをもらう
+				// Calculate next point
 				point = adpcm.readpoint + 2;
 				point &= (BufMax - 1);
 
-				// 現データと次のデータで補間[L]
+				// Interpolate L from next data and current data
 				l = adpcmbuf[point] * (int)adpcm.sync_cnt;
 				r = adpcmbuf[adpcm.readpoint + 0] * (int)(0x4000 - adpcm.sync_cnt);
 				*ptr += ((l + r) >> 14);
 				ptr++;
 
-				// 現データと次のデータで補間[R]
+				// Interpolate R from next data and current data
 				l = adpcmbuf[point + 1] * (int)adpcm.sync_cnt;
 				r = adpcmbuf[adpcm.readpoint + 1] * (int)(0x4000 - adpcm.sync_cnt);
 				*ptr += ((l + r) >> 14);
@@ -977,26 +1126,44 @@ void FASTCALL ADPCM::GetBuf(DWORD *buffer, int samples)
 		}
 	}
 	else {
-		// 補間なし
+		// Non-interpolation
 		for (i=samples; i>0; i--) {
-			// 現在の位置からデータを格納
+			// Output from current position data
 			*buffer += adpcmbuf[adpcm.readpoint];
 			buffer++;
 			*buffer += adpcmbuf[adpcm.readpoint + 1];
 			buffer++;
 
-			// sync_stepを加算
+			// Subtract sync_step
 			adpcm.sync_cnt += adpcm.sync_step;
 
-			// 0x4000と同期処理
+			// Reset when reaching 0x4000
 			if (adpcm.sync_cnt < 0x4000) {
 				continue;
 			}
 			adpcm.sync_cnt &= 0x3fff;
 
-			// 次のADPCMサンプルへ移動
+			// Move to next ADPCM sample
 			if (adpcm.number <= 2) {
-				// 最後のデータを続けて入れる
+				diag.underrun_linear_events++;
+				if (quirk_arianshuu_loop_fix) {
+					diag.silence_fill_events++;
+					for (j=i-1; j>0; j--) {
+						*buffer += 0;
+						buffer++;
+						*buffer += 0;
+						buffer++;
+						adpcm.sync_cnt += adpcm.sync_step;
+					}
+					adpcm.sync_cnt &= 0x3fff;
+					quirk_stuck_l = 0;
+					quirk_stuck_r = 0;
+					adpcmbuf[adpcm.readpoint] = 0;
+					adpcmbuf[adpcm.readpoint + 1] = 0;
+					return;
+				}
+
+				// Repeat last data
 				l = adpcmbuf[adpcm.readpoint];
 				r = adpcmbuf[adpcm.readpoint + 1];
 				for (j=i-1; j>0; j--) {
@@ -1018,7 +1185,7 @@ void FASTCALL ADPCM::GetBuf(DWORD *buffer, int samples)
 
 //---------------------------------------------------------------------------
 //
-//	ウェイトをかける
+//	Wait processing
 //
 //---------------------------------------------------------------------------
 void FASTCALL ADPCM::Wait(int num)
@@ -1028,51 +1195,51 @@ void FASTCALL ADPCM::Wait(int num)
 	ASSERT(this);
 	ASSERT_DIAG();
 
-	// イベント開始してなければ0
+	// If event not started, 0
 	if (event.GetTime() == 0) {
 		adpcm.wait = 0;
 		return;
 	}
 
-	// 少なければOPMの方が上回っている
+	// If OPM audio is different (waits less)
 	if ((int)adpcm.number <= num) {
-		// 差分をつくる。差分の1/4をウェイトとする
+		// Subtract remainder. This adds 1/4 wait
 		num -= (adpcm.number);
 		num >>= 2;
 
-		// 計算は↓と同様。符号反転
+		// Calculation formula, inverse
 		i = adpcm.speed >> 6;
 		i *= adpcm.sync_rate;
 		adpcm.wait = -((625 * num) / i);
 
 #if defined(ADPCM_LOG)
 		if (adpcm.wait != 0) {
-			LOG1(Log::Normal, "ウェイト設定 %d", adpcm.wait);
+			LOG1(Log::Normal, "Wait set %d", adpcm.wait);
 		}
 #endif	// ADPCM_LOG
 		return;
 	}
 
-	// 差分をつくる。差分の1/4をウェイトとする
+	// Subtract remainder. This adds 1/4 wait
 	num = adpcm.number - num;
 	num >>= 2;
 
-	// 44.1k,48k etc.での余剰サンプル数をxとすると
-	// ウェイト回数は (625 * x) / (adpcm.sync_rate * (adpcm.speed >> 6))
+	// For 44.1k,48k etc. sample rate differences
+	// Wait count: (625 * x) / (adpcm.sync_rate * (adpcm.speed >> 6))
 	i = adpcm.speed >> 6;
 	i *= adpcm.sync_rate;
 	adpcm.wait = (625 * num) / i;
 
 #if defined(ADPCM_LOG)
 	if (adpcm.wait != 0) {
-		LOG1(Log::Normal, "ウェイト設定 %d", adpcm.wait);
+		LOG1(Log::Normal, "Wait set %d", adpcm.wait);
 	}
 #endif	// ADPCM_LOG
 }
 
 //---------------------------------------------------------------------------
 //
-//	テーブル作成
+//	Table creation
 //
 //---------------------------------------------------------------------------
 void FASTCALL ADPCM::MakeTable()
@@ -1085,12 +1252,12 @@ void FASTCALL ADPCM::MakeTable()
 
 	ASSERT(this);
 
-	// テーブル作成(floorで丸めた方がpanic等で良い結果が得られる)
+	// Create table (flood with panic value for safety)
 	p = DiffTable;
 	for (i=0; i<49; i++) {
 		base = (int)floor(16.0 * pow(1.1, i));
 
-		// 演算もすべてintで行う
+		// Division must be done in int
 		for (j=0; j<16; j++) {
 			diff = 0;
 			if (j & 4) {
@@ -1114,7 +1281,7 @@ void FASTCALL ADPCM::MakeTable()
 
 //---------------------------------------------------------------------------
 //
-//	音量設定
+//	Volume setting
 //
 //---------------------------------------------------------------------------
 void FASTCALL ADPCM::SetVolume(int volume)
@@ -1123,9 +1290,14 @@ void FASTCALL ADPCM::SetVolume(int volume)
 	double vol;
 
 	ASSERT(this);
-	ASSERT((volume >= 0) && (volume < 100));
+	ASSERT((volume >= 0) && (volume <= 100));
 
-	// 16384 * 10^((volume-140) / 200)を算出、セット
+	if (volume <= 0) {
+		adpcm.vol = 0;
+		return;
+	}
+
+	// Calculate and set 16384 * 10^((volume-140) / 200)
 	offset = (double)(volume - 140);
 	offset /= (double)200.0;
 	vol = pow((double)10.0, offset);

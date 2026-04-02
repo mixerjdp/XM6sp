@@ -2,8 +2,8 @@
 //
 //	X68000 EMULATOR "XM6"
 //
-//	Copyright (C) 2001-2005 ＰＩ．(ytanaka@ipc-tokai.or.jp)
-//	[ デバイス ]
+//	Copyright (C) 2001-2005 PI (ytanaka@ipc-tokai.or.jp)
+//	[ Device ]
 //
 //---------------------------------------------------------------------------
 
@@ -15,23 +15,23 @@
 
 //===========================================================================
 //
-//	デバイス
+//	Device
 //
 //===========================================================================
 
 //---------------------------------------------------------------------------
 //
-//	コンストラクタ
+//	Constructor
 //
 //---------------------------------------------------------------------------
 Device::Device(VM *p)
 {
-	// ワーク初期化
+	// Link structure
 	dev.next = NULL;
 	dev.id = 0;
 	dev.desc = NULL;
 
-	// ワーク記憶、デバイス追加
+	// Link to VM and add device
 	vm = p;
 	vm->AddDevice(this);
 	log = &(vm->log);
@@ -39,7 +39,7 @@ Device::Device(VM *p)
 
 //---------------------------------------------------------------------------
 //
-//	デストラクタ
+//	Destructor
 //
 //---------------------------------------------------------------------------
 Device::~Device()
@@ -48,37 +48,37 @@ Device::~Device()
 
 //---------------------------------------------------------------------------
 //
-//	初期化
+//	Initialization
 //
 //---------------------------------------------------------------------------
 BOOL FASTCALL Device::Init()
 {
 	ASSERT(this);
 
-	// ここで、メモリ確保・ファイルロード等を行う
+	// Do nothing, leave memory and file handling undone
 	return TRUE;
 }
 
 //---------------------------------------------------------------------------
 //
-//	クリーンアップ
+//	Cleanup
 //
 //---------------------------------------------------------------------------
 void FASTCALL Device::Cleanup()
 {
 	ASSERT(this);
 
-	// VMに対し、デバイス削除を依頼
+	// Delete from VM
 	ASSERT(vm);
 	vm->DelDevice(this);
 
-	// 自分自身を削除
+	// Delete myself
 	delete this;
 }
 
 //---------------------------------------------------------------------------
 //
-//	リセット
+//	Reset
 //
 //---------------------------------------------------------------------------
 void FASTCALL Device::Reset()
@@ -89,7 +89,7 @@ void FASTCALL Device::Reset()
 
 //---------------------------------------------------------------------------
 //
-//	セーブ
+//	Save
 //
 //---------------------------------------------------------------------------
 BOOL FASTCALL Device::Save(Fileio* /*fio*/, int /*ver*/)
@@ -102,7 +102,7 @@ BOOL FASTCALL Device::Save(Fileio* /*fio*/, int /*ver*/)
 
 //---------------------------------------------------------------------------
 //
-//	ロード
+//	Load
 //
 //---------------------------------------------------------------------------
 BOOL FASTCALL Device::Load(Fileio* /*fio*/, int /*ver*/)
@@ -115,7 +115,7 @@ BOOL FASTCALL Device::Load(Fileio* /*fio*/, int /*ver*/)
 
 //---------------------------------------------------------------------------
 //
-//	設定適用
+//	Apply configuration
 //
 //---------------------------------------------------------------------------
 void FASTCALL Device::ApplyCfg(const Config* /*config*/)
@@ -127,7 +127,7 @@ void FASTCALL Device::ApplyCfg(const Config* /*config*/)
 #if !defined(NDEBUG)
 //---------------------------------------------------------------------------
 //
-//	診断
+//	Assert
 //
 //---------------------------------------------------------------------------
 void FASTCALL Device::AssertDiag() const
@@ -143,7 +143,7 @@ void FASTCALL Device::AssertDiag() const
 
 //---------------------------------------------------------------------------
 //
-//	イベントコールバック
+//	Event callback
 //
 //---------------------------------------------------------------------------
 BOOL FASTCALL Device::Callback(Event* /*ev*/)
@@ -156,29 +156,29 @@ BOOL FASTCALL Device::Callback(Event* /*ev*/)
 
 //===========================================================================
 //
-//	メモリマップドデバイス
+//	Memory mapped device
 //
 //===========================================================================
 
 //---------------------------------------------------------------------------
 //
-//	コンストラクタ
+//	Constructor
 //
 //---------------------------------------------------------------------------
 MemDevice::MemDevice(VM *p) : Device(p)
 {
-	// メモリアドレス割り当てなし
+	// Set dummy address
 	memdev.first = 0;
 	memdev.last = 0;
 
-	// ポインタ初期化
+	// Initialize pointers
 	cpu = NULL;
 	scheduler = NULL;
 }
 
 //---------------------------------------------------------------------------
 //
-//	初期化
+//	Initialization
 //
 //---------------------------------------------------------------------------
 BOOL FASTCALL MemDevice::Init()
@@ -189,12 +189,12 @@ BOOL FASTCALL MemDevice::Init()
 	ASSERT(memdev.last <= 0xffffff);
 	ASSERT(memdev.first <= memdev.last);
 
-	// デバイスの初期化を先に行う
+	// Run base class device initialization
 	if (!Device::Init()) {
 		return FALSE;
 	}
 
-	// CPU、スケジューラ取得
+	// Get CPU and scheduler
 	cpu = (CPU*)vm->SearchDevice(MAKEID('C', 'P', 'U', ' '));
 	ASSERT(cpu);
 	scheduler = (Scheduler*)vm->SearchDevice(MAKEID('S', 'C', 'H', 'E'));
@@ -205,7 +205,7 @@ BOOL FASTCALL MemDevice::Init()
 
 //---------------------------------------------------------------------------
 //
-//	バイト読み込み
+//	Byte read
 //
 //---------------------------------------------------------------------------
 DWORD FASTCALL MemDevice::ReadByte(DWORD /*addr*/)
@@ -218,7 +218,7 @@ DWORD FASTCALL MemDevice::ReadByte(DWORD /*addr*/)
 
 //---------------------------------------------------------------------------
 //
-//	ワード読み込み
+//	Word read
 //
 //---------------------------------------------------------------------------
 DWORD FASTCALL MemDevice::ReadWord(DWORD addr)
@@ -230,7 +230,7 @@ DWORD FASTCALL MemDevice::ReadWord(DWORD addr)
 	ASSERT((addr & 1) == 0);
 	ASSERT_DIAG();
 
-	// 上位→下位の順でRead
+	// Low then high byte read
 	data = ReadByte(addr);
 	data <<= 8;
 	data |= ReadByte(addr + 1);
@@ -240,7 +240,7 @@ DWORD FASTCALL MemDevice::ReadWord(DWORD addr)
 
 //---------------------------------------------------------------------------
 //
-//	バイト書き込み
+//	Byte write
 //
 //---------------------------------------------------------------------------
 void FASTCALL MemDevice::WriteByte(DWORD /*addr*/, DWORD /*data*/)
@@ -251,7 +251,7 @@ void FASTCALL MemDevice::WriteByte(DWORD /*addr*/, DWORD /*data*/)
 
 //---------------------------------------------------------------------------
 //
-//	ワード書き込み
+//	Word write
 //
 //---------------------------------------------------------------------------
 void FASTCALL MemDevice::WriteWord(DWORD addr, DWORD data)
@@ -261,14 +261,14 @@ void FASTCALL MemDevice::WriteWord(DWORD addr, DWORD data)
 	ASSERT((addr & 1) == 0);
 	ASSERT_DIAG();
 
-	// 上位→下位の順でWrite
+	// Low then high byte write
 	WriteByte(addr, (BYTE)(data >> 8));
 	WriteByte(addr + 1, (BYTE)data);
 }
 
 //---------------------------------------------------------------------------
 //
-//	読み込みのみ
+//	Read only
 //
 //---------------------------------------------------------------------------
 DWORD FASTCALL MemDevice::ReadOnly(DWORD /*addr*/) const
@@ -282,12 +282,12 @@ DWORD FASTCALL MemDevice::ReadOnly(DWORD /*addr*/) const
 #if !defined(NDEBUG)
 //---------------------------------------------------------------------------
 //
-//	診断
+//	Assert
 //
 //---------------------------------------------------------------------------
 void FASTCALL MemDevice::AssertDiag() const
 {
-	// 基本クラス
+	// Base class
 	Device::AssertDiag();
 
 	ASSERT(this);

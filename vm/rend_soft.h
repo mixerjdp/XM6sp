@@ -2,13 +2,16 @@
 //
 //	X68000 EMULATOR "XM6"
 //
-//	Copyright (C) 2001-2004 ‚o‚hD(ytanaka@ipc-tokai.or.jp)
-//	[ ƒŒƒ“ƒ_ƒ‰ ƒAƒZƒ“ƒuƒ‰ƒTƒu ]
+//	Copyright (C) 2001-2004 ï¿½oï¿½hï¿½D(ytanaka@ipc-tokai.or.jp)
+//	[ ï¿½ï¿½ï¿½ï¿½ï¿½_ï¿½ï¿½ ï¿½Aï¿½Zï¿½ï¿½ï¿½uï¿½ï¿½ï¿½Tï¿½u ]
 //
 //---------------------------------------------------------------------------
 
 #if !defined (rend_asm_h)
 #define rend_asm_h
+
+#include "os.h"
+#include "xm6.h"
 
 #if defined(__cplusplus)
 extern "C" {
@@ -16,106 +19,106 @@ extern "C" {
 
 //---------------------------------------------------------------------------
 //
-//	ƒvƒƒgƒ^ƒCƒvéŒ¾
+//	ï¿½vï¿½ï¿½ï¿½gï¿½^ï¿½Cï¿½vï¿½éŒ¾
 //
 //---------------------------------------------------------------------------
 void RendTextMem(const BYTE *tvrm, BOOL *flag, BYTE *buf);
-										// ƒeƒLƒXƒgƒŒƒ“ƒ_ƒŠƒ“ƒO(…•½‚’¼•ÏŠ·)
+										// ï¿½eï¿½Lï¿½Xï¿½gï¿½ï¿½ï¿½ï¿½ï¿½_ï¿½ï¿½ï¿½ï¿½ï¿½O(ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ÏŠï¿½)
 void RendTextPal(const BYTE *buf, DWORD *out, BOOL *flag, const DWORD *pal);
-										// ƒeƒLƒXƒgƒŒƒ“ƒ_ƒŠƒ“ƒO(ƒpƒŒƒbƒg)
+										// ï¿½eï¿½Lï¿½Xï¿½gï¿½ï¿½ï¿½ï¿½ï¿½_ï¿½ï¿½ï¿½ï¿½ï¿½O(ï¿½pï¿½ï¿½ï¿½bï¿½g)
 void RendTextAll(const BYTE *buf, DWORD *out, const DWORD *pal);
-										// ƒeƒLƒXƒgƒŒƒ“ƒ_ƒŠƒ“ƒO(ƒpƒŒƒbƒg‘S‚Ä)
+										// ï¿½eï¿½Lï¿½Xï¿½gï¿½ï¿½ï¿½ï¿½ï¿½_ï¿½ï¿½ï¿½ï¿½ï¿½O(ï¿½pï¿½ï¿½ï¿½bï¿½gï¿½Sï¿½ï¿½)
 void RendTextCopy(const BYTE *src, const BYTE *dst, DWORD plane, BOOL *textmem, BOOL *textflag);
-										// ƒeƒLƒXƒgƒ‰ƒXƒ^ƒRƒs[
+										// ï¿½eï¿½Lï¿½Xï¿½gï¿½ï¿½ï¿½Xï¿½^ï¿½Rï¿½sï¿½[
 
 int Rend1024A(const BYTE *gvrm, DWORD *buf, const DWORD *pal);
-										// ƒOƒ‰ƒtƒBƒbƒN1024ƒŒƒ“ƒ_ƒŠƒ“ƒO(ƒy[ƒW0,1-All)
+										// ï¿½Oï¿½ï¿½ï¿½tï¿½Bï¿½bï¿½N1024ï¿½ï¿½ï¿½ï¿½ï¿½_ï¿½ï¿½ï¿½ï¿½ï¿½O(ï¿½yï¿½[ï¿½W0,1-All)
 int Rend1024B(const BYTE *gvrm, DWORD *buf, const DWORD *pal);
-										// ƒOƒ‰ƒtƒBƒbƒN1024ƒŒƒ“ƒ_ƒŠƒ“ƒO(ƒy[ƒW2,3-All)
+										// ï¿½Oï¿½ï¿½ï¿½tï¿½Bï¿½bï¿½N1024ï¿½ï¿½ï¿½ï¿½ï¿½_ï¿½ï¿½ï¿½ï¿½ï¿½O(ï¿½yï¿½[ï¿½W2,3-All)
 void Rend1024C(const BYTE *gvrm, DWORD *buf, BOOL *flag, const DWORD *pal);
-										// ƒOƒ‰ƒtƒBƒbƒN1024ƒŒƒ“ƒ_ƒŠƒ“ƒO(ƒy[ƒW0)
+										// ï¿½Oï¿½ï¿½ï¿½tï¿½Bï¿½bï¿½N1024ï¿½ï¿½ï¿½ï¿½ï¿½_ï¿½ï¿½ï¿½ï¿½ï¿½O(ï¿½yï¿½[ï¿½W0)
 void Rend1024D(const BYTE *gvrm, DWORD *buf, BOOL *flag, const DWORD *pal);
-										// ƒOƒ‰ƒtƒBƒbƒN1024ƒŒƒ“ƒ_ƒŠƒ“ƒO(ƒy[ƒW1)
+										// ï¿½Oï¿½ï¿½ï¿½tï¿½Bï¿½bï¿½N1024ï¿½ï¿½ï¿½ï¿½ï¿½_ï¿½ï¿½ï¿½ï¿½ï¿½O(ï¿½yï¿½[ï¿½W1)
 void Rend1024E(const BYTE *gvrm, DWORD *buf, BOOL *flag, const DWORD *pal);
-										// ƒOƒ‰ƒtƒBƒbƒN1024ƒŒƒ“ƒ_ƒŠƒ“ƒO(ƒy[ƒW2)
+										// ï¿½Oï¿½ï¿½ï¿½tï¿½Bï¿½bï¿½N1024ï¿½ï¿½ï¿½ï¿½ï¿½_ï¿½ï¿½ï¿½ï¿½ï¿½O(ï¿½yï¿½[ï¿½W2)
 void Rend1024F(const BYTE *gvrm, DWORD *buf, BOOL *flag, const DWORD *pal);
-										// ƒOƒ‰ƒtƒBƒbƒN1024ƒŒƒ“ƒ_ƒŠƒ“ƒO(ƒy[ƒW3)
+										// ï¿½Oï¿½ï¿½ï¿½tï¿½Bï¿½bï¿½N1024ï¿½ï¿½ï¿½ï¿½ï¿½_ï¿½ï¿½ï¿½ï¿½ï¿½O(ï¿½yï¿½[ï¿½W3)
 int Rend16A(const BYTE *gvrm, DWORD *buf, const DWORD *pal);
-										// ƒOƒ‰ƒtƒBƒbƒN16ƒŒƒ“ƒ_ƒŠƒ“ƒO(ƒy[ƒW0-All)
+										// ï¿½Oï¿½ï¿½ï¿½tï¿½Bï¿½bï¿½N16ï¿½ï¿½ï¿½ï¿½ï¿½_ï¿½ï¿½ï¿½ï¿½ï¿½O(ï¿½yï¿½[ï¿½W0-All)
 int Rend16B(const BYTE *gvrm, DWORD *buf, BOOL *flag, const DWORD *pal);
-										// ƒOƒ‰ƒtƒBƒbƒN16ƒŒƒ“ƒ_ƒŠƒ“ƒO(ƒy[ƒW0)
+										// ï¿½Oï¿½ï¿½ï¿½tï¿½Bï¿½bï¿½N16ï¿½ï¿½ï¿½ï¿½ï¿½_ï¿½ï¿½ï¿½ï¿½ï¿½O(ï¿½yï¿½[ï¿½W0)
 int Rend16C(const BYTE *gvrm, DWORD *buf, const DWORD *pal);
-										// ƒOƒ‰ƒtƒBƒbƒN16ƒŒƒ“ƒ_ƒŠƒ“ƒO(ƒy[ƒW1-All)
+										// ï¿½Oï¿½ï¿½ï¿½tï¿½Bï¿½bï¿½N16ï¿½ï¿½ï¿½ï¿½ï¿½_ï¿½ï¿½ï¿½ï¿½ï¿½O(ï¿½yï¿½[ï¿½W1-All)
 int Rend16D(const BYTE *gvrm, DWORD *buf, BOOL *flag, const DWORD *pal);
-										// ƒOƒ‰ƒtƒBƒbƒN16ƒŒƒ“ƒ_ƒŠƒ“ƒO(ƒy[ƒW1)
+										// ï¿½Oï¿½ï¿½ï¿½tï¿½Bï¿½bï¿½N16ï¿½ï¿½ï¿½ï¿½ï¿½_ï¿½ï¿½ï¿½ï¿½ï¿½O(ï¿½yï¿½[ï¿½W1)
 int Rend16E(const BYTE *gvrm, DWORD *buf, const DWORD *pal);
-										// ƒOƒ‰ƒtƒBƒbƒN16ƒŒƒ“ƒ_ƒŠƒ“ƒO(ƒy[ƒW2-All)
+										// ï¿½Oï¿½ï¿½ï¿½tï¿½Bï¿½bï¿½N16ï¿½ï¿½ï¿½ï¿½ï¿½_ï¿½ï¿½ï¿½ï¿½ï¿½O(ï¿½yï¿½[ï¿½W2-All)
 int Rend16F(const BYTE *gvrm, DWORD *buf, BOOL *flag, const DWORD *pal);
-										// ƒOƒ‰ƒtƒBƒbƒN16ƒŒƒ“ƒ_ƒŠƒ“ƒO(ƒy[ƒW2)
+										// ï¿½Oï¿½ï¿½ï¿½tï¿½Bï¿½bï¿½N16ï¿½ï¿½ï¿½ï¿½ï¿½_ï¿½ï¿½ï¿½ï¿½ï¿½O(ï¿½yï¿½[ï¿½W2)
 int Rend16G(const BYTE *gvrm, DWORD *buf, const DWORD *pal);
-										// ƒOƒ‰ƒtƒBƒbƒN16ƒŒƒ“ƒ_ƒŠƒ“ƒO(ƒy[ƒW3-All)
+										// ï¿½Oï¿½ï¿½ï¿½tï¿½Bï¿½bï¿½N16ï¿½ï¿½ï¿½ï¿½ï¿½_ï¿½ï¿½ï¿½ï¿½ï¿½O(ï¿½yï¿½[ï¿½W3-All)
 int Rend16H(const BYTE *gvrm, DWORD *buf, BOOL *flag, const DWORD *pal);
-										// ƒOƒ‰ƒtƒBƒbƒN16ƒŒƒ“ƒ_ƒŠƒ“ƒO(ƒy[ƒW3)
+										// ï¿½Oï¿½ï¿½ï¿½tï¿½Bï¿½bï¿½N16ï¿½ï¿½ï¿½ï¿½ï¿½_ï¿½ï¿½ï¿½ï¿½ï¿½O(ï¿½yï¿½[ï¿½W3)
 void Rend256A(const BYTE *gvrm, DWORD *buf, BOOL *flag, const DWORD *pal);
-										// ƒOƒ‰ƒtƒBƒbƒN256ƒŒƒ“ƒ_ƒŠƒ“ƒO(ƒy[ƒW0)
+										// ï¿½Oï¿½ï¿½ï¿½tï¿½Bï¿½bï¿½N256ï¿½ï¿½ï¿½ï¿½ï¿½_ï¿½ï¿½ï¿½ï¿½ï¿½O(ï¿½yï¿½[ï¿½W0)
 void Rend256B(const BYTE *gvrm, DWORD *buf, BOOL *flag, const DWORD *pal);
-										// ƒOƒ‰ƒtƒBƒbƒN256ƒŒƒ“ƒ_ƒŠƒ“ƒO(ƒy[ƒW1)
+										// ï¿½Oï¿½ï¿½ï¿½tï¿½Bï¿½bï¿½N256ï¿½ï¿½ï¿½ï¿½ï¿½_ï¿½ï¿½ï¿½ï¿½ï¿½O(ï¿½yï¿½[ï¿½W1)
 int Rend256C(const BYTE *gvrm, DWORD *buf, const DWORD *pal);
-										// ƒOƒ‰ƒtƒBƒbƒN256ƒŒƒ“ƒ_ƒŠƒ“ƒO(ƒy[ƒW0-All)
+										// ï¿½Oï¿½ï¿½ï¿½tï¿½Bï¿½bï¿½N256ï¿½ï¿½ï¿½ï¿½ï¿½_ï¿½ï¿½ï¿½ï¿½ï¿½O(ï¿½yï¿½[ï¿½W0-All)
 int Rend256D(const BYTE *gvrm, DWORD *buf, const DWORD *pal);
-										// ƒOƒ‰ƒtƒBƒbƒN256ƒŒƒ“ƒ_ƒŠƒ“ƒO(ƒy[ƒW1-All)
+										// ï¿½Oï¿½ï¿½ï¿½tï¿½Bï¿½bï¿½N256ï¿½ï¿½ï¿½ï¿½ï¿½_ï¿½ï¿½ï¿½ï¿½ï¿½O(ï¿½yï¿½[ï¿½W1-All)
 void Rend64KA(const BYTE *gvrm, DWORD *buf, BOOL *flag, BYTE *plt, DWORD *pal);
-										// ƒOƒ‰ƒtƒBƒbƒN64KƒŒƒ“ƒ_ƒŠƒ“ƒO
+										// ï¿½Oï¿½ï¿½ï¿½tï¿½Bï¿½bï¿½N64Kï¿½ï¿½ï¿½ï¿½ï¿½_ï¿½ï¿½ï¿½ï¿½ï¿½O
 int Rend64KB(const BYTE *gvrm, DWORD *buf, BYTE *plt, DWORD *pal);
-										// ƒOƒ‰ƒtƒBƒbƒN64KƒŒƒ“ƒ_ƒŠƒ“ƒO(All)
+										// ï¿½Oï¿½ï¿½ï¿½tï¿½Bï¿½bï¿½N64Kï¿½ï¿½ï¿½ï¿½ï¿½_ï¿½ï¿½ï¿½ï¿½ï¿½O(All)
 
 void RendClrSprite(DWORD *buf, DWORD color, int len);
-										// ƒXƒvƒ‰ƒCƒgƒoƒbƒtƒ@ƒNƒŠƒA
+										// ï¿½Xï¿½vï¿½ï¿½ï¿½Cï¿½gï¿½oï¿½bï¿½tï¿½@ï¿½Nï¿½ï¿½ï¿½A
 void RendSprite(const DWORD *line, DWORD *buf, DWORD x, DWORD flag);
-										// ƒXƒvƒ‰ƒCƒgƒŒƒ“ƒ_ƒŠƒ“ƒO(’P‘Ì)
+										// ï¿½Xï¿½vï¿½ï¿½ï¿½Cï¿½gï¿½ï¿½ï¿½ï¿½ï¿½_ï¿½ï¿½ï¿½ï¿½ï¿½O(ï¿½Pï¿½ï¿½)
 void RendSpriteC(const DWORD *line, DWORD *buf, DWORD x, DWORD flag);
-										// ƒXƒvƒ‰ƒCƒgƒŒƒ“ƒ_ƒŠƒ“ƒO(’P‘ÌACMOV)
+										// ï¿½Xï¿½vï¿½ï¿½ï¿½Cï¿½gï¿½ï¿½ï¿½ï¿½ï¿½_ï¿½ï¿½ï¿½ï¿½ï¿½O(ï¿½Pï¿½ÌACMOV)
 void RendPCGNew(DWORD index, const BYTE *mem, DWORD *buf, DWORD *pal);
-										// PCGƒŒƒ“ƒ_ƒŠƒ“ƒO(NewVer)
+										// PCGï¿½ï¿½ï¿½ï¿½ï¿½_ï¿½ï¿½ï¿½ï¿½ï¿½O(NewVer)
 void RendBG8(DWORD **ptr, DWORD *buf, int x, int len, BOOL *ready, const BYTE *mem,
-			DWORD *pcgbuf, DWORD *pal);	// BG(8x8AŠ„‚èØ‚ê‚é)
+			DWORD *pcgbuf, DWORD *pal, BOOL legacy_bg_transparency);	// BG(8x8ï¿½Aï¿½ï¿½ï¿½ï¿½Ø‚ï¿½ï¿½)
 void RendBG8C(DWORD **ptr, DWORD *buf, int x, int len, BOOL *ready, const BYTE *mem,
-			DWORD *pcgbuf, DWORD *pal);	// BG(8x8AŠ„‚èØ‚ê‚éACMOV)
+			DWORD *pcgbuf, DWORD *pal, BOOL legacy_bg_transparency);	// BG(8x8ï¿½Aï¿½ï¿½ï¿½ï¿½Ø‚ï¿½ï¿½ACMOV)
 void RendBG8P(DWORD **ptr, DWORD *buf, int offset, int length, BOOL *ready, const BYTE *mem,
-			DWORD *pcgbuf, DWORD *pal);	// BG(8x8A•”•ª‚Ì‚Ý)
+			DWORD *pcgbuf, DWORD *pal, BOOL legacy_bg_transparency);	// BG(8x8ï¿½Aï¿½ï¿½ï¿½ï¿½ï¿½Ì‚ï¿½)
 void RendBG16(DWORD **ptr, DWORD *buf, int x, int len, BOOL *ready, const BYTE *mem,
-			DWORD *pcgbuf, DWORD *pal);	// BG(16x16AŠ„‚èØ‚ê‚é)
+			DWORD *pcgbuf, DWORD *pal, BOOL legacy_bg_transparency);	// BG(16x16ï¿½Aï¿½ï¿½ï¿½ï¿½Ø‚ï¿½ï¿½)
 void RendBG16C(DWORD **ptr, DWORD *buf, int x, int len, BOOL *ready, const BYTE *mem,
-			DWORD *pcgbuf, DWORD *pal);	// BG(16x16AŠ„‚èØ‚ê‚éACMOV)
+			DWORD *pcgbuf, DWORD *pal, BOOL legacy_bg_transparency);	// BG(16x16ï¿½Aï¿½ï¿½ï¿½ï¿½Ø‚ï¿½ï¿½ACMOV)
 void RendBG16P(DWORD **ptr, DWORD *buf, int offset, int length, BOOL *ready, const BYTE *mem,
-			DWORD *pcgbuf, DWORD *pal);	// BG(16x16A•”•ª‚Ì‚Ý)
+			DWORD *pcgbuf, DWORD *pal, BOOL legacy_bg_transparency);	// BG(16x16ï¿½Aï¿½ï¿½ï¿½ï¿½ï¿½Ì‚ï¿½)
 
 void RendMix00(DWORD *buf, BOOL *flag, int len);
-										// ‡¬(0–Ê)
+										// ï¿½ï¿½ï¿½ï¿½(0ï¿½ï¿½)
 void RendMix01(DWORD *buf, const DWORD *src, BOOL *flag, int len);
-										// ‡¬(1–Ê)
+										// ï¿½ï¿½ï¿½ï¿½(1ï¿½ï¿½)
 void RendMix02(DWORD *buf, const DWORD *f, const DWORD *s, BOOL *flag, int len);
-										// ‡¬(2–ÊAƒJƒ‰[0d‚Ë‡‚í‚¹)
+										// ï¿½ï¿½ï¿½ï¿½(2ï¿½ÊAï¿½Jï¿½ï¿½ï¿½[0ï¿½dï¿½Ëï¿½ï¿½í‚¹)
 void RendMix02C(DWORD *buf, const DWORD *f, const DWORD *s, BOOL *flag, int len);
-										// ‡¬(2–ÊAƒJƒ‰[0d‚Ë‡‚í‚¹ACMOV)
+										// ï¿½ï¿½ï¿½ï¿½(2ï¿½ÊAï¿½Jï¿½ï¿½ï¿½[0ï¿½dï¿½Ëï¿½ï¿½í‚¹ï¿½ACMOV)
 void RendMix03(DWORD *buf, const DWORD *f, const DWORD *s, BOOL *flag, int len);
-										// ‡¬(2–ÊA’Êíd‚Ë‡‚í‚¹)
+										// ï¿½ï¿½ï¿½ï¿½(2ï¿½ÊAï¿½Êï¿½dï¿½Ëï¿½ï¿½í‚¹)
 void RendMix03C(DWORD *buf, const DWORD *f, const DWORD *s, BOOL *flag, int len);
-										// ‡¬(2–ÊA’Êíd‚Ë‡‚í‚¹ACMOV)
+										// ï¿½ï¿½ï¿½ï¿½(2ï¿½ÊAï¿½Êï¿½dï¿½Ëï¿½ï¿½í‚¹ï¿½ACMOV)
 void RendMix04(DWORD *buf, const DWORD *f, const DWORD *s, DWORD *t, BOOL *flag, int len);
-										// ‡¬(3–ÊA’Êíd‚Ë‡‚í‚¹ACMOV)
+										// ï¿½ï¿½ï¿½ï¿½(3ï¿½ÊAï¿½Êï¿½dï¿½Ëï¿½ï¿½í‚¹ï¿½ACMOV)
 void RendMix04C(DWORD *buf, const DWORD *f, const DWORD *s, DWORD *t, BOOL *flag, int len);
-										// ‡¬(3–ÊA’Êíd‚Ë‡‚í‚¹ACMOV)
+										// ï¿½ï¿½ï¿½ï¿½(3ï¿½ÊAï¿½Êï¿½dï¿½Ëï¿½ï¿½í‚¹ï¿½ACMOV)
 void RendGrp02(DWORD *buf, const DWORD *f, const DWORD *s, int len);
-										// ƒOƒ‰ƒtƒBƒbƒN‡¬(2–Ê)
+										// ï¿½Oï¿½ï¿½ï¿½tï¿½Bï¿½bï¿½Nï¿½ï¿½ï¿½ï¿½(2ï¿½ï¿½)
 void RendGrp02C(DWORD *buf, const DWORD *f, const DWORD *s, int len);
-										// ƒOƒ‰ƒtƒBƒbƒN‡¬(2–ÊACMOV)
+										// ï¿½Oï¿½ï¿½ï¿½tï¿½Bï¿½bï¿½Nï¿½ï¿½ï¿½ï¿½(2ï¿½ÊACMOV)
 void RendGrp03(DWORD *buf, const DWORD *f, const DWORD *s, const DWORD *t, int len);
-										// ƒOƒ‰ƒtƒBƒbƒN‡¬(3–Ê)
+										// ï¿½Oï¿½ï¿½ï¿½tï¿½Bï¿½bï¿½Nï¿½ï¿½ï¿½ï¿½(3ï¿½ï¿½)
 void RendGrp03C(DWORD *buf, const DWORD *f, const DWORD *s, const DWORD *t, int len);
-										// ƒOƒ‰ƒtƒBƒbƒN‡¬(3–ÊACMOV)
+										// ï¿½Oï¿½ï¿½ï¿½tï¿½Bï¿½bï¿½Nï¿½ï¿½ï¿½ï¿½(3ï¿½ÊACMOV)
 void RendGrp04(DWORD *buf, DWORD *f, DWORD *s, DWORD *t, DWORD *e, int len);
-										// ƒOƒ‰ƒtƒBƒbƒN‡¬(4–Ê)
+										// ï¿½Oï¿½ï¿½ï¿½tï¿½Bï¿½bï¿½Nï¿½ï¿½ï¿½ï¿½(4ï¿½ï¿½)
 
 #if defined(__cplusplus)
 }

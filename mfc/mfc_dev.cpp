@@ -1,16 +1,16 @@
-  //---------------------------------------------------------------------------
-  //
-  //	EMULADOR X68000 "XM6"
-  //
-  //	Copyright (C) 2001-2006 PI.(ytanaka@ipc-tokai.or.jp)
-  //	[ Subventana MFC (Dispositivo) ]
-  //
-  //---------------------------------------------------------------------------
+//---------------------------------------------------------------------------
+//
+//	X68000 Emulator "XM6"
+//
+//	Copyright (C) 2001-2006 PI.(ytanaka@ipc-tokai.or.jp)
+//	[MFC subwindow (Devices)]
+//
+//---------------------------------------------------------------------------
 
 #if defined(_WIN32)
 
-#include "os.h"
 #include "mfc.h"
+#include "os.h"
 #include "xm6.h"
 #include "vm.h"
 #include "mfp.h"
@@ -34,57 +34,57 @@
 #include "mfc_res.h"
 #include "mfc_dev.h"
 
-  //===========================================================================
-  //
-  //	Ventana MFP
-  //
-  //===========================================================================
+//===========================================================================
+//
+//	MFP window
+//
+//===========================================================================
 
-  //---------------------------------------------------------------------------
-  //
-  //	Constructor
-  //
-  //---------------------------------------------------------------------------
+//---------------------------------------------------------------------------
+//
+//	Constructor
+//
+//---------------------------------------------------------------------------
 CMFPWnd::CMFPWnd()
 {
- 	 // Definicion de parametros de ventana
+	// Window parameter offinitions
 	m_dwID = MAKEID('M', 'F', 'P', ' ');
 	::GetMsg(IDS_SWND_MFP, m_strCaption);
 	m_nWidth = 55;
 	m_nHeight = 34;
 
- 	 // Obtener MFP
+	// Get MFP
 	m_pMFP = (MFP*)::GetVM()->SearchDevice(MAKEID('M', 'F', 'P', ' '));
 	ASSERT(m_pMFP);
 }
 
-  //---------------------------------------------------------------------------
-  //
-  //	Configuracion
-  //
-  //---------------------------------------------------------------------------
+//---------------------------------------------------------------------------
+//
+//	Configuration
+//
+//---------------------------------------------------------------------------
 void FASTCALL CMFPWnd::Setup()
 {
 	ASSERT(this);
 
- 	 // Limpiar
+	// Clear
 	Clear();
 
- 	 // Obtener datos
+	// Get data
 	ASSERT(m_pMFP);
 	m_pMFP->GetMFP(&m_mfp);
 
- 	 // Configuracion
+	// Configuration
 	SetupInt(0, 0);
 	SetupGPIP(0, 19);
 	SetupTimer(0, 29);
 }
 
-  //---------------------------------------------------------------------------
-  //
-  //	Configuracion (Interrupcion)
-  //
-  //---------------------------------------------------------------------------
+//---------------------------------------------------------------------------
+//
+//	Configuration (Interrupt)
+//
+//---------------------------------------------------------------------------
 void FASTCALL CMFPWnd::SetupInt(int x, int y)
 {
 	ASSERT(this);
@@ -93,7 +93,7 @@ void FASTCALL CMFPWnd::SetupInt(int x, int y)
 
 	int i;
 
- 	 // Guia
+	// Guide
 	SetString(x, y, _T("(High)"));
 	SetString(x + 24, y, _T("IER"));
 	SetString(x + 33, y, _T("IPR"));
@@ -101,9 +101,9 @@ void FASTCALL CMFPWnd::SetupInt(int x, int y)
 	SetString(x + 50, y, _T("IMR"));
 	y++;
 
- 	 // Bucle
+	// Loop
 	for (i=0; i<0x10; i++) {
- 		 // Cadena de nombre
+		// Name string
 		if (m_mfp.iidx == i) {
 			Reverse(TRUE);
 			SetString(x, y, DescInt[i]);
@@ -113,43 +113,43 @@ void FASTCALL CMFPWnd::SetupInt(int x, int y)
 			SetString(x, y, DescInt[i]);
 		}
 
- 		 // Solicitud
+		// Request
 		if (m_mfp.ireq[i]) {
 			SetString(x + 15, y, _T("Request"));
 		}
 
- 		 // IER
+		// IER
 		if (m_mfp.ier[i]) {
 			SetString(x + 23, y, _T("Enable"));
 		}
 
- 		 // IPR
+		// IPR
 		if (m_mfp.ipr[i]) {
 			SetString(x + 31, y, _T("Pending"));
 		}
 
- 		 // ISR
+		// ISR
 		if (m_mfp.isr[i]) {
 			SetString(x + 39, y, _T("InService"));
 		}
 
- 		 // IMR
+		// IMR
 		if (!m_mfp.imr[i]) {
 			SetString(x + 50, y, _T("Mask"));
 		}
 
- 		 // Siguiente
+		// Next
 		y++;
 	}
 
 	SetString(x, y, _T("(Low)"));
 }
 
-  //---------------------------------------------------------------------------
-  //
-  //	Tabla de interrupciones
-  //
-  //---------------------------------------------------------------------------
+//---------------------------------------------------------------------------
+//
+//	Interrupt table
+//
+//---------------------------------------------------------------------------
 LPCTSTR CMFPWnd::DescInt[] = {
 	_T("CRTC H-SYNC"),
 	_T("CRTC Raster"),
@@ -169,11 +169,11 @@ LPCTSTR CMFPWnd::DescInt[] = {
 	_T("RTC ALARM")
 };
 
-  //---------------------------------------------------------------------------
-  //
-  //	Configuracion (GPIP)
-  //
-  //---------------------------------------------------------------------------
+//---------------------------------------------------------------------------
+//
+//	Configuration (GPIP)
+//
+//---------------------------------------------------------------------------
 void FASTCALL CMFPWnd::SetupGPIP(int x, int y)
 {
 	int i;
@@ -187,13 +187,13 @@ void FASTCALL CMFPWnd::SetupGPIP(int x, int y)
 	ASSERT(x >= 0);
 	ASSERT(y >= 0);
 
- 	 // Obtener datos
+	// Get data
 	dwGPDR = m_mfp.gpdr;
 	dwAER = m_mfp.aer;
 	dwDDR = m_mfp.ddr;
 	dwBER = m_mfp.ber;
 
- 	 // Guia
+	// Guide
 	SetString(x, y, _T("No."));
 	SetString(x + 6, y, _T("Description"));
 	SetString(x + 23, y, _T("GPIP"));
@@ -202,16 +202,16 @@ void FASTCALL CMFPWnd::SetupGPIP(int x, int y)
 	SetString(x + 51, y, _T("BER"));
 	y++;
 
- 	 // Bucle
+	// Loop
 	for (i=0; i<8; i++) {
- 		 // Mostrar numero
+		// Display numero
 		strText.Format(_T("GPIP%1d"), 7 - i);
 		SetString(x, y, strText);
 
- 		 // Descripcion
+		// description
 		SetString(x + 6, y, DescGPIP[i]);
 
- 		 // GPIP
+		// GPIP
 		if (dwGPDR & 0x80) {
 			SetString(x + 24, y, _T("1"));
 		}
@@ -219,7 +219,7 @@ void FASTCALL CMFPWnd::SetupGPIP(int x, int y)
 			SetString(x + 24, y, _T("0"));
 		}
 
- 		 // AER
+		// AER
 		if (dwAER & 0x80) {
 			SetString(x + 32, y, _T("0->1"));
 		}
@@ -227,7 +227,7 @@ void FASTCALL CMFPWnd::SetupGPIP(int x, int y)
 			SetString(x + 32, y, _T("1->0"));
 		}
 
- 		 // DDR
+		// DDR
 		if (dwDDR & 0x80) {
 			SetString(x + 41, y, _T("Output"));
 		}
@@ -235,7 +235,7 @@ void FASTCALL CMFPWnd::SetupGPIP(int x, int y)
 			SetString(x + 41, y, _T("Input"));
 		}
 
- 		 // BER
+		// BER
 		if (dwBER & 0x80) {
 			SetString(x + 52, y, _T("1"));
 		}
@@ -251,11 +251,11 @@ void FASTCALL CMFPWnd::SetupGPIP(int x, int y)
 	}
 }
 
-  //---------------------------------------------------------------------------
-  //
-  //	Tabla GPIP
-  //
-  //---------------------------------------------------------------------------
+//---------------------------------------------------------------------------
+//
+//	GPIP table
+//
+//---------------------------------------------------------------------------
 LPCTSTR CMFPWnd::DescGPIP[] = {
 	_T("CRTC H-SYNC"),
 	_T("CRTC Raster"),
@@ -267,11 +267,11 @@ LPCTSTR CMFPWnd::DescGPIP[] = {
 	_T("RTC ALARM")
 };
 
-  //---------------------------------------------------------------------------
-  //
-  //	Configuracion (Temporizador)
-  //
-  //---------------------------------------------------------------------------
+//---------------------------------------------------------------------------
+//
+//	Configuration (Timer)
+//
+//---------------------------------------------------------------------------
 void FASTCALL CMFPWnd::SetupTimer(int x, int y)
 {
 	int i;
@@ -289,18 +289,18 @@ void FASTCALL CMFPWnd::SetupTimer(int x, int y)
 	y++;
 
 	for (i=0; i<4; i++) {
- 		 // Nombre de temporizador
+		// Timer name
 		strText.Format(_T("Timer-%c"), _T('A') + i);
 		SetString(0, y, strText);
 
- 		 // Modo
+		// Modo
 		SetString(9, y, DescTimer[ m_mfp.tcr[i] & 0x0f ]);
 
- 		 // Conteo
+		// Conteo
 		strText.Format(_T("%3d"), m_mfp.tir[i]);
 		SetString(33, y, strText);
 
- 		 // Recarga
+		// Recarga
 		strText.Format(_T("%3d"), m_mfp.tdr[i]);
 		SetString(46, y, strText);
 
@@ -308,11 +308,11 @@ void FASTCALL CMFPWnd::SetupTimer(int x, int y)
 	}
 }
 
-  //---------------------------------------------------------------------------
-  //
-  //	Tabla de temporizador
-  //
-  //---------------------------------------------------------------------------
+//---------------------------------------------------------------------------
+//
+//	Timer table
+//
+//---------------------------------------------------------------------------
 LPCTSTR CMFPWnd::DescTimer[] = {
 	_T("Stop"),
 	_T("Delay (1us)"),
@@ -332,35 +332,35 @@ LPCTSTR CMFPWnd::DescTimer[] = {
 	_T("Pulse-Width (50us)")
 };
 
-  //===========================================================================
-  //
-  //	Ventana DMAC
-  //
-  //===========================================================================
+//===========================================================================
+//
+//	DMAC window
+//
+//===========================================================================
 
-  //---------------------------------------------------------------------------
-  //
-  //	Constructor
-  //
-  //---------------------------------------------------------------------------
+//---------------------------------------------------------------------------
+//
+//	Constructor
+//
+//---------------------------------------------------------------------------
 CDMACWnd::CDMACWnd()
 {
- 	 // Definicion de parametros de ventana
+	// Window parameter offinitions
 	m_dwID = MAKEID('D', 'M', 'A', 'C');
 	::GetMsg(IDS_SWND_DMAC, m_strCaption);
 	m_nWidth = 90;
 	m_nHeight = 34;
 
- 	 // Obtener DMAC
+	// Get DMAC
 	m_pDMAC = (DMAC*)::GetVM()->SearchDevice(MAKEID('D', 'M', 'A', 'C'));
 	ASSERT(m_pDMAC);
 }
 
-  //---------------------------------------------------------------------------
-  //
-  //	Configuracion
-  //
-  //---------------------------------------------------------------------------
+//---------------------------------------------------------------------------
+//
+//	Configuration
+//
+//---------------------------------------------------------------------------
 void FASTCALL CDMACWnd::Setup()
 {
 	int i;
@@ -401,10 +401,10 @@ void FASTCALL CDMACWnd::Setup()
 		NULL
 	};
 
- 	 // Limpiar
+	// Clear
 	Clear();
 
- 	 // Mostrar guia
+	// Display guia
 	for (i=0; ; i++) {
 		if (!lpszGuide[i]) {
 			break;
@@ -414,28 +414,28 @@ void FASTCALL CDMACWnd::Setup()
 
 	ASSERT(m_pDMAC);
 
- 	 // Canal 0 (FDC)
+	// Channel 0 (FDC)
 	m_pDMAC->GetDMA(0, &dma);
 	SetupCh(0, &dma, _T("#0 (FDC)"));
 
- 	 // Canal 1 (HDC)
+	// Channel 1 (HDC)
 	m_pDMAC->GetDMA(1, &dma);
 	SetupCh(1, &dma, _T("#1 (HDC)"));
 
- 	 // Canal 2 (USUARIO)
+	// Channel 2 (USUARIO)
 	m_pDMAC->GetDMA(2, &dma);
 	SetupCh(2, &dma, _T("#2 (USER)"));
 
- 	 // Canal 3 (ADPCM)
+	// Channel 3 (ADPCM)
 	m_pDMAC->GetDMA(3, &dma);
 	SetupCh(3, &dma, _T("#3 (ADPCM)"));
 }
 
-  //---------------------------------------------------------------------------
-  //
-  //	Configuracion (Canal)
-  //
-  //---------------------------------------------------------------------------
+//---------------------------------------------------------------------------
+//
+//	Configuration (Channel)
+//
+//---------------------------------------------------------------------------
 void FASTCALL CDMACWnd::SetupCh(int nCh, DMAC::dma_t *pDMA, LPCTSTR lpszTitle)
 {
 	int x;
@@ -446,15 +446,15 @@ void FASTCALL CDMACWnd::SetupCh(int nCh, DMAC::dma_t *pDMA, LPCTSTR lpszTitle)
 	ASSERT(pDMA);
 	ASSERT(lpszTitle);
 
- 	 // Calcular x,y
+	// Calcular x,y
 	x = (nCh * 18) + 20;
 	y = 0;
 
- 	 // Mostrar titulo
+	// Display titulo
 	SetString(x, y, lpszTitle);
 	y += 2;
 
- 	 // XRM
+	// XRM
 	switch (pDMA->xrm) {
 		case 0:
 			string = _T("Burst");
@@ -475,7 +475,7 @@ void FASTCALL CDMACWnd::SetupCh(int nCh, DMAC::dma_t *pDMA, LPCTSTR lpszTitle)
 	SetString(x, y, string);
 	y++;
 
- 	 // Tipo de dispositivo
+	// Device type
 	switch (pDMA->dtyp) {
 		case 0:
 			string = _T("68000");
@@ -496,7 +496,7 @@ void FASTCALL CDMACWnd::SetupCh(int nCh, DMAC::dma_t *pDMA, LPCTSTR lpszTitle)
 	SetString(x, y, string);
 	y++;
 
- 	 // Tamano de puerto
+	// Port size
 	if (pDMA->dps) {
 		string = _T("16bit");
 	}
@@ -506,7 +506,7 @@ void FASTCALL CDMACWnd::SetupCh(int nCh, DMAC::dma_t *pDMA, LPCTSTR lpszTitle)
 	SetString(x, y, string);
 	y++;
 
- 	 // PCL
+	// PCL
 	switch (pDMA->pcl) {
 		case 0:
 			string = _T("Status");
@@ -527,7 +527,7 @@ void FASTCALL CDMACWnd::SetupCh(int nCh, DMAC::dma_t *pDMA, LPCTSTR lpszTitle)
 	SetString(x, y, string);
 	y++;
 
- 	 // Direccion
+	// Address
 	if (pDMA->dir) {
 		string = _T("Device->Memory");
 	}
@@ -537,7 +537,7 @@ void FASTCALL CDMACWnd::SetupCh(int nCh, DMAC::dma_t *pDMA, LPCTSTR lpszTitle)
 	SetString(x, y, string);
 	y++;
 
- 	 // Entrada DONE
+	// Entrada DONE
 	if (pDMA->btd) {
 		string = _T("Next Block");
 	}
@@ -547,7 +547,7 @@ void FASTCALL CDMACWnd::SetupCh(int nCh, DMAC::dma_t *pDMA, LPCTSTR lpszTitle)
 	SetString(x, y, string);
 	y++;
 
- 	 // Tamano de operando
+	// Operand size
 	switch (pDMA->size) {
 		case 0:
 			string = _T("Pack (8bit)");
@@ -568,7 +568,7 @@ void FASTCALL CDMACWnd::SetupCh(int nCh, DMAC::dma_t *pDMA, LPCTSTR lpszTitle)
 	SetString(x, y, string);
 	y++;
 
- 	 // Modo encadenado
+	// Modo encadenado
 	switch (pDMA->chain) {
 		case 0:
 			string = _T("No Chain");
@@ -589,7 +589,7 @@ void FASTCALL CDMACWnd::SetupCh(int nCh, DMAC::dma_t *pDMA, LPCTSTR lpszTitle)
 	SetString(x, y, string);
 	y++;
 
- 	 // Generacion de solicitud
+	// Request generation
 	switch (pDMA->reqg) {
 		case 0:
 			string = _T("Auto Req.(Limit)");
@@ -610,7 +610,7 @@ void FASTCALL CDMACWnd::SetupCh(int nCh, DMAC::dma_t *pDMA, LPCTSTR lpszTitle)
 	SetString(x, y, string);
 	y++;
 
- 	 // Canal activo
+	// Channel activo
 	if (pDMA->act) {
 		string = _T("Active");
 	}
@@ -620,7 +620,7 @@ void FASTCALL CDMACWnd::SetupCh(int nCh, DMAC::dma_t *pDMA, LPCTSTR lpszTitle)
 	SetString(x, y, string);
 	y++;
 
- 	 // Continuar
+	// Continuar
 	if (pDMA->cnt) {
 		string = _T("Continue");
 	}
@@ -630,7 +630,7 @@ void FASTCALL CDMACWnd::SetupCh(int nCh, DMAC::dma_t *pDMA, LPCTSTR lpszTitle)
 	SetString(x, y, string);
 	y++;
 
- 	 // Halt
+	// Halt
 	if (pDMA->hlt) {
 		string = _T("Halt");
 	}
@@ -640,7 +640,7 @@ void FASTCALL CDMACWnd::SetupCh(int nCh, DMAC::dma_t *pDMA, LPCTSTR lpszTitle)
 	SetString(x, y, string);
 	y++;
 
- 	 // Transferencia de canal completada
+	// Channel transfer complete
 	if (pDMA->coc) {
 		string = _T("Complete");
 	}
@@ -650,7 +650,7 @@ void FASTCALL CDMACWnd::SetupCh(int nCh, DMAC::dma_t *pDMA, LPCTSTR lpszTitle)
 	SetString(x, y, string);
 	y++;
 
- 	 // Transferencia de bloque completada
+	// Block transfer complete
 	if (pDMA->boc) {
 		string = _T("Complete");
 	}
@@ -660,7 +660,7 @@ void FASTCALL CDMACWnd::SetupCh(int nCh, DMAC::dma_t *pDMA, LPCTSTR lpszTitle)
 	SetString(x, y, string);
 	y++;
 
- 	 // Interrupcion
+	// Interrupt
 	if (pDMA->intr) {
 		string = _T("Enable");
 	}
@@ -670,17 +670,17 @@ void FASTCALL CDMACWnd::SetupCh(int nCh, DMAC::dma_t *pDMA, LPCTSTR lpszTitle)
 	SetString(x, y, string);
 	y++;
 
- 	 // Interrupcion normal
+	// Interrupt normal
 	string.Format(_T("Vector $%02X"), pDMA->niv);
 	SetString(x, y, string);
 	y++;
 
- 	 // Interrupcion de error
+	// Error interrupt
 	string.Format(_T("Vector $%02X"), pDMA->eiv);
 	SetString(x, y, string);
 	y++;
 
- 	 // Bit de error
+	// Error bit
 	if (pDMA->err) {
 		string = _T("Error");
 	}
@@ -690,27 +690,27 @@ void FASTCALL CDMACWnd::SetupCh(int nCh, DMAC::dma_t *pDMA, LPCTSTR lpszTitle)
 	SetString(x, y, string);
 	y++;
 
- 	 // Codigo de error
+	// Error code
 	string.Format(_T("$%02X"), pDMA->ecode);
 	SetString(x, y, string);
 	y++;
 
- 	 // Tipo de transferencia de datos
+	// Data transfer type
 	string.Format(_T("%d"), pDMA->type);
 	SetString(x, y, string);
 	y++;
 
- 	 // Contador de transferencia de memoria
+	// Memory transfer counter
 	string.Format(_T("$%04X"), pDMA->mtc);
 	SetString(x, y, string);
 	y++;
 
- 	 // Direccion de memoria
+	// Memory address
 	string.Format(_T("$%06X"), pDMA->mar);
 	SetString(x, y, string);
 	y++;
 
- 	 // Conteo de registro de direccion de memoria
+	// Memory address register count
 	switch (pDMA->mac) {
 		case 0:
 			string = _T("HOLD");
@@ -731,12 +731,12 @@ void FASTCALL CDMACWnd::SetupCh(int nCh, DMAC::dma_t *pDMA, LPCTSTR lpszTitle)
 	SetString(x, y, string);
 	y++;
 
- 	 // Direccion de dispositivo
+	// Device address
 	string.Format(_T("$%06X"), pDMA->dar);
 	SetString(x, y, string);
 	y++;
 
- 	 // Conteo de registro de direccion de dispositivo
+	// Device address register count
 	switch (pDMA->dac) {
 		case 0:
 			string = _T("HOLD");
@@ -757,22 +757,22 @@ void FASTCALL CDMACWnd::SetupCh(int nCh, DMAC::dma_t *pDMA, LPCTSTR lpszTitle)
 	SetString(x, y, string);
 	y++;
 
- 	 // Contador de transferencia base
+	// Base transfer counter
 	string.Format(_T("$%04X"), pDMA->btc);
 	SetString(x, y, string);
 	y++;
 
- 	 // Direccion base
+	// Base address
 	string.Format(_T("$%06X"), pDMA->bar);
 	SetString(x, y, string);
 	y++;
 
- 	 // Tiempo de rafaga (Burst)
+	// Burst time
 	string.Format(_T("%d Clock"), 1 << (pDMA->bt + 4));
 	SetString(x, y, string);
 	y++;
 
- 	 // Ratio de bus
+	// Bus ratio
 	switch (pDMA->br) {
 		case 0:
 			string = _T("50%");
@@ -790,50 +790,50 @@ void FASTCALL CDMACWnd::SetupCh(int nCh, DMAC::dma_t *pDMA, LPCTSTR lpszTitle)
 	SetString(x, y, string);
 	y++;
 
- 	 // Prioridad
+	// Prioridad
 	string.Format(_T("$%02X"), pDMA->cp);
 	SetString(x, y, string);
 	y++;
 
- 	 // Conteo de inicio
+	// Start count
 	string.Format(_T("%d"), pDMA->startcnt);
 	SetString(x, y, string);
 	y++;
 
- 	 // Conteo de errores
+	// Error count
 	string.Format(_T("%d"), pDMA->errorcnt);
 	SetString(x, y, string);
 }
 
-  //===========================================================================
-  //
-  //	Ventana CRTC
-  //
-  //===========================================================================
+//===========================================================================
+//
+//	CRTC window
+//
+//===========================================================================
 
-  //---------------------------------------------------------------------------
-  //
-  //	Constructor
-  //
-  //---------------------------------------------------------------------------
+//---------------------------------------------------------------------------
+//
+//	Constructor
+//
+//---------------------------------------------------------------------------
 CCRTCWnd::CCRTCWnd()
 {
- 	 // Definicion de parametros de ventana
+	// Window parameter offinitions
 	m_dwID = MAKEID('C', 'R', 'T', 'C');
 	::GetMsg(IDS_SWND_CRTC, m_strCaption);
 	m_nWidth = 54;
 	m_nHeight = 17;
 
- 	 // Obtener CRTC
+	// Get CRTC
 	m_pCRTC = (CRTC*)::GetVM()->SearchDevice(MAKEID('C', 'R', 'T', 'C'));
 	ASSERT(m_pCRTC);
 }
 
-  //---------------------------------------------------------------------------
-  //
-  //	Configuracion
-  //
-  //---------------------------------------------------------------------------
+//---------------------------------------------------------------------------
+//
+//	Configuration
+//
+//---------------------------------------------------------------------------
 void FASTCALL CCRTCWnd::Setup()
 {
 	CString string;
@@ -843,21 +843,21 @@ void FASTCALL CCRTCWnd::Setup()
 
 	ASSERT(this);
 
- 	 // Limpiar
+	// Clear
 	Clear();
 	y = 0;
 
- 	 // Obtener datos internos y frecuencia de sincronizacion
+	// Get internal data and sync frequency
 	ASSERT(m_pCRTC);
 	m_pCRTC->GetCRTC(&crtc);
 	m_pCRTC->GetHVHz(&h, &v);
 
- 	 // En caso de aumento vertical x2, reducir a la mitad
+	// If vertical doubling is enabled, halve the value
 	if (crtc.v_mul == 2 && !crtc.lowres) {
 		crtc.v_dots >>= 1;
 	}
 
- 	 // Lado horizontal
+	// Lado horizontal
 	SetString(0, y, "Horizontal");
 	string.Format("%2d.%02d kHz", h / 100, h % 100);
 	SetString(16, y, string);
@@ -871,7 +871,7 @@ void FASTCALL CCRTCWnd::Setup()
 	SetString(0 + 24, y, string);
 	y++;
 
- 	 // Horizontal (Constante de tiempo)
+	// Horizontal (time constant)
 	SetString(0, y, "Sync");
 	string.Format("%10d ns", crtc.h_sync);
 	SetString(0 + 12, y, string);
@@ -889,7 +889,7 @@ void FASTCALL CCRTCWnd::Setup()
 	SetString(0 + 12, y, string);
 	y++;
 
- 	 // Raster
+	// Raster
 	SetString(0, y, "Raster (All)");
 	string.Format("%4d", crtc.raster_count);
 	SetString(0 + 21, y, string);
@@ -903,7 +903,7 @@ void FASTCALL CCRTCWnd::Setup()
 	SetString(0 + 21, y, string);
 	y++;
 
- 	 // Memoria de texto, pantalla real grafica
+	// Text memory, real graphics screen
 	SetString(0, y, "Text VRAM");
 	if (crtc.tmem) {
 		SetString(0 + 19, y, "Buffer");
@@ -921,7 +921,7 @@ void FASTCALL CCRTCWnd::Setup()
 	}
 	y++;
 
- 	 // Desplazamiento (Scroll)
+	// Desplazamiento (Scroll)
 	SetString(0, y, "Text Scroll X");
 	string.Format("%4d", crtc.text_scrlx);
 	SetString(0 + 21, y, string);
@@ -942,7 +942,7 @@ void FASTCALL CCRTCWnd::Setup()
 	string.Format("%4d", crtc.grp_scrlx[3]);
 	SetString(0 + 21, y, string);
 
- 	 // Lado vertical
+	// Lado vertical
 	x = 29;
 	y = 0;
 	SetString(x, y, "Vertical");
@@ -958,7 +958,7 @@ void FASTCALL CCRTCWnd::Setup()
 	SetString(x + 24, y, string);
 	y++;
 
- 	 // Horizontal (Constante de tiempo)
+	// Horizontal (time constant)
 	SetString(x, y, "Sync");
 	string.Format("%10d ns", crtc.v_sync * crtc.h_sync);
 	SetString(x + 12, y, string);
@@ -976,7 +976,7 @@ void FASTCALL CCRTCWnd::Setup()
 	SetString(x + 12, y, string);
 	y++;
 
- 	 // Flags
+	// Flags
 	SetString(x, y, "Sync  Flag");
 	if (crtc.v_disp) {
 		SetString(x + 22, y, "Off");
@@ -998,7 +998,7 @@ void FASTCALL CCRTCWnd::Setup()
 	SetString(x + 15, y, string);
 	y++;
 
- 	 // Memoria grafica, color grafico
+	// Memory grafica, color grafico
 	SetString(x, y, "Graphic VRAM");
 	if (crtc.gmem) {
 		SetString(x + 19, y, "Buffer");
@@ -1026,7 +1026,7 @@ void FASTCALL CCRTCWnd::Setup()
 	}
 	y++;
 
- 	 // Desplazamiento (Scroll)
+	// Desplazamiento (Scroll)
 	SetString(x, y, "Text Scroll Y");
 	string.Format("%4d", crtc.text_scrly);
 	SetString(x + 21, y, string);
@@ -1048,35 +1048,35 @@ void FASTCALL CCRTCWnd::Setup()
 	SetString(x + 21, y, string);
 }
 
-  //===========================================================================
-  //
-  //	Ventana VC
-  //
-  //===========================================================================
+//===========================================================================
+//
+//	VC window
+//
+//===========================================================================
 
-  //---------------------------------------------------------------------------
-  //
-  //	Constructor
-  //
-  //---------------------------------------------------------------------------
+//---------------------------------------------------------------------------
+//
+//	Constructor
+//
+//---------------------------------------------------------------------------
 CVCWnd::CVCWnd()
 {
- 	 // Definicion de parametros de ventana
+	// Window parameter offinitions
 	m_dwID = MAKEID('V', 'C', ' ', ' ');
 	::GetMsg(IDS_SWND_VC, m_strCaption);
 	m_nWidth = 54;
 	m_nHeight = 12;
 
- 	 // Obtener VC
+	// Get VC
 	m_pVC = (VC*)::GetVM()->SearchDevice(MAKEID('V', 'C', ' ', ' '));
 	ASSERT(m_pVC);
 }
 
-  //---------------------------------------------------------------------------
-  //
-  //	Configuracion
-  //
-  //---------------------------------------------------------------------------
+//---------------------------------------------------------------------------
+//
+//	Configuration
+//
+//---------------------------------------------------------------------------
 void FASTCALL CVCWnd::Setup()
 {
 	VC::vc_t vc;
@@ -1085,17 +1085,17 @@ void FASTCALL CVCWnd::Setup()
 	int y;
 	int i;
 
- 	 // Limpiar
+	// Clear
 	Clear();
 
- 	 // Obtener datos del controlador de video
+	// Get video controller data
 	m_pVC->GetVC(&vc);
 
- 	 // Mitad izquierda
+	// Mitad izquierda
 	x = 0;
 	y = 0;
 
- 	 // Tamano
+	// Tamano
 	SetString(x, y, "Graphic Size");
 	if (vc.siz) {
 		SetString(x + 16, y, "1024x1024");
@@ -1105,7 +1105,7 @@ void FASTCALL CVCWnd::Setup()
 	}
 	y++;
 
- 	 // Ys
+	// Ys
 	SetString(x, y, "Ys");
 	if (vc.ys) {
 		SetString(x + 23, y, "On");
@@ -1115,7 +1115,7 @@ void FASTCALL CVCWnd::Setup()
 	}
 	y++;
 
- 	 // AH
+	// AH
 	SetString(x, y, "AH");
 	if (vc.ah) {
 		SetString(x + 23, y, "On");
@@ -1125,7 +1125,7 @@ void FASTCALL CVCWnd::Setup()
 	}
 	y++;
 
- 	 // VHT
+	// VHT
 	SetString(x, y, "VHT");
 	if (vc.vht) {
 		SetString(x + 23, y, "On");
@@ -1135,7 +1135,7 @@ void FASTCALL CVCWnd::Setup()
 	}
 	y++;
 
- 	 // EXON
+	// EXON
 	SetString(x, y, "EXON");
 	if (vc.exon) {
 		SetString(x + 23, y, "On");
@@ -1145,7 +1145,7 @@ void FASTCALL CVCWnd::Setup()
 	}
 	y++;
 
- 	 // SON
+	// SON
 	SetString(x, y, "BG/Sprite");
 	if (vc.son) {
 		SetString(x + 18, y, "Display");
@@ -1155,7 +1155,7 @@ void FASTCALL CVCWnd::Setup()
 	}
 	y++;
 
- 	 // TON
+	// TON
 	SetString(x, y, "Text");
 	if (vc.ton) {
 		SetString(x + 18, y, "Display");
@@ -1165,7 +1165,7 @@ void FASTCALL CVCWnd::Setup()
 	}
 	y++;
 
- 	 // GON
+	// GON
 	SetString(x, y, "Graphic(1024)");
 	if (vc.gon) {
 		SetString(x + 18, y, "Display");
@@ -1175,7 +1175,7 @@ void FASTCALL CVCWnd::Setup()
 	}
 	y++;
 
- 	 // GS
+	// GS
 	for (i=0; i<4; i++) {
 		string.Format("Graphic(512-Pri%1d)", i);
 		SetString(x, y, string);
@@ -1188,11 +1188,11 @@ void FASTCALL CVCWnd::Setup()
 		y++;
 	}
 
- 	 // Mitad derecha
+	// Mitad ofrecha
 	x = 29;
 	y = 0;
 
- 	 // Color
+	// Color
 	SetString(x, y, "Graphic Color");
 	switch (vc.col) {
 		case 0:
@@ -1213,7 +1213,7 @@ void FASTCALL CVCWnd::Setup()
 	}
 	y++;
 
- 	 // H/P
+	// H/P
 	SetString(x, y, "H/P");
 	if (vc.hp) {
 		SetString(x + 23, y, "On");
@@ -1223,7 +1223,7 @@ void FASTCALL CVCWnd::Setup()
 	}
 	y++;
 
- 	 // B/P
+	// B/P
 	SetString(x, y, "B/P");
 	if (vc.bp) {
 		SetString(x + 23, y, "On");
@@ -1233,7 +1233,7 @@ void FASTCALL CVCWnd::Setup()
 	}
 	y++;
 
- 	 // G/G
+	// G/G
 	SetString(x, y, "G/G");
 	if (vc.gg) {
 		SetString(x + 23, y, "On");
@@ -1243,7 +1243,7 @@ void FASTCALL CVCWnd::Setup()
 	}
 	y++;
 
- 	 // G/T
+	// G/T
 	SetString(x, y, "G/T");
 	if (vc.gt) {
 		SetString(x + 23, y, "On");
@@ -1253,25 +1253,25 @@ void FASTCALL CVCWnd::Setup()
 	}
 	y++;
 
- 	 // SP
+	// SP
 	SetString(x, y, "BG/Sprite");
 	string.Format("Pri%1d", vc.sp);
 	SetString(x + 21, y, string);
 	y++;
 
- 	 // TX
+	// TX
 	SetString(x, y, "Text");
 	string.Format("Pri%1d", vc.tx);
 	SetString(x + 21, y, string);
 	y++;
 
- 	 // GR
+	// GR
 	SetString(x, y, "Graphic(All)");
 	string.Format("Pri%1d", vc.gr);
 	SetString(x + 21, y, string);
 	y++;
 
- 	 // GP
+	// GP
 	for (i=0; i<4; i++) {
 		string.Format("Graphic(512-Pri%1d)", i);
 		SetString(x, y, string);
@@ -1281,35 +1281,35 @@ void FASTCALL CVCWnd::Setup()
 	}
 }
 
-  //===========================================================================
-  //
-  //	Ventana RTC
-  //
-  //===========================================================================
+//===========================================================================
+//
+//	RTC window
+//
+//===========================================================================
 
-  //---------------------------------------------------------------------------
-  //
-  //	Constructor
-  //
-  //---------------------------------------------------------------------------
+//---------------------------------------------------------------------------
+//
+//	Constructor
+//
+//---------------------------------------------------------------------------
 CRTCWnd::CRTCWnd()
 {
- 	 // Definicion de parametros de ventana
+	// Window parameter offinitions
 	m_dwID = MAKEID('R', 'T', 'C', ' ');
 	::GetMsg(IDS_SWND_RTC, m_strCaption);
 	m_nWidth = 25;
 	m_nHeight = 17;
 
- 	 // Obtener RTC
+	// Get RTC
 	m_pRTC = (RTC*)::GetVM()->SearchDevice(MAKEID('R', 'T', 'C', ' '));
 	ASSERT(m_pRTC);
 }
 
-  //---------------------------------------------------------------------------
-  //
-  //	Configuracion
-  //
-  //---------------------------------------------------------------------------
+//---------------------------------------------------------------------------
+//
+//	Configuration
+//
+//---------------------------------------------------------------------------
 void FASTCALL CRTCWnd::Setup()
 {
 	RTC::rtc_t rtc;
@@ -1327,34 +1327,34 @@ void FASTCALL CRTCWnd::Setup()
 		"Always L"
 	};
 
- 	 // Limpiar
+	// Clear
 	Clear();
 	x = 17;
 	y = 0;
 
- 	 // Obtener datos
+	// Get data
 	ASSERT(m_pRTC);
 	m_pRTC->GetRTC(&rtc);
 
- 	 // Tiempo
+	// Time
 	SetString(0, y, "Time");
 	string.Format("%02d:%02d:%02d", rtc.hour, rtc.min, rtc.sec);
 	SetString(x, y, string);
 	y++;
 
- 	 // Fecha
+	// Fecha
 	SetString(0, y, "Date");
 	string.Format("%02d/%02d/%02d", rtc.year, rtc.month, rtc.day);
 	SetString(x, y, string);
 	y++;
 
- 	 // Dia de la semana
+	// Day of the week
 	SetString(0, y, "Day of Week");
 	string.Format("%d", rtc.week);
 	SetString(x + 7, y, string);
 	y++;
 
- 	 // Habilitar temporizador
+	// Enable timer
 	SetString(0, y, "Timer Enable");
 	if (rtc.timer_en) {
 		SetString(x + 2, y, "Enable");
@@ -1364,7 +1364,7 @@ void FASTCALL CRTCWnd::Setup()
 	}
 	y++;
 
- 	 // Habilitar alarma
+	// Habilitar alarma
 	SetString(0, y, "Alarm Enable");
 	if (rtc.alarm_en) {
 		SetString(x + 2, y, "Enable");
@@ -1374,7 +1374,7 @@ void FASTCALL CRTCWnd::Setup()
 	}
 	y++;
 
- 	 // Habilitar 1Hz
+	// Habilitar 1Hz
 	SetString(0, y, "1Hz   Enable");
 	if (rtc.alarm_1hz) {
 		SetString(x + 2, y, "Enable");
@@ -1384,7 +1384,7 @@ void FASTCALL CRTCWnd::Setup()
 	}
 	y++;
 
- 	 // Habilitar 16Hz
+	// Habilitar 16Hz
 	SetString(0, y, "16Hz  Enable");
 	if (rtc.alarm_16hz) {
 		SetString(x + 2, y, "Enable");
@@ -1394,25 +1394,25 @@ void FASTCALL CRTCWnd::Setup()
 	}
 	y++;
 
- 	 // Seleccion CLKOUT
+	// Seleccion CLKOUT
 	SetString(0, y, "CLKOUT");
 	ASSERT(rtc.clkout <= 7);
 	SetString(x, y, ClkoutTable[rtc.clkout]);
 	y++;
 
- 	 // Tiempo de alarma
+	// Alarm time
 	SetString(0, y, "Alarm Time");
 	string.Format("%02d:%02d", rtc.alarm_hour, rtc.alarm_min);
 	SetString(x + 3, y, string);
 	y++;
 
- 	 // Tiempo de alarma
+	// Alarm time
 	SetString(0, y, "Alarm Day");
 	string.Format("%02d(%1d)", rtc.alarm_day, rtc.alarm_week);
 	SetString(x + 3, y, string);
 	y++;
 
- 	 // Alarma
+	// Alarma
 	SetString(0, y, "Alarm Cmp");
 	if (rtc.alarm) {
 		SetString(x + 7, y, "Z");
@@ -1422,7 +1422,7 @@ void FASTCALL CRTCWnd::Setup()
 	}
 	y++;
 
- 	 // Salida (OUT) de alarma
+	// Alarm output (OUT)
 	SetString(0, y, "ALARM OUT");
 	if (rtc.alarmout) {
 		SetString(x + 7, y, "H");
@@ -1432,7 +1432,7 @@ void FASTCALL CRTCWnd::Setup()
 	}
 	y++;
 
- 	 // Flag 12h,24h
+	// Flag 12h,24h
 	SetString(0, y, "12h/24h");
 	if (rtc.fullhour) {
 		SetString(x + 5, y, "24h");
@@ -1442,13 +1442,13 @@ void FASTCALL CRTCWnd::Setup()
 	}
 	y++;
 
- 	 // Contador de ano bisiesto
+	// Leap year counter
 	SetString(0, y, "Leap Count");
 	string.Format("%1d", rtc.leap);
 	SetString(x + 7, y, string);
 	y++;
 
- 	 // Senal 1Hz
+	// Senal 1Hz
 	SetString(0, y, "1Hz  Signal");
 	if (rtc.signal_1hz) {
 		SetString(x + 7, y, "H");
@@ -1458,7 +1458,7 @@ void FASTCALL CRTCWnd::Setup()
 	}
 	y++;
 
- 	 // Senal 16Hz
+	// Senal 16Hz
 	SetString(0, y, "16Hz Signal");
 	if (rtc.signal_16hz) {
 		SetString(x + 7, y, "H");
@@ -1468,7 +1468,7 @@ void FASTCALL CRTCWnd::Setup()
 	}
 	y++;
 
- 	 // LED de temporizador
+	// Timer LED
 	SetString(0, y, "Timer LED");
 	if (m_pRTC->GetTimerLED()) {
 		SetString(x + 6, y, "On");
@@ -1478,35 +1478,35 @@ void FASTCALL CRTCWnd::Setup()
 	}
 }
 
-  //===========================================================================
-  //
-  //	Ventana OPM
-  //
-  //===========================================================================
+//===========================================================================
+//
+//	OPM window
+//
+//===========================================================================
 
-  //---------------------------------------------------------------------------
-  //
-  //	Constructor
-  //
-  //---------------------------------------------------------------------------
+//---------------------------------------------------------------------------
+//
+//	Constructor
+//
+//---------------------------------------------------------------------------
 COPMWnd::COPMWnd()
 {
- 	 // Definicion de parametros de ventana
+	// Window parameter offinitions
 	m_dwID = MAKEID('O', 'P', 'M', ' ');
 	::GetMsg(IDS_SWND_OPM, m_strCaption);
 	m_nWidth = 20;
 	m_nHeight = 33;
 
- 	 // Obtener OPM
+	// Get OPM
 	m_pOPM = (OPMIF*)::GetVM()->SearchDevice(MAKEID('O', 'P', 'M', ' '));
 	ASSERT(m_pOPM);
 }
 
-  //---------------------------------------------------------------------------
-  //
-  //	Configuracion
-  //
-  //---------------------------------------------------------------------------
+//---------------------------------------------------------------------------
+//
+//	Configuration
+//
+//---------------------------------------------------------------------------
 void FASTCALL COPMWnd::Setup()
 {
 	int y;
@@ -1516,65 +1516,65 @@ void FASTCALL COPMWnd::Setup()
 	DWORD *p;
 	CString string;
 
- 	 // Limpiar
+	// Clear
 	Clear();
 
- 	 // Obtener datos
+	// Get data
 	ASSERT(m_pOPM);
 	m_pOPM->GetOPM(&opm);
 
- 	 // Cabecera
+	// Cabecera
 	y = 0;
 	SetString(0, y, "REG:+0+1+2+3+4+5+6+7");
 	y++;
 
- 	 // Bucle de registro
+	// Register loop
 	p = opm.reg;
 	for (i=0; i<32; i++) {
- 		 // Establecer direccion
+		// Set address
 		string.Format("+%02X:", i << 3);
 		SetString(0, y, string);
 
- 		 // Bucle
+		// Loop
 		for (j=0; j<8; j++) {
 			string.Format("%02X", *p++);
 			SetString(j * 2 + 4, y, string);
 		}
 
- 		 // A la siguiente linea
+		// Move to the next line
 		y++;
 	}
 }
 
-  //===========================================================================
-  //
-  //	Ventana de teclado
-  //
-  //===========================================================================
+//===========================================================================
+//
+//	Keyboard window
+//
+//===========================================================================
 
-  //---------------------------------------------------------------------------
-  //
-  //	Constructor
-  //
-  //---------------------------------------------------------------------------
+//---------------------------------------------------------------------------
+//
+//	Constructor
+//
+//---------------------------------------------------------------------------
 CKeyboardWnd::CKeyboardWnd()
 {
- 	 // Definicion de parametros de ventana
+	// Window parameter offinitions
 	m_dwID = MAKEID('K', 'E', 'Y', 'B');
 	::GetMsg(IDS_SWND_KEYBOARD, m_strCaption);
 	m_nWidth = 37;
 	m_nHeight = 16;
 
- 	 // Obtener teclado
+	// Get keyboard
 	m_pKeyboard = (Keyboard*)::GetVM()->SearchDevice(MAKEID('K', 'E', 'Y', 'B'));
 	ASSERT(m_pKeyboard);
 }
 
-  //---------------------------------------------------------------------------
-  //
-  //	Configuracion
-  //
-  //---------------------------------------------------------------------------
+//---------------------------------------------------------------------------
+//
+//	Configuration
+//
+//---------------------------------------------------------------------------
 void FASTCALL CKeyboardWnd::Setup()
 {
 	Keyboard::keyboard_t keyboard;
@@ -1585,27 +1585,27 @@ void FASTCALL CKeyboardWnd::Setup()
 	DWORD dwLED;
 	int nKey;
 
- 	 // Limpiar
+	// Clear
 	Clear();
 	y = 0;
 
- 	 // Obtener datos
+	// Get data
 	ASSERT(m_pKeyboard);
 	m_pKeyboard->GetKeyboard(&keyboard);
 
- 	 // Codigo de repeticion
+	// Repeat code
 	SetString(0, y, _T("Repeat Code"));
 	strText.Format(_T("%02X"), keyboard.rep_code);
 	SetString(19, y, strText);
 	y++;
 
- 	 // Contador de repeticion
+	// Repeat counter
 	SetString(0, y, _T("Repeat Count"));
 	strText.Format(_T("%6u"), keyboard.rep_count);
 	SetString(15, y, strText);
 	y++;
 
- 	 // Tiempo de repeticion
+	// Repeat time
 	SetString(0, y, _T("Repeat Time1"));
 	strText.Format(_T("%5dms"), keyboard.rep_start / 2000);
 	SetString(14, y, strText);
@@ -1615,7 +1615,7 @@ void FASTCALL CKeyboardWnd::Setup()
 	SetString(14, y, strText);
 	y++;
 
- 	 // Habilitar transmision
+	// Enable transmission
 	SetString(0, y, _T("Send Enable"));
 	if (keyboard.send_en) {
 		SetString(15, y, _T("Enable"));
@@ -1625,7 +1625,7 @@ void FASTCALL CKeyboardWnd::Setup()
 	}
 	y++;
 
- 	 // Espera de transmision
+	// Transmission wait
 	SetString(0, y, _T("Send Wait"));
 	if (keyboard.send_wait) {
 		SetString(17, y, _T("Wait"));
@@ -1635,13 +1635,13 @@ void FASTCALL CKeyboardWnd::Setup()
 	}
 	y++;
 
- 	 // MSCTRL
+	// MSCTRL
 	SetString(0, y, _T("MSCTRL"));
 	strText.Format(_T("%01X"), keyboard.msctrl);
 	SetString(20, y, strText);
 	y++;
 
- 	 // Control OPT2
+	// Control OPT2
 	SetString(0, y, _T("OPT2 Ctrl"));
 	if (keyboard.opt2_ctrl) {
 		SetString(15, y, _T("Enable"));
@@ -1651,22 +1651,22 @@ void FASTCALL CKeyboardWnd::Setup()
 	}
 	y++;
 
- 	 // Brillo
+	// Brillo
 	SetString(0, y, _T("LED Bright"));
 	strText.Format(_T("%01X"), keyboard.bright);
 	SetString(20, y, strText);
 	y++;
 
- 	 // LED
+	// LED
 	dwLED = keyboard.led;
 	for (nLED=0;; nLED++) {
- 		 // Nombre
+		// Name
 		if (!DescLED[nLED]) {
 			break;
 		}
 		SetString(0, y, DescLED[nLED]);
 
- 		 // ON,OFF
+		// ON,OFF
 		SetString(9, y, _T("LED"));
 		if (dwLED & 1) {
 			SetString(19, y, _T("On"));
@@ -1678,43 +1678,43 @@ void FASTCALL CKeyboardWnd::Setup()
 		y++;
 	}
 
- 	 // Reinicializacion
+	// Reinitialization
 	x = 25;
 	y = 0;
 
- 	 // Mapa de teclas
+	// Key map
 	SetString(x, y, _T("KEY:01234567"));
 	for (nKey=0; nKey<120; nKey++) {
- 		 // Uno por cada 8 teclas
+		// One entry per 8 keys
 		if ((nKey & 7) == 0) {
- 			 // Salto de linea y LF
+			// Line break and LF
 			x = 25;
 			y++;
 
- 			 // Guia por linea
+			// Guide per line
 			strText.Format(_T("+%02X:"), nKey);
 			SetString(x, y, strText);
 			x += 4;
 		}
 
- 		 // Comprobacion de tecla
+		// Key check
 		if (keyboard.status[nKey]) {
- 			 // Estado Make
+			// State Make
 			SetString(x, y, _T("X"));
 		}
 		else {
- 			 // Estado Break
+			// State Break
 			SetString(x, y, _T("."));
 		}
 		x++;
 	}
 }
 
-  //---------------------------------------------------------------------------
-  //
-  //	Tabla de LED de teclas
-  //
-  //---------------------------------------------------------------------------
+//---------------------------------------------------------------------------
+//
+//	Keyboard LED table
+//
+//---------------------------------------------------------------------------
 LPCTSTR CKeyboardWnd::DescLED[] = {
 	_T("KANA"),
 	_T("RO-MAJI"),
@@ -1726,37 +1726,37 @@ LPCTSTR CKeyboardWnd::DescLED[] = {
 	NULL
 };
 
-  //===========================================================================
-  //
-  //	Ventana FDD
-  //
-  //===========================================================================
+//===========================================================================
+//
+//	FDD window
+//
+//===========================================================================
 
-  //---------------------------------------------------------------------------
-  //
-  //	Constructor
-  //
-  //---------------------------------------------------------------------------
+//---------------------------------------------------------------------------
+//
+//	Constructor
+//
+//---------------------------------------------------------------------------
 CFDDWnd::CFDDWnd()
 {
 	int i;
 	const FDC::fdc_t *pFDC;
 
- 	 // Definicion de parametros de ventana
+	// Window parameter offinitions
 	m_dwID = MAKEID('F', 'D', 'D', ' ');
 	::GetMsg(IDS_SWND_FDD, m_strCaption);
 	m_nWidth = 63;
 	m_nHeight = 30;
 
- 	 // Obtener FDD
+	// Get FDD
 	m_pFDD = (FDD*)::GetVM()->SearchDevice(MAKEID('F', 'D', 'D', ' '));
 	ASSERT(m_pFDD);
 
- 	 // Obtener FDC
+	// Get FDC
 	m_pFDC = (FDC*)::GetVM()->SearchDevice(MAKEID('F', 'D', 'C', ' '));
 	ASSERT(m_pFDC);
 
- 	 // Inicializar unidad de acceso, cabezal y CHRN
+	// Initialize the access unit, head, and CHRN
 	pFDC = m_pFDC->GetWork();
 	m_dwDrive = pFDC->dsr;
 	m_dwHD = pFDC->hd;
@@ -1768,22 +1768,22 @@ CFDDWnd::CFDDWnd()
 	}
 }
 
-  //---------------------------------------------------------------------------
-  //
-  //	Configuracion
-  //
-  //---------------------------------------------------------------------------
+//---------------------------------------------------------------------------
+//
+//	Configuration
+//
+//---------------------------------------------------------------------------
 void FASTCALL CFDDWnd::Setup()
 {
 	int i;
 	int y;
 	const FDC::fdc_t *pFDC;
 
- 	 // Limpiar
+	// Clear
 	Clear();
 	y = 2;
 
- 	 // Mostrar descripcion
+	// Display ofscription
 	for (i=0;; i++) {
 		if (!DescTable[i]) {
 			break;
@@ -1792,12 +1792,12 @@ void FASTCALL CFDDWnd::Setup()
 		y++;
 	}
 
- 	 // Procesar en orden
+	// Procesar in orden
 	for (i=0; i<=3; i++) {
 		SetupFDD(i, (i * 12) + 18);
 	}
 
- 	 // Obtener trabajo FDC, comprobar comando
+	// Get trabajo FDC, comprobar comando
 	pFDC = m_pFDC->GetWork();
 	switch (pFDC->cmd) {
 		case FDC::read_id:
@@ -1809,7 +1809,7 @@ void FASTCALL CFDDWnd::Setup()
 		case FDC::scan_eq:
 		case FDC::scan_lo_eq:
 		case FDC::scan_hi_eq:
- 			 // Obtener unidad y CHRN
+			// Get unit and CHRN
 			m_dwDrive = pFDC->dsr;
 			if (m_dwDrive > 1) {
 				m_dwDrive = 0;
@@ -1824,16 +1824,16 @@ void FASTCALL CFDDWnd::Setup()
 			break;
 	}
 
- 	 // Configuracion (Pista)
+	// Configuration (Track)
 	SetupTrack();
 	return;
 }
 
-  //---------------------------------------------------------------------------
-  //
-  //	Tabla de descripcion
-  //
-  //---------------------------------------------------------------------------
+//---------------------------------------------------------------------------
+//
+//	Description table
+//
+//---------------------------------------------------------------------------
 LPCTSTR CFDDWnd::DescTable[] = {
 	_T("Image Type"),
 	_T("Multi Image"),
@@ -1866,11 +1866,11 @@ LPCTSTR CFDDWnd::DescTable[] = {
 	NULL
 };
 
-  //---------------------------------------------------------------------------
-  //
-  //	Configuracion sub
-  //
-  //---------------------------------------------------------------------------
+//---------------------------------------------------------------------------
+//
+//	Sub configuration
+//
+//---------------------------------------------------------------------------
 void FASTCALL CFDDWnd::SetupFDD(int nDrive, int x)
 {
 	CString strText;
@@ -1882,17 +1882,17 @@ void FASTCALL CFDDWnd::SetupFDD(int nDrive, int x)
 	ASSERT((nDrive >= 0) && (nDrive <= 3));
 	ASSERT(x >= 0);
 
- 	 // Nombre de unidad
+	// Unit name
 	strText.Format(_T("FDD#%1d"), nDrive);
 	SetString(x, 0, strText);
 
- 	 // Obtener informacion de unidad
+	// Get unit information
 	ASSERT(m_pFDD);
 	m_pFDD->GetFDD(&fdd);
 	m_pFDD->GetDrive(nDrive, &drv);
 	y = 2;
 
- 	 // Tipo de imagen
+	// Image type
 	dwID = drv.fdi->GetID();
 	strText.Format(_T("%c%c%c%c"),
 				(dwID >> 24) & 0xff,
@@ -1902,7 +1902,7 @@ void FASTCALL CFDDWnd::SetupFDD(int nDrive, int x)
 	SetString(x, y, strText);
 	y++;
 
- 	 // Multi-imagen
+	// Multi-imagen
 	if (drv.fdi->IsMulti()) {
 		SetString(x, y, _T("Multi"));
 	}
@@ -1911,7 +1911,7 @@ void FASTCALL CFDDWnd::SetupFDD(int nDrive, int x)
 	}
 	y++;
 
- 	 // Solo lectura
+	// Solo lectura
 	if (drv.fdi->IsReadOnly()) {
 		SetString(x, y, _T("RO"));
 	}
@@ -1920,7 +1920,7 @@ void FASTCALL CFDDWnd::SetupFDD(int nDrive, int x)
 	}
 	y++;
 
- 	 // Proteccion contra escritura
+	// Proteccion contra escritura
 	if (drv.fdi->IsWriteP()) {
 		SetString(x, y, _T("Protect"));
 	}
@@ -1929,7 +1929,7 @@ void FASTCALL CFDDWnd::SetupFDD(int nDrive, int x)
 	}
 	y++;
 
- 	 // Unidad seleccionada
+	// Unit seleccionada
 	if (fdd.selected == nDrive) {
 		SetString(x, y, _T("Selected"));
 	}
@@ -1938,7 +1938,7 @@ void FASTCALL CFDDWnd::SetupFDD(int nDrive, int x)
 	}
 	y++;
 
- 	 // Densidad
+	// Densidad
 	if (fdd.hd) {
 		SetString(x, y, _T("HD"));
 	}
@@ -1947,7 +1947,7 @@ void FASTCALL CFDDWnd::SetupFDD(int nDrive, int x)
 	}
 	y++;
 
- 	 // Motor
+	// Motor
 	if (fdd.motor) {
 		SetString(x, y, _T("On"));
 	}
@@ -1956,7 +1956,7 @@ void FASTCALL CFDDWnd::SetupFDD(int nDrive, int x)
 	}
 	y++;
 
- 	 // Asentamiento (Settling)
+	// Asentamiento (Settling)
 	if (fdd.settle || fdd.motor) {
 		SetString(x, y, _T("Settle"));
 	}
@@ -1965,7 +1965,7 @@ void FASTCALL CFDDWnd::SetupFDD(int nDrive, int x)
 	}
 	y++;
 
- 	 // Ready forzado
+	// Ready forzado
 	if (fdd.force) {
 		SetString(x, y, _T("Ready"));
 	}
@@ -1974,7 +1974,7 @@ void FASTCALL CFDDWnd::SetupFDD(int nDrive, int x)
 	}
 	y++;
 
- 	 // Insertar
+	// Insertar
 	if (drv.insert) {
 		SetString(x, y, _T("Insert"));
 	}
@@ -1983,7 +1983,7 @@ void FASTCALL CFDDWnd::SetupFDD(int nDrive, int x)
 	}
 	y++;
 
- 	 // Insercion erronea
+	// Insercion erronea
 	if (drv.invalid) {
 		SetString(x, y, _T("Invalid"));
 	}
@@ -1992,7 +1992,7 @@ void FASTCALL CFDDWnd::SetupFDD(int nDrive, int x)
 	}
 	y++;
 
- 	 // Eyectar habilitado
+	// Eyectar habilitado
 	if (drv.eject) {
 		SetString(x, y, _T("Enable"));
 	}
@@ -2001,7 +2001,7 @@ void FASTCALL CFDDWnd::SetupFDD(int nDrive, int x)
 	}
 	y++;
 
- 	 // Parpadeo (Blink)
+	// Parpadeo (Blink)
 	if (drv.blink) {
 		SetString(x, y, _T("Blink"));
 	}
@@ -2010,7 +2010,7 @@ void FASTCALL CFDDWnd::SetupFDD(int nDrive, int x)
 	}
 	y++;
 
- 	 // Acceso
+	// Access
 	if (drv.access) {
 		SetString(x, y, _T("Access"));
 	}
@@ -2019,7 +2019,7 @@ void FASTCALL CFDDWnd::SetupFDD(int nDrive, int x)
 	}
 	y++;
 
- 	 // Seek
+	// Seek
 	if (drv.seeking) {
 		SetString(x, y, _T("Seek"));
 	}
@@ -2028,16 +2028,16 @@ void FASTCALL CFDDWnd::SetupFDD(int nDrive, int x)
 	}
 	y++;
 
- 	 // Cilindro
+	// Cilindro
 	strText.Format(_T("%d"), drv.cylinder);
 	SetString(x, y, strText);
 }
 
-  //---------------------------------------------------------------------------
-  //
-  //	Configuracion de pista
-  //
-  //---------------------------------------------------------------------------
+//---------------------------------------------------------------------------
+//
+//  Track configuration
+//
+//---------------------------------------------------------------------------
 BOOL FASTCALL CFDDWnd::SetupTrack()
 {
 	FDD::drv_t drv;
@@ -2055,14 +2055,14 @@ BOOL FASTCALL CFDDWnd::SetupTrack()
 
 	ASSERT(this);
 
- 	 // Obtener FDD
+	// Get FDD
 	m_pFDD->GetDrive((int)m_dwDrive, &drv);
 
- 	 // Configuracion x,y
+	// X/Y configuration
 	x = 18;
 	y = 19;
 
- 	 // Obtener
+	// Get
 	pFDI = m_pFDD->GetFDI((int)m_dwDrive);
 	ASSERT(pFDI);
 	pDisk = pFDI->GetDisk();
@@ -2080,7 +2080,7 @@ BOOL FASTCALL CFDDWnd::SetupTrack()
 		return FALSE;
 	}
 
- 	 // Contar numero de sectores
+	// Count the number of sectors
 	nSecs = 0;
 	pSector = pTrack->GetFirst();
 	while (pSector) {
@@ -2088,7 +2088,7 @@ BOOL FASTCALL CFDDWnd::SetupTrack()
 		pSector = pSector->GetNext();
 	}
 
- 	 // Primera visualizacion
+	// Primera display
 	if (nSecs == 0) {
 		if (pTrack->IsHD()) {
 			strText.Format(_T("Track %d, 2HD, unformat"), nTrack);
@@ -2108,13 +2108,13 @@ BOOL FASTCALL CFDDWnd::SetupTrack()
 	SetString(x, y, strText);
 	y++;
 
- 	 // Bucle solo para sectores
+	// Loop for sectors only
 	pSector = pTrack->GetFirst();
 	while (pSector) {
- 		 // Obtener
+		// Get
 		pSector->GetCHRN(chrn);
 
- 		 // Si coincide, invertir (solo ver C,H,R)
+		// Si coincide, invertir (solo ver C,H,R)
 		chrn[3] = m_CHRN[3];
 		if (memcmp(chrn, m_CHRN, sizeof(chrn)) == 0) {
 			Reverse(TRUE);
@@ -2123,14 +2123,14 @@ BOOL FASTCALL CFDDWnd::SetupTrack()
 			Reverse(FALSE);
 		}
 
- 		 // CHRN
+		// CHRN
 		pSector->GetCHRN(chrn);
 		for (i=0; i<4; i++) {
 			strText.Format(_T("%02X"), chrn[i]);
 			SetString(x, y + i, strText);
 		}
 
- 		 // MFM
+		// MFM
 		if (pSector->IsMFM()) {
 			SetString(x, y + 4, _T("MF"));
 		}
@@ -2138,23 +2138,23 @@ BOOL FASTCALL CFDDWnd::SetupTrack()
 			SetString(x, y + 4, _T("FM"));
 		}
 
- 		 // GAP3
+		// GAP3
 		strText.Format(_T("%02X"), pSector->GetGAP3());
 		SetString(x, y + 5, strText);
 
- 		 // STAT
+		// STAT
 		strText.Format(_T("%02X"), pSector->GetError() >> 8);
 		SetString(x, y + 6, strText);
 		strText.Format(_T("%02X"), pSector->GetError() & 0xff);
 		SetString(x, y + 7, strText);
 
- 		 // TIEMPO
+		// TIEMPO
 		strText.Format(_T("%02X"), (pSector->GetPos() >> 4) >> 8);
 		SetString(x, y + 8, strText);
 		strText.Format(_T("%02X"), (pSector->GetPos() >> 4) & 0xff);
 		SetString(x, y + 9, strText);
 
- 		 // Obtener siguiente
+		// Get siguiente
 		x += 3;
 		pSector = pSector->GetNext();
 	}
@@ -2163,47 +2163,47 @@ BOOL FASTCALL CFDDWnd::SetupTrack()
 }
 
 
-  //===========================================================================
-  //
-  //	Ventana FDC
-  //
-  //===========================================================================
+//===========================================================================
+//
+//	FDC window
+//
+//===========================================================================
 
-  //---------------------------------------------------------------------------
-  //
-  //	Constructor
-  //
-  //---------------------------------------------------------------------------
+//---------------------------------------------------------------------------
+//
+//	Constructor
+//
+//---------------------------------------------------------------------------
 CFDCWnd::CFDCWnd()
 {
- 	 // Definicion de parametros de ventana
+	// Window parameter offinitions
 	m_dwID = MAKEID('F', 'D', 'C', ' ');
 	::GetMsg(IDS_SWND_FDC, m_strCaption);
 	m_nWidth = 71;
 	m_nHeight = 19;
 
- 	 // Obtener FDC
+	// Get FDC
 	m_pFDC = (FDC*)::GetVM()->SearchDevice(MAKEID('F', 'D', 'C', ' '));
 	ASSERT(m_pFDC);
 }
 
-  //---------------------------------------------------------------------------
-  //
-  //	Configuracion
-  //
-  //---------------------------------------------------------------------------
+//---------------------------------------------------------------------------
+//
+//	Configuration
+//
+//---------------------------------------------------------------------------
 void FASTCALL CFDCWnd::Setup()
 {
 	ASSERT(this);
 
- 	 // Obtener direccion de trabajo
+	// Get working address
 	ASSERT(m_pFDC);
 	m_pWork = m_pFDC->GetWork();
 
- 	 // Limpiar
+	// Clear
 	Clear();
 
- 	 // Establecer en orden
+	// Set in orden
 	SetupGeneral(0, 0);
 	SetupParam(24, 0);
 	SetupSR(48, 0);
@@ -2212,11 +2212,11 @@ void FASTCALL CFDCWnd::Setup()
 	SetupST2(48, 10);
 }
 
-  //---------------------------------------------------------------------------
-  //
-  //	Configuracion (General)
-  //
-  //---------------------------------------------------------------------------
+//---------------------------------------------------------------------------
+//
+//	Configuration (General)
+//
+//---------------------------------------------------------------------------
 void FASTCALL CFDCWnd::SetupGeneral(int x, int y)
 {
 	CString strText;
@@ -2225,7 +2225,7 @@ void FASTCALL CFDCWnd::SetupGeneral(int x, int y)
 	ASSERT(x >= 0);
 	ASSERT(y >= 0);
 
- 	 // Comando
+	// Command
 	switch (m_pWork->cmd) {
 		case FDC::read_data:
 			strText = _T("READ DATA");
@@ -2295,7 +2295,7 @@ void FASTCALL CFDCWnd::SetupGeneral(int x, int y)
 	SetString(x, y, strText);
 	y++;
 
- 	 // Fase
+	// Phase
 	switch (m_pWork->phase) {
 		case FDC::idle:
 			strText = _T("(Idle)");
@@ -2323,22 +2323,22 @@ void FASTCALL CFDCWnd::SetupGeneral(int x, int y)
 	SetString(x, y, strText);
 	y++;
 
- 	 // Dejar una linea en blanco
+	// Dejar una linea in blanco
 	y++;
 
- 	 // Registro de seleccion de unidad
+	// Unit select register
 	SetString(x, y, _T("Drive Select"));
 	strText.Format(_T("%1d"), m_pWork->dsr);
 	SetString(x + 19, y, strText);
 	y++;
 
- 	 // Registro de control
+	// Control register
 	SetString(x, y, _T("Drive Control"));
 	strText.Format(_T("%02X"), m_pWork->dcr);
 	SetString(x + 18, y, strText);
 	y++;
 
- 	 // FIFO(Entrada)
+	// FIFO(Entrada)
 	SetString(x, y, _T("FIFO(IN)  Count"));
 	strText.Format(_T("%2d"), m_pWork->in_cnt);
 	SetString(x + 18, y, strText);
@@ -2348,7 +2348,7 @@ void FASTCALL CFDCWnd::SetupGeneral(int x, int y)
 	SetString(x + 18, y, strText);
 	y++;
 
- 	 // FIFO(Salida)
+	// FIFO(Salida)
 	SetString(x, y, _T("FIFO(OUT) Count"));
 	strText.Format(_T("%2d"), m_pWork->out_cnt);
 	SetString(x + 18, y, strText);
@@ -2358,11 +2358,11 @@ void FASTCALL CFDCWnd::SetupGeneral(int x, int y)
 	SetString(x + 18, y, strText);
 }
 
-  //---------------------------------------------------------------------------
-  //
-  //	Configuracion (Parametro)
-  //
-  //---------------------------------------------------------------------------
+//---------------------------------------------------------------------------
+//
+//	Configuration (Parameter)
+//
+//---------------------------------------------------------------------------
 void FASTCALL CFDCWnd::SetupParam(int x, int y)
 {
 	CString strText;
@@ -2371,7 +2371,7 @@ void FASTCALL CFDCWnd::SetupParam(int x, int y)
 	ASSERT(x >= 0);
 	ASSERT(y >= 0);
 
- 	 // CHRN
+	// CHRN
 	SetString(x, y, _T("C"));
 	strText.Format(_T("%02X"), m_pWork->chrn[0]);
 	SetString(x + 6, y, strText);
@@ -2389,7 +2389,7 @@ void FASTCALL CFDCWnd::SetupParam(int x, int y)
 	SetString(x + 6, y, strText);
 	y++;
 
- 	 // HD,US
+	// HD,US
 	SetString(x, y, _T("HD"));
 	strText.Format(_T("%02X"), m_pWork->hd);
 	SetString(x + 6, y, strText);
@@ -2399,7 +2399,7 @@ void FASTCALL CFDCWnd::SetupParam(int x, int y)
 	SetString(x + 6, y, strText);
 	y++;
 
- 	 // MFM,MT,SK
+	// MFM,MT,SK
 	SetString(x, y, _T("MFM"));
 	strText.Format(_T("%2d"), m_pWork->mfm);
 	SetString(x + 6, y, strText);
@@ -2412,11 +2412,11 @@ void FASTCALL CFDCWnd::SetupParam(int x, int y)
 	strText.Format(_T("%2d"), m_pWork->sk);
 	SetString(x + 6, y, strText);
 
- 	 // Mover a la siguiente columna
+	// Move to the next column
 	x += 12;
 	y -= 8;
 
- 	 // EOT,GAP3
+	// EOT,GAP3
 	SetString(x, y, _T("EOT"));
 	strText.Format(_T("%02X"), m_pWork->eot);
 	SetString(x + 8, y, strText);
@@ -2431,7 +2431,7 @@ void FASTCALL CFDCWnd::SetupParam(int x, int y)
 	SetString(x + 8, y, strText);
 	y++;
 
- 	 // Head (Cabezal)
+	// Head (Cabezal)
 	SetString(x, y, _T("HEAD"));
 	if (m_pWork->load) {
 		SetString(x + 6, y, _T("LOAD"));
@@ -2441,7 +2441,7 @@ void FASTCALL CFDCWnd::SetupParam(int x, int y)
 	}
 	y++;
 
- 	 // CYL (Cilindro)
+	// CYL (Cilindro)
 	SetString(x, y, _T("PCN0"));
 	strText.Format(_T("%02X"), m_pWork->cyl[0]);
 	SetString(x + 8, y, strText);
@@ -2451,7 +2451,7 @@ void FASTCALL CFDCWnd::SetupParam(int x, int y)
 	SetString(x + 8, y, strText);
 	y++;
 
- 	 // NDM
+	// NDM
 	SetString(x, y, _T("NDM"));
 	if (m_pWork->ndm) {
 		SetString(x + 7, y, _T("CPU"));
@@ -2461,44 +2461,44 @@ void FASTCALL CFDCWnd::SetupParam(int x, int y)
 	}
 	y++;
 
- 	 // err (error)
+	// err (error)
 	SetString(x, y, _T("ERR"));
 	strText.Format(_T("%04X"), m_pWork->err);
 	SetString(x + 6, y, strText);
 	y++;
 
- 	 // offset (desplazamiento)
+	// offset (shift)
 	SetString(x, y, _T("OFF"));
 	strText.Format(_T("%4X"), m_pWork->offset);
 	SetString(x + 6, y, strText);
 	y++;
 
- 	 // length (longitud)
+	// length (longitud)
 	SetString(x, y, _T("LEN"));
 	strText.Format(_T("%7X"), m_pWork->len);
 	SetString(x + 3, y, strText);
 }
 
-  //---------------------------------------------------------------------------
-  //
-  //	Configuracion (Registro de estado)
-  //
-  //---------------------------------------------------------------------------
+//---------------------------------------------------------------------------
+//
+//	Configuration (Status register)
+//
+//---------------------------------------------------------------------------
 void FASTCALL CFDCWnd::SetupSR(int x, int y)
 {
 	ASSERT(this);
 	ASSERT(x >= 0);
 	ASSERT(y >= 0);
 
- 	 // Dejar en manos de la subfuncion
+	// Leave it to the subroutine
 	SetupSub(x, y, _T("[Status]"), SRDesc, m_pWork->sr);
 }
 
-  //---------------------------------------------------------------------------
-  //
-  //	Cadena (Registro de estado)
-  //
-  //---------------------------------------------------------------------------
+//---------------------------------------------------------------------------
+//
+//	String (status register)
+//
+//---------------------------------------------------------------------------
 LPCTSTR CFDCWnd::SRDesc[8] = {
 	_T("Request for Master"),
 	_T("Data Input/Output"),
@@ -2510,26 +2510,26 @@ LPCTSTR CFDCWnd::SRDesc[8] = {
 	_T("FDD#0 Busy")
 };
 
-  //---------------------------------------------------------------------------
-  //
-  //	Configuracion (ST0)
-  //
-  //---------------------------------------------------------------------------
+//---------------------------------------------------------------------------
+//
+//	Configuration (ST0)
+//
+//---------------------------------------------------------------------------
 void FASTCALL CFDCWnd::SetupST0(int x, int y)
 {
 	ASSERT(this);
 	ASSERT(x >= 0);
 	ASSERT(y >= 0);
 
- 	 // Dejar en manos de la subfuncion
+	// Leave it to the subroutine
 	SetupSub(x, y, _T("[ST0]"), ST0Desc, m_pWork->st[0]);
 }
 
-  //---------------------------------------------------------------------------
-  //
-  //	Cadena (ST0)
-  //
-  //---------------------------------------------------------------------------
+//---------------------------------------------------------------------------
+//
+//	String (ST0)
+//
+//---------------------------------------------------------------------------
 LPCTSTR CFDCWnd::ST0Desc[8] = {
 	_T("Interrupt Code 1"),
 	_T("Interrupt Code 0"),
@@ -2541,26 +2541,26 @@ LPCTSTR CFDCWnd::ST0Desc[8] = {
 	_T("Unit Select 0")
 };
 
-  //---------------------------------------------------------------------------
-  //
-  //	Configuracion (ST1)
-  //
-  //---------------------------------------------------------------------------
+//---------------------------------------------------------------------------
+//
+//	Configuration (ST1)
+//
+//---------------------------------------------------------------------------
 void FASTCALL CFDCWnd::SetupST1(int x, int y)
 {
 	ASSERT(this);
 	ASSERT(x >= 0);
 	ASSERT(y >= 0);
 
- 	 // Dejar en manos de la subfuncion
+	// Leave it to the subroutine
 	SetupSub(x, y, _T("[ST1]"), ST1Desc, m_pWork->st[1]);
 }
 
-  //---------------------------------------------------------------------------
-  //
-  //	Cadena (ST1)
-  //
-  //---------------------------------------------------------------------------
+//---------------------------------------------------------------------------
+//
+//	String (ST1)
+//
+//---------------------------------------------------------------------------
 LPCTSTR CFDCWnd::ST1Desc[8] = {
 	_T("End of Cylinder"),
 	NULL,
@@ -2572,26 +2572,26 @@ LPCTSTR CFDCWnd::ST1Desc[8] = {
 	_T("Missing Address Mark")
 };
 
-  //---------------------------------------------------------------------------
-  //
-  //	Configuracion (ST2)
-  //
-  //---------------------------------------------------------------------------
+//---------------------------------------------------------------------------
+//
+//	Configuration (ST2)
+//
+//---------------------------------------------------------------------------
 void FASTCALL CFDCWnd::SetupST2(int x, int y)
 {
 	ASSERT(this);
 	ASSERT(x >= 0);
 	ASSERT(y >= 0);
 
- 	 // Dejar en manos de la subfuncion
+	// Leave it to the subroutine
 	SetupSub(x, y, _T("[ST2]"), ST2Desc, m_pWork->st[2]);
 }
 
-  //---------------------------------------------------------------------------
-  //
-  //	Cadena (ST2)
-  //
-  //---------------------------------------------------------------------------
+//---------------------------------------------------------------------------
+//
+//	String (ST2)
+//
+//---------------------------------------------------------------------------
 LPCTSTR CFDCWnd::ST2Desc[8] = {
 	NULL,
 	_T("Control Mark"),
@@ -2603,11 +2603,11 @@ LPCTSTR CFDCWnd::ST2Desc[8] = {
 	_T("Missing Data Mark")
 };
 
-  //---------------------------------------------------------------------------
-  //
-  //	Configuracion (Sub)
-  //
-  //---------------------------------------------------------------------------
+//---------------------------------------------------------------------------
+//
+//	Configuration (Sub)
+//
+//---------------------------------------------------------------------------
 void FASTCALL CFDCWnd::SetupSub(int x, int y, LPCTSTR lpszTitle, LPCTSTR *lpszDesc, DWORD data)
 {
 	int i;
@@ -2621,38 +2621,38 @@ void FASTCALL CFDCWnd::SetupSub(int x, int y, LPCTSTR lpszTitle, LPCTSTR *lpszDe
 	ASSERT(lpszTitle);
 	ASSERT(lpszDesc);
 
- 	 // Mostrar titulo
+	// Display titulo
 	SetString(x, y, lpszTitle);
 	y++;
 
- 	 // Bucle
+	// Loop
 	for (i=0; i<8; i++) {
- 		 // b7-b0
+		// b7-b0
 		strText.Format(_T("b%1d:"), 7 - i);
 		SetString(x, y, strText);
 
- 		 // Creacion de cadena
+		// String creation
 		if (lpszDesc[i]) {
- 			 // Rellenar con espacios
+			// Rellenar with espacios
 			for (j=0; j<0x40; j++) {
 				strBuf[j] = _T(' ');
 			}
 
- 			 // Copiar solo la longitud de la cadena
+			// Copiar solo the longitud of the cadena
 			ASSERT(_tcslen(lpszDesc[i]) < 0x40);
 			memcpy(strBuf, lpszDesc[i], _tcslen(lpszDesc[i]) * sizeof(TCHAR));
 		}
 		else {
- 			 // Rellenar con -
+			// Rellenar with -
 			for (j=0; j<0x40; j++) {
 				strBuf[j] = _T('-');
 			}
 		}
 
- 		 // La longitud se determina aqui
+		// La longitud se oftermina aqui
 		strBuf[20] = _T('\0');
 
- 		 // El bit correspondiente se muestra invertido
+		// El bit correspondiente se muestra invertido
 		if (data & 0x80) {
 			Reverse(TRUE);
 			SetString(x + 3, y, (LPCTSTR)strBuf);
@@ -2662,55 +2662,55 @@ void FASTCALL CFDCWnd::SetupSub(int x, int y, LPCTSTR lpszTitle, LPCTSTR *lpszDe
 			SetString(x + 3, y, (LPCTSTR)strBuf);
 		}
 
- 		 // Siguiente
+		// Next
 		data <<= 1;
 		y++;
 	}
 }
 
-  //===========================================================================
-  //
-  //	Ventana SCC
-  //
-  //===========================================================================
+//===========================================================================
+//
+//	SCC window
+//
+//===========================================================================
 
-  //---------------------------------------------------------------------------
-  //
-  //	Constructor
-  //
-  //---------------------------------------------------------------------------
+//---------------------------------------------------------------------------
+//
+//	Constructor
+//
+//---------------------------------------------------------------------------
 CSCCWnd::CSCCWnd()
 {
- 	 // Definicion de parametros de ventana
+	// Window parameter offinitions
 	m_dwID = MAKEID('S', 'C', 'C', ' ');
 	::GetMsg(IDS_SWND_SCC, m_strCaption);
 	m_nWidth = 48;
 	m_nHeight = 35;
 
- 	 // Obtener SCC
+	// Get SCC
 	m_pSCC = (SCC*)::GetVM()->SearchDevice(MAKEID('S', 'C', 'C', ' '));
 	ASSERT(m_pSCC);
 }
 
-  //---------------------------------------------------------------------------
-  //
-  //	Configuracion
-  //
-  //---------------------------------------------------------------------------
+//---------------------------------------------------------------------------
+//
+//	Configuration
+//
+//---------------------------------------------------------------------------
 void FASTCALL CSCCWnd::Setup()
 {
 	int i;
 	CString strText;
 	SCC::scc_t scc;
 
- 	 // Limpiar
+	// Clear
 	Clear();
 
- 	 // Obtener datos
+	// Get data
 	ASSERT(m_pSCC);
 	m_pSCC->GetSCC(&scc);
 
- 	 // Mostrar items
+	// Display items
 	for (i=0;; i++) {
 		if (!DescTable[i]) {
 			break;
@@ -2718,18 +2718,18 @@ void FASTCALL CSCCWnd::Setup()
 		SetString(0, i, DescTable[i]);
 	}
 
- 	 // Procesamiento de canal
+	// Procesamiento of canal
 	SetString(19, 0, _T("A(RS-232C)"));
 	SetupSCC(&scc.ch[0], 19, 1);
 	SetString(35, 0, _T("B(MOUSE)"));
 	SetupSCC(&scc.ch[1], 35, 1);
 }
 
-  //---------------------------------------------------------------------------
-  //
-  //	Tabla de cadenas
-  //
-  //---------------------------------------------------------------------------
+//---------------------------------------------------------------------------
+//
+//	String table
+//
+//---------------------------------------------------------------------------
 LPCTSTR CSCCWnd::DescTable[] = {
 	_T("Channel"),
 	_T("BaudRate"),
@@ -2769,11 +2769,11 @@ LPCTSTR CSCCWnd::DescTable[] = {
 	NULL
 };
 
-  //---------------------------------------------------------------------------
-  //
-  //	Configuracion (Canal)
-  //
-  //---------------------------------------------------------------------------
+//---------------------------------------------------------------------------
+//
+//	Configuration (Channel)
+//
+//---------------------------------------------------------------------------
 void FASTCALL CSCCWnd::SetupSCC(SCC::ch_t *pCh, int x, int y)
 {
 	CString strText;
@@ -2783,12 +2783,12 @@ void FASTCALL CSCCWnd::SetupSCC(SCC::ch_t *pCh, int x, int y)
 	ASSERT(x >= 0);
 	ASSERT(y >= 0);
 
- 	 // Baudios
+	// Baudios
 	strText.Format(_T("%u"), pCh->baudrate);
 	SetString(x, y, strText);
 	y++;
 
- 	 // Bits de parada
+	// Bits of parada
 	switch (pCh->stopbit) {
 		case 0:
 			SetString(x, y, _T("NOT Async"));
@@ -2808,7 +2808,7 @@ void FASTCALL CSCCWnd::SetupSCC(SCC::ch_t *pCh, int x, int y)
 	}
 	y++;
 
- 	 // Paridad
+	// Paridad
 	switch (pCh->parity) {
 		case 0:
 			SetString(x, y, _T("No"));
@@ -2825,7 +2825,7 @@ void FASTCALL CSCCWnd::SetupSCC(SCC::ch_t *pCh, int x, int y)
 	}
 	y++;
 
- 	 // Tx habilitado
+	// Tx habilitado
 	if (pCh->txen) {
 		SetString(x, y, _T("Enable"));
 	}
@@ -2834,12 +2834,12 @@ void FASTCALL CSCCWnd::SetupSCC(SCC::ch_t *pCh, int x, int y)
 	}
 	y++;
 
- 	 // Tx bits
+	// Tx bits
 	strText.Format(_T("%d"), pCh->txbit);
 	SetString(x, y, strText);
 	y++;
 
- 	 // Tx Break
+	// Tx Break
 	if (pCh->brk) {
 		SetString(x, y, _T("Break"));
 	}
@@ -2848,7 +2848,7 @@ void FASTCALL CSCCWnd::SetupSCC(SCC::ch_t *pCh, int x, int y)
 	}
 	y++;
 
- 	 // Tx Busy
+	// Tx Busy
 	if (pCh->tdf) {
 		SetString(x, y, _T("Busy"));
 	}
@@ -2857,27 +2857,27 @@ void FASTCALL CSCCWnd::SetupSCC(SCC::ch_t *pCh, int x, int y)
 	}
 	y++;
 
- 	 // Tx Enviado (Sent)
+	// Tx Enviado (Sent)
 	strText.Format(_T("%u"), pCh->txtotal);
 	SetString(x, y, strText);
 	y++;
 
- 	 // Tx buffer Num
+	// Tx buffer Num
 	strText.Format(_T("0x%03X"), pCh->txnum);
 	SetString(x, y, strText);
 	y++;
 
- 	 // Tx buffer Read
+	// Tx buffer Read
 	strText.Format(_T("0x%03X"), pCh->txread);
 	SetString(x, y, strText);
 	y++;
 
- 	 // Tx buffer Write
+	// Tx buffer Write
 	strText.Format(_T("0x%03X"), pCh->txwrite);
 	SetString(x, y, strText);
 	y++;
 
- 	 // Rx habilitado
+	// Rx habilitado
 	if (pCh->rxen) {
 		SetString(x, y, _T("Enable"));
 	}
@@ -2886,12 +2886,12 @@ void FASTCALL CSCCWnd::SetupSCC(SCC::ch_t *pCh, int x, int y)
 	}
 	y++;
 
- 	 // Rx bits
+	// Rx bits
 	strText.Format(_T("%d"), pCh->rxbit);
 	SetString(x, y, strText);
 	y++;
 
- 	 // Rx Break
+	// Rx Break
 	if (pCh->ba) {
 		SetString(x, y, _T("Break"));
 	}
@@ -2900,32 +2900,32 @@ void FASTCALL CSCCWnd::SetupSCC(SCC::ch_t *pCh, int x, int y)
 	}
 	y++;
 
- 	 // Rx FIFO
+	// Rx FIFO
 	strText.Format(_T("%u"), pCh->rxfifo);
 	SetString(x, y, strText);
 	y++;
 
- 	 // Rx Recibido (Received)
+	// Rx Recibido (Received)
 	strText.Format(_T("%u"), pCh->rxtotal);
 	SetString(x, y, strText);
 	y++;
 
- 	 // Rx buffer Num
+	// Rx buffer Num
 	strText.Format(_T("0x%03X"), pCh->rxnum);
 	SetString(x, y, strText);
 	y++;
 
- 	 // Rx buffer Read
+	// Rx buffer Read
 	strText.Format(_T("0x%03X"), pCh->rxread);
 	SetString(x, y, strText);
 	y++;
 
- 	 // Rx buffer Write
+	// Rx buffer Write
 	strText.Format(_T("0x%03X"), pCh->rxwrite);
 	SetString(x, y, strText);
 	y++;
 
- 	 // Error de encuadre (Framing error)
+	// Error of encuadre (Framing error)
 	if (pCh->framing) {
 		SetString(x, y, _T("Error"));
 	}
@@ -2934,7 +2934,7 @@ void FASTCALL CSCCWnd::SetupSCC(SCC::ch_t *pCh, int x, int y)
 	}
 	y++;
 
- 	 // Error de paridad
+	// Error of paridad
 	if (pCh->parerr) {
 		SetString(x, y, _T("Error"));
 	}
@@ -2943,7 +2943,7 @@ void FASTCALL CSCCWnd::SetupSCC(SCC::ch_t *pCh, int x, int y)
 	}
 	y++;
 
- 	 // Error de desbordamiento (Overrun error)
+	// Error of ofsbordamiento (Overrun error)
 	if (pCh->overrun) {
 		SetString(x, y, _T("Error"));
 	}
@@ -2952,7 +2952,7 @@ void FASTCALL CSCCWnd::SetupSCC(SCC::ch_t *pCh, int x, int y)
 	}
 	y++;
 
- 	 // Modo automatico
+	// Modo automatico
 	if (pCh->aen) {
 		SetString(x, y, _T("Auto"));
 	}
@@ -2961,7 +2961,7 @@ void FASTCALL CSCCWnd::SetupSCC(SCC::ch_t *pCh, int x, int y)
 	}
 	y++;
 
- 	 // CTS
+	// CTS
 	if (pCh->cts) {
 		SetString(x, y, _T("L"));
 	}
@@ -2970,7 +2970,7 @@ void FASTCALL CSCCWnd::SetupSCC(SCC::ch_t *pCh, int x, int y)
 	}
 	y++;
 
- 	 // DCD
+	// DCD
 	if (pCh->dcd) {
 		SetString(x, y, _T("L"));
 	}
@@ -2979,7 +2979,7 @@ void FASTCALL CSCCWnd::SetupSCC(SCC::ch_t *pCh, int x, int y)
 	}
 	y++;
 
- 	 // RTS
+	// RTS
 	if (pCh->rts) {
 		SetString(x, y, _T("L"));
 	}
@@ -2988,7 +2988,7 @@ void FASTCALL CSCCWnd::SetupSCC(SCC::ch_t *pCh, int x, int y)
 	}
 	y++;
 
- 	 // DTR
+	// DTR
 	if (!pCh->dtrreq) {
 		if (pCh->dtr) {
 			SetString(x, y, _T("L"));
@@ -3007,7 +3007,7 @@ void FASTCALL CSCCWnd::SetupSCC(SCC::ch_t *pCh, int x, int y)
 	}
 	y++;
 
- 	 // RxInt En (Habilitar)
+	// RxInt En (Habilitar)
 	if (pCh->rxim >= 1) {
 		SetString(x, y, _T("Enable"));
 	}
@@ -3016,7 +3016,7 @@ void FASTCALL CSCCWnd::SetupSCC(SCC::ch_t *pCh, int x, int y)
 	}
 	y++;
 
- 	 // TxInt En (Habilitar)
+	// TxInt En (Habilitar)
 	if (pCh->txie) {
 		SetString(x, y, _T("Enable"));
 	}
@@ -3025,7 +3025,7 @@ void FASTCALL CSCCWnd::SetupSCC(SCC::ch_t *pCh, int x, int y)
 	}
 	y++;
 
- 	 // ExtInt En (Habilitar)
+	// ExtInt En (Habilitar)
 	if (pCh->extie) {
 		SetString(x, y, _T("Enable"));
 	}
@@ -3034,7 +3034,7 @@ void FASTCALL CSCCWnd::SetupSCC(SCC::ch_t *pCh, int x, int y)
 	}
 	y++;
 
- 	 // RxInt Pendiente
+	// RxInt Pendiente
 	if (pCh->rxip) {
 		SetString(x, y, _T("Pending"));
 	}
@@ -3043,7 +3043,7 @@ void FASTCALL CSCCWnd::SetupSCC(SCC::ch_t *pCh, int x, int y)
 	}
 	y++;
 
- 	 // RsInt Pendiente
+	// RsInt Pendiente
 	if (pCh->rsip) {
 		SetString(x, y, _T("Pending"));
 	}
@@ -3052,7 +3052,7 @@ void FASTCALL CSCCWnd::SetupSCC(SCC::ch_t *pCh, int x, int y)
 	}
 	y++;
 
- 	 // TxInt Pendiente
+	// TxInt Pendiente
 	if (pCh->txip) {
 		SetString(x, y, _T("Pending"));
 	}
@@ -3061,7 +3061,7 @@ void FASTCALL CSCCWnd::SetupSCC(SCC::ch_t *pCh, int x, int y)
 	}
 	y++;
 
- 	 // ExtInt Pendiente
+	// ExtInt Pendiente
 	if (pCh->extip) {
 		SetString(x, y, _T("Pending"));
 	}
@@ -3070,35 +3070,35 @@ void FASTCALL CSCCWnd::SetupSCC(SCC::ch_t *pCh, int x, int y)
 	}
 }
 
-  //===========================================================================
-  //
-  //	Ventana Cynthia
-  //
-  //===========================================================================
+//===========================================================================
+//
+//	Cynthia window
+//
+//===========================================================================
 
-  //---------------------------------------------------------------------------
-  //
-  //	Constructor
-  //
-  //---------------------------------------------------------------------------
+//---------------------------------------------------------------------------
+//
+//	Constructor
+//
+//---------------------------------------------------------------------------
 CCynthiaWnd::CCynthiaWnd()
 {
- 	 // Definicion de parametros de ventana
+	// Window parameter offinitions
 	m_dwID = MAKEID('C', 'Y', 'N', 'T');
 	::GetMsg(IDS_SWND_CYNTHIA, m_strCaption);
 	m_nWidth = 46;
 	m_nHeight = 5;
 
- 	 // Obtener controlador de sprites
+	// Get the sprite controller
 	m_pSprite = (Sprite*)::GetVM()->SearchDevice(MAKEID('S', 'P', 'R', ' '));
 	ASSERT(m_pSprite);
 }
 
-  //---------------------------------------------------------------------------
-  //
-  //	Configuracion
-  //
-  //---------------------------------------------------------------------------
+//---------------------------------------------------------------------------
+//
+//	Configuration
+//
+//---------------------------------------------------------------------------
 void FASTCALL CCynthiaWnd::Setup()
 {
 	int i;
@@ -3107,13 +3107,13 @@ void FASTCALL CCynthiaWnd::Setup()
 	CString string;
 	Sprite::sprite_t spr;
 
- 	 // Limpiar, obtener datos
+	// Clear, obtener data
 	Clear();
 	y = 0;
 	x = 25;
 	m_pSprite->GetSprite(&spr);
 
- 	 // Mostrar
+	// Display
 	SetString(0, y, "Access");
 	if (spr.disp) {
 		SetString(16, y, "Video");
@@ -3122,7 +3122,7 @@ void FASTCALL CCynthiaWnd::Setup()
 		SetString(18, y, "CPU");
 	}
 
- 	 // Tamano BG
+	// Tamano BG
 	SetString(x, y, "BG Size");
 	if (spr.bg_size) {
 		SetString(x + 16, y, "16x16");
@@ -3132,9 +3132,9 @@ void FASTCALL CCynthiaWnd::Setup()
 	}
 	y++;
 
- 	 // BG comun
+	// BG comun
 	for (i=0; i<2; i++) {
- 		 // determinar x
+		// determinar x
 		if (i == 0) {
 			x = 0;
 		}
@@ -3142,7 +3142,7 @@ void FASTCALL CCynthiaWnd::Setup()
 			x = 25;
 		}
 
- 		 // Mostrar
+		// Display
 		string.Format("BG%d Area", i);
 		SetString(x, y + 0, string);
 		string.Format("%1d", spr.bg_area[i]);
@@ -3166,64 +3166,64 @@ void FASTCALL CCynthiaWnd::Setup()
 	}
 }
 
-  //===========================================================================
-  //
-  //	Ventana SASI
-  //
-  //===========================================================================
+//===========================================================================
+//
+//	SASI window
+//
+//===========================================================================
 
-  //---------------------------------------------------------------------------
-  //
-  //	Constructor
-  //
-  //---------------------------------------------------------------------------
+//---------------------------------------------------------------------------
+//
+//	Constructor
+//
+//---------------------------------------------------------------------------
 CSASIWnd::CSASIWnd()
 {
- 	 // Definicion de parametros de ventana
+	// Window parameter offinitions
 	m_dwID = MAKEID('S', 'A', 'S', 'I');
 	::GetMsg(IDS_SWND_SASI, m_strCaption);
 	m_nWidth = 59;
 	m_nHeight = 16;
 
- 	 // Obtener SASI
+	// Get SASI
 	m_pSASI = (SASI*)::GetVM()->SearchDevice(MAKEID('S', 'A', 'S', 'I'));
 	ASSERT(m_pSASI);
 }
 
-  //---------------------------------------------------------------------------
-  //
-  //	Configuracion
-  //
-  //---------------------------------------------------------------------------
+//---------------------------------------------------------------------------
+//
+//	Configuration
+//
+//---------------------------------------------------------------------------
 void FASTCALL CSASIWnd::Setup()
 {
 	ASSERT(this);
 	ASSERT(m_pSASI);
 
- 	 // Limpiar
+	// Clear
 	Clear();
 
- 	 // Obtener datos SASI
+	// Get SASI data
 	m_pSASI->GetSASI(&m_sasi);
 
- 	 // Comando
+	// Command
 	SetupCmd(0, 0);
 
- 	 // Controlador
+	// Controller
 	SetupCtrl(0, 1);
 
- 	 // Unidad (Drive)
+	// Unit (Drive)
 	SetupDrive(0, 11);
 
- 	 // Cache
+	// Cache
 	SetupCache(23, 0);
 }
 
-  //---------------------------------------------------------------------------
-  //
-  //	Configuracion (Comando)
-  //
-  //---------------------------------------------------------------------------
+//---------------------------------------------------------------------------
+//
+//	Configuration (Command)
+//
+//---------------------------------------------------------------------------
 void FASTCALL CSASIWnd::SetupCmd(int x, int y)
 {
 	CString strCmd;
@@ -3232,10 +3232,10 @@ void FASTCALL CSASIWnd::SetupCmd(int x, int y)
 	ASSERT(x >= 0);
 	ASSERT(y >= 0);
 
- 	 // Inicializacion
+	// Initialization
 	strCmd = _T("(UNKNOWN)");
 
- 	 // Por comando
+	// By command
 	switch (m_sasi.cmd[0]) {
 		case 0x00:
 			strCmd = _T("TEST UNIT READY");
@@ -3303,7 +3303,7 @@ void FASTCALL CSASIWnd::SetupCmd(int x, int y)
 			break;
 	}
 
- 	 // Comprobar fase inactiva (Idle)
+	// Check for idle phase
 	if (!m_sasi.bsy) {
 		strCmd = _T("(IDLE)");
 	}
@@ -3311,11 +3311,11 @@ void FASTCALL CSASIWnd::SetupCmd(int x, int y)
 	SetString(x, y, strCmd);
 }
 
-  //---------------------------------------------------------------------------
-  //
-  //	Configuracion (Controlador)
-  //
-  //---------------------------------------------------------------------------
+//---------------------------------------------------------------------------
+//
+//	Configuration (Controller)
+//
+//---------------------------------------------------------------------------
 void FASTCALL CSASIWnd::SetupCtrl(int x, int y)
 {
 	CString strPhase;
@@ -3325,7 +3325,7 @@ void FASTCALL CSASIWnd::SetupCtrl(int x, int y)
 	ASSERT(x >= 0);
 	ASSERT(y >= 0);
 
- 	 // Fase
+	// Phase
 	switch (m_sasi.phase) {
 		case SASI::busfree:
 			strPhase = _T("Busfree");
@@ -3359,7 +3359,7 @@ void FASTCALL CSASIWnd::SetupCtrl(int x, int y)
 	SetString(x + 11, y, strPhase);
 	y++;
 
- 	 // Selecci?n (Select)
+	// Select
 	SetString(x, y, _T("SEL"));
 	if (m_sasi.sel) {
 		SetString(x + 11, y, _T("Select"));
@@ -3369,7 +3369,7 @@ void FASTCALL CSASIWnd::SetupCtrl(int x, int y)
 	}
 	y++;
 
- 	 // Mensaje
+	// Message
 	SetString(x, y, _T("MSG"));
 	if (m_sasi.msg) {
 		SetString(x + 11, y, _T("Message"));
@@ -3379,7 +3379,7 @@ void FASTCALL CSASIWnd::SetupCtrl(int x, int y)
 	}
 	y++;
 
- 	 // Comando/Datos
+	// Command/Data
 	SetString(x, y, _T("C/D"));
 	if (m_sasi.cd) {
 		SetString(x + 11, y, _T("Command"));
@@ -3389,7 +3389,7 @@ void FASTCALL CSASIWnd::SetupCtrl(int x, int y)
 	}
 	y++;
 
- 	 // Entrada/Salida (Input/Output)
+	// Input/Output
 	SetString(x, y, _T("I/O"));
 	if (m_sasi.io) {
 		SetString(x + 11, y, _T("Input"));
@@ -3399,7 +3399,7 @@ void FASTCALL CSASIWnd::SetupCtrl(int x, int y)
 	}
 	y++;
 
- 	 // Busy (Ocupado)
+	// Busy
 	SetString(x, y, _T("BSY"));
 	if (m_sasi.bsy) {
 		SetString(x + 11, y, _T("Busy"));
@@ -3409,7 +3409,7 @@ void FASTCALL CSASIWnd::SetupCtrl(int x, int y)
 	}
 	y++;
 
- 	 // REQ
+	// REQ
 	SetString(x, y, _T("REQ"));
 	if (m_sasi.req) {
 		SetString(x + 11, y, _T("Request"));
@@ -3419,23 +3419,23 @@ void FASTCALL CSASIWnd::SetupCtrl(int x, int y)
 	}
 	y++;
 
- 	 // Mensaje
+	// Message
 	SetString(x, y, _T("Message"));
 	strText.Format(_T("%02X"), m_sasi.message);
 	SetString(x + 11, y, strText);
 	y++;
 
- 	 // Estado (Status)
+	// State (Status)
 	SetString(x, y, _T("Status"));
 	strText.Format(_T("%02X"), m_sasi.status);
 	SetString(x + 11, y, strText);
 }
 
-  //---------------------------------------------------------------------------
-  //
-  //	Configuracion (Unidad)
-  //
-  //---------------------------------------------------------------------------
+//---------------------------------------------------------------------------
+//
+//	Configuration (Unit)
+//
+//---------------------------------------------------------------------------
 void FASTCALL CSASIWnd::SetupDrive(int x, int y)
 {
 	CString strText;
@@ -3447,29 +3447,29 @@ void FASTCALL CSASIWnd::SetupDrive(int x, int y)
 	ASSERT(x >= 0);
 	ASSERT(y >= 0);
 
- 	 // Inicializacion
+	// Initialization
 	pDisk = NULL;
 
- 	 // ID
+	// ID
 	SetString(x, y, _T("ID"));
 	if (m_sasi.cmd[1] & 0x20) {
- 		 // Con LUN
+		// With LUN
 		strText.Format(_T("%d (LUN:1)"), m_sasi.ctrl);
 		pDisk = m_sasi.disk[(m_sasi.ctrl << 1) + 1];
 	}
 	else {
- 		 // Sin LUN
+		// Without LUN
 		strText.Format(_T("%d"), m_sasi.ctrl);
 		pDisk = m_sasi.disk[m_sasi.ctrl << 1];
 	}
 	SetString(x + 11, y, strText);
 	y++;
 
- 	 // Obtener datos
+	// Get data
 	ASSERT(pDisk);
 	pDisk->GetDisk(&disk);
 
- 	 // Tipo
+	// Type
 	SetString(x, y, _T("Type"));
 	switch (disk.id) {
 		case MAKEID('S', 'A', 'H', 'D'):
@@ -3491,7 +3491,7 @@ void FASTCALL CSASIWnd::SetupDrive(int x, int y)
 	SetString(x + 11, y, strText);
 	y++;
 
- 	 // Capacidad
+	// Capacity
 	SetString(x, y, _T("Capacity"));
 	dwSize = disk.blocks;
 	if (!disk.ready) {
@@ -3508,7 +3508,7 @@ void FASTCALL CSASIWnd::SetupDrive(int x, int y)
 	SetString(x + 11, y, strText);
 	y++;
 
- 	 // Tipo de acceso
+	// Access type
 	SetString(x, y, _T("Access"));
 	if (disk.writep) {
 		SetString(x + 11, y, _T("RO"));
@@ -3518,7 +3518,7 @@ void FASTCALL CSASIWnd::SetupDrive(int x, int y)
 	}
 	y++;
 
- 	 // Atributos de medio
+	// Media attributes
 	SetString(x, y, _T("Media"));
 	if (disk.removable) {
 		SetString(x + 11, y, _T("Removable"));
@@ -3528,11 +3528,11 @@ void FASTCALL CSASIWnd::SetupDrive(int x, int y)
 	}
 }
 
-  //---------------------------------------------------------------------------
-  //
-  //	Configuracion (Cache)
-  //
-  //---------------------------------------------------------------------------
+//---------------------------------------------------------------------------
+//
+//	Configuration (Cache)
+//
+//---------------------------------------------------------------------------
 void FASTCALL CSASIWnd::SetupCache(int x, int y)
 {
 	int nCache;
@@ -3547,25 +3547,25 @@ void FASTCALL CSASIWnd::SetupCache(int x, int y)
 	ASSERT(x >= 0);
 	ASSERT(y >= 0);
 
- 	 // ?Hay alguna unidad asignada actualmente?
+	// Is any unit currently assigned?
 	if (!m_sasi.current) {
 		return;
 	}
- 	 // ?Esta listo?
+	// ?Esta listo?
 	if (!m_sasi.current->IsReady()) {
 		return;
 	}
 
- 	 // Obtener trabajo interno
+	// Get trabajo interno
 	m_sasi.current->GetDisk(&disk);
 
- 	 // Buscar el ultimo indice utilizado
+	// Search the ultimo indice utilizado
 	dwMax = 0;
 	nLast = -1;
 	for (nCache=0; nCache<DiskCache::CacheMax; nCache++) {
- 		 // ?Esta en uso?
+		// ?Esta in uso?
 		if (disk.dcache->GetCache(nCache, nTrack, dwSerial)) {
- 			 // ?Es el serial mayor?
+			// ?Es the serial mayor?
 			if (dwSerial > dwMax) {
 				nLast = nCache;
 				dwMax = dwSerial;
@@ -3573,62 +3573,62 @@ void FASTCALL CSASIWnd::SetupCache(int x, int y)
 		}
 	}
 
- 	 // Bucle
+	// Loop
 	for (nCache=0; nCache<DiskCache::CacheMax; nCache++) {
- 		 // ?Esta en uso?
+		// ?Esta in uso?
 		if (disk.dcache->GetCache(nCache, nTrack, dwSerial)) {
- 			 // Inversion
+			// Inversion
 			if (nCache == nLast) {
 				Reverse(TRUE);
 			}
 
- 			 // Creacion de cadena
+			// String creation
 			strText.Format(_T("Cache%1X: Track%08X Serial%08X"),
 								nCache, nTrack, dwSerial);
 
- 			 // Establecer
+			// Set
 			SetString(x, y, strText);
 
- 			 // Inversion
+			// Inversion
 			if (nCache == nLast) {
 				Reverse(FALSE);
 			}
 		}
 
- 		 // Siguiente
+		// Next
 		y++;
 	}
 }
 
-  //===========================================================================
-  //
-  //	Ventana MIDI
-  //
-  //===========================================================================
+//===========================================================================
+//
+//	MIDI window
+//
+//===========================================================================
 
-  //---------------------------------------------------------------------------
-  //
-  //	Constructor
-  //
-  //---------------------------------------------------------------------------
+//---------------------------------------------------------------------------
+//
+//	Constructor
+//
+//---------------------------------------------------------------------------
 CMIDIWnd::CMIDIWnd()
 {
- 	 // Definicion de parametros de ventana
+	// Window parameter offinitions
 	m_dwID = MAKEID('M', 'I', 'D', 'I');
 	::GetMsg(IDS_SWND_MIDI, m_strCaption);
 	m_nWidth = 42;
 	m_nHeight = 24;
 
- 	 // Obtener MIDI
+	// Get MIDI
 	m_pMIDI = (MIDI*)::GetVM()->SearchDevice(MAKEID('M', 'I', 'D', 'I'));
 	ASSERT(m_pMIDI);
 }
 
-  //---------------------------------------------------------------------------
-  //
-  //	Configuracion
-  //
-  //---------------------------------------------------------------------------
+//---------------------------------------------------------------------------
+//
+//	Configuration
+//
+//---------------------------------------------------------------------------
 void FASTCALL CMIDIWnd::Setup()
 {
 	int x;
@@ -3638,76 +3638,76 @@ void FASTCALL CMIDIWnd::Setup()
 	ASSERT(this);
 	ASSERT(m_pMIDI);
 
- 	 // Obtener datos internos MIDI
+	// Get internal MIDI data
 	m_pMIDI->GetMIDI(&m_midi);
 
- 	 // Limpiar
+	// Clear
 	Clear();
 
- 	 // Control
+	// Control
 	x = 0;
 	y = 0;
 	SetString(x, y, _T("<Ctrl>"));
 	y++;
 	SetupCtrl(x, y);
 
- 	 // Interrupcion
+	// Interrupt
 	x = 15;
 	y = 0;
 	SetString(x, y, _T("<Int>"));
 	y++;
 	SetupInt(x, y);
 
- 	 // Transmision
+	// Transmission
 	x = 0;
 	y = 7;
 	SetString(x, y, _T("<Trans>"));
 	y++;
 	SetupTrans(x, y);
 
- 	 // Recepcion
+	// Reception
 	x = 15;
 	y = 7;
 	SetString(x, y, _T("<Recv>"));
 	y++;
 	SetupRecv(x, y);
 
- 	 // Transmision en tiempo real
+	// Transmission in tiempo real
 	x = 0;
 	y = 18;
 	SetString(x, y, _T("<R-Trans>"));
 	y++;
 	SetupRT(x, y);
 
- 	 // Recepcion en tiempo real
+	// Reception in tiempo real
 	x = 15;
 	y = 18;
 	SetString(x, y, _T("<R-Recv>"));
 	y++;
 	SetupRR(x, y);
 
- 	 // Contador
+	// Counter
 	x = 30;
 	y = 0;
 	SetString(x, y, _T("<Count>"));
 	y++;
 	SetupCount(x, y);
 
- 	 // Address Hunter
+	// Address Hunter
 	x = 30;
 	y = 12;
 	SetString(x, y, _T("<A-Hunter>"));
 	y++;
 	SetupHunter(x, y);
 
- 	 // FSK
+	// FSK
 	x = 30;
 	y = 16;
 	SetString(x, y, _T("<FSK>"));
 	y++;
 	SetupFSK(x, y);
 
- 	 // GPIO
+	// GPIO
 	x = 30;
 	y = 20;
 	SetString(x, y, _T("<GPIO>"));
@@ -3715,11 +3715,11 @@ void FASTCALL CMIDIWnd::Setup()
 	SetupGPIO(x, y);
 }
 
-  //---------------------------------------------------------------------------
-  //
-  //	Tabla de cadenas (Control)
-  //
-  //---------------------------------------------------------------------------
+//---------------------------------------------------------------------------
+//
+//	String table (Control)
+//
+//---------------------------------------------------------------------------
 LPCTSTR CMIDIWnd::DescCtrl[] = {
 	_T("Reset"),
 	_T("Access"),
@@ -3729,11 +3729,11 @@ LPCTSTR CMIDIWnd::DescCtrl[] = {
 	NULL
 };
 
-  //---------------------------------------------------------------------------
-  //
-  //	Configuracion (Control)
-  //
-  //---------------------------------------------------------------------------
+//---------------------------------------------------------------------------
+//
+//	Configuration (Control)
+//
+//---------------------------------------------------------------------------
 void FASTCALL CMIDIWnd::SetupCtrl(int x, int y)
 {
 	int i;
@@ -3743,7 +3743,7 @@ void FASTCALL CMIDIWnd::SetupCtrl(int x, int y)
 	ASSERT((x >= 0) && (x < m_nWidth));
 	ASSERT((y >= 0) && (y < m_nHeight));
 
- 	 // Tabla de cadenas
+	// String table
 	for (i=0;; i++) {
 		if (!DescCtrl[i]) {
 			break;
@@ -3751,10 +3751,10 @@ void FASTCALL CMIDIWnd::SetupCtrl(int x, int y)
 		SetString(x, y + i, DescCtrl[i]);
 	}
 
- 	 // Offset (Desplazamiento)
+	// Offset (Desplazamiento)
 	x += 8;
 
- 	 // Reset
+	// Reset
 	if (m_midi.reset) {
 		SetString(x, y, _T("Reset"));
 	}
@@ -3763,7 +3763,7 @@ void FASTCALL CMIDIWnd::SetupCtrl(int x, int y)
 	}
 	y++;
 
- 	 // Acceso
+	// Access
 	if (m_midi.access) {
 		SetString(x, y, _T("Access"));
 	}
@@ -3772,26 +3772,26 @@ void FASTCALL CMIDIWnd::SetupCtrl(int x, int y)
 	}
 	y++;
 
- 	 // ID de placa
+	// ID of placa
 	strText.Format(_T("%d"), m_midi.bid);
 	SetString(x, y, strText);
 	y++;
 
- 	 // WDR
+	// WDR
 	strText.Format(_T("%02X"), m_midi.wdr);
 	SetString(x, y, strText);
 	y++;
 
- 	 // RGR
+	// RGR
 	strText.Format(_T("%02X"), m_midi.rgr);
 	SetString(x, y, strText);
 }
 
-  //---------------------------------------------------------------------------
-  //
-  //	Configuracion (Interrupcion)
-  //
-  //---------------------------------------------------------------------------
+//---------------------------------------------------------------------------
+//
+//	Configuration (Interrupt)
+//
+//---------------------------------------------------------------------------
 void FASTCALL CMIDIWnd::SetupInt(int x, int y)
 {
 	int i;
@@ -3801,7 +3801,7 @@ void FASTCALL CMIDIWnd::SetupInt(int x, int y)
 	ASSERT((x >= 0) && (x < m_nWidth));
 	ASSERT((y >= 0) && (y < m_nHeight));
 
- 	 // Tabla de cadenas
+	// String table
 	for (i=0;; i++) {
 		if (!DescInt[i]) {
 			break;
@@ -3809,39 +3809,39 @@ void FASTCALL CMIDIWnd::SetupInt(int x, int y)
 		SetString(x, y + i, DescInt[i]);
 	}
 
- 	 // Offset (Desplazamiento)
+	// Offset (Desplazamiento)
 	x += 8;
 
- 	 // Nivel
+	// Nivel
 	strText.Format(_T("%d"), m_midi.ilevel);
 	SetString(x, y, strText);
 	y++;
 
- 	 // IVR
+	// IVR
 	strText.Format(_T("%02X"), m_midi.ivr);
 	SetString(x, y, strText);
 	y++;
 
- 	 // ISR
+	// ISR
 	strText.Format(_T("%02X"), m_midi.isr);
 	SetString(x, y, strText);
 	y++;
 
- 	 // IMR
+	// IMR
 	strText.Format(_T("%02X"), m_midi.imr);
 	SetString(x, y, strText);
 	y++;
 
- 	 // IER
+	// IER
 	strText.Format(_T("%02X"), m_midi.ier);
 	SetString(x, y, strText);
 }
 
-  //---------------------------------------------------------------------------
-  //
-  //	Tabla de cadenas (Interrupcion)
-  //
-  //---------------------------------------------------------------------------
+//---------------------------------------------------------------------------
+//
+//	String table (Interrupt)
+//
+//---------------------------------------------------------------------------
 LPCTSTR CMIDIWnd::DescInt[] = {
 	_T("Level"),
 	_T("IVR"),
@@ -3851,11 +3851,11 @@ LPCTSTR CMIDIWnd::DescInt[] = {
 	NULL
 };
 
-  //---------------------------------------------------------------------------
-  //
-  //	Configuracion (Transmision)
-  //
-  //---------------------------------------------------------------------------
+//---------------------------------------------------------------------------
+//
+//	Configuration (Transmission)
+//
+//---------------------------------------------------------------------------
 void FASTCALL CMIDIWnd::SetupTrans(int x, int y)
 {
 	int i;
@@ -3865,7 +3865,7 @@ void FASTCALL CMIDIWnd::SetupTrans(int x, int y)
 	ASSERT((x >= 0) && (x < m_nWidth));
 	ASSERT((y >= 0) && (y < m_nHeight));
 
- 	 // Tabla de cadenas
+	// String table
 	for (i=0;; i++) {
 		if (!DescTrans[i]) {
 			break;
@@ -3873,59 +3873,59 @@ void FASTCALL CMIDIWnd::SetupTrans(int x, int y)
 		SetString(x, y + i, DescTrans[i]);
 	}
 
- 	 // Offset (Desplazamiento)
+	// Offset (Desplazamiento)
 	x += 8;
 
- 	 // TRR
+	// TRR
 	strText.Format(_T("%02X"), m_midi.trr);
 	SetString(x, y, strText);
 	y++;
 
- 	 // TMR
+	// TMR
 	strText.Format(_T("%02X"), m_midi.tmr);
 	SetString(x, y, strText);
 	y++;
 
- 	 // TBS
+	// TBS
 	strText.Format(_T("%02X"), m_midi.tbs);
 	SetString(x, y, strText);
 	y++;
 
- 	 // TCR
+	// TCR
 	strText.Format(_T("%02X"), m_midi.tcr);
 	SetString(x, y, strText);
 	y++;
 
- 	 // TCN
+	// TCN
 	strText.Format(_T("%03X"), m_midi.tcn);
 	SetString(x, y, strText);
 	y++;
 
- 	 // Num
+	// Num
 	strText.Format(_T("%d"), m_midi.normnum);
 	SetString(x, y, strText);
 	y++;
 
- 	 // Leer (Read)
+	// Leer (Read)
 	strText.Format(_T("%d"), m_midi.normread);
 	SetString(x, y, strText);
 	y++;
 
- 	 // Escribir (Write)
+	// Escribir (Write)
 	strText.Format(_T("%d"), m_midi.normwrite);
 	SetString(x, y, strText);
 	y++;
 
- 	 // Total
+	// Total
 	strText.Format(_T("%-6d"), m_midi.normtotal);
 	SetString(x, y, strText);
 }
 
-  //---------------------------------------------------------------------------
-  //
-  //	Tabla de cadenas (Transmision)
-  //
-  //---------------------------------------------------------------------------
+//---------------------------------------------------------------------------
+//
+//	String table (Transmission)
+//
+//---------------------------------------------------------------------------
 LPCTSTR CMIDIWnd::DescTrans[] = {
 	_T("TRR"),
 	_T("TMR"),
@@ -3939,11 +3939,11 @@ LPCTSTR CMIDIWnd::DescTrans[] = {
 	NULL
 };
 
-  //---------------------------------------------------------------------------
-  //
-  //	Configuracion (Recepcion)
-  //
-  //---------------------------------------------------------------------------
+//---------------------------------------------------------------------------
+//
+//	Configuration (Reception)
+//
+//---------------------------------------------------------------------------
 void FASTCALL CMIDIWnd::SetupRecv(int x, int y)
 {
 	int i;
@@ -3953,7 +3953,7 @@ void FASTCALL CMIDIWnd::SetupRecv(int x, int y)
 	ASSERT((x >= 0) && (x < m_nWidth));
 	ASSERT((y >= 0) && (y < m_nHeight));
 
- 	 // Tabla de cadenas
+	// String table
 	for (i=0;; i++) {
 		if (!DescRecv[i]) {
 			break;
@@ -3961,59 +3961,59 @@ void FASTCALL CMIDIWnd::SetupRecv(int x, int y)
 		SetString(x, y + i, DescRecv[i]);
 	}
 
- 	 // Offset (Desplazamiento)
+	// Offset (Desplazamiento)
 	x += 8;
 
- 	 // RRR
+	// RRR
 	strText.Format(_T("%02X"), m_midi.rrr);
 	SetString(x, y, strText);
 	y++;
 
- 	 // RMR
+	// RMR
 	strText.Format(_T("%02X"), m_midi.rmr);
 	SetString(x, y, strText);
 	y++;
 
- 	 // RSR
+	// RSR
 	strText.Format(_T("%02X"), m_midi.rsr);
 	SetString(x, y, strText);
 	y++;
 
- 	 // RCR
+	// RCR
 	strText.Format(_T("%02X"), m_midi.rcr);
 	SetString(x, y, strText);
 	y++;
 
- 	 // RCN
+	// RCN
 	strText.Format(_T("%03X"), m_midi.rcn);
 	SetString(x, y, strText);
 	y++;
 
- 	 // Num
+	// Num
 	strText.Format(_T("%d"), m_midi.stdnum);
 	SetString(x, y, strText);
 	y++;
 
- 	 // Leer (Read)
+	// Leer (Read)
 	strText.Format(_T("%d"), m_midi.stdread);
 	SetString(x, y, strText);
 	y++;
 
- 	 // Escribir (Write)
+	// Escribir (Write)
 	strText.Format(_T("%d"), m_midi.stdwrite);
 	SetString(x, y, strText);
 	y++;
 
- 	 // Total
+	// Total
 	strText.Format(_T("%-6d"), m_midi.stdtotal);
 	SetString(x, y, strText);
 }
 
-  //---------------------------------------------------------------------------
-  //
-  //	Tabla de cadenas (Recepcion)
-  //
-  //---------------------------------------------------------------------------
+//---------------------------------------------------------------------------
+//
+//	String table (Reception)
+//
+//---------------------------------------------------------------------------
 LPCTSTR CMIDIWnd::DescRecv[] = {
 	_T("RRR"),
 	_T("RMR"),
@@ -4027,11 +4027,11 @@ LPCTSTR CMIDIWnd::DescRecv[] = {
 	NULL
 };
 
-  //---------------------------------------------------------------------------
-  //
-  //	Configuracion (Transmision en tiempo real)
-  //
-  //---------------------------------------------------------------------------
+//---------------------------------------------------------------------------
+//
+//	Configuration (Real-time transmission)
+//
+//---------------------------------------------------------------------------
 void FASTCALL CMIDIWnd::SetupRT(int x, int y)
 {
 	int i;
@@ -4041,7 +4041,7 @@ void FASTCALL CMIDIWnd::SetupRT(int x, int y)
 	ASSERT((x >= 0) && (x < m_nWidth));
 	ASSERT((y >= 0) && (y < m_nHeight));
 
- 	 // Tabla de cadenas
+	// String table
 	for (i=0;; i++) {
 		if (!DescRT[i]) {
 			break;
@@ -4049,39 +4049,39 @@ void FASTCALL CMIDIWnd::SetupRT(int x, int y)
 		SetString(x, y + i, DescRT[i]);
 	}
 
- 	 // Offset (Desplazamiento)
+	// Offset (Desplazamiento)
 	x += 8;
 
- 	 // DMR
+	// DMR
 	strText.Format(_T("%02X"), m_midi.dmr);
 	SetString(x, y, strText);
 	y++;
 
- 	 // Num
+	// Num
 	strText.Format(_T("%d"), m_midi.rtnum);
 	SetString(x, y, strText);
 	y++;
 
- 	 // Leer (Read)
+	// Leer (Read)
 	strText.Format(_T("%d"), m_midi.rtread);
 	SetString(x, y, strText);
 	y++;
 
- 	 // Escribir (Write)
+	// Escribir (Write)
 	strText.Format(_T("%d"), m_midi.rtwrite);
 	SetString(x, y, strText);
 	y++;
 
- 	 // Total
+	// Total
 	strText.Format(_T("%-6d"), m_midi.rttotal);
 	SetString(x, y, strText);
 }
 
-  //---------------------------------------------------------------------------
-  //
-  //	Tabla de cadenas (Transmision en tiempo real)
-  //
-  //---------------------------------------------------------------------------
+//---------------------------------------------------------------------------
+//
+//	String table (Real-time transmission)
+//
+//---------------------------------------------------------------------------
 LPCTSTR CMIDIWnd::DescRT[] = {
 	_T("DMR"),
 	_T("Num"),
@@ -4091,11 +4091,11 @@ LPCTSTR CMIDIWnd::DescRT[] = {
 	NULL
 };
 
-  //---------------------------------------------------------------------------
-  //
-  //	Configuracion (Recepcion en tiempo real)
-  //
-  //---------------------------------------------------------------------------
+//---------------------------------------------------------------------------
+//
+//	Configuration (Real-time reception)
+//
+//---------------------------------------------------------------------------
 void FASTCALL CMIDIWnd::SetupRR(int x, int y)
 {
 	int i;
@@ -4105,7 +4105,7 @@ void FASTCALL CMIDIWnd::SetupRR(int x, int y)
 	ASSERT((x >= 0) && (x < m_nWidth));
 	ASSERT((y >= 0) && (y < m_nHeight));
 
- 	 // Tabla de cadenas
+	// String table
 	for (i=0;; i++) {
 		if (!DescRR[i]) {
 			break;
@@ -4113,39 +4113,39 @@ void FASTCALL CMIDIWnd::SetupRR(int x, int y)
 		SetString(x, y + i, DescRR[i]);
 	}
 
- 	 // Offset (Desplazamiento)
+	// Offset (Desplazamiento)
 	x += 8;
 
- 	 // DCR
+	// DCR
 	strText.Format(_T("%02X"), m_midi.dcr);
 	SetString(x, y, strText);
 	y++;
 
- 	 // Num
+	// Num
 	strText.Format(_T("%d"), m_midi.rrnum);
 	SetString(x, y, strText);
 	y++;
 
- 	 // Leer (Read)
+	// Leer (Read)
 	strText.Format(_T("%d"), m_midi.rrread);
 	SetString(x, y, strText);
 	y++;
 
- 	 // Escribir (Write)
+	// Escribir (Write)
 	strText.Format(_T("%d"), m_midi.rrwrite);
 	SetString(x, y, strText);
 	y++;
 
- 	 // Total
+	// Total
 	strText.Format(_T("%-6d"), m_midi.rrtotal);
 	SetString(x, y, strText);
 }
 
-  //---------------------------------------------------------------------------
-  //
-  //	Tabla de cadenas (Recepcion en tiempo real)
-  //
-  //---------------------------------------------------------------------------
+//---------------------------------------------------------------------------
+//
+//	String table (Real-time reception)
+//
+//---------------------------------------------------------------------------
 LPCTSTR CMIDIWnd::DescRR[] = {
 	_T("DCR"),
 	_T("Num"),
@@ -4155,11 +4155,11 @@ LPCTSTR CMIDIWnd::DescRR[] = {
 	NULL
 };
 
-  //---------------------------------------------------------------------------
-  //
-  //	Configuracion (Contador)
-  //
-  //---------------------------------------------------------------------------
+//---------------------------------------------------------------------------
+//
+//	Configuration (Counter)
+//
+//---------------------------------------------------------------------------
 void FASTCALL CMIDIWnd::SetupCount(int x, int y)
 {
 	int i;
@@ -4169,7 +4169,7 @@ void FASTCALL CMIDIWnd::SetupCount(int x, int y)
 	ASSERT((x >= 0) && (x < m_nWidth));
 	ASSERT((y >= 0) && (y < m_nHeight));
 
- 	 // Tabla de cadenas
+	// String table
 	for (i=0;; i++) {
 		if (!DescCount[i]) {
 			break;
@@ -4177,64 +4177,64 @@ void FASTCALL CMIDIWnd::SetupCount(int x, int y)
 		SetString(x, y + i, DescCount[i]);
 	}
 
- 	 // Offset (Desplazamiento)
+	// Offset (Desplazamiento)
 	x += 8;
 
- 	 // CCR
+	// CCR
 	strText.Format(_T("%02X"), m_midi.ccr);
 	SetString(x, y, strText);
 	y++;
 
- 	 // CDR
+	// CDR
 	strText.Format(_T("%02X"), m_midi.cdr);
 	SetString(x, y, strText);
 	y++;
 
- 	 // CTR
+	// CTR
 	strText.Format(_T("%02X"), m_midi.ctr);
 	SetString(x, y, strText);
 	y++;
 
- 	 // SRR
+	// SRR
 	strText.Format(_T("%02X"), m_midi.srr);
 	SetString(x, y, strText);
 	y++;
 
- 	 // SCR
+	// SCR
 	strText.Format(_T("%02X"), m_midi.scr);
 	SetString(x, y, strText);
 	y++;
 
- 	 // SCT
+	// SCT
 	strText.Format(_T("%02X"), m_midi.sct);
 	SetString(x, y, strText);
 	y++;
 
- 	 // SPR
+	// SPR
 	strText.Format(_T("%04X"), m_midi.spr);
 	SetString(x, y, strText);
 	y++;
 
- 	 // STR
+	// STR
 	strText.Format(_T("%04X"), m_midi.str & 0xffff);
 	SetString(x, y, strText);
 	y++;
 
- 	 // GTR
+	// GTR
 	strText.Format(_T("%04X"), m_midi.gtr);
 	SetString(x, y, strText);
 	y++;
 
- 	 // MTR
+	// MTR
 	strText.Format(_T("%04X"), m_midi.mtr);
 	SetString(x, y, strText);
 }
 
-  //---------------------------------------------------------------------------
-  //
-  //	Tabla de cadenas (Contador)
-  //
-  //---------------------------------------------------------------------------
+//---------------------------------------------------------------------------
+//
+//	String table (Counter)
+//
+//---------------------------------------------------------------------------
 LPCTSTR CMIDIWnd::DescCount[] = {
 	_T("CCR"),
 	_T("CDR"),
@@ -4249,11 +4249,11 @@ LPCTSTR CMIDIWnd::DescCount[] = {
 	NULL
 };
 
-  //---------------------------------------------------------------------------
-  //
-  //	Configuracion (Address Hunter)
-  //
-  //---------------------------------------------------------------------------
+//---------------------------------------------------------------------------
+//
+//	Configuration (Address Hunter)
+//
+//---------------------------------------------------------------------------
 void FASTCALL CMIDIWnd::SetupHunter(int x, int y)
 {
 	int i;
@@ -4263,7 +4263,7 @@ void FASTCALL CMIDIWnd::SetupHunter(int x, int y)
 	ASSERT((x >= 0) && (x < m_nWidth));
 	ASSERT((y >= 0) && (y < m_nHeight));
 
- 	 // Tabla de cadenas
+	// String table
 	for (i=0;; i++) {
 		if (!DescHunter[i]) {
 			break;
@@ -4271,35 +4271,35 @@ void FASTCALL CMIDIWnd::SetupHunter(int x, int y)
 		SetString(x, y + i, DescHunter[i]);
 	}
 
- 	 // Offset (Desplazamiento)
+	// Offset (Desplazamiento)
 	x += 8;
 
- 	 // AMR
+	// AMR
 	strText.Format(_T("%02X"), m_midi.amr);
 	SetString(x, y, strText);
 	y++;
 
- 	 // ADR
+	// ADR
 	strText.Format(_T("%02X"), m_midi.adr);
 	SetString(x, y, strText);
 }
 
-  //---------------------------------------------------------------------------
-  //
-  //	Tabla de cadenas (Address Hunter)
-  //
-  //---------------------------------------------------------------------------
+//---------------------------------------------------------------------------
+//
+//	String table (Address Hunter)
+//
+//---------------------------------------------------------------------------
 LPCTSTR CMIDIWnd::DescHunter[] = {
 	_T("AMR"),
 	_T("ADR"),
 	NULL
 };
 
-  //---------------------------------------------------------------------------
-  //
-  //	Configuracion (FSK)
-  //
-  //---------------------------------------------------------------------------
+//---------------------------------------------------------------------------
+//
+//	Configuration (FSK)
+//
+//---------------------------------------------------------------------------
 void FASTCALL CMIDIWnd::SetupFSK(int x, int y)
 {
 	int i;
@@ -4309,7 +4309,7 @@ void FASTCALL CMIDIWnd::SetupFSK(int x, int y)
 	ASSERT((x >= 0) && (x < m_nWidth));
 	ASSERT((y >= 0) && (y < m_nHeight));
 
- 	 // Tabla de cadenas
+	// String table
 	for (i=0;; i++) {
 		if (!DescFSK[i]) {
 			break;
@@ -4317,35 +4317,35 @@ void FASTCALL CMIDIWnd::SetupFSK(int x, int y)
 		SetString(x, y + i, DescFSK[i]);
 	}
 
- 	 // Offset (Desplazamiento)
+	// Offset (Desplazamiento)
 	x += 8;
 
- 	 // FSR
+	// FSR
 	strText.Format(_T("%02X"), m_midi.fsr);
 	SetString(x, y, strText);
 	y++;
 
- 	 // FCR
+	// FCR
 	strText.Format(_T("%02X"), m_midi.fcr);
 	SetString(x, y, strText);
 }
 
-  //---------------------------------------------------------------------------
-  //
-  //	Tabla de cadenas (FSK)
-  //
-  //---------------------------------------------------------------------------
+//---------------------------------------------------------------------------
+//
+//	String table (FSK)
+//
+//---------------------------------------------------------------------------
 LPCTSTR CMIDIWnd::DescFSK[] = {
 	_T("FSR"),
 	_T("FCR"),
 	NULL
 };
 
-  //---------------------------------------------------------------------------
-  //
-  //	Configuracion (GPIO)
-  //
-  //---------------------------------------------------------------------------
+//---------------------------------------------------------------------------
+//
+//	Configuration (GPIO)
+//
+//---------------------------------------------------------------------------
 void FASTCALL CMIDIWnd::SetupGPIO(int x, int y)
 {
 	int i;
@@ -4355,7 +4355,7 @@ void FASTCALL CMIDIWnd::SetupGPIO(int x, int y)
 	ASSERT((x >= 0) && (x < m_nWidth));
 	ASSERT((y >= 0) && (y < m_nHeight));
 
- 	 // Tabla de cadenas
+	// String table
 	for (i=0;; i++) {
 		if (!DescGPIO[i]) {
 			break;
@@ -4363,29 +4363,29 @@ void FASTCALL CMIDIWnd::SetupGPIO(int x, int y)
 		SetString(x, y + i, DescGPIO[i]);
 	}
 
- 	 // Offset (Desplazamiento)
+	// Offset (Desplazamiento)
 	x += 8;
 
- 	 // EDR
+	// EDR
 	strText.Format(_T("%02X"), m_midi.edr);
 	SetString(x, y, strText);
 	y++;
 
- 	 // EOR
+	// EOR
 	strText.Format(_T("%02X"), m_midi.eor);
 	SetString(x, y, strText);
 	y++;
 
- 	 // EIR
+	// EIR
 	strText.Format(_T("%02X"), m_midi.eir);
 	SetString(x, y, strText);
 }
 
-  //---------------------------------------------------------------------------
-  //
-  //	Tabla de cadenas (GPIO)
-  //
-  //---------------------------------------------------------------------------
+//---------------------------------------------------------------------------
+//
+//	String table (GPIO)
+//
+//---------------------------------------------------------------------------
 LPCTSTR CMIDIWnd::DescGPIO[] = {
 	_T("EDR"),
 	_T("EOR"),
@@ -4393,67 +4393,67 @@ LPCTSTR CMIDIWnd::DescGPIO[] = {
 	NULL
 };
 
-  //===========================================================================
-  //
-  //	Ventana SCSI
-  //
-  //===========================================================================
+//===========================================================================
+//
+//	SCSI window
+//
+//===========================================================================
 
-  //---------------------------------------------------------------------------
-  //
-  //	Constructor
-  //
-  //---------------------------------------------------------------------------
+//---------------------------------------------------------------------------
+//
+//	Constructor
+//
+//---------------------------------------------------------------------------
 CSCSIWnd::CSCSIWnd()
 {
- 	 // Definicion de parametros de ventana
+	// Window parameter offinitions
 	m_dwID = MAKEID('S', 'C', 'S', 'I');
 	::GetMsg(IDS_SWND_SCSI, m_strCaption);
 	m_nWidth = 39;
 	m_nHeight = 22;
 
- 	 // Obtener SCSI
+	// Get SCSI
 	m_pSCSI = (SCSI*)::GetVM()->SearchDevice(MAKEID('S', 'C', 'S', 'I'));
 	ASSERT(m_pSCSI);
 }
 
-  //---------------------------------------------------------------------------
-  //
-  //	Configuracion
-  //
-  //---------------------------------------------------------------------------
+//---------------------------------------------------------------------------
+//
+//	Configuration
+//
+//---------------------------------------------------------------------------
 void FASTCALL CSCSIWnd::Setup()
 {
 	ASSERT(this);
 	ASSERT(m_pSCSI);
 
- 	 // Limpiar
+	// Clear
 	Clear();
 
- 	 // Obtener datos SCSI
+	// Get data SCSI
 	m_pSCSI->GetSCSI(&m_scsi);
 
- 	 // Comando
+	// Command
 	SetupCmd(0, 0);
 
- 	 // Controlador
+	// Controller
 	SetupCtrl(0, 1);
 
- 	 // Unidad (Drive)
+	// Unit (Drive)
 	SetupDrive(0, 14);
 
- 	 // Registro
+	// Register
 	SetupReg(26, 0);
 
- 	 // CDB
+	// CDB
 	SetupCDB(26, 12);
 }
 
-  //---------------------------------------------------------------------------
-  //
-  //	Configuracion (Comando)
-  //
-  //---------------------------------------------------------------------------
+//---------------------------------------------------------------------------
+//
+//	Configuration (Command)
+//
+//---------------------------------------------------------------------------
 void FASTCALL CSCSIWnd::SetupCmd(int x, int y)
 {
 	CString strCmd;
@@ -4462,10 +4462,10 @@ void FASTCALL CSCSIWnd::SetupCmd(int x, int y)
 	ASSERT(x >= 0);
 	ASSERT(y >= 0);
 
- 	 // Inicializacion
+	// Initialization
 	strCmd = _T("(UNKNOWN)");
 
- 	 // Por comando
+	// By command
 	switch (m_scsi.cmd[0]) {
 		case 0x00:
 			strCmd = _T("TEST UNIT READY");
@@ -4532,7 +4532,7 @@ void FASTCALL CSCSIWnd::SetupCmd(int x, int y)
 			break;
 	}
 
- 	 // Comprobar fase inactiva (Idle)
+	// Check for idle phase
 	if (m_scsi.phase == SCSI::busfree) {
 		strCmd = _T("(IDLE)");
 	}
@@ -4540,11 +4540,11 @@ void FASTCALL CSCSIWnd::SetupCmd(int x, int y)
 	SetString(x, y, strCmd);
 }
 
-  //---------------------------------------------------------------------------
-  //
-  //	Configuracion (Controlador)
-  //
-  //---------------------------------------------------------------------------
+//---------------------------------------------------------------------------
+//
+//	Configuration (Controller)
+//
+//---------------------------------------------------------------------------
 void FASTCALL CSCSIWnd::SetupCtrl(int x, int y)
 {
 	CString strPhase;
@@ -4554,7 +4554,7 @@ void FASTCALL CSCSIWnd::SetupCtrl(int x, int y)
 	ASSERT(x >= 0);
 	ASSERT(y >= 0);
 
- 	 // Fase
+	// Phase
 	switch (m_scsi.phase) {
 		case SCSI::busfree:
 			strPhase = _T("Busfree");
@@ -4597,7 +4597,7 @@ void FASTCALL CSCSIWnd::SetupCtrl(int x, int y)
 	SetString(x + 11, y, strPhase);
 	y++;
 
- 	 // Selecci?n (Select)
+	// Select
 	SetString(x, y, _T("SEL"));
 	if (m_scsi.sel) {
 		SetString(x + 11, y, _T("Select"));
@@ -4607,7 +4607,7 @@ void FASTCALL CSCSIWnd::SetupCtrl(int x, int y)
 	}
 	y++;
 
- 	 // Atencion (Attention)
+	// Attention
 	SetString(x, y, _T("ATN"));
 	if (m_scsi.atn) {
 		SetString(x + 11, y, _T("Attention"));
@@ -4617,7 +4617,7 @@ void FASTCALL CSCSIWnd::SetupCtrl(int x, int y)
 	}
 	y++;
 
- 	 // Mensaje
+	// Message
 	SetString(x, y, _T("MSG"));
 	if (m_scsi.msg) {
 		SetString(x + 11, y, _T("Message"));
@@ -4627,7 +4627,7 @@ void FASTCALL CSCSIWnd::SetupCtrl(int x, int y)
 	}
 	y++;
 
- 	 // Comando/Datos
+	// Command/Data
 	SetString(x, y, _T("C/D"));
 	if (m_scsi.cd) {
 		SetString(x + 11, y, _T("Command"));
@@ -4637,7 +4637,7 @@ void FASTCALL CSCSIWnd::SetupCtrl(int x, int y)
 	}
 	y++;
 
- 	 // Entrada/Salida (Input/Output)
+	// Input/Output
 	SetString(x, y, _T("I/O"));
 	if (m_scsi.io) {
 		SetString(x + 11, y, _T("Input"));
@@ -4647,7 +4647,7 @@ void FASTCALL CSCSIWnd::SetupCtrl(int x, int y)
 	}
 	y++;
 
- 	 // Busy (Ocupado)
+	// Busy
 	SetString(x, y, _T("BSY"));
 	if (m_scsi.bsy) {
 		SetString(x + 11, y, _T("Busy"));
@@ -4657,7 +4657,7 @@ void FASTCALL CSCSIWnd::SetupCtrl(int x, int y)
 	}
 	y++;
 
- 	 // REQ
+	// REQ
 	SetString(x, y, _T("REQ"));
 	if (m_scsi.req) {
 		SetString(x + 11, y, _T("Request"));
@@ -4667,7 +4667,7 @@ void FASTCALL CSCSIWnd::SetupCtrl(int x, int y)
 	}
 	y++;
 
- 	 // ACK
+	// ACK
 	SetString(x, y, _T("ACK"));
 	if (m_scsi.ack) {
 		SetString(x + 11, y, _T("ACK"));
@@ -4677,7 +4677,7 @@ void FASTCALL CSCSIWnd::SetupCtrl(int x, int y)
 	}
 	y++;
 
- 	 // Reseteo (Reset)
+	// Reset
 	SetString(x, y, _T("RST"));
 	if (m_scsi.rst) {
 		SetString(x + 11, y, _T("Reset"));
@@ -4687,23 +4687,23 @@ void FASTCALL CSCSIWnd::SetupCtrl(int x, int y)
 	}
 	y++;
 
- 	 // Mensaje
+	// Message
 	SetString(x, y, _T("Message"));
 	strText.Format(_T("%02X"), m_scsi.message);
 	SetString(x + 11, y, strText);
 	y++;
 
- 	 // Estado (Status)
+	// State (Status)
 	SetString(x, y, _T("Status"));
 	strText.Format(_T("%02X"), m_scsi.status);
 	SetString(x + 11, y, strText);
 }
 
-  //---------------------------------------------------------------------------
-  //
-  //	Configuracion (Unidad)
-  //
-  //---------------------------------------------------------------------------
+//---------------------------------------------------------------------------
+//
+//	Configuration (Unit)
+//
+//---------------------------------------------------------------------------
 void FASTCALL CSCSIWnd::SetupDrive(int x, int y)
 {
 	CString strText;
@@ -4715,10 +4715,10 @@ void FASTCALL CSCSIWnd::SetupDrive(int x, int y)
 	ASSERT(x >= 0);
 	ASSERT(y >= 0);
 
- 	 // Inicializacion
+	// Initialization
 	pDisk = NULL;
 
- 	 // ID
+	// ID
 	SetString(x, y, _T("ID"));
 	if ((m_scsi.id >= 0) && (m_scsi.id <= 7)) {
 		strText.Format(_T("%d"), m_scsi.id);
@@ -4730,7 +4730,7 @@ void FASTCALL CSCSIWnd::SetupDrive(int x, int y)
 	SetString(x + 11, y, strText);
 	y++;
 
- 	 // Obtener datos
+	// Get data
 	if (pDisk) {
 		pDisk->GetDisk(&disk);
 	}
@@ -4738,7 +4738,7 @@ void FASTCALL CSCSIWnd::SetupDrive(int x, int y)
 		memset(&disk, 0, sizeof(disk));
 	}
 
- 	 // Tipo
+	// Type
 	SetString(x, y, _T("Type"));
 	strText = _T("(No Unit)");
 	if (pDisk) {
@@ -4757,7 +4757,7 @@ void FASTCALL CSCSIWnd::SetupDrive(int x, int y)
 	SetString(x + 11, y, strText);
 	y++;
 
- 	 // Capacidad
+	// Capacity
 	SetString(x, y, _T("Capacity"));
 	dwSize = 0;
 	if (pDisk) {
@@ -4773,7 +4773,7 @@ void FASTCALL CSCSIWnd::SetupDrive(int x, int y)
 	SetString(x + 11, y, strText);
 	y++;
 
- 	 // Tipo de acceso
+	// Access type
 	SetString(x, y, _T("Access"));
 	if (pDisk) {
 		if (disk.writep) {
@@ -4788,7 +4788,7 @@ void FASTCALL CSCSIWnd::SetupDrive(int x, int y)
 	}
 	y++;
 
- 	 // Atributos de medio
+	// Media attributes
 	SetString(x, y, _T("Media"));
 	if (pDisk) {
 		if (disk.removable) {
@@ -4803,10 +4803,10 @@ void FASTCALL CSCSIWnd::SetupDrive(int x, int y)
 	}
 	y++;
 
- 	 // Inicializacion
+	// Initialization
 	strText = _T("N/A");
 
- 	 // Sense key (Clave de sentido)
+	// Sense key
 	SetString(x, y, _T("Sense"));
 	if (pDisk) {
 		strText.Format(_T("%02X"), (BYTE)(disk.code >> 16));
@@ -4814,7 +4814,7 @@ void FASTCALL CSCSIWnd::SetupDrive(int x, int y)
 	SetString(x + 11, y, strText);
 	y++;
 
- 	 // Codigo de sentido extendido
+	// Extended sense code
 	SetString(x, y, _T("ASC"));
 	if (pDisk) {
 		strText.Format(_T("%02X"), (BYTE)(disk.code >> 8));
@@ -4822,7 +4822,7 @@ void FASTCALL CSCSIWnd::SetupDrive(int x, int y)
 	SetString(x + 11, y, strText);
 	y++;
 
- 	 // Codigo de sentido extendido
+	// Extended sense code
 	SetString(x, y, _T("ASCQ"));
 	if (pDisk) {
 		strText.Format(_T("%02X"), (BYTE)disk.code);
@@ -4830,11 +4830,11 @@ void FASTCALL CSCSIWnd::SetupDrive(int x, int y)
 	SetString(x + 11, y, strText);
 }
 
-  //---------------------------------------------------------------------------
-  //
-  //	Configuracion (Registro)
-  //
-  //---------------------------------------------------------------------------
+//---------------------------------------------------------------------------
+//
+//	Configuration (Register)
+//
+//---------------------------------------------------------------------------
 void FASTCALL CSCSIWnd::SetupReg(int x, int y)
 {
 	CString strText;
@@ -4843,61 +4843,61 @@ void FASTCALL CSCSIWnd::SetupReg(int x, int y)
 	ASSERT(x >= 0);
 	ASSERT(y >= 0);
 
- 	 // BDID (Visualizacion de bits)
+	// BDID (bit display)
 	SetString(x, y, _T("BDID"));
 	strText.Format(_T("%02X"), m_scsi.bdid);
 	SetString(x + 11, y, strText);
 	y++;
 
- 	 // SCTL
+	// SCTL
 	SetString(x, y, _T("SCTL"));
 	strText.Format(_T("%02X"), m_scsi.sctl);
 	SetString(x + 11, y, strText);
 	y++;
 
- 	 // SCMD
+	// SCMD
 	SetString(x, y, _T("SCMD"));
 	strText.Format(_T("%02X"), m_scsi.scmd);
 	SetString(x + 11, y, strText);
 	y++;
 
- 	 // INTS
+	// INTS
 	SetString(x, y, _T("INTS"));
 	strText.Format(_T("%02X"), m_scsi.ints);
 	SetString(x + 11, y, strText);
 	y++;
 
- 	 // SDGC
+	// SDGC
 	SetString(x, y, _T("SDGC"));
 	strText.Format(_T("%02X"), m_scsi.sdgc);
 	SetString(x + 11, y, strText);
 	y++;
 
- 	 // PCTL
+	// PCTL
 	SetString(x, y, _T("PCTL"));
 	strText.Format(_T("%02X"), m_scsi.pctl);
 	SetString(x + 11, y, strText);
 	y++;
 
- 	 // MBC
+	// MBC
 	SetString(x, y, _T("MBC"));
 	strText.Format(_T("%02X"), m_scsi.mbc);
 	SetString(x + 11, y, strText);
 	y++;
 
- 	 // TEMP
+	// TEMP
 	SetString(x, y, _T("TEMP"));
 	strText.Format(_T("%02X"), m_scsi.temp);
 	SetString(x + 11, y, strText);
 	y++;
 
- 	 // TC
+	// TC
 	SetString(x, y, _T("TC"));
 	strText.Format(_T("%06X"), m_scsi.tc);
 	SetString(x + 11 - 4, y, strText);
 	y++;
 
- 	 // Transferencia (Transfer)
+	// Transfer (Transfer)
 	SetString(x, y, _T("XFER"));
 	if (m_scsi.trans) {
 		SetString(x + 9, y, _T("Auto"));
@@ -4907,17 +4907,17 @@ void FASTCALL CSCSIWnd::SetupReg(int x, int y)
 	}
 	y++;
 
- 	 // Longitud (Length)
+	// Length (Length)
 	SetString(x, y, _T("LEN"));
 	strText.Format(_T("%04X"), m_scsi.length);
 	SetString(x + 9, y, strText);
 }
 
-  //---------------------------------------------------------------------------
-  //
-  //	Configuracion (CDB)
-  //
-  //---------------------------------------------------------------------------
+//---------------------------------------------------------------------------
+//
+//	Configuration (CDB)
+//
+//---------------------------------------------------------------------------
 void FASTCALL CSCSIWnd::SetupCDB(int x, int y)
 {
 	int nCDB;
@@ -4927,24 +4927,24 @@ void FASTCALL CSCSIWnd::SetupCDB(int x, int y)
 	ASSERT(x >= 0);
 	ASSERT(y >= 0);
 
- 	 // Bucle CDB
+    // CDB loop
 	for (nCDB=0; nCDB<10; nCDB++) {
- 		 // A partir del 6? byte podria no mostrarse
+		// From the 6th byte onward, it may not be displayed
 		if (nCDB == 6) {
 			if (m_scsi.cmd[0] < 0x20) {
 				break;
 			}
 		}
 
- 		 // Mostrar
+		// Display
 		strText.Format(_T("CDB[%d]"), nCDB);
 		SetString(x, y, strText);
 		strText.Format(_T("%02X"), m_scsi.cmd[nCDB]);
 		SetString(x + 11, y, strText);
 
- 		 // Siguiente
+		// Next
 		y++;
 	}
 }
 
- #endif	 // _WIN32
+#endif	// _WIN32

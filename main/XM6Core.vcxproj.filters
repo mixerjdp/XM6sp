@@ -1,0 +1,417 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="VM">
+      <UniqueIdentifier>{9ed18be7-b3e2-4ee8-8f99-bb48548c73e0}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="MFC">
+      <UniqueIdentifier>{7fbd05ea-1faf-46c1-81a1-dce273417d6d}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Libretro">
+      <UniqueIdentifier>{a5a7f1ef-4a6f-4bf4-a657-7d1eb0b7e9a1}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="..\vm\adpcm.cpp">
+      <Filter>VM</Filter>
+    </ClCompile>
+    <ClCompile Include="..\vm\areaset.cpp">
+      <Filter>VM</Filter>
+    </ClCompile>
+    <ClCompile Include="..\vm\cpu.cpp">
+      <Filter>VM</Filter>
+    </ClCompile>
+    <ClCompile Include="..\vm\cpudebug.c">
+      <Filter>VM</Filter>
+    </ClCompile>
+    <ClCompile Include="..\vm\crtc.cpp">
+      <Filter>VM</Filter>
+    </ClCompile>
+    <ClCompile Include="..\vm\device.cpp">
+      <Filter>VM</Filter>
+    </ClCompile>
+    <ClCompile Include="..\vm\disk.cpp">
+      <Filter>VM</Filter>
+    </ClCompile>
+    <ClCompile Include="..\vm\dmac.cpp">
+      <Filter>VM</Filter>
+    </ClCompile>
+    <ClCompile Include="..\vm\event.cpp">
+      <Filter>VM</Filter>
+    </ClCompile>
+    <ClCompile Include="..\vm\fdc.cpp">
+      <Filter>VM</Filter>
+    </ClCompile>
+    <ClCompile Include="..\vm\fdd.cpp">
+      <Filter>VM</Filter>
+    </ClCompile>
+    <ClCompile Include="..\vm\fdi.cpp">
+      <Filter>VM</Filter>
+    </ClCompile>
+    <ClCompile Include="..\vm\fileio.cpp">
+      <Filter>VM</Filter>
+    </ClCompile>
+    <ClCompile Include="..\vm\filepath.cpp">
+      <Filter>VM</Filter>
+    </ClCompile>
+    <ClCompile Include="..\vm\fmgen.cpp">
+      <Filter>VM</Filter>
+    </ClCompile>
+    <ClCompile Include="..\vm\fmtimer.cpp">
+      <Filter>VM</Filter>
+    </ClCompile>
+    <ClCompile Include="..\vm\gvram.cpp">
+      <Filter>VM</Filter>
+    </ClCompile>
+    <ClCompile Include="..\vm\iosc.cpp">
+      <Filter>VM</Filter>
+    </ClCompile>
+    <ClCompile Include="..\vm\keyboard.cpp">
+      <Filter>VM</Filter>
+    </ClCompile>
+    <ClCompile Include="..\vm\log.cpp">
+      <Filter>VM</Filter>
+    </ClCompile>
+    <ClCompile Include="..\vm\memory.cpp">
+      <Filter>VM</Filter>
+    </ClCompile>
+    <ClCompile Include="..\vm\mercury.cpp">
+      <Filter>VM</Filter>
+    </ClCompile>
+    <ClCompile Include="..\vm\mfp.cpp">
+      <Filter>VM</Filter>
+    </ClCompile>
+    <ClCompile Include="..\vm\midi.cpp">
+      <Filter>VM</Filter>
+    </ClCompile>
+    <ClCompile Include="..\vm\mouse.cpp">
+      <Filter>VM</Filter>
+    </ClCompile>
+    <ClCompile Include="..\vm\neptune.cpp">
+      <Filter>VM</Filter>
+    </ClCompile>
+    <ClCompile Include="..\vm\opm.cpp">
+      <Filter>VM</Filter>
+    </ClCompile>
+    <ClCompile Include="..\vm\opmif.cpp">
+      <Filter>VM</Filter>
+    </ClCompile>
+    <ClCompile Include="..\vm\x68sound_bridge.cpp">
+      <Filter>VM</Filter>
+    </ClCompile>
+    <ClCompile Include="..\vm\ymfm_opm_engine.cpp">
+      <Filter>VM</Filter>
+    </ClCompile>
+    <ClCompile Include="..\vm\x68sound\X68Sound.cpp">
+      <Filter>VM</Filter>
+    </ClCompile>
+    <ClCompile Include="..\vm\ppi.cpp">
+      <Filter>VM</Filter>
+    </ClCompile>
+    <ClCompile Include="..\vm\printer.cpp">
+      <Filter>VM</Filter>
+    </ClCompile>
+    <ClCompile Include="..\vm\render.cpp">
+      <Filter>VM</Filter>
+    </ClCompile>
+    <ClCompile Include="..\vm\renderfast_compositor.cpp">
+      <Filter>VM</Filter>
+    </ClCompile>
+    <ClCompile Include="..\vm\rend_soft.cpp">
+      <Filter>VM</Filter>
+    </ClCompile>
+    <ClCompile Include="..\vm\rtc.cpp">
+      <Filter>VM</Filter>
+    </ClCompile>
+    <ClCompile Include="..\vm\sasi.cpp">
+      <Filter>VM</Filter>
+    </ClCompile>
+    <ClCompile Include="..\vm\scc.cpp">
+      <Filter>VM</Filter>
+    </ClCompile>
+    <ClCompile Include="..\vm\schedule.cpp">
+      <Filter>VM</Filter>
+    </ClCompile>
+    <ClCompile Include="..\vm\scsi.cpp">
+      <Filter>VM</Filter>
+    </ClCompile>
+    <ClCompile Include="..\vm\sprite.cpp">
+      <Filter>VM</Filter>
+    </ClCompile>
+    <ClCompile Include="..\vm\sram.cpp">
+      <Filter>VM</Filter>
+    </ClCompile>
+    <ClCompile Include="..\vm\sram_default.cpp">
+      <Filter>VM</Filter>
+    </ClCompile>
+    <ClCompile Include="..\vm\sync.cpp">
+      <Filter>VM</Filter>
+    </ClCompile>
+    <ClCompile Include="..\vm\sysport.cpp">
+      <Filter>VM</Filter>
+    </ClCompile>
+    <ClCompile Include="..\vm\tvram.cpp">
+      <Filter>VM</Filter>
+    </ClCompile>
+    <ClCompile Include="..\vm\vc.cpp">
+      <Filter>VM</Filter>
+    </ClCompile>
+    <ClCompile Include="..\vm\vm.cpp">
+      <Filter>VM</Filter>
+    </ClCompile>
+    <ClCompile Include="..\vm\windrv.cpp">
+      <Filter>VM</Filter>
+    </ClCompile>
+    <ClCompile Include="..\vm\ymfm\ymfm_opm.cpp">
+      <Filter>VM</Filter>
+    </ClCompile>
+    <ClCompile Include="..\vm\core_soft.cpp">
+      <Filter>VM</Filter>
+    </ClCompile>
+    <ClCompile Include="..\vm\xm6core_diag.cpp">
+      <Filter>VM</Filter>
+    </ClCompile>
+    <ClCompile Include="..\vm\xm6core_impl.cpp">
+      <Filter>VM</Filter>
+    </ClCompile>
+    <ClCompile Include="..\vm\xm6core_runtime.cpp">
+      <Filter>VM</Filter>
+    </ClCompile>
+    <ClCompile Include="..\vm\xm6core_stubs.cpp">
+      <Filter>VM</Filter>
+    </ClCompile>
+    <ClCompile Include="..\vm\musashi_adapter.cpp">
+      <Filter>VM</Filter>
+    </ClCompile>
+    <ClCompile Include="..\vm\musashi_mem.cpp">
+      <Filter>VM</Filter>
+    </ClCompile>
+    <ClCompile Include="..\cpu\Musashi\softfloat\softfloat.c">
+      <Filter>VM</Filter>
+    </ClCompile>
+    <ClCompile Include="..\cpu\Musashi\m68kcpu.c">
+      <Filter>VM</Filter>
+    </ClCompile>
+    <ClCompile Include="..\cpu\Musashi\m68kops.c">
+      <Filter>VM</Filter>
+    </ClCompile>
+    <ClCompile Include="..\cpu\Musashi\m68kdasm.c">
+      <Filter>VM</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="..\mfc\resource.h">
+      <Filter>MFC</Filter>
+    </ClInclude>
+    <ClInclude Include="..\vm\adpcm.h">
+      <Filter>VM</Filter>
+    </ClInclude>
+    <ClInclude Include="..\vm\areaset.h">
+      <Filter>VM</Filter>
+    </ClInclude>
+    <ClInclude Include="..\vm\cisc.h">
+      <Filter>VM</Filter>
+    </ClInclude>
+    <ClInclude Include="..\vm\config.h">
+      <Filter>VM</Filter>
+    </ClInclude>
+    <ClInclude Include="..\vm\core_asm.h">
+      <Filter>VM</Filter>
+    </ClInclude>
+    <ClInclude Include="..\vm\core_soft.h">
+      <Filter>VM</Filter>
+    </ClInclude>
+    <ClInclude Include="..\vm\cpu.h">
+      <Filter>VM</Filter>
+    </ClInclude>
+    <ClInclude Include="..\vm\cpudebug.h">
+      <Filter>VM</Filter>
+    </ClInclude>
+    <ClInclude Include="..\vm\crtc.h">
+      <Filter>VM</Filter>
+    </ClInclude>
+    <ClInclude Include="..\vm\device.h">
+      <Filter>VM</Filter>
+    </ClInclude>
+    <ClInclude Include="..\vm\disk.h">
+      <Filter>VM</Filter>
+    </ClInclude>
+    <ClInclude Include="..\vm\dmac.h">
+      <Filter>VM</Filter>
+    </ClInclude>
+    <ClInclude Include="..\vm\event.h">
+      <Filter>VM</Filter>
+    </ClInclude>
+    <ClInclude Include="..\vm\fdc.h">
+      <Filter>VM</Filter>
+    </ClInclude>
+    <ClInclude Include="..\vm\fdd.h">
+      <Filter>VM</Filter>
+    </ClInclude>
+    <ClInclude Include="..\vm\fdi.h">
+      <Filter>VM</Filter>
+    </ClInclude>
+    <ClInclude Include="..\vm\fileio.h">
+      <Filter>VM</Filter>
+    </ClInclude>
+    <ClInclude Include="..\vm\filepath.h">
+      <Filter>VM</Filter>
+    </ClInclude>
+    <ClInclude Include="..\vm\fmgen.h">
+      <Filter>VM</Filter>
+    </ClInclude>
+    <ClInclude Include="..\vm\fmgeninl.h">
+      <Filter>VM</Filter>
+    </ClInclude>
+    <ClInclude Include="..\vm\fmtimer.h">
+      <Filter>VM</Filter>
+    </ClInclude>
+    <ClInclude Include="..\vm\gvram.h">
+      <Filter>VM</Filter>
+    </ClInclude>
+    <ClInclude Include="..\vm\host_fs.h">
+      <Filter>VM</Filter>
+    </ClInclude>
+    <ClInclude Include="..\vm\host_services.h">
+      <Filter>VM</Filter>
+    </ClInclude>
+    <ClInclude Include="..\vm\iosc.h">
+      <Filter>VM</Filter>
+    </ClInclude>
+    <ClInclude Include="..\vm\keyboard.h">
+      <Filter>VM</Filter>
+    </ClInclude>
+    <ClInclude Include="..\vm\log.h">
+      <Filter>VM</Filter>
+    </ClInclude>
+    <ClInclude Include="..\vm\memory.h">
+      <Filter>VM</Filter>
+    </ClInclude>
+    <ClInclude Include="..\vm\mercury.h">
+      <Filter>VM</Filter>
+    </ClInclude>
+    <ClInclude Include="..\vm\mfp.h">
+      <Filter>VM</Filter>
+    </ClInclude>
+    <ClInclude Include="..\vm\midi.h">
+      <Filter>VM</Filter>
+    </ClInclude>
+    <ClInclude Include="..\vm\mouse.h">
+      <Filter>VM</Filter>
+    </ClInclude>
+    <ClInclude Include="..\vm\musashi_adapter.h">
+      <Filter>VM</Filter>
+    </ClInclude>
+    <ClInclude Include="..\vm\neptune.h">
+      <Filter>VM</Filter>
+    </ClInclude>
+    <ClInclude Include="..\vm\opm.h">
+      <Filter>VM</Filter>
+    </ClInclude>
+    <ClInclude Include="..\vm\opmif.h">
+      <Filter>VM</Filter>
+    </ClInclude>
+    <ClInclude Include="..\vm\x68sound_adpcm_core.h">
+      <Filter>VM</Filter>
+    </ClInclude>
+    <ClInclude Include="..\vm\x68sound_bridge.h">
+      <Filter>VM</Filter>
+    </ClInclude>
+    <ClInclude Include="..\vm\x68sound\adpcm.h">
+      <Filter>VM</Filter>
+    </ClInclude>
+    <ClInclude Include="..\vm\x68sound\global.h">
+      <Filter>VM</Filter>
+    </ClInclude>
+    <ClInclude Include="..\vm\x68sound\lfo.h">
+      <Filter>VM</Filter>
+    </ClInclude>
+    <ClInclude Include="..\vm\x68sound\op.h">
+      <Filter>VM</Filter>
+    </ClInclude>
+    <ClInclude Include="..\vm\x68sound\opm.h">
+      <Filter>VM</Filter>
+    </ClInclude>
+    <ClInclude Include="..\vm\x68sound\pcm8.h">
+      <Filter>VM</Filter>
+    </ClInclude>
+    <ClInclude Include="..\vm\x68sound\x68sound.h">
+      <Filter>VM</Filter>
+    </ClInclude>
+    <ClInclude Include="..\vm\x68sound\x68sound_platform.h">
+      <Filter>VM</Filter>
+    </ClInclude>
+    <ClInclude Include="..\vm\ymfm_opm_engine.h">
+      <Filter>VM</Filter>
+    </ClInclude>
+    <ClInclude Include="..\vm\os.h">
+      <Filter>VM</Filter>
+    </ClInclude>
+    <ClInclude Include="..\vm\ppi.h">
+      <Filter>VM</Filter>
+    </ClInclude>
+    <ClInclude Include="..\vm\printer.h">
+      <Filter>VM</Filter>
+    </ClInclude>
+    <ClInclude Include="..\vm\render.h">
+      <Filter>VM</Filter>
+    </ClInclude>
+    <ClInclude Include="..\vm\renderin.h">
+      <Filter>VM</Filter>
+    </ClInclude>
+    <ClInclude Include="..\vm\rend_asm.h">
+      <Filter>VM</Filter>
+    </ClInclude>
+    <ClInclude Include="..\vm\rend_soft.h">
+      <Filter>VM</Filter>
+    </ClInclude>
+    <ClInclude Include="..\vm\rtc.h">
+      <Filter>VM</Filter>
+    </ClInclude>
+    <ClInclude Include="..\vm\sasi.h">
+      <Filter>VM</Filter>
+    </ClInclude>
+    <ClInclude Include="..\vm\scc.h">
+      <Filter>VM</Filter>
+    </ClInclude>
+    <ClInclude Include="..\vm\schedule.h">
+      <Filter>VM</Filter>
+    </ClInclude>
+    <ClInclude Include="..\vm\scsi.h">
+      <Filter>VM</Filter>
+    </ClInclude>
+    <ClInclude Include="..\vm\sprite.h">
+      <Filter>VM</Filter>
+    </ClInclude>
+    <ClInclude Include="..\vm\sram.h">
+      <Filter>VM</Filter>
+    </ClInclude>
+    <ClInclude Include="..\vm\starcpu.h">
+      <Filter>VM</Filter>
+    </ClInclude>
+    <ClInclude Include="..\vm\sync.h">
+      <Filter>VM</Filter>
+    </ClInclude>
+    <ClInclude Include="..\vm\sysport.h">
+      <Filter>VM</Filter>
+    </ClInclude>
+    <ClInclude Include="..\vm\tvram.h">
+      <Filter>VM</Filter>
+    </ClInclude>
+    <ClInclude Include="..\vm\vc.h">
+      <Filter>VM</Filter>
+    </ClInclude>
+    <ClInclude Include="..\vm\vm.h">
+      <Filter>VM</Filter>
+    </ClInclude>
+    <ClInclude Include="..\vm\windrv.h">
+      <Filter>VM</Filter>
+    </ClInclude>
+    <ClInclude Include="..\vm\xm6.h">
+      <Filter>VM</Filter>
+    </ClInclude>
+    <ClInclude Include="..\vm\xm6core.h">
+      <Filter>VM</Filter>
+    </ClInclude>
+  </ItemGroup>
+</Project>

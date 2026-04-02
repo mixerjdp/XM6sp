@@ -1,79 +1,79 @@
-  //---------------------------------------------------------------------------
-  //
-  //	EMULADOR X68000 "XM6"
-  //
-  //	Copyright (C) 2001-2005 PI.(ytanaka@ipc-tokai.or.jp)
-  //	[ Componente MFC ]
-  //
-  //---------------------------------------------------------------------------
+//---------------------------------------------------------------------------
+//
+//	X68000 Emulator "XM6"
+//
+//	Copyright (C) 2001-2005 PI.(ytanaka@ipc-tokai.or.jp)
+//	[MFC component]
+//
+//---------------------------------------------------------------------------
 
 #if defined(_WIN32)
 
 #if !defined(mfc_com_h)
 #define mfc_com_h
 
-  //===========================================================================
-  //
-  //	Componente
-  //
-  //===========================================================================
+//===========================================================================
+//
+//	Component
+//
+//===========================================================================
 class CComponent : public CObject
 {
 public:
- 	 // Funciones basicas
+	// Basic functions
 	CComponent(CFrmWnd *pFrmWnd);
- 										 // Constructor
+										// Constructor
 	virtual ~CComponent();
- 										 // Destructor
+										// Destructor
 	virtual BOOL FASTCALL Init();
- 										 // Inicializacion
+										// Initialization
 	virtual void FASTCALL Cleanup();
- 										 // Limpieza
+										// Cleanup
 	virtual void FASTCALL Enable(BOOL bEnable)	{ m_bEnable = bEnable; }
- 										 // Control de operacion
+										// Enable control
 	BOOL FASTCALL IsEnable() const		{ return m_bEnable; }
- 										 // Obtener estado de operacion
+										// Check whether the component is enabled
 	virtual BOOL FASTCALL Save(Fileio *pFio, int nVer);
- 										 // Guardar
+										// Save
 	virtual BOOL FASTCALL Load(Fileio *pFio, int nVer);
- 										 // Cargar
+										// Load
 	virtual void FASTCALL ApplyCfg(const Config *pConfig);
- 										 // Aplicar configuracion
+										// Apply configuration
 #if !defined(NDEBUG)
 		void AssertValid() const;
- 										 // Diagnostico
- #endif	 // NDEBUG
+										// Diagnostics
+#endif	// NDEBUG
 
- 	 // Propiedades
+	// Properties
 	DWORD FASTCALL GetID() const		{ return m_dwID; }
- 										 // Obtener ID
+										// Get the ID
 	void FASTCALL GetDesc(CString& strDesc) const;
- 										 // Obtener nombre
+										// Get the name
 
- 	 // Gestion de componentes
+	// Component management
 	CComponent* FASTCALL SearchComponent(DWORD dwID);
- 										 // Buscar componente
+										// Search for a component
 	void FASTCALL AddComponent(CComponent *pNewComponent);
- 										 // Anadir componente
+										// Add a component
 	CComponent* FASTCALL GetPrevComponent() const	{ return m_pPrev; }
- 										 // Obtener el componente anterior
+										// Get the previous component
 	CComponent* FASTCALL GetNextComponent() const	{ return m_pNext; }
- 										 // Obtener el componente siguiente
+										// Get the next component
 
 protected:
 	CFrmWnd *m_pFrmWnd;
- 										 // Ventana de marco
+										// Frame window
 	DWORD m_dwID;
- 										 // ID de componente
+										// Component ID
 	BOOL m_bEnable;
- 										 // Flag de activado
+										// Enabled flag
 	CString m_strDesc;
- 										 // Nombre
+										// Name
 	CComponent *m_pPrev;
- 										 // Componente anterior
+										// Previous component
 	CComponent *m_pNext;
- 										 // Componente siguiente
+										// Next component
 };
 
- #endif	 // mfc_com_h
- #endif	 // _WIN32
+#endif	// mfc_com_h
+#endif	// _WIN32

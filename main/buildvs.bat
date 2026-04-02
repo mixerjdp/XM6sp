@@ -8,9 +8,16 @@ echo ========================================================
 echo.
 
 set "MSBUILD_PATH=C:\Program Files\Microsoft Visual Studio\2022\Community\MSBuild\Current\Bin\MSBuild.exe"
+set "SOLUTION_PATH=%~dp0XM6.sln"
 
 if not exist "%MSBUILD_PATH%" (
     echo [ERROR] No se pudo encontrar MSBuild en: "%MSBUILD_PATH%"
+    pause
+    exit /b 1
+)
+
+if not exist "%SOLUTION_PATH%" (
+    echo [ERROR] No se pudo encontrar la solucion en: "%SOLUTION_PATH%"
     pause
     exit /b 1
 )
@@ -19,7 +26,7 @@ echo Iniciando compilacion de XM6.sln...
 echo.
 
 :: Ejecutar la compilacion
-"%MSBUILD_PATH%" XM6.sln /p:Configuration=Release /p:Platform=Win32 /t:Build /m
+"%MSBUILD_PATH%" "%SOLUTION_PATH%" /p:Configuration=Release /p:Platform=Win32 /t:Build /m
 
 if %ERRORLEVEL% equ 0 (
     echo.

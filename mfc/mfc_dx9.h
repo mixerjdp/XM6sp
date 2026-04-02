@@ -9,24 +9,24 @@ public:
     CDX9Renderer();
     ~CDX9Renderer();
 
-    // Init: Inicializa Direct3D9.
-    // Intenta usar Direct3DCreate9Ex primero (Win7+), si falla, cae a Direct3DCreate9 (XP).
+// Initialize Direct3D9.
+// Try Direct3DCreate9Ex first (Win7+); if it fails, fall back to Direct3DCreate9 (XP).
     BOOL Init(HWND hWnd, int width, int height, BOOL bWindowed, BOOL bVSync);
     void Cleanup();
 
-    // Actualiza la textura dinámica de D3D con el buffer de pixeles del emulador
+    // Update the D3D dynamic texture with the emulator pixel buffer
     BOOL UpdateSurface(const DWORD* pSrcBuffer, int srcWidth, int srcHeight, int srcPitchPixels);
-    
-    // Muestra la imagen en pantalla
-    BOOL PresentFrame(int srcWidth, int srcHeight, BOOL fillWindow, BOOL keepAspect);
 
-    // OSD (overlay) renderizado por hardware
+// Present the image on screen
+    BOOL PresentFrame(int srcWidth, int srcHeight, int scalePercent);
+
+// Hardware-rendered OSD overlay
     void SetOverlayText(LPCTSTR line1, LPCTSTR line2);
 
-    // Resetear el dispositivo en caso de pérdida o cambio de tamaño
+    // Reset the device after a loss or a resize
     BOOL ResetDevice(int width, int height, BOOL bWindowed, BOOL bVSync);
-    
-    // Status
+
+// Status
     BOOL IsInitialized() const { return m_bInitialized; }
     BOOL IsDeviceLost() const { return m_bDeviceLost; }
     BOOL IsShaderEnabled() const { return m_bShaderEnabled; }
@@ -58,17 +58,17 @@ private:
     IDirect3DTexture9* m_pTexture;
     IDirect3DTexture9* m_pOverlayTexture;
     IDirect3DVertexBuffer9* m_pVertexBuffer;
-    IDirect3DPixelShader9* m_pCRTShader;	// Shader CRT para postproceso
+    IDirect3DPixelShader9 *m_pCRTShader;	// CRT post-processing shader
 
     HWND m_hWnd;
     D3DPRESENT_PARAMETERS m_d3dpp;
-    TCHAR m_szCRTShaderPath[MAX_PATH];	// Ruta del shader CRT cargado
+    TCHAR m_szCRTShaderPath[MAX_PATH];	// Path of the loaded CRT shader
 
     BOOL m_bInitialized;
     BOOL m_bDeviceLost;
-    BOOL m_bIsEx; // Indica si estamos usando D3D9Ex
-    BOOL m_bShaderEnabled; // Shader CRT habilitado
-    DWORD m_dwOwnerThreadId; // Guardar ID del hilo
+    BOOL m_bIsEx;	// True if D3D9Ex is in use
+    BOOL m_bShaderEnabled;	// CRT shader enabled
+    DWORD m_dwOwnerThreadId;	// Owner thread ID
 
     int m_TexWidth;
     int m_TexHeight;
@@ -85,4 +85,4 @@ private:
     DWORD* m_pOverlayBits;
 };
 
-#endif // MFC_DX9_H
+#endif  // MFC_DX9_H

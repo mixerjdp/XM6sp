@@ -7,10 +7,27 @@
 #include <fstream>
 #include <string>
 #include <vector>
+#include <chrono>
+#include <cerrno>
+#include <sys/stat.h>
 
+#if defined(_WIN32)
 #include <windows.h>
+#ifndef S_ISDIR
+#define S_ISDIR(mode) (((mode) & _S_IFMT) == _S_IFDIR)
+#endif
+#else
+#include <unistd.h>
+#include <limits.h>
+#include <strings.h>
+#include <dlfcn.h>
+#endif
 
 #include "libretro.h"
+
+#if !defined(_WIN32) && !defined(XM6CORE_MONOLITHIC)
+#define XM6CORE_MONOLITHIC
+#endif
 
 #ifndef XM6CORE_STATIC
 #define XM6CORE_STATIC
@@ -33,7 +50,8 @@ static bool g_supports_midi_interface = false;
 
 static const double k_default_fps = 55.0;
 static const double k_default_aspect = 4.0 / 3.0;
-static const unsigned k_sample_rate = 44100;
+static const unsigned k_default_sample_rate = 44100;
+static const unsigned k_ymfm_sample_rate = 62500;
 static const unsigned k_default_width = 768;
 static const unsigned k_default_height = 512;
 static const unsigned k_savestate_guard_frames_default = 300;
@@ -44,17 +62,9 @@ static const unsigned k_video_probe_frames_after_mode_change = 12;
 
 static uint64_t now_usec()
 {
-  static LARGE_INTEGER freq = {};
-  if (freq.QuadPart == 0) {
-    QueryPerformanceFrequency(&freq);
-    if (freq.QuadPart == 0) {
-      return 0;
-    }
-  }
-
-  LARGE_INTEGER counter = {};
-  QueryPerformanceCounter(&counter);
-  return static_cast<uint64_t>((counter.QuadPart * 1000000LL) / freq.QuadPart);
+  const auto now = std::chrono::steady_clock::now().time_since_epoch();
+  return static_cast<uint64_t>(
+      std::chrono::duration_cast<std::chrono::microseconds>(now).count());
 }
 
 static unsigned g_frame_width = k_default_width;
@@ -62,6 +72,7 @@ static unsigned g_frame_height = k_default_height;
 static float g_frame_aspect = static_cast<float>(k_default_aspect);
 static double g_current_fps = k_default_fps;
 static double g_audio_fraction = 0.0;
+static unsigned g_sample_rate = k_default_sample_rate;
 static bool g_game_loaded = false;
 
 static std::vector<std::string> g_disk_paths;
@@ -90,10 +101,23 @@ static int g_system_clock = 0;
 static int g_ram_size = 5;
 static bool g_fast_floppy = false;
 static int g_render_mode = XM6CORE_RENDER_MODE_ORIGINAL;
+static bool g_alt_raster_enabled = true;
+static bool g_render_bg0_enabled = true;
+static bool g_transparency_enabled = true;
 static enum retro_pixel_format g_frontend_pixel_format = RETRO_PIXEL_FORMAT_UNKNOWN;
-static int g_master_volume = 100;
-static int g_fm_volume = 54;
-static int g_adpcm_volume = 52;
+static int g_fm_volume = 50;
+static int g_adpcm_volume = 50;
+static bool g_hq_adpcm_enabled = false;
+static int g_reverb_level = 0;
+static int g_eq_sub_bass_level = 50;
+static int g_eq_bass_level = 50;
+static int g_eq_mid_level = 50;
+static int g_eq_presence_level = 50;
+static int g_eq_treble_level = 50;
+static int g_eq_air_level = 50;
+static bool g_surround_enabled = false;
+static int g_audio_engine = XM6CORE_AUDIO_ENGINE_XM6;
+static bool g_legacy_dmac_cnt = false;
 static bool g_midi_output_enabled = false;
 enum midi_output_type_t {
   MIDI_OUTPUT_LA = 0,
@@ -200,7 +224,13 @@ static unsigned g_video_probe_frames_remaining = 0;
 static unsigned g_video_probe_frame_index = 0;
 
 struct xm6_api_t {
+#ifndef XM6CORE_MONOLITHIC
+#if defined(_WIN32)
   HMODULE module = nullptr;
+#else
+  void* module = nullptr;
+#endif
+#endif
 
   XM6Handle (XM6CORE_CALL *create)(void) = nullptr;
   void (XM6CORE_CALL *destroy)(XM6Handle) = nullptr;
@@ -245,10 +275,25 @@ struct xm6_api_t {
   int (XM6CORE_CALL *set_master_volume)(XM6Handle handle, int volume) = nullptr;
   int (XM6CORE_CALL *set_fm_volume)(XM6Handle handle, int volume) = nullptr;
   int (XM6CORE_CALL *set_adpcm_volume)(XM6Handle handle, int volume) = nullptr;
+  int (XM6CORE_CALL *set_adpcm_interp)(XM6Handle handle, int enabled) = nullptr;
+  int (XM6CORE_CALL *set_hq_adpcm_enabled)(XM6Handle handle, int enabled) = nullptr;
+  int (XM6CORE_CALL *set_reverb_level)(XM6Handle handle, int level) = nullptr;
+  int (XM6CORE_CALL *set_eq_bass2_level)(XM6Handle handle, int level) = nullptr;
+  int (XM6CORE_CALL *set_eq_bass_level)(XM6Handle handle, int level) = nullptr;
+  int (XM6CORE_CALL *set_eq_presence_level)(XM6Handle handle, int level) = nullptr;
+  int (XM6CORE_CALL *set_eq_mid_level)(XM6Handle handle, int level) = nullptr;
+  int (XM6CORE_CALL *set_eq_treble_level)(XM6Handle handle, int level) = nullptr;
+  int (XM6CORE_CALL *set_eq_air_level)(XM6Handle handle, int level) = nullptr;
+  int (XM6CORE_CALL *set_surround_enabled)(XM6Handle handle, int enabled) = nullptr;
+  int (XM6CORE_CALL *set_audio_engine)(XM6Handle handle, int audio_engine) = nullptr;
+  int (XM6CORE_CALL *set_legacy_dmac_cnt)(XM6Handle handle, int enabled) = nullptr;
   int (XM6CORE_CALL *set_mouse_speed)(XM6Handle handle, int speed) = nullptr;
   int (XM6CORE_CALL *set_mouse_port)(XM6Handle handle, int port) = nullptr;
   int (XM6CORE_CALL *set_mouse_swap)(XM6Handle handle, int enabled) = nullptr;
   int (XM6CORE_CALL *set_render_mode)(XM6Handle handle, int mode) = nullptr;
+  int (XM6CORE_CALL *set_alt_raster)(XM6Handle handle, int enabled) = nullptr;
+  int (XM6CORE_CALL *set_render_bg0)(XM6Handle handle, int enabled) = nullptr;
+  int (XM6CORE_CALL *set_transparency_enabled)(XM6Handle handle, int enabled) = nullptr;
   int (XM6CORE_CALL *get_render_mode)(XM6Handle handle) = nullptr;
   int (XM6CORE_CALL *set_midi_enabled)(XM6Handle handle, int enabled) = nullptr;
   int (XM6CORE_CALL *midi_read_output)(XM6Handle handle,
@@ -274,6 +319,22 @@ static XM6Handle g_xm6_handle = nullptr;
 
 static void core_log(enum retro_log_level level, const char *fmt, ...);
 static void reset_video_mode_log_state();
+static void fill_av_info(struct retro_system_av_info *info);
+static unsigned desired_audio_sample_rate_for_engine(int engine)
+{
+  return (engine == XM6CORE_AUDIO_ENGINE_YMFM ||
+          engine == XM6CORE_AUDIO_ENGINE_YMFM_DIRECT) ? k_ymfm_sample_rate : k_default_sample_rate;
+}
+static const char* audio_engine_label(int engine)
+{
+  switch (engine) {
+    case XM6CORE_AUDIO_ENGINE_PX68K: return "PX68k";
+    case XM6CORE_AUDIO_ENGINE_YMFM: return "YMFM";
+    case XM6CORE_AUDIO_ENGINE_YMFM_DIRECT: return "YMFM";
+    case XM6CORE_AUDIO_ENGINE_X68SOUND: return "X68Sound";
+    default: return "XM6";
+  }
+}
 
 static void XM6CORE_CALL xm6_host_message_cb(const char *message, void * /*user*/)
 {
@@ -293,13 +354,18 @@ static void core_log(enum retro_log_level level, const char *fmt, ...)
   if (g_log_cb) {
     g_log_cb(level, "%s", buffer);
   } else {
+#if defined(_WIN32)
     OutputDebugStringA(buffer);
     OutputDebugStringA("\n");
+#else
+    std::fprintf(stderr, "%s\n", buffer);
+#endif
   }
 }
 
 static void core_log_last_error(const char *prefix)
 {
+#if defined(_WIN32)
   const DWORD err = GetLastError();
   char *msg = nullptr;
   const DWORD flags = FORMAT_MESSAGE_ALLOCATE_BUFFER |
@@ -319,6 +385,16 @@ static void core_log_last_error(const char *prefix)
   }
   core_log(RETRO_LOG_ERROR, "[xm6-libretro] %s (winerr=%lu)",
            prefix, static_cast<unsigned long>(err));
+#else
+  const int err = errno;
+  const char* dyn = dlerror();
+  if (dyn && *dyn) {
+    core_log(RETRO_LOG_ERROR, "[xm6-libretro] %s (dlerror=%s)", prefix, dyn);
+    return;
+  }
+  core_log(RETRO_LOG_ERROR, "[xm6-libretro] %s (errno=%d: %s)",
+           prefix, err, std::strerror(err));
+#endif
 }
 
 static bool set_frontend_pixel_format(enum retro_pixel_format fmt)
@@ -340,9 +416,10 @@ static bool set_frontend_pixel_format(enum retro_pixel_format fmt)
 
 static void sync_frontend_pixel_format_for_render_mode()
 {
-  const enum retro_pixel_format desired =
-    (g_render_mode == XM6CORE_RENDER_MODE_FAST) ? RETRO_PIXEL_FORMAT_RGB565
-                                               : RETRO_PIXEL_FORMAT_XRGB8888;
+  // Keep the frontend pixel format stable across compositor changes.
+  // RetroArch can display corrupted colors/geometry when switching between
+  // RGB565 and XRGB8888 mid-run; the core always produces ARGB32 anyway.
+  const enum retro_pixel_format desired = RETRO_PIXEL_FORMAT_XRGB8888;
 
   if (desired == g_frontend_pixel_format && g_frontend_pixel_format != RETRO_PIXEL_FORMAT_UNKNOWN) {
     return;
@@ -351,22 +428,20 @@ static void sync_frontend_pixel_format_for_render_mode()
   if (set_frontend_pixel_format(desired)) {
     core_log(RETRO_LOG_INFO,
              "[xm6-libretro] Video output pixel format set to %s",
-             (desired == RETRO_PIXEL_FORMAT_RGB565) ? "RGB565" : "XRGB8888");
+             "XRGB8888");
     return;
   }
 
-  if (desired == RETRO_PIXEL_FORMAT_RGB565) {
-    core_log(RETRO_LOG_WARN, "[xm6-libretro] Frontend does not support RGB565 (falling back to XRGB8888)");
-    if (set_frontend_pixel_format(RETRO_PIXEL_FORMAT_XRGB8888)) {
-      core_log(RETRO_LOG_INFO,
-               "[xm6-libretro] Video output pixel format set to %s",
-               "XRGB8888");
-      return;
-    }
+  core_log(RETRO_LOG_WARN, "[xm6-libretro] Frontend does not support XRGB8888 (falling back to RGB565)");
+  if (set_frontend_pixel_format(RETRO_PIXEL_FORMAT_RGB565)) {
+    core_log(RETRO_LOG_INFO,
+             "[xm6-libretro] Video output pixel format set to %s",
+             "RGB565");
+    return;
   }
 
   core_log(RETRO_LOG_ERROR, "[xm6-libretro] Frontend does not support %s",
-           (desired == RETRO_PIXEL_FORMAT_RGB565) ? "RGB565" : "XRGB8888");
+           "XRGB8888 or RGB565");
 }
 
 static bool get_core_module_dir(char *out_dir, size_t out_dir_size)
@@ -375,6 +450,7 @@ static bool get_core_module_dir(char *out_dir, size_t out_dir_size)
     return false;
   }
 
+#if defined(_WIN32)
   HMODULE self = nullptr;
   if (!GetModuleHandleExA(GET_MODULE_HANDLE_EX_FLAG_FROM_ADDRESS |
                           GET_MODULE_HANDLE_EX_FLAG_UNCHANGED_REFCOUNT,
@@ -403,6 +479,27 @@ static bool get_core_module_dir(char *out_dir, size_t out_dir_size)
   std::memcpy(out_dir, module_path, dir_len);
   out_dir[dir_len] = '\0';
   return true;
+#else
+  char module_path[PATH_MAX] = {};
+  ssize_t len = readlink("/proc/self/exe", module_path, sizeof(module_path) - 1);
+  if (len <= 0 || static_cast<size_t>(len) >= sizeof(module_path)) {
+    return false;
+  }
+  module_path[len] = '\0';
+
+  const char *slash = std::strrchr(module_path, '/');
+  if (!slash) {
+    return false;
+  }
+  const size_t dir_len = static_cast<size_t>(slash - module_path + 1);
+  if (dir_len + 1 > out_dir_size) {
+    return false;
+  }
+
+  std::memcpy(out_dir, module_path, dir_len);
+  out_dir[dir_len] = '\0';
+  return true;
+#endif
 }
 
 template <typename FnType>
@@ -416,7 +513,11 @@ static bool load_required_symbol(FnType *fn, const char *symbol)
   }
   return true;
 #else
+#if defined(_WIN32)
   *fn = reinterpret_cast<FnType>(GetProcAddress(g_xm6.module, symbol));
+#else
+  *fn = reinterpret_cast<FnType>(dlsym(g_xm6.module, symbol));
+#endif
   if (!*fn) {
     core_log(RETRO_LOG_ERROR, "[xm6-libretro] Missing required symbol: %s", symbol);
     return false;
@@ -431,7 +532,11 @@ static void load_optional_symbol(FnType *fn, const char *symbol)
 #ifdef XM6CORE_MONOLITHIC
   (void)symbol;
 #else
+#if defined(_WIN32)
   *fn = reinterpret_cast<FnType>(GetProcAddress(g_xm6.module, symbol));
+#else
+  *fn = reinterpret_cast<FnType>(dlsym(g_xm6.module, symbol));
+#endif
 #endif
 }
 
@@ -439,7 +544,11 @@ static void unload_xm6_api()
 {
 #ifndef XM6CORE_MONOLITHIC
   if (g_xm6.module) {
+#if defined(_WIN32)
     FreeLibrary(g_xm6.module);
+#else
+    dlclose(g_xm6.module);
+#endif
   }
 #endif
   g_xm6 = xm6_api_t();
@@ -483,10 +592,25 @@ static bool load_xm6_api()
   g_xm6.set_master_volume = xm6_set_master_volume;
   g_xm6.set_fm_volume = xm6_set_fm_volume;
   g_xm6.set_adpcm_volume = xm6_set_adpcm_volume;
+  g_xm6.set_adpcm_interp = xm6_set_adpcm_interp;
+  g_xm6.set_hq_adpcm_enabled = xm6_set_hq_adpcm_enabled;
+  g_xm6.set_reverb_level = xm6_set_reverb_level;
+  g_xm6.set_eq_bass2_level = xm6_set_eq_bass2_level;
+  g_xm6.set_eq_bass_level = xm6_set_eq_bass_level;
+  g_xm6.set_eq_presence_level = xm6_set_eq_presence_level;
+  g_xm6.set_eq_mid_level = xm6_set_eq_mid_level;
+  g_xm6.set_eq_treble_level = xm6_set_eq_treble_level;
+  g_xm6.set_eq_air_level = xm6_set_eq_air_level;
+  g_xm6.set_surround_enabled = xm6_set_surround_enabled;
+  g_xm6.set_audio_engine = xm6_set_audio_engine;
+  g_xm6.set_legacy_dmac_cnt = xm6_set_legacy_dmac_cnt;
   g_xm6.set_mouse_speed = xm6_set_mouse_speed;
   g_xm6.set_mouse_port = xm6_set_mouse_port;
   g_xm6.set_mouse_swap = xm6_set_mouse_swap;
   g_xm6.set_render_mode = xm6_set_render_mode;
+  g_xm6.set_alt_raster = xm6_set_alt_raster;
+  g_xm6.set_render_bg0 = xm6_set_render_bg0;
+  g_xm6.set_transparency_enabled = xm6_set_transparency_enabled;
   g_xm6.get_render_mode = xm6_get_render_mode;
   g_xm6.set_midi_enabled = xm6_set_midi_enabled;
   g_xm6.midi_read_output = xm6_midi_read_output;
@@ -528,6 +652,7 @@ static bool load_xm6_api()
     return true;
   }
 
+#if defined(_WIN32)
   char core_dir[MAX_PATH] = {};
   char dll_path[MAX_PATH] = {};
   if (get_core_module_dir(core_dir, sizeof(core_dir))) {
@@ -538,9 +663,24 @@ static bool load_xm6_api()
   if (!g_xm6.module) {
     g_xm6.module = LoadLibraryA("xm6core.dll");
   }
+#else
+  char core_dir[PATH_MAX] = {};
+  char so_path[PATH_MAX] = {};
+  if (get_core_module_dir(core_dir, sizeof(core_dir))) {
+    std::snprintf(so_path, sizeof(so_path), "%s%s", core_dir, "xm6core.so");
+    g_xm6.module = dlopen(so_path, RTLD_NOW | RTLD_LOCAL);
+  }
+  if (!g_xm6.module) {
+    g_xm6.module = dlopen("xm6core.so", RTLD_NOW | RTLD_LOCAL);
+  }
+#endif
 
   if (!g_xm6.module) {
+#if defined(_WIN32)
     core_log_last_error("Could not load xm6core.dll");
+#else
+    core_log_last_error("Could not load xm6core.so");
+#endif
     return false;
   }
 
@@ -589,10 +729,25 @@ static bool load_xm6_api()
   load_optional_symbol(&g_xm6.set_master_volume, "xm6_set_master_volume");
   load_optional_symbol(&g_xm6.set_fm_volume, "xm6_set_fm_volume");
   load_optional_symbol(&g_xm6.set_adpcm_volume, "xm6_set_adpcm_volume");
+  load_optional_symbol(&g_xm6.set_adpcm_interp, "xm6_set_adpcm_interp");
+  load_optional_symbol(&g_xm6.set_hq_adpcm_enabled, "xm6_set_hq_adpcm_enabled");
+  load_optional_symbol(&g_xm6.set_reverb_level, "xm6_set_reverb_level");
+  load_optional_symbol(&g_xm6.set_eq_bass2_level, "xm6_set_eq_bass2_level");
+  load_optional_symbol(&g_xm6.set_eq_bass_level, "xm6_set_eq_bass_level");
+  load_optional_symbol(&g_xm6.set_eq_presence_level, "xm6_set_eq_presence_level");
+  load_optional_symbol(&g_xm6.set_eq_mid_level, "xm6_set_eq_mid_level");
+  load_optional_symbol(&g_xm6.set_eq_treble_level, "xm6_set_eq_treble_level");
+  load_optional_symbol(&g_xm6.set_eq_air_level, "xm6_set_eq_air_level");
+  load_optional_symbol(&g_xm6.set_surround_enabled, "xm6_set_surround_enabled");
+  load_optional_symbol(&g_xm6.set_audio_engine, "xm6_set_audio_engine");
+  load_optional_symbol(&g_xm6.set_legacy_dmac_cnt, "xm6_set_legacy_dmac_cnt");
   load_optional_symbol(&g_xm6.set_mouse_speed, "xm6_set_mouse_speed");
   load_optional_symbol(&g_xm6.set_mouse_port, "xm6_set_mouse_port");
   load_optional_symbol(&g_xm6.set_mouse_swap, "xm6_set_mouse_swap");
   load_optional_symbol(&g_xm6.set_render_mode, "xm6_set_render_mode");
+  load_optional_symbol(&g_xm6.set_alt_raster, "xm6_set_alt_raster");
+  load_optional_symbol(&g_xm6.set_render_bg0, "xm6_set_render_bg0");
+  load_optional_symbol(&g_xm6.set_transparency_enabled, "xm6_set_transparency_enabled");
   load_optional_symbol(&g_xm6.get_render_mode, "xm6_get_render_mode");
   load_optional_symbol(&g_xm6.set_midi_enabled, "xm6_set_midi_enabled");
   load_optional_symbol(&g_xm6.midi_read_output, "xm6_midi_read_output");
@@ -632,12 +787,21 @@ static bool ensure_xm6_handle()
     }
   }
 
-  if (g_xm6.audio_configure(g_xm6_handle, k_sample_rate) != XM6CORE_OK) {
-    core_log(RETRO_LOG_WARN, "[xm6-libretro] audio configure failed");
-  }
-
   if (g_xm6.set_message_callback) {
     g_xm6.set_message_callback(g_xm6_handle, xm6_host_message_cb, nullptr);
+  }
+  if (g_xm6.set_surround_enabled) {
+    g_xm6.set_surround_enabled(g_xm6_handle, g_surround_enabled ? 1 : 0);
+  }
+
+  g_sample_rate = desired_audio_sample_rate_for_engine(g_audio_engine);
+  if (g_xm6.audio_configure(g_xm6_handle, g_sample_rate) != XM6CORE_OK) {
+    core_log(RETRO_LOG_WARN, "[xm6-libretro] audio configure failed");
+  } else {
+    core_log(RETRO_LOG_INFO,
+             "[xm6-libretro] Audio runtime: engine=%s sample_rate=%u Hz",
+             audio_engine_label(g_audio_engine),
+             g_sample_rate);
   }
 
   return true;
@@ -674,9 +838,6 @@ static void begin_hdd_boot_warmup(const char *kind)
     return;
   }
 
-  core_log(RETRO_LOG_INFO,
-           "[xm6-libretro] Starting deferred %s boot stabilization before CPU boot (%u warm-up frames)",
-           kind ? kind : "content", k_hdd_boot_warmup_frames);
   g_hdd_boot_reset_countdown = k_hdd_boot_warmup_frames;
   g_video_not_ready_count = 0;
 }
@@ -702,13 +863,80 @@ static bool run_pending_hdd_boot_warmup_step()
 
   --g_hdd_boot_reset_countdown;
   if (g_hdd_boot_reset_countdown == 0) {
-    core_log(RETRO_LOG_INFO,
-             "[xm6-libretro] Completing deferred HDD boot stabilization with reset");
-    g_xm6.reset(g_xm6_handle);
+      g_xm6.reset(g_xm6_handle);
     g_video_not_ready_count = 0;
   }
 
   return true;
+}
+
+static void reset_mouse_state();
+static void apply_runtime_core_options();
+static void apply_joy_type_options();
+static bool mount_current_disk();
+static bool set_system_directory_from_frontend();
+
+static void clear_reset_input_latches()
+{
+  g_prev_start = false;
+  g_prev_select = false;
+  g_prev_start_keycode = 0;
+  g_prev_select_keycode = 0;
+  g_prev_midi_hotkey = false;
+}
+
+static void sanitize_runtime_for_reset()
+{
+  g_hdd_boot_reset_countdown = 0;
+  g_video_not_ready_count = 0;
+  clear_reset_input_latches();
+  reset_mouse_state();
+}
+
+static void hdd_manual_reset_cold_style()
+{
+  if (!g_xm6_handle || !g_xm6.set_power) {
+    return;
+  }
+
+  core_log(RETRO_LOG_INFO,
+           "[xm6-libretro] Manual reset while HDD mounted: full cold-style reboot (recreate VM + remount + deferred warm-up reset)");
+
+  // Recreate VM instance so manual reset matches content-load cold boot behavior.
+  if (g_xm6.destroy) {
+    g_xm6.destroy(g_xm6_handle);
+    g_xm6_handle = nullptr;
+  }
+
+  if (!ensure_xm6_handle()) {
+    core_log(RETRO_LOG_ERROR,
+             "[xm6-libretro] HDD manual reset failed: could not recreate VM handle");
+    g_game_loaded = false;
+    return;
+  }
+
+  if (!set_system_directory_from_frontend()) {
+    core_log(RETRO_LOG_WARN,
+             "[xm6-libretro] HDD manual reset: could not set system directory");
+  }
+
+  // Re-apply runtime options before remount so VM-side config mirrors content-load
+  // cold boot behavior as closely as possible.
+  apply_runtime_core_options();
+  apply_joy_type_options();
+  reset_mouse_state();
+
+  if (!mount_current_disk()) {
+    core_log(RETRO_LOG_ERROR,
+             "[xm6-libretro] HDD manual reset failed: remount failed");
+    g_game_loaded = false;
+    return;
+  }
+
+  g_xm6.set_power(g_xm6_handle, 0);
+  g_xm6.set_power(g_xm6_handle, 1);
+  begin_hdd_boot_warmup("manual reset (HDD full cold-style)");
+  g_game_loaded = true;
 }
 
 static void arm_savestate_guard_frames(const char *reason, unsigned frames)
@@ -718,11 +946,6 @@ static void arm_savestate_guard_frames(const char *reason, unsigned frames)
            "[xm6-libretro] Savestate guard armed for %u frames (%s)",
            g_savestate_guard_countdown,
            reason ? reason : "unspecified");
-}
-
-static void arm_savestate_guard(const char *reason)
-{
-  arm_savestate_guard_frames(reason, k_savestate_guard_frames_default);
 }
 
 static void reset_mouse_state()
@@ -786,7 +1009,11 @@ static bool set_system_directory_from_frontend()
   std::string normalized = sys_dir;
   const char last = normalized.empty() ? '\0' : normalized[normalized.size() - 1];
   if (last != '\\' && last != '/') {
+#if defined(_WIN32)
     normalized.push_back('\\');
+#else
+    normalized.push_back('/');
+#endif
   }
 
   core_log(RETRO_LOG_INFO, "[xm6-libretro] set_system_dir: %s", normalized.c_str());
@@ -812,8 +1039,11 @@ static bool file_exists(const std::string &path)
   if (path.empty()) {
     return false;
   }
-  const DWORD attrs = GetFileAttributesA(path.c_str());
-  return attrs != INVALID_FILE_ATTRIBUTES && (attrs & FILE_ATTRIBUTE_DIRECTORY) == 0;
+  struct stat st = {};
+  if (stat(path.c_str(), &st) != 0) {
+    return false;
+  }
+  return !S_ISDIR(st.st_mode);
 }
 
 static bool get_file_size_bytes(const std::string &path, unsigned long long *out_size)
@@ -825,17 +1055,15 @@ static bool get_file_size_bytes(const std::string &path, unsigned long long *out
     return false;
   }
 
-  WIN32_FILE_ATTRIBUTE_DATA data = {};
-  if (!GetFileAttributesExA(path.c_str(), GetFileExInfoStandard, &data)) {
+  struct stat st = {};
+  if (stat(path.c_str(), &st) != 0) {
     return false;
   }
-  if (data.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) {
+  if (S_ISDIR(st.st_mode)) {
     return false;
   }
 
-  const unsigned long long size =
-      (static_cast<unsigned long long>(data.nFileSizeHigh) << 32) |
-      static_cast<unsigned long long>(data.nFileSizeLow);
+  const unsigned long long size = static_cast<unsigned long long>(st.st_size);
   if (out_size) {
     *out_size = size;
   }
@@ -854,7 +1082,11 @@ static std::string join_path(const std::string &dir, const char *name)
   if (last == '\\' || last == '/') {
     return dir + name;
   }
+#if defined(_WIN32)
   return dir + "\\" + name;
+#else
+  return dir + "/" + name;
+#endif
 }
 
 static bool system_file_exists(const char *name, unsigned long long *out_size = nullptr)
@@ -882,6 +1114,13 @@ static bool is_classic_sasi_hdf_size(unsigned long long size)
   return size == 0x9f5400ull || size == 0x13c9800ull || size == 0x2793000ull;
 }
 
+static bool path_has_extension(const std::string &path, const char *ext);
+
+static bool is_hdd_content_path(const std::string &path)
+{
+  return path_has_extension(path, ".hdf") || path_has_extension(path, ".hds");
+}
+
 static void resolve_hdd_target_for_path(const std::string &path, bool *out_is_scsi,
                                         int *out_slot, const char **out_reason)
 {
@@ -889,7 +1128,11 @@ static void resolve_hdd_target_for_path(const std::string &path, bool *out_is_sc
   int slot = g_hdd_slot;
   const char *reason = g_hdd_target_auto ? "auto fallback" : "manual override";
 
-  if (g_hdd_target_auto) {
+  if (path_has_extension(path, ".hds")) {
+    is_scsi = true;
+    slot = 0;
+    reason = "HDS content";
+  } else if (g_hdd_target_auto) {
     unsigned long long size = 0;
     if (get_file_size_bytes(path, &size)) {
       if (is_classic_sasi_hdf_size(size)) {
@@ -1476,6 +1719,13 @@ static void apply_runtime_core_options()
     return;
   }
 
+  const unsigned desired_sample_rate = desired_audio_sample_rate_for_engine(g_audio_engine);
+  const bool sample_rate_changed = (g_sample_rate != desired_sample_rate);
+  if (sample_rate_changed) {
+    g_sample_rate = desired_sample_rate;
+    g_audio_fraction = 0.0;
+  }
+
   if (g_xm6.set_system_clock) {
     g_xm6.set_system_clock(g_xm6_handle, g_system_clock);
   }
@@ -1488,14 +1738,75 @@ static void apply_runtime_core_options()
   if (g_xm6.set_render_mode) {
     g_xm6.set_render_mode(g_xm6_handle, g_render_mode);
   }
+  if (g_xm6.set_alt_raster) {
+    g_xm6.set_alt_raster(g_xm6_handle, g_alt_raster_enabled ? 1 : 0);
+  }
+  if (g_xm6.set_render_bg0) {
+    g_xm6.set_render_bg0(g_xm6_handle, g_render_bg0_enabled ? 1 : 0);
+  }
+  if (g_xm6.set_transparency_enabled) {
+    g_xm6.set_transparency_enabled(g_xm6_handle, g_transparency_enabled ? 1 : 0);
+  }
   if (g_xm6.set_master_volume) {
-    g_xm6.set_master_volume(g_xm6_handle, g_master_volume);
+    g_xm6.set_master_volume(g_xm6_handle, 100);
   }
   if (g_xm6.set_fm_volume) {
     g_xm6.set_fm_volume(g_xm6_handle, g_fm_volume);
   }
   if (g_xm6.set_adpcm_volume) {
     g_xm6.set_adpcm_volume(g_xm6_handle, g_adpcm_volume);
+  }
+  if (g_xm6.set_adpcm_interp) {
+    g_xm6.set_adpcm_interp(g_xm6_handle, 1);
+  }
+  if (g_xm6.set_hq_adpcm_enabled) {
+    g_xm6.set_hq_adpcm_enabled(g_xm6_handle, g_hq_adpcm_enabled ? 1 : 0);
+  }
+  if (g_xm6.set_reverb_level) {
+    g_xm6.set_reverb_level(g_xm6_handle, g_reverb_level);
+  }
+  if (g_xm6.set_eq_bass2_level) {
+    g_xm6.set_eq_bass2_level(g_xm6_handle, g_eq_bass_level);
+  }
+  if (g_xm6.set_eq_bass_level) {
+    g_xm6.set_eq_bass_level(g_xm6_handle, g_eq_sub_bass_level);
+  }
+  if (g_xm6.set_eq_presence_level) {
+    g_xm6.set_eq_presence_level(g_xm6_handle, g_eq_presence_level);
+  }
+  if (g_xm6.set_eq_mid_level) {
+    g_xm6.set_eq_mid_level(g_xm6_handle, g_eq_mid_level);
+  }
+  if (g_xm6.set_eq_treble_level) {
+    g_xm6.set_eq_treble_level(g_xm6_handle, g_eq_treble_level);
+  }
+  if (g_xm6.set_eq_air_level) {
+    g_xm6.set_eq_air_level(g_xm6_handle, g_eq_air_level);
+  }
+  if (g_xm6.set_surround_enabled) {
+    g_xm6.set_surround_enabled(g_xm6_handle, g_surround_enabled ? 1 : 0);
+  }
+  if (g_xm6.set_audio_engine) {
+    g_xm6.set_audio_engine(g_xm6_handle, g_audio_engine);
+  }
+  if (g_xm6.audio_configure && sample_rate_changed) {
+    if (g_xm6.audio_configure(g_xm6_handle, g_sample_rate) != XM6CORE_OK) {
+      core_log(RETRO_LOG_WARN,
+               "[xm6-libretro] audio reconfigure failed for %s at %u Hz",
+               audio_engine_label(g_audio_engine),
+               g_sample_rate);
+    } else if (g_environ_cb) {
+      retro_system_av_info av_info = {};
+      fill_av_info(&av_info);
+      g_environ_cb(RETRO_ENVIRONMENT_SET_SYSTEM_AV_INFO, &av_info);
+      core_log(RETRO_LOG_INFO,
+               "[xm6-libretro] Audio runtime: engine=%s sample_rate=%u Hz",
+               audio_engine_label(g_audio_engine),
+               g_sample_rate);
+    }
+  }
+  if (g_xm6.set_legacy_dmac_cnt) {
+    g_xm6.set_legacy_dmac_cnt(g_xm6_handle, g_legacy_dmac_cnt ? 1 : 0);
   }
   if (g_xm6.set_midi_enabled) {
     g_xm6.set_midi_enabled(g_xm6_handle, g_midi_output_enabled ? 1 : 0);
@@ -1509,6 +1820,51 @@ static void apply_runtime_core_options()
   if (g_xm6.set_mouse_swap) {
     g_xm6.set_mouse_swap(g_xm6_handle, g_mouse_swap ? 1 : 0);
   }
+}
+
+static bool equals_ci(const char *lhs, const char *rhs)
+{
+  if (!lhs || !rhs) {
+    return false;
+  }
+#if defined(_WIN32)
+  return _stricmp(lhs, rhs) == 0;
+#else
+  return strcasecmp(lhs, rhs) == 0;
+#endif
+}
+
+static int parse_joy_type_value(const char *value, int default_type)
+{
+  if (!value) {
+    return default_type;
+  }
+
+  if (equals_ci(value, "cpsf_sfc") ||
+      equals_ci(value, "cpsf-sfc") ||
+      equals_ci(value, "CPSF-SFC (8 Buttons)") ||
+      equals_ci(value, "cpsf sfc")) {
+    return 7;
+  }
+  if (equals_ci(value, "cpsf_md") ||
+      equals_ci(value, "cpsf-md") ||
+      equals_ci(value, "CPSF-MD (8 Buttons)") ||
+      equals_ci(value, "cpsf md")) {
+    return 8;
+  }
+  if (equals_ci(value, "atari_ss") ||
+      equals_ci(value, "atari-ss") ||
+      equals_ci(value, "atari + start/select")) {
+    return 2;
+  }
+  if (equals_ci(value, "atari") || equals_ci(value, "2button") || equals_ci(value, "2-button")) {
+    return 1;
+  }
+  if (equals_ci(value, "disabled") || equals_ci(value, "none")) {
+    return 0;
+  }
+
+  return default_type;
 }
 
 static void apply_core_option_values()
@@ -1557,32 +1913,12 @@ static void apply_core_option_values()
 
   var.key = "xm6_joy1_type";
   if (g_environ_cb(RETRO_ENVIRONMENT_GET_VARIABLE, &var) && var.value) {
-    if (std::strcmp(var.value, "cpsf_sfc") == 0) {
-      g_joy_type[0] = 7;
-    } else if (std::strcmp(var.value, "cpsf_md") == 0) {
-      g_joy_type[0] = 8;
-    } else if (std::strcmp(var.value, "atari_ss") == 0) {
-      g_joy_type[0] = 2;
-    } else if (std::strcmp(var.value, "disabled") == 0) {
-      g_joy_type[0] = 0;
-    } else {
-      g_joy_type[0] = 1;
-    }
+    g_joy_type[0] = parse_joy_type_value(var.value, 1);
   }
 
   var.key = "xm6_joy2_type";
   if (g_environ_cb(RETRO_ENVIRONMENT_GET_VARIABLE, &var) && var.value) {
-    if (std::strcmp(var.value, "cpsf_sfc") == 0) {
-      g_joy_type[1] = 7;
-    } else if (std::strcmp(var.value, "cpsf_md") == 0) {
-      g_joy_type[1] = 8;
-    } else if (std::strcmp(var.value, "atari_ss") == 0) {
-      g_joy_type[1] = 2;
-    } else if (std::strcmp(var.value, "atari") == 0) {
-      g_joy_type[1] = 1;
-    } else {
-      g_joy_type[1] = 0;
-    }
+    g_joy_type[1] = parse_joy_type_value(var.value, 0);
   }
 
   var.key = "xm6_ram_size";
@@ -1616,9 +1952,14 @@ static void apply_core_option_values()
     }
   }
 
-  var.key = "xm6_master_volume";
+  var.key = "xm6_alt_raster";
   if (g_environ_cb(RETRO_ENVIRONMENT_GET_VARIABLE, &var) && var.value) {
-    g_master_volume = std::atoi(var.value);
+    g_alt_raster_enabled = (std::strcmp(var.value, "disabled") != 0);
+  }
+
+  var.key = "xm6_transparency";
+  if (g_environ_cb(RETRO_ENVIRONMENT_GET_VARIABLE, &var) && var.value) {
+    g_transparency_enabled = (std::strcmp(var.value, "disabled") != 0);
   }
 
   var.key = "xm6_fm_volume";
@@ -1629,6 +1970,106 @@ static void apply_core_option_values()
   var.key = "xm6_adpcm_volume";
   if (g_environ_cb(RETRO_ENVIRONMENT_GET_VARIABLE, &var) && var.value) {
     g_adpcm_volume = std::atoi(var.value);
+  }
+
+  var.key = "xm6_hq_adpcm";
+  if (g_environ_cb(RETRO_ENVIRONMENT_GET_VARIABLE, &var) && var.value) {
+    g_hq_adpcm_enabled = (std::strcmp(var.value, "enabled") == 0);
+  }
+
+  var.key = "xm6_reverb";
+  if (g_environ_cb(RETRO_ENVIRONMENT_GET_VARIABLE, &var) && var.value) {
+    g_reverb_level = std::atoi(var.value);
+    if (g_reverb_level < 0) {
+      g_reverb_level = 0;
+    } else if (g_reverb_level > 100) {
+      g_reverb_level = 100;
+    }
+  }
+
+  var.key = "xm6_eq_sub_bass";
+  if (g_environ_cb(RETRO_ENVIRONMENT_GET_VARIABLE, &var) && var.value) {
+    g_eq_sub_bass_level = std::atoi(var.value);
+    if (g_eq_sub_bass_level < 0) {
+      g_eq_sub_bass_level = 0;
+    } else if (g_eq_sub_bass_level > 100) {
+      g_eq_sub_bass_level = 100;
+    }
+  }
+
+  var.key = "xm6_eq_bass";
+  if (g_environ_cb(RETRO_ENVIRONMENT_GET_VARIABLE, &var) && var.value) {
+    g_eq_bass_level = std::atoi(var.value);
+    if (g_eq_bass_level < 0) {
+      g_eq_bass_level = 0;
+    } else if (g_eq_bass_level > 100) {
+      g_eq_bass_level = 100;
+    }
+  }
+
+  var.key = "xm6_eq_mid";
+  if (g_environ_cb(RETRO_ENVIRONMENT_GET_VARIABLE, &var) && var.value) {
+    g_eq_mid_level = std::atoi(var.value);
+    if (g_eq_mid_level < 0) {
+      g_eq_mid_level = 0;
+    } else if (g_eq_mid_level > 100) {
+      g_eq_mid_level = 100;
+    }
+  }
+
+  var.key = "xm6_eq_presence";
+  if (g_environ_cb(RETRO_ENVIRONMENT_GET_VARIABLE, &var) && var.value) {
+    g_eq_presence_level = std::atoi(var.value);
+    if (g_eq_presence_level < 0) {
+      g_eq_presence_level = 0;
+    } else if (g_eq_presence_level > 100) {
+      g_eq_presence_level = 100;
+    }
+  }
+
+  var.key = "xm6_eq_treble";
+  if (g_environ_cb(RETRO_ENVIRONMENT_GET_VARIABLE, &var) && var.value) {
+    g_eq_treble_level = std::atoi(var.value);
+    if (g_eq_treble_level < 0) {
+      g_eq_treble_level = 0;
+    } else if (g_eq_treble_level > 100) {
+      g_eq_treble_level = 100;
+    }
+  }
+
+  var.key = "xm6_eq_air";
+  if (g_environ_cb(RETRO_ENVIRONMENT_GET_VARIABLE, &var) && var.value) {
+    g_eq_air_level = std::atoi(var.value);
+    if (g_eq_air_level < 0) {
+      g_eq_air_level = 0;
+    } else if (g_eq_air_level > 100) {
+      g_eq_air_level = 100;
+    }
+  }
+
+  var.key = "xm6_surround";
+  if (g_environ_cb(RETRO_ENVIRONMENT_GET_VARIABLE, &var) && var.value) {
+    g_surround_enabled = (std::strcmp(var.value, "enabled") == 0);
+  }
+
+  var.key = "xm6_audio_engine";
+  if (g_environ_cb(RETRO_ENVIRONMENT_GET_VARIABLE, &var) && var.value) {
+    if (std::strcmp(var.value, "PX68k") == 0) {
+      g_audio_engine = XM6CORE_AUDIO_ENGINE_PX68K;
+    } else if (std::strcmp(var.value, "YMFM") == 0) {
+      g_audio_engine = XM6CORE_AUDIO_ENGINE_YMFM;
+    } else if (std::strcmp(var.value, "YMFM direct") == 0 || std::strcmp(var.value, "YMFM raw") == 0) {
+      g_audio_engine = XM6CORE_AUDIO_ENGINE_YMFM_DIRECT;
+    } else if (std::strcmp(var.value, "X68Sound") == 0) {
+      g_audio_engine = XM6CORE_AUDIO_ENGINE_X68SOUND;
+    } else {
+      g_audio_engine = XM6CORE_AUDIO_ENGINE_XM6;
+    }
+  }
+
+  var.key = "xm6_legacy_dmac_cnt";
+  if (g_environ_cb(RETRO_ENVIRONMENT_GET_VARIABLE, &var) && var.value) {
+    g_legacy_dmac_cnt = (std::strcmp(var.value, "enabled") == 0);
   }
 
   var.key = "xm6_midi_output";
@@ -1711,7 +2152,7 @@ static void apply_core_option_values()
     g_mpu_nowait = (std::strcmp(var.value, "enabled") == 0);
   }
 
-  core_log(RETRO_LOG_INFO, "[xm6-libretro] options: drive=FDD%d exec_mode=%s start_select=%s clock=%s joy1=%d joy2=%d ram=%dmb fast_floppy=%s render=%s vol(master=%d fm=%d adpcm=%d) midi=%s/%s mouse=%s port=%d speed=%d swap=%s hdd=%s mpu_nowait=%s",
+  core_log(RETRO_LOG_INFO, "[xm6-libretro] options: drive=FDD%d exec_mode=%s start_select=%s clock=%s joy1=%d joy2=%d ram=%dmb fast_floppy=%s render=%s alt_raster=%s render_bg0=%s vol(master=100 fm=%d adpcm=%d hq_adpcm=%s reverb=%d eq(sub_bass=%d bass=%d mid=%d presence=%d treble=%d air=%d) surround=%s) audio=%s dmac_cnt=%s midi=%s/%s mouse=%s port=%d speed=%d swap=%s hdd=%s mpu_nowait=%s",
            g_disk_drive,
            g_use_exec_to_frame ? "exec_to_frame" : "legacy_exec",
            (g_pad_start_select_mode == START_SELECT_F_KEYS) ? "f_keys" :
@@ -1723,7 +2164,15 @@ static void apply_core_option_values()
            g_joy_type[0], g_joy_type[1], (g_ram_size + 1) * 2,
            g_fast_floppy ? "enabled" : "disabled",
            (g_render_mode == XM6CORE_RENDER_MODE_FAST) ? "fast" : "original",
-           g_master_volume, g_fm_volume, g_adpcm_volume,
+           g_alt_raster_enabled ? "enabled" : "disabled",
+           g_render_bg0_enabled ? "enabled" : "disabled",
+           g_fm_volume, g_adpcm_volume,
+           g_hq_adpcm_enabled ? "enabled" : "disabled",
+           g_reverb_level,
+           g_eq_sub_bass_level, g_eq_bass_level, g_eq_mid_level, g_eq_presence_level, g_eq_treble_level, g_eq_air_level,
+           g_surround_enabled ? "enabled" : "disabled",
+           audio_engine_label(g_audio_engine),
+           g_legacy_dmac_cnt ? "legacy" : "fixed",
            g_midi_output_enabled ? "enabled" : "disabled",
            (g_midi_output_type == MIDI_OUTPUT_LA) ? "LA" :
            (g_midi_output_type == MIDI_OUTPUT_GS) ? "GS" :
@@ -1741,47 +2190,606 @@ static void register_core_options()
     return;
   }
 
+  unsigned version = 0;
+  g_environ_cb(RETRO_ENVIRONMENT_GET_CORE_OPTIONS_VERSION, &version);
+
+  if (version >= 2) {
+    static retro_core_option_v2_category cats[] = {
+      { "system",  "System",  "System-level hardware and boot settings." },
+      { "video",   "Video",   "Rendering, transparency and raster timing." },
+      { "sound",   "Sound",   "Volumes and audio processing." },
+      { "input",   "Input",   "Controller, pointer and mouse mapping." },
+      { "media",   "Media",   "Disk drive and HDD target selection." },
+      { "advanced","Advanced","Low-level compatibility and performance tweaks." },
+      { nullptr, nullptr, nullptr }
+    };
+
+    static retro_core_option_v2_definition defs[] = {
+      {
+        "xm6_exec_mode",
+        "Frame execution mode",
+        nullptr,
+        "Choose the execution mode used to drive the emulation loop.",
+        nullptr,
+        "system",
+        {
+          { "exec_to_frame", nullptr },
+          { "legacy_exec", nullptr },
+          { nullptr, nullptr }
+        },
+        "exec_to_frame"
+      },
+      {
+        "xm6_cpu_clock",
+        "System clock",
+        nullptr,
+        "Select the emulated CPU clock speed.",
+        nullptr,
+        "system",
+        {
+          { "10mhz", nullptr },
+          { "12mhz", nullptr },
+          { "16mhz", nullptr },
+          { "22mhz", nullptr },
+          { nullptr, nullptr }
+        },
+        "10mhz"
+      },
+      {
+        "xm6_ram_size",
+        "Main RAM size (Reset)",
+        nullptr,
+        "Sets the amount of main RAM. Requires a reset.",
+        nullptr,
+        "system",
+        {
+          { "12mb", nullptr },
+          { "10mb", nullptr },
+          { "8mb", nullptr },
+          { "6mb", nullptr },
+          { "4mb", nullptr },
+          { "2mb", nullptr },
+          { nullptr, nullptr }
+        },
+        "12mb"
+      },
+      {
+        "xm6_fast_floppy",
+        "Fast floppy",
+        nullptr,
+        "Speed up floppy handling.",
+        nullptr,
+        "system",
+        {
+          { "disabled", nullptr },
+          { "enabled", nullptr },
+          { nullptr, nullptr }
+        },
+        "disabled"
+      },
+      {
+        "xm6_disk_drive",
+        "Disk drive for content swap",
+        nullptr,
+        "Select which floppy drive receives the mounted content.",
+        nullptr,
+        "media",
+        {
+          { "FDD0", nullptr },
+          { "FDD1", nullptr },
+          { nullptr, nullptr }
+        },
+        "FDD0"
+      },
+      {
+        "xm6_hdd_target",
+        "HDD target",
+        nullptr,
+        "Choose the active HDD slot and bus.",
+        nullptr,
+        "media",
+        {
+          { "auto", nullptr },
+          { "sasi0", nullptr },
+          { "sasi1", nullptr },
+          { "scsi0", nullptr },
+          { "scsi1", nullptr },
+          { nullptr, nullptr }
+        },
+        "auto"
+      },
+      {
+        "xm6_render_mode",
+        "Video compositor",
+        nullptr,
+        "Choose the video compositor path.",
+        nullptr,
+        "video",
+        {
+          { "original", nullptr },
+          { "fast", nullptr },
+          { nullptr, nullptr }
+        },
+        "original"
+      },
+      {
+        "xm6_alt_raster",
+        "Alternative raster timing",
+        nullptr,
+        "Enable alternate raster timing for compatibility tweaks.",
+        nullptr,
+        "video",
+        {
+          { "enabled", nullptr },
+          { "disabled", nullptr },
+          { nullptr, nullptr }
+        },
+        "enabled"
+      },
+      {
+        "xm6_render_bg0",
+        "BG tile transparency rule",
+        nullptr,
+        "Select the background transparency rule used by the compositor.",
+        nullptr,
+        "video",
+        {
+          { "modern", nullptr },
+          { "legacy (XM62022Nuevo)", nullptr },
+          { nullptr, nullptr }
+        },
+        "modern"
+      },
+      {
+        "xm6_transparency",
+        "Transparency (TR/half-fill)",
+        nullptr,
+        "Enable or disable TR/half-fill transparency handling.",
+        nullptr,
+        "video",
+        {
+          { "enabled", nullptr },
+          { "disabled", nullptr },
+          { nullptr, nullptr }
+        },
+        "enabled"
+      },
+      {
+        "xm6_audio_engine",
+        "Audio engine",
+        nullptr,
+        "Select the FM synthesis backend.",
+        nullptr,
+        "sound",
+        {
+          { "XM6", nullptr },
+          { "PX68k", nullptr },
+          { "YMFM", nullptr },
+          { "X68Sound", nullptr },
+          { nullptr, nullptr }
+        },
+        "XM6"
+      },
+      {
+        "xm6_fm_volume",
+        "FM volume",
+        nullptr,
+        "Adjust the FM channel mix.",
+        nullptr,
+        "sound",
+        {
+          { "0", nullptr },
+          { "10", nullptr },
+          { "20", nullptr },
+          { "30", nullptr },
+          { "40", nullptr },
+          { "50", nullptr },
+          { "60", nullptr },
+          { "70", nullptr },
+          { "80", nullptr },
+          { "90", nullptr },
+          { "100", nullptr },
+          { nullptr, nullptr }
+        },
+        "50"
+      },
+      {
+        "xm6_adpcm_volume",
+        "ADPCM volume",
+        nullptr,
+        "Adjust the ADPCM channel mix.",
+        nullptr,
+        "sound",
+        {
+          { "0", nullptr },
+          { "10", nullptr },
+          { "20", nullptr },
+          { "30", nullptr },
+          { "40", nullptr },
+          { "50", nullptr },
+          { "60", nullptr },
+          { "70", nullptr },
+          { "80", nullptr },
+          { "90", nullptr },
+          { "100", nullptr },
+          { nullptr, nullptr }
+        },
+        "50"
+      },
+      {
+        "xm6_hq_adpcm",
+        "HQ ADPCM",
+        nullptr,
+        "Apply the higher quality ADPCM post-processing path.",
+        nullptr,
+        "sound",
+        {
+          { "disabled", nullptr },
+          { "enabled", nullptr },
+          { nullptr, nullptr }
+        },
+        "disabled"
+      },
+      {
+        "xm6_reverb",
+        "Reverb",
+        nullptr,
+        "Adjust the global reverb intensity. 0 is bypass; 100 is the fullest space.",
+        nullptr,
+        "sound",
+        {
+          { "0", nullptr },
+          { "10", nullptr },
+          { "20", nullptr },
+          { "30", nullptr },
+          { "40", nullptr },
+          { "50", nullptr },
+          { "60", nullptr },
+          { "70", nullptr },
+          { "80", nullptr },
+          { "90", nullptr },
+          { "100", nullptr },
+          { nullptr, nullptr }
+        },
+        "0"
+      },
+      {
+        "xm6_eq_sub_bass",
+        "Sub-bass EQ",
+        nullptr,
+        "Adjust the 60 Hz band of the global EQ. 50 is flat; 0 cuts and 100 boosts.",
+        nullptr,
+        "sound",
+        {
+          { "0", nullptr },
+          { "10", nullptr },
+          { "20", nullptr },
+          { "30", nullptr },
+          { "40", nullptr },
+          { "50", nullptr },
+          { "60", nullptr },
+          { "70", nullptr },
+          { "80", nullptr },
+          { "90", nullptr },
+          { "100", nullptr },
+          { nullptr, nullptr }
+        },
+        "50"
+      },
+      {
+        "xm6_eq_bass",
+        "Bass EQ",
+        nullptr,
+        "Adjust the 200 Hz band of the global EQ. 50 is flat; 0 cuts and 100 boosts.",
+        nullptr,
+        "sound",
+        {
+          { "0", nullptr },
+          { "10", nullptr },
+          { "20", nullptr },
+          { "30", nullptr },
+          { "40", nullptr },
+          { "50", nullptr },
+          { "60", nullptr },
+          { "70", nullptr },
+          { "80", nullptr },
+          { "90", nullptr },
+          { "100", nullptr },
+          { nullptr, nullptr }
+        },
+        "50"
+      },
+      {
+        "xm6_eq_mid",
+        "Mid EQ",
+        nullptr,
+        "Adjust the 800 Hz band of the global EQ. 50 is flat; 0 cuts and 100 boosts.",
+        nullptr,
+        "sound",
+        {
+          { "0", nullptr },
+          { "10", nullptr },
+          { "20", nullptr },
+          { "30", nullptr },
+          { "40", nullptr },
+          { "50", nullptr },
+          { "60", nullptr },
+          { "70", nullptr },
+          { "80", nullptr },
+          { "90", nullptr },
+          { "100", nullptr },
+          { nullptr, nullptr }
+        },
+        "50"
+      },
+      {
+        "xm6_eq_presence",
+        "Presence EQ",
+        nullptr,
+        "Adjust the 3 kHz band of the global EQ. 50 is flat; 0 cuts and 100 boosts.",
+        nullptr,
+        "sound",
+        {
+          { "0", nullptr },
+          { "10", nullptr },
+          { "20", nullptr },
+          { "30", nullptr },
+          { "40", nullptr },
+          { "50", nullptr },
+          { "60", nullptr },
+          { "70", nullptr },
+          { "80", nullptr },
+          { "90", nullptr },
+          { "100", nullptr },
+          { nullptr, nullptr }
+        },
+        "50"
+      },
+      {
+        "xm6_eq_treble",
+        "Treble EQ",
+        nullptr,
+        "Adjust the 8 kHz band of the global EQ. 50 is flat; 0 cuts and 100 boosts.",
+        nullptr,
+        "sound",
+        {
+          { "0", nullptr },
+          { "10", nullptr },
+          { "20", nullptr },
+          { "30", nullptr },
+          { "40", nullptr },
+          { "50", nullptr },
+          { "60", nullptr },
+          { "70", nullptr },
+          { "80", nullptr },
+          { "90", nullptr },
+          { "100", nullptr },
+          { nullptr, nullptr }
+        },
+        "50"
+      },
+      {
+        "xm6_eq_air",
+        "Air EQ",
+        nullptr,
+        "Adjust the 16 kHz band of the global EQ. 50 is flat; 0 cuts and 100 boosts.",
+        nullptr,
+        "sound",
+        {
+          { "0", nullptr },
+          { "10", nullptr },
+          { "20", nullptr },
+          { "30", nullptr },
+          { "40", nullptr },
+          { "50", nullptr },
+          { "60", nullptr },
+          { "70", nullptr },
+          { "80", nullptr },
+          { "90", nullptr },
+          { "100", nullptr },
+          { nullptr, nullptr }
+        },
+        "50"
+      },
+      {
+        "xm6_surround",
+        "Surround",
+        nullptr,
+        "Apply stereo widening to FM and ADPCM.",
+        nullptr,
+        "sound",
+        {
+          { "disabled", nullptr },
+          { "enabled", nullptr },
+          { nullptr, nullptr }
+        },
+        "disabled"
+      },
+      {
+        "xm6_midi_output",
+        "MIDI output",
+        nullptr,
+        "Enable or disable MIDI output.",
+        nullptr,
+        "sound",
+        {
+          { "disabled", nullptr },
+          { "enabled", nullptr },
+          { nullptr, nullptr }
+        },
+        "disabled"
+      },
+      {
+        "xm6_midi_output_type",
+        "MIDI output type",
+        nullptr,
+        "Choose the MIDI output profile.",
+        nullptr,
+        "sound",
+        {
+          { "GM", nullptr },
+          { "LA", nullptr },
+          { "GS", nullptr },
+          { "XG", nullptr },
+          { nullptr, nullptr }
+        },
+        "GM"
+      },
+      {
+        "xm6_pad_start_select",
+        "Map Start/Select to keys",
+        nullptr,
+        "Select how Start and Select are mapped to X68000 keys.",
+        nullptr,
+        "input",
+        {
+          { "xf_keys", nullptr },
+          { "f_keys", nullptr },
+          { "opt_keys", nullptr },
+          { "disabled", nullptr },
+          { nullptr, nullptr }
+        },
+        "xf_keys"
+      },
+      {
+        "xm6_joy1_type",
+        "Joystick Port 1 Type",
+        nullptr,
+        "Set the type used by joystick port 1.",
+        nullptr,
+        "input",
+        {
+          { "atari", nullptr },
+          { "atari_ss", nullptr },
+          { "cpsf_sfc", nullptr },
+          { "cpsf_md", nullptr },
+          { "disabled", nullptr },
+          { nullptr, nullptr }
+        },
+        "atari"
+      },
+      {
+        "xm6_joy2_type",
+        "Joystick Port 2 Type",
+        nullptr,
+        "Set the type used by joystick port 2.",
+        nullptr,
+        "input",
+        {
+          { "disabled", nullptr },
+          { "atari", nullptr },
+          { "atari_ss", nullptr },
+          { "cpsf_sfc", nullptr },
+          { "cpsf_md", nullptr },
+          { nullptr, nullptr }
+        },
+        "disabled"
+      },
+      {
+        "xm6_pointer_device",
+        "Pointer device",
+        nullptr,
+        "Choose the pointer device emulation mode.",
+        nullptr,
+        "input",
+        {
+          { "disabled", nullptr },
+          { "mouse", nullptr },
+          { nullptr, nullptr }
+        },
+        "disabled"
+      },
+      {
+        "xm6_mouse_port",
+        "Mouse port",
+        nullptr,
+        "Select which port receives mouse input.",
+        nullptr,
+        "input",
+        {
+          { "off", nullptr },
+          { "scc", nullptr },
+          { "keyboard", nullptr },
+          { nullptr, nullptr }
+        },
+        "off"
+      },
+      {
+        "xm6_mouse_speed",
+        "Mouse speed",
+        nullptr,
+        "Choose the mouse pointer speed.",
+        nullptr,
+        "input",
+        {
+          { "205", nullptr },
+          { "256", nullptr },
+          { "128", nullptr },
+          { "384", nullptr },
+          { "512", nullptr },
+          { "64", nullptr },
+          { "0", nullptr },
+          { nullptr, nullptr }
+        },
+        "205"
+      },
+      {
+        "xm6_mouse_swap",
+        "Swap mouse buttons",
+        nullptr,
+        "Swap left and right mouse buttons.",
+        nullptr,
+        "input",
+        {
+          { "disabled", nullptr },
+          { "enabled", nullptr },
+          { nullptr, nullptr }
+        },
+        "disabled"
+      },
+      {
+        "xm6_legacy_dmac_cnt",
+        "Legacy DMAC CNT behavior",
+        nullptr,
+        "Use the legacy CNT behavior for compatibility.",
+        nullptr,
+        "advanced",
+        {
+          { "disabled", nullptr },
+          { "enabled", nullptr },
+          { nullptr, nullptr }
+        },
+        "disabled"
+      },
+      {
+        "xm6_mpu_nowait",
+        "No Wait Operation with MPU",
+        nullptr,
+        "Enable MPU no-wait operation for compatibility.",
+        nullptr,
+        "advanced",
+        {
+          { "disabled", nullptr },
+          { "enabled", nullptr },
+          { nullptr, nullptr }
+        },
+        "disabled"
+      },
+      { nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, { { nullptr, nullptr } }, nullptr }
+    };
+
+    static retro_core_options_v2 options_v2 = {
+      cats,
+      defs
+    };
+
+    g_environ_cb(RETRO_ENVIRONMENT_SET_CORE_OPTIONS_V2, &options_v2);
+    return;
+  }
+
   static const retro_variable vars[] = {
-    { "xm6_disk_drive",
-      "Disk drive for content swap; FDD0|FDD1" },
-    { "xm6_exec_mode",
-      "Frame execution mode; exec_to_frame|legacy_exec" },
-    { "xm6_pad_start_select",
-      "Map Start/Select to keys; xf_keys|f_keys|opt_keys|disabled" },
-    { "xm6_cpu_clock",
-      "System clock; 10mhz|12mhz|16mhz|22mhz" },
-    { "xm6_joy1_type",
-      "Joystick Port 1 Type; atari|atari_ss|cpsf_sfc|cpsf_md|disabled" },
-    { "xm6_joy2_type",
-      "Joystick Port 2 Type; disabled|atari|atari_ss|cpsf_sfc|cpsf_md" },
-    { "xm6_ram_size",
-      "Main RAM size (Reset); 12mb|10mb|8mb|6mb|4mb|2mb" },
-    { "xm6_fast_floppy",
-      "Fast floppy; disabled|enabled" },
-    { "xm6_render_mode",
-      "Video compositor; original|fast" },
-    { "xm6_master_volume",
-      "Master volume; 100|90|80|70|60|50|40|30|20|10|0" },
-    { "xm6_fm_volume",
-      "FM volume; 54|100|90|80|70|60|50|40|30|20|10|0" },
-    { "xm6_adpcm_volume",
-      "ADPCM volume; 52|100|90|80|70|60|50|40|30|20|10|0" },
-    { "xm6_midi_output",
-      "MIDI output; disabled|enabled" },
-    { "xm6_midi_output_type",
-      "MIDI output type; GM|LA|GS|XG" },
-    { "xm6_pointer_device",
-      "Pointer device; disabled|mouse" },
-    { "xm6_mouse_port",
-      "Mouse port; off|scc|keyboard" },
-    { "xm6_mouse_speed",
-      "Mouse speed; 205|256|128|384|512|64|0" },
-    { "xm6_mouse_swap",
-      "Swap mouse buttons; disabled|enabled" },
-    { "xm6_hdd_target",
-      "HDF mount target; auto|sasi0|sasi1|scsi0|scsi1" },
-    { "xm6_mpu_nowait",
-      "No Wait Operation with MPU; disabled|enabled" },
+    { "xm6_audio_engine",
+      "Audio engine (legacy); XM6|PX68k|YMFM|X68Sound" },
     { nullptr, nullptr }
   };
   g_environ_cb(RETRO_ENVIRONMENT_SET_VARIABLES, const_cast<retro_variable *>(vars));
@@ -1829,7 +2837,8 @@ static unsigned map_retro_key_to_xm6(unsigned keycode)
     case RETROK_k: return 0x25;
     case RETROK_l: return 0x26;
     case RETROK_SEMICOLON: return 0x27;
-    case RETROK_COLON: return 0x28;
+    case RETROK_COLON:
+    case RETROK_QUOTE: return 0x28;
     case RETROK_RIGHTBRACKET: return 0x29;
     case RETROK_z: return 0x2A;
     case RETROK_x: return 0x2B;
@@ -1888,6 +2897,8 @@ static unsigned map_retro_key_to_xm6(unsigned keycode)
     case RETROK_RSHIFT: return 0x70;
     case RETROK_LCTRL:
     case RETROK_RCTRL: return 0x71;
+    case RETROK_LALT: return 0x72;
+    case RETROK_RALT: return 0x73;
     default: return 0;
   }
 }
@@ -1915,7 +2926,7 @@ static void fill_av_info(struct retro_system_av_info *info)
 
   std::memset(info, 0, sizeof(*info));
   info->timing.fps = g_current_fps;
-  info->timing.sample_rate = static_cast<double>(k_sample_rate);
+  info->timing.sample_rate = static_cast<double>(g_sample_rate);
   info->geometry.base_width = g_frame_width;
   info->geometry.base_height = g_frame_height;
   info->geometry.max_width = 1024;
@@ -2231,7 +3242,7 @@ static void update_refresh_rate_from_core()
 static unsigned calc_audio_frames_for_run()
 {
   const double fps = (g_current_fps > 1.0) ? g_current_fps : k_default_fps;
-  const double samples = (static_cast<double>(k_sample_rate) / fps) + g_audio_fraction;
+  const double samples = (static_cast<double>(g_sample_rate) / fps) + g_audio_fraction;
   unsigned frames = static_cast<unsigned>(samples);
   g_audio_fraction = samples - static_cast<double>(frames);
 
@@ -2325,17 +3336,49 @@ static void build_joy_state(unsigned port,
   axes[2] = 0;
   axes[3] = 0;
 
-  buttons[0] = joy_pressed(port, RETRO_DEVICE_ID_JOYPAD_B) ? 1 : 0;
-  buttons[1] = joy_pressed(port, RETRO_DEVICE_ID_JOYPAD_A) ? 1 : 0;
-  buttons[2] = joy_pressed(port, RETRO_DEVICE_ID_JOYPAD_Y) ? 1 : 0;
-  buttons[3] = joy_pressed(port, RETRO_DEVICE_ID_JOYPAD_X) ? 1 : 0;
-  buttons[4] = joy_pressed(port, RETRO_DEVICE_ID_JOYPAD_L) ? 1 : 0;
-  buttons[5] = joy_pressed(port, RETRO_DEVICE_ID_JOYPAD_R) ? 1 : 0;
-
   const bool select_pressed = joy_pressed(port, RETRO_DEVICE_ID_JOYPAD_SELECT);
   const bool start_pressed = joy_pressed(port, RETRO_DEVICE_ID_JOYPAD_START);
-  buttons[6] = select_pressed ? 1 : 0;
-  buttons[7] = start_pressed ? 1 : 0;
+
+  const int joy_type = (port < 2) ? g_joy_type[port] : 0;
+  switch (joy_type) {
+    case 2: // atari_ss
+      buttons[0] = joy_pressed(port, RETRO_DEVICE_ID_JOYPAD_B) ? 1 : 0;
+      buttons[1] = joy_pressed(port, RETRO_DEVICE_ID_JOYPAD_A) ? 1 : 0;
+      buttons[2] = start_pressed ? 1 : 0;
+      buttons[3] = select_pressed ? 1 : 0;
+      break;
+    case 7: // cpsf_sfc
+      // Match px68k/libretro trigger layout.
+      buttons[0] = joy_pressed(port, RETRO_DEVICE_ID_JOYPAD_X) ? 1 : 0;
+      buttons[1] = joy_pressed(port, RETRO_DEVICE_ID_JOYPAD_Y) ? 1 : 0;
+      buttons[2] = joy_pressed(port, RETRO_DEVICE_ID_JOYPAD_A) ? 1 : 0;
+      buttons[3] = joy_pressed(port, RETRO_DEVICE_ID_JOYPAD_B) ? 1 : 0;
+      buttons[4] = joy_pressed(port, RETRO_DEVICE_ID_JOYPAD_R) ? 1 : 0;
+      buttons[5] = joy_pressed(port, RETRO_DEVICE_ID_JOYPAD_L) ? 1 : 0;
+      break;
+    case 8: // cpsf_md
+      buttons[0] = joy_pressed(port, RETRO_DEVICE_ID_JOYPAD_A) ? 1 : 0;
+      buttons[1] = joy_pressed(port, RETRO_DEVICE_ID_JOYPAD_B) ? 1 : 0;
+      buttons[2] = joy_pressed(port, RETRO_DEVICE_ID_JOYPAD_X) ? 1 : 0;
+      buttons[3] = joy_pressed(port, RETRO_DEVICE_ID_JOYPAD_Y) ? 1 : 0;
+      buttons[4] = joy_pressed(port, RETRO_DEVICE_ID_JOYPAD_L) ? 1 : 0;
+      buttons[5] = joy_pressed(port, RETRO_DEVICE_ID_JOYPAD_R) ? 1 : 0;
+      buttons[7] = select_pressed ? 1 : 0; // MODE
+      break;
+    default:
+      buttons[0] = joy_pressed(port, RETRO_DEVICE_ID_JOYPAD_B) ? 1 : 0;
+      buttons[1] = joy_pressed(port, RETRO_DEVICE_ID_JOYPAD_A) ? 1 : 0;
+      buttons[2] = joy_pressed(port, RETRO_DEVICE_ID_JOYPAD_Y) ? 1 : 0;
+      buttons[3] = joy_pressed(port, RETRO_DEVICE_ID_JOYPAD_X) ? 1 : 0;
+      buttons[4] = joy_pressed(port, RETRO_DEVICE_ID_JOYPAD_L) ? 1 : 0;
+      buttons[5] = joy_pressed(port, RETRO_DEVICE_ID_JOYPAD_R) ? 1 : 0;
+      break;
+  }
+
+  buttons[6] = start_pressed ? 1 : 0;
+  if (joy_type != 8) {
+    buttons[7] = select_pressed ? 1 : 0;
+  }
 
   if (out_select_pressed) {
     *out_select_pressed = select_pressed;
@@ -2663,6 +3706,7 @@ void retro_init(void)
   g_frame_aspect = static_cast<float>(k_default_aspect);
   g_current_fps = k_default_fps;
   g_audio_fraction = 0.0;
+  g_sample_rate = k_default_sample_rate;
   g_game_loaded = false;
   g_disk_paths.clear();
   g_disk_labels.clear();
@@ -2682,9 +3726,22 @@ void retro_init(void)
   g_system_clock = 0;
   g_ram_size = 5;
   g_fast_floppy = false;
-  g_master_volume = 100;
-  g_fm_volume = 54;
-  g_adpcm_volume = 52;
+  g_alt_raster_enabled = true;
+  g_render_bg0_enabled = true;
+  g_transparency_enabled = true;
+  g_fm_volume = 50;
+  g_adpcm_volume = 50;
+  g_hq_adpcm_enabled = false;
+  g_reverb_level = 0;
+  g_eq_sub_bass_level = 50;
+  g_eq_bass_level = 50;
+  g_eq_mid_level = 50;
+  g_eq_presence_level = 50;
+  g_eq_treble_level = 50;
+  g_eq_air_level = 50;
+  g_surround_enabled = false;
+  g_audio_engine = XM6CORE_AUDIO_ENGINE_XM6;
+  g_legacy_dmac_cnt = false;
   g_midi_output_enabled = false;
   g_midi_output_type = MIDI_OUTPUT_GM;
   g_midi_reset_pending = false;
@@ -2730,7 +3787,7 @@ void retro_get_system_info(struct retro_system_info *info)
   info->library_version = "2.06 Libretro";
   info->need_fullpath = true;
   info->block_extract = false;
-  info->valid_extensions = "dim|xdf|d88|88d|hdm|dup|2hd|img|hdf|m3u";
+  info->valid_extensions = "dim|xdf|d88|88d|hdm|dup|2hd|img|hdf|hds|m3u";
 }
 
 void retro_get_system_av_info(struct retro_system_av_info *info)
@@ -2743,22 +3800,20 @@ void retro_set_controller_port_device(unsigned, unsigned) {}
 void retro_reset(void)
 {
   if (g_xm6_handle && g_xm6.reset) {
-    g_hdd_boot_reset_countdown = 0;
-    reset_mouse_state();
-    g_video_not_ready_count = 0;
+    sanitize_runtime_for_reset();
 
     if (g_content_is_hdd && g_xm6.set_power) {
-      core_log(RETRO_LOG_INFO,
-               "[xm6-libretro] Manual reset while HDD mounted: power cycle + deferred warm-up reset");
-      g_xm6.set_power(g_xm6_handle, 0);
-      g_xm6.set_power(g_xm6_handle, 1);
-      begin_hdd_boot_warmup("manual reset (HDD)");
+      hdd_manual_reset_cold_style();
     } else {
       g_xm6.reset(g_xm6_handle);
     }
 
+    apply_joy_type_options();
+
     midi_queue_reset_if_enabled();
-    arm_savestate_guard("manual reset");
+    arm_savestate_guard_frames(
+      g_content_is_hdd ? "manual reset (HDD full cold-style)" : "manual reset",
+      g_content_is_hdd ? k_savestate_guard_frames_hdd_load : k_savestate_guard_frames_default);
   }
 }
 
@@ -2770,6 +3825,8 @@ bool retro_load_game(const struct retro_game_info *info)
   if (!load_xm6_api()) {
     return false;
   }
+
+  apply_core_option_values();
 
   if (!set_system_directory_from_frontend()) {
     core_log(RETRO_LOG_WARN, "[xm6-libretro] Could not set system directory");
@@ -2785,8 +3842,6 @@ bool retro_load_game(const struct retro_game_info *info)
     log_system_bios_probe();
     return false;
   }
-
-  apply_core_option_values();
   apply_runtime_core_options();
   apply_joy_type_options();
   if (g_midi_output_enabled && !g_supports_midi_interface) {
@@ -2794,7 +3849,7 @@ bool retro_load_game(const struct retro_game_info *info)
              "[xm6-libretro] MIDI output enabled but frontend MIDI interface is unavailable");
   }
   reset_mouse_state();
-  g_content_is_hdd = path_has_extension(info->path, ".hdf");
+  g_content_is_hdd = is_hdd_content_path(info->path);
 
   if (!g_content_is_hdd) {
     core_log(RETRO_LOG_INFO,
@@ -2804,17 +3859,10 @@ bool retro_load_game(const struct retro_game_info *info)
   }
 
   sync_frontend_pixel_format_for_render_mode();
-  if (g_render_mode == XM6CORE_RENDER_MODE_FAST) {
-    if (g_frontend_pixel_format != RETRO_PIXEL_FORMAT_RGB565) {
-      core_log(RETRO_LOG_WARN,
-               "[xm6-libretro] Fast compositor requested RGB565 but frontend is using %s",
-               (g_frontend_pixel_format == RETRO_PIXEL_FORMAT_XRGB8888) ? "XRGB8888" : "UNKNOWN");
-    }
-  } else {
-    if (g_frontend_pixel_format != RETRO_PIXEL_FORMAT_XRGB8888) {
-      core_log(RETRO_LOG_ERROR, "[xm6-libretro] Failed to set XRGB8888 pixel format");
-      return false;
-    }
+  if (g_frontend_pixel_format != RETRO_PIXEL_FORMAT_XRGB8888 &&
+      g_frontend_pixel_format != RETRO_PIXEL_FORMAT_RGB565) {
+    core_log(RETRO_LOG_ERROR, "[xm6-libretro] Failed to set a supported pixel format");
+    return false;
   }
 
   g_disk_paths.clear();
@@ -2851,12 +3899,14 @@ bool retro_load_game(const struct retro_game_info *info)
     // HDF boot is more reliable with a full power cycle, not just a soft reset.
     g_xm6.set_power(g_xm6_handle, 0);
     g_xm6.set_power(g_xm6_handle, 1);
+    apply_joy_type_options();
     begin_hdd_boot_warmup("HDD");
   } else {
     g_xm6.set_power(g_xm6_handle, 1);
     g_video_not_ready_count = 0;
     core_log(RETRO_LOG_INFO, "[xm6-libretro] Performing floppy post-mount reset");
     g_xm6.reset(g_xm6_handle);
+    apply_joy_type_options();
   }
 
   midi_queue_reset_if_enabled();
@@ -2914,9 +3964,21 @@ void retro_run(void)
 	      const int old_ram_size = g_ram_size;
 	      const bool old_fast_floppy = g_fast_floppy;
 	      const int old_render_mode = g_render_mode;
-	      const int old_master_volume = g_master_volume;
-	      const int old_fm_volume = g_fm_volume;
-	      const int old_adpcm_volume = g_adpcm_volume;
+	      const bool old_alt_raster_enabled = g_alt_raster_enabled;
+	      const bool old_render_bg0_enabled = g_render_bg0_enabled;
+	      const bool old_transparency_enabled = g_transparency_enabled;
+      const int old_fm_volume = g_fm_volume;
+      const int old_adpcm_volume = g_adpcm_volume;
+	      const bool old_hq_adpcm_enabled = g_hq_adpcm_enabled;
+	      const int old_reverb_level = g_reverb_level;
+	      const int old_eq_sub_bass_level = g_eq_sub_bass_level;
+	      const int old_eq_bass_level = g_eq_bass_level;
+	      const int old_eq_mid_level = g_eq_mid_level;
+	      const int old_eq_presence_level = g_eq_presence_level;
+	      const int old_eq_treble_level = g_eq_treble_level;
+	      const bool old_surround_enabled = g_surround_enabled;
+	      const int old_audio_engine = g_audio_engine;
+	      const bool old_legacy_dmac_cnt = g_legacy_dmac_cnt;
       const bool old_midi_output_enabled = g_midi_output_enabled;
       const int old_midi_output_type = g_midi_output_type;
       const int old_pointer_device_mode = g_pointer_device_mode;
@@ -2961,13 +4023,74 @@ void retro_run(void)
 	        g_video_probe_frames_remaining = k_video_probe_frames_after_mode_change;
 	        g_video_probe_frame_index = 0;
 	      }
-      if (old_master_volume != g_master_volume ||
-          old_fm_volume != g_fm_volume ||
-          old_adpcm_volume != g_adpcm_volume) {
+	      if (old_alt_raster_enabled != g_alt_raster_enabled) {
+	        apply_runtime_core_options();
+	        core_log(RETRO_LOG_INFO, "[xm6-libretro] Alternative raster timing %s",
+	                 g_alt_raster_enabled ? "enabled" : "disabled");
+	      }
+	      if (old_render_bg0_enabled != g_render_bg0_enabled) {
+	        apply_runtime_core_options();
+	        core_log(RETRO_LOG_INFO, "[xm6-libretro] BG tile transparency rule %s",
+	                 g_render_bg0_enabled ? "modern" : "legacy (XM62022Nuevo)");
+	      }
+	      if (old_transparency_enabled != g_transparency_enabled) {
+	        apply_runtime_core_options();
+	        core_log(RETRO_LOG_INFO, "[xm6-libretro] Transparency (TR/half-fill) %s",
+	                 g_transparency_enabled ? "enabled" : "disabled");
+	      }
+      if (old_audio_engine != g_audio_engine) {
+        apply_runtime_core_options();
+        g_audio_fraction = 0.0;
+        core_log(RETRO_LOG_INFO,
+                 "[xm6-libretro] Audio engine changed to %s",
+                 audio_engine_label(g_audio_engine));
+      }
+      if (old_reverb_level != g_reverb_level) {
+        apply_runtime_core_options();
+        g_audio_fraction = 0.0;
+        if (g_xm6.audio_configure && g_xm6_handle && g_sample_rate > 0) {
+          if (g_xm6.audio_configure(g_xm6_handle, g_sample_rate) == XM6CORE_OK) {
+            core_log(RETRO_LOG_INFO,
+                     "[xm6-libretro] Reverb audio state refreshed at %u Hz",
+                     g_sample_rate);
+          } else {
+            core_log(RETRO_LOG_WARN,
+                     "[xm6-libretro] Reverb refresh failed at %u Hz",
+                     g_sample_rate);
+          }
+        }
+        core_log(RETRO_LOG_INFO,
+                 "[xm6-libretro] Reverb level changed to %d",
+                 g_reverb_level);
+      }
+      if (old_eq_sub_bass_level != g_eq_sub_bass_level ||
+          old_eq_bass_level != g_eq_bass_level ||
+          old_eq_mid_level != g_eq_mid_level ||
+          old_eq_presence_level != g_eq_presence_level ||
+          old_eq_treble_level != g_eq_treble_level) {
+        apply_runtime_core_options();
+      }
+      if (old_surround_enabled != g_surround_enabled) {
         apply_runtime_core_options();
         core_log(RETRO_LOG_INFO,
-                 "[xm6-libretro] Audio volumes changed (master=%d fm=%d adpcm=%d)",
-                 g_master_volume, g_fm_volume, g_adpcm_volume);
+                 "[xm6-libretro] Surround %s",
+                 g_surround_enabled ? "enabled" : "disabled");
+      }
+      if (old_legacy_dmac_cnt != g_legacy_dmac_cnt) {
+        apply_runtime_core_options();
+        core_log(RETRO_LOG_INFO,
+                 "[xm6-libretro] Legacy DMAC CNT behavior %s",
+                 g_legacy_dmac_cnt ? "enabled" : "disabled");
+      }
+      if (old_fm_volume != g_fm_volume ||
+          old_adpcm_volume != g_adpcm_volume) {
+        apply_runtime_core_options();
+      }
+      if (old_hq_adpcm_enabled != g_hq_adpcm_enabled) {
+        apply_runtime_core_options();
+        core_log(RETRO_LOG_INFO,
+                 "[xm6-libretro] HQ ADPCM %s",
+                 g_hq_adpcm_enabled ? "enabled" : "disabled");
       }
       if (old_midi_output_enabled != g_midi_output_enabled ||
           old_midi_output_type != g_midi_output_type) {
@@ -3204,11 +4327,22 @@ bool retro_unserialize(const void *data, size_t size)
   if (!g_xm6_handle || !data) {
     return false;
   }
-  bool ok = g_xm6.load_state_mem(g_xm6_handle, data, static_cast<unsigned int>(size)) == XM6CORE_OK;
+
+  bool ok = false;
+#if defined(_WIN32)
+  __try {
+#endif
+    ok = g_xm6.load_state_mem(g_xm6_handle, data, static_cast<unsigned int>(size)) == XM6CORE_OK;
+#if defined(_WIN32)
+  } __except (EXCEPTION_EXECUTE_HANDLER) {
+    ok = false;
+  }
+#endif
   if (ok) {
+    apply_runtime_core_options();
+    apply_joy_type_options();
     g_video_not_ready_count = 0;
     arm_savestate_guard_frames("post state load", k_savestate_guard_frames_post_load);
-    core_log(RETRO_LOG_INFO, "[xm6-libretro] Savestate loaded");
   }
   return ok;
 }

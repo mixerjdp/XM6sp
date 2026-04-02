@@ -2,8 +2,8 @@
 //
 //	X68000 EMULATOR "XM6"
 //
-//	Copyright (C) 2001-2006 ‚o‚hD(ytanaka@ipc-tokai.or.jp)
-//	[ MFC ƒXƒPƒWƒ…[ƒ‰ ]
+//	Copyright (C) 2001-2006 PI(ytanaka@ipc-tokai.or.jp)
+//	[ MFC Scheduler ]
 //
 //---------------------------------------------------------------------------
 
@@ -14,113 +14,113 @@
 
 //===========================================================================
 //
-//	ƒXƒPƒWƒ…[ƒ‰
+//	Scheduler
 //
 //===========================================================================
 class CScheduler : public CComponent
 {
 public:
-	// Šî–{ƒtƒ@ƒ“ƒNƒVƒ‡ƒ“
+	// Basic procedures
 	CScheduler(CFrmWnd *pFrmWnd);
-										// ƒRƒ“ƒXƒgƒ‰ƒNƒ^
+										// Constructor
 	BOOL FASTCALL Init();
-										// ‰Šú‰»
+										// Initialization
 	void FASTCALL Cleanup();
-										// ƒNƒŠ[ƒ“ƒAƒbƒv
+										// Cleanup
 	void FASTCALL ApplyCfg(const Config *pConfig);
-										// Ý’è“K—p
+										// Apply configuration
 #if defined(_DEBUG)
 	void AssertValid() const;
-										// f’f
+										// Assert
 #endif	// _DEBUG
 
-	// ŽÀs§Œä
+	// Execution control
 	void FASTCALL Reset();
-										// ŽžŠÔ‚ðƒŠƒZƒbƒg
+										// Reset time
 	void FASTCALL Run();
-										// ŽÀs
+										// Execute
 	void FASTCALL Stop();
-										// ƒXƒPƒWƒ…[ƒ‰’âŽ~
+										// Scheduler stop
 
-	// ƒZ[ƒuEƒ[ƒh
+	// Save/Load
 	BOOL FASTCALL Save(Fileio *pFio, int nVer);
-										// ƒZ[ƒu
+										// Save
 	BOOL FASTCALL Load(Fileio *pFio, int nVer);
-										// ƒ[ƒh
+										// Load
 	BOOL FASTCALL HasSavedEnable() const { return m_bSavedValid; }
-										// ƒZ[ƒuŽž‚ÉEnableó‘Ô‚ð•Û‘¶‚µ‚Ä‚¢‚é‚©
+										// Was Enable status saved
 	BOOL FASTCALL GetSavedEnable() const { return m_bSavedEnable; }
-										// ƒZ[ƒuŽž‚ÉEnableó‘Ô‚¾‚Á‚½‚©
+										// Was Enable status set at save
 	void FASTCALL SetSavedEnable(BOOL bEnable) { m_bSavedEnable = bEnable; }
-										// ƒZ[ƒuŽž‚Ìó‘Ô‚ðÝ’è
+										// Set status at save
 
-	// ‚»‚Ì‘¼
+	// Others
 	void FASTCALL Menu(BOOL bMenu)		{ m_bMenu = bMenu; }
-										// ƒƒjƒ…[’Ê’m
+										// Menu notification
 	void FASTCALL Activate(BOOL bAct)	{ m_bActivate = bAct; }
-										// ƒAƒNƒeƒBƒu’Ê’m
+										// Active notification
 	void FASTCALL SyncDisasm();
-										// ‹tƒAƒZƒ“ƒuƒ‹“¯Šú
+										// PC sync with disassembler
 	int FASTCALL GetFrameRate();
-										// ƒtƒŒ [ƒ€ƒŒ [ƒgŽæ“¾
+										// Get frame rate
 	void FASTCALL OnMainFramePresented();
-										// Confirmacion asincrona de frame consumido por UI
+										// Async confirmation of frame consumed by UI
 
 private:
 	static UINT ThreadFunc(LPVOID pParam);
-										// ƒXƒŒƒbƒhŠÖ”
+										// Thread function
 	unsigned __int64 FASTCALL GetTimeMicro();
 	unsigned __int64 FASTCALL GetTimeMilli();
 	DWORD FASTCALL GetTime()			{ return (DWORD)GetTimeMilli(); }
-										// ŽžŠÔŽæ“¾
+										// Get time
 	void FASTCALL Lock()				{ ::LockVM(); }
-										// VMƒƒbƒN
+										// Lock VM
 	void FASTCALL Unlock()				{ ::UnlockVM(); }
-										// VMƒAƒ“ƒƒbƒN
+										// Unlock VM
 	void FASTCALL Refresh();
-										// ƒŠƒtƒŒƒbƒVƒ…
+										// Screen refresh
 	CPU *m_pCPU;
 										// CPU
 	Render *m_pRender;
-										// ƒŒƒ“ƒ_ƒ‰
+										// Renderer
 	CWinThread *m_pThread;
-										// ƒXƒŒƒbƒhƒ|ƒCƒ“ƒ^
+										// Thread pointer
 	CSound *m_pSound;
-										// ƒTƒEƒ“ƒh
+										// Sound
 	CInput *m_pInput;
-										// ƒCƒ“ƒvƒbƒg
+										// Input
 	BOOL m_bExitReq;
-										// ƒXƒŒƒbƒhI—¹—v‹
+										// Thread exit request
 	DWORD m_dwExecTime;
-										// ƒ^ƒCƒ}[ƒJƒEƒ“ƒg(ŽÀs)
+										// Timer count (execution)
 	int m_nSubWndNum;
-										// ƒTƒuƒEƒBƒ“ƒhƒE‚ÌŒÂ”
+										// Number of subwindows
 	int m_nSubWndDisp;
-										// ƒTƒuƒEƒBƒ“ƒhƒE‚Ì•\Ž¦(-1:ƒƒCƒ“‰æ–Ê)
+										// Display subwindow (-1:main screen)
 	BOOL m_bMPUFull;
-										// MPU‚‘¬ƒtƒ‰ƒO
+										// MPU fullspeed flag
 	BOOL m_bVMFull;
-										// VM‚‘¬ƒtƒ‰ƒO
+										// VM fullspeed flag
 	DWORD m_dwDrawCount;
-										// ƒƒCƒ“ƒEƒBƒ“ƒhƒE•\Ž¦‰ñ”
+										// Frame display count
 	DWORD m_dwDrawPrev;
-										// ƒƒCƒ“ƒEƒBƒ“ƒhƒE•\Ž¦‰ñ”(‘O)
+										// Frame display count (previous)
 	DWORD m_dwDrawTime;
-										// ƒƒCƒ“ƒEƒBƒ“ƒhƒE•\Ž¦ŽžŠÔ
+										// Frame display time
 	DWORD m_dwDrawBackup;
-										// ƒƒCƒ“ƒEƒBƒ“ƒhƒE•\Ž¦‰ñ”(‘O)
+										// Frame display count (backup)
 	BOOL m_bMenu;
-										// ƒƒjƒ…[ƒtƒ‰ƒO
+										// Menu flag
 	BOOL m_bActivate;
-										// ƒAƒNƒeƒBƒuƒtƒ‰ƒO
+										// Active flag
 	BOOL m_bBackup;
-										// Enableƒtƒ‰ƒOƒoƒbƒNƒAƒbƒv
+										// Enable flag backup
 	BOOL m_bSavedValid;
-										// ƒZ[ƒuŽž‚ÉEnableó‘Ô‚ð•Û‘¶‚µ‚Ä‚¢‚é‚©
+										// Enable status was saved
 	BOOL m_bSavedEnable;
-										// ƒZ[ƒuŽž‚ÉEnable‚¾‚Á‚½‚©
+										// Enable status at save
 	LARGE_INTEGER m_liFreq;
-										// Frecuencia del contador de alto rendimiento
+										// High performance counter frequency
 };
 
 #endif	// mfc_sch_h

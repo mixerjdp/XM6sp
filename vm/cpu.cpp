@@ -24,7 +24,7 @@
 
 //---------------------------------------------------------------------------
 //
-//	アセンブラコアとのインタフェース
+//	Interface with assembler core
 //
 //---------------------------------------------------------------------------
 #if defined(__cplusplus)
@@ -33,11 +33,10 @@ extern "C" {
 
 //---------------------------------------------------------------------------
 //
-//	スタティック ワーク
+//	Static work
 //
 //---------------------------------------------------------------------------
-static CPU *cpu;
-										// CPU
+static CPU *cpu;						// CPU
 
 // Pending interrupt vectors by level (1..7). -1 means autovector.
 static int g_pending_vector[8] = {0, -1, -1, -1, -1, -1, -1, -1};
@@ -55,17 +54,17 @@ static int GetHighestPendingIRQ(void)
 
 //---------------------------------------------------------------------------
 //
-//	外部定義
+//	External definitions
 //
 //---------------------------------------------------------------------------
 // Forward declarations removed - now in musashi_adapter.h
 // DWORD s68000fbpc(void);
 // void s68000buserr(DWORD addr, DWORD param);
-										// バスエラー
+// Bus error
 
 //---------------------------------------------------------------------------
 //
-//	RESET命令ハンドラ
+//	RESET instruction handler
 //
 //---------------------------------------------------------------------------
 static void cpu_resethandler(void)
@@ -75,7 +74,7 @@ static void cpu_resethandler(void)
 
 //---------------------------------------------------------------------------
 //
-//	割り込みACK
+//	Interrupt ACK
 //
 //---------------------------------------------------------------------------
 int musashi_int_ack(int level)
@@ -107,7 +106,7 @@ void s68000intack(int level)
 
 //---------------------------------------------------------------------------
 //
-//	バスエラー記録
+//	Bus error logging
 //
 //---------------------------------------------------------------------------
 void s68000buserrlog(DWORD addr, DWORD stat)
@@ -117,7 +116,7 @@ void s68000buserrlog(DWORD addr, DWORD stat)
 
 //---------------------------------------------------------------------------
 //
-//	アドレスエラー記録
+//	Address error logging
 //
 //---------------------------------------------------------------------------
 void s68000addrerrlog(DWORD addr, DWORD stat)
@@ -138,16 +137,16 @@ void s68000addrerrlog(DWORD addr, DWORD stat)
 
 //---------------------------------------------------------------------------
 //
-//	コンストラクタ
+//	Constructor
 //
 //---------------------------------------------------------------------------
 CPU::CPU(VM *p) : Device(p)
 {
-	// デバイスIDを初期化
+	// Initialize device ID
 	dev.id = MAKEID('C', 'P', 'U', ' ');
 	dev.desc = "MPU (MC68000)";
 
-	// ポインタ初期化
+	// Initialize pointers
 	memory = NULL;
 	dmac = NULL;
 	mfp = NULL;
@@ -160,54 +159,54 @@ CPU::CPU(VM *p) : Device(p)
 
 //---------------------------------------------------------------------------
 //
-//	初期化
+//	Initialization
 //
 //---------------------------------------------------------------------------
 BOOL FASTCALL CPU::Init()
 {
 	ASSERT(this);
 
-	// 基本クラス
+	// Base class
 	if (!Device::Init()) {
 		return FALSE;
 	}
 
-	// CPU記憶
+	// CPU storage
 	::cpu = this;
 
-	// メモリ取得
+	// Get memory
 	memory = (Memory*)vm->SearchDevice(MAKEID('M', 'E', 'M', ' '));
 	ASSERT(memory);
 
-	// DMAC取得
+	// Get DMAC
 	dmac = (DMAC*)vm->SearchDevice(MAKEID('D', 'M', 'A', 'C'));
 	ASSERT(dmac);
 
-	// MFP取得
+	// Get MFP
 	mfp = (MFP*)vm->SearchDevice(MAKEID('M', 'F', 'P', ' '));
 	ASSERT(mfp);
 
-	// IOSC取得
+	// Get IOSC
 	iosc = (IOSC*)vm->SearchDevice(MAKEID('I', 'O', 'S', 'C'));
 	ASSERT(iosc);
 
-	// SCC取得
+	// Get SCC
 	scc = (SCC*)vm->SearchDevice(MAKEID('S', 'C', 'C', ' '));
 	ASSERT(scc);
 
-	// MIDI取得
+	// Get MIDI
 	midi = (MIDI*)vm->SearchDevice(MAKEID('M', 'I', 'D', 'I'));
 	ASSERT(midi);
 
-	// SCSI取得
+	// Get SCSI
 	scsi = (SCSI*)vm->SearchDevice(MAKEID('S', 'C', 'S', 'I'));
 	ASSERT(scsi);
 
-	// スケジューラ取得
+	// Get scheduler
 	scheduler = (Scheduler*)vm->SearchDevice(MAKEID('S', 'C', 'H', 'E'));
 	ASSERT(scheduler);
 
-	// CPUコアのジャンプテーブルを作成
+	// Create CPU core jump table
 	::s68000init();
 	for (int i=1; i<=7; i++) {
 		g_pending_vector[i] = -1;
@@ -219,20 +218,20 @@ BOOL FASTCALL CPU::Init()
 
 //---------------------------------------------------------------------------
 //
-//	クリーンアップ
+//	Cleanup
 //
 //---------------------------------------------------------------------------
 void FASTCALL CPU::Cleanup()
 {
 	ASSERT(this);
 
-	// 基本クラスへ
+	// To base class
 	Device::Cleanup();
 }
 
 //---------------------------------------------------------------------------
 //
-//	リセット
+//	Reset
 //
 //---------------------------------------------------------------------------
 void FASTCALL CPU::Reset()
@@ -240,22 +239,22 @@ void FASTCALL CPU::Reset()
 	int i;
 
 	ASSERT(this);
-	LOG0(Log::Normal, "リセット");
+	LOG0(Log::Normal, "Reset");
 
-	// エラーアドレス、エラー時間クリア
+	// Clear error address and error time
 	sub.erraddr = 0;
 	sub.errtime = 0;
 
-	// 割り込みカウントクリア
+	// Clear interrupt count
 	for (i=0; i<8; i++) {
 		sub.intreq[i] = 0;
 		sub.intack[i] = 0;
 	}
 
-	// メモリコンテキスト作成(リセット専用)
+	// Create memory context (reset only)
 	memory->MakeContext(TRUE);
 
-	// リセット
+	// Reset
 	::s68000reset();
 	::s68000context.resethandler = cpu_resethandler;
 	::s68000context.odometer = 0;
@@ -266,13 +265,13 @@ void FASTCALL CPU::Reset()
 	}
 	g_pending_mask = 0;
 
-	// メモリコンテキスト作成(通常)
+	// Create memory context (normal)
 	memory->MakeContext(FALSE);
 }
 
 //---------------------------------------------------------------------------
 //
-//	セーブ
+//	Save
 //
 //---------------------------------------------------------------------------
 BOOL FASTCALL CPU::Save(Fileio *fio, int /*ver*/)
@@ -283,29 +282,29 @@ BOOL FASTCALL CPU::Save(Fileio *fio, int /*ver*/)
 	ASSERT(this);
 	ASSERT(fio);
 
-	LOG0(Log::Normal, "セーブ");
+	LOG0(Log::Normal, "Save");
 
-	// コンテキスト取得
+	// Get context
 	GetCPU(&cpu);
 
-	// サイズをセーブ
+	// Save size
 	sz = sizeof(cpu_t);
 	if (!fio->Write(&sz, sizeof(sz))) {
 		return FALSE;
 	}
 
-	// 実体をセーブ
+	// Save entity
 	if (!fio->Write(&cpu, (int)sz)) {
 		return FALSE;
 	}
 
-	// サイズをセーブ(サブ)
+	// Save size (sub)
 	sz = sizeof(cpusub_t);
 	if (!fio->Write(&sz, sizeof(sz))) {
 		return FALSE;
 	}
 
-	// 実体をセーブ(サブ)
+	// Save entity (sub)
 	if (!fio->Write(&sub, (int)sz)) {
 		return FALSE;
 	}
@@ -315,7 +314,7 @@ BOOL FASTCALL CPU::Save(Fileio *fio, int /*ver*/)
 
 //---------------------------------------------------------------------------
 //
-//	ロード
+//	Load
 //
 //---------------------------------------------------------------------------
 BOOL FASTCALL CPU::Load(Fileio *fio, int /*ver*/)
@@ -326,9 +325,9 @@ BOOL FASTCALL CPU::Load(Fileio *fio, int /*ver*/)
 	ASSERT(this);
 	ASSERT(fio);
 
-	LOG0(Log::Normal, "ロード");
+	LOG0(Log::Normal, "Load");
 
-	// サイズをロード、照合
+	// Load size and verify
 	if (!fio->Read(&sz, sizeof(sz))) {
 		return FALSE;
 	}
@@ -336,18 +335,18 @@ BOOL FASTCALL CPU::Load(Fileio *fio, int /*ver*/)
 		return FALSE;
 	}
 
-	// 実体をロード
+	// Load entity
 	if (!fio->Read(&cpu, (int)sz)) {
 		return FALSE;
 	}
 
-	// 適用(リセットしてから行う)
+	// Apply (after reset)
 	memory->MakeContext(TRUE);
 	::s68000reset();
 	memory->MakeContext(FALSE);
 	SetCPU(&cpu);
 
-	// サイズをロード、照合(サブ)
+	// Load size and verify (sub)
 	if (!fio->Read(&sz, sizeof(sz))) {
 		return FALSE;
 	}
@@ -355,7 +354,7 @@ BOOL FASTCALL CPU::Load(Fileio *fio, int /*ver*/)
 		return FALSE;
 	}
 
-	// 実体をロード(サブ)
+	// Load entity (sub)
 	if (!fio->Read(&sub, (int)sz)) {
 		return FALSE;
 	}
@@ -365,19 +364,19 @@ BOOL FASTCALL CPU::Load(Fileio *fio, int /*ver*/)
 
 //---------------------------------------------------------------------------
 //
-//	設定適用
+//	Apply configuration
 //
 //---------------------------------------------------------------------------
 void FASTCALL CPU::ApplyCfg(const Config* /*config*/)
 {
 	ASSERT(this);
 
-	LOG0(Log::Normal, "設定適用");
+	LOG0(Log::Normal, "Apply configuration");
 }
 
 //---------------------------------------------------------------------------
 //
-//	CPUレジスタ取得
+//	Get CPU registers
 //
 //---------------------------------------------------------------------------
 void FASTCALL CPU::GetCPU(cpu_t *buffer) const
@@ -393,7 +392,7 @@ void FASTCALL CPU::GetCPU(cpu_t *buffer) const
 		buffer->areg[i] = ::s68000context.areg[i];
 	}
 
-	// 割り込み
+	// Interrupts
 	for (i=0; i<8; i++) {
 		if (i == 0) {
 			buffer->intr[i] = g_pending_mask;
@@ -405,7 +404,7 @@ void FASTCALL CPU::GetCPU(cpu_t *buffer) const
 		buffer->intack[i] = sub.intack[i];
 	}
 
-	// その他
+	// Others
 	buffer->sp = ::s68000context.asp;
 	buffer->pc = ::s68000context.pc;
 	buffer->sr = (DWORD)::s68000context.sr;
@@ -414,7 +413,7 @@ void FASTCALL CPU::GetCPU(cpu_t *buffer) const
 
 //---------------------------------------------------------------------------
 //
-//	CPUレジスタ設定
+//	Set CPU registers
 //
 //---------------------------------------------------------------------------
 void FASTCALL CPU::SetCPU(const cpu_t *buffer)
@@ -425,7 +424,7 @@ void FASTCALL CPU::SetCPU(const cpu_t *buffer)
 	ASSERT(this);
 	ASSERT(buffer);
 
-	// コンテキスト取得
+	// Get context
 	::s68000GetContext(&context);
 
 	// Dreg, Areg
@@ -434,7 +433,7 @@ void FASTCALL CPU::SetCPU(const cpu_t *buffer)
 		context.areg[i] = buffer->areg[i];
 	}
 
-	// 割り込み
+	// Interrupts
 	for (i=0; i<8; i++) {
 		if (i == 0) {
 			g_pending_mask = buffer->intr[i];
@@ -447,20 +446,20 @@ void FASTCALL CPU::SetCPU(const cpu_t *buffer)
 		sub.intack[i] = buffer->intack[i];
 	}
 
-	// その他
+	// Others
 	context.asp = buffer->sp;
 	context.pc = buffer->pc;
 	context.sr = (WORD)buffer->sr;
 	context.odometer = buffer->odd;
 
-	// コンテキスト設定
+	// Set context
 	::s68000SetContext(&context);
 	::m68k_set_irq(GetHighestPendingIRQ());
 }
 
 //---------------------------------------------------------------------------
 //
-//	割り込み
+//	Interrupt
 //
 //---------------------------------------------------------------------------
 BOOL FASTCALL CPU::Interrupt(int level, int vector)
@@ -496,21 +495,21 @@ void FASTCALL CPU::IntAck(int level)
 	ASSERT((level >= 1) && (level <= 7));
 
 #if defined(CPU_LOG)
-	LOG1(Log::Normal, "割り込み要求ACK レベル%d", level);
+	LOG1(Log::Normal, "Interrupt request ACK level %d", level);
 #endif	// CPU_LOG
 
-	// カウントアップ
+	// Increment counter
 	sub.intack[level]++;
 
-	// 割り込みレベル別
+	// Per interrupt level
 	switch (level) {
-		// IOSC,SCSI(内蔵)
+		// IOSC, SCSI (internal)
 		case 1:
 			iosc->IntAck();
 			scsi->IntAck(1);
 			break;
 
-		// MIDI,SCSI(レベル2)
+		// MIDI, SCSI (level 2)
 		case 2:
 			midi->IntAck(2);
 			scsi->IntAck(2);
@@ -521,7 +520,7 @@ void FASTCALL CPU::IntAck(int level)
 			dmac->IntAck();
 			break;
 
-		// MIDI,SCSI(レベル4)
+		// MIDI, SCSI (level 4)
 		case 4:
 			midi->IntAck(4);
 			scsi->IntAck(4);
@@ -537,7 +536,7 @@ void FASTCALL CPU::IntAck(int level)
 			mfp->IntAck();
 			break;
 
-		// その他
+		// Others
 		default:
 			break;
 	}
@@ -545,7 +544,7 @@ void FASTCALL CPU::IntAck(int level)
 
 //---------------------------------------------------------------------------
 //
-//	割り込みキャンセル
+//	Cancel interrupt
 //
 //---------------------------------------------------------------------------
 void FASTCALL CPU::IntCancel(int level)
@@ -578,14 +577,13 @@ void FASTCALL CPU::ResetInst()
 	Device *device;
 
 	ASSERT(this);
-	LOG0(Log::Detail, "RESET命令");
+	LOG0(Log::Detail, "RESET instruction");
 
-	// メモリを取得
+	// Get memory
 	device = (Device*)vm->SearchDevice(MAKEID('M', 'E', 'M', ' '));
 	ASSERT(device);
 
-	// メモリデバイスに対してすべてリセットをかけておく
-	// 正確には、CPUのRESET信号がどこまで伝わっているかによる
+	// Reset all devices. Depends on how far the CPU's RESET signal propagates
 	while (device) {
 		device->Reset();
 		device = device->GetNextDevice();
@@ -594,9 +592,9 @@ void FASTCALL CPU::ResetInst()
 
 //---------------------------------------------------------------------------
 //
-//	バスエラー
-//	※DMA転送によるバスエラーもここに来る
-//	※CPUコア内部でバスエラーと判定した場合は、ここを経由しない
+//	Bus error
+//	* Bus errors from DMA transfers also come here
+//	* Bus errors detected internally by the CPU core do not pass through here
 //
 //---------------------------------------------------------------------------
 void FASTCALL CPU::BusErr(DWORD addr, BOOL read)
@@ -607,33 +605,33 @@ void FASTCALL CPU::BusErr(DWORD addr, BOOL read)
 	ASSERT(this);
 	ASSERT(addr <= 0xffffff);
 
-	// DMACに転送中か聞く。DMAC中ならDMACに任せる
+	// Ask DMAC if transferring. If in DMAC, delegate to DMAC
 	if (dmac->IsDMA()) {
 		dmac->BusErr(addr, read);
 		return;
 	}
 
-	// アドレスが前回のアドレス+2で、かつ時間が同じなら無視する(LONGアクセス)
+	// Ignore if address is previous address+2 and time is same (LONG access)
 	if (addr == (sub.erraddr + 2)) {
 		if (scheduler->GetTotalTime() == sub.errtime) {
 			return;
 		}
 	}
 
-	// アドレスと時間を更新
+	// Update address and time
 	sub.erraddr = addr;
 	sub.errtime = scheduler->GetTotalTime();
 
-	// PC取得(該当命令のオペコードに位置する)
+	// Get PC (at the opcode of the relevant instruction)
 	pc = GetPC();
 
-	// 読み出し(Word)
+	// Read (Word)
 	stat = memory->ReadOnly(pc);
 	stat <<= 8;
 	stat |= memory->ReadOnly(pc + 1);
 	stat <<= 16;
 
-	// ファンクションコード作成(常にデータアクセスとみなす)
+	// Create function code (always treated as data access)
 	stat |= 0x09;
 	if (::s68000context.sr & 0x2000) {
 		stat |= 0x04;
@@ -642,15 +640,15 @@ void FASTCALL CPU::BusErr(DWORD addr, BOOL read)
 		stat |= 0x10;
 	}
 
-	// バスエラー発行
+	// Issue bus error
 	::s68000buserr(addr, stat);
 }
 
 //---------------------------------------------------------------------------
 //
-//	アドレスエラー
-//	※DMA転送によるアドレスエラーもここに来る
-//	※CPUコア内部でアドレスエラーと判定した場合は、ここを経由しない
+//	Address error
+//	* Address errors from DMA transfers also come here
+//	* Address errors detected internally by the CPU core do not pass through here
 //
 //---------------------------------------------------------------------------
 void FASTCALL CPU::AddrErr(DWORD addr, BOOL read)
@@ -662,33 +660,33 @@ void FASTCALL CPU::AddrErr(DWORD addr, BOOL read)
 	ASSERT(addr <= 0xffffff);
 	ASSERT(addr & 1);
 
-	// DMACに転送中か聞く。DMAC中ならDMACに任せる
+	// Ask DMAC if transferring. If in DMAC, delegate to DMAC
 	if (dmac->IsDMA()) {
 		dmac->AddrErr(addr, read);
 		return;
 	}
 
-	// アドレスが前回のアドレス+2で、かつ時間が同じなら無視する(LONGアクセス)
+	// Ignore if address is previous address+2 and time is same (LONG access)
 	if (addr == (sub.erraddr + 2)) {
 		if (scheduler->GetTotalTime() == sub.errtime) {
 			return;
 		}
 	}
 
-	// アドレスと時間を更新
+	// Update address and time
 	sub.erraddr = addr;
 	sub.errtime = scheduler->GetTotalTime();
 
-	// PC取得(該当命令のオペコードに位置する)
+	// Get PC (at the opcode of the relevant instruction)
 	pc = GetPC();
 
-	// 読み出し(Word)
+	// Read (Word)
 	stat = memory->ReadOnly(pc);
 	stat <<= 8;
 	stat |= memory->ReadOnly(pc + 1);
 	stat <<= 16;
 
-	// ファンクションコード作成(常にデータアクセスとみなす)
+	// Create function code (always treated as data access)
 	stat |= 0x8009;
 	if (::s68000context.sr & 0x2000) {
 		stat |= 0x04;
@@ -697,48 +695,48 @@ void FASTCALL CPU::AddrErr(DWORD addr, BOOL read)
 		stat |= 0x10;
 	}
 
-	// バスエラー発行(内部でアドレスエラーへ分岐)
+	// Issue bus error (branches to address error internally)
 	::s68000buserr(addr, stat);
 }
 
 //---------------------------------------------------------------------------
 //
-//	バスエラー記録
-//	※CPUコア内部でバスエラーと判定した場合も、ここを通る
+//	Bus error logging
+//	* Also passes through when bus error is detected by CPU core
 //
 //---------------------------------------------------------------------------
 void FASTCALL CPU::BusErrLog(DWORD addr, DWORD stat)
 {
 	ASSERT(this);
 
-	// 必ずマスク(24bitを超える場合がある)
+	// Always mask (may exceed 24bit)
 	addr &= 0xffffff;
 
 	if (stat & 0x10) {
-		LOG1(Log::Warning, "バスエラー(読み込み) $%06X", addr);
+		LOG1(Log::Warning, "Bus error (read) $%06X", addr);
 	}
 	else {
-		LOG1(Log::Warning, "バスエラー(書き込み) $%06X", addr);
+		LOG1(Log::Warning, "Bus error (write) $%06X", addr);
 	}
 }
 
 //---------------------------------------------------------------------------
 //
-//	アドレスエラー記録
-//	※CPUコア内部でアドレスエラーと判定した場合も、ここを通る
+//	Address error logging
+//	* Also passes through when address error is detected by CPU core
 //
 //---------------------------------------------------------------------------
 void FASTCALL CPU::AddrErrLog(DWORD addr, DWORD stat)
 {
 	ASSERT(this);
 
-	// 必ずマスク(24bitを超える場合がある)
+	// Always mask (may exceed 24bit)
 	addr &= 0xffffff;
 
 	if (stat & 0x10) {
-		LOG1(Log::Warning, "アドレスエラー(読み込み) $%06X", addr);
+		LOG1(Log::Warning, "Address error (read) $%06X", addr);
 	}
 	else {
-		LOG1(Log::Warning, "アドレスエラー(書き込み) $%06X", addr);
+		LOG1(Log::Warning, "Address error (write) $%06X", addr);
 	}
 }

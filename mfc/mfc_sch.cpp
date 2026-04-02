@@ -2,15 +2,15 @@
 //
 //	X68000 EMULATOR "XM6"
 //
-//	Copyright (C) 2001-2006 ‚o‚hD(ytanaka@ipc-tokai.or.jp)
-//	[ MFC ƒXƒPƒWƒ…[ƒ‰ ]
+//	Copyright (C) 2001-2006 PI(ytanaka@ipc-tokai.or.jp)
+//	[ MFC Scheduler ]
 //
 //---------------------------------------------------------------------------
 
 #if defined(_WIN32)
 
-#include "os.h"
 #include "mfc.h"
+#include "os.h"
 #include "xm6.h"
 #include "vm.h"
 #include "cpu.h"
@@ -27,22 +27,22 @@
 
 //===========================================================================
 //
-//	ƒXƒPƒWƒ…[ƒ‰
+//	Scheduler
 //
 //===========================================================================
 
 //---------------------------------------------------------------------------
 //
-//	ƒRƒ“ƒXƒgƒ‰ƒNƒ^
+//	Constructor
 //
 //---------------------------------------------------------------------------
 CScheduler::CScheduler(CFrmWnd *pFrmWnd) : CComponent(pFrmWnd)
 {
-	// ƒRƒ“ƒ|[ƒlƒ“ƒgƒpƒ‰ƒ[ƒ^
+	// Component identifier
 	m_dwID = MAKEID('S', 'C', 'H', 'E');
 	m_strDesc = _T("Scheduler");
 
-	// ƒ[ƒN‰Šú‰»
+	// Initialize members
 	m_pCPU = NULL;
 	m_pRender = NULL;
 	m_pThread = NULL;
@@ -65,44 +65,44 @@ CScheduler::CScheduler(CFrmWnd *pFrmWnd) : CComponent(pFrmWnd)
 
 //---------------------------------------------------------------------------
 //
-//	‰Šú‰»
+//	Initialization
 //
 //---------------------------------------------------------------------------
 BOOL FASTCALL CScheduler::Init()
 {
 	ASSERT(this);
 
-	// Šî–{ƒNƒ‰ƒX
+	// Base class
 	if (!CComponent::Init()) {
 		return FALSE;
 	}
 
 	QueryPerformanceFrequency(&m_liFreq);
 
-	// CPUŽæ“¾
+	// Get CPU
 	ASSERT(!m_pCPU);
 	m_pCPU = (CPU*)::GetVM()->SearchDevice(MAKEID('C', 'P', 'U', ' '));
 	ASSERT(m_pCPU);
 
-	// ƒŒƒ“ƒ_ƒ‰Žæ“¾
+	// Get renderer
 	ASSERT(!m_pRender);
 	m_pRender = (Render*)::GetVM()->SearchDevice(MAKEID('R', 'E', 'N', 'D'));
 	ASSERT(m_pRender);
 
-	// ƒTƒEƒ“ƒhƒRƒ“ƒ|[ƒlƒ“ƒg‚ðŒŸõ
+	// Search sound component
 	ASSERT(!m_pSound);
 	m_pSound = (CSound*)SearchComponent(MAKEID('S', 'N', 'D', ' '));
 	ASSERT(m_pSound);
 
-	// ƒCƒ“ƒvƒbƒgƒRƒ“ƒ|[ƒlƒ“ƒg‚ðŒŸõ
+	// Search input component
 	ASSERT(!m_pInput);
 	m_pInput = (CInput*)SearchComponent(MAKEID('I', 'N', 'P', ' '));
 	ASSERT(m_pInput);
 
-	// ƒ}ƒ‹ƒ`ƒƒfƒBƒAƒ^ƒCƒ}[‚ÌŽžŠÔŠÔŠu‚ð1ms‚ÉÝ’è
+	// Set multimedia timer to 1ms precision
 	::timeBeginPeriod(1);
 
-	// ƒXƒŒƒbƒh‚ð—§‚Ä‚é
+	// Start thread
 	m_pThread = AfxBeginThread(ThreadFunc, this);
 	if (!m_pThread) {
 		::timeEndPeriod(1);
@@ -114,7 +114,7 @@ BOOL FASTCALL CScheduler::Init()
 
 //---------------------------------------------------------------------------
 //
-//	ƒNƒŠ[ƒ“ƒAƒbƒv
+//	Cleanup
 //
 //---------------------------------------------------------------------------
 void FASTCALL CScheduler::Cleanup()
@@ -122,19 +122,19 @@ void FASTCALL CScheduler::Cleanup()
 	ASSERT(this);
 	ASSERT_VALID(this);
 
-	// ’âŽ~
+	// Stop
 	Stop();
 
-	// ƒ}ƒ‹ƒ`ƒƒfƒBƒAƒ^ƒCƒ}[‚ÌŽžŠÔŠÔŠu‚ð–ß‚·
+	// Restore multimedia timer precision
 	::timeEndPeriod(1);
 
-	// Šî–{ƒNƒ‰ƒX
+	// Base class
 	CComponent::Cleanup();
 }
 
 //---------------------------------------------------------------------------
 //
-//	Ý’è“K—p
+//	Apply configuration
 //
 //---------------------------------------------------------------------------
 void FASTCALL CScheduler::ApplyCfg(const Config *pConfig)
@@ -145,13 +145,13 @@ void FASTCALL CScheduler::ApplyCfg(const Config *pConfig)
 	ASSERT_VALID(this);
 	ASSERT(pConfig);
 
-	// ‹ŒVMƒtƒ‹‚ð•Û‘¶
+	// Save VM flag
 	bFlag = m_bVMFull;
 
 	m_bMPUFull = pConfig->mpu_fullspeed;
 	m_bVMFull = pConfig->vm_fullspeed;
 
-	// ˆá‚Á‚½‚çƒŠƒZƒbƒg
+	// If changed, reset
 	if (bFlag != m_bVMFull) {
 		Reset();
 	}
@@ -160,7 +160,7 @@ void FASTCALL CScheduler::ApplyCfg(const Config *pConfig)
 #if defined(_DEBUG)
 //---------------------------------------------------------------------------
 //
-//	f’f
+//	Assert
 //
 //---------------------------------------------------------------------------
 void CScheduler::AssertValid() const
@@ -180,7 +180,7 @@ void CScheduler::AssertValid() const
 
 //---------------------------------------------------------------------------
 //
-//	ƒŠƒZƒbƒg
+//	Reset
 //
 //---------------------------------------------------------------------------
 void FASTCALL CScheduler::Reset()
@@ -188,7 +188,7 @@ void FASTCALL CScheduler::Reset()
 	ASSERT(this);
 	ASSERT_VALID(this);
 
-	// ƒŠƒZƒbƒg
+	// Reset
 	m_dwExecTime = GetTime();
 	m_dwDrawTime = m_dwExecTime;
 	m_dwDrawBackup = 0;
@@ -198,7 +198,7 @@ void FASTCALL CScheduler::Reset()
 
 //---------------------------------------------------------------------------
 //
-//	’âŽ~
+//	Stop
 //
 //---------------------------------------------------------------------------
 void FASTCALL CScheduler::Stop()
@@ -206,22 +206,22 @@ void FASTCALL CScheduler::Stop()
 	ASSERT(this);
 	ASSERT_VALID(this);
 
-	// ƒXƒŒƒbƒh‚ªã‚ª‚Á‚Ä‚¢‚éê‡‚Ì‚ÝI—¹ˆ—
+	// If thread is running, request termination
 	if (m_pThread) {
-		// I—¹ƒŠƒNƒGƒXƒg‚ð—§‚Ä‚é
+		// Set exit request
 		m_bExitReq = TRUE;
 
-		// ’âŽ~‚Ü‚Å‘Ò‚Â
+		// Wait for stop
 		::WaitForSingleObject(m_pThread->m_hThread, INFINITE);
 
-		// ƒXƒŒƒbƒh‚ÍI—¹‚µ‚½
+		// Thread has terminated
 		m_pThread = NULL;
 	}
 }
 
 //---------------------------------------------------------------------------
 //
-//	ƒZ[ƒu
+//	Save
 //
 //---------------------------------------------------------------------------
 BOOL FASTCALL CScheduler::Save(Fileio *pFio, int /*nVer*/)
@@ -229,7 +229,7 @@ BOOL FASTCALL CScheduler::Save(Fileio *pFio, int /*nVer*/)
 	ASSERT(this);
 	ASSERT_VALID(this);
 
-	// ƒZ[ƒuŽž‚ÌEnableó‘Ô‚ð•Û‘¶(version2.04)
+	// Save Enable status at save time (version2.04)
 	if (!pFio->Write(&m_bSavedEnable, sizeof(m_bSavedEnable))) {
 		return FALSE;
 	}
@@ -239,7 +239,7 @@ BOOL FASTCALL CScheduler::Save(Fileio *pFio, int /*nVer*/)
 
 //---------------------------------------------------------------------------
 //
-//	ƒ[ƒh
+//	Load
 //
 //---------------------------------------------------------------------------
 BOOL FASTCALL CScheduler::Load(Fileio *pFio, int nVer)
@@ -248,10 +248,10 @@ BOOL FASTCALL CScheduler::Load(Fileio *pFio, int nVer)
 	ASSERT(nVer >= 0x0200);
 	ASSERT_VALID(this);
 
-	// ƒZ[ƒuŽž‚ÌEnableó‘Ô•Û‘¶‚Í‚³‚ê‚Ä‚¢‚È‚¢‚à‚Ì‚Æ‰¼’è
+	// At save time, Enable status was not saved
 	m_bSavedValid = FALSE;
 
-	// version2.04ˆÈ~‚Å‚ ‚ê‚ÎAƒ[ƒh
+	// version2.04 and later, load
 	if (nVer >= 0x0204) {
 		if (!pFio->Read(&m_bSavedEnable, sizeof(m_bSavedEnable))) {
 			return FALSE;
@@ -264,31 +264,31 @@ BOOL FASTCALL CScheduler::Load(Fileio *pFio, int nVer)
 
 //---------------------------------------------------------------------------
 //
-//	ƒXƒŒƒbƒhŠÖ”
+//	Thread function
 //
 //---------------------------------------------------------------------------
 UINT CScheduler::ThreadFunc(LPVOID pParam)
 {
 	CScheduler *pSch;
 
-	// ƒpƒ‰ƒ[ƒ^‚ðŽó‚¯Žæ‚é
+	// Receive parameter
 	pSch = (CScheduler*)pParam;
 	ASSERT(pSch);
 #if defined(_DEBUG)
 	pSch->AssertValid();
 #endif	// _DEBUG
 
-	// ŽÀs
+	// Execute
 	pSch->Run();
 
-	// I—¹ƒR[ƒh‚ðŽ‚Á‚ÄƒXƒŒƒbƒh‚ðI—¹
+	// Return code terminates thread
 	return 0;
 }
 
 
 //---------------------------------------------------------------------------
 //
-//	Tiempo (QPC)
+//	Time (QPC)
 //
 //---------------------------------------------------------------------------
 unsigned __int64 FASTCALL CScheduler::GetTimeMicro()
@@ -307,7 +307,7 @@ unsigned __int64 FASTCALL CScheduler::GetTimeMilli()
 
 //---------------------------------------------------------------------------
 //
-//	Ejecucion
+//	Execution
 //
 //---------------------------------------------------------------------------
 void FASTCALL CScheduler::Run()
@@ -321,7 +321,7 @@ void FASTCALL CScheduler::Run()
 	ASSERT(this);
 	ASSERT_VALID(this);
 
-	// Adquisicion de VM
+	// Get VM
 	pVM = ::GetVM();
 	ASSERT(pVM);
 	pScheduler = (Scheduler*)pVM->SearchDevice(MAKEID('S', 'C', 'H', 'E'));
@@ -329,7 +329,7 @@ void FASTCALL CScheduler::Run()
 	pRender = (Render*)pVM->SearchDevice(MAKEID('R', 'E', 'N', 'D'));
 	ASSERT(pRender);
 
-	// Contador de tiempo
+	// Time counter
 	m_dwExecTime = GetTime();
 	dwExecCount = 0;
 	m_dwDrawTime = m_dwExecTime;
@@ -341,30 +341,30 @@ void FASTCALL CScheduler::Run()
 	unsigned __int64 currentTime = GetTimeMicro();
 	unsigned __int64 accumulator = 0;
 
-	//  Bucle hasta que la solicitud de salida se eleva
+	// Loop until exit request is set
 	while (!m_bExitReq) {
-		// Diagnostico permanente
+		// Permanent diagnostic
 		ASSERT_VALID(this);
 
 		// Sleep
 		::Sleep(0);
 
-		// Asegurar
+		// Lock
 		Lock();
 
-		// Si no se levanta ninguna bandera valida, la maquina se detiene
+		// If no valid flag is set, machine is stopped
 		if (!m_bEnable) {
-			// Volver a dibujar siempre cuando se activa -> se desactiva por puntos de interrupcion, fallo de alimentacion, etc.
+			// Redraw when activated -> deactivated by breakpoints, power failure, etc.
 			if (m_bBackup) {
 				m_pFrmWnd->GetView()->Invalidate(FALSE);
 				m_bBackup = FALSE;
 			}
 
-			// Dibujo
+			// Draw
 			Refresh();
 			dwExecCount = 0;
 
-			// Procesamiento y coincidencia temporal de otros componentes
+			// Processing and time synchronization of other components
 			m_pSound->Process(FALSE);
 			m_pInput->Process(FALSE);
 			m_dwExecTime = GetTime();
@@ -377,19 +377,19 @@ void FASTCALL CScheduler::Run()
 			continue;
 		}
 
-		// Actualizacion de la bandera de respaldo (se estaba ejecutando justo antes)
+		// Update backup flag (was running just before)
 		m_bBackup = TRUE;
 
 		unsigned __int64 newTime = GetTimeMicro();
 		unsigned __int64 frameTime = newTime - currentTime;
 		currentTime = newTime;
 
-		// Limitar la espiral de la muerte (ej: si hay lag en el OS de mas de 250ms)
+		// Cap the death spiral (for example, if the OS lags by more than 250 ms)
 		if (frameTime > 250000) {
 			frameTime = 250000;
 		}
 
-		// Procesamiento en modo rapido (ignora acumulador)
+		// Fast mode processing (ignores the accumulator)
 		if (m_bVMFull) {
 			if (!pVM->Exec(2000)) {
 				SyncDisasm();
@@ -420,44 +420,44 @@ void FASTCALL CScheduler::Run()
 			continue;
 		}
 		else if (m_bMPUFull) {
-			// Modo MPU en rápido, mantenemos el comportamiento legacy
+			// MPU full speed mode, keep legacy behavior
 			dwCycle = pScheduler->GetCPUCycle();
 			m_pCPU->Exec(pScheduler->GetCPUSpeed());
 			pScheduler->SetCPUCycle(dwCycle);
 			
-			// Dejamos que el acumulador siga corriendo normal para video/audio
+			// Let accumulator continue normally for video/audio
 		}
 
 		accumulator += frameTime;
 
-		// Active wait (spin-lock) para micro-resolución si falta muy poco para 1000us
-		// y no estamos en modo menu
+		// Active wait (spin-lock) for micro-resolution if very close to 1000us
+		// and we are not in menu mode
 		if (accumulator < 1000 && accumulator > 800 && (!m_bActivate || m_bMenu) == FALSE) {
 			Unlock();
 			continue;
 		}
 
 		while (accumulator >= 1000) {
-			// Determinar si es posible el renderizado: Si quedan menos de 2000, 
-			// es el ultimo ciclo "al dia"
+			// Determine if rendering is possible: if less than 2000 remain,
+			// this is the last cycle "up to date"
 			if (accumulator < 2000) {
 				pRender->EnableAct(TRUE);
 			} else {
 				pRender->EnableAct(FALSE);
 			}
 
-			// Impulsar la VM
+			// Drive the VM
 			if (!pVM->Exec(2000)) {
-				// Puntos de interrupcion
+				// Breakpoints
 				SyncDisasm();
 				dwExecCount++;
 				m_bEnable = FALSE;
 				break;
 			}
 
-			// Comprobacion de la fuente de alimentacion
+			// Check power supply
 			if (!pVM->IsPower()) {
-				// Apagado
+				// Power off
 				SyncDisasm();
 				dwExecCount++;
 				m_bEnable = FALSE;
@@ -468,11 +468,11 @@ void FASTCALL CScheduler::Run()
 			m_dwExecTime++;
 			accumulator -= 1000;
 
-			// Procesamiento de otros componentes
+			// Processing of other components
 			m_pSound->Process(TRUE);
 			m_pInput->Process(TRUE);
 
-			// Failsafe para PCs lentas: si el emulador no logra ponerse al día, forzar dibujo cada 400ms
+			// Failsafe for slow PCs: if emulator cannot keep up, force draw every 400ms
 			if (dwExecCount > 400) {
 				Refresh();
 				dwExecCount = 0;
@@ -484,14 +484,14 @@ void FASTCALL CScheduler::Run()
 			continue;
 		}
 
-		// Hemos salido del bucle, lo que significa que el emulador alcanzó el tiempo real (accumulator < 1000).
-		// Este es nuestro "tiempo libre", el momento ideal para pintar en pantalla si la VM generó un frame.
+		// We exited the loop, which means the emulator reached real time (accumulator < 1000).
+		// This is our "free time", the ideal moment to paint on screen if VM generated a frame.
 		if (dwExecCount > 0) {
 			Refresh();
 			dwExecCount = 0;
 		}
 
-		// Dormir una vez cada 8ms si esta inactivo o el menu ON
+		// Sleep once every 8 ms if idle or the menu is open
 		if (!m_bActivate || m_bMenu) {
 			if ((m_dwExecTime & 0x07) == 0) {
 				Unlock();
@@ -500,7 +500,7 @@ void FASTCALL CScheduler::Run()
 			}
 		}
 
-		// Desbloquear
+		// Unlock
 		Unlock();
 	}
 }
@@ -508,7 +508,7 @@ void FASTCALL CScheduler::Run()
 
 //---------------------------------------------------------------------------
 //
-//	refrescar (por ejemplo, la memoria)
+//	Refresh (e.g., memory)
 //
 //---------------------------------------------------------------------------
 void FASTCALL CScheduler::Refresh()
@@ -520,23 +520,23 @@ void FASTCALL CScheduler::Refresh()
 	ASSERT_VALID(this);
 	ASSERT(m_pFrmWnd);
 
-	// Consigue la vista.
+	// Get the view
 	pView = m_pFrmWnd->GetView();
 	ASSERT(pView);
 
-	//  Obtiene el numero de subventanas.
+	// Get the number of subwindows
 	num = pView->GetSubWndNum();
 
-	// Reinicia si el numero de piezas es diferente al valor de la memoria.
+	// Reset if the number of pieces differs from the saved value
 	if (m_nSubWndNum != num) {
 		m_nSubWndNum = num;
 		m_nSubWndDisp = -1;
 	}
 
 	if (m_bEnable) {
-		// Esta en marcha y es el turno de la pantalla principal.
+		// Running and it's main screen turn
 		if (m_nSubWndDisp < 0) {
-			// Si el renderizador no esta listo, no dibujara.
+			// If renderer not ready, no drawing
 			if (!m_pRender->IsReady()) {
 				return;
 			}
@@ -544,10 +544,10 @@ void FASTCALL CScheduler::Refresh()
 		}
 	}
 
-	// Pantalla (parcial)
+	// Screen (partial)
 	pView->Draw(m_nSubWndDisp);
 
-	// Si es pantalla principal, completar frame como en el flujo legacy
+	// If main screen, complete frame like in legacy flow
 	if (m_nSubWndDisp < 0) {
 		if (m_pRender) {
 			m_pRender->Complete();
@@ -555,7 +555,7 @@ void FASTCALL CScheduler::Refresh()
 		m_dwDrawCount++;
 	}
 
-	// Vista de la ciclica
+	// Next window
 	m_nSubWndDisp++;
 	if (m_nSubWndDisp >= m_nSubWndNum) {
 		m_nSubWndDisp = -1;
@@ -564,7 +564,7 @@ void FASTCALL CScheduler::Refresh()
 
 //---------------------------------------------------------------------------
 //
-//	combinacion de PC con ensamblador inverso
+//	PC sync with disassembler
 //
 //---------------------------------------------------------------------------
 void FASTCALL CScheduler::SyncDisasm()
@@ -577,16 +577,16 @@ void FASTCALL CScheduler::SyncDisasm()
 	ASSERT(this);
 	ASSERT_VALID(this);
 
-	// Consigue la vista.
+	// Get the view
 	pView = m_pFrmWnd->GetView();
 	ASSERT(pView);
 
-	// Hasta un maximo de 8 piezas.
+	// Up to 8 pieces maximum
 	for (i=0; i<8; i++) {
 		dwID = MAKEID('D', 'I', 'S', ('A' + i));
 		pWnd = (CDisasmWnd*)pView->SearchSWnd(dwID);
 		if (pWnd) {
-			// Resultados.
+			// Results
 			pWnd->SetPC(m_pCPU->GetPC());
 		}
 	}
@@ -594,24 +594,24 @@ void FASTCALL CScheduler::SyncDisasm()
 
 //---------------------------------------------------------------------------
 //
-//	Adquisicion de la velocidad de fotogramas
+//	Get frame rate
 //
 //---------------------------------------------------------------------------
 int FASTCALL CScheduler::GetFrameRate()
 {
 	DWORD dwCount;
 	DWORD dwTime;
-    DWORD dwDiff;
+	DWORD dwDiff;
 
 	ASSERT(this);
 	ASSERT_VALID(this);
 
-	// control invalido
+	// Invalid control
 	if (!m_bEnable) {
 		return 0;
 	}
 
-	// Adquisicion de tiempo (soporte de bucle, inicializacion si es largo)
+	// Get time (loop support, initialize if long)
 	dwTime = GetTime();
 	if (dwTime <= m_dwDrawTime) {
 		m_dwDrawTime = dwTime;
@@ -629,7 +629,7 @@ int FASTCALL CScheduler::GetFrameRate()
 		return 0;
 	}
 
-	// Si la diferencia es inferior a 500 ms, el proceso es normal.
+	// If difference is less than 500 ms, normal processing
 	if (dwDiff < 500) {
 		m_dwDrawBackup = 0;
 		dwDiff /= 10;
@@ -640,7 +640,7 @@ int FASTCALL CScheduler::GetFrameRate()
 		return (dwCount / dwDiff);
 	}
 
-	// Memoria si la diferencia es inferior a 1000 ms.
+	// Memory if difference is less than 1000 ms
 	if (dwDiff < 1000) {
 		if (m_dwDrawBackup == 0) {
 			m_dwDrawBackup = dwTime;
@@ -651,7 +651,7 @@ int FASTCALL CScheduler::GetFrameRate()
 		return (dwCount / dwDiff);
 	}
 
-	// Mas que eso, asi que cambia a Prev
+	// More than that, so switch to Prev
 	dwDiff /= 10;
 	dwCount = m_dwDrawCount * 1000;
 	m_dwDrawTime = (m_dwDrawBackup != 0) ? m_dwDrawBackup : dwTime;
@@ -668,13 +668,13 @@ int FASTCALL CScheduler::GetFrameRate()
 
 //---------------------------------------------------------------------------
 //
-//	Confirmacion asincrona de frame consumido por UI
+//	Async confirmation of frame consumed by UI
 //
 //---------------------------------------------------------------------------
 void FASTCALL CScheduler::OnMainFramePresented()
 {
-	// Mantenido por compatibilidad. El contador y Complete
-	// ahora se actualizan en Refresh() para preservar el ritmo original.
+	// Kept for compatibility. Counter and Complete
+	// are now updated in Refresh() to preserve original timing
 }
 
 #endif	// _WIN32

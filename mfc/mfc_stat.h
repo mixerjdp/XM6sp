@@ -2,8 +2,8 @@
 //
 //	X68000 EMULATOR "XM6"
 //
-//	Copyright (C) 2001-2005 ＰＩ．(ytanaka@ipc-tokai.or.jp)
-//	[ MFC ステータスビュー ]
+//	Copyright (C) 2001-2005 PI.(ytanaka@ipc-tokai.or.jp)
+//	[ MFC status view ]
 //
 //---------------------------------------------------------------------------
 
@@ -14,68 +14,68 @@
 
 //===========================================================================
 //
-//	ステータスビュー
+//	Status view
 //
 //===========================================================================
 class CStatusView : public CWnd
 {
 public:
 	CStatusView();
-										// コンストラクタ
+										// Constructor
 	BOOL FASTCALL Init(CFrmWnd *pFrmWnd);
-										// 初期化
+										// Initialization
 	void FASTCALL SetCaptionString(CString& strCap);
-										// キャプション文字列指定
+										// Caption string specification
 	void FASTCALL SetMenuString(CString& strMenu);
-										// メニュー文字列指定
+										// Menu string specification
 	void FASTCALL SetInfoString(CString& strInfo);
-										// 情報文字列指定
+										// Info string specification
 	void FASTCALL DrawStatus(int nPane);
-										// ステータス描画
+										// Status draw
 
 protected:
 	void PostNcDestroy();
-										// ウィンドウ削除完了
+										// Window destruction
 	afx_msg void OnPaint();
-										// ウィンドウ再描画
+										// Window paint
 	afx_msg BOOL OnEraseBkgnd(CDC *pDC);
-										// ウィンドウ背景描画
+										// Window background paint
 	afx_msg void OnSize(UINT nType, int cx, int cy);
-										// ウィンドウサイズ変更
+										// Window size change
 	afx_msg void OnMove(int x, int y);
-										// ウィンドウ位置変更
+										// Window position change
 
 private:
-	// 全体
+	// General
 	CFrmWnd *m_pFrmWnd;
-										// フレームウィンドウ
+										// Frame window
 	CRect m_rectClient;
-										// クライアント矩形
+										// Client area
 	LONG m_tmWidth;
-										// キャラクタ横幅
+										// Text metrics width
 	LONG m_tmHeight;
-										// キャラクタ高さ
+										// Text metrics height
 
-	// メッセージ
+	// Messages
 	void FASTCALL DrawMessage(CDC *pDC) const;
-										// メッセージ描画
+										// Message draw
 	CString m_strIdle;
-										// アイドル文字列
+										// Idle string
 	CString m_strCaption;
-										// キャプション文字列
+										// Caption string
 	CString m_strMenu;
-										// メニュー文字列
+										// Menu string
 	CString m_strInfo;
-										// 情報表示文字列
+										// Info string
 
-	// ステータス
+	// Status
 	CRect m_rectFDD[2];
-										// FDD矩形
+										// FDD rect
 	CRect m_rectLED[3];
-										// LED矩形
+										// LED rect
 
 	DECLARE_MESSAGE_MAP()
-										// メッセージ マップあり
+										// Message map
 };
 
 #endif	// mfc_stat_h

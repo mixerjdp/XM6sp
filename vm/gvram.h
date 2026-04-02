@@ -3,7 +3,7 @@
 //	X68000 EMULATOR "XM6"
 //
 //	Copyright (C) 2001-2006 ＰＩ．(ytanaka@ipc-tokai.or.jp)
-//	[ グラフィックVRAM ]
+//	[ Graphic VRAM ]
 //
 //---------------------------------------------------------------------------
 
@@ -15,232 +15,232 @@
 
 //===========================================================================
 //
-//	グラフィックVRAMハンドラ
+//	Graphic VRAMHandler
 //
 //===========================================================================
 class GVRAMHandler
 {
 public:
 	GVRAMHandler(Render *rend, BYTE *mem, CPU *p);
-										// コンストラクタ
+										// Constructor
 	virtual DWORD FASTCALL ReadByte(DWORD addr) = 0;
-										// バイト読み込み
+										// Byte read
 	virtual DWORD FASTCALL ReadWord(DWORD addr) = 0;
-										// ワード読み込み
+										// Word read
 	virtual void FASTCALL WriteByte(DWORD addr, DWORD data) = 0;
-										// バイト書き込み
+										// Byte write
 	virtual void FASTCALL WriteWord(DWORD addr, DWORD data) = 0;
-										// ワード書き込み
+										// Word write
 	virtual DWORD FASTCALL ReadOnly(DWORD addr) const = 0;
-										// 読み込みのみ
+										// Read only
 
 protected:
 	Render *render;
-										// レンダラ
+										// Renderer
 	BYTE *gvram;
-										// グラフィックVRAM
+										// Graphic VRAM
 	CPU *cpu;
 										// CPU
 };
 
 //===========================================================================
 //
-//	グラフィックVRAMハンドラ(1024)
+//	Graphic VRAMHandler(1024)
 //
 //===========================================================================
 class GVRAM1024 : public GVRAMHandler
 {
 public:
 	GVRAM1024(Render *render, BYTE *gvram, CPU *p);
-										// コンストラクタ
+										// Constructor
 	DWORD FASTCALL ReadByte(DWORD addr);
-										// バイト読み込み
+										// Byte read
 	DWORD FASTCALL ReadWord(DWORD addr);
-										// ワード読み込み
+										// Word read
 	void FASTCALL WriteByte(DWORD addr, DWORD data);
-										// バイト書き込み
+										// Byte write
 	void FASTCALL WriteWord(DWORD addr, DWORD data);
-										// ワード書き込み
+										// Word write
 	DWORD FASTCALL ReadOnly(DWORD addr) const;
-										// 読み込みのみ
+										// Read only
 };
 
 //===========================================================================
 //
-//	グラフィックVRAMハンドラ(16色)
+//	Graphic VRAMHandler(16 colors)
 //
 //===========================================================================
 class GVRAM16 : public GVRAMHandler
 {
 public:
 	GVRAM16(Render *render, BYTE *gvram, CPU *p);
-										// コンストラクタ
+										// Constructor
 	DWORD FASTCALL ReadByte(DWORD addr);
-										// バイト読み込み
+										// Byte read
 	DWORD FASTCALL ReadWord(DWORD addr);
-										// ワード読み込み
+										// Word read
 	void FASTCALL WriteByte(DWORD addr, DWORD data);
-										// バイト書き込み
+										// Byte write
 	void FASTCALL WriteWord(DWORD addr, DWORD data);
-										// ワード書き込み
+										// Word write
 	DWORD FASTCALL ReadOnly(DWORD addr) const;
-										// 読み込みのみ
+										// Read only
 };
 
 //===========================================================================
 //
-//	グラフィックVRAMハンドラ(256色)
+//	Graphic VRAMHandler(256 colors)
 //
 //===========================================================================
 class GVRAM256 : public GVRAMHandler
 {
 public:
 	GVRAM256(Render *render, BYTE *gvram, CPU *p);
-										// コンストラクタ
+										// Constructor
 	DWORD FASTCALL ReadByte(DWORD addr);
-										// バイト読み込み
+										// Byte read
 	DWORD FASTCALL ReadWord(DWORD addr);
-										// ワード読み込み
+										// Word read
 	void FASTCALL WriteByte(DWORD addr, DWORD data);
-										// バイト書き込み
+										// Byte write
 	void FASTCALL WriteWord(DWORD addr, DWORD data);
-										// ワード書き込み
+										// Word write
 	DWORD FASTCALL ReadOnly(DWORD addr) const;
-										// 読み込みのみ
+										// Read only
 };
 
 //===========================================================================
 //
-//	グラフィックVRAMハンドラ(無効)
+//	Graphic VRAMHandler(Undefined)
 //
 //===========================================================================
 class GVRAMNDef : public GVRAMHandler
 {
 public:
 	GVRAMNDef(Render *render, BYTE *gvram, CPU *p);
-										// コンストラクタ
+										// Constructor
 	DWORD FASTCALL ReadByte(DWORD addr);
-										// バイト読み込み
+										// Byte read
 	DWORD FASTCALL ReadWord(DWORD addr);
-										// ワード読み込み
+										// Word read
 	void FASTCALL WriteByte(DWORD addr, DWORD data);
-										// バイト書き込み
+										// Byte write
 	void FASTCALL WriteWord(DWORD addr, DWORD data);
-										// ワード書き込み
+										// Word write
 	DWORD FASTCALL ReadOnly(DWORD addr) const;
-										// 読み込みのみ
+										// Read only
 };
 
 //===========================================================================
 //
-//	グラフィックVRAMハンドラ(65536色)
+//	Graphic VRAMHandler(65536 colors)
 //
 //===========================================================================
 class GVRAM64K : public GVRAMHandler
 {
 public:
 	GVRAM64K(Render *render, BYTE *gvram, CPU *p);
-										// コンストラクタ
+										// Constructor
 	DWORD FASTCALL ReadByte(DWORD addr);
-										// バイト読み込み
+										// Byte read
 	DWORD FASTCALL ReadWord(DWORD addr);
-										// ワード読み込み
+										// Word read
 	void FASTCALL WriteByte(DWORD addr, DWORD data);
-										// バイト書き込み
+										// Byte write
 	void FASTCALL WriteWord(DWORD addr, DWORD data);
-										// ワード書き込み
+										// Word write
 	DWORD FASTCALL ReadOnly(DWORD addr) const;
-										// 読み込みのみ
+										// Read only
 };
 
 //===========================================================================
 //
-//	グラフィックVRAM
+//	Graphic VRAM
 //
 //===========================================================================
 class GVRAM : public MemDevice
 {
 public:
-	// 内部ワーク定義
+	// Structure
 	typedef struct {
-		BOOL mem;						// 512KB単純メモリフラグ
-		DWORD siz;						// 1024×1024フラグ
-		DWORD col;						// 16, 256, 未定義, 65536
-		int type;						// ハンドラタイプ(0～4)
-		DWORD mask[4];					// 高速クリア マスク
-		BOOL plane[4];					// 高速クリア プレーン
+		BOOL mem;						// 512KB single bank flag
+		DWORD siz;						// 1024x1024 flag
+		DWORD col;						// 16, 256, Undefined, 65536
+		int type;						// Handler type (0-4)
+		DWORD mask[4];					// Plane clear mask
+		BOOL plane[4];					// Plane clear flag
 	} gvram_t;
 
 public:
-	// 基本ファンクション
+	// Basic procedures
 	GVRAM(VM *p);
-										// コンストラクタ
+										// Constructor
 	BOOL FASTCALL Init();
-										// 初期化
+										// Initialize
 	void FASTCALL Cleanup();
-										// クリーンアップ
+										// Cleanup
 	void FASTCALL Reset();
-										// リセット
+										// Reset
 	BOOL FASTCALL Save(Fileio *fio, int ver);
-										// セーブ
+										// Save
 	BOOL FASTCALL Load(Fileio *fio, int ver);
-										// ロード
+										// Load
 	void FASTCALL ApplyCfg(const Config *config);
-										// 設定適用
+										// Apply config
 #if !defined(NDEBUG)
 	void FASTCALL AssertDiag() const;
-										// 診断
+										// Assert
 #endif	// NDEBUG
 
-	// メモリデバイス
+	// Memory device
 	DWORD FASTCALL ReadByte(DWORD addr);
-										// バイト読み込み
+										// Byte read
 	DWORD FASTCALL ReadWord(DWORD addr);
-										// ワード読み込み
+										// Word read
 	void FASTCALL WriteByte(DWORD addr, DWORD data);
-										// バイト書き込み
+										// Byte write
 	void FASTCALL WriteWord(DWORD addr, DWORD data);
-										// ワード書き込み
+										// Word write
 	DWORD FASTCALL ReadOnly(DWORD addr) const;
-										// 読み込みのみ
+										// Read only
 
-	// 外部API
+	// Public API
 	void FASTCALL SetType(DWORD type);
-										// GVRAMタイプ設定
+										// GVRAM type set
 	void FASTCALL FastSet(DWORD mask);
-										// 高速クリア設定
+										// Plane clear flag set
 	void FASTCALL FastClr(const CRTC::crtc_t *p);
-										// 高速クリア
+										// Plane clear
 	const BYTE* FASTCALL GetGVRAM() const;
-										// GVRAM取得
+										// Get GVRAM
 
 private:
 	void FASTCALL FastClr768(const CRTC::crtc_t *p);
-										// 高速クリア 1024x1024 512/768
+										// Plane clear 1024x1024 512/768
 	void FASTCALL FastClr256(const CRTC::crtc_t *p);
-										// 高速クリア 1024x1024 256
+										// Plane clear 1024x1024 256
 	void FASTCALL FastClr512(const CRTC::crtc_t *p);
-										// 高速クリア 512x512
+										// Plane clear 512x512
 	Render *render;
-										// レンダラ
+										// Renderer
 	BYTE *gvram;
-										// グラフィックVRAM
+										// Graphic VRAM
 	GVRAMHandler *handler;
-										// メモリハンドラ(カレント)
+										// Internal Handler(default)
 	GVRAM1024 *hand1024;
-										// メモリハンドラ(1024)
+										// Internal Handler(1024)
 	GVRAM16 *hand16;
-										// メモリハンドラ(16色)
+										// Internal Handler(16 colors)
 	GVRAM256 *hand256;
-										// メモリハンドラ(256色)
+										// Internal Handler(256 colors)
 	GVRAMNDef *handNDef;
-										// メモリハンドラ(無効)
+										// Internal Handler(Undefined)
 	GVRAM64K *hand64K;
-										// メモリハンドラ(64K色)
+										// Internal Handler(64K colors)
 	gvram_t gvdata;
-										// 内部ワーク
+										// State
 	DWORD gvcount;
-										// GVRAMアクセスカウント(version2.04以降)
+										// GVRAM access count (version 2.04 or later)
 };
 
 #endif	// gvram_h

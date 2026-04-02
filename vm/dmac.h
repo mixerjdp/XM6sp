@@ -2,7 +2,7 @@
 //
 //	X68000 EMULATOR "XM6"
 //
-//	Copyright (C) 2001-2006 ‚o‚hD(ytanaka@ipc-tokai.or.jp)
+//	Copyright (C) 2001-2006 ï¿½oï¿½hï¿½D(ytanaka@ipc-tokai.or.jp)
 //	[ DMAC(HD63450) ]
 //
 //---------------------------------------------------------------------------
@@ -20,181 +20,184 @@
 class DMAC : public MemDevice
 {
 public:
-	// “à•”ƒf[ƒ^’è‹`(ƒ`ƒƒƒlƒ‹•Ê)
+	// Member data definition (per channel)
 	typedef struct {
-		// Šî–{ƒpƒ‰ƒ[ƒ^
-		DWORD xrm;						// ƒŠƒNƒGƒXƒgƒ‚[ƒh
-		DWORD dtyp;						// ƒfƒoƒCƒXƒ^ƒCƒv
-		BOOL dps;						// ƒ|[ƒgƒTƒCƒY (TRUE‚Å16bit)
-		DWORD pcl;						// PCLƒZƒŒƒNƒ^
-		BOOL dir;						// •ûŒü (TRUE‚ÅDAR¨ƒƒ‚ƒŠ)
-		BOOL btd;						// DONE‚ÅŸƒuƒƒbƒN‚Ö
-		DWORD size;						// ƒIƒyƒ‰ƒ“ƒhƒTƒCƒY
-		DWORD chain;					// ƒ`ƒFƒCƒ““®ì
-		DWORD reqg;						// REQ¶¬ƒ‚[ƒh
-		DWORD mac;						// ƒƒ‚ƒŠƒAƒhƒŒƒXXVƒ‚[ƒh
-		DWORD dac;						// ƒfƒoƒCƒXƒAƒhƒŒƒXXVƒ‚[ƒh
+		// Basic parameters
+		DWORD xrm;						// Transfer mode
+		DWORD dtyp;						// Device type
+		BOOL dps;						// Port size (TRUE=16bit)
+		DWORD pcl;						// PCL counter
+		BOOL dir;						// Direction (TRUE=DAR increment)
+		BOOL btd;						// Done block transfer
+		DWORD size;						// Transfer size
+		DWORD chain;					// Chaining mode
+		DWORD reqg;						// REQ signal mode
+		DWORD mac;						// Memory address update mode
+		DWORD dac;						// Device address update mode
 
-		// §Œäƒtƒ‰ƒO
-		BOOL str;						// ƒXƒ^[ƒgƒtƒ‰ƒO
-		BOOL cnt;						// ƒRƒ“ƒeƒBƒjƒ…[ƒtƒ‰ƒO
-		BOOL hlt;						// HALTƒtƒ‰ƒO
-		BOOL sab;						// ƒ\ƒtƒgƒEƒFƒAƒAƒ{[ƒgƒtƒ‰ƒO
-		BOOL intr;						// Š„‚è‚İ‰Â”\ƒtƒ‰ƒO
-		BOOL coc;						// ƒ`ƒƒƒ“ƒlƒ‹“®ìŠ®—¹ƒtƒ‰ƒO
-		BOOL boc;						// ƒuƒƒbƒN“®ìŠ®—¹ƒtƒ‰ƒO
-		BOOL ndt;						// ³íI—¹ƒtƒ‰ƒO
-		BOOL err;						// ƒGƒ‰[ƒtƒ‰ƒO
-		BOOL act;						// ƒAƒNƒeƒBƒuƒtƒ‰ƒO
-		BOOL dit;						// DONE“ü—Íƒtƒ‰ƒO
-		BOOL pct;						// PCL negedgeŒŸoƒtƒ‰ƒO
-		BOOL pcs;						// PCL‚Ìó‘Ô (TRUE‚ÅHƒŒƒxƒ‹)
-		DWORD ecode;					// ƒGƒ‰[ƒR[ƒh
+		// Status flags
+		BOOL str;						// Start flag
+		BOOL cnt;						// Counter flag
+		BOOL hlt;						// HALT flag
+		BOOL sab;						// Software abort flag
+		BOOL intr;						// Interrupt possible flag
+		BOOL coc;						// Channel operation complete flag
+		BOOL boc;						// Block operation complete flag
+		BOOL ndt;						// Normal end flag
+		BOOL err;						// Error flag
+		BOOL act;						// Active flag
+		BOOL dit;						// Done interrupt flag
+		BOOL pct;						// PCL negative edge detect flag
+		BOOL pcs;						// PCL level (TRUE=High level)
+		DWORD ecode;					// Error code
 
-		// ƒAƒhƒŒƒXAƒŒƒ“ƒOƒX
-		DWORD mar;						// ƒƒ‚ƒŠƒAƒhƒŒƒXƒJƒEƒ“ƒ^
-		DWORD dar;						// ƒfƒoƒCƒXƒAƒhƒŒƒXƒŒƒWƒXƒ^
-		DWORD bar;						// ƒx[ƒXƒAƒhƒŒƒXƒŒƒWƒXƒ^
-		DWORD mtc;						// ƒƒ‚ƒŠƒgƒ‰ƒ“ƒXƒtƒ@ƒJƒEƒ“ƒ^
-		DWORD btc;						// ƒx[ƒXƒgƒ‰ƒ“ƒXƒtƒ@ƒJƒEƒ“ƒ^
-		DWORD mfc;						// ƒƒ‚ƒŠƒtƒ@ƒ“ƒNƒVƒ‡ƒ“ƒR[ƒh
-		DWORD dfc;						// ƒfƒoƒCƒXƒtƒ@ƒ“ƒNƒVƒ‡ƒ“ƒR[ƒh
-		DWORD bfc;						// ƒx[ƒXƒtƒ@ƒ“ƒNƒVƒ‡ƒ“ƒR[ƒh
-		DWORD niv;						// ƒm[ƒ}ƒ‹ƒCƒ“ƒ^ƒ‰ƒvƒgƒxƒNƒ^
-		DWORD eiv;						// ƒGƒ‰[ƒCƒ“ƒ^ƒ‰ƒvƒgƒxƒNƒ^
+		// Address and counter registers
+		DWORD mar;						// Memory address register
+		DWORD dar;						// Device address register
+		DWORD bar;						// Base address register
+		DWORD mtc;						// Memory transfer count register
+		DWORD btc;						// Base transfer count register
+		DWORD mfc;						// Memory function code
+		DWORD dfc;						// Device function code
+		DWORD bfc;						// Base function code
+		DWORD niv;						// Normal interrupt vector
+		DWORD eiv;						// Error interrupt vector
 
-		// ƒo[ƒXƒg“]‘—
-		DWORD cp;						// ƒvƒ‰ƒCƒIƒŠƒeƒB
-		DWORD bt;						// ƒo[ƒXƒg“]‘—ƒ^ƒCƒ€
-		DWORD br;						// ƒoƒ“ƒh•
-		int type;						// “]‘—ƒ^ƒCƒv
+		// Context save
+		DWORD cp;						// Current priority
+		DWORD bt;						// Burst transfer mode
+		DWORD br;						// Burst request mode
+		int type;						// Transfer type
 
-		// “®ìƒJƒEƒ“ƒ^(ƒfƒoƒbƒOŒü‚¯)
-		DWORD startcnt;					// ƒXƒ^[ƒgƒJƒEƒ“ƒ^
-		DWORD errorcnt;					// ƒGƒ‰[ƒJƒEƒ“ƒ^
+		// Debug counters
+		DWORD startcnt;					// Start counter
+		DWORD errorcnt;					// Error counter
 	} dma_t;
 
-	// “à•”ƒf[ƒ^’è‹`(ƒOƒ[ƒoƒ‹)
+	// Member data definition (global)
 	typedef struct {
-		int transfer;					// “]‘—’†ƒtƒ‰ƒO(ƒ`ƒƒƒlƒ‹Œ“—p)
-		int load;						// ƒ`ƒFƒCƒ“ƒ[ƒhƒtƒ‰ƒO(ƒ`ƒƒƒlƒ‹Œ“—p)
-		BOOL exec;						// ƒI[ƒgƒŠƒNƒGƒXƒg—L–³ƒtƒ‰ƒO
-		int current_ch;					// ƒI[ƒgƒŠƒNƒGƒXƒgˆ—ƒ`ƒƒƒlƒ‹
-		int cpu_cycle;					// CPUƒTƒCƒNƒ‹ƒJƒEƒ“ƒ^
-		int vector;						// Š„‚è‚İ—v‹’†ƒxƒNƒ^
+		int transfer;					// Transfer flag (per channel)
+		int load;						// Chain load flag (per channel)
+		BOOL exec;						// Execute request active flag
+		int current_ch;					// Current channel
+		int cpu_cycle;					// CPU cycle counter
+		int vector;						// Interrupt pending vector
 	} dmactrl_t;
 
 public:
-	// Šî–{ƒtƒ@ƒ“ƒNƒVƒ‡ƒ“
+	// Basic constructor
 	DMAC(VM *p);
-										// ƒRƒ“ƒXƒgƒ‰ƒNƒ^
+										// Constructor
 	BOOL FASTCALL Init();
-										// ‰Šú‰»
+										// Initialize
 	void FASTCALL Cleanup();
-										// ƒNƒŠ[ƒ“ƒAƒbƒv
+										// Cleanup
 	void FASTCALL Reset();
-										// ƒŠƒZƒbƒg
+										// Reset
 	BOOL FASTCALL Save(Fileio *fio, int ver);
-										// ƒZ[ƒu
+										// Save
 	BOOL FASTCALL Load(Fileio *fio, int ver);
-										// ƒ[ƒh
+										// Load
 	void FASTCALL ApplyCfg(const Config *config);
-										// İ’è“K—p
+										// Apply config
 
-	// ƒƒ‚ƒŠƒfƒoƒCƒX
+	// External device access
 	DWORD FASTCALL ReadByte(DWORD addr);
-										// ƒoƒCƒg“Ç‚İ‚İ
+										// Byte read
 	DWORD FASTCALL ReadWord(DWORD addr);
-										// ƒ[ƒh“Ç‚İ‚İ
+										// Word read
 	void FASTCALL WriteByte(DWORD addr, DWORD data);
-										// ƒoƒCƒg‘‚«‚İ
+										// Byte write
 	void FASTCALL WriteWord(DWORD addr, DWORD data);
-										// ƒ[ƒh“Ç‚İ‚İ
+										// Word write
 	DWORD FASTCALL ReadOnly(DWORD addr) const;
-										// “Ç‚İ‚İ‚Ì‚İ
+										// Read only
 
-	// ŠO•”API
+	// External API
 	void FASTCALL GetDMA(int ch, dma_t *buffer) const;
-										// DMAî•ñæ“¾
+										// Get DMA
 	void FASTCALL GetDMACtrl(dmactrl_t *buffer) const;
-										// DMA§Œäî•ñæ“¾
+										// Get DMA control
 	BOOL FASTCALL ReqDMA(int ch);
-										// DMA“]‘——v‹
+										// DMA request
 	DWORD FASTCALL AutoDMA(DWORD cycle);
-										// DMAƒI[ƒgƒŠƒNƒGƒXƒg
+										// DMA auto request
 	BOOL FASTCALL IsDMA() const;
-										// DMA“]‘—’†‚©–â‚¢‡‚í‚¹
+										// DMA transfer query
 	void FASTCALL BusErr(DWORD addr, BOOL read);
-										// ƒoƒXƒGƒ‰[
+										// Bus error
 	void FASTCALL AddrErr(DWORD addr, BOOL read);
-										// ƒAƒhƒŒƒXƒGƒ‰[
+										// Address error
 	DWORD FASTCALL GetVector(int type) const;
-										// ƒxƒNƒ^æ“¾
+										// Get vector
 	void FASTCALL IntAck();
-										// Š„‚è‚İACK
+										// Interrupt ACK
 	BOOL FASTCALL IsAct(int ch) const;
-										// DMA“]‘—‰Â”\‚©–â‚¢‡‚í‚¹
+										// DMA transfer possible query
+	void FASTCALL SetLegacyCntMode(BOOL enabled);
+	BOOL FASTCALL IsLegacyCntMode() const;
 
 private:
-	// ƒ`ƒƒƒlƒ‹ƒƒ‚ƒŠƒAƒNƒZƒX
+	// Channel register access
 	DWORD FASTCALL ReadDMA(int ch, DWORD addr) const;
-										// DMA“Ç‚İ‚İ
+										// DMA read
 	void FASTCALL WriteDMA(int ch, DWORD addr, DWORD data);
-										// DMA‘‚«‚İ
+										// DMA write
 	void FASTCALL SetDCR(int ch, DWORD data);
-										// DCRƒZƒbƒg
+										// DCR set
 	DWORD FASTCALL GetDCR(int ch) const;
-										// DCRæ“¾
+										// DCR get
 	void FASTCALL SetOCR(int ch, DWORD data);
-										// OCRƒZƒbƒg
+										// OCR set
 	DWORD FASTCALL GetOCR(int ch) const;
-										// OCRæ“¾
+										// OCR get
 	void FASTCALL SetSCR(int ch, DWORD data);
-										// SCRƒZƒbƒg
+										// SCR set
 	DWORD FASTCALL GetSCR(int ch) const;
-										// SCRæ“¾
+										// SCR get
 	void FASTCALL SetCCR(int ch, DWORD data);
-										// CCRƒZƒbƒg
+										// CCR set
 	DWORD FASTCALL GetCCR(int ch) const;
-										// CCRæ“¾
+										// CCR get
 	void FASTCALL SetCSR(int ch, DWORD data);
-										// CSRƒZƒbƒg
+										// CSR set
 	DWORD FASTCALL GetCSR(int ch) const;
-										// CSRæ“¾
+										// CSR get
 	void FASTCALL SetGCR(DWORD data);
-										// GCRƒZƒbƒg
+										// GCR set
 
-	// ƒ`ƒƒƒlƒ‹ƒIƒyƒŒ[ƒVƒ‡ƒ“
+	// Channel operation
 	void FASTCALL ResetDMA(int ch);
-										// DMAƒŠƒZƒbƒg
+										// DMA reset
 	void FASTCALL StartDMA(int ch);
-										// DMAƒXƒ^[ƒg
+										// DMA start
 	void FASTCALL ContDMA(int ch);
-										// DMAƒRƒ“ƒeƒBƒjƒ…[
+										// DMA continue
 	void FASTCALL AbortDMA(int ch);
-										// DMAƒ\ƒtƒgƒEƒFƒAƒAƒ{[ƒg
+										// DMA software abort
 	void FASTCALL LoadDMA(int ch);
-										// DMAƒuƒƒbƒNƒ[ƒh
+										// DMA block load
 	void FASTCALL ErrorDMA(int ch, DWORD code);
-										// ƒGƒ‰[
+										// Error
 	void FASTCALL Interrupt();
-										// Š„‚è‚İ
+										// Interrupt
 	BOOL FASTCALL TransDMA(int ch);
-										// DMA1‰ñ“]‘—
+										// DMA1 transfer
 
-	// ƒe[ƒuƒ‹A“à•”ƒ[ƒN
+	// Table and device
 	static const int MemDiffTable[8][4];
-										// ƒƒ‚ƒŠXVƒe[ƒuƒ‹
+										// Memory difference table
 	static const int DevDiffTable[8][4];
-										// ƒfƒoƒCƒXXVƒe[ƒuƒ‹
+										// Device difference table
 	Memory *memory;
-										// ƒƒ‚ƒŠ
+										// Memory
 	FDC *fdc;
 										// FDC
 	dma_t dma[4];
-										// “à•”ƒ[ƒN(ƒ`ƒƒƒlƒ‹)
+										// Structure (channel)
 	dmactrl_t dmactrl;
-										// “à•”ƒ[ƒN(ƒOƒ[ƒoƒ‹)
+										// Structure (global)
+	BOOL legacy_cnt_mode;
 };
 
 #endif	// dmac_h

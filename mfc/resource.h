@@ -1,5 +1,5 @@
 //{{NO_DEPENDENCIES}}
-// Archivo de inclusión generado de Microsoft Visual C++.
+// File de inclusión generado de Microsoft Visual C++.
 // Usado por mfc_res.rc
 //
 #define IDC_BUTTON1                     1001
@@ -8,7 +8,7 @@
 #define IDM_SAVEAS1                     40004
 
 // Next default values for new objects
-// 
+//
 #ifdef APSTUDIO_INVOKED
 #ifndef APSTUDIO_READONLY_SYMBOLS
 #define _APS_NEXT_RESOURCE_VALUE        101

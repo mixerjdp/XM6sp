@@ -2,15 +2,15 @@
 //
 //	X68000 EMULATOR "XM6"
 //
-//	Copyright (C) 2001-2006 ＰＩ．(ytanaka@ipc-tokai.or.jp)
+//	Copyright (C) 2001-2006 PI (ytanaka@ipc-tokai.or.jp)
 //	[ MFC Info ]
 //
 //---------------------------------------------------------------------------
 
 #if defined(_WIN32)
 
-#include "os.h"
 #include "mfc.h"
+#include "os.h"
 #include "xm6.h"
 #include "vm.h"
 #include "schedule.h"
@@ -38,18 +38,18 @@
 
 //---------------------------------------------------------------------------
 //
-//	コンストラクタ
+//	Constructor
 //
 //---------------------------------------------------------------------------
 CInfo::CInfo(CFrmWnd *pWnd, CStatusBar *pBar) : CComponent(pWnd)
 {
 	int nPane;
 
-	// コンポーネントパラメータ
+	// Component parameter
 	m_dwID = MAKEID('I', 'N', 'F', 'O');
 	m_strDesc = _T("Info Center");
 
-	// キャプション
+	// Option
 	m_strRun.Empty();
 	m_strStop.Empty();
 	m_szVM[0] = _T('\0');
@@ -68,14 +68,14 @@ CInfo::CInfo(CFrmWnd *pWnd, CStatusBar *pBar) : CComponent(pWnd)
 	m_pSASI = NULL;
 	m_pSCSI = NULL;
 
-	// 情報
+	// Info
 	m_bInfo = FALSE;
 	m_bPower = FALSE;
 	m_dwInfo = 0;
 	m_strInfo.Empty();
 	m_szInfo[0] = _T('\0');
 
-	// ステータス
+	// Status
 	for (nPane=0; nPane<PaneMax; nPane++) {
 		m_colStatus[nPane] = (COLORREF)-1;
 		m_szStatus[nPane][0] = _T('\0');
@@ -89,17 +89,17 @@ CInfo::CInfo(CFrmWnd *pWnd, CStatusBar *pBar) : CComponent(pWnd)
 	m_dwDiskID = 0;
 	m_dwDiskTime = DiskTypeTime;
 
-	// ステータスバー
+	// Status bar
 	ASSERT(pBar);
 	m_pStatusBar = pBar;
 
-	// ステータスビュー
+	// Status view
 	m_pStatusView = NULL;
 }
 
 //---------------------------------------------------------------------------
 //
-//	初期化
+//	Initialization
 //
 //---------------------------------------------------------------------------
 BOOL FASTCALL CInfo::Init()
@@ -108,12 +108,12 @@ BOOL FASTCALL CInfo::Init()
 
 	ASSERT(this);
 
-	// 基本クラス
+	// Base class
 	if (!CComponent::Init()) {
 		return FALSE;
 	}
 
-	// キャプション
+	// Option
 	::GetMsg(IDS_CAPTION_RUN, m_strRun);
 	::GetMsg(IDS_CAPTION_STOP, m_strStop);
 	m_pSch = (CScheduler*)SearchComponent(MAKEID('S', 'C', 'H', 'E'));
@@ -125,7 +125,7 @@ BOOL FASTCALL CInfo::Init()
 	m_pSCSI = (SCSI*)::GetVM()->SearchDevice(MAKEID('S', 'C', 'S', 'I'));
 	ASSERT(m_pSCSI);
 
-	// 情報
+	// Info
 	::SetInfoMsg(m_szInfo, TRUE);
 	::GetMsg(AFX_IDS_IDLEMESSAGE, strIdle);
 	if (strIdle.GetLength() < 0x100) {
@@ -134,7 +134,7 @@ BOOL FASTCALL CInfo::Init()
 	::GetMsg(IDS_POWEROFF, m_strPower);
 	m_bPower = ::GetVM()->IsPower();
 
-	// ステータス
+	// Status
 	m_pFDD = (FDD*)::GetVM()->SearchDevice(MAKEID('F', 'D', 'D', ' '));
 	ASSERT(m_pFDD);
 	m_pRTC = (RTC*)::GetVM()->SearchDevice(MAKEID('R', 'T', 'C', ' '));
@@ -145,7 +145,7 @@ BOOL FASTCALL CInfo::Init()
 
 //---------------------------------------------------------------------------
 //
-//	クリーンアップ
+//	Cleanup
 //
 //---------------------------------------------------------------------------
 void FASTCALL CInfo::Cleanup()
@@ -153,13 +153,13 @@ void FASTCALL CInfo::Cleanup()
 	ASSERT(this);
 
 
-	// 基本クラス
+	// Base class
 	CComponent::Cleanup();
 }
 
 //---------------------------------------------------------------------------
 //
-//	設定適用
+//	Apply config
 //
 //---------------------------------------------------------------------------
 void FASTCALL CInfo::ApplyCfg(const Config* pConfig)
@@ -167,7 +167,7 @@ void FASTCALL CInfo::ApplyCfg(const Config* pConfig)
 	ASSERT(this);
 	ASSERT(pConfig);
 
-	// ステータス
+	// Status
 	m_bFloppyLED = pConfig->floppy_led;
 	m_bPowerLED = pConfig->power_led;
 	m_bCaptionInfo = pConfig->caption_info;
@@ -175,7 +175,7 @@ void FASTCALL CInfo::ApplyCfg(const Config* pConfig)
 
 //---------------------------------------------------------------------------
 //
-//	動作制御
+//	Enable
 //
 //---------------------------------------------------------------------------
 void FASTCALL CInfo::Enable(BOOL bEnable)
@@ -192,45 +192,45 @@ void FASTCALL CInfo::Enable(BOOL bEnable)
 	BYTE *pBits;
 	BYTE byteFont;
 
-	// 有効にする場合(起動初回を意味する)
+	// When enabled (may start emulation)
 	if (bEnable) {
-		// コンフィグマネージャを取得
+		// Get config manager
 		pConfig = (CConfig*)SearchComponent(MAKEID('C', 'F', 'G', ' '));
 		ASSERT(pConfig);
 
-		// コンフィグデータを取得
+		// Get config data
 		pConfig->GetConfig(&cfg);
 
-		// 電源ON起動、OFF起動で分ける
+		// Power OFF: clear and ON count
 		if (cfg.power_off) {
-			// 電源OFFから
+			// Power OFF state
 			m_bPower = FALSE;
 			m_bRun = FALSE;
 			m_bCount = TRUE;
 		}
 		else {
-			// 電源ONから
+			// Power ON state
 			m_bPower = TRUE;
 			m_bRun = TRUE;
 			m_bCount = FALSE;
 		}
 		m_dwTick = ::GetTickCount();
 
-		// ドライブ用ビットマップ作成
+		// Drive bitmap create
 		pMemory = (Memory*)::GetVM()->SearchDevice(MAKEID('M', 'E', 'M', ' '));
 		ASSERT(pMemory);
 		pCG = pMemory->GetCG();
 		ASSERT(pCG);
 
-		// ドライブループ
+		// Drive loop
 		for (i=0; i<2; i++) {
-			// サイズチェック
+			// Size check
 			ASSERT((sizeof(BITMAPINFOHEADER) + 8 * 8 * 3) <= sizeof(m_bmpDrive[i]));
 
-			// クリア
+			// Clear
 			memset(m_bmpDrive[i], 0, sizeof(m_bmpDrive[i]));
 
-			// ビットマップヘッダ設定
+			// Bitmap header setup
 			bmi = (BITMAPINFOHEADER*)&m_bmpDrive[i][0];
 			bmi->biSize = sizeof(BITMAPINFOHEADER);
 			bmi->biWidth = 8;
@@ -240,16 +240,16 @@ void FASTCALL CInfo::Enable(BOOL bEnable)
 			bmi->biCompression = BI_RGB;
 			bmi->biSizeImage = 8 * 8 * 3;
 
-			// アドレス設定
+			// Address setup
 			pChr = pCG + 0x3a000 + (('0' + i) << 3);
 			pBits = &m_bmpDrive[i][sizeof(BITMAPINFOHEADER)];
 
-			// x, yループ
+			// x, y loop
 			for (y=0; y<8; y++) {
-				// CGROMからデータ取得
+				// Get CGROM data
 				byteFont = pChr[y ^ 1];
 
-				// 1ビットごとに検査
+				// Convert 1 bit at a time
 				for (x=0; x<8; x++) {
 					if (byteFont & 0x80) {
 						pBits[0] = 208;
@@ -263,19 +263,19 @@ void FASTCALL CInfo::Enable(BOOL bEnable)
 		}
 	}
 
-	// 基本クラス
+	// Base class
 	CComponent::Enable(bEnable);
 }
 
 //===========================================================================
 //
-//	キャプション
+//	Option
 //
 //===========================================================================
 
 //---------------------------------------------------------------------------
 //
-//	キャプションリセット
+//	Option caption reset
 //
 //---------------------------------------------------------------------------
 void FASTCALL CInfo::ResetCaption()
@@ -285,10 +285,10 @@ void FASTCALL CInfo::ResetCaption()
 	ASSERT(this);
 	ASSERT(m_pSch);
 
-	// 現在の状態と反転
+	// Invert current state
 	m_bRun = !m_pSch->IsEnable();
 
-	// 更新アルゴリズムの逆を設定
+	// Update, percentage state opposite
 	if (m_bRun) {
 		m_bCount = FALSE;
 		m_nParcent = -1;
@@ -298,7 +298,7 @@ void FASTCALL CInfo::ResetCaption()
 		m_nParcent = -1;
 	}
 
-	// 現在の状態からメッセージを作る
+	// Set message according to current state
 	if (m_pSch->IsEnable()) {
 		strCap = m_strRun;
 	}
@@ -306,7 +306,7 @@ void FASTCALL CInfo::ResetCaption()
 		strCap = m_strStop;
 	}
 
-	// 設定
+	// Set
 	m_pFrmWnd->SetWindowText(strCap);
 	if (m_pStatusView) {
 		m_pStatusView->SetCaptionString(strCap);
@@ -315,7 +315,7 @@ void FASTCALL CInfo::ResetCaption()
 
 //---------------------------------------------------------------------------
 //
-//	キャプション更新
+//	Option caption update
 //
 //---------------------------------------------------------------------------
 void FASTCALL CInfo::UpdateCaption()
@@ -327,19 +327,19 @@ void FASTCALL CInfo::UpdateCaption()
 
 	ASSERT(this);
 
-	// ％チェック
+	// Parcent check
 	bParcent = CheckParcent();
 
-	// VMチェック
+	// VM check
 	bVM = CheckVM();
 
-	// MOチェック
+	// MO check
 	bMO = CheckMO();
 
-	// CDチェック
+	// CD check
 	bCD = CheckCD();
 
-	// どれか異なっていたら、キャプション設定
+	// If anything changed, set caption
 	if (bParcent || bVM || bMO || bCD) {
 		SetCaption();
 	}
@@ -347,7 +347,7 @@ void FASTCALL CInfo::UpdateCaption()
 
 //---------------------------------------------------------------------------
 //
-//	％チェック
+//	Parcent check
 //
 //---------------------------------------------------------------------------
 BOOL FASTCALL CInfo::CheckParcent()
@@ -361,17 +361,17 @@ BOOL FASTCALL CInfo::CheckParcent()
 	ASSERT(m_pSch);
 	ASSERT(m_pScheduler);
 
-	// 前回の状態をバックアップ
+	// Backup previous state
 	bRun = m_bRun;
 
-	// 今回の動作状態を取得
+	// Get current state
 	m_bRun = m_pSch->IsEnable();
 
-	// 停止になっていれば特別処理
+	// When stopped, calculate relative time
 	if (!m_bRun) {
-		// 前回も停止なら
+		// Was stopped before
 		if (!bRun) {
-			// 計測ありになっていれば下ろして、更新あり
+			// If already calculated, explain and update
 			if (m_bCount) {
 				m_bCount = FALSE;
 				return TRUE;
@@ -379,64 +379,64 @@ BOOL FASTCALL CInfo::CheckParcent()
 			return FALSE;
 		}
 
-		// 計測なし
+		// Not calculated
 		m_bCount = FALSE;
 
-		// ％表示なし
+		// Percentage invalid
 		m_nParcent = -1;
 
-		// 変更あり
+		// Changed
 		return TRUE;
 	}
 
-	// 計測開始していなければ特別処理(STOP→RUNはここに入る)
+	// If execution started or relative time not calculated (STOP to RUN transition)
 	if (!m_bCount || !bRun) {
-		// 計測開始
+		// Start calculation
 		m_bCount = TRUE;
 		m_dwTick = ::GetTickCount();
 		m_dwTime = m_pScheduler->GetTotalTime();
 
-		// ％表示なし
+		// Percentage invalid
 		m_nParcent = -1;
 
-		// 変更あり
+		// Changed
 		return TRUE;
 	}
 
-	// RUN→RUNの場合のみ
+	// Only RUN to RUN case
 	ASSERT(m_bCount);
 	ASSERT(bRun);
 	ASSERT(m_bRun);
 
-	// 時間差分を見る
+	// Get elapsed time
 	dwDiff = ::GetTickCount();
 	dwDiff -= m_dwTick;
 	if (m_nParcent >= 0) {
-		// 既に％表示中の場合
+		// Previously percentage was calculated
 		if (dwDiff < CapTimeLong) {
-			// 変更なし
+			// No change
 			return FALSE;
 		}
 	}
 	else {
-		// まだ％表示していない場合
+		// If not yet calculated
 		if (dwDiff < CapTimeShort) {
-			// 変更なし
+			// No change
 			return FALSE;
 		}
 	}
 
-	// 時間差、実行タイム差を得る
+	// Get elapsed time, real time
 	dwTick = ::GetTickCount();
 	m_dwTime = m_pScheduler->GetTotalTime() - m_dwTime;
 	m_dwTick = dwTick - m_dwTick;
 
-	// 除算により％を算出
+	// Calculate by division
 	if ((m_dwTime == 0) || (m_dwTick == 0)) {
 		nParcent = 0;
 	}
 	else {
-		// VM側は0.5us単位
+		// VM time is 0.5us unit
 		nParcent = (int)m_dwTime;
 		nParcent /= (int)m_dwTick;
 		if (nParcent > 0) {
@@ -444,11 +444,11 @@ BOOL FASTCALL CInfo::CheckParcent()
 		}
 	}
 
-	// 再セット
+	// Reset
 	m_dwTime = m_pScheduler->GetTotalTime();
 	m_dwTick = dwTick;
 
-	// ％加工(4捨5入)
+	// Round (4 or 5 up)
 	if ((nParcent % 10) >= 5) {
 		nParcent /= 10;
 		nParcent++;
@@ -457,19 +457,19 @@ BOOL FASTCALL CInfo::CheckParcent()
 		nParcent /= 10;
 	}
 
-	// 異なっていれば更新して、TRUE
+	// If changed, update and return TRUE
 	if (m_nParcent != nParcent) {
 		m_nParcent = nParcent;
 		return TRUE;
 	}
 
-	// 前回と同じ。FALSE
+	// Same as before, return FALSE
 	return FALSE;
 }
 
 //---------------------------------------------------------------------------
 //
-//	VMファイルチェック
+//	VM file check
 //
 //---------------------------------------------------------------------------
 BOOL FASTCALL CInfo::CheckVM()
@@ -481,32 +481,32 @@ BOOL FASTCALL CInfo::CheckVM()
 	ASSERT(this);
 	ASSERT(m_pSASI);
 
-	// VMパス取得
+	// Get VM path
 	::GetVM()->GetPath(path);
 	lpszPath = path.GetPath();
 
-	// フルとパス文字列が一致しているかどうか調べる
+	// Check if previous and current paths match
 	if (_tcscmp(lpszPath, m_szVMFull) == 0) {
-		// 変更なし
+		// No change
 		return FALSE;
 	}
 
-	// フルに全てコピー
+	// Copy all to previous
 	_tcscpy(m_szVMFull, lpszPath);
 
-	// ファイル名＋拡張子のみ取り出す
+	// Extract only filename and extension
 	lpszFileExt = path.GetFileExt();
 
-	// 更新
+	// Update
 	_tcscpy(m_szVM, lpszFileExt);
 
-	// 変更あり
+	// Changed
 	return TRUE;
 }
 
 //---------------------------------------------------------------------------
 //
-//	MOファイルチェック
+//	MO file check
 //
 //---------------------------------------------------------------------------
 BOOL FASTCALL CInfo::CheckMO()
@@ -518,32 +518,32 @@ BOOL FASTCALL CInfo::CheckMO()
 	ASSERT(this);
 	ASSERT(m_pSASI);
 
-	// MOパス取得
+	// Get MO path
 	m_pSASI->GetPath(path);
 	lpszPath = path.GetPath();
 
-	// フルとパス文字列が一致しているかどうか調べる
+	// Check if previous and current paths match
 	if (_tcscmp(lpszPath, m_szMOFull) == 0) {
-		// 変更なし
+		// No change
 		return FALSE;
 	}
 
-	// フルに全てコピー
+	// Copy all to previous
 	_tcscpy(m_szMOFull, lpszPath);
 
-	// ファイル名＋拡張子のみ取り出す
+	// Extract only filename and extension
 	lpszFileExt = path.GetFileExt();
 
-	// 更新
+	// Update
 	_tcscpy(m_szMO, lpszFileExt);
 
-	// 変更あり
+	// Changed
 	return TRUE;
 }
 
 //---------------------------------------------------------------------------
 //
-//	CDファイルチェック
+//	CD file check
 //
 //---------------------------------------------------------------------------
 BOOL FASTCALL CInfo::CheckCD()
@@ -555,32 +555,32 @@ BOOL FASTCALL CInfo::CheckCD()
 	ASSERT(this);
 	ASSERT(m_pSCSI);
 
-	// CDパス取得
+	// Get CD path
 	m_pSCSI->GetPath(path, FALSE);
 	lpszPath = path.GetPath();
 
-	// フルとパス文字列が一致しているかどうか調べる
+	// Check if previous and current paths match
 	if (_tcscmp(lpszPath, m_szCDFull) == 0) {
-		// 変更なし
+		// No change
 		return FALSE;
 	}
 
-	// フルに全てコピー
+	// Copy all to previous
 	_tcscpy(m_szCDFull, lpszPath);
 
-	// ファイル名＋拡張子のみ取り出す
+	// Extract only filename and extension
 	lpszFileExt = path.GetFileExt();
 
-	// 更新
+	// Update
 	_tcscpy(m_szCD, lpszFileExt);
 
-	// 変更あり
+	// Changed
 	return TRUE;
 }
 
 //---------------------------------------------------------------------------
 //
-//	キャプション設定
+//	Option caption set
 //
 //---------------------------------------------------------------------------
 void FASTCALL CInfo::SetCaption()
@@ -591,30 +591,30 @@ void FASTCALL CInfo::SetCaption()
 	ASSERT(this);
 	ASSERT(m_pFrmWnd);
 
-	// 動作中 or 停止
+	// Run or stop
 	if (m_bRun) {
-		// 動作中
+		// Running
 		strCap = m_strRun;
 	}
 	else {
-		// 停止中
+		// Stopped
 		strCap = m_strStop;
 	}
 
-	// 設定(キャプションへ情報表示しない場合)
+	// Set (if not showing info in caption)
 	if (m_bCaptionInfo == FALSE) {
 		strCap = _T("XM6");
 
-		// キャプション
+		// Caption
 		m_pFrmWnd->SetWindowText(strCap);
 
-		// ステータスビュー
+		// Status view
 		if (m_pStatusView) {
 			m_pStatusView->SetCaptionString(strCap);
 		}
 	}
 
-	// %表示
+	// % display
 	if (m_nParcent >= 0) {
 		strSub.Format(_T(" - %3d%%"), m_nParcent);
 		strCap += strSub;
@@ -638,12 +638,12 @@ void FASTCALL CInfo::SetCaption()
 		strCap += strSub;
 	}
 
-	//  設定(キャプションへ情報表示する場合)
+	// Set (if showing info in caption)
 	if (m_bCaptionInfo) {
-		// キャプション
+		// Caption
 		m_pFrmWnd->SetWindowText(strCap);
 
-		// ステータスビュー
+		// Status view
 		if (m_pStatusView) {
 			m_pStatusView->SetCaptionString(strCap);
 		}
@@ -652,31 +652,31 @@ void FASTCALL CInfo::SetCaption()
 
 //===========================================================================
 //
-//	情報
+//	Info
 //
 //===========================================================================
 
 //---------------------------------------------------------------------------
 //
-//	情報設定
+//	Info set
 //
 //---------------------------------------------------------------------------
 void FASTCALL CInfo::SetInfo(CString& strInfo)
 {
 	ASSERT(this);
 
-	// メッセージ記憶
+	// Message save
 	m_strInfo = strInfo;
 
-	// フラグアップ、時間記憶
+	// Flag, backup, time record
 	m_bInfo = TRUE;
 	m_dwInfo = ::GetTickCount();
 
-	// ステータスバーへ設定
+	// Set to status bar pane
 	ASSERT(m_pStatusBar);
 	m_pStatusBar->SetPaneText(0, m_strInfo, TRUE);
 
-	// ステータスビューへ設定
+	// Set to status view
 	if (m_pStatusView) {
 		m_pStatusView->SetInfoString(m_strInfo);
 	}
@@ -684,23 +684,23 @@ void FASTCALL CInfo::SetInfo(CString& strInfo)
 
 //---------------------------------------------------------------------------
 //
-//	通常メッセージ設定
+//	Message string set
 //
 //---------------------------------------------------------------------------
 void FASTCALL CInfo::SetMessageString(const CString& strMessage) const
 {
 	LPCTSTR lpszMessage;
 
-	// LPCTSTRへ変換
+	// Convert to LPCTSTR
 	lpszMessage = (LPCTSTR)strMessage;
 
-	// const制約を抜けるため、C形式の関数を経由
+	// Discard const to call C function
 	::SetInfoMsg(lpszMessage, FALSE);
 }
 
 //---------------------------------------------------------------------------
 //
-//	情報更新
+//	Info update
 //
 //---------------------------------------------------------------------------
 void FASTCALL CInfo::UpdateInfo()
@@ -711,40 +711,40 @@ void FASTCALL CInfo::UpdateInfo()
 
 	ASSERT(this);
 
-	// 電源状態をチェック
+	// Check power state
 	bPower = ::GetVM()->IsPower();
 	if (m_bPower && !bPower) {
-		// 電源がON→OFFに遷移した。強制メッセージ
+		// Power changed from ON to OFF. Show power message
 		SetInfo(m_strPower);
 	}
-	// 電源状態を常に更新
+	// Update power state
 	m_bPower = bPower;
 
-	// 情報有無フラグOFFなら
+	// If no info flag or OFF
 	if (!m_bInfo) {
-		// 何もしない
+		// Do nothing
 		return;
 	}
 
-	// 時間計測。2000msで消去
+	// Time calculation. Minimum 2000ms
 	dwDiff = ::GetTickCount();
 	dwDiff -= m_dwInfo;
 	if (dwDiff < InfoTime) {
-		// 表示中
+		// Still showing
 		return;
 	}
 
-	// 情報有無フラグOFF
+	// Turn info flag OFF
 	m_bInfo = FALSE;
 
-	// 通常メッセージを復元
+	// Restore message string
 	strText = m_szInfo;
 
-	// ステータスバーへ設定
+	// Set to status bar pane
 	ASSERT(m_pStatusBar);
 	m_pStatusBar->SetPaneText(0, strText, TRUE);
 
-	// ステータスビューへ設定
+	// Set to status view
 	if (m_pStatusView) {
 		strText.Empty();
 		m_pStatusView->SetInfoString(strText);
@@ -753,13 +753,13 @@ void FASTCALL CInfo::UpdateInfo()
 
 //===========================================================================
 //
-//	ステータス
+//	Status
 //
 //===========================================================================
 
 //---------------------------------------------------------------------------
 //
-//	ステータスリセット
+//	Status reset
 //
 //---------------------------------------------------------------------------
 void FASTCALL CInfo::ResetStatus()
@@ -768,19 +768,19 @@ void FASTCALL CInfo::ResetStatus()
 
 	ASSERT(this);
 
-	// ペインをすべてクリア
+	// Clear all and reset
 	for (nPane=0; nPane<PaneMax; nPane++) {
-		// 不定色
+		// Clear color
 		m_colStatus[nPane] = (COLORREF)-1;
 
-		// 表示テキストなし
+		// Clear text
 		m_szStatus[nPane][0] = _T('\0');
 	}
 }
 
 //---------------------------------------------------------------------------
 //
-//	ステータス更新
+//	Status update
 //
 //---------------------------------------------------------------------------
 void FASTCALL CInfo::UpdateStatus()
@@ -795,10 +795,10 @@ void FASTCALL CInfo::UpdateStatus()
 	ASSERT(this);
 	ASSERT(m_pStatusBar);
 
-	// VMロック
+	// VM lock
 	::LockVM();
 
-	// テキストとカラーを作成
+	// Create text and color
 	ASSERT(PaneMax == 5);
 	colStatus[0] = StatusFloppy(szStatus[0], 0);
 	colStatus[1] = StatusFloppy(szStatus[1], 1);
@@ -806,16 +806,16 @@ void FASTCALL CInfo::UpdateStatus()
 	colStatus[3] = StatusTimer(szStatus[3]);
 	colStatus[4] = StatusPower(szStatus[4]);
 
-	// VMアンロック
+	// VM unlock
 	::UnlockVM();
 
-	// ナンバ文字列作成(毎回の更新で、異なる文字列を作成)
+	// Create serial number (changes this number, different meaning)
 	strNumber.Format(_T("%08X"), m_dwNumber);
 
-	// 比較ループと描画
+	// Compare view and draw
 	bAll = FALSE;
 	for (nPane=0; nPane<5; nPane++) {
-		// 比較し、描画するかどうかを決める
+		// Compare, whether to redraw
 		bDraw = FALSE;
 		if (m_colStatus[nPane] != colStatus[nPane]) {
 			bDraw = TRUE;
@@ -824,28 +824,28 @@ void FASTCALL CInfo::UpdateStatus()
 			bDraw = TRUE;
 		}
 
-		// 描画する必要がなければ次へ
+		// Skip if no need to draw
 		if (!bDraw) {
 			continue;
 		}
 
-		// コピー
+		// Copy
 		m_colStatus[nPane] = colStatus[nPane];
 		_tcscpy(m_szStatus[nPane], szStatus[nPane]);
 
-		// 描画
+		// Draw
 		m_pStatusBar->SetPaneText(nPane + 1, strNumber, TRUE);
 
-		// ステータスビュー
+		// Status view
 		if (m_pStatusView) {
 			m_pStatusView->DrawStatus(nPane);
 		}
 
-		// フラグUp
+		// Flag up
 		bAll = TRUE;
 	}
 
-	// ナンバ更新
+	// Serial update
 	if (bAll) {
 		m_dwNumber++;
 	}
@@ -853,7 +853,7 @@ void FASTCALL CInfo::UpdateStatus()
 
 //---------------------------------------------------------------------------
 //
-//	ステータスFD
+//	Status FD
 //
 //---------------------------------------------------------------------------
 COLORREF FASTCALL CInfo::StatusFloppy(LPTSTR lpszText, int nDrive) const
@@ -871,63 +871,63 @@ COLORREF FASTCALL CInfo::StatusFloppy(LPTSTR lpszText, int nDrive) const
 	ASSERT(m_pFDD);
 	ASSERT(m_pSch);
 
-	// 初期化、FDDデータを得る
+	// First, get FDD data
 	bPower = ::GetVM()->IsPower();
 	lpszText[0] = _T('\0');
 	colStatus = RGB(1, 1, 1);
 	nStatus = m_pFDD->GetStatus(nDrive);
 
-	// 点滅中か
+	// Blink
 	if (nStatus & FDST_BLINK) {
-		// 点滅中。点と滅のどちらか
+		// Blink, which is lighter
 		if ((nStatus & FDST_CURRENT) && bPower) {
-			// 緑
+			// On
 			colStatus = RGB(15, 159, 15);
 		}
 		else {
-			// 黒
+			// Off
 			colStatus = RGB(0, 0, 0);
 		}
 	}
 
-	// 挿入または誤挿入か
+	// Insert or eject
 	if (nStatus & FDST_INSERT) {
-		// 灰
+		// Gray
 		colStatus = RGB(95, 95, 95);
 
-		// ディスク名取得
+		// Get disk name
 		m_pFDD->GetName(nDrive, name);
 		lpszName = A2CT(name);
 		_tcscpy(lpszText, lpszName);
 
-		// アクセス中
+		// Access
 		if (m_bFloppyLED) {
-			// モータON&セレクトなら赤
+			// Motor ON & not select
 			if ((nStatus & FDST_MOTOR) && (nStatus & FDST_SELECT)) {
 				colStatus = RGB(208, 31, 31);
 			}
 		}
 		else {
-			// アクセス中なら赤
+			// No access
 			if (nStatus & FDST_ACCESS) {
 				colStatus = RGB(208, 31, 31);
 			}
 		}
 
-		// 電源OFFなら必ず灰色
+		// Gray if power OFF
 		if (!bPower) {
 			colStatus = RGB(95, 95, 95);
 		}
 	}
 
-	// スケジューラ停止中の場合の特例
+	// If scheduler stopped, handle
 	if (!m_pSch->IsEnable()) {
-		// ドライブ詳細を取得
+		// Get drive info
 		m_pFDD->GetDrive(nDrive, &drv);
 		if (!(nStatus & FDST_INSERT)) {
-			// ディスクは挿入されていない
+			// Disk is not set
 			if (drv.next) {
-				// 次ディスクがある
+				// Next disk exists
 				colStatus = RGB(95, 95, 95);
 
 				drv.next->GetName(name, 0);
@@ -937,7 +937,7 @@ COLORREF FASTCALL CInfo::StatusFloppy(LPTSTR lpszText, int nDrive) const
 		}
 	}
 
-	// イジェクト禁止なら最上位を立てる
+	// If eject prohibited, show final state
 	if (!(nStatus & FDST_EJECT)) {
 		colStatus |= (COLORREF)0x80000000;
 	}
@@ -947,7 +947,7 @@ COLORREF FASTCALL CInfo::StatusFloppy(LPTSTR lpszText, int nDrive) const
 
 //---------------------------------------------------------------------------
 //
-//	ステータスHD
+//	Status HD
 //
 //---------------------------------------------------------------------------
 COLORREF FASTCALL CInfo::StatusHardDisk(LPTSTR lpszText)
@@ -959,16 +959,16 @@ COLORREF FASTCALL CInfo::StatusHardDisk(LPTSTR lpszText)
 	ASSERT(lpszText);
 	ASSERT(m_pSASI);
 
-	// 電源チェック
+	// Power check
 	if (!::GetVM()->IsPower()) {
-		// 電源が入っていない。黒
+		// Power not available. Gray
 		_tcscpy(lpszText, _T("HD BUSY"));
 		m_dwDiskID = 0;
 		m_dwDiskTime = DiskTypeTime;
 		return RGB(0, 0, 0);
 	}
 
-	// デバイス取得
+	// Get device
 	dwID = m_pSASI->GetBusyDevice();
 	switch (dwID) {
 		// SASI-HD
@@ -991,52 +991,52 @@ COLORREF FASTCALL CInfo::StatusHardDisk(LPTSTR lpszText)
 			color = RGB(208, 31, 32);
 			break;
 
-		// BUSYでない
+		// Not BUSY
 		case 0:
 			color = RGB(0, 0, 0);
 			break;
 
-		// その他(ありえない)
+		// Others (should not occur)
 		default:
 			ASSERT(FALSE);
 			_tcscpy(lpszText, _T("HD BUSY"));
 			return RGB(0, 0, 0);
 	}
 
-	// 有効なデバイスの場合
+	// If valid device
 	if (color != RGB(0, 0, 0)) {
-		// 前回のデバイスと同じか
+		// Same as previous device
 		if (dwID == m_dwDiskID) {
-			// 時間を+1(最大はDiskTypeTime)
+			// Time +1 (max is DiskTypeTime)
 			if (m_dwDiskTime < DiskTypeTime) {
 				m_dwDiskTime++;
 			}
 		}
 		else {
-			// デバイスが切り替わったので、記憶して時間を初期化
+			// Device changed, reset and start time count
 			m_dwDiskID = dwID;
 			m_dwDiskTime = 0;
 		}
 	}
 	else {
-		// BUSYでなければ、時間チェック
+		// If not BUSY, time check
 		if (m_dwDiskTime >= DiskTypeTime) {
-			// HD BUSYに戻す
+			// Return to HD BUSY
 			ASSERT(m_dwDiskTime == DiskTypeTime);
 			_tcscpy(lpszText, _T("HD BUSY"));
 			m_dwDiskID = 0;
 
-			// 黒
+			// Gray
 			return RGB(0, 0, 0);
 		}
 
-		// しばらく、黒に近い色で、前回のデバイスで表示
+		// Most likely, show last device with different color
 		m_dwDiskTime++;
 		dwID = m_dwDiskID;
 		color = RGB(0, 0, 1);
 	}
 
-	// 文字列作成
+	// Text create
 	switch (dwID) {
 		// SASI-HD
 		case MAKEID('S', 'A', 'H', 'D'):
@@ -1058,7 +1058,7 @@ COLORREF FASTCALL CInfo::StatusHardDisk(LPTSTR lpszText)
 			_tcscpy(lpszText, _T("CD BUSY"));
 			break;
 
-		// その他(ありえない)
+		// Others (should not occur)
 		default:
 			ASSERT(FALSE);
 	}
@@ -1068,7 +1068,7 @@ COLORREF FASTCALL CInfo::StatusHardDisk(LPTSTR lpszText)
 
 //---------------------------------------------------------------------------
 //
-//	ステータスTIMER
+//	Status TIMER
 //
 //---------------------------------------------------------------------------
 COLORREF FASTCALL CInfo::StatusTimer(LPTSTR lpszText) const
@@ -1077,21 +1077,21 @@ COLORREF FASTCALL CInfo::StatusTimer(LPTSTR lpszText) const
 	ASSERT(lpszText);
 	ASSERT(m_pRTC);
 
-	// テキスト
+	// Text
 	_tcscpy(lpszText, _T("TIMER"));
 
-	// タイマーONなら赤(電源は関係ない)
+	// Timer ON? (power has no effect)
 	if (m_pRTC->GetTimerLED()) {
 		return RGB(208, 31, 31);
 	}
 
-	// 黒
+	// Off
 	return RGB(0, 0, 0);
 }
 
 //---------------------------------------------------------------------------
 //
-//	ステータスPOWER
+//	Status POWER
 //
 //---------------------------------------------------------------------------
 COLORREF FASTCALL CInfo::StatusPower(LPTSTR lpszText) const
@@ -1102,28 +1102,28 @@ COLORREF FASTCALL CInfo::StatusPower(LPTSTR lpszText) const
 	ASSERT(lpszText);
 	ASSERT(m_pRTC);
 
-	// VM取得
+	// Get VM
 	pVM = m_pRTC->GetVM();
 	ASSERT(pVM);
 
-	// テキスト
+	// Text
 	_tcscpy(lpszText, _T("POWER"));
 
-	// 電源OFFか
+	// Power OFF
 	if (!pVM->IsPower()) {
 		if (m_bPowerLED) {
-			// 暗青
+			// Blue
 			return RGB(12, 23, 129);
 		}
 		else {
-			// 赤
+			// Red
 			return RGB(208, 31, 31);
 		}
 	}
 
-	// 電源スイッチはONか
+	// Power switch ON
 	if (pVM->IsPowerSW()) {
-		// 緑または青
+		// Blue or green
 		if (m_bPowerLED) {
 			return RGB(50, 50, 255);
 		}
@@ -1132,9 +1132,9 @@ COLORREF FASTCALL CInfo::StatusPower(LPTSTR lpszText) const
 		}
 	}
 
-	// 電源スイッチOFFの時は、ALARM出力によるトグル動作
+	// When power switch OFF, ALARM output uses different color
 	if (m_pRTC->GetAlarmOut()) {
-		// 緑または青
+		// Blue or green
 		if (m_bPowerLED) {
 			return RGB(50, 50, 255);
 		}
@@ -1143,18 +1143,18 @@ COLORREF FASTCALL CInfo::StatusPower(LPTSTR lpszText) const
 		}
 	}
 	if (m_bPowerLED) {
-		// 暗青
+		// Blue
 		return RGB(12, 23, 129);
 	}
 	else {
-		// 黒
+		// Off
 		return RGB(0, 0, 0);
 	}
 }
 
 //---------------------------------------------------------------------------
 //
-//	ステータス描画
+//	Status draw
 //
 //---------------------------------------------------------------------------
 void FASTCALL CInfo::DrawStatus(int nPane, HDC hDC, CRect& rectDraw)
@@ -1174,7 +1174,7 @@ void FASTCALL CInfo::DrawStatus(int nPane, HDC hDC, CRect& rectDraw)
 	ASSERT((nPane >= 0) && (nPane < PaneMax));
 	ASSERT(hDC);
 
-	// カラーとハーフトーン(ライン抜き描画)の設定
+	// Set color and half flag (gray stripe pattern)
 	colStatus = m_colStatus[nPane];
 	bHalf = FALSE;
 	if (colStatus & 0x80000000) {
@@ -1182,32 +1182,32 @@ void FASTCALL CInfo::DrawStatus(int nPane, HDC hDC, CRect& rectDraw)
 		colStatus &= (COLORREF)(0x7fffffff);
 	}
 
-	// メモリ矩形の設定
+	// Set drawing rectangle
 	rectMem.left = 0;
 	rectMem.top = 0;
 	rectMem.right = rectDraw.Width();
 	rectMem.bottom = rectDraw.Height();
 
-	// メモリDC作成
+	// Create compatible DC
 	hMemDC = ::CreateCompatibleDC(hDC);
 
-	// ビットマップ作成、セレクト
+	// Create bitmap and select
 	hBitmap = ::CreateCompatibleBitmap(hDC, rectDraw.Width(), rectDraw.Height());
 	hDefBitmap = (HBITMAP)::SelectObject(hMemDC, hBitmap);
 	ASSERT(hDefBitmap);
 
-	// フォント作成、セレクト
+	// Create font and select
 	hFont = (HFONT)::GetStockObject(DEFAULT_GUI_FONT);
 	hDefFont = (HFONT)::SelectObject(hMemDC, hFont);
 	ASSERT(hDefFont);
 
-	// 塗りつぶし
+	// Fill
 	::SetBkColor(hMemDC, colStatus);
 	::ExtTextOut(hMemDC, 0, 0, ETO_OPAQUE, &rectMem, NULL, 0, NULL);
 
-	// ハーフ処理
+	// Gray pattern
 	if (bHalf) {
-		// ラインおきに黒線を引く
+		// Draw gray stripes
 		rectLine = rectMem;
 		::SetBkColor(hMemDC, RGB(0, 0, 0));
 		for (nLine=0; nLine<rectMem.bottom; nLine+=2) {
@@ -1218,36 +1218,36 @@ void FASTCALL CInfo::DrawStatus(int nPane, HDC hDC, CRect& rectDraw)
 		::SetBkColor(hMemDC, colStatus);
 	}
 
-	// テキスト描画(ただし、例外あり)
+	// Text draw (shadow, outline)
 	if (!m_pStatusView || (nPane < 2) || (colStatus != 0)) {
-		// 影を付けるため、1ドットだけ右下へシフト
+		// To place border, shift 1 pixel right and down
 		rectMem.left++;
 		rectMem.top++;
 		rectMem.right++;
 		rectMem.bottom++;
 
-		// 影を表示(黒)
+		// Text outline (black)
 		::SetTextColor(hMemDC, RGB(0, 0, 0));
 		::SetBkMode(hMemDC, TRANSPARENT);
 		::DrawText(hMemDC, m_szStatus[nPane], (int)_tcslen(m_szStatus[nPane]),
 						 &rectMem, DT_NOPREFIX | DT_CENTER | DT_VCENTER | DT_SINGLELINE);
 
-		// 戻すため、1ドットだけ左上へシフト
+		// Return first, 1 pixel shift back
 		rectMem.left--;
 		rectMem.top--;
 		rectMem.right--;
 		rectMem.bottom--;
 
-		// 本体を表示(白)
+		// Main text (white)
 		::SetTextColor(hMemDC, RGB(255, 255, 255));
 		::SetBkMode(hMemDC, TRANSPARENT);
 		::DrawText(hMemDC, m_szStatus[nPane], (int)_tcslen(m_szStatus[nPane]),
 						 &rectMem, DT_NOPREFIX | DT_CENTER | DT_VCENTER | DT_SINGLELINE);
 	}
 
-	// フロッピーディスクはドライブ番号を描画
+	// Draw floppy disk bitmap if needed
 	if ((nPane < 2) && (colStatus != 0)) {
-		// 例外あり
+		// If not monochrome
 		if (!m_pStatusView || (colStatus != RGB(1, 1, 1))) {
 			::SetDIBitsToDevice(hMemDC, 0, 0, 8, 8, 0, 0, 0, 8,
 								&m_bmpDrive[nPane][sizeof(BITMAPINFOHEADER)],
@@ -1260,33 +1260,33 @@ void FASTCALL CInfo::DrawStatus(int nPane, HDC hDC, CRect& rectDraw)
 	::BitBlt(hDC, rectDraw.left, rectDraw.top, rectDraw.Width(), rectDraw.Height(),
 						hMemDC, 0, 0, SRCCOPY);
 
-	// フォント戻す
+	// Return font
 	::SelectObject(hMemDC, hDefFont);
 
-	// ビットマップ戻す
+	// Return bitmap
 	::SelectObject(hMemDC, hDefBitmap);
 	::DeleteObject(hBitmap);
 
-	// メモリDC戻す
+	// Return compatible DC
 	::DeleteDC(hMemDC);
 }
 
 //===========================================================================
 //
-//	その他
+//	Others
 //
 //===========================================================================
 
 //---------------------------------------------------------------------------
 //
-//	ステータスビュー通知
+//	Status view notice
 //
 //---------------------------------------------------------------------------
 void FASTCALL CInfo::SetStatusView(CStatusView *pView)
 {
 	ASSERT(this);
 
-	// NULLにかかわらず、記憶
+	// Unless NULL, save
 	m_pStatusView = pView;
 }
 

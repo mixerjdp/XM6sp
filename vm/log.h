@@ -2,8 +2,8 @@
 //
 //	X68000 EMULATOR "XM6"
 //
-//	Copyright (C) 2001-2006 ＰＩ．(ytanaka@ipc-tokai.or.jp)
-//	[ ログ ]
+//	Copyright (C) 2001-2006 PI (ytanaka@ipc-tokai.or.jp)
+//	[ Log ]
 //
 //---------------------------------------------------------------------------
 
@@ -15,98 +15,98 @@
 
 //===========================================================================
 //
-//	ログ
+//	Log
 //
 //===========================================================================
 class Log
 {
 public:
 	enum loglevel {
-		Detail,							// 詳細レベル
-		Normal,							// 通常レベル
-		Warning							// 警告レベル
+		Detail,							// Detail level
+		Normal,							// Normal level
+		Warning							// Warning level
 	};
 	typedef struct {
-		DWORD number;					// 通し番号(リセットでクリア)
-		DWORD total;					// 通し番号(累積)
-		DWORD time;						// 仮想時間
-		DWORD id;						// デバイスID
-		DWORD pc;						// プログラムカウンタ
-		loglevel level;					// レベル
-		char *string;					// 文字列実体
+		DWORD number;					// Entry number (clear at reset)
+		DWORD total;					// Entry number (total)
+		DWORD time;						// Execution time
+		DWORD id;						// Device ID
+		DWORD pc;						// Program counter
+		loglevel level;					// Level
+		char *string;					// String data
 	} logdata_t;
 
 public:
-	// 基本ファンクション
+	// Basic constructor
 	Log();
-										// コンストラクタ
+										// Constructor
 	BOOL FASTCALL Init(VM *vm);
-										// 初期化
+										// Initialization
 	void FASTCALL Cleanup();
-										// クリーンアップ
+										// Cleanup
 	void FASTCALL Reset();
-										// リセット
+										// Reset
 #if !defined(NDEBUG)
 	void FASTCALL AssertDiag() const;
-										// 診断
+										// Assert
 #endif	// NDEBUG
 
-	// 出力
+	// Output
 	void Format(loglevel level, const Device *dev, char *format, ...);
-										// ログ出力(...)
+										// Log output(...)
 	void vFormat(loglevel level, const Device *dev, char *format, va_list args);
-										// ログ出力(va)
+										// Log output(va)
 	void FASTCALL AddString(DWORD id, loglevel level, char *string);
-										// ログデータ追加
+										// Log data add
 
-	// 取得
+	// Get
 	int FASTCALL GetNum() const;
-										// ログ項目数を取得
+										// Get log entry count
 	int FASTCALL GetMax() const;
-										// ログ最大記録数を取得
+										// Get max log count
 	BOOL FASTCALL GetData(int index, logdata_t *ptr);
-										// ログデータ取得
+										// Get log data
 
 private:
 	enum {
-		LogMax = 0x4000					// ログ最大記録数(2の倍数であること)
+		LogMax = 0x4000					// Max log entry (must be power of 2)
 	};
 
 private:
 	void FASTCALL Clear();
-										// データをクリア
+										// Data clear
 	int logtop;
-										// 先頭ポインタ(最も古い)
+										// Top pointer (cyclic)
 	int lognum;
-										// ログ記録数
+										// Log entry count
 	int logcount;
-										// ログカウント
+										// Log count
 	logdata_t *logdata[LogMax];
-										// ログポインタ
+										// Log pointer
 	Sync *sync;
-										// 同期オブジェクト
+										// Sync object
 	CPU *cpu;
 										// CPU
 	Scheduler *scheduler;
-										// スケジューラ
+										// Scheduler
 };
 
 //---------------------------------------------------------------------------
 //
-//	ログ出力マクロ
+//	Log output macro
 //
 //---------------------------------------------------------------------------
 #if !defined(NO_LOG)
 class LogProxy {
 public:
-	// コンストラクタ
+	// Constructor
 	LogProxy(const Device* device, Log* log)
 	{
 		m_device = device;
 		m_log = log;
 	}
 
-	// ログ出力
+	// Log output
 	void operator()(enum Log::loglevel level, char* format, ...) const
 	{
 		va_list args;

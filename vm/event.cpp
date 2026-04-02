@@ -2,8 +2,8 @@
 //
 //	X68000 EMULATOR "XM6"
 //
-//	Copyright (C) 2001-2005 ＰＩ．(ytanaka@ipc-tokai.or.jp)
-//	[ イベント ]
+//	Copyright (C) 2001-2005 PI(ytanaka@ipc-tokai.or.jp)
+//	[ Event ]
 //
 //---------------------------------------------------------------------------
 
@@ -17,18 +17,18 @@
 
 //===========================================================================
 //
-//	イベント
+//	Event
 //
 //===========================================================================
 
 //---------------------------------------------------------------------------
 //
-//	コンストラクタ
+//	Constructor
 //
 //---------------------------------------------------------------------------
 Event::Event()
 {
-	// メンバ変数初期化
+	// Member variable initialization
 	ev.device = NULL;
 	ev.desc[0] = '\0';
 	ev.user = 0;
@@ -39,7 +39,7 @@ Event::Event()
 
 //---------------------------------------------------------------------------
 //
-//	デストラクタ
+//	Destructor
 //
 //---------------------------------------------------------------------------
 Event::~Event()
@@ -49,7 +49,7 @@ Event::~Event()
 #if !defined(NDEBUG)
 //---------------------------------------------------------------------------
 //
-//	診断
+//	Assertion
 //
 //---------------------------------------------------------------------------
 void FASTCALL Event::AssertDiag() const
@@ -65,7 +65,7 @@ void FASTCALL Event::AssertDiag() const
 
 //---------------------------------------------------------------------------
 //
-//	セーブ
+//	Save
 //
 //---------------------------------------------------------------------------
 BOOL FASTCALL Event::Save(Fileio *fio, int /*ver*/)
@@ -76,13 +76,13 @@ BOOL FASTCALL Event::Save(Fileio *fio, int /*ver*/)
 	ASSERT(fio);
 	ASSERT_DIAG();
 
-	// サイズをセーブ
+	// Save size
 	sz = sizeof(event_t);
 	if (!fio->Write(&sz, sizeof(sz))) {
 		return FALSE;
 	}
 
-	// 実体をセーブ
+	// Save this data
 	if (!fio->Write(&ev, (int)sz)) {
 		return FALSE;
 	}
@@ -92,7 +92,7 @@ BOOL FASTCALL Event::Save(Fileio *fio, int /*ver*/)
 
 //---------------------------------------------------------------------------
 //
-//	ロード
+//	Load
 //
 //---------------------------------------------------------------------------
 BOOL FASTCALL Event::Load(Fileio *fio, int ver)
@@ -103,12 +103,12 @@ BOOL FASTCALL Event::Load(Fileio *fio, int ver)
 	ASSERT(this);
 	ASSERT(fio);
 
-	// version2.01以前は、別ルーチン
+	// Before version 2.01, old format
 	if (ver <= 0x0201) {
 		return Load201(fio);
 	}
 
-	// サイズをロード、照合
+	// Load size and verify
 	if (!fio->Read(&sz, sizeof(sz))) {
 		return FALSE;
 	}
@@ -116,17 +116,17 @@ BOOL FASTCALL Event::Load(Fileio *fio, int ver)
 		return FALSE;
 	}
 
-	// 実体をテンポラリ領域にロード
+	// Load this data to temporary area
 	if (!fio->Read(&lev, (int)sz)) {
 		return FALSE;
 	}
 
-	// 現在のデータのうち、ポインタ類は残す
+	// Keep current device and scheduler pointers
 	lev.device = ev.device;
 	lev.scheduler = ev.scheduler;
 	lev.next = ev.next;
 
-	// コピー、終了
+	// Copy and finish
 	ev = lev;
 
 	return TRUE;
@@ -134,7 +134,7 @@ BOOL FASTCALL Event::Load(Fileio *fio, int ver)
 
 //---------------------------------------------------------------------------
 //
-//	ロード(version 2.01)
+//	Load (version 2.01)
 //
 //---------------------------------------------------------------------------
 BOOL FASTCALL Event::Load201(Fileio *fio)
@@ -145,7 +145,7 @@ BOOL FASTCALL Event::Load201(Fileio *fio)
 	ASSERT(this);
 	ASSERT(fio);
 
-	// サイズをロード、照合
+	// Load size and verify
 	if (!fio->Read(&sz, sizeof(sz))) {
 		return FALSE;
 	}
@@ -153,18 +153,18 @@ BOOL FASTCALL Event::Load201(Fileio *fio)
 		return FALSE;
 	}
 
-	// 実体をテンポラリ領域にロード
+	// Load this data to temporary area
 	if (!fio->Read(&ev201, (int)sz)) {
 		return FALSE;
 	}
 
-	// コピー(共通)
+	// Copy (partial)
 	strcpy(ev.desc, ev201.desc);
 	ev.user = ev201.user;
 	ev.time = ev201.time;
 	ev.remain = ev201.remain;
 
-	// enableが降りていれば、remain,timeは0
+	// If enable is off, set remain,time to 0
 	if (!ev201.enable) {
 		ev.time = 0;
 		ev.remain = 0;
@@ -175,7 +175,7 @@ BOOL FASTCALL Event::Load201(Fileio *fio)
 
 //---------------------------------------------------------------------------
 //
-//	デバイス設定
+//	Device setting
 //
 //---------------------------------------------------------------------------
 void FASTCALL Event::SetDevice(Device *p)
@@ -186,19 +186,19 @@ void FASTCALL Event::SetDevice(Device *p)
 	ASSERT(!ev.device);
 	ASSERT(p);
 
-	// スケジューラを得る
+	// Get scheduler
 	vm = p->GetVM();
 	ASSERT(vm);
 	ev.scheduler = (Scheduler*)vm->SearchDevice(MAKEID('S', 'C', 'H', 'E'));
 	ASSERT(ev.scheduler);
 
-	// デバイスを記憶
+	// Set device
 	ev.device = p;
 }
 
 //---------------------------------------------------------------------------
 //
-//	名称設定
+//	Description setting
 //
 //---------------------------------------------------------------------------
 void FASTCALL Event::SetDesc(const char *desc)
@@ -212,7 +212,7 @@ void FASTCALL Event::SetDesc(const char *desc)
 
 //---------------------------------------------------------------------------
 //
-//	名称取得
+//	Description get
 //
 //---------------------------------------------------------------------------
 const char* FASTCALL Event::GetDesc() const
@@ -225,7 +225,7 @@ const char* FASTCALL Event::GetDesc() const
 
 //---------------------------------------------------------------------------
 //
-//	時間周期設定
+//	Time setting
 //
 //---------------------------------------------------------------------------
 void FASTCALL Event::SetTime(DWORD hus)
@@ -233,11 +233,11 @@ void FASTCALL Event::SetTime(DWORD hus)
 	ASSERT(this);
 	ASSERT_DIAG();
 
-	// 時間周期設定(0ならイベント停止)
+	// Set time (0 stops event)
 	ev.time = hus;
 
-	// カウンタ設定。実行中は経過分だけ上げる
-	// この際、上げすぎないよう注意する(Scheduler::GetPassedTime())
+	// Set counter. Elapsed time increases remainder
+	// Note: remainder will not decrease here (see Scheduler::GetPassedTime())
 	ev.remain = ev.time;
 	if (ev.remain > 0) {
 		ev.remain += ev.scheduler->GetPassedTime();
@@ -246,7 +246,7 @@ void FASTCALL Event::SetTime(DWORD hus)
 
 //---------------------------------------------------------------------------
 //
-//	時間を進める
+//	Time execution
 //
 //---------------------------------------------------------------------------
 void FASTCALL Event::Exec(DWORD hus)
@@ -254,28 +254,28 @@ void FASTCALL Event::Exec(DWORD hus)
 	ASSERT(this);
 	ASSERT_DIAG();
 
-	// 時間未設定なら、何もしない
+	// If time is not set, do nothing
 	if (ev.time == 0) {
 		ASSERT(ev.remain == 0);
 		return;
 	}
 
-	// 時間を進める(オーバー分は無視)
+	// Execute when time arrives (over or equal is error)
 	if (ev.remain <= hus) {
-		// 時間をリロード
+		// Reset time to load
 		ev.remain = ev.time;
 
-		// コールバック実行
+		// Callback execution
 		ASSERT(ev.device);
 
-		// FALSEで帰ってきたら、無効化
+		// If callback returns FALSE, stop
 		if (!ev.device->Callback(this)) {
 			ev.time = 0;
 			ev.remain = 0;
 		}
 	}
 	else {
-		// 残りを減らす
+		// Decrement
 		ev.remain -= hus;
 	}
 }
