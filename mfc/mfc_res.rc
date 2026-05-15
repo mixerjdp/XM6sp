@@ -167,7 +167,7 @@ BEGIN
             MENUITEM "3.0x     2304x1536",          IDM_SCALE_300
         END
         MENUITEM "フルスクリーン(&U)\tAlt+Enter",      IDM_FULLSCREEN
-        MENUITEM "高速描画",                        IDM_RENDER_FAST
+
         MENUITEM "CRTシェーダー\tF9",                IDM_TOGGLE_SHADER
     END
     POPUP "デバッグ(&D)"
@@ -356,7 +356,7 @@ BEGIN
                 MENUITEM "3.0x     2304x1536",          IDM_SCALE_300
             END
             MENUITEM "???????(&U)       Alt+Enter", IDM_FULLSCREEN
-            MENUITEM "????",                        IDM_RENDER_FAST
+
             MENUITEM "CRT?????  F9",                IDM_TOGGLE_SHADER
         END
         POPUP "????(&D)"
@@ -558,8 +558,9 @@ BEGIN
             MENUITEM "3.0x\t2304x1536",             IDM_SCALE_300
         END
         MENUITEM "F&ull Screen\tAlt+Enter",     IDM_FULLSCREEN
-        MENUITEM "Render Fast",                 IDM_RENDER_FAST
+
         MENUITEM "&CRT Shader\tF9",             IDM_TOGGLE_SHADER
+        MENUITEM "PX68k Video Engine",        IDM_TOGGLE_RENDER_FAST_DUMMY
     END
     POPUP "&Debug"
     BEGIN
@@ -746,8 +747,9 @@ BEGIN
                 MENUITEM "3.0x\t2304x1536",             IDM_SCALE_300
             END
             MENUITEM "F&ull Screen\tAlt+Enter",     IDM_FULLSCREEN
-            MENUITEM "Render Fast",                 IDM_RENDER_FAST
+
             MENUITEM "&CRT Shader\tF9",             IDM_TOGGLE_SHADER
+        MENUITEM "PX68k Video Engine",        IDM_TOGGLE_RENDER_FAST_DUMMY
         END
         POPUP "&Debug"
         BEGIN
@@ -2424,8 +2426,9 @@ BEGIN
             MENUITEM "3.0x     2304x1536",          IDM_SCALE_300
         END
         MENUITEM "F&ull Screen\tAlt+Enter",     IDM_FULLSCREEN
-        MENUITEM "Render Fast",                 IDM_RENDER_FAST
+
         MENUITEM "&CRT Shader\tF9",             IDM_TOGGLE_SHADER
+        MENUITEM "PX68k Video Engine",        IDM_TOGGLE_RENDER_FAST_DUMMY
     END
     POPUP "&Depurar"
     BEGIN
@@ -2612,8 +2615,9 @@ BEGIN
                 MENUITEM "3.0x     2304x1536",          IDM_SCALE_300
             END
             MENUITEM "F&ull Screen\tAlt+Enter",     IDM_FULLSCREEN
-            MENUITEM "Render Fast",                 IDM_RENDER_FAST
+
             MENUITEM "&CRT Shader\tF9",             IDM_TOGGLE_SHADER
+        MENUITEM "PX68k Video Engine",        IDM_TOGGLE_RENDER_FAST_DUMMY
         END
         POPUP "&Depurar"
         BEGIN
@@ -5956,4 +5960,5 @@ END
 
 /////////////////////////////////////////////////////////////////////////////
 #endif    // not APSTUDIO_INVOKED
+
 

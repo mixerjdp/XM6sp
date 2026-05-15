@@ -124,6 +124,10 @@ public:
 										// Get joystick config
 	void FASTCALL SetJoyCfg(int nJoy, const LPJOYCFG lpJoyCfg);
 										// Set joystick config
+	void FASTCALL SetSmokeJoyButton(int nPort, int nButton, BOOL bPressed);
+										// Smoke-test joystick override
+	void FASTCALL SetSmokeJoyAxis(int nPort, int nAxis, BOOL bActive, DWORD dwValue);
+										// Smoke-test joystick axis override
 
 private:
 	// General
@@ -225,6 +229,14 @@ private:
 										// Joystick acquire count
 	DIJOYSTATE m_JoyState[JoyDevices];
 										// Joystick state
+	BOOL m_bSmokeJoyButton[2][8];
+										// Smoke-test joystick buttons
+	BOOL m_bSmokeJoyAxisActive[2][4];
+										// Smoke-test joystick axis active flags
+	DWORD m_dwSmokeJoyAxis[2][4];
+										// Smoke-test joystick axis values
+	BOOL m_bSmokeJoyActive;
+										// Smoke-test joystick override active
 	DWORD m_dwJoyDevs;
 										// Number of joystick devices
 	DIDEVCAPS m_JoyDevCaps[JoyDeviceMax];

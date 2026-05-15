@@ -11,7 +11,17 @@
 
 #define REND_COLOR0 0x80000000u
 #define REND_PX68K_IBIT 0x40000000u
+enum {
+	k_fast_line_margin = 16,
+	k_fast_line_capacity = 1024 + k_fast_line_margin
+};
 
+static unsigned int g_vertical_probe_last_width = 0u;
+static unsigned int g_vertical_probe_last_height = 0u;
+static Render::fast_vertical_probe_snapshot_t g_vertical_probe_snapshot;
+static BOOL g_vertical_probe_snapshot_armed = FALSE;
+static int g_sprite_fine_probe_count = 0;
+extern void xm6_debug_message(const char *format, ...);
 
 static int FASTCALL CalcBGHAdjustPixels(int compositor_mode, const CRTC *crtc, const Sprite *sprite)
 {
@@ -40,6 +50,179 @@ namespace {
 
 static const DWORD k_render_color0 = 0x80000000u;
 static const DWORD k_px68k_ibit_marker = 0x40000000u;
+
+struct Px68kVerticalTiming {
+	int bg_vline;
+	int vline_bg;
+	int layer_raster;
+};
+
+static BYTE FASTCALL FastReadBGRegByte(const Sprite::sprite_t *spr, int reg_index)
+{
+	if (!spr || !spr->mem || (reg_index < 0) || (reg_index > 0x11)) {
+		return 0;
+	}
+
+	// The BG control block lives at emulated byte addresses 0x800-0x811.
+	// XM6 stores that RAM in host-endian words, so byte accesses are swapped the
+	// same way Sprite::ReadByte()/WriteByte() handle them. Match px68k's
+	// BG_Regs[n] layout by reading the raw byte with the bus byte-lane flip.
+	return spr->mem[0x800 + (reg_index ^ 1)];
+}
+
+static BOOL FASTCALL FastUsePx68kBGSpriteTiming(const VC::vc_t *vc_state, const Sprite::sprite_t *spr, BOOL sprite_display)
+{
+	BYTE bg_ctrl;
+	BYTE bg_mode;
+
+	if (!vc_state || !spr || !sprite_display) {
+		return FALSE;
+	}
+
+	bg_ctrl = FastReadBGRegByte(spr, 0x08);
+	bg_mode = FastReadBGRegByte(spr, 0x11);
+
+	// Match px68k's BG/sprite scanline path guard from WinDraw_DrawLine():
+	//   (VCReg2[1] & 0x40) && (BG_Regs[8] & 2) && !(BG_Regs[0x11] & 2) && Debug_Sp
+	return (BOOL)((vc_state->vr2l & 0x40) && (bg_ctrl & 0x02) && !(bg_mode & 0x02));
+}
+
+static Px68kVerticalTiming FASTCALL FastGetVerticalTiming(const VC::vc_t *vc_state, const CRTC::crtc_t *c, const Sprite::sprite_t *spr, BOOL sprite_display, int raster, const Px68kCrtcState *crtc_state)
+{
+	Px68kVerticalTiming timing;
+	BYTE bg_mode;
+	BYTE bg_vdisp;
+	int crtc_vstart;
+	int s1;
+	int s2;
+	int vline_bg;
+	timing.bg_vline = 0;
+	timing.vline_bg = raster & 0x3ff;
+	timing.layer_raster = raster & 0x3ff;
+
+	if (!c || !spr) {
+		return timing;
+	}
+
+	if (!FastUsePx68kBGSpriteTiming(vc_state, spr, sprite_display)) {
+		return timing;
+	}
+
+	bg_mode = FastReadBGRegByte(spr, 0x11);
+	bg_vdisp = FastReadBGRegByte(spr, 0x0f);
+	if (crtc_state) {
+		crtc_vstart = (int)crtc_state->vstart & 0x3ff;
+	}
+	else {
+		crtc_vstart = (((int)c->reg[0x0c] << 8) | (int)c->reg[0x0d]) & 0x3ff;
+	}
+	s1 = ((bg_mode & 0x04) ? 2 : 1) - ((bg_mode & 0x10) ? 1 : 0);
+	s2 = ((c->reg[0x29] & 0x04) ? 2 : 1) - ((c->reg[0x29] & 0x10) ? 1 : 0);
+	timing.bg_vline = ((int)bg_vdisp - crtc_vstart) / ((bg_mode & 0x04) ? 1 : 2);
+	if (crtc_state && (crtc_state->vstart <= 2u) && (crtc_state->vend <= 2u) && (timing.bg_vline >= 20)) {
+		timing.bg_vline -= 20;
+	}
+
+	vline_bg = raster & 0x3ff;
+	vline_bg <<= s1;
+	vline_bg >>= s2;
+	if (!(bg_mode & 0x10)) {
+		const int crtc_vstart_low = crtc_state ? (int)(crtc_state->vstart & 0xffu) : (int)c->reg[0x0d];
+		vline_bg -= (((int)bg_vdisp >> s1) - (crtc_vstart_low >> s2));
+	}
+
+	timing.vline_bg = vline_bg & 0x3ff;
+	timing.layer_raster = (timing.vline_bg - timing.bg_vline) & 0x3ff;
+	return timing;
+}
+
+static DWORD FASTCALL FastGetVisibleVLine(const CRTC::crtc_t *c)
+{
+	if (!c) {
+		return 0xffffffffu;
+	}
+
+	const DWORD vstep = ((c->reg[0x29] & 0x14) == 0x10) ? 1u : (((c->reg[0x29] & 0x14) == 0x04) ? 4u : 2u);
+
+	if ((c->v_scan >= 0) && (c->v_scan <= c->v_dots)) {
+		const DWORD line = (DWORD)((c->v_scan > 0) ? (c->v_scan - 1) : 0);
+		return (DWORD)((line * vstep) / 2u);
+	}
+
+	return 0xffffffffu;
+}
+
+static void FASTCALL FastResetVerticalProbeSnapshot(void)
+{
+	std::memset(&g_vertical_probe_snapshot, 0, sizeof(g_vertical_probe_snapshot));
+}
+
+static void FASTCALL FastBeginVerticalProbeSnapshot(int width, int height, int mixwidth, int mixheight, int mixpage, int mixtype, BOOL lowres, BOOL bgspflag, BOOL bgspdisp)
+{
+	FastResetVerticalProbeSnapshot();
+	g_vertical_probe_snapshot.valid = TRUE;
+	g_vertical_probe_snapshot.width = width;
+	g_vertical_probe_snapshot.height = height;
+	g_vertical_probe_snapshot.mixwidth = mixwidth;
+	g_vertical_probe_snapshot.mixheight = mixheight;
+	g_vertical_probe_snapshot.mixpage = mixpage;
+	g_vertical_probe_snapshot.mixtype = mixtype;
+	g_vertical_probe_snapshot.lowres = lowres ? TRUE : FALSE;
+	g_vertical_probe_snapshot.bgspflag = bgspflag ? TRUE : FALSE;
+	g_vertical_probe_snapshot.bgspdisp = bgspdisp ? TRUE : FALSE;
+	g_vertical_probe_snapshot.sample_count = 0;
+	g_vertical_probe_snapshot_armed = TRUE;
+}
+
+static void FASTCALL FastStoreVerticalProbeSample(int slot, int dst_y, int src_y, DWORD px68k_vline,
+	const Render::render_t *render, const VC::vc_t *vc_state, const CRTC::crtc_t *c, const Px68kVerticalTiming &timing,
+	BOOL bg_active, BOOL bg_opaq, BOOL gon, BOOL tron, BOOL pron, BOOL ton)
+{
+	Render::fast_vertical_probe_sample_t *sample;
+
+	if (!g_vertical_probe_snapshot_armed) {
+		return;
+	}
+	if ((slot < 0) || (slot >= 6) || !render) {
+		return;
+	}
+
+	sample = &g_vertical_probe_snapshot.samples[slot];
+	if (!sample->valid) {
+		++g_vertical_probe_snapshot.sample_count;
+	}
+
+	sample->valid = TRUE;
+	sample->dst_y = dst_y;
+	sample->src_y = src_y;
+	sample->px68k_vline = px68k_vline;
+	sample->sprite_raster = (int)(timing.layer_raster & 0x3ff);
+	sample->bg_raster = (int)(timing.layer_raster & (render->bgsize ? 0x3ff : 0x1ff));
+	sample->layer_raster = (int)(timing.layer_raster & 0x3ff);
+	sample->bg_vline = timing.bg_vline;
+	sample->vline_bg = timing.vline_bg;
+	sample->visible = (px68k_vline != 0xffffffffu) ? TRUE : FALSE;
+	sample->bg_on = bg_active ? TRUE : FALSE;
+	sample->bg_opaq = bg_opaq ? TRUE : FALSE;
+	sample->sprite_enabled = (vc_state && vc_state->son) ? TRUE : FALSE;
+	sample->bgspflag = render->bgspflag ? TRUE : FALSE;
+	sample->bgspdisp = render->bgspdisp ? TRUE : FALSE;
+	sample->gon = gon ? TRUE : FALSE;
+	sample->tron = tron ? TRUE : FALSE;
+	sample->pron = pron ? TRUE : FALSE;
+	sample->ton = ton ? TRUE : FALSE;
+	sample->vr2h = vc_state ? vc_state->vr2h : 0u;
+	sample->vr2l = vc_state ? vc_state->vr2l : 0u;
+	sample->vscan = c ? c->v_scan : -1;
+	sample->vdots = c ? c->v_dots : -1;
+	sample->vcount = c ? (DWORD)c->v_count : 0u;
+	sample->vblank = c ? (c->v_blank ? TRUE : FALSE) : FALSE;
+	sample->rcount = c ? c->raster_count : -1;
+	sample->vstep = c ? (((c->reg[0x29] & 0x14) == 0x10) ? 1 : (((c->reg[0x29] & 0x14) == 0x04) ? 4 : 2)) : 0;
+	sample->mixlen = render->mixlen;
+	sample->lowres = render->lowres ? TRUE : FALSE;
+	sample->vmul = render->v_mul;
+}
 
 static inline WORD pack_rgb565i(DWORD pixel)
 {
@@ -397,38 +580,73 @@ void FASTCALL Xm6Px68kComposeScanlineFast(DWORD *out_argb32,
 
 static BOOL FastVisiblePixel(DWORD pixel);
 
-void FASTCALL Render::FastDrawSpriteLinePX(int raster, int pri, DWORD *bg_line, BYTE *bg_flag, WORD *bg_pri, BOOL *active)
+void FASTCALL Render::FastDrawSpriteLinePX(int layer_raster, int pri, DWORD *bg_line, BYTE *bg_flag, WORD *bg_pri, BOOL *active)
 {
 	int n;
 	int i;
 	DWORD *reg;
-	DWORD **ptr;
 	int x;
 	int dx;
+	int row;
 	DWORD pixel;
-	const DWORD sprite_mask = 0x4000;
+	const DWORD pcg_flip_mask = 0x4000;
 	const int bg_hadjust = CalcBGHAdjustPixels(compositor_mode, crtc, sprite);
+	const int sprite_limit = render.mixlen;
 
 	reg = &render.spreg[127 << 2];
-	ptr = &render.spptr[127 << 9];
-	ptr += (raster & 0x1ff);
+	if (layer_raster == 0) {
+		g_sprite_fine_probe_count = 0;
+	}
 	for (n=127; n>=0; n--) {
-		if (render.spuse[n] && ((int)(reg[3] & 3) == pri) && *ptr) {
+		if (render.spuse[n] && ((int)(reg[3] & 3) == pri)) {
 			DWORD pcgno;
+			const DWORD *line;
+			int d;
+
+			// Match px68k's Sprite_DrawLineMcr Y evaluation:
+			//   y = sprite_posy - VLINEBG + BG_VLINE; y = -y + 16;
+			row = ((layer_raster & 0x3ff) - (int)(reg[1] & 0x3ff) + 16);
+			if ((row < 0) || (row > 15)) {
+				reg -= 4;
+				continue;
+			}
+			if (g_sprite_fine_probe_count < 8) {
+				xm6_debug_message("[sprite-probe] core=xm6 pri=%d n=%d layer=%d spy=%u row=%d ctrl=%04X x=%d bg_hadj=%d",
+					pri, n, (layer_raster & 0x3ff), (unsigned)(reg[1] & 0x3ff), row, (unsigned)(reg[2] & 0xffff), (int)reg[0], bg_hadjust);
+				++g_sprite_fine_probe_count;
+			}
+
 			pcgno = reg[2] & 0xfff;
 			if (!render.pcgready[pcgno]) {
 				ASSERT(render.pcguse[pcgno] > 0);
 				render.pcgready[pcgno] = TRUE;
 				RendPCGNew(pcgno, render.sprmem, render.pcgbuf, render.paldata);
 			}
-			const DWORD *line = *ptr;
+			if (reg[2] < pcg_flip_mask) {
+				line = &render.pcgbuf[(pcgno << 8) + (row * 16)];
+				d = 1;
+			}
+			else if (((reg[2] - pcg_flip_mask) & 0x8000) != 0) {
+				line = &render.pcgbuf[(pcgno << 8) + (((row * 16) & 0xff) ^ 0xf0) + 15];
+				d = -1;
+			}
+			else if ((int16_t)(reg[2]) >= 0x4000) {
+				line = &render.pcgbuf[(pcgno << 8) + (row * 16) + 15];
+				d = -1;
+			}
+			else {
+				line = &render.pcgbuf[(pcgno << 8) + (((row * 16) & 0xff) ^ 0xf0)];
+				d = 1;
+			}
+
 			x = ((int)reg[0] + bg_hadjust) & 0x3ff;
 			for (i=0; i<16; i++) {
-				dx = x - 16 + ((reg[2] & sprite_mask) ? (15 - i) : i);
-				if ((dx < 0) || (dx >= render.mixlen)) {
+				dx = x - 16 + i;
+				if ((dx < 0) || (dx >= sprite_limit)) {
 					continue;
 				}
-				pixel = line[i];
+				pixel = *line;
+				line += d;
 				if (!FastVisiblePixel(pixel)) {
 					continue;
 				}
@@ -441,7 +659,6 @@ void FASTCALL Render::FastDrawSpriteLinePX(int raster, int pri, DWORD *bg_line, 
 			}
 		}
 		reg -= 4;
-		ptr -= 512;
 	}
 }
 
@@ -471,7 +688,7 @@ void FASTCALL Render::FastDrawBGPageLinePX(int page, int raster, BOOL gd, DWORD 
 		return;
 	}
 
-	yblk = (int)render.bgy[page] + (raster & 0x1ff);
+	yblk = (int)render.bgy[page] + (render.bgsize ? (raster & 0x3ff) : (raster & 0x1ff));
 	if (render.bgsize) {
 		yblk &= 0x3ff;
 		yblk >>= 4;
@@ -485,7 +702,7 @@ void FASTCALL Render::FastDrawBGPageLinePX(int page, int raster, BOOL gd, DWORD 
 		BGBlock(page, yblk);
 	}
 
-	line = (int)render.bgy[page] + (raster & 0x1ff);
+	line = (int)render.bgy[page] + (render.bgsize ? (raster & 0x3ff) : (raster & 0x1ff));
 	if (render.bgsize) {
 		line &= 0x3ff;
 		x = (int)((render.bgx[page] - bg_hadjust) & 0x3ff);
@@ -550,20 +767,17 @@ void FASTCALL Render::FastDrawBGPageLinePX(int page, int raster, BOOL gd, DWORD 
 	}
 }
 
-void FASTCALL Render::FastBuildBGLinePX(int src_y, BOOL ton, int tx_pri, int sp_pri, DWORD *bg_line, BYTE *bg_flag, BOOL *active, BOOL *bg_opaq)
+void FASTCALL Render::FastBuildBGLinePX(int sprite_raster, int bg_raster, BOOL ton, int tx_pri, int sp_pri, DWORD *bg_line, BYTE *bg_flag, WORD *bg_pri, BOOL *active, BOOL *bg_opaq)
 {
 	int i;
-	WORD *bg_pri;
-	const BOOL sprite_visible = sprite->IsDisplay();
+	const BOOL sprite_visible = render.bgspdisp;
 	const BOOL has_bg = (BOOL)(render.bgdisp[0] || (render.bgdisp[1] && !render.bgsize));
 	const BOOL bgsp_on = render.bgspflag;
 	const BOOL gd = (BOOL)(sp_pri >= tx_pri);
 	const BOOL opaq = gd ? TRUE : (BOOL)!ton;
 	const DWORD base = (render.paldata[0x100] & ~k_render_color0);
-	const int raster = (src_y & 0x1ff);
 	const BOOL has_sources = (BOOL)(sprite_visible || has_bg);
 
-	bg_pri = render.fast_bg_pribuf;
 	for (i=0; i<render.mixlen; i++) {
 		bg_line[i] = opaq ? base : k_render_color0;
 		bg_flag[i] = 0;
@@ -579,19 +793,19 @@ void FASTCALL Render::FastBuildBGLinePX(int src_y, BOOL ton, int tx_pri, int sp_
 
 	*active = has_sources;
 	if (sprite_visible) {
-		FastDrawSpriteLinePX(raster, 1, bg_line, bg_flag, bg_pri, active);
+		FastDrawSpriteLinePX(sprite_raster & 0x3ff, 1, bg_line, bg_flag, bg_pri, active);
 	}
 	if (render.bgdisp[1] && !render.bgsize) {
-		FastDrawBGPageLinePX(1, raster, gd, bg_line, bg_flag, bg_pri, active);
+		FastDrawBGPageLinePX(1, bg_raster, gd, bg_line, bg_flag, bg_pri, active);
 	}
 	if (sprite_visible) {
-		FastDrawSpriteLinePX(raster, 2, bg_line, bg_flag, bg_pri, active);
+		FastDrawSpriteLinePX(sprite_raster & 0x3ff, 2, bg_line, bg_flag, bg_pri, active);
 	}
 	if (render.bgdisp[0]) {
-		FastDrawBGPageLinePX(0, raster, gd, bg_line, bg_flag, bg_pri, active);
+		FastDrawBGPageLinePX(0, bg_raster, gd, bg_line, bg_flag, bg_pri, active);
 	}
 	if (sprite_visible) {
-		FastDrawSpriteLinePX(raster, 3, bg_line, bg_flag, bg_pri, active);
+		FastDrawSpriteLinePX(sprite_raster & 0x3ff, 3, bg_line, bg_flag, bg_pri, active);
 	}
 
 	if (bg_opaq) {
@@ -1342,20 +1556,23 @@ void FASTCALL Xm6Px68kComposeScanlineFast(DWORD *out_argb32, int len, const DWOR
 void FASTCALL Render::MixFastLine(int dst_y, int src_y)
 {
 	DWORD *dst;
-	DWORD *grp = render.fast_grp_linebuf;
-	DWORD *grp_sp = render.fast_grp_linebuf_sp;
-	DWORD *grp_sp2 = render.fast_grp_linebuf_sp2;
-	BOOL *grp_sp_tr = render.fast_grp_linebuf_sp_tr;
-	DWORD text_line[1024];
-	DWORD *bg_line = render.fast_bg_linebuf;
-	DWORD bgtext_line[1024];
-	DWORD out[1024];
-	BYTE *bg_flag = render.fast_text_trflag;
-	BYTE tr_flag[1024];
+	DWORD grp[k_fast_line_capacity];
+	DWORD grp_sp[k_fast_line_capacity];
+	DWORD grp_sp2[k_fast_line_capacity];
+	BOOL grp_sp_tr[k_fast_line_capacity];
+	DWORD text_line[k_fast_line_capacity];
+	DWORD bg_line[k_fast_line_capacity];
+	WORD bg_pri[k_fast_line_capacity];
+	DWORD bgtext_line[k_fast_line_capacity];
+	DWORD out[k_fast_line_capacity];
+	BYTE bg_flag[k_fast_line_capacity];
+	BYTE tr_flag[k_fast_line_capacity];
 	const VC::vc_t *p;
+	const CRTC::crtc_t *c;
 	int tx_pri;
 	int sp_pri;
 	int gr_pri;
+	DWORD px68k_vline;
 	BOOL gon;
 	BOOL tron;
 	BOOL pron;
@@ -1365,6 +1582,22 @@ void FASTCALL Render::MixFastLine(int dst_y, int src_y)
 	BOOL bg_opaq;
 	DWORD mix_stamp;
 	int i;
+	DWORD *const grp_visible = &grp[k_fast_line_margin];
+	DWORD *const grp_sp_visible = &grp_sp[k_fast_line_margin];
+	DWORD *const grp_sp2_visible = &grp_sp2[k_fast_line_margin];
+	BOOL *const grp_sp_tr_visible = &grp_sp_tr[k_fast_line_margin];
+	DWORD *const text_line_visible = &text_line[k_fast_line_margin];
+	DWORD *const bg_line_visible = &bg_line[k_fast_line_margin];
+	WORD *const bg_pri_visible = &bg_pri[k_fast_line_margin];
+	DWORD *const bgtext_line_visible = &bgtext_line[k_fast_line_margin];
+	DWORD *const out_visible = &out[k_fast_line_margin];
+	BYTE *const bg_flag_visible = &bg_flag[k_fast_line_margin];
+	BYTE *const tr_flag_visible = &tr_flag[k_fast_line_margin];
+	Sprite::sprite_t spr;
+	Px68kVerticalTiming timing;
+	int grp_text_raster;
+	int sprite_raster;
+	int bg_raster;
 
 	if (!render.mixbuf) {
 		return;
@@ -1385,42 +1618,87 @@ void FASTCALL Render::MixFastLine(int dst_y, int src_y)
 	render.fast_mix_done[src_y] = mix_stamp;
 	dst = &render.mixbuf[render.mixwidth * dst_y];
 	p = vc->GetWorkAddr();
-	tx_pri = (int)(p->tx & 3);
-	sp_pri = (int)(p->sp & 3);
-	gr_pri = (int)(p->gr & 3);
+	c = crtc->GetWorkAddr();
+	sprite->GetSprite(&spr);
+	const BOOL sprite_enabled = (p && p->son);
+	px68k_vline = px68k_crtc_state_cache.state.visible_vline;
+	if (px68k_vline == 0xffffffffu) {
+		px68k_vline = FastGetVisibleVLine(c);
+	}
+	if (px68k_vline == 0xffffffffu) {
+		px68k_vline = (DWORD)src_y;
+	}
+	timing = FastGetVerticalTiming(p, c, &spr, sprite_enabled, px68k_vline, &px68k_crtc_state_cache.state);
+	// px68k derives the BG/sprite lookup from VLINEBG - BG_VLINE while
+	// GRP/TEXT continue to use the output scanline path that XM6 already has
+	// prepared for this compositor.
+	sprite_raster = timing.layer_raster & 0x3ff;
+	bg_raster = timing.layer_raster & (render.bgsize ? 0x3ff : 0x1ff);
+	grp_text_raster = src_y;
+	tx_pri = p ? (int)(p->tx & 3) : 0;
+	sp_pri = p ? (int)(p->sp & 3) : 0;
+	gr_pri = p ? (int)(p->gr & 3) : 0;
 	ton = render.texten;
 
-	FastMixGrp(src_y, grp, grp_sp, grp_sp2, grp_sp_tr, &gon, &tron, &pron);
+	std::memset(grp, 0, sizeof(grp));
+	std::memset(grp_sp, 0, sizeof(grp_sp));
+	std::memset(grp_sp2, 0, sizeof(grp_sp2));
+	std::memset(grp_sp_tr, 0, sizeof(grp_sp_tr));
+	std::memset(text_line, 0, sizeof(text_line));
+	std::memset(bg_line, 0, sizeof(bg_line));
+	std::memset(bg_pri, 0xff, sizeof(bg_pri));
+	std::memset(bgtext_line, 0, sizeof(bgtext_line));
+	std::memset(out, 0, sizeof(out));
+	std::memset(bg_flag, 0, sizeof(bg_flag));
+	std::memset(tr_flag, 0, sizeof(tr_flag));
+
+	FastMixGrp(grp_text_raster, grp_visible, grp_sp_visible, grp_sp2_visible, grp_sp_tr_visible, &gon, &tron, &pron);
 
 	for (i=0; i<render.mixlen; i++) {
-		// px68k does not prefill the final scanline with backdrop before layering.
-		// Start from visible black so opaq-path copies and half-fill behavior match.
-		out[i] = 0;
+		// px68k keeps a 16px guard band before the visible window.
+		// We compose into the shifted slice and later copy only the visible region.
+		out_visible[i] = 0;
 		if (ton) {
-			text_line[i] = render.textout[(((src_y + (int)render.texty) & 0x3ff) << 10) + (((int)render.textx + i) & 0x3ff)];
+			text_line_visible[i] = render.textout[(((grp_text_raster + (int)render.texty) & 0x3ff) << 10) + (((int)render.textx + i) & 0x3ff)];
 		}
 		else {
-			text_line[i] = k_render_color0;
+			text_line_visible[i] = k_render_color0;
 		}
-		bg_line[i] = k_render_color0;
-		bg_flag[i] = 0;
+		bg_line_visible[i] = k_render_color0;
+		bg_flag_visible[i] = 0;
 	}
 
 	bg_active = FALSE;
 	bg_opaq = FALSE;
-	FastBuildBGLinePX(src_y, ton, tx_pri, sp_pri, bg_line, bg_flag, &bg_active, &bg_opaq);
+	FastBuildBGLinePX(sprite_raster, bg_raster, ton, tx_pri, sp_pri, bg_line_visible, bg_flag_visible, bg_pri_visible, &bg_active, &bg_opaq);
 	bgon = bg_active;
-	FastPrepareBGTextLine(bgtext_line, tr_flag, bg_flag, text_line, bg_line, render.mixlen, ton, bgon, tx_pri, sp_pri, bg_opaq);
+	FastPrepareBGTextLine(bgtext_line_visible, tr_flag_visible, bg_flag_visible, text_line_visible, bg_line_visible, render.mixlen, ton, bgon, tx_pri, sp_pri, bg_opaq);
+
+	if (g_vertical_probe_snapshot_armed) {
+		const int last_line = (render.height > 0) ? (render.height - 1) : 0;
+		const int tail_base = (render.height >= 3) ? (render.height - 3) : 0;
+		int slot = -1;
+
+		if (dst_y < 3) {
+			slot = dst_y;
+		}
+		else if ((render.height >= 3) && (dst_y >= tail_base)) {
+			slot = 3 + (dst_y - tail_base);
+		}
+		if (slot >= 0) {
+			FastStoreVerticalProbeSample(slot, dst_y, src_y, px68k_vline, &render, p, c, timing, bg_active, bg_opaq, gon, tron, pron, ton);
+		}
+	}
 
 	// px68k-style 565+Ibit scanline composition (Render Fast 1:1 path)
-	Xm6Px68kComposeScanlineFast(out, render.mixlen,
-		grp, grp_sp, grp_sp2,
-		bgtext_line, tr_flag,
+	Xm6Px68kComposeScanlineFast(out_visible, render.mixlen,
+		grp_visible, grp_sp_visible, grp_sp2_visible,
+		bgtext_line_visible, tr_flag_visible,
 		gon, tron, pron, ton, bgon,
 		gr_pri, sp_pri, tx_pri,
 		p->vr2h, transparency_enabled);
 
-	RendMix01(dst, out, render.drawflag + (src_y << 6), render.mixlen);
+	RendMix01(dst, out_visible, render.drawflag + (src_y << 6), render.mixlen);
 }
 
 // ---- Fast pipeline methods moved from render.cpp ----
@@ -1439,6 +1717,7 @@ void FASTCALL Render::StartFrameFast()
 	int i;
 
 	ASSERT(this);
+	ApplyPendingCompositorMode();
 
 	render.count = 0;
 
@@ -1471,6 +1750,16 @@ void FASTCALL Render::StartFrameFast()
 			render.mixlen = render.mixwidth;
 		}
 
+		g_vertical_probe_snapshot_armed = FALSE;
+		FastResetVerticalProbeSnapshot();
+		if (render.width != g_vertical_probe_last_width || render.height != g_vertical_probe_last_height) {
+			g_vertical_probe_last_width = render.width;
+			g_vertical_probe_last_height = render.height;
+		if ((render.width == 256) && (render.height == 256)) {
+				FastBeginVerticalProbeSnapshot(render.width, render.height, render.width, render.height, render.mixpage, render.mixtype, render.lowres, render.bgspflag, render.bgspdisp);
+			}
+		}
+
 		SpriteReset();
 		for (i=0; i<1024; i++) {
 			render.mix[i] = TRUE;
@@ -1496,6 +1785,15 @@ void FASTCALL Render::EndFrameFast()
 
 	render.count++;
 	render.act = FALSE;
+}
+
+void FASTCALL Render::GetFastVerticalProbeSnapshot(fast_vertical_probe_snapshot_t *out) const
+{
+	if (!out) {
+		return;
+	}
+
+	*out = g_vertical_probe_snapshot;
 }
 
 void FASTCALL Render::SetCRTCFast()
@@ -1576,7 +1874,7 @@ void FASTCALL Render::VideoFastPX68K()
 		render.mix[i] = TRUE;
 	}
 
-	// VC?f?[?^?ACRTC?f?[?^o�E��E�
+	// VC?f?[?^?ACRTC?f?[?^o?E??E?
 	p = vc->GetWorkAddr();
 	q = crtc->GetWorkAddr();
 
@@ -1719,7 +2017,7 @@ void FASTCALL Render::VideoFastPX68K()
 		}
 	}
 
-	// ?Doo?�E��E�
+	// ?Doo??E??E?
 	tx = p->tx;
 	sp = p->sp;
 	gr = p->gr;
@@ -1735,7 +2033,7 @@ void FASTCALL Render::VideoFastPX68K()
 			for (i=0; i<512; i++) {
 				render.bgspmod[i] = TRUE;
 			}
-			render.bgspdisp = sprite->IsDisplay();
+			render.bgspdisp = (p->son != 0);
 		}
 	}
 	else {
@@ -1745,7 +2043,7 @@ void FASTCALL Render::VideoFastPX68K()
 			for (i=0; i<512; i++) {
 				render.bgspmod[i] = TRUE;
 			}
-			render.bgspdisp = sprite->IsDisplay();
+			render.bgspdisp = (p->son != 0);
 		}
 	}
 
@@ -2217,6 +2515,7 @@ void FASTCALL Render::ProcessFast()
 	int i;
 	int src;
 	DWORD stamp;
+	const VC::vc_t *p;
 	BOOL sprite_disp;
 
 	// ?sooooooos?v
@@ -2250,7 +2549,8 @@ void FASTCALL Render::ProcessFast()
 
 	// first==0oA?X?vo?C?go\oON/OFFoo?
 	// Sprite display state can toggle mid-frame
-	sprite_disp = sprite->IsDisplay();
+	p = vc ? vc->GetWorkAddr() : NULL;
+	sprite_disp = (p && p->son);
 	if (sprite_disp != render.bgspdisp) {
 		stamp = ++render.fast_stamp_counter;
 		for (i=0; i<512; i++) {
@@ -2267,7 +2567,7 @@ void FASTCALL Render::ProcessFast()
 	}
 
 	if ((render.v_mul == 2) && !render.lowres) {
-		// I/Ooog?�E��E�ooA?cooooooooo
+		// Preserve the px68k-style 2x vertical timing path for 256x256 modes.
 		for (i=render.first; i<render.last; i++) {
 			if ((i & 1) == 0) {
 				src = (i >> 1);
@@ -2280,7 +2580,6 @@ void FASTCALL Render::ProcessFast()
 				MixFastLine(src, src);
 			}
 		}
-		// ?X?V
 		render.first = render.last;
 		return;
 	}

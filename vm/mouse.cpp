@@ -2,8 +2,8 @@
 //
 //	X68000 EMULATOR "XM6"
 //
-//	Copyright (C) 2001-2005 ＰＩ．(ytanaka@ipc-tokai.or.jp)
-//	[ マウス ]
+//	Copyright (C) 2001-2005 PI(ytanaka@ipc-tokai.or.jp)
+//	[ Mouse ]
 //
 //---------------------------------------------------------------------------
 
@@ -19,26 +19,26 @@
 
 //===========================================================================
 //
-//	マウス
+//	Mouse
 //
 //===========================================================================
 //#define MOUSE_LOG
 
 //---------------------------------------------------------------------------
 //
-//	コンストラクタ
+//	Constructor
 //
 //---------------------------------------------------------------------------
 Mouse::Mouse(VM *p) : Device(p)
 {
-	// デバイスIDを初期化
+	// Set device ID
 	dev.id = MAKEID('M', 'O', 'U', 'S');
 	dev.desc = "Mouse";
 }
 
 //---------------------------------------------------------------------------
 //
-//	初期化
+//	Initialize
 //
 //---------------------------------------------------------------------------
 BOOL FASTCALL Mouse::Init()
@@ -47,27 +47,27 @@ BOOL FASTCALL Mouse::Init()
 
 	ASSERT(this);
 
-	// 基本クラス
+	// Base class
 	if (!Device::Init()) {
 		return FALSE;
 	}
 
-	// SCC取得
+	// Get SCC
 	scc = (SCC*)vm->SearchDevice(MAKEID('S', 'C', 'C', ' '));
-	ASSERT(scc);
+ ASSERT(scc);
 
-	// スケジューラ取得
+	// Get scheduler
 	scheduler = (Scheduler*)vm->SearchDevice(MAKEID('S', 'C', 'H', 'E'));
-	ASSERT(scheduler);
+ ASSERT(scheduler);
 
-	// イベント設定
+	// Event setup
 	event.SetDevice(this);
 	event.SetDesc("Latency 725us");
 	event.SetUser(0);
 	event.SetTime(0);
 	scheduler->AddEvent(&event);
 
-	// マウス倍率205/256、左右反転なし、本体接続
+	// Mouse speed 205/256, no swap, port 1
 	mouse.mul = 205;
 	mouse.rev = FALSE;
 	mouse.port = 1;
@@ -77,47 +77,47 @@ BOOL FASTCALL Mouse::Init()
 
 //---------------------------------------------------------------------------
 //
-//	クリーンアップ
+//	Cleanup
 //
 //---------------------------------------------------------------------------
 void FASTCALL Mouse::Cleanup()
 {
-	ASSERT(this);
+ ASSERT(this);
 
-	// 基本クラスへ
+	// Base class
 	Device::Cleanup();
 }
 
 //---------------------------------------------------------------------------
 //
-//	リセット
+//	Reset
 //
 //---------------------------------------------------------------------------
 void FASTCALL Mouse::Reset()
 {
-	ASSERT(this);
-	LOG0(Log::Normal, "リセット");
+ ASSERT(this);
+	LOG0(Log::Normal, "Reset");
 
-	// MSCTRL信号を'L'に設定
+	// Set MSCTRL receive to 'L'
 	mouse.msctrl = FALSE;
 
-	// リセットフラグを上げる
+	// Set reset flag
 	mouse.reset = TRUE;
 }
 
 //---------------------------------------------------------------------------
 //
-//	セーブ
+//	Save
 //
 //---------------------------------------------------------------------------
 BOOL FASTCALL Mouse::Save(Fileio *fio, int ver)
 {
 	size_t sz;
 
-	ASSERT(this);
-	LOG0(Log::Normal, "セーブ");
+ ASSERT(this);
+	LOG0(Log::Normal, "Save");
 
-	// サイズをセーブ
+	// Save size
 	sz = sizeof(mouse_t);
 	if (!fio->Write(&sz, sizeof(sz))) {
 		return FALSE;
@@ -126,7 +126,7 @@ BOOL FASTCALL Mouse::Save(Fileio *fio, int ver)
 		return FALSE;
 	}
 
-	// イベントをセーブ
+	// Save event
 	if (!event.Save(fio, ver)) {
 		return FALSE;
 	}
@@ -136,17 +136,17 @@ BOOL FASTCALL Mouse::Save(Fileio *fio, int ver)
 
 //---------------------------------------------------------------------------
 //
-//	ロード
+//	Load
 //
 //---------------------------------------------------------------------------
 BOOL FASTCALL Mouse::Load(Fileio *fio, int ver)
 {
 	size_t sz;
 
-	ASSERT(this);
-	LOG0(Log::Normal, "ロード");
+ ASSERT(this);
+	LOG0(Log::Normal, "Load");
 
-	// 本体をロード
+	// Load body
 	if (!fio->Read(&sz, sizeof(sz))) {
 		return FALSE;
 	}
@@ -157,7 +157,7 @@ BOOL FASTCALL Mouse::Load(Fileio *fio, int ver)
 		return FALSE;
 	}
 
-	// イベントをロード
+	// Load event
 	if (!event.Load(fio, ver)) {
 		return FALSE;
 	}
@@ -167,29 +167,29 @@ BOOL FASTCALL Mouse::Load(Fileio *fio, int ver)
 
 //---------------------------------------------------------------------------
 //
-//	設定適用
+//	Apply configuration
 //
 //---------------------------------------------------------------------------
 void FASTCALL Mouse::ApplyCfg(const Config *config)
 {
-	ASSERT(this);
-	ASSERT(config);
-	LOG0(Log::Normal, "設定適用");
+ ASSERT(this);
+ ASSERT(config);
+	LOG0(Log::Normal, "Apply configuration");
 
-	// 比率
+	// Speed
 	if (mouse.mul != config->mouse_speed) {
-		// 違ったら座標リセット
+		// Update speed value
 		mouse.mul = config->mouse_speed;
 		mouse.reset = TRUE;
 	}
 
-	// 反転フラグ
+	// Swap flag
 	mouse.rev = config->mouse_swap;
 
-	// ポート
+	// Port
 	mouse.port = config->mouse_port;
 	if (mouse.port == 0) {
-		// 接続なしなので、イベントを止める
+		// Not connected, so stop event
 		mouse.reset = TRUE;
 		event.SetTime(0);
 	}
@@ -197,21 +197,21 @@ void FASTCALL Mouse::ApplyCfg(const Config *config)
 
 //---------------------------------------------------------------------------
 //
-//	内部データ取得
+//	Get mouse data
 //
 //---------------------------------------------------------------------------
 void FASTCALL Mouse::GetMouse(mouse_t *buffer)
 {
-	ASSERT(this);
-	ASSERT(buffer);
+ ASSERT(this);
+ ASSERT(buffer);
 
-	// 内部ワークをコピー
+	// Copy structure
 	*buffer = mouse;
 }
 
 //---------------------------------------------------------------------------
 //
-//	イベントコールバック
+//	Event callback
 //
 //---------------------------------------------------------------------------
 BOOL FASTCALL Mouse::Callback(Event* /*ev*/)
@@ -220,13 +220,13 @@ BOOL FASTCALL Mouse::Callback(Event* /*ev*/)
 	int dx;
 	int dy;
 
-	ASSERT(this);
-	ASSERT(scc);
+ ASSERT(this);
+ ASSERT(scc);
 
-	// ステータス作成
+	// Create status
 	status = 0;
 
-	// ボタン作成
+	// Create button
 	if (mouse.left) {
 		status |= 0x01;
 	}
@@ -234,7 +234,7 @@ BOOL FASTCALL Mouse::Callback(Event* /*ev*/)
 		status |= 0x02;
 	}
 
-	// X差分作成
+	// Create X delta
 	dx = mouse.x - mouse.px;
 	dx *= mouse.mul;
 	dx >>= 8;
@@ -247,7 +247,7 @@ BOOL FASTCALL Mouse::Callback(Event* /*ev*/)
 		status |= 0x20;
 	}
 
-	// Y差分作成
+	// Create Y delta
 	dy = mouse.y - mouse.py;
 	dy *= mouse.mul;
 	dy >>= 8;
@@ -260,64 +260,64 @@ BOOL FASTCALL Mouse::Callback(Event* /*ev*/)
 		status |= 0x80;
 	}
 
-	// SCCが受信していなければ何もしない
+	// If SCC not receiving, ignore
 	if (!scc->IsRxEnable(1)) {
 		return FALSE;
 	}
 
-	// 受信bpsが4800でなければ、フレーミングエラー
+	// If not 4800bps, framing error
 	if (!scc->IsBaudRate(1, 4800)) {
 #if defined(MOUSE_LOG)
-		LOG0(Log::Normal, "SCCボーレートエラー");
+		LOG0(Log::Normal, "SCC baudrate error");
 #endif	// MOUSE_LOG
 		scc->FramingErr(1);
 		return FALSE;
 	}
 
-	// データが8bitでなければ、フレーミングエラー
+	// If not 8bit data, framing error
 	if (scc->GetRxBit(1) != 8) {
 #if defined(MOUSE_LOG)
-		LOG0(Log::Normal, "SCCデータビット長エラー");
+		LOG0(Log::Normal, "SCC data bit error");
 #endif	// MOUSE_LOG
 		scc->FramingErr(1);
 		return FALSE;
 	}
 
-	// ストップビットが2bitでなければ、フレーミングエラー
+	// If not 2 stop bits, framing error
 	if (scc->GetStopBit(1) != 3) {
 #if defined(MOUSE_LOG)
-		LOG0(Log::Normal, "SCCストップビットエラー");
+		LOG0(Log::Normal, "SCC stop bit error");
 #endif	// MOUSE_LOG
 		scc->FramingErr(1);
 		return FALSE;
 	}
 
-	// パリティなしでなければ、パリティエラー
+	// If not no parity, parity error
 	if (scc->GetParity(1) != 0) {
 #if defined(MOUSE_LOG)
-		LOG0(Log::Normal, "SCCパリティエラー");
+		LOG0(Log::Normal, "SCC parity error");
 #endif	// MOUSE_LOG
 		scc->ParityErr(1);
 		return FALSE;
 	}
 
-	// SCCの受信バッファにデータがあるなら送信しない
+	// If SCC Rx buffer has data, cannot receive
 	if (!scc->IsRxBufEmpty(1)) {
 #if defined(MOUSE_LOG)
-		LOG0(Log::Normal, "SCC受信バッファにデータあり");
+		LOG0(Log::Normal, "SCC Rx buffer has data");
 #endif	// MOUSE_LOG
 		return FALSE;
 	}
 
-	// データ送信(3バイト)
+	// Send data (3 bytes)
 #if defined(MOUSE_LOG)
-	LOG3(Log::Normal, "データ送出 St:$%02X X:$%02X Y:$%02X", status, dx & 0xff, dy & 0xff);
+	LOG3(Log::Normal, "Send data St:$%02X X:$%02X Y:$%02X", status, dx & 0xff, dy & 0xff);
 #endif	// MOUSE_LOG
 	scc->Send(1, status);
 	scc->Send(1, dx);
 	scc->Send(1, dy);
 
-	// 前回データを更新
+	// Update previous data
 	mouse.px = mouse.x;
 	mouse.py = mouse.y;
 
@@ -326,56 +326,56 @@ BOOL FASTCALL Mouse::Callback(Event* /*ev*/)
 
 //---------------------------------------------------------------------------
 //
-//	MSCTRL制御
+//	MSCTRL processing
 //
 //---------------------------------------------------------------------------
 void FASTCALL Mouse::MSCtrl(BOOL flag, int port)
 {
-	ASSERT(this);
-	ASSERT((port == 1) || (port == 2));
+ ASSERT(this);
+ ASSERT((port == 1) || (port == 2));
 
 #if defined(MOUSE_LOG)
 	LOG2(Log::Normal, "PORT=%d MSCTRL=%d", port, flag);
 #endif	// MOUSE_LOG
 
-	// ポートが一致しなければ何もしない
+	// If port does not match, ignore
 	if (port != mouse.port) {
 		return;
 	}
 
-	// 'H'から'L'への立下りでイベント発生
+	// Set event from 'H' to 'L'
 	if (flag) {
 		mouse.msctrl = TRUE;
 		return;
 	}
 
-	// 前回'H'かチェック
+	// Check previous 'H'
 	if (!mouse.msctrl) {
 		return;
 	}
 
-	// 記憶
+	// Clear
 	mouse.msctrl = FALSE;
 
-	// イベント中なら無視
+	// If event is not zero
 	if (event.GetTime() != 0) {
 		return;
 	}
 
-	// イベント発生(725us)
+	// Set event (725us)
 	event.SetTime(725 * 2);
 }
 
 //---------------------------------------------------------------------------
 //
-//	マウスデータ設定
+//	Set mouse data
 //
 //---------------------------------------------------------------------------
 void FASTCALL Mouse::SetMouse(int x, int y, BOOL left, BOOL right)
 {
-	ASSERT(this);
+ ASSERT(this);
 
-	// データ記憶
+	// Set data
 	mouse.x = x;
 	mouse.y = y;
 	if (mouse.rev) {
@@ -387,7 +387,7 @@ void FASTCALL Mouse::SetMouse(int x, int y, BOOL left, BOOL right)
 		mouse.right = right;
 	}
 
-	// リセットフラグがあれば座標をリセット
+	// If reset flag is set, reset position
 	if (mouse.reset) {
 		mouse.reset = FALSE;
 		mouse.px = x;
@@ -397,12 +397,12 @@ void FASTCALL Mouse::SetMouse(int x, int y, BOOL left, BOOL right)
 
 //---------------------------------------------------------------------------
 //
-//	マウスデータリセット
+//	Reset mouse data
 //
 //---------------------------------------------------------------------------
 void FASTCALL Mouse::ResetMouse()
 {
-	ASSERT(this);
+ ASSERT(this);
 
 	mouse.reset = TRUE;
 }

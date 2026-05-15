@@ -2,7 +2,7 @@
 //
 //	X68000 EMULATOR "XM6"
 //
-//	Copyright (C) 2001-2005 ＰＩ．(ytanaka@ipc-tokai.or.jp)
+//	Copyright (C) 2001-2005 ytanaka (ytanaka@ipc-tokai.or.jp)
 //	[ MIDI(YM3802) ]
 //
 //---------------------------------------------------------------------------
@@ -26,27 +26,27 @@
 
 //---------------------------------------------------------------------------
 //
-//	コンストラクタ
+//	Constructor
 //
 //---------------------------------------------------------------------------
 MIDI::MIDI(VM *p) : MemDevice(p)
 {
-	// デバイスIDを初期化
+	// Device ID setting
 	dev.id = MAKEID('M', 'I', 'D', 'I');
 	dev.desc = "MIDI (YM3802)";
 
-	// 開始アドレス、終了アドレス
+	// Start address, End address
 	memdev.first = 0xeae000;
 	memdev.last = 0xeaffff;
 
-	// オブジェクト
+	// Device
 	sync = NULL;
 
-	// 送信バッファ、受信バッファ
+	// Transmit buffer, Receive buffer
 	midi.transbuf = NULL;
 	midi.recvbuf = NULL;
 
-	// ワーク一部初期化(自己診断用)
+	// Queue initialization (Real-time priority)
 	midi.transnum = 0;
 	midi.transread = 0;
 	midi.transwrite = 0;
@@ -71,3068 +71,3068 @@ MIDI::MIDI(VM *p) : MemDevice(p)
 
 //---------------------------------------------------------------------------
 //
-//	初期化
+//	Initialize
 //
 //---------------------------------------------------------------------------
 BOOL FASTCALL MIDI::Init()
 {
-	ASSERT(this);
+ ASSERT(this);
 
-	// 基本クラス
-	if (!MemDevice::Init()) {
-		return FALSE;
-	}
+ // Constructor
+ if (!MemDevice::Init()) {
+  return FALSE;
+ }
 
-	// Sync作成
-	ASSERT(!sync);
-	sync = new Sync;
-	ASSERT(sync);
+ // Sync create
+ ASSERT(!sync);
+ sync = new Sync;
+ ASSERT(sync);
 
-	// 送信バッファ確保
-	try {
-		midi.transbuf = new mididata_t[TransMax];
-	}
-	catch (...) {
-		midi.transbuf = NULL;
-		return FALSE;
-	}
-	if (!midi.transbuf) {
-		return FALSE;
-	}
+ // Transmit buffer allocation
+ try {
+  midi.transbuf = new mididata_t[TransMax];
+ }
+ catch (...) {
+  midi.transbuf = NULL;
+  return FALSE;
+ }
+ if (!midi.transbuf) {
+  return FALSE;
+ }
 
-	// 受信バッファ確保
-	try {
-		midi.recvbuf = new mididata_t[RecvMax];
-	}
-	catch (...) {
-		midi.recvbuf = NULL;
-		return FALSE;
-	}
-	if (!midi.recvbuf) {
-		return FALSE;
-	}
+ // Receive buffer allocation
+ try {
+  midi.recvbuf = new mididata_t[RecvMax];
+ }
+ catch (...) {
+  midi.recvbuf = NULL;
+  return FALSE;
+ }
+ if (!midi.recvbuf) {
+  return FALSE;
+ }
 
-	// イベント初期化
-	event[0].SetDevice(this);
-	event[0].SetDesc("MIDI 31250bps");
-	event[0].SetUser(0);
-	event[0].SetTime(0);
-	event[1].SetDevice(this);
-	event[1].SetDesc("Clock");
-	event[1].SetUser(1);
-	event[1].SetTime(0);
-	event[2].SetDevice(this);
-	event[2].SetDesc("General Timer");
-	event[2].SetUser(2);
-	event[2].SetTime(0);
+ // Event setup
+ event[0].SetDevice(this);
+ event[0].SetDesc("MIDI 31250bps");
+ event[0].SetUser(0);
+ event[0].SetTime(0);
+ event[1].SetDevice(this);
+ event[1].SetDesc("Clock");
+ event[1].SetUser(1);
+ event[1].SetTime(0);
+ event[2].SetDevice(this);
+ event[2].SetDesc("General Timer");
+ event[2].SetUser(2);
+ event[2].SetTime(0);
 
-	// ボードなし、割り込みレベル4
-	midi.bid = 0;
-	midi.ilevel = 4;
+ // Board ID not set, priority level 4
+ midi.bid = 0;
+ midi.ilevel = 4;
 
-	// 受信遅れ時間0ms
-	recvdelay = 0;
+ // Receive delay initial 0ms
+ recvdelay = 0;
 
-	return TRUE;
+ return TRUE;
 }
 
 //---------------------------------------------------------------------------
 //
-//	クリーンアップ
+//	Cleanup
 //
 //---------------------------------------------------------------------------
 void FASTCALL MIDI::Cleanup()
 {
-	ASSERT(this);
+ ASSERT(this);
 
-	// 受信バッファ削除
-	if (midi.recvbuf) {
-		delete[] midi.recvbuf;
-		midi.recvbuf = NULL;
-	}
+ // Receive buffer delete
+ if (midi.recvbuf) {
+  delete[] midi.recvbuf;
+  midi.recvbuf = NULL;
+ }
 
-	// 送信バッファ削除
-	if (midi.transbuf) {
-		delete[] midi.transbuf;
-		midi.transbuf = NULL;
-	}
+ // Transmit buffer delete
+ if (midi.transbuf) {
+  delete[] midi.transbuf;
+  midi.transbuf = NULL;
+ }
 
-	// Sync削除
-	if (sync) {
-		delete sync;
-		sync = NULL;
-	}
+ // Sync delete
+ if (sync) {
+  delete sync;
+  sync = NULL;
+ }
 
-	// 基本クラスへ
-	MemDevice::Cleanup();
+ // Constructor release
+ MemDevice::Cleanup();
 }
 
 //---------------------------------------------------------------------------
 //
-//	リセット
+//	Reset
 //
 //---------------------------------------------------------------------------
 void FASTCALL MIDI::Reset()
 {
-	int i;
+ int i;
 
-	ASSERT(this);
-	ASSERT_DIAG();
+ ASSERT(this);
+ ASSERT_DIAG();
 
-	LOG0(Log::Normal, "リセット");
+ LOG0(Log::Normal, "Reset");
 
-	// アクセスなし
-	midi.access = FALSE;
+ // Not accessed
+ midi.access = FALSE;
 
-	// リセットあり
-	midi.reset = TRUE;
+ // Reset state
+ midi.reset = TRUE;
 
-	// レジスタリセット
-	ResetReg();
+ // Register reset
+ ResetReg();
 
-	// イベント初期化
-	for (i=0; i<3; i++) {
-		event[i].SetTime(0);
-	}
+ // Event reset
+ for (i=0; i<3; i++) {
+  event[i].SetTime(0);
+ }
 }
 
 //---------------------------------------------------------------------------
 //
-//	セーブ
+//	Save
 //
 //---------------------------------------------------------------------------
 BOOL FASTCALL MIDI::Save(Fileio *fio, int ver)
 {
-	size_t sz;
-	int i;
+ size_t sz;
+ int i;
 
-	ASSERT(this);
-	ASSERT(fio);
-	ASSERT(ver >= 0x0200);
-	ASSERT_DIAG();
+ ASSERT(this);
+ ASSERT(fio);
+ ASSERT(ver >= 0x0200);
+ ASSERT_DIAG();
 
-	LOG0(Log::Normal, "セーブ");
+ LOG0(Log::Normal, "Save");
 
-	// サイズをセーブ
-	sz = sizeof(midi_t);
-	if (!fio->Write(&sz, sizeof(sz))) {
-		return FALSE;
-	}
+ // Size save
+ sz = sizeof(midi_t);
+ if (!fio->Write(&sz, sizeof(sz))) {
+  return FALSE;
+ }
 
-	// 実体をセーブ
-	if (!fio->Write(&midi, (int)sz)) {
-		return FALSE;
-	}
+ // Body save
+ if (!fio->Write(&midi, (int)sz)) {
+  return FALSE;
+ }
 
-	// イベントをセーブ
-	for (i=0; i<3; i++) {
-		if (!event[i].Save(fio, ver)) {
-			return FALSE;
-		}
-	}
+ // Event save
+ for (i=0; i<3; i++) {
+  if (!event[i].Save(fio, ver)) {
+   return FALSE;
+  }
+ }
 
-	return TRUE;
+ return TRUE;
 }
 
 //---------------------------------------------------------------------------
 //
-//	ロード
+//	Load
 //
 //---------------------------------------------------------------------------
 BOOL FASTCALL MIDI::Load(Fileio *fio, int ver)
 {
-	midi_t bk;
-	size_t sz;
-	int i;
+ midi_t bk;
+ size_t sz;
+ int i;
 
-	ASSERT(this);
-	ASSERT(fio);
-	ASSERT(ver >= 0x0200);
-	ASSERT_DIAG();
+ ASSERT(this);
+ ASSERT(fio);
+ ASSERT(ver >= 0x0200);
+ ASSERT_DIAG();
 
-	LOG0(Log::Normal, "ロード");
+ LOG0(Log::Normal, "Load");
 
-	// 現在のワークを保存
-	bk = midi;
+ // Status register save
+ bk = midi;
 
-	// サイズをロード、照合
-	if (!fio->Read(&sz, sizeof(sz))) {
-		return FALSE;
-	}
-	if (sz != sizeof(midi_t)) {
-		return FALSE;
-	}
+ // Size load, verify
+ if (!fio->Read(&sz, sizeof(sz))) {
+  return FALSE;
+ }
+ if (sz != sizeof(midi_t)) {
+  return FALSE;
+ }
 
-	// 実体をロード
-	if (!fio->Read(&midi, (int)sz)) {
-		return FALSE;
-	}
+ // Body load
+ if (!fio->Read(&midi, (int)sz)) {
+  return FALSE;
+ }
 
-	// イベントをロード
-	for (i=0; i<3; i++) {
-		if (!event[i].Load(fio, ver)) {
-			return FALSE;
-		}
-	}
+ // Event load
+ for (i=0; i<3; i++) {
+  if (!event[i].Load(fio, ver)) {
+   return FALSE;
+  }
+ }
 
-	// イベントを動的に追加・削除
-	if (midi.bid == 0) {
-		// イベント削除
-		if (scheduler->HasEvent(&event[0])) {
-			scheduler->DelEvent(&event[0]);
-			scheduler->DelEvent(&event[1]);
-			scheduler->DelEvent(&event[2]);
-		}
-	}
-	else {
-		// イベント追加
-		if (!scheduler->HasEvent(&event[0])) {
-			scheduler->AddEvent(&event[0]);
-			scheduler->AddEvent(&event[1]);
-			scheduler->AddEvent(&event[2]);
-		}
-	}
+ // Event dynamically add/delete
+ if (midi.bid == 0) {
+  // Event delete
+  if (scheduler->HasEvent(&event[0])) {
+   scheduler->DelEvent(&event[0]);
+   scheduler->DelEvent(&event[1]);
+   scheduler->DelEvent(&event[2]);
+  }
+ }
+ else {
+  // Event add
+  if (!scheduler->HasEvent(&event[0])) {
+   scheduler->AddEvent(&event[0]);
+   scheduler->AddEvent(&event[1]);
+   scheduler->AddEvent(&event[2]);
+  }
+ }
 
-	// 送信バッファを復帰
-	midi.transbuf = bk.transbuf;
-	midi.transread = bk.transread;
-	midi.transwrite = bk.transwrite;
-	midi.transnum = bk.transnum;
+ // Transmit buffer restore
+ midi.transbuf = bk.transbuf;
+ midi.transread = bk.transread;
+ midi.transwrite = bk.transwrite;
+ midi.transnum = bk.transnum;
 
-	// 受信バッファを復帰
-	midi.recvbuf = bk.recvbuf;
-	midi.recvread = bk.recvread;
-	midi.recvwrite = bk.recvwrite;
-	midi.recvnum = bk.recvnum;
+ // Receive buffer restore
+ midi.recvbuf = bk.recvbuf;
+ midi.recvread = bk.recvread;
+ midi.recvwrite = bk.recvwrite;
+ midi.recvnum = bk.recvnum;
 
-	return TRUE;
+ return TRUE;
 }
 
 //---------------------------------------------------------------------------
 //
-//	設定適用
+//	Apply config
 //
 //---------------------------------------------------------------------------
 void FASTCALL MIDI::ApplyCfg(const Config *config)
 {
-	ASSERT(this);
-	ASSERT(config);
-	ASSERT_DIAG();
+ ASSERT(this);
+ ASSERT(config);
+ ASSERT_DIAG();
 
-	LOG0(Log::Normal, "設定適用");
+ LOG0(Log::Normal, "Apply config");
 
-	if (midi.bid != (DWORD)config->midi_bid) {
-		midi.bid = (DWORD)config->midi_bid;
+ if (midi.bid != (DWORD)config->midi_bid) {
+  midi.bid = (DWORD)config->midi_bid;
 
-		// イベントを動的に追加・削除
-		if (midi.bid == 0) {
-			// イベント削除
-			if (scheduler->HasEvent(&event[0])) {
-				scheduler->DelEvent(&event[0]);
-				scheduler->DelEvent(&event[1]);
-				scheduler->DelEvent(&event[2]);
-			}
-		}
-		else {
-			// イベント追加
-			if (!scheduler->HasEvent(&event[0])) {
-				scheduler->AddEvent(&event[0]);
-				scheduler->AddEvent(&event[1]);
-				scheduler->AddEvent(&event[2]);
-			}
-		}
-	}
+  // Event dynamically add/delete
+  if (midi.bid == 0) {
+   // Event delete
+   if (scheduler->HasEvent(&event[0])) {
+    scheduler->DelEvent(&event[0]);
+    scheduler->DelEvent(&event[1]);
+    scheduler->DelEvent(&event[2]);
+   }
+  }
+  else {
+   // Event add
+   if (!scheduler->HasEvent(&event[0])) {
+    scheduler->AddEvent(&event[0]);
+    scheduler->AddEvent(&event[1]);
+    scheduler->AddEvent(&event[2]);
+   }
+  }
+ }
 }
 
 #if !defined(NDEBUG)
 //---------------------------------------------------------------------------
 //
-//	診断
+//	Diagnostic
 //
 //---------------------------------------------------------------------------
 void FASTCALL MIDI::AssertDiag() const
 {
-	// 基本クラス
-	MemDevice::AssertDiag();
+ // Constructor
+ MemDevice::AssertDiag();
 
-	ASSERT(this);
-	ASSERT(GetID() == MAKEID('M', 'I', 'D', 'I'));
-	ASSERT(memdev.first == 0xeae000);
-	ASSERT(memdev.last == 0xeaffff);
-	ASSERT((midi.bid >= 0) && (midi.bid < 2));
-	ASSERT((midi.ilevel == 2) || (midi.ilevel == 4));
-	ASSERT(midi.transnum <= TransMax);
-	ASSERT(midi.transread < TransMax);
-	ASSERT(midi.transwrite < TransMax);
-	ASSERT(midi.recvnum <= RecvMax);
-	ASSERT(midi.recvread < RecvMax);
-	ASSERT(midi.recvwrite < RecvMax);
-	ASSERT(midi.normnum <= 16);
-	ASSERT(midi.normread < 16);
-	ASSERT(midi.normwrite < 16);
-	ASSERT(midi.rtnum <= 4);
-	ASSERT(midi.rtread < 4);
-	ASSERT(midi.rtwrite < 4);
-	ASSERT(midi.stdnum <= 0x80);
-	ASSERT(midi.stdread < 0x80);
-	ASSERT(midi.stdwrite < 0x80);
-	ASSERT(midi.rrnum <= 4);
-	ASSERT(midi.rrread < 4);
-	ASSERT(midi.rrwrite < 4);
+ ASSERT(this);
+ ASSERT(GetID() == MAKEID('M', 'I', 'D', 'I'));
+ ASSERT(memdev.first == 0xeae000);
+ ASSERT(memdev.last == 0xeaffff);
+ ASSERT((midi.bid >= 0) && (midi.bid < 2));
+ ASSERT((midi.ilevel == 2) || (midi.ilevel == 4));
+ ASSERT(midi.transnum <= TransMax);
+ ASSERT(midi.transread < TransMax);
+ ASSERT(midi.transwrite < TransMax);
+ ASSERT(midi.recvnum <= RecvMax);
+ ASSERT(midi.recvread < RecvMax);
+ ASSERT(midi.recvwrite < RecvMax);
+ ASSERT(midi.normnum <= 16);
+ ASSERT(midi.normread < 16);
+ ASSERT(midi.normwrite < 16);
+ ASSERT(midi.rtnum <= 4);
+ ASSERT(midi.rtread < 4);
+ ASSERT(midi.rtwrite < 4);
+ ASSERT(midi.stdnum <= 0x80);
+ ASSERT(midi.stdread < 0x80);
+ ASSERT(midi.stdwrite < 0x80);
+ ASSERT(midi.rrnum <= 4);
+ ASSERT(midi.rrread < 4);
+ ASSERT(midi.rrwrite < 4);
 }
 #endif	// NDEBUG
 
 //---------------------------------------------------------------------------
 //
-//	バイト読み込み
+//	Read byte not used
 //
 //---------------------------------------------------------------------------
 DWORD FASTCALL MIDI::ReadByte(DWORD addr)
 {
-	ASSERT(this);
-	ASSERT((addr >= memdev.first) && (addr <= memdev.last));
-	ASSERT_DIAG();
+ ASSERT(this);
+ ASSERT((addr >= memdev.first) && (addr <= memdev.last));
+ ASSERT_DIAG();
 
-	switch (midi.bid) {
-		// ボード無し
-		case 0:
-			break;
+ switch (midi.bid) {
+  // Board not connected
+  case 0:
+   break;
 
-		// ボードID1
-		case 1:
-			// 範囲内か
-			if ((addr >= 0xeafa00) && (addr < 0xeafa10)) {
-				// 奇数アドレスのみデコードされている
-				if ((addr & 1) == 0) {
-					return 0xff;
-				}
+  // Board ID1
+  case 1:
+   // Range check
+   if ((addr >= 0xeafa00) && (addr < 0xeafa10)) {
+    // Odd address read returns dummy
+    if ((addr & 1) == 0) {
+     return 0xff;
+    }
 
-				// レジスタリード
-				addr -= 0xeafa00;
-				addr >>= 1;
-				return ReadReg(addr);
-			}
-			break;
+    // Register read
+    addr -= 0xeafa00;
+    addr >>= 1;
+    return ReadReg(addr);
+   }
+   break;
 
-		// ボードID2
-		case 2:
-			// 範囲内か
-			if ((addr >= 0xeafa10) && (addr < 0xeafa20)) {
-				// 奇数アドレスのみデコードされている
-				if ((addr & 1) == 0) {
-					return 0xff;
-				}
+  // Board ID2
+  case 2:
+   // Range check
+   if ((addr >= 0xeafa10) && (addr < 0xeafa20)) {
+    // Odd address read returns dummy
+    if ((addr & 1) == 0) {
+     return 0xff;
+    }
 
-				// レジスタリード
-				addr -= 0xeafa10;
-				addr >>= 1;
-				return ReadReg(addr);
-			}
-			break;
+    // Register read
+    addr -= 0xeafa10;
+    addr >>= 1;
+    return ReadReg(addr);
+   }
+   break;
 
-		// その他(あり得ない)
-		default:
-			ASSERT(FALSE);
-			break;
-	}
+  // Invalid (should not occur)
+  default:
+   ASSERT(FALSE);
+   break;
+ }
 
-	// バスエラー
-	cpu->BusErr(addr, TRUE);
+ // Bus error
+ cpu->BusErr(addr, TRUE);
 
-	return 0xff;
+ return 0xff;
 }
 
 //---------------------------------------------------------------------------
 //
-//	ワード読み込み
+//	Read word not used
 //
 //---------------------------------------------------------------------------
 DWORD FASTCALL MIDI::ReadWord(DWORD addr)
 {
-	ASSERT(this);
-	ASSERT((addr >= memdev.first) && (addr <= memdev.last));
-	ASSERT((addr & 1) == 0);
-	ASSERT_DIAG();
+ ASSERT(this);
+ ASSERT((addr >= memdev.first) && (addr <= memdev.last));
+ ASSERT((addr & 1) == 0);
+ ASSERT_DIAG();
 
-	return (0xff00 | ReadByte(addr + 1));
+ return (0xff00 | ReadByte(addr + 1));
 }
 
 //---------------------------------------------------------------------------
 //
-//	バイト書き込み
+//	Write byte not used
 //
 //---------------------------------------------------------------------------
 void FASTCALL MIDI::WriteByte(DWORD addr, DWORD data)
 {
-	ASSERT(this);
-	ASSERT((addr >= memdev.first) && (addr <= memdev.last));
-	ASSERT(data < 0x100);
-	ASSERT_DIAG();
+ ASSERT(this);
+ ASSERT((addr >= memdev.first) && (addr <= memdev.last));
+ ASSERT(data < 0x100);
+ ASSERT_DIAG();
 
-	switch (midi.bid) {
-		// ボード無し
-		case 0:
-			break;
+ switch (midi.bid) {
+  // Board not connected
+  case 0:
+   break;
 
-		// ボードID1
-		case 1:
-			// 範囲内か
-			if ((addr >= 0xeafa00) && (addr < 0xeafa10)) {
-				// 奇数アドレスのみデコードされている
-				if ((addr & 1) == 0) {
-					return;
-				}
+  // Board ID1
+  case 1:
+   // Range check
+   if ((addr >= 0xeafa00) && (addr < 0xeafa10)) {
+    // Odd address write is ignored
+    if ((addr & 1) == 0) {
+     return;
+    }
 
-				// レジスタリード
-				addr -= 0xeafa00;
-				addr >>= 1;
-				WriteReg(addr, data);
-				return;
-			}
-			break;
+    // Register write
+    addr -= 0xeafa00;
+    addr >>= 1;
+    WriteReg(addr, data);
+    return;
+   }
+   break;
 
-		// ボードID2
-		case 2:
-			// 範囲内か
-			if ((addr >= 0xeafa10) && (addr < 0xeafa20)) {
-				// 奇数アドレスのみデコードされている
-				if ((addr & 1) == 0) {
-					return;
-				}
+  // Board ID2
+  case 2:
+   // Range check
+   if ((addr >= 0xeafa10) && (addr < 0xeafa20)) {
+    // Odd address write is ignored
+    if ((addr & 1) == 0) {
+     return;
+    }
 
-				// レジスタリード
-				addr -= 0xeafa10;
-				addr >>= 1;
-				WriteReg(addr, data);
-				return;
-			}
-			break;
+    // Register write
+    addr -= 0xeafa10;
+    addr >>= 1;
+    WriteReg(addr, data);
+    return;
+   }
+   break;
 
-		// その他(あり得ない)
-		default:
-			ASSERT(FALSE);
-			break;
-	}
+  // Invalid (should not occur)
+  default:
+   ASSERT(FALSE);
+   break;
+ }
 
-	// バスエラー
-	cpu->BusErr(addr, FALSE);
+ // Bus error
+ cpu->BusErr(addr, FALSE);
 }
 
 //---------------------------------------------------------------------------
 //
-//	ワード書き込み
+//	Write word not used
 //
 //---------------------------------------------------------------------------
 void FASTCALL MIDI::WriteWord(DWORD addr, DWORD data)
 {
-	ASSERT(this);
-	ASSERT((addr >= memdev.first) && (addr <= memdev.last));
-	ASSERT((addr & 1) == 0);
-	ASSERT(data < 0x10000);
-	ASSERT_DIAG();
+ ASSERT(this);
+ ASSERT((addr >= memdev.first) && (addr <= memdev.last));
+ ASSERT((addr & 1) == 0);
+ ASSERT(data < 0x10000);
+ ASSERT_DIAG();
 
-	WriteByte(addr + 1, (BYTE)data);
+ WriteByte(addr + 1, (BYTE)data);
 }
 
 //---------------------------------------------------------------------------
 //
-//	読み込みのみ
+//	Read only dummy
 //
 //---------------------------------------------------------------------------
 DWORD FASTCALL MIDI::ReadOnly(DWORD addr) const
 {
-	ASSERT(this);
-	ASSERT((addr >= memdev.first) && (addr <= memdev.last));
-	ASSERT_DIAG();
+ ASSERT(this);
+ ASSERT((addr >= memdev.first) && (addr <= memdev.last));
+ ASSERT_DIAG();
 
-	switch (midi.bid) {
-		// ボード無し
-		case 0:
-			break;
+ switch (midi.bid) {
+  // Board not connected
+  case 0:
+   break;
 
-		// ボードID1
-		case 1:
-			// 範囲内か
-			if ((addr >= 0xeafa00) && (addr < 0xeafa10)) {
-				// 奇数アドレスのみデコードされている
-				if ((addr & 1) == 0) {
-					return 0xff;
-				}
+  // Board ID1
+  case 1:
+   // Range check
+   if ((addr >= 0xeafa00) && (addr < 0xeafa10)) {
+    // Odd address read returns dummy
+    if ((addr & 1) == 0) {
+     return 0xff;
+    }
 
-				// レジスタリード
-				addr -= 0xeafa00;
-				addr >>= 1;
-				return ReadRegRO(addr);
-			}
-			break;
+    // Register read
+    addr -= 0xeafa00;
+    addr >>= 1;
+    return ReadRegRO(addr);
+   }
+   break;
 
-		// ボードID2
-		case 2:
-			// 範囲内か
-			if ((addr >= 0xeafa10) && (addr < 0xeafa20)) {
-				// 奇数アドレスのみデコードされている
-				if ((addr & 1) == 0) {
-					return 0xff;
-				}
+  // Board ID2
+  case 2:
+   // Range check
+   if ((addr >= 0xeafa10) && (addr < 0xeafa20)) {
+    // Odd address read returns dummy
+    if ((addr & 1) == 0) {
+     return 0xff;
+    }
 
-				// レジスタリード
-				addr -= 0xeafa10;
-				addr >>= 1;
-				return ReadRegRO(addr);
-			}
-			break;
+    // Register read
+    addr -= 0xeafa10;
+    addr >>= 1;
+    return ReadRegRO(addr);
+   }
+   break;
 
-		// その他(あり得ない)
-		default:
-			ASSERT(FALSE);
-			break;
-	}
+  // Invalid (should not occur)
+  default:
+   ASSERT(FALSE);
+   break;
+ }
 
-	return 0xff;
+ return 0xff;
 }
 
 //---------------------------------------------------------------------------
 //
-//	MIDIアクティブチェック
+//	MIDI Active Data Check
 //
 //---------------------------------------------------------------------------
 BOOL FASTCALL MIDI::IsActive() const
 {
-	ASSERT(this);
-	ASSERT_DIAG();
+ ASSERT(this);
+ ASSERT_DIAG();
 
-	// ボードIDが0以外であり
-	if (midi.bid != 0) {
-		// リセット後、1回以上アクセスされていること
-		if (midi.access) {
-			return TRUE;
-		}
-	}
+ // Board ID is not 0
+ if (midi.bid != 0) {
+  // After reset, if more than 1 time accessed
+  if (midi.access) {
+   return TRUE;
+  }
+ }
 
-	// アクティブでない
-	return FALSE;
+ // Not active
+ return FALSE;
 }
 
 //---------------------------------------------------------------------------
 //
-//	イベントコールバック
+//	Event Callback
 //
 //---------------------------------------------------------------------------
 BOOL FASTCALL MIDI::Callback(Event *ev)
 {
-	DWORD mtr;
-	DWORD hus;
+ DWORD mtr;
+ DWORD hus;
 
-	ASSERT(this);
-	ASSERT(ev);
-	ASSERT_DIAG();
+ ASSERT(this);
+ ASSERT(ev);
+ ASSERT_DIAG();
 
-	// アクセスフラグがFALSEなら、MIDIアプリケーションは存在しない
-	if (!midi.access) {
-		// 高速化のため、先頭でチェック
-		return TRUE;
-	}
+ // If access flag is FALSE, MIDI application does not exist
+ if (!midi.access) {
+  // No data, first Data check
+  return TRUE;
+ }
 
-	// パラメータによって振り分け
-	switch (ev->GetUser()) {
-		// MIDI送受信 31250bps
-		case 0:
-			// 受信および送信
-			Receive();
-			Transmit();
-			return TRUE;
+ // Parameter determines division ratio
+ switch (ev->GetUser()) {
+  // MIDI receive 31250bps
+  case 0:
+   // Receive and Transmit
+   Receive();
+   Transmit();
+   return TRUE;
 
-		// MIDIクロック(補間あり)
-		case 1:
-			// 先にMTRを算出しておく
-			if (midi.mtr <= 1) {
-				mtr = 0x40000;
-			}
-			else {
-				mtr = midi.mtr << 4;
-			}
+  // MIDI clock(Period timer)
+  case 1:
+   // Calculate MTR from divisor
+   if (midi.mtr <= 1) {
+    mtr = 0x40000;
+   }
+   else {
+    mtr = midi.mtr << 4;
+   }
 
-			// レコーディングカウンタ(8bitカウンタ)
-			midi.srr++;
-			midi.srr &= 0xff;
-			if (midi.srr == 0) {
-				// 割り込み
-				Interrupt(3, TRUE);
-			}
+   // Serial overflow counter (8bit counter)
+   midi.srr++;
+   midi.srr &= 0xff;
+   if (midi.srr == 0) {
+    // Interrupt if necessary
+    Interrupt(3, TRUE);
+   }
 
-			// プレイバックカウンタ(15bitダウンカウンタ)
-			if (midi.str != 0xffff8000) {
-				midi.str--;
-			}
-			if (midi.str >= 0xffff8000) {
-				// 割り込み
-				Interrupt(2, TRUE);
-			}
+   // Down counter (15bit up/down counter)
+   if (midi.str != 0xffff8000) {
+    midi.str--;
+   }
+   if (midi.str >= 0xffff8000) {
+    // Interrupt if necessary
+    Interrupt(2, TRUE);
+   }
 
-			// クロック補間カウンタをデクリメントし、0チェック
-			midi.sct--;
-			if (midi.sct != 0) {
-				// SCT=1の場合、除算による切捨てを補うため、補正をかける
-				if (midi.sct == 1) {
-					hus = mtr - (mtr / midi.scr) * (midi.scr - 1);
-					if (event[1].GetTime() != hus) {
-						event[1].SetTime(hus);
-					}
-				}
-				return TRUE;
-			}
-			midi.sct = midi.scr;
+   // Clock period counter reset, if overflow not occur then Data check
+   midi.sct--;
+   if (midi.sct != 0) {
+    // If SCT=1, adjust time to avoid skew, correct overflow
+    if (midi.sct == 1) {
+     hus = mtr - (mtr / midi.scr) * (midi.scr - 1);
+     if (event[1].GetTime() != hus) {
+      event[1].SetTime(hus);
+     }
+    }
+    return TRUE;
+   }
+   midi.sct = midi.scr;
 
-			// クロック処理
-			Clock();
+   // Clock process
+   Clock();
 
-			// 受信有効か
-			if (midi.rcr & 1) {
-				// クロックタイマを使うか
-				if ((midi.dmr & 0x07) == 0x03) {
-					if (midi.dmr & 0x08) {
-						// リアルタイム受信バッファへ挿入
-						InsertRR(0xf8);
-					}
-				}
-			}
+   // Receive enable
+   if (midi.rcr & 1) {
+    // Clock timer used
+    if ((midi.dmr & 0x07) == 0x03) {
+     if (midi.dmr & 0x08) {
+      // Realtime clock receive buffer insert
+      InsertRR(0xf8);
+     }
+    }
+   }
 
-			// バッファチェック
-			CheckRR();
+   // Buffer Data check
+   CheckRR();
 
-			// タイマ値は毎回ロードする(Mu-1)
-			mtr /= midi.scr;
-			if (ev->GetTime() != mtr) {
-				ev->SetTime(mtr);
-			}
-			return TRUE;
+   // Timer value is transferred (Mu-1)
+   mtr /= midi.scr;
+   if (ev->GetTime() != mtr) {
+    ev->SetTime(mtr);
+   }
+   return TRUE;
 
-		// 汎用タイマ
-		case 2:
-			General();
-			return TRUE;
-	}
+  // General timer
+  case 2:
+   General();
+   return TRUE;
+ }
 
-	// それ以外はエラー。打ち切り
-	ASSERT(FALSE);
-	ev->SetTime(0);
-	return FALSE;
+ // Otherwise is error. returns
+ ASSERT(FALSE);
+ ev->SetTime(0);
+ return FALSE;
 }
 
 //---------------------------------------------------------------------------
 //
-//	受信コールバック
+//	Receive Callback
 //
 //---------------------------------------------------------------------------
 void FASTCALL MIDI::Receive()
 {
-	BOOL recv;
-	mididata_t *p;
-	DWORD diff;
-	DWORD data;
+ BOOL recv;
+ mididata_t *p;
+ DWORD diff;
+ DWORD data;
 
-	ASSERT(this);
-	ASSERT_DIAG();
+ ASSERT(this);
+ ASSERT_DIAG();
 
-	// レシーバREADY
-	midi.rsr &= ~0x01;
+ // Receiver READY
+ midi.rsr &= ~0x01;
 
-	// 受信ディセーブルなら何もしない
-	if ((midi.rcr & 1) == 0) {
-		// 受信しなかった
-		return;
-	}
+ // If receive disabled then exit
+ if ((midi.rcr & 1) == 0) {
+  // No receive
+  return;
+ }
 
-	// 受信パラメータをチェック
-	if (midi.rrr != 0x08) {
-		// 31250bpsでない
-		return;
-	}
-	if ((midi.rmr & 0x32) != 0) {
-		// 8bitキャラクタ、1ストップビット、ノンパリティでない
-		return;
-	}
+ // Receive parameter Data check
+ if (midi.rrr != 0x08) {
+  // Not 31250bps
+  return;
+ }
+ if ((midi.rmr & 0x32) != 0) {
+  // 8bit character, 1stop bit, Parity is not even
+  return;
+ }
 
-	// 受信フラグOFF
-	recv = FALSE;
+ // Receive timeout OFF
+ recv = FALSE;
 
-	// 受信バッファのチェック
-	sync->Lock();
-	if (midi.recvnum > 0) {
-		// 有効なデータがある。時間差分をみる
-		diff = scheduler->GetTotalTime();
-		p = &midi.recvbuf[midi.recvread];
-		diff -= p->vtime;
-		if (diff > recvdelay) {
-			// 今回受信する
-			recv = TRUE;
-		}
-	}
-	sync->Unlock();
+ // Receive buffer Data check
+ sync->Lock();
+ if (midi.recvnum > 0) {
+  // Valid data exists. Compare time stamp
+  diff = scheduler->GetTotalTime();
+  p = &midi.recvbuf[midi.recvread];
+  diff -= p->vtime;
+  if (diff > recvdelay) {
+   // Receive done
+   recv = TRUE;
+  }
+ }
+ sync->Unlock();
 
-	// 今回受信しないのであれば、受信なし時間を延長
-	if (!recv) {
-		if (midi.rcn == 0x3ff) {
-			// 327.68ms受信なしなので、オフラインと割り込み
-			midi.rsr |= 0x04;
-			if ((midi.imr & 4) == 0) {
-				Interrupt(4, TRUE);
-			}
-		}
-		midi.rcn++;
-		if (midi.rcn >= 0x400) {
-			midi.rcn = 0;
-		}
+ // If no receive available, then wait receive time-out
+ if (!recv) {
+  if (midi.rcn == 0x3ff) {
+   // 327.68ms no receive, so clear status if necessary
+   midi.rsr |= 0x04;
+   if ((midi.imr & 4) == 0) {
+    Interrupt(4, TRUE);
+   }
+  }
+  midi.rcn++;
+  if (midi.rcn >= 0x400) {
+   midi.rcn = 0;
+  }
 
-		// 受信しなかった
-		return;
-	}
+  // No receive
+  return;
+ }
 
-	// 受信カウンタリセット
-	midi.rcn = 0;
+ // Receive counter reset
+ midi.rcn = 0;
 
-	// 受信バッファからデータを取り込む
-	sync->Lock();
-	data = midi.recvbuf[midi.recvread].data;
-	midi.recvread = (midi.recvread + 1) & (RecvMax - 1);
-	midi.recvnum--;
-	sync->Unlock();
+ // Receive buffer read data
+ sync->Lock();
+ data = midi.recvbuf[midi.recvread].data;
+ midi.recvread = (midi.recvread + 1) & (RecvMax - 1);
+ midi.recvnum--;
+ sync->Unlock();
 
-	if (data == 0xf8) {
-		// リアルタイム受信バッファへ挿入
-		if (midi.dmr & 0x08) {
-			InsertRR(0xf8);
+ if (data == 0xf8) {
+  // Realtime clock receive buffer insert
+  if (midi.dmr & 0x08) {
+   InsertRR(0xf8);
 
-			// クロック処理
-			Clock();
+   // Clock process
+   Clock();
 
-			// バッファチェック
-			CheckRR();
-		}
+   // Buffer Data check
+   CheckRR();
+  }
 
-		// クロックフィルタ
-		if (midi.rcr & 0x10) {
+  // Clock filter
+  if (midi.rcr & 0x10) {
 #if defined(MIDI_LOG)
-			LOG0(Log::Normal, "MIDIクロックフィルタ動作 $F8スキップ");
+   LOG0(Log::Normal, "MIDI Clock Filter pass $F8 Skip");
 #endif	// MIDI_LOG
-			return;
-		}
-	}
-	if ((data >= 0xf9) && (data <= 0xfd)) {
-		// リアルタイム受信バッファへ挿入
-		if (midi.dmr & 0x08) {
-			InsertRR(data);
-		}
-	}
+   return;
+  }
+ }
+ if ((data >= 0xf9) && (data <= 0xfd)) {
+  // Realtime clock receive buffer insert
+  if (midi.dmr & 0x08) {
+   InsertRR(data);
+  }
+ }
 
-	// アドレスハンタ
-	if (midi.rcr & 2) {
-		if (data == 0xf0) {
-			// メーカIDチェックへ
-			midi.asr = 1;
-		}
-		if (data == 0xf7) {
-			// アドレスハンタ終了
-			midi.asr = 0;
-		}
-		switch (midi.asr) {
-			// メーカIDチェック中
-			case 1:
-				if ((midi.amr & 0x7f) == data) {
+ // Address matching
+ if (midi.rcr & 2) {
+  if (data == 0xf0) {
+   // SysEx ID Data check start
+   midi.asr = 1;
+  }
+  if (data == 0xf7) {
+   // Address matching end
+   midi.asr = 0;
+  }
+  switch (midi.asr) {
+   // SysEx ID Data check
+   case 1:
+    if ((midi.amr & 0x7f) == data) {
 #if defined(MIDI_LOG)
-					LOG1(Log::Normal, "メーカIDマッチ $%02X", midi.amr & 0x7f);
+     LOG1(Log::Normal, "SysEx ID match $%02X", midi.amr & 0x7f);
 #endif	// MIDI_LOG
-					midi.asr = 2;
-				}
-				else {
+     midi.asr = 2;
+    }
+    else {
 #if defined(MIDI_LOG)
-					LOG1(Log::Normal, "メーカIDアンマッチ $%02X", data);
+     LOG1(Log::Normal, "SysEx ID mismatch $%02X", data);
 #endif	// MIDI_LOG
-					midi.asr = 3;
-				}
-				break;
+     midi.asr = 3;
+    }
+    break;
 
-			// デバイスIDチェック中
-			case 2:
-				if (midi.amr & 0x80) {
-					if ((midi.adr & 0x7f) != data) {
+   // Device ID Data check
+   case 2:
+    if (midi.amr & 0x80) {
+     if ((midi.adr & 0x7f) != data) {
 #if defined(MIDI_LOG)
-						LOG1(Log::Normal, "デバイスIDアンマッチ $%02X", data);
+      LOG1(Log::Normal, "Device ID mismatch $%02X", data);
 #endif	// MIDI_LOG
-						midi.asr = 3;
-					}
-				}
-				break;
+      midi.asr = 3;
+     }
+    }
+    break;
 
-			default:
-				break;
-		}
-		if (midi.asr == 3) {
-			// アドレスハンタ動作中。スキップ
-			return;
-		}
-	}
-	else {
-		// アドレスハンタ ディセーブル
-		midi.asr = 0;
-	}
+   default:
+    break;
+  }
+  if (midi.asr == 3) {
+   // Address matching inside. Skip
+   return;
+  }
+ }
+ else {
+  // Address matching disable
+  midi.asr = 0;
+ }
 
-	// レシーバBUSY
-	midi.rsr |= 0x01;
+ // Receiver BUSY
+ midi.rsr |= 0x01;
 
-	// 標準バッファへ
-	InsertStd(data);
+ // Standard buffer insert
+ InsertStd(data);
 }
 
 //---------------------------------------------------------------------------
 //
-//	送信コールバック
+//	Transmit Callback
 //
 //---------------------------------------------------------------------------
 void FASTCALL MIDI::Transmit()
 {
-	ASSERT(this);
-	ASSERT_DIAG();
+ ASSERT(this);
+ ASSERT_DIAG();
 
-	// 送信Ready
-	midi.tbs = FALSE;
+ // Transmit Ready
+ midi.tbs = FALSE;
 
-	// リアルタイム送信バッファのチェック
-	if (midi.rtnum > 0) {
-		// リアルタイム送信バッファのデータを送信バッファへ転送
-		ASSERT(midi.rtnum <= 4);
-		if (midi.tcr & 1) {
-			InsertTrans(midi.rtbuf[midi.rtread]);
-		}
-		midi.rtnum--;
-		midi.rtread = (midi.rtread + 1) & 3;
+ // Realtime clock transmit buffer Data check
+ if (midi.rtnum > 0) {
+  // Realtime clock transmit buffer data to transmit buffer transfer
+  ASSERT(midi.rtnum <= 4);
+  if (midi.tcr & 1) {
+   InsertTrans(midi.rtbuf[midi.rtread]);
+  }
+  midi.rtnum--;
+  midi.rtread = (midi.rtread + 1) & 3;
 
-		// 送信BUSY、無送信なし
-		midi.tbs = TRUE;
-		midi.tcn = 0;
-		return;
-	}
+  // Transmit BUSY, if not transmitting then
+  midi.tbs = TRUE;
+  midi.tcn = 0;
+  return;
+ }
 
-	// 通常バッファのチェック
-	if (midi.normnum > 0) {
-		// 通常バッファのデータを送信バッファへ転送
-		ASSERT(midi.normnum <= 16);
-		if (midi.tcr & 1) {
-			InsertTrans(midi.normbuf[midi.normread]);
-		}
-		midi.normnum--;
-		midi.normread = (midi.normread + 1) & 15;
+ // Normal buffer Data check
+ if (midi.normnum > 0) {
+  // Normal buffer data to transmit buffer transfer
+  ASSERT(midi.normnum <= 16);
+  if (midi.tcr & 1) {
+   InsertTrans(midi.normbuf[midi.normread]);
+  }
+  midi.normnum--;
+  midi.normread = (midi.normread + 1) & 15;
 
-		// 通常バッファがクリアされれば、送信バッファエンプティ割り込み
-		if (midi.normnum == 0) {
-			Interrupt(6, TRUE);
-		}
+  // If normal buffer completely empty, then transmit buffer empty interrupt
+  if (midi.normnum == 0) {
+   Interrupt(6, TRUE);
+  }
 
-		// 送信BUSY、無送信なし
-		midi.tbs = TRUE;
-		midi.tcn = 0;
-		return;
-	}
+  // Transmit BUSY, if not transmitting then
+  midi.tbs = TRUE;
+  midi.tcn = 0;
+  return;
+ }
 
-	// 今回は送信しなかった。無送信時間を延長
-	if (midi.tcn == 0xff) {
-		// 81.92ms無送信
-		if (midi.tcr & 1) {
-			if (midi.dmr & 0x20) {
-				// アクティブセンシング送信(DMRのビット指示による)
-				InsertRT(0xfe);
-			}
-		}
-	}
-	midi.tcn++;
-	if (midi.tcn >= 0x100) {
-		midi.tcn = 0x100;
-	}
+ // If more transmit cannot do so. Wait transmit time
+ if (midi.tcn == 0xff) {
+  // 81.92ms transmit
+  if (midi.tcr & 1) {
+   if (midi.dmr & 0x20) {
+    // Active buffer mode transmit(DMR flag specified)
+    InsertRT(0xfe);
+   }
+  }
+ }
+ midi.tcn++;
+ if (midi.tcn >= 0x100) {
+  midi.tcn = 0x100;
+ }
 }
 
 //---------------------------------------------------------------------------
 //
-//	MIDIクロック検出
+//	MIDI Clock Output
 //
 //---------------------------------------------------------------------------
 void FASTCALL MIDI::Clock()
 {
-	ASSERT(this);
-	ASSERT_DIAG();
+ ASSERT(this);
+ ASSERT_DIAG();
 
-	// クリックカウンタ
-	midi.ctr--;
-	if (midi.ctr == 0) {
-		// リロード
-		if (midi.cdr == 0) {
-			midi.ctr = 0x80;
-		}
-		else {
-			midi.ctr = midi.cdr;
-		}
+ // Clock counter
+ midi.ctr--;
+ if (midi.ctr == 0) {
+  // Reload
+  if (midi.cdr == 0) {
+   midi.ctr = 0x80;
+  }
+  else {
+   midi.ctr = midi.cdr;
+  }
 
-		// 割り込み
-		if ((midi.imr & 8) == 0) {
-			Interrupt(1, TRUE);
-		}
-	}
+  // Interrupt if necessary
+  if ((midi.imr & 8) == 0) {
+   Interrupt(1, TRUE);
+  }
+ }
 }
 
 //---------------------------------------------------------------------------
 //
-//	汎用タイマコールバック
+//	General Timer Callback
 //
 //---------------------------------------------------------------------------
 void FASTCALL MIDI::General()
 {
-	DWORD hus;
+ DWORD hus;
 
-	ASSERT(this);
-	ASSERT_DIAG();
+ ASSERT(this);
+ ASSERT_DIAG();
 
-	// 割り込み発生
-	Interrupt(7, TRUE);
+ // Interrupt if necessary Timer request
+ Interrupt(7, TRUE);
 
-	// GTRが変化していれば、時間を再設定
-	hus = midi.gtr << 4;
-	if (event[2].GetTime() != hus) {
-		event[2].SetTime(hus);
-	}
+ // GTR changed, re-set time
+ hus = midi.gtr << 4;
+ if (event[2].GetTime() != hus) {
+  event[2].SetTime(hus);
+ }
 }
 
 //---------------------------------------------------------------------------
 //
-//	送信バッファへ挿入
+//	Transmit buffer insert
 //
 //---------------------------------------------------------------------------
 void FASTCALL MIDI::InsertTrans(DWORD data)
 {
-	ASSERT(this);
-	ASSERT(data < 0x100);
-	ASSERT_DIAG();
+ ASSERT(this);
+ ASSERT(data < 0x100);
+ ASSERT_DIAG();
 
 #if defined(MIDI_LOG)
-	LOG1(Log::Normal, "送信バッファ挿入 $%02X", data);
+ LOG1(Log::Normal, "Transmit buffer insert $%02X", data);
 #endif	// MIDI_LOG
 
-	// ロック
-	sync->Lock();
+ // Lock
+ sync->Lock();
 
-	// データ挿入
-	midi.transbuf[midi.transwrite].data = data;
-	midi.transbuf[midi.transwrite].vtime = scheduler->GetTotalTime();
-	midi.transwrite = (midi.transwrite + 1) & (TransMax - 1);
-	midi.transnum++;
-	if (midi.transnum > TransMax) {
-		// 送信バッファのオーバーフローは無視(I/Oエミュレーションを行わない場合)
-		midi.transnum = TransMax;
-		midi.transread = midi.transwrite;
-	}
+ // Data insert
+ midi.transbuf[midi.transwrite].data = data;
+ midi.transbuf[midi.transwrite].vtime = scheduler->GetTotalTime();
+ midi.transwrite = (midi.transwrite + 1) & (TransMax - 1);
+ midi.transnum++;
+ if (midi.transnum > TransMax) {
+  // Transmit buffer overflow occurs (I/O operation not executed)
+  midi.transnum = TransMax;
+  midi.transread = midi.transwrite;
+ }
 
-	// アンロック
-	sync->Unlock();
+ // Unlock
+ sync->Unlock();
 }
 
 //---------------------------------------------------------------------------
 //
-//	受信バッファへ挿入
+//	Receive buffer insert
 //
 //---------------------------------------------------------------------------
 void FASTCALL MIDI::InsertRecv(DWORD data)
 {
-	ASSERT(this);
-	ASSERT(data < 0x100);
-	ASSERT_DIAG();
+ ASSERT(this);
+ ASSERT(data < 0x100);
+ ASSERT_DIAG();
 
 #if defined(MIDI_LOG)
-	LOG1(Log::Normal, "受信バッファ挿入 $%02X", data);
+ LOG1(Log::Normal, "Receive buffer insert $%02X", data);
 #endif	// MIDI_LOG
 
-	// ロック
-	sync->Lock();
+ // Lock
+ sync->Lock();
 
-	// データ挿入
-	midi.recvbuf[midi.recvwrite].data = data;
-	midi.recvbuf[midi.recvwrite].vtime = scheduler->GetTotalTime();
-	midi.recvwrite = (midi.recvwrite + 1) & (RecvMax - 1);
-	midi.recvnum++;
-	if (midi.recvnum > RecvMax) {
-		LOG0(Log::Warning, "受信バッファ オーバーフロー");
-		midi.recvnum = RecvMax;
-		midi.recvread = midi.recvwrite;
-	}
+ // Data insert
+ midi.recvbuf[midi.recvwrite].data = data;
+ midi.recvbuf[midi.recvwrite].vtime = scheduler->GetTotalTime();
+ midi.recvwrite = (midi.recvwrite + 1) & (RecvMax - 1);
+ midi.recvnum++;
+ if (midi.recvnum > RecvMax) {
+  LOG0(Log::Warning, "Receive buffer Overflow");
+  midi.recvnum = RecvMax;
+  midi.recvread = midi.recvwrite;
+ }
 
-	// アンロック
-	sync->Unlock();
+ // Unlock
+ sync->Unlock();
 }
 
 //---------------------------------------------------------------------------
 //
-//	通常バッファへ挿入
+//	Normal buffer insert
 //
 //---------------------------------------------------------------------------
 void FASTCALL MIDI::InsertNorm(DWORD data)
 {
-	ASSERT(this);
-	ASSERT(data < 0x100);
-	ASSERT_DIAG();
+ ASSERT(this);
+ ASSERT(data < 0x100);
+ ASSERT_DIAG();
 
 #if defined(MIDI_LOG)
-	LOG1(Log::Normal, "通常バッファ挿入 $%02X", data);
+ LOG1(Log::Normal, "Normal buffer insert $%02X", data);
 #endif	// MIDI_LOG
 
-	// ロック
-	sync->Lock();
+ // Lock
+ sync->Lock();
 
-	// データ挿入
-	midi.normbuf[midi.normwrite] = data;
-	midi.normwrite = (midi.normwrite + 1) & 15;
-	midi.normnum++;
-	midi.normtotal++;
-	if (midi.normnum > 16) {
-		LOG0(Log::Warning, "通常バッファ オーバーフロー");
-		midi.normnum = 16;
-		midi.normread = midi.normwrite;
-	}
+ // Data insert
+ midi.normbuf[midi.normwrite] = data;
+ midi.normwrite = (midi.normwrite + 1) & 15;
+ midi.normnum++;
+ midi.normtotal++;
+ if (midi.normnum > 16) {
+  LOG0(Log::Warning, "Normal buffer Overflow");
+  midi.normnum = 16;
+  midi.normread = midi.normwrite;
+ }
 
-	// アンロック
-	sync->Unlock();
+ // Unlock
+ sync->Unlock();
 }
 
 //---------------------------------------------------------------------------
 //
-//	リアルタイム送信バッファへ挿入
+//	Realtime clock transmit buffer insert
 //
 //---------------------------------------------------------------------------
 void FASTCALL MIDI::InsertRT(DWORD data)
 {
-	ASSERT(this);
-	ASSERT(data < 0x100);
-	ASSERT_DIAG();
+ ASSERT(this);
+ ASSERT(data < 0x100);
+ ASSERT_DIAG();
 
 #if defined(MIDI_LOG)
-	LOG1(Log::Normal, "リアルタイム送信バッファ挿入 $%02X", data);
+ LOG1(Log::Normal, "Realtime clock transmit buffer insert $%02X", data);
 #endif	// MIDI_LOG
 
-	// ロック
-	sync->Lock();
+ // Lock
+ sync->Lock();
 
-	// データ挿入
-	midi.rtbuf[midi.rtwrite] = data;
-	midi.rtwrite = (midi.rtwrite + 1) & 3;
-	midi.rtnum++;
-	midi.rttotal++;
-	if (midi.rtnum > 4) {
-		LOG0(Log::Warning, "リアルタイム送信バッファ オーバーフロー");
-		midi.rtnum = 4;
-		midi.rtread = midi.rtwrite;
-	}
+ // Data insert
+ midi.rtbuf[midi.rtwrite] = data;
+ midi.rtwrite = (midi.rtwrite + 1) & 3;
+ midi.rtnum++;
+ midi.rttotal++;
+ if (midi.rtnum > 4) {
+  LOG0(Log::Warning, "Realtime clock transmit buffer Overflow");
+  midi.rtnum = 4;
+  midi.rtread = midi.rtwrite;
+ }
 
-	// アンロック
-	sync->Unlock();
+ // Unlock
+ sync->Unlock();
 }
 
 //---------------------------------------------------------------------------
 //
-//	一般バッファへ挿入
+//	Standard buffer insert
 //
 //---------------------------------------------------------------------------
 void FASTCALL MIDI::InsertStd(DWORD data)
 {
-	ASSERT(this);
-	ASSERT(data < 0x100);
-	ASSERT_DIAG();
+ ASSERT(this);
+ ASSERT(data < 0x100);
+ ASSERT_DIAG();
 
 #if defined(MIDI_LOG)
-	LOG1(Log::Normal, "一般バッファ挿入 $%02X", data);
+ LOG1(Log::Normal, "Standard buffer insert $%02X", data);
 #endif	// MIDI_LOG
 
-	// ロック
-	sync->Lock();
+ // Lock
+ sync->Lock();
 
-	// データ挿入
-	midi.stdbuf[midi.stdwrite] = data;
-	midi.stdwrite = (midi.stdwrite + 1) & 0x7f;
-	midi.stdnum++;
-	midi.stdtotal++;
-	if (midi.stdnum > 0x80) {
+ // Data insert
+ midi.stdbuf[midi.stdwrite] = data;
+ midi.stdwrite = (midi.stdwrite + 1) & 0x7f;
+ midi.stdnum++;
+ midi.stdtotal++;
+ if (midi.stdnum > 0x80) {
 #if defined(MIDI_LOG)
-		LOG0(Log::Warning, "一般バッファ オーバーフロー");
+  LOG0(Log::Warning, "Standard buffer Overflow");
 #endif	// MIDI_LOG
-		midi.stdnum = 0x80;
-		midi.stdread = midi.stdwrite;
+  midi.stdnum = 0x80;
+  midi.stdread = midi.stdwrite;
 
-		// 受信ステータス設定(オーバーフロー)
-		midi.rsr |= 0x40;
-	}
+  // Receive status set (overflow)
+  midi.rsr |= 0x40;
+ }
 
-	// アンロック
-	sync->Unlock();
+ // Unlock
+ sync->Unlock();
 
-	// 受信ステータス設定(受信データあり)
-	midi.rsr |= 0x80;
+ // Receive status set (Receive data ready)
+ midi.rsr |= 0x80;
 
-	// 割り込み発生(エンプティ→受信データあり)
-	if (midi.stdnum == 1) {
-		Interrupt(5, TRUE);
-	}
+ // Interrupt if necessary(Receive data available)
+ if (midi.stdnum == 1) {
+  Interrupt(5, TRUE);
+ }
 }
 
 //---------------------------------------------------------------------------
 //
-//	リアルタイム受信バッファへ挿入
+//	Realtime clock receive buffer insert
 //
 //---------------------------------------------------------------------------
 void FASTCALL MIDI::InsertRR(DWORD data)
 {
-	ASSERT(this);
-	ASSERT(data < 0x100);
-	ASSERT_DIAG();
+ ASSERT(this);
+ ASSERT(data < 0x100);
+ ASSERT_DIAG();
 
 #if defined(MIDI_LOG)
-	LOG1(Log::Normal, "リアルタイム受信バッファ挿入 $%02X", data);
+ LOG1(Log::Normal, "Realtime clock receive buffer insert $%02X", data);
 #endif	// MIDI_LOG
 
-	// ロック
-	sync->Lock();
+ // Lock
+ sync->Lock();
 
-	// データ挿入
-	midi.rrbuf[midi.rrwrite] = data;
-	midi.rrwrite = (midi.rrwrite + 1) & 3;
-	midi.rrnum++;
-	midi.rrtotal++;
-	if (midi.rrnum > 4) {
+ // Data insert
+ midi.rrbuf[midi.rrwrite] = data;
+ midi.rrwrite = (midi.rrwrite + 1) & 3;
+ midi.rrnum++;
+ midi.rrtotal++;
+ if (midi.rrnum > 4) {
 #if defined(MIDI_LOG)
-		LOG0(Log::Warning, "リアルタイム受信バッファ オーバーフロー");
+  LOG0(Log::Warning, "Realtime clock receive buffer Overflow");
 #endif	// MIDI_LOG
-		midi.rrnum = 4;
-		midi.rrread = midi.rrwrite;
-	}
+  midi.rrnum = 4;
+  midi.rrread = midi.rrwrite;
+ }
 
-	// アンロック
-	sync->Unlock();
+ // Unlock
+ sync->Unlock();
 }
 
 //---------------------------------------------------------------------------
 //
-//	送信バッファ個数取得
+//	Transmit buffer number get
 //
 //---------------------------------------------------------------------------
 DWORD FASTCALL MIDI::GetTransNum() const
 {
-	ASSERT(this);
-	ASSERT_DIAG();
+ ASSERT(this);
+ ASSERT_DIAG();
 
-	// 4バイトデータ読みのため、ロックしない
-	// (1回のメモリバスアクセスでデータ確定することが前提)
-	return  midi.transnum;
+ // 4 byte data read ahead, No lock
+ // (Can determine if data exists for reading)
+ return  midi.transnum;
 }
 
 //---------------------------------------------------------------------------
 //
-//	送信バッファデータ取得
+//	Transmit buffer data get
 //
 //---------------------------------------------------------------------------
 const MIDI::mididata_t* FASTCALL MIDI::GetTransData(DWORD proceed)
 {
-	const mididata_t *ptr;
-	int offset;
+ const mididata_t *ptr;
+ int offset;
 
-	ASSERT(this);
-	ASSERT(proceed < TransMax);
-	ASSERT_DIAG();
+ ASSERT(this);
+ ASSERT(proceed < TransMax);
+ ASSERT_DIAG();
 
-	// ロック
-	sync->Lock();
+ // Lock
+ sync->Lock();
 
-	// 取得
-	offset = midi.transread;
-	offset += proceed;
-	offset &= (TransMax - 1);
-	ptr = &(midi.transbuf[offset]);
+ // Get
+ offset = midi.transread;
+ offset += proceed;
+ offset &= (TransMax - 1);
+ ptr = &(midi.transbuf[offset]);
 
-	// アンロック
-	sync->Unlock();
+ // Unlock
+ sync->Unlock();
 
-	// 返す
-	return ptr;
+ // Return
+ return ptr;
 }
 
 //---------------------------------------------------------------------------
 //
-//	送信バッファ削除
+//	Transmit buffer delete
 //
 //---------------------------------------------------------------------------
 void FASTCALL MIDI::DelTransData(DWORD number)
 {
-	ASSERT(this);
-	ASSERT(number < TransMax);
-	ASSERT_DIAG();
+ ASSERT(this);
+ ASSERT(number < TransMax);
+ ASSERT_DIAG();
 
-	// ロック
-	sync->Lock();
+ // Lock
+ sync->Lock();
 
-	// 個数調整
-	if (number > midi.transnum) {
-		number = midi.transnum;
-	}
+ // Number fix
+ if (number > midi.transnum) {
+  number = midi.transnum;
+ }
 
-	// 個数とreadポインタを変更
-	midi.transnum -= number;
-	midi.transread = (midi.transread + number) & (TransMax - 1);
+ // Number read pointer change
+ midi.transnum -= number;
+ midi.transread = (midi.transread + number) & (TransMax - 1);
 
-	// アンロック
-	sync->Unlock();
+ // Unlock
+ sync->Unlock();
 }
 
 //---------------------------------------------------------------------------
 //
-//	送信バッファクリア
+//	Transmit buffer clear
 //
 //---------------------------------------------------------------------------
 void FASTCALL MIDI::ClrTransData()
 {
-	ASSERT(this);
-	ASSERT_DIAG();
+ ASSERT(this);
+ ASSERT_DIAG();
 
-	// ロック
-	sync->Lock();
+ // Lock
+ sync->Lock();
 
-	// クリア
-	midi.transnum = 0;
-	midi.transread = 0;
-	midi.transwrite = 0;
+ // Clear
+ midi.transnum = 0;
+ midi.transread = 0;
+ midi.transwrite = 0;
 
-	// アンロック
-	sync->Unlock();
+ // Unlock
+ sync->Unlock();
 }
 
 //---------------------------------------------------------------------------
 //
-//	受信バッファデータ設定
+//	Receive buffer data set
 //
 //---------------------------------------------------------------------------
 void FASTCALL MIDI::SetRecvData(const BYTE *ptr, DWORD length)
 {
-	DWORD lp;
+ DWORD lp;
 
-	ASSERT(this);
-	ASSERT(ptr);
-	ASSERT_DIAG();
+ ASSERT(this);
+ ASSERT(ptr);
+ ASSERT_DIAG();
 
-	// ボードIDが0であれば何もしない
-	if (midi.bid == 0) {
-		return;
-	}
+ // If Board ID is 0, ignore
+ if (midi.bid == 0) {
+  return;
+ }
 
-	// 受信できる場合のみ、受け付ける
-	if (midi.rcr & 1) {
-		// 受信バッファへ挿入
-		for (lp=0; lp<length; lp++) {
-			InsertRecv((DWORD)ptr[lp]);
-		}
-	}
+ // If receive enable then, data insert
+ if (midi.rcr & 1) {
+  // Insert to receive buffer
+  for (lp=0; lp<length; lp++) {
+   InsertRecv((DWORD)ptr[lp]);
+  }
+ }
 
-	// 受信できる、できないにかかわらず、THRU指定があれば送信バッファへ
-	if (midi.trr & 0x40) {
-		for (lp=0; lp<length; lp++) {
-			InsertTrans((DWORD)ptr[lp]);
-		}
-	}
+ // If receive enable and also not enable, do not THRU set as specified then transmit buffer insert
+ if (midi.trr & 0x40) {
+  for (lp=0; lp<length; lp++) {
+   InsertTrans((DWORD)ptr[lp]);
+  }
+ }
 }
 
 //---------------------------------------------------------------------------
 //
-//	受信ディレイ設定
+//	Receive delay set
 //
 //---------------------------------------------------------------------------
 void FASTCALL MIDI::SetRecvDelay(int delay)
 {
-	ASSERT(this);
-	ASSERT(delay >= 0);
-	ASSERT_DIAG();
+ ASSERT(this);
+ ASSERT(delay >= 0);
+ ASSERT_DIAG();
 
-	// hus単位であること
-	recvdelay = delay;
+ // Is in hus unit
+ recvdelay = delay;
 }
 
 //---------------------------------------------------------------------------
 //
-//	レジスタリセット
+//	Register reset
 //
 //---------------------------------------------------------------------------
 void FASTCALL MIDI::ResetReg()
 {
-	ASSERT(this);
-	ASSERT_DIAG();
+ ASSERT(this);
+ ASSERT_DIAG();
 
 #if defined(MIDI_LOG)
-	LOG0(Log::Normal, "レジスタリセット");
+ LOG0(Log::Normal, "Register reset");
 #endif	// MIDI_LOG
 
-	// 割り込み
-	midi.vector = -1;
+ // Interrupt if necessary
+ midi.vector = -1;
 
-	// MCSレジスタ(一般)
-	midi.wdr = 0;
-	midi.rgr = 0xff;
+ // MCS register(read)
+ midi.wdr = 0;
+ midi.rgr = 0xff;
 
-	// MCSレジスタ(割り込み)
-	// IMRはbit1を立てておく(スーパーハングオン)
-	midi.ivr = 0x10;
-	midi.isr = 0;
-	midi.imr = 0x02;
-	midi.ier = 0;
+ // MCS register(Interrupt if necessary)
+ // IMR bit1 is set(General interrupt priority)
+ midi.ivr = 0x10;
+ midi.isr = 0;
+ midi.imr = 0x02;
+ midi.ier = 0;
 
-	// MCSレジスタ(リアルタイムメッセージ)
-	midi.dmr = 0;
-	midi.dcr = 0;
+ // MCS register(Realtime clock message)
+ midi.dmr = 0;
+ midi.dcr = 0;
 
-	// MCSレジスタ(受信)
-	midi.rrr = 0;
-	midi.rmr = 0;
-	midi.rcn = 0;
-	midi.amr = 0;
-	midi.adr = 0;
-	midi.asr = 0;
-	midi.rsr = 0;
-	midi.rcr = 0;
+ // MCS register(Receive)
+ midi.rrr = 0;
+ midi.rmr = 0;
+ midi.rcn = 0;
+ midi.amr = 0;
+ midi.adr = 0;
+ midi.asr = 0;
+ midi.rsr = 0;
+ midi.rcr = 0;
 
-	// MCSレジスタ(送信)
-	midi.trr = 0;
-	midi.tmr = 0;
-	midi.tbs = FALSE;
-	midi.tcn = 0;
-	midi.tcr = 0;
+ // MCS register(Transmit)
+ midi.trr = 0;
+ midi.tmr = 0;
+ midi.tbs = FALSE;
+ midi.tcn = 0;
+ midi.tcr = 0;
 
-	// MCSレジスタ(FSK)
-	midi.fsr = 0;
-	midi.fcr = 0;
+ // MCS register(FSK)
+ midi.fsr = 0;
+ midi.fcr = 0;
 
-	// MCSレジスタ(カウンタ)
-	midi.ccr = 2;
-	midi.cdr = 0;
-	midi.ctr = 0x80;
-	midi.srr = 0;
-	midi.scr = 1;
-	midi.sct = 1;
-	midi.spr = 0;
-	midi.str = 0xffff8000;
-	midi.gtr = 0;
-	midi.mtr = 0;
+ // MCS register(Counter)
+ midi.ccr = 2;
+ midi.cdr = 0;
+ midi.ctr = 0x80;
+ midi.srr = 0;
+ midi.scr = 1;
+ midi.sct = 1;
+ midi.spr = 0;
+ midi.str = 0xffff8000;
+ midi.gtr = 0;
+ midi.mtr = 0;
 
-	// MCSレジスタ(GPIO)
-	midi.edr = 0;
-	midi.eor = 0;
-	midi.eir = 0;
+ // MCS register(GPIO)
+ midi.edr = 0;
+ midi.eor = 0;
+ midi.eir = 0;
 
-	// 通常バッファ
-	midi.normnum = 0;
-	midi.normread = 0;
-	midi.normwrite = 0;
-	midi.normtotal = 0;
+ // Normal buffer
+ midi.normnum = 0;
+ midi.normread = 0;
+ midi.normwrite = 0;
+ midi.normtotal = 0;
 
-	// リアルタイム送信バッファ
-	midi.rtnum = 0;
-	midi.rtread = 0;
-	midi.rtwrite = 0;
-	midi.rttotal = 0;
+ // Realtime clock transmit buffer
+ midi.rtnum = 0;
+ midi.rtread = 0;
+ midi.rtwrite = 0;
+ midi.rttotal = 0;
 
-	// 一般バッファ
-	midi.stdnum = 0;
-	midi.stdread = 0;
-	midi.stdwrite = 0;
-	midi.stdtotal = 0;
+ // Standard buffer
+ midi.stdnum = 0;
+ midi.stdread = 0;
+ midi.stdwrite = 0;
+ midi.stdtotal = 0;
 
-	// リアルタイム受信バッファ
-	midi.rrnum = 0;
-	midi.rrread = 0;
-	midi.rrwrite = 0;
-	midi.rrtotal = 0;
+ // Realtime clock receive buffer
+ midi.rrnum = 0;
+ midi.rrread = 0;
+ midi.rrwrite = 0;
+ midi.rrtotal = 0;
 
-	// 送信バッファ
-	sync->Lock();
-	midi.transnum = 0;
-	midi.transread = 0;
-	midi.transwrite = 0;
-	sync->Unlock();
+ // Transmit buffer
+ sync->Lock();
+ midi.transnum = 0;
+ midi.transread = 0;
+ midi.transwrite = 0;
+ sync->Unlock();
 
-	// 受信バッファ
-	sync->Lock();
-	midi.recvnum = 0;
-	midi.recvread = 0;
-	midi.recvwrite = 0;
-	sync->Unlock();
+ // Receive buffer
+ sync->Lock();
+ midi.recvnum = 0;
+ midi.recvread = 0;
+ midi.recvwrite = 0;
+ sync->Unlock();
 
-	// イベント停止(汎用タイマ)
-	event[2].SetTime(0);
+ // Event stop(General timer)
+ event[2].SetTime(0);
 
-	// イベント開始(MIDIクロック)(OPMDRV3.X)
-	event[1].SetDesc("Clock");
-	event[1].SetTime(0x40000);
+ // Event start(MIDI clock)(OPMDRV3.X)
+ event[1].SetDesc("Clock");
+ event[1].SetTime(0x40000);
 
-	// エクスクルーシブカウンタ
-	ex_cnt[0] = 0;
-	ex_cnt[1] = 0;
-	ex_cnt[2] = 0;
-	ex_cnt[3] = 0;
+ // Extension counter reset
+ ex_cnt[0] = 0;
+ ex_cnt[1] = 0;
+ ex_cnt[2] = 0;
+ ex_cnt[3] = 0;
 
-	// 全ての割り込みをキャンセル
-	IntCheck();
+ // All interrupt if necessary are processed
+ IntCheck();
 
-	// 通常バッファエンプティ割り込み(実際はISRのみ変化)
-	Interrupt(6, TRUE);
+ // Normal buffer empty interrupt (Actually ISR change)
+ Interrupt(6, TRUE);
 }
 
 //---------------------------------------------------------------------------
 //
-//	レジスタ読み出し
+//	Register read out
 //
 //---------------------------------------------------------------------------
 DWORD FASTCALL MIDI::ReadReg(DWORD reg)
 {
-	DWORD group;
+ DWORD group;
 
-	ASSERT(this);
-	ASSERT(reg < 8);
-	ASSERT_DIAG();
+ ASSERT(this);
+ ASSERT(reg < 8);
+ ASSERT_DIAG();
 
-	// アクセスフラグON
-	if (!midi.access) {
-		event[0].SetTime(640);
-		midi.access = TRUE;
-	}
+ // Access flag ON
+ if (!midi.access) {
+  event[0].SetTime(640);
+  midi.access = TRUE;
+ }
 
-	// ウェイト
-	scheduler->Wait(2);
+ // Wait
+ scheduler->Wait(2);
 
-	switch (reg) {
-		// IVR
-		case 0:
+ switch (reg) {
+  // IVR
+  case 0:
 #if defined(MIDI_LOG)
-			LOG1(Log::Normal, "割り込みベクタ読み出し $%02X", midi.ivr);
+   LOG1(Log::Normal, "Interrupt vector read $%02X", midi.ivr);
 #endif	// MIDI_LOG
-			return midi.ivr;
+   return midi.ivr;
 
-		// RGR
-		case 1:
-			return midi.rgr;
+  // RGR
+  case 1:
+   return midi.rgr;
 
-		// ISR
-		case 2:
+  // ISR
+  case 2:
 #if defined(MIDI_LOG)
-			LOG1(Log::Normal, "割り込みサービスレジスタ読み出し $%02X", midi.isr);
+   LOG1(Log::Normal, "Interrupt service register read $%02X", midi.isr);
 #endif	// MIDI_LOG
-			return midi.isr;
+   return midi.isr;
 
-		// ICR
-		case 3:
-			LOG1(Log::Normal, "レジスタ読み出し R%d", reg);
-			return midi.wdr;
-	}
+  // ICR
+  case 3:
+   LOG1(Log::Normal, "Register read R%d", reg);
+   return midi.wdr;
+ }
 
-	// グループから、レジスタ番号を作成
-	group = midi.rgr & 0x0f;
-	if (group >= 0x0a) {
-		return 0xff;
-	}
+ // Group from register number create
+ group = midi.rgr & 0x0f;
+ if (group >= 0x0a) {
+  return 0xff;
+ }
 
-	// レジスタ番号生成
-	reg += (group * 10);
+ // Register number add
+ reg += (group * 10);
 
-	// レジスタ別(レジスタ4以降)
-	switch (reg) {
-		// DSR
-		case 16:
-			return GetDSR();
+ // Register read(Register 4 and above)
+ switch (reg) {
+  // DSR
+  case 16:
+   return GetDSR();
 
-		// RSR
-		case 34:
-			return GetRSR();
+  // RSR
+  case 34:
+   return GetRSR();
 
-		// RDR(更新あり)
-		case 36:
-			return GetRDR();
+  // RDR(ReadOnly)
+  case 36:
+   return GetRDR();
 
-		// TSR
-		case 54:
-			return GetTSR();
+  // TSR
+  case 54:
+   return GetTSR();
 
-		// FSR
-		case 64:
-			return GetFSR();
+  // FSR
+  case 64:
+   return GetFSR();
 
-		// SRR
-		case 74:
-			return GetSRR();
+  // SRR
+  case 74:
+   return GetSRR();
 
-		// EIR
-		case 96:
-			return GetEIR();
-	}
+  // EIR
+  case 96:
+   return GetEIR();
+ }
 
-	LOG1(Log::Normal, "レジスタ読み出し R%d", reg);
-	return midi.wdr;
+ LOG1(Log::Normal, "Register read R%d", reg);
+ return midi.wdr;
 }
 
 //---------------------------------------------------------------------------
 //
-//	レジスタ書き込み
+//	Register write not used
 //
 //---------------------------------------------------------------------------
 void FASTCALL MIDI::WriteReg(DWORD reg, DWORD data)
 {
-	DWORD group;
+ DWORD group;
 
-	ASSERT(this);
-	ASSERT(reg < 8);
-	ASSERT(data < 0x100);
-	ASSERT_DIAG();
+ ASSERT(this);
+ ASSERT(reg < 8);
+ ASSERT(data < 0x100);
+ ASSERT_DIAG();
 
-	// アクセスフラグON
-	if (!midi.access) {
-		event[0].SetTime(640);
-		midi.access = TRUE;
-	}
+ // Access flag ON
+ if (!midi.access) {
+  event[0].SetTime(640);
+  midi.access = TRUE;
+ }
 
-	// ウェイト
-	scheduler->Wait(2);
+ // Wait
+ scheduler->Wait(2);
 
-	// 書き込みデータを保存(未定義のレジスタで読める)
-	midi.wdr = data;
+ // Write not used data store (Send command register to access)
+ midi.wdr = data;
 
-	// レジスタ別
-	switch (reg) {
-		// IVR
-		case 0:
-			LOG2(Log::Normal, "レジスタ書き込み R%d <- $%02X", reg, data);
-			return;
+ // Register write
+ switch (reg) {
+  // IVR
+  case 0:
+   LOG2(Log::Normal, "Register write R%d <- $%02X", reg, data);
+   return;
 
-		// RGR
-		case 1:
-			// 最上位ビットはレジスタリセット
-			if (data & 0x80) {
-				ResetReg();
-			}
-			midi.rgr = data;
-			return;
+  // RGR
+  case 1:
+   // First bit is register reset
+   if (data & 0x80) {
+    ResetReg();
+   }
+   midi.rgr = data;
+   return;
 
-		// ISR
-		case 2:
-			LOG2(Log::Normal, "レジスタ書き込み R%d <- $%02X", reg, data);
-			return;
+  // ISR
+  case 2:
+   LOG2(Log::Normal, "Register write R%d <- $%02X", reg, data);
+   return;
 
-		// ICR
-		case 3:
-			SetICR(data);
-			return;
-	}
+  // ICR
+  case 3:
+   SetICR(data);
+   return;
+ }
 
-	// グループから、レジスタ番号を作成
-	group = midi.rgr & 0x0f;
-	if (group >= 0x0a) {
-		return;
-	}
+ // Group from register number create
+ group = midi.rgr & 0x0f;
+ if (group >= 0x0a) {
+  return;
+ }
 
-	// レジスタ番号生成
-	reg += (group * 10);
+ // Register number add
+ reg += (group * 10);
 
-	// レジスタ別(レジスタ4以降)
-	switch (reg) {
-		// IOR
-		case 4:
-			SetIOR(data);
-			return;
+ // Register write(Register 4 and above)
+ switch (reg) {
+  // IOR
+  case 4:
+   SetIOR(data);
+   return;
 
-		// IMR
-		case 5:
-			SetIMR(data);
-			return;
+  // IMR
+  case 5:
+   SetIMR(data);
+   return;
 
-		// IER
-		case 6:
-			SetIER(data);
-			return;
+  // IER
+  case 6:
+   SetIER(data);
+   return;
 
-		// DMR
-		case 14:
-			SetDMR(data);
-			return;
+  // DMR
+  case 14:
+   SetDMR(data);
+   return;
 
-		// DCR
-		case 15:
-			SetDCR(data);
-			return;
+  // DCR
+  case 15:
+   SetDCR(data);
+   return;
 
-		// DNR
-		case 17:
-			SetDNR(data);
-			return;
+  // DNR
+  case 17:
+   SetDNR(data);
+   return;
 
-		// RRR
-		case 24:
-			SetRRR(data);
-			return;
+  // RRR
+  case 24:
+   SetRRR(data);
+   return;
 
-		// RMR
-		case 25:
-			SetRMR(data);
-			return;
+  // RMR
+  case 25:
+   SetRMR(data);
+   return;
 
-		// AMR
-		case 26:
-			SetAMR(data);
-			return;
+  // AMR
+  case 26:
+   SetAMR(data);
+   return;
 
-		// ADR
-		case 27:
-			SetADR(data);
-			return;
+  // ADR
+  case 27:
+   SetADR(data);
+   return;
 
-		// RCR
-		case 35:
-			SetRCR(data);
-			return;
+  // RCR
+  case 35:
+   SetRCR(data);
+   return;
 
-		// TRR
-		case 44:
-			SetTRR(data);
-			return;
+  // TRR
+  case 44:
+   SetTRR(data);
+   return;
 
-		// TMR
-		case 45:
-			SetTMR(data);
-			return;
+  // TMR
+  case 45:
+   SetTMR(data);
+   return;
 
-		// TCR
-		case 55:
-			SetTCR(data);
-			return;
+  // TCR
+  case 55:
+   SetTCR(data);
+   return;
 
-		// TDR
-		case 56:
-			SetTDR(data);
-			return;
+  // TDR
+  case 56:
+   SetTDR(data);
+   return;
 
-		// FCR
-		case 65:
-			SetFCR(data);
-			return;
+  // FCR
+  case 65:
+   SetFCR(data);
+   return;
 
-		// CCR
-		case 66:
-			SetCCR(data);
-			return;
+  // CCR
+  case 66:
+   SetCCR(data);
+   return;
 
-		// CDR
-		case 67:
-			SetCDR(data);
-			return;
+  // CDR
+  case 67:
+   SetCDR(data);
+   return;
 
-		// SCR
-		case 75:
-			SetSCR(data);
-			return;
+  // SCR
+  case 75:
+   SetSCR(data);
+   return;
 
-		// SPR(L)
-		case 76:
-			SetSPR(data, FALSE);
-			return;
+  // SPR(L)
+  case 76:
+   SetSPR(data, FALSE);
+   return;
 
-		// SPR(H)
-		case 77:
-			SetSPR(data, TRUE);
-			return;
+  // SPR(H)
+  case 77:
+   SetSPR(data, TRUE);
+   return;
 
-		// GTR(L)
-		case 84:
-			SetGTR(data, FALSE);
-			return;
+  // GTR(L)
+  case 84:
+   SetGTR(data, FALSE);
+   return;
 
-		// GTR(H)
-		case 85:
-			SetGTR(data, TRUE);
-			return;
+  // GTR(H)
+  case 85:
+   SetGTR(data, TRUE);
+   return;
 
-		// MTR(L)
-		case 86:
-			SetMTR(data, FALSE);
-			return;
+  // MTR(L)
+  case 86:
+   SetMTR(data, FALSE);
+   return;
 
-		// MTR(H)
-		case 87:
-			SetMTR(data, TRUE);
-			return;
+  // MTR(H)
+  case 87:
+   SetMTR(data, TRUE);
+   return;
 
-		// EDR
-		case 94:
-			SetEDR(data);
-			return;
+  // EDR
+  case 94:
+   SetEDR(data);
+   return;
 
-		// EOR
-		case 96:
-			SetEOR(data);
-			return;
-	}
+  // EOR
+  case 96:
+   SetEOR(data);
+   return;
+ }
 
-	LOG2(Log::Normal, "レジスタ書き込み R%d <- $%02X", reg, data);
+ LOG2(Log::Normal, "Register write R%d <- $%02X", reg, data);
 }
 
 //---------------------------------------------------------------------------
 //
-//	レジスタ読み出し(ReadOnly)
+//	Register read out(ReadOnly)
 //
 //---------------------------------------------------------------------------
 DWORD FASTCALL MIDI::ReadRegRO(DWORD reg) const
 {
-	DWORD group;
+ DWORD group;
 
-	ASSERT(this);
-	ASSERT(reg < 8);
-	ASSERT_DIAG();
+ ASSERT(this);
+ ASSERT(reg < 8);
+ ASSERT_DIAG();
 
-	switch (reg) {
-		// IVR
-		case 0:
-			return midi.ivr;
+ switch (reg) {
+  // IVR
+  case 0:
+   return midi.ivr;
 
-		// RGR
-		case 1:
-			return midi.rgr;
+  // RGR
+  case 1:
+   return midi.rgr;
 
-		// ISR
-		case 2:
-			return midi.isr;
+  // ISR
+  case 2:
+   return midi.isr;
 
-		// ICR
-		case 3:
-			return midi.wdr;
-	}
+  // ICR
+  case 3:
+   return midi.wdr;
+ }
 
-	// グループから、レジスタ番号を作成
-	group = midi.rgr & 0x0f;
-	if (group >= 0x0a) {
-		return 0xff;
-	}
+ // Group from register number create
+ group = midi.rgr & 0x0f;
+ if (group >= 0x0a) {
+  return 0xff;
+ }
 
-	// レジスタ番号生成
-	reg += (group * 10);
+ // Register number add
+ reg += (group * 10);
 
-	// レジスタ別(レジスタ4以降)
-	switch (reg) {
-		// DSR
-		case 16:
-			return GetDSR();
+ // Register read(Register 4 and above)
+ switch (reg) {
+  // DSR
+  case 16:
+   return GetDSR();
 
-		// RSR
-		case 34:
-			return GetRSR();
+  // RSR
+  case 34:
+   return GetRSR();
 
-		// RDR(ReadOnly)
-		case 36:
-			return GetRDRRO();
+  // RDR(ReadOnly)
+  case 36:
+   return GetRDRRO();
 
-		// TSR
-		case 54:
-			return GetTSR();
+  // TSR
+  case 54:
+   return GetTSR();
 
-		// FSR
-		case 64:
-			return GetFSR();
+  // FSR
+  case 64:
+   return GetFSR();
 
-		// SRR
-		case 74:
-			return GetSRR();
+  // SRR
+  case 74:
+   return GetSRR();
 
-		// EIR
-		case 96:
-			return GetEIR();
-	}
+  // EIR
+  case 96:
+   return GetEIR();
+ }
 
-	return midi.wdr;
+ return midi.wdr;
 }
 
 //---------------------------------------------------------------------------
 //
-//	ICR設定
+//	ICR set
 //
 //---------------------------------------------------------------------------
 void FASTCALL MIDI::SetICR(DWORD data)
 {
-	ASSERT(this);
-	ASSERT(data < 0x100);
-	ASSERT_DIAG();
+ ASSERT(this);
+ ASSERT(data < 0x100);
+ ASSERT_DIAG();
 
 #if defined(MIDI_LOG)
-	LOG1(Log::Normal, "割り込みクリアレジスタ設定 $%02X", data);
+ LOG1(Log::Normal, "Interrupt clear register set $%02X", data);
 #endif
 
-	// ビット反転データを使って、インサービスをクリア
-	midi.isr &= ~data;
+ // Bit inverted data used, Clear service
+ midi.isr &= ~data;
 
-	// 割り込みチェック
-	IntCheck();
+ // Interrupt if necessary Data check
+ IntCheck();
 }
 
 //---------------------------------------------------------------------------
 //
-//	IOR設定
+//	IOR set
 //
 //---------------------------------------------------------------------------
 void FASTCALL MIDI::SetIOR(DWORD data)
 {
-	ASSERT(this);
-	ASSERT(data < 0x100);
-	ASSERT_DIAG();
+ ASSERT(this);
+ ASSERT(data < 0x100);
+ ASSERT_DIAG();
 
-	// 上位3bitのみ有効
-	data &= 0xe0;
+ // Upper 3bit valid
+ data &= 0xe0;
 
-	LOG1(Log::Detail, "割り込みベクタベース $%02X", data);
+ LOG1(Log::Detail, "Interrupt vector base $%02X", data);
 
-	// IVRを変更する
-	midi.ivr &= 0x1f;
-	midi.ivr |= data;
+ // IVR change
+ midi.ivr &= 0x1f;
+ midi.ivr |= data;
 
-	// 割り込みチェック
-	IntCheck();
+ // Interrupt if necessary Data check
+ IntCheck();
 }
 
 //---------------------------------------------------------------------------
 //
-//	IMR設定
+//	IMR set
 //
 //---------------------------------------------------------------------------
 void FASTCALL MIDI::SetIMR(DWORD data)
 {
-	ASSERT(this);
-	ASSERT(data < 0x100);
-	ASSERT_DIAG();
+ ASSERT(this);
+ ASSERT(data < 0x100);
+ ASSERT_DIAG();
 
-	data &= 0x0f;
+ data &= 0x0f;
 
-	if (midi.imr != data) {
+ if (midi.imr != data) {
 #if defined(MIDI_LOG)
-		LOG1(Log::Normal, "割り込みモードレジスタ設定 $%02X", data);
+  LOG1(Log::Normal, "Interrupt mask register set $%02X", data);
 #endif	// MIDI_LOG
-		midi.imr = data;
+  midi.imr = data;
 
-		// 割り込みチェック
-		IntCheck();
-	}
+  // Interrupt if necessary Data check
+  IntCheck();
+ }
 }
 
 //---------------------------------------------------------------------------
 //
-//	IER設定
+//	IER set
 //
 //---------------------------------------------------------------------------
 void FASTCALL MIDI::SetIER(DWORD data)
 {
-	ASSERT(this);
-	ASSERT(data < 0x100);
-	ASSERT_DIAG();
+ ASSERT(this);
+ ASSERT(data < 0x100);
+ ASSERT_DIAG();
 
-	if (midi.ier != data) {
+ if (midi.ier != data) {
 #if defined(MIDI_LOG)
-		LOG1(Log::Normal, "割り込み許可レジスタ設定 $%02X", data);
+  LOG1(Log::Normal, "Interrupt enable register set $%02X", data);
 #endif	// MIDI_LOG
 
-		// 設定
-		midi.ier = data;
+  // Set
+  midi.ier = data;
 
-		// 割り込みチェック
-		IntCheck();
-	}
+  // Interrupt if necessary Data check
+  IntCheck();
+ }
 }
 
 //---------------------------------------------------------------------------
 //
-//	DMR設定
+//	DMR set
 //
 //---------------------------------------------------------------------------
 void FASTCALL MIDI::SetDMR(DWORD data)
 {
-	ASSERT(this);
-	ASSERT(data < 0x100);
-	ASSERT_DIAG();
+ ASSERT(this);
+ ASSERT(data < 0x100);
+ ASSERT_DIAG();
 
-	// 有効データだけ残す
-	data &= 0x3f;
+ // Valid data extract
+ data &= 0x3f;
 
-	if (midi.dmr != data) {
+ if (midi.dmr != data) {
 #if defined(MIDI_LOG)
-		LOG1(Log::Normal, "リアルタイムメッセージモードレジスタ設定 $%02X", data);
+  LOG1(Log::Normal, "Realtime clock message mode register set $%02X", data);
 #endif
 
-		// 設定
-		midi.dmr = data;
-	}
+  // Set
+  midi.dmr = data;
+ }
 }
 
 //---------------------------------------------------------------------------
 //
-//	DCR設定
+//	DCR set
 //
 //---------------------------------------------------------------------------
 void FASTCALL MIDI::SetDCR(DWORD data)
 {
-	DWORD msg;
+ DWORD msg;
 
-	ASSERT(this);
-	ASSERT(data < 0x100);
-	ASSERT_DIAG();
+ ASSERT(this);
+ ASSERT(data < 0x100);
+ ASSERT_DIAG();
 
 #if defined(MIDI_LOG)
-	LOG1(Log::Normal, "リアルタイムメッセージコントロールレジスタ設定 $%02X", data);
+ LOG1(Log::Normal, "Realtime clock message control register set $%02X", data);
 #endif
 
-	// 設定
-	midi.dcr = data;
+ // Set
+ midi.dcr = data;
 
-	// メッセージ作成
-	msg = data & 0x07;
-	msg += 0xf8;
-	if (msg >= 0xfe) {
-		LOG1(Log::Warning, "不正なリアルタイムメッセージ $%02X", msg);
-		return;
-	}
+ // Message create
+ msg = data & 0x07;
+ msg += 0xf8;
+ if (msg >= 0xfe) {
+  LOG1(Log::Warning, "Invalid realtime clock message $%02X", msg);
+  return;
+ }
 
-	// MIDIクロックメッセージはDMRのbit2で分ける
-	if (msg == 0xf8) {
-		if ((midi.dmr & 4) == 0) {
-			// MIDIクロックタイマ、$F8受信などでクロックとする
-			return;
-		}
+ // MIDI clock message is created by DMR bit2 controlling
+ if (msg == 0xf8) {
+  if ((midi.dmr & 4) == 0) {
+   // MIDI clock timer, $F8 clocks etc. not count
+   return;
+  }
 
-		// このタイミングでMIDIクロック受信とする
-		if (midi.rcr & 1) {
-			if (midi.dmr & 8) {
-				// リアルタイム受信バッファへ挿入
-				InsertRR(0xf8);
+  // During timing, MIDI clock also counted
+  if (midi.rcr & 1) {
+   if (midi.dmr & 8) {
+    // Realtime clock receive buffer insert
+    InsertRR(0xf8);
 
-				// クロック処理
-				Clock();
+    // Clock process
+    Clock();
 
-				// バッファチェック
-				CheckRR();
-			}
-		}
-		return;
-	}
-	else {
-		// それ以外のメッセージは、リアルタイム送信バッファ宛か
-		if ((data & 0x80) == 0) {
-			return;
-		}
-	}
+    // Buffer Data check
+    CheckRR();
+   }
+  }
+  return;
+ }
+ else {
+  // Other messages are inserted to realtime receive buffer
+  if ((data & 0x80) == 0) {
+   return;
+  }
+ }
 
-	// リアルタイム送信バッファへデータを挿入
-	InsertRT(msg);
+ // Realtime clock receive buffer insert data
+ InsertRT(msg);
 }
 
 //---------------------------------------------------------------------------
 //
-//	DSR取得
+//	DSR get
 //
 //---------------------------------------------------------------------------
 DWORD FASTCALL MIDI::GetDSR() const
 {
-	ASSERT(this);
-	ASSERT_DIAG();
+ ASSERT(this);
+ ASSERT_DIAG();
 
-	// FIFO-IRxのデータを読み出す。データがなければ0
-	if (midi.rrnum == 0) {
-		return 0;
-	}
+ // FIFO-IRx data read out. If data none then 0
+ if (midi.rrnum == 0) {
+  return 0;
+ }
 
 #if defined(MIDI_LOG)
-	LOG1(Log::Normal, "FIFO-IRx取得 $%02X", midi.rrbuf[midi.rrread]);
+ LOG1(Log::Normal, "FIFO-IRx get $%02X", midi.rrbuf[midi.rrread]);
 #endif	// MIDI_LOG
 
-	return midi.rrbuf[midi.rrread];
+ return midi.rrbuf[midi.rrread];
 }
 
 //---------------------------------------------------------------------------
 //
-//	DNR設定
+//	DNR set
 //
 //---------------------------------------------------------------------------
 void FASTCALL MIDI::SetDNR(DWORD data)
 {
-	ASSERT(this);
-	ASSERT(data < 0x100);
-	ASSERT_DIAG();
+ ASSERT(this);
+ ASSERT(data < 0x100);
+ ASSERT_DIAG();
 
-	if (data & 0x01) {
+ if (data & 0x01) {
 #if defined(MIDI_LOG)
-		LOG0(Log::Normal, "FIFO-IRx更新");
+  LOG0(Log::Normal, "FIFO-IRx Update");
 #endif	// MIDI_LOG
 
-		// リアルタイム受信バッファを更新
-		if (midi.rrnum > 0) {
-			midi.rrnum--;
-			midi.rrread = (midi.rrread + 1) & 3;
-		}
+  // Realtime clock receive buffer update
+  if (midi.rrnum > 0) {
+   midi.rrnum--;
+   midi.rrread = (midi.rrread + 1) & 3;
+  }
 
-		// リアルタイム受信バッファ割り込みチェック
-		CheckRR();
-	}
+  // Realtime clock receive buffer Interrupt if necessary Data check
+  CheckRR();
+ }
 }
 
 //---------------------------------------------------------------------------
 //
-//	RRR設定
+//	RRR set
 //
 //---------------------------------------------------------------------------
 void FASTCALL MIDI::SetRRR(DWORD data)
 {
-	ASSERT(this);
-	ASSERT(data < 0x100);
-	ASSERT_DIAG();
+ ASSERT(this);
+ ASSERT(data < 0x100);
+ ASSERT_DIAG();
 
-	// 有効部分だけ残す
-	data &= 0x38;
+ // Valid bit mask
+ data &= 0x38;
 
-	if (midi.rrr != data) {
+ if (midi.rrr != data) {
 #if defined(MIDI_LOG)
-		LOG1(Log::Normal, "受信レート設定 $%02X", data);
+  LOG1(Log::Normal, "Receive mode set $%02X", data);
 #endif	// MIDI_LOG
 
-		// 設定
-		midi.rrr = data;
-	}
+  // Set
+  midi.rrr = data;
+ }
 
-	// 受信レートチェック
-	if (midi.rrr != 0x08) {
-		LOG1(Log::Warning, "受信レート異常 $%02X", midi.rrr);
-	}
+ // Receive mode Data check
+ if (midi.rrr != 0x08) {
+  LOG1(Log::Normal, "Receive mode error $%02X", midi.rrr);
+ }
 }
 
 //---------------------------------------------------------------------------
 //
-//	RMR設定
+//	RMR set
 //
 //---------------------------------------------------------------------------
 void FASTCALL MIDI::SetRMR(DWORD data)
 {
-	ASSERT(this);
-	ASSERT(data < 0x100);
-	ASSERT_DIAG();
+ ASSERT(this);
+ ASSERT(data < 0x100);
+ ASSERT_DIAG();
 
-	// 有効部分だけ残す
-	data &= 0x3f;
+ // Valid bit mask
+ data &= 0x3f;
 
-	if (midi.rmr != data) {
+ if (midi.rmr != data) {
 #if defined(MIDI_LOG)
-		LOG1(Log::Normal, "受信パラメータ設定 $%02X", data);
+  LOG1(Log::Normal, "Receive parameter set $%02X", data);
 #endif	// MIDI_LOG
 
-		// 設定
-		midi.rmr = data;
-	}
+  // Set
+  midi.rmr = data;
+ }
 
-	// 受信パラメータチェック
-	if ((midi.rmr & 0x32) != 0) {
-		LOG1(Log::Warning, "受信パラメータ異常 $%02X", midi.rmr);
-	}
+ // Receive parameter Data check
+ if ((midi.rmr & 0x32) != 0) {
+  LOG1(Log::Warning, "Receive parameter error $%02X", midi.rmr);
+ }
 }
 
 //---------------------------------------------------------------------------
 //
-//	AMR設定
+//	AMR set
 //
 //---------------------------------------------------------------------------
 void FASTCALL MIDI::SetAMR(DWORD data)
 {
-	ASSERT(this);
-	ASSERT(data < 0x100);
-	ASSERT_DIAG();
+ ASSERT(this);
+ ASSERT(data < 0x100);
+ ASSERT_DIAG();
 
-	if (midi.amr != data) {
+ if (midi.amr != data) {
 #if defined(MIDI_LOG)
-		if (data & 0x80) {
-			LOG1(Log::Normal, "受信時メーカID+デバイスIDチェック。メーカID $%02X", data & 0x7f);
-		}
-		else {
-			LOG1(Log::Normal, "受信時メーカIDのみチェック。メーカID $%02X", data & 0x7f);
-		}
+  if (data & 0x80) {
+   LOG1(Log::Normal, "Receive SysExID+DeviceID check. SysExID $%02X", data & 0x7f);
+  }
+  else {
+   LOG1(Log::Normal, "Receive SysExID only check. SysExID $%02X", data & 0x7f);
+  }
 #endif	// MIDI_LOG
 
-		midi.amr = data;
-	}
+  midi.amr = data;
+ }
 }
 
 //---------------------------------------------------------------------------
 //
-//	ADR設定
+//	ADR set
 //
 //---------------------------------------------------------------------------
 void FASTCALL MIDI::SetADR(DWORD data)
 {
-	ASSERT(this);
-	ASSERT(data < 0x100);
-	ASSERT_DIAG();
+ ASSERT(this);
+ ASSERT(data < 0x100);
+ ASSERT_DIAG();
 
-	if (midi.adr != data) {
+ if (midi.adr != data) {
 #if defined(MIDI_LOG)
-		if (data & 0x80) {
-			LOG1(Log::Normal, "ブロードキャスト許可。デバイスID $%02X", data & 0x7f);
-		}
-		else {
-			LOG1(Log::Normal, "ブロードキャスト許可。デバイスID $%02X", data & 0x7f);
-		}
+  if (data & 0x80) {
+   LOG1(Log::Normal, "Universal allow. DeviceID $%02X", data & 0x7f);
+  }
+  else {
+   LOG1(Log::Normal, "Universal disallow. DeviceID $%02X", data & 0x7f);
+  }
 #endif	// MIDI_LOG
 
-		midi.adr = data;
-	}
+  midi.adr = data;
+ }
 }
 
 //---------------------------------------------------------------------------
 //
-//	RSR取得
+//	RSR get
 //
 //---------------------------------------------------------------------------
 DWORD FASTCALL MIDI::GetRSR() const
 {
-	ASSERT(this);
-	ASSERT_DIAG();
+ ASSERT(this);
+ ASSERT_DIAG();
 
 #if defined(MIDI_LOG)
-	LOG1(Log::Normal, "受信バッファステータス取得 $%02X", midi.rsr);
+ LOG1(Log::Normal, "Receive buffer status get $%02X", midi.rsr);
 #endif	// MIDI_LOG
 
-	return midi.rsr;
+ return midi.rsr;
 }
 
 //---------------------------------------------------------------------------
 //
-//	RCR設定
+//	RCR set
 //
 //---------------------------------------------------------------------------
 void FASTCALL MIDI::SetRCR(DWORD data)
 {
-	ASSERT(this);
-	ASSERT(data < 0x100);
-	ASSERT_DIAG();
+ ASSERT(this);
+ ASSERT(data < 0x100);
+ ASSERT_DIAG();
 
-	// 有効部分だけ残す
-	data &= 0xdf;
+ // Valid bit mask
+ data &= 0xdf;
 
 #if defined(MIDI_LOG)
-	LOG1(Log::Normal, "受信コントロール $%02X", data);
+ LOG1(Log::Normal, "Receive control register $%02X", data);
 #endif	// MIDI_LOG
 
-	// データ設定
-	midi.rcr = data;
+ // Data set
+ midi.rcr = data;
 
-	// オフラインフラグクリア
-	if (midi.rcr & 0x04) {
-		midi.rsr &= ~0x04;
+ // Overrun flag clear
+ if (midi.rcr & 0x04) {
+  midi.rsr &= ~0x04;
 
-		// オフライン割り込み解除
-		if ((midi.imr & 4) == 0) {
-			Interrupt(4, FALSE);
-		}
-	}
+  // Overrun Interrupt if necessary process
+  if ((midi.imr & 4) == 0) {
+   Interrupt(4, FALSE);
+  }
+ }
 
-	// ブレークフラグクリア
-	if (midi.rcr & 0x08) {
-		midi.rsr &= ~0x08;
+ // Break flag clear
+ if (midi.rcr & 0x08) {
+  midi.rsr &= ~0x08;
 
-		// ブレーク割り込み解除
-		if (midi.imr & 4) {
-			Interrupt(4, FALSE);
-		}
-	}
+  // Break Interrupt if necessary process
+  if (midi.imr & 4) {
+   Interrupt(4, FALSE);
+  }
+ }
 
-	// オーバーフローフラグクリア
-	if (midi.rcr & 0x40) {
-		midi.rsr &= ~0x40;
-	}
+ // Overrun flag clear
+ if (midi.rcr & 0x40) {
+  midi.rsr &= ~0x40;
+ }
 
-	// 受信バッファクリア
-	if (midi.rcr & 0x80) {
-		// 通常バッファ
-		midi.stdnum = 0;
-		midi.stdread = 0;
-		midi.stdwrite = 0;
+ // Receive buffer clear
+ if (midi.rcr & 0x80) {
+  // Normal buffer
+  midi.stdnum = 0;
+  midi.stdread = 0;
+  midi.stdwrite = 0;
 
-		// リアルタイム受信バッファ
-		midi.rrnum = 0;
-		midi.rrread = 0;
-		midi.rrwrite = 0;
+  // Realtime clock receive buffer
+  midi.rrnum = 0;
+  midi.rrread = 0;
+  midi.rrwrite = 0;
 
-		// 割り込みオフ
-		Interrupt(5, FALSE);
-		Interrupt(0, FALSE);
-		if (midi.imr & 8) {
-			Interrupt(1, FALSE);
-		}
-	}
+  // Interrupt if necessary clear
+  Interrupt(5, FALSE);
+  Interrupt(0, FALSE);
+  if (midi.imr & 8) {
+   Interrupt(1, FALSE);
+  }
+ }
 
-	// アドレスハンタイネーブル
-	if (midi.rcr & 0x02) {
+ // Address matching clear
+ if (midi.rcr & 0x02) {
 #if defined(MIDI_LOG)
-		LOG0(Log::Normal, "アドレスハンタ イネーブル");
+  LOG0(Log::Normal, "Address matching enable");
 #endif	// MIDI_LOG
-		midi.rsr |= 0x02;
-	}
-	else {
+  midi.rsr |= 0x02;
+ }
+ else {
 #if defined(MIDI_LOG)
-		LOG0(Log::Normal, "アドレスハンタ ディセーブル");
+  LOG0(Log::Normal, "Address matching disable");
 #endif	// MIDI_LOG
-		midi.rsr &= ~0x02;
-	}
+  midi.rsr &= ~0x02;
+ }
 
-	// 受信イネーブル
-	if (midi.rcr & 0x01) {
+ // Receive enable
+ if (midi.rcr & 0x01) {
 #if defined(MIDI_LOG)
-		LOG0(Log::Normal, "受信イネーブル");
+  LOG0(Log::Normal, "Receive enable");
 #endif	// MIDI_LOG
-	}
-	else {
+ }
+ else {
 #if defined(MIDI_LOG)
-		LOG0(Log::Normal, "受信ディセーブル");
+  LOG0(Log::Normal, "Receive disable");
 #endif	// MIDI_LOG
-	}
+ }
 }
 
 //---------------------------------------------------------------------------
 //
-//	RDR取得
+//	RDR get
 //
 //---------------------------------------------------------------------------
 DWORD FASTCALL MIDI::GetRDR()
 {
-	DWORD data;
+ DWORD data;
 
-	ASSERT(this);
-	ASSERT_DIAG();
+ ASSERT(this);
+ ASSERT_DIAG();
 
-	// データはwdr(未検証)
-	data = midi.wdr;
+ // Data to wdr(dummy)
+ data = midi.wdr;
 
-	// バッファに有効データがあるか
-	if (midi.stdnum > 0) {
+ // If buffer has valid data
+ if (midi.stdnum > 0) {
 #if defined(MIDI_LOG)
-		LOG1(Log::Normal, "一般バッファ取得 $%02X", midi.stdbuf[midi.stdread]);
+  LOG1(Log::Normal, "Standard buffer get $%02X", midi.stdbuf[midi.stdread]);
 #endif	// MIDI_LOG
 
-		// バッファからデータを得る
-		data = midi.stdbuf[midi.stdread];
+  // Buffer read data get
+  data = midi.stdbuf[midi.stdread];
 
-		// バッファ処理
-		midi.stdnum--;
-		midi.stdread = (midi.stdread + 1) & 0x7f;
+  // Buffer decrement
+  midi.stdnum--;
+  midi.stdread = (midi.stdread + 1) & 0x7f;
 
-		// 割り込み解除
-		Interrupt(5, FALSE);
+  // Interrupt if necessary process
+  Interrupt(5, FALSE);
 
-		// バッファが空になれば
-		if (midi.stdnum == 0) {
-			// 受信バッファ有効フラグ解除
-			midi.rsr &= 0x7f;
-		}
-		else {
-			// 受信バッファ有効フラグ設定
-			midi.rsr |= 0x80;
-		}
+  // If buffer becomes empty
+  if (midi.stdnum == 0) {
+   // Receive buffer enable flag clear
+   midi.rsr &= 0x7f;
+  }
+  else {
+   // Receive buffer enable flag set
+   midi.rsr |= 0x80;
+  }
 
-		// データチェック(動作確認用に、エクスクルーシブカウンタを上げる)
-		if (data == 0xf0) {
-			ex_cnt[2]++;
-		}
-		if (data == 0xf7) {
-			ex_cnt[3]++;
-		}
-	}
+  // Data Data check(for verify, Extension counter increment)
+  if (data == 0xf0) {
+   ex_cnt[2]++;
+  }
+  if (data == 0xf7) {
+   ex_cnt[3]++;
+  }
+ }
 
-	return data;
+ return data;
 }
 
 //---------------------------------------------------------------------------
 //
-//	RDR取得 (Read Only)
+//	RDR get (Read Only)
 //
 //---------------------------------------------------------------------------
 DWORD FASTCALL MIDI::GetRDRRO() const
 {
-	DWORD data;
+ DWORD data;
 
-	ASSERT(this);
-	ASSERT_DIAG();
+ ASSERT(this);
+ ASSERT_DIAG();
 
-	// データはwdr(未検証)
-	data = midi.wdr;
+ // Data to wdr(dummy)
+ data = midi.wdr;
 
-	// バッファに有効データがあるか
-	if (midi.stdnum > 0) {
-		data = midi.stdbuf[midi.stdread];
-	}
+ // If buffer has valid data
+ if (midi.stdnum > 0) {
+  data = midi.stdbuf[midi.stdread];
+ }
 
-	return data;
+ return data;
 }
 
 //---------------------------------------------------------------------------
 //
-//	TRR設定
+//	TRR set
 //
 //---------------------------------------------------------------------------
 void FASTCALL MIDI::SetTRR(DWORD data)
 {
-	ASSERT(this);
-	ASSERT(data < 0x100);
-	ASSERT_DIAG();
+ ASSERT(this);
+ ASSERT(data < 0x100);
+ ASSERT_DIAG();
 
-	// 有効部分だけ残す
-	data &= 0x78;
+ // Valid bit mask
+ data &= 0x78;
 
-	if (midi.trr != data) {
+ if (midi.trr != data) {
 #if defined(MIDI_LOG)
-		LOG1(Log::Normal, "送信レート設定 $%02X", data);
+  LOG1(Log::Normal, "Transmit mode set $%02X", data);
 #endif	// MIDI_LOG
 
-		// 設定
-		midi.trr = data;
-	}
+  // Set
+  midi.trr = data;
+ }
 
-	// 送信レートチェック
-	if ((midi.trr & 0x38) != 0x08) {
-		LOG1(Log::Warning, "送信レート異常 $%02X", midi.trr);
-	}
+ // Transmit mode Data check
+ if ((midi.trr & 0x38) != 0x08) {
+  LOG1(Log::Warning, "Transmit mode error $%02X", midi.trr);
+ }
 
 #if defined(MIDI_LOG)
-	if (midi.trr & 0x40) {
-		LOG0(Log::Normal, "MIDI THRU設定");
-	}
+ if (midi.trr & 0x40) {
+  LOG0(Log::Normal, "MIDI THRU set");
+ }
 #endif	// MIDI_LOG
 }
 
 //---------------------------------------------------------------------------
 //
-//	TMR設定
+//	TMR set
 //
 //---------------------------------------------------------------------------
 void FASTCALL MIDI::SetTMR(DWORD data)
 {
-	ASSERT(this);
-	ASSERT(data < 0x100);
-	ASSERT_DIAG();
+ ASSERT(this);
+ ASSERT(data < 0x100);
+ ASSERT_DIAG();
 
-	// 有効部分だけ残す
-	data &= 0x3f;
+ // Valid bit mask
+ data &= 0x3f;
 
-	if (midi.tmr != data) {
+ if (midi.tmr != data) {
 #if defined(MIDI_LOG)
-		LOG1(Log::Normal, "送信パラメータ設定 $%02X", data);
+  LOG1(Log::Normal, "Transmit parameter set $%02X", data);
 #endif	// MIDI_LOG
 
-		// 設定
-		midi.tmr = data;
-	}
+  // Set
+  midi.tmr = data;
+ }
 
-	// 送信パラメータチェック
-	if ((midi.tmr & 0x32) != 0) {
-		LOG1(Log::Warning, "送信パラメータ異常 $%02X", midi.tmr);
-	}
+ // Transmit parameter Data check
+ if ((midi.tmr & 0x32) != 0) {
+  LOG1(Log::Warning, "Transmit parameter error $%02X", midi.tmr);
+ }
 }
 
 //---------------------------------------------------------------------------
 //
-//	TSR取得
+//	TSR get
 //
 //---------------------------------------------------------------------------
 DWORD FASTCALL MIDI::GetTSR() const
 {
-	DWORD data;
+ DWORD data;
 
-	ASSERT(this);
-	ASSERT_DIAG();
+ ASSERT(this);
+ ASSERT_DIAG();
 
-	// クリア
-	data = 0;
+ // Clear
+ data = 0;
 
-	// bit7:通常バッファ空フラグ
-	if (midi.normnum == 0) {
-		data |= 0x80;
-	}
+ // bit7:Normal buffer empty flag
+ if (midi.normnum == 0) {
+  data |= 0x80;
+ }
 
-	// bit6:通常バッファデータ有無フラグ
-	if (midi.normnum < 16) {
-		data |= 0x40;
-	}
+ // bit6:Normal buffer data enable flag
+ if (midi.normnum < 16) {
+  data |= 0x40;
+ }
 
-	// bit2:無送信(81.920ms)フラグ
-	if (midi.tcn >= 0x100) {
-		ASSERT(midi.tcn == 0x100);
-		data |= 0x04;
-	}
+ // bit2:Transmit complete(81.920ms) flag
+ if (midi.tcn >= 0x100) {
+  ASSERT(midi.tcn == 0x100);
+  data |= 0x04;
+ }
 
-	// bit0:トランスミッタBUSYフラグ
-	if (midi.tbs) {
-		data |= 0x01;
-	}
+ // bit0:Transmitter BUSY flag
+ if (midi.tbs) {
+  data |= 0x01;
+ }
 
-	return data;
+ return data;
 }
 
 //---------------------------------------------------------------------------
 //
-//	TCR設定
+//	TCR set
 //
 //---------------------------------------------------------------------------
 void FASTCALL MIDI::SetTCR(DWORD data)
 {
-	ASSERT(this);
-	ASSERT(data < 0x100);
-	ASSERT_DIAG();
+ ASSERT(this);
+ ASSERT(data < 0x100);
+ ASSERT_DIAG();
 
-	// 有効部分だけ残す
-	data &= 0x8d;
+ // Valid bit mask
+ data &= 0x8d;
 
 #if defined(MIDI_LOG)
-	if (midi.tcr != data) {
-		LOG1(Log::Normal, "送信コントロール $%02X", data);
-	}
+ if (midi.tcr != data) {
+  LOG1(Log::Normal, "Transmit control register $%02X", data);
+ }
 #endif	// MIDI_LOG
 
-	// 有効なビットのみ保存
-	midi.tcr = data;
+ // Valid bit save
+ midi.tcr = data;
 
-	// 通常バッファ、リアルタイム専用送信バッファ クリア
-	if (data & 0x80) {
-		// 通常バッファ
-		midi.normnum = 0;
-		midi.normread = 0;
-		midi.normwrite = 0;
+ // Normal buffer and Realtime buffer transmit buffer clear
+ if (data & 0x80) {
+  // Normal buffer
+  midi.normnum = 0;
+  midi.normread = 0;
+  midi.normwrite = 0;
 
-		// リアルタイム専用送信バッファ
-		midi.rtnum = 0;
-		midi.rtread = 0;
-		midi.rtwrite = 0;
+  // Realtime buffer transmit buffer
+  midi.rtnum = 0;
+  midi.rtread = 0;
+  midi.rtwrite = 0;
 
-		// 割り込みオン
-		Interrupt(6, TRUE);
-	}
+  // Interrupt if necessary clear
+  Interrupt(6, TRUE);
+ }
 
-	// 無送信状態(81.920ms)フラグ クリア
-	if (data & 0x04) {
-		midi.tcn = 0;
-	}
+ // Transmit complete(81.920ms) flag clear
+ if (data & 0x04) {
+  midi.tcn = 0;
+ }
 
-	// 送信イネーブル
+ // Transmit enable
 #if defined(MIDI_LOG)
-	if (data & 0x01) {
-		LOG0(Log::Normal, "送信イネーブル");
-	}
-	else {
-		LOG0(Log::Normal, "送信ディセーブル");
-	}
+ if (data & 0x01) {
+  LOG0(Log::Normal, "Transmit enable");
+ }
+ else {
+  LOG0(Log::Normal, "Transmit disable");
+ }
 #endif	// MIDI_LOG
 }
 
 //---------------------------------------------------------------------------
 //
-//	TDR設定
+//	TDR set
 //
 //---------------------------------------------------------------------------
 void FASTCALL MIDI::SetTDR(DWORD data)
 {
-	ASSERT(this);
-	ASSERT(data < 0x100);
-	ASSERT_DIAG();
+ ASSERT(this);
+ ASSERT(data < 0x100);
+ ASSERT_DIAG();
 
 #if defined(MIDI_LOG)
-	LOG1(Log::Normal, "送信バッファ書き込み $%02X", data);
+ LOG1(Log::Normal, "Transmit buffer write $%02X", data);
 #endif	// MIDI_LOG
 
-	// データチェック(動作確認用に、エクスクルーシブカウンタを上げる)
-	if (data == 0xf0) {
-		ex_cnt[0]++;
-	}
-	if (data == 0xf7) {
-		ex_cnt[1]++;
-	}
+ // Data Data check(for verify, Extension counter increment)
+ if (data == 0xf0) {
+  ex_cnt[0]++;
+ }
+ if (data == 0xf7) {
+  ex_cnt[1]++;
+ }
 
-	// 送信条件チェック(送信ディセーブルでも書き込める:ジオグラフシール)
-	if ((midi.trr & 0x38) != 0x08) {
-		// 送信レートが31250bpsでない
-		return;
-	}
-	if ((midi.tmr & 0x32) != 0) {
-		// 8bitデータ、1ストップビット、ノンパリティでない
-		return;
-	}
+ // Transmit enable Data check(Transmit disable then return:Synchronous mode)
+ if ((midi.trr & 0x38) != 0x08) {
+  // Transmit mode is not 31250bps
+  return;
+ }
+ if ((midi.tmr & 0x32) != 0) {
+  // 8bit data, 1stop bit, Parity is not even
+  return;
+ }
 
-	// 通常バッファにデータを挿入
-	InsertNorm(data);
+ // Normal buffer insert data
+ InsertNorm(data);
 
-	// 送信バッファエンプティ割り込みはクリア
-	Interrupt(6, FALSE);
+ // Transmit buffer empty interrupt then interrupt clear
+ Interrupt(6, FALSE);
 }
 
 //---------------------------------------------------------------------------
 //
-//	FSR取得
+//	FSR get
 //
 //---------------------------------------------------------------------------
 DWORD FASTCALL MIDI::GetFSR() const
 {
-	ASSERT(this);
-	ASSERT_DIAG();
+ ASSERT(this);
+ ASSERT_DIAG();
 
 #if defined(MIDI_LOG)
-	LOG1(Log::Normal, "テープSYNCステータス取得 $%02X", midi.fsr);
+ LOG1(Log::Normal, "FIFO SYNC Status get $%02X", midi.fsr);
 #endif	// MIDI_LOG
 
-	return midi.fsr;
+ return midi.fsr;
 }
 
 //---------------------------------------------------------------------------
 //
-//	FCR設定
+//	FCR set
 //
 //---------------------------------------------------------------------------
 void FASTCALL MIDI::SetFCR(DWORD data)
 {
-	ASSERT(this);
-	ASSERT(data < 0x100);
-	ASSERT_DIAG();
+ ASSERT(this);
+ ASSERT(data < 0x100);
+ ASSERT_DIAG();
 
-	// 有効部分だけ残す
-	data &= 0x9f;
+ // Valid bit mask
+ data &= 0x9f;
 
-	if (midi.fcr != data) {
+ if (midi.fcr != data) {
 #if defined(MIDI_LOG)
-		LOG1(Log::Normal, "テープSYNCコマンド設定 $%02X", data);
+  LOG1(Log::Normal, "FIFO SYNC Command set $%02X", data);
 #endif	// MIDI_LOG
 
-		// 設定
-		midi.fcr = data;
-	}
+  // Set
+  midi.fcr = data;
+ }
 }
 
 //---------------------------------------------------------------------------
 //
-//	CCR設定
+//	CCR set
 //
 //---------------------------------------------------------------------------
 void FASTCALL MIDI::SetCCR(DWORD data)
 {
-	ASSERT(this);
-	ASSERT(data < 0x100);
-	ASSERT_DIAG();
+ ASSERT(this);
+ ASSERT(data < 0x100);
+ ASSERT_DIAG();
 
 #if defined(MIDI_LOG)
-	LOG1(Log::Normal, "クリックコントロールレジスタ設定 $%02X", data);
+ LOG1(Log::Normal, "Clock control register set $%02X", data);
 #endif	// MIDI_LOG
 
-	// 下位2bitのみ有効
-	data &= 0x03;
+ // Lower 2bit valid
+ data &= 0x03;
 
-	// bit1は必ず1
-	if ((data & 2) == 0) {
-		LOG0(Log::Warning, "CLKMクロック周波数選択エラー");
-	}
+ // bit1 must be 1
+ if ((data & 2) == 0) {
+  LOG0(Log::Warning, "CLKM Clock use end Error");
+ }
 
-	// 設定
-	midi.ccr = data;
+ // Set
+ midi.ccr = data;
 }
 
 //---------------------------------------------------------------------------
 //
-//	CDR設定
+//	CDR set
 //
 //---------------------------------------------------------------------------
 void FASTCALL MIDI::SetCDR(DWORD data)
 {
-	ASSERT(this);
-	ASSERT(data < 0x100);
-	ASSERT_DIAG();
+ ASSERT(this);
+ ASSERT(data < 0x100);
+ ASSERT_DIAG();
 
-	// CDR設定
-	if (midi.cdr != (data & 0x7f)) {
-		midi.cdr = (data & 0x7f);
-
-#if defined(MIDI_LOG)
-		LOG1(Log::Normal, "クリックカウンタ時定数設定 $%02X", midi.cdr);
-#endif	// MIDI_LOG
-	}
-
-	// bit7でCTRに値を即時ロード
-	if (data & 0x80) {
-		// CTR設定
-		midi.ctr = midi.cdr;
+ // CDR set
+ if (midi.cdr != (data & 0x7f)) {
+  midi.cdr = (data & 0x7f);
 
 #if defined(MIDI_LOG)
-		LOG0(Log::Normal, "クリックカウンタ時定数設定をロード");
+  LOG1(Log::Normal, "Clock counter constant set $%02X", midi.cdr);
 #endif	// MIDI_LOG
-	}
+ }
+
+ // bit7 load to CTR value
+ if (data & 0x80) {
+  // CTR set
+  midi.ctr = midi.cdr;
+
+#if defined(MIDI_LOG)
+  LOG0(Log::Normal, "Clock counter constant set load");
+#endif	// MIDI_LOG
+ }
 }
 
 //---------------------------------------------------------------------------
 //
-//	SRR取得
+//	SRR get
 //
 //---------------------------------------------------------------------------
 DWORD FASTCALL MIDI::GetSRR() const
 {
-	ASSERT(this);
-	ASSERT_DIAG();
+ ASSERT(this);
+ ASSERT_DIAG();
 
 #if defined(MIDI_LOG)
-	LOG1(Log::Normal, "レコーディングカウンタ取得 $%02X", midi.srr);
+ LOG1(Log::Normal, "Serial overflow counter get $%02X", midi.srr);
 #endif	// MIDI_LOG
 
-	return midi.srr;
+ return midi.srr;
 }
 
 //---------------------------------------------------------------------------
 //
-//	SCR設定
+//	SCR set
 //
 //---------------------------------------------------------------------------
 void FASTCALL MIDI::SetSCR(DWORD data)
 {
-	DWORD mtr;
-	char desc[16];
+ DWORD mtr;
+ char desc[16];
 
-	ASSERT(this);
-	ASSERT(data < 0x100);
-	ASSERT_DIAG();
+ ASSERT(this);
+ ASSERT(data < 0x100);
+ ASSERT_DIAG();
 
-	// 補間レート設定
-	if (midi.scr != (data & 0x0f)) {
+ // Ratio set
+ if (midi.scr != (data & 0x0f)) {
 #if defined(MIDI_LOG)
-		LOG1(Log::Normal, "MIDIクロック補間器設定 $%02X", data & 0x0f);
+  LOG1(Log::Normal, "MIDI Clock ratio set $%02X", data & 0x0f);
 #endif	// MIDI_LOG
-		midi.scr = (data & 0x0f);
+  midi.scr = (data & 0x0f);
 
-		// レート0は設定禁止
-		if (midi.scr == 0) {
-			LOG0(Log::Warning, "MIDIクロック補間器 設定禁止値");
-			midi.scr = 1;
-		}
+  // Ratio 0 is set prohibited
+  if (midi.scr == 0) {
+   LOG0(Log::Warning, "MIDI Clock ratio Set prohibition value");
+   midi.scr = 1;
+  }
 
-		// イベント再設定
-		if (midi.mtr <= 1) {
-			mtr = 0x40000;
-		}
-		else {
-			mtr = midi.mtr << 4;
-		}
-		mtr /= midi.scr;
-		if (event[1].GetTime() != mtr) {
-			event[1].SetTime(mtr);
-		}
+  // Event re-set
+  if (midi.mtr <= 1) {
+   mtr = 0x40000;
+  }
+  else {
+   mtr = midi.mtr << 4;
+  }
+  mtr /= midi.scr;
+  if (event[1].GetTime() != mtr) {
+   event[1].SetTime(mtr);
+  }
 
-		// SCTもチェック
-		if (midi.sct > midi.scr) {
-			midi.sct = midi.scr;
-		}
-		ASSERT(midi.sct > 0);
+  // SCT Data check
+  if (midi.sct > midi.scr) {
+   midi.sct = midi.scr;
+  }
+  ASSERT(midi.sct > 0);
 
-		// イベント文字列
-		if (midi.scr == 1) {
-			event[1].SetDesc("Clock");
-		}
-		else {
-			sprintf(desc, "Clock (Div%d)", midi.scr);
-			event[1].SetDesc(desc);
-		}
-	}
+  // Event description
+  if (midi.scr == 1) {
+   event[1].SetDesc("Clock");
+  }
+  else {
+   sprintf(desc, "Clock (Div%d)", midi.scr);
+   event[1].SetDesc(desc);
+  }
+ }
 
-	// プレイバックカウンタクリア
-	if (data & 0x10) {
+ // Down counter clear
+ if (data & 0x10) {
 #if defined(MIDI_LOG)
-		LOG0(Log::Normal, "プレイバックカウンタクリア");
+  LOG0(Log::Normal, "Down counter clear");
 #endif	// MIDI_LOG
-		midi.str = 0;
-	}
+  midi.str = 0;
+ }
 
-	// プレイバックカウンタ加算
-	if (data & 0x20) {
-		// 加算
-		midi.str += midi.spr;
+ // Down counter add
+ if (data & 0x20) {
+  // Add
+  midi.str += midi.spr;
 
-		// オーバーフローチェック
-		if ((midi.str >= 0x8000) && (midi.str < 0x10000)) {
-			midi.str = 0x8000;
-		}
+  // Overflow Data check
+  if ((midi.str >= 0x8000) && (midi.str < 0x10000)) {
+   midi.str = 0x8000;
+  }
 
 #if defined(MIDI_LOG)
-		LOG2(Log::Normal, "プレイバックカウンタ加算 $%04X->$%04X", midi.spr, midi.str);
+  LOG2(Log::Normal, "Down counter add $%04X->$%04X", midi.spr, midi.str);
 #endif	// MIDI_LOG
-	}
+ }
 }
 
 //---------------------------------------------------------------------------
 //
-//	SPR設定
+//	SPR set
 //
 //---------------------------------------------------------------------------
 void FASTCALL MIDI::SetSPR(DWORD data, BOOL high)
 {
-	ASSERT(this);
-	ASSERT(data < 0x100);
-	ASSERT_DIAG();
+ ASSERT(this);
+ ASSERT(data < 0x100);
+ ASSERT_DIAG();
 
-	if (high) {
-		// 上位
-		midi.spr &= 0x00ff;
-		midi.spr |= ((data & 0x7f) << 8);
-	}
-	else {
-		// 下位
-		midi.spr &= 0xff00;
-		midi.spr |= data;
-	}
+ if (high) {
+  // Upper
+  midi.spr &= 0x00ff;
+  midi.spr |= ((data & 0x7f) << 8);
+ }
+ else {
+  // Lower
+  midi.spr &= 0xff00;
+  midi.spr |= data;
+ }
 
 #if defined(MIDI_LOG)
-	LOG1(Log::Normal, "プレイバックカウンタ時定数設定 $%04X", midi.spr);
+ LOG1(Log::Normal, "Down counter constant set $%04X", midi.spr);
 #endif	// MIDI_LOG
 }
 
 //---------------------------------------------------------------------------
 //
-//	GTR設定
+//	GTR set
 //
 //---------------------------------------------------------------------------
 void FASTCALL MIDI::SetGTR(DWORD data, BOOL high)
 {
-	ASSERT(this);
-	ASSERT(data < 0x100);
-	ASSERT_DIAG();
+ ASSERT(this);
+ ASSERT(data < 0x100);
+ ASSERT_DIAG();
 
-	if (high) {
-		// 上位
-		midi.gtr &= 0x00ff;
-		midi.gtr |= ((data & 0x3f) << 8);
-	}
-	else {
-		// 下位
-		midi.gtr &= 0xff00;
-		midi.gtr |= data;
-	}
+ if (high) {
+  // Upper
+  midi.gtr &= 0x00ff;
+  midi.gtr |= ((data & 0x3f) << 8);
+ }
+ else {
+  // Lower
+  midi.gtr &= 0xff00;
+  midi.gtr |= data;
+ }
 
 #if defined(MIDI_LOG)
-	LOG1(Log::Normal, "汎用タイマレジスタ設定 $%04X", midi.gtr);
+ LOG1(Log::Normal, "General timer register set $%04X", midi.gtr);
 #endif	// MIDI_LOG
 
-	// bit7でデータをロード
-	if (high && (data & 0x80)) {
+ // bit7 data load
+ if (high && (data & 0x80)) {
 #if defined(MIDI_LOG)
-		LOG0(Log::Normal, "汎用タイマ設定値をロード");
+  LOG0(Log::Normal, "General timer value load");
 #endif	// MIDI_LOG
 
-		// データをロードして、タイマ開始
-		event[2].SetTime(midi.gtr << 4);
-	}
+  // Data load, timer start
+  event[2].SetTime(midi.gtr << 4);
+ }
 }
 
 //---------------------------------------------------------------------------
 //
-//	MTR設定
+//	MTR set
 //
 //---------------------------------------------------------------------------
 void FASTCALL MIDI::SetMTR(DWORD data, BOOL high)
 {
-	DWORD mtr;
+ DWORD mtr;
 
-	ASSERT(this);
-	ASSERT(data < 0x100);
-	ASSERT_DIAG();
+ ASSERT(this);
+ ASSERT(data < 0x100);
+ ASSERT_DIAG();
 
-	if (high) {
-		// 上位
-		midi.mtr &= 0x00ff;
-		midi.mtr |= ((data & 0x3f) << 8);
-	}
-	else {
-		// 下位
-		midi.mtr &= 0xff00;
-		midi.mtr |= data;
-	}
+ if (high) {
+  // Upper
+  midi.mtr &= 0x00ff;
+  midi.mtr |= ((data & 0x3f) << 8);
+ }
+ else {
+  // Lower
+  midi.mtr &= 0xff00;
+  midi.mtr |= data;
+ }
 
 #if defined(MIDI_LOG)
-	LOG1(Log::Normal, "MIDIクロックタイマレジスタ設定 $%04X", midi.mtr);
+ LOG1(Log::Normal, "MIDI Clock timer register set $%04X", midi.mtr);
 #endif	// MIDI_LOG
 
-	// bit7でデータをロード
-	if (high) {
-		if (midi.mtr <= 1) {
-			mtr = 0x40000;
-		}
-		else {
-			mtr = midi.mtr << 4;
-		}
+ // bit7 data load
+ if (high) {
+  if (midi.mtr <= 1) {
+   mtr = 0x40000;
+  }
+  else {
+   mtr = midi.mtr << 4;
+  }
 
-		// SCRで割った値
-		ASSERT(midi.scr != 0);
-		event[1].SetTime(mtr / midi.scr);
-	}
+  // SCR division value check
+  ASSERT(midi.scr != 0);
+  event[1].SetTime(mtr / midi.scr);
+ }
 }
 
 //---------------------------------------------------------------------------
 //
-//	EDR設定
+//	EDR set
 //
 //---------------------------------------------------------------------------
 void FASTCALL MIDI::SetEDR(DWORD data)
 {
-	ASSERT(this);
-	ASSERT(data < 0x100);
-	ASSERT_DIAG();
+ ASSERT(this);
+ ASSERT(data < 0x100);
+ ASSERT_DIAG();
 
-	if (midi.edr != data) {
+ if (midi.edr != data) {
 #if defined(MIDI_LOG)
-		LOG1(Log::Normal, "GPIOディレクション設定 $%02X", data);
+  LOG1(Log::Normal, "GPIO direction register set $%02X", data);
 #endif	// MIDI_LOG
 
-		midi.edr = data;
-	}
+  midi.edr = data;
+ }
 }
 
 //---------------------------------------------------------------------------
 //
-//	EOR設定
+//	EOR set
 //
 //---------------------------------------------------------------------------
 void FASTCALL MIDI::SetEOR(DWORD data)
 {
-	ASSERT(this);
-	ASSERT(data < 0x100);
-	ASSERT_DIAG();
+ ASSERT(this);
+ ASSERT(data < 0x100);
+ ASSERT_DIAG();
 
-	if (midi.eor != data) {
+ if (midi.eor != data) {
 #if defined(MIDI_LOG)
-		LOG1(Log::Normal, "GPIO出力データ設定 $%02X", data);
+  LOG1(Log::Normal, "GPIO output data set $%02X", data);
 #endif	// MIDI_LOG
 
-		midi.eor = data;
-	}
+  midi.eor = data;
+ }
 }
 
 //---------------------------------------------------------------------------
 //
-//	EIR取得
+//	EIR get
 //
 //---------------------------------------------------------------------------
 DWORD FASTCALL MIDI::GetEIR() const
 {
-	ASSERT(this);
-	ASSERT_DIAG();
+ ASSERT(this);
+ ASSERT_DIAG();
 
 #if defined(MIDI_LOG)
-	LOG1(Log::Normal, "GPIO読み出し $%02X", midi.eir);
+ LOG1(Log::Normal, "GPIO read $%02X", midi.eir);
 #endif	// MIDI_LOG
 
-	return midi.eir;
+ return midi.eir;
 }
 
 //---------------------------------------------------------------------------
 //
-//	リアルタイム受信バッファチェック
+//	Realtime clock receive buffer Data check
 //
 //---------------------------------------------------------------------------
 void FASTCALL MIDI::CheckRR()
 {
-	DWORD data;
+ DWORD data;
 
-	ASSERT(this);
-	ASSERT_DIAG();
+ ASSERT(this);
+ ASSERT_DIAG();
 
-	// 受信バッファにデータがなければ
-	if (midi.rrnum == 0) {
-		// 割り込みオフ
-		Interrupt(0, FALSE);
-		if (midi.imr & 8) {
-			Interrupt(1, FALSE);
-		}
-		return;
-	}
+ // If buffer has no data
+ if (midi.rrnum == 0) {
+  // Interrupt if necessary clear
+  Interrupt(0, FALSE);
+  if (midi.imr & 8) {
+   Interrupt(1, FALSE);
+  }
+  return;
+ }
 
-	// 最も古いデータを得る
-	data = midi.rrbuf[midi.rrread];
+ // Latest data get
+ data = midi.rrbuf[midi.rrread];
 
-	// IRQ-1
-	if (data == 0xf8) {
-		if (midi.imr & 8) {
-			Interrupt(1, TRUE);
-			Interrupt(0, FALSE);
-			return;
-		}
-	}
+ // IRQ-1
+ if (data == 0xf8) {
+  if (midi.imr & 8) {
+   Interrupt(1, TRUE);
+   Interrupt(0, FALSE);
+   return;
+  }
+ }
 
-	// IRQ-0
-	Interrupt(1, FALSE);
-	if ((data >= 0xf9) && (data <= 0xfd)) {
-		Interrupt(0, TRUE);
-	}
-	else {
-		Interrupt(0, FALSE);
-	}
+ // IRQ-0
+ Interrupt(1, FALSE);
+ if ((data >= 0xf9) && (data <= 0xfd)) {
+  Interrupt(0, TRUE);
+ }
+ else {
+  Interrupt(0, FALSE);
+ }
 }
 
 //---------------------------------------------------------------------------
 //
-//	割り込み要求
+//	Interrupt if necessary request
 //
 //---------------------------------------------------------------------------
 void FASTCALL MIDI::Interrupt(int type, BOOL flag)
 {
-	ASSERT(this);
-	ASSERT((type >= 0) && (type <= 7));
-	ASSERT_DIAG();
+ ASSERT(this);
+ ASSERT((type >= 0) && (type <= 7));
+ ASSERT_DIAG();
 
-	// ISRの該当するビットを変化させる
-	if (flag) {
-		midi.isr |= (1 << type);
-	}
-	else {
-		midi.isr &= ~(1 << type);
-	}
+ // ISR related bit change request
+ if (flag) {
+  midi.isr |= (1 << type);
+ }
+ else {
+  midi.isr &= ~(1 << type);
+ }
 
-	// 割り込みチェック
-	IntCheck();
+ // Interrupt if necessary Data check
+ IntCheck();
 }
 
 //---------------------------------------------------------------------------
 //
-//	割り込みACK
+//	Interrupt if necessary ACK
 //
 //---------------------------------------------------------------------------
 void FASTCALL MIDI::IntAck(int level)
 {
-	ASSERT(this);
-	ASSERT((level == 2) || (level == 4));
-	ASSERT_DIAG();
+ ASSERT(this);
+ ASSERT((level == 2) || (level == 4));
+ ASSERT_DIAG();
 
-	// 割り込みレベルが一致しなければ何もしない
-	if (level != (int)midi.ilevel) {
+ // If interrupt if necessary priority not correct then ignore
+ if (level != (int)midi.ilevel) {
 #if defined(MIDI_LOG)
-		LOG1(Log::Normal, "割り込みレベル異常 レベル%d", level);
+  LOG1(Log::Normal, "Interrupt level error Level%d", level);
 #endif	// MIDI_LOG
-		return;
-	}
+  return;
+ }
 
-	// 割り込み要求中でなければ、何もしない
-	if (midi.vector < 0) {
+ // If interrupt if necessary request not exist, then ignore
+ if (midi.vector < 0) {
 #if defined(MIDI_LOG)
-		LOG0(Log::Normal, "要求していない割り込み");
+  LOG0(Log::Normal, "Not requested interrupt");
 #endif	// MIDI_LOG
-		return;
-	}
+  return;
+ }
 
 #if defined(MIDI_LOG)
-	LOG1(Log::Normal, "割り込みACK レベル%d", level);
+ LOG1(Log::Normal, "Interrupt ACK Level%d", level);
 #endif	// MIDI_LOG
 
-	// 要求ベクタなし
-	midi.vector = -1;
+ // Vector clear
+ midi.vector = -1;
 
-	// 次の割り込みをスケジュール
-	IntCheck();
+ // Sync interrupt if necessary synchronize
+ IntCheck();
 }
 
 //---------------------------------------------------------------------------
 //
-//	割り込みチェック
+//	Interrupt if necessary Data check
 //
 //---------------------------------------------------------------------------
 void FASTCALL MIDI::IntCheck()
 {
-	int i;
-	int vector;
-	DWORD bit;
+ int i;
+ int vector;
+ DWORD bit;
 
-	ASSERT(this);
-	ASSERT_DIAG();
+ ASSERT(this);
+ ASSERT_DIAG();
 
-	// 割り込みモードコントロールbit1=1でないと、68000割り込みに適合しない
-	if ((midi.imr & 0x02) == 0) {
-		// 割り込みがあればキャンセルする
-		if (midi.vector != -1) {
-			cpu->IntCancel(midi.ilevel);
-			midi.ivr &= 0xe0;
-			midi.ivr |= 0x10;
-			midi.vector = -1;
-		}
-		return;
-	}
+ // If interrupt if necessary mask control bit1=1 not, 68000 interrupt not match
+ if ((midi.imr & 0x02) == 0) {
+  // If interrupt if necessary has request then cancel
+  if (midi.vector != -1) {
+   cpu->IntCancel(midi.ilevel);
+   midi.ivr &= 0xe0;
+   midi.ivr |= 0x10;
+   midi.vector = -1;
+  }
+  return;
+ }
 
-	// ISRをチェック
-	bit = 0x80;
-	for (i=7; i>=0; i--) {
-		if (midi.isr & bit) {
-			if (midi.ier & bit) {
-				// 割り込み発生。ベクタ算出
-				vector = midi.ivr;
-				vector &= 0xe0;
-				vector += (i << 1);
+ // ISR Data check
+ bit = 0x80;
+ for (i=7; i>=0; i--) {
+  if (midi.isr & bit) {
+   if (midi.ier & bit) {
+    // Interrupt if necessary Timer request, vector create
+    vector = midi.ivr;
+    vector &= 0xe0;
+    vector += (i << 1);
 
-				// 現在のものと違ったら、要求
-				if (midi.vector != vector) {
-					// 既に他のものが要求されていれば、キャンセルする
-					if (midi.vector >= 0) {
-						cpu->IntCancel(midi.ilevel);
-					}
-					// 割り込み要求
-					cpu->Interrupt(midi.ilevel, vector);
-					midi.vector = vector;
-					midi.ivr = (DWORD)vector;
+    // Status matched, request
+    if (midi.vector != vector) {
+     // If has before request, cancel
+     if (midi.vector >= 0) {
+      cpu->IntCancel(midi.ilevel);
+     }
+     // Interrupt if necessary request
+     cpu->Interrupt(midi.ilevel, vector);
+     midi.vector = vector;
+     midi.ivr = (DWORD)vector;
 
 #if defined(MIDI_LOG)
-					LOG3(Log::Normal, "割り込み要求 レベル%d タイプ%d ベクタ$%02X", midi.ilevel, i, vector);
+     LOG3(Log::Normal, "Interrupt request Level%d Type%d Vector$%02X", midi.ilevel, i, vector);
 #endif	// MIDI_LOG
-				}
-				return;
-			}
-		}
+    }
+    return;
+   }
+  }
 
-		// 次へ
-		bit >>= 1;
-	}
+  // Next bit
+  bit >>= 1;
+ }
 
-	// 発生させる割り込みはないので、キャンセル
-	if (midi.vector != -1) {
-		// 割り込みキャンセル
-		cpu->IntCancel(midi.ilevel);
-		midi.vector = -1;
-		midi.ivr &= 0xe0;
-		midi.ivr |= 0x10;
+ // Timer has no interrupt if necessary, so cancel
+ if (midi.vector != -1) {
+  // Interrupt if necessary cancel
+  cpu->IntCancel(midi.ilevel);
+  midi.vector = -1;
+  midi.ivr &= 0xe0;
+  midi.ivr |= 0x10;
 #if defined(MIDI_LOG)
-		LOG0(Log::Normal, "割り込みキャンセル");
+  LOG0(Log::Normal, "Interrupt cancel");
 #endif	// MIDI_LOG
-	}
+ }
 }
 
 //---------------------------------------------------------------------------
 //
-//	内部データ取得
+//	Extension data get
 //
 //---------------------------------------------------------------------------
 void FASTCALL MIDI::GetMIDI(midi_t *buffer) const
 {
-	ASSERT(this);
-	ASSERT(buffer);
-	ASSERT_DIAG();
+ ASSERT(this);
+ ASSERT(buffer);
+ ASSERT_DIAG();
 
-	// 内部データをコピー
-	*buffer = midi;
+ // Extension data copy
+ *buffer = midi;
 }
 
 //---------------------------------------------------------------------------
 //
-//	エクスクルーシブカウント取得
+//	Extension counter get
 //
 //---------------------------------------------------------------------------
 DWORD FASTCALL MIDI::GetExCount(int index) const
 {
-	ASSERT(this);
-	ASSERT((index >= 0) && (index < 4));
-	ASSERT_DIAG();
+ ASSERT(this);
+ ASSERT((index >= 0) && (index < 4));
+ ASSERT_DIAG();
 
-	return ex_cnt[index];
+ return ex_cnt[index];
 }

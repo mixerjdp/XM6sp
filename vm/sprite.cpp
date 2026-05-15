@@ -2,15 +2,60 @@
 //
 //	X68000 EMULATOR "XM6"
 //
-//	Copyright (C) 2001-2006 ï¿½oï¿½hï¿½D(ytanaka@ipc-tokai.or.jp)
-//	[ ï¿½Xï¿½vï¿½ï¿½ï¿½Cï¿½g(CYNTHIA) ]
+//	Copyright (C) 2001-2006 ‚o‚hD(ytanaka@ipc-tokai.or.jp)
+//	Copyright (C) 2010-2014 GIMONS
+//	[ ƒXƒvƒ‰ƒCƒg(CYNTHIA) ]
 //
 //---------------------------------------------------------------------------
+
+/*
+
+ƒ|[ƒg‚Ìó‘Ô’²¸Œ‹‰Ê
+---------------------------------------------------------------------------
+
+  ‰æ–Êƒ‚[ƒh‚ª512~512 á‚µ‚­‚Í 256~256 ‚ÌˆÈŠO‚ÌƒoƒXƒGƒ‰[ó‹µ
+
+@@$eb0000 - $eb03ff ƒoƒXƒGƒ‰[
+@@$eb0400 - $eb07ff ƒoƒXƒGƒ‰[
+@@$eb0800 - $eb0811 ƒAƒNƒZƒX‰Â”\
+@@$eb0812 - $eb7fff í‚É$ff
+@@$eb8000 - $ebffff ƒoƒXƒGƒ‰[
+
+  ‰æ–Êƒ‚[ƒh‚ª512~512 á‚µ‚­‚Í 256~256 ‚Ì
+
+@@$eb0000 - $eb03ff ƒAƒNƒZƒX‰Â”\
+@@$eb0400 - $eb07ff í‚É$ff
+@@$eb0800 - $eb0811 ƒAƒNƒZƒX‰Â”\
+@@$eb0812 - $eb7fff í‚É$ff
+@@$eb8000 - $ebffff ƒAƒNƒZƒX‰Â”\
+
+  ƒ[ƒhƒAƒNƒZƒXAƒoƒCƒgƒAƒNƒZƒXó‹µ
+
+@@$eb0000 - $eb03ff RFƒ[ƒh/ƒoƒCƒg@W:ƒ[ƒh
+@@$eb0400 - $eb07ff í‚É$ff
+@@$eb0800 - $eb0811 RFƒ[ƒh/ƒoƒCƒg@W:ƒ[ƒh/ƒoƒCƒg
+@@$eb0812 - $eb7fff í‚É$ff
+@@$eb8000 - $ebffff RFƒ[ƒh/ƒoƒCƒg@W:ƒ[ƒh
+
+  @–ƒoƒCƒg•s‰Â‚Ìê‡‚É‘‚«‚Ş‚ÆEEE
+   @ ãˆÊƒoƒCƒg‚È‚ç‰ºˆÊ‚É‚à“¯‚¶’l‚ª‘‚«‚Ü‚êA
+	  ‰ºˆÊƒoƒCƒg‚È‚çãˆÊ‚É‚à“¯‚¶’l‚ª‘‚«‚Ü‚ê‚éB
+
+
+ƒŒƒWƒXƒ^‚Ì—LŒøƒrƒbƒg
+---------------------------------------------------------------------------
+  ƒXƒvƒ‰ƒCƒgƒXƒNƒ[ƒ‹ƒŒƒWƒXƒ^‚ÌPRW(—Dæ“x)‚Íbit2‚à•Û
+  BG ƒRƒ“ƒgƒ[ƒ‹($eb0808)‚Ìbit10‚à•Û
+
+ƒŠƒZƒbƒg‚ÌƒXƒvƒ‰ƒCƒgƒXƒNƒ[ƒ‹ƒŒƒWƒXƒ^‚¨‚æ‚ÑPCG/BGƒoƒbƒtƒ@‚Ì“à—e
+---------------------------------------------------------------------------
+@ƒNƒŠƒA‚³‚ê‚È‚¢
+
+*/
 
 #include "os.h"
 #include "xm6.h"
 #include "vm.h"
-#include "log.h"
 #include "schedule.h"
 #include "fileio.h"
 #include "render.h"
@@ -18,27 +63,27 @@
 
 //===========================================================================
 //
-//	ï¿½Xï¿½vï¿½ï¿½ï¿½Cï¿½g
+//	ƒXƒvƒ‰ƒCƒg
 //
 //===========================================================================
 //#define SPRITE_LOG
 
 //---------------------------------------------------------------------------
 //
-//	ï¿½Rï¿½ï¿½ï¿½Xï¿½gï¿½ï¿½ï¿½Nï¿½^
+//	ƒRƒ“ƒXƒgƒ‰ƒNƒ^
 //
 //---------------------------------------------------------------------------
 Sprite::Sprite(VM *p) : MemDevice(p)
 {
-	// ï¿½fï¿½oï¿½Cï¿½XIDï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
+	// ƒfƒoƒCƒXID‚ğ‰Šú‰»
 	dev.id = MAKEID('S', 'P', 'R', ' ');
 	dev.desc = "Sprite (CYNTHIA)";
 
-	// ï¿½Jï¿½nï¿½Aï¿½hï¿½ï¿½ï¿½Xï¿½Aï¿½Iï¿½ï¿½ï¿½Aï¿½hï¿½ï¿½ï¿½X
+	// ŠJnƒAƒhƒŒƒXAI—¹ƒAƒhƒŒƒX
 	memdev.first = 0xeb0000;
 	memdev.last = 0xebffff;
 
-	// ï¿½ï¿½ï¿½Ì‘ï¿½
+	// ‚»‚Ì‘¼
 	sprite = NULL;
 	render = NULL;
 	spr.mem = NULL;
@@ -47,19 +92,21 @@ Sprite::Sprite(VM *p) : MemDevice(p)
 
 //---------------------------------------------------------------------------
 //
-//	ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
+//	‰Šú‰»
 //
 //---------------------------------------------------------------------------
 BOOL FASTCALL Sprite::Init()
 {
+	int i;
+
 	ASSERT(this);
 
-	// ï¿½ï¿½{ï¿½Nï¿½ï¿½ï¿½X
+	// Šî–{ƒNƒ‰ƒX
 	if (!MemDevice::Init()) {
 		return FALSE;
 	}
 
-	// ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½mï¿½ÛAï¿½Nï¿½ï¿½ï¿½A
+	// ƒƒ‚ƒŠŠm•ÛAƒNƒŠƒA
 	try {
 		sprite = new BYTE[ 0x10000 ];
 	}
@@ -70,31 +117,39 @@ BOOL FASTCALL Sprite::Init()
 		return FALSE;
 	}
 
-	// EB0400-EB07FF, EB0812-EB7FFFï¿½ï¿½Reserved(FF)
+	// EB0400-EB07FF, EB0812-EB7FFF‚ÍReserved(FF)
 	memset(sprite, 0, 0x10000);
 	memset(&sprite[0x400], 0xff, 0x400);
 	memset(&sprite[0x812], 0xff, 0x77ee);
 
-	// ï¿½ï¿½ï¿½[ï¿½Nï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
+	// ƒ[ƒN‰Šú‰»
 	memset(&spr, 0, sizeof(spr));
 	spr.mem = &sprite[0x0000];
 	spr.pcg = &sprite[0x8000];
 
-	// ï¿½ï¿½ï¿½ï¿½ï¿½_ï¿½ï¿½ï¿½æ“¾
+	// ƒŒƒ“ƒ_ƒ‰æ“¾
 	render = (Render*)vm->SearchDevice(MAKEID('R', 'E', 'N', 'D'));
 	ASSERT(render);
+
+	// ƒXƒvƒ‰ƒCƒg HSYNC—v‹
+	for (i=0; i<128; i++) {
+		sphsync[i] = 3;
+	}
+
+	// BG HSYNC—v‹
+	bghsync = 0x1f;
 
 	return TRUE;
 }
 
 //---------------------------------------------------------------------------
 //
-//	ï¿½Nï¿½ï¿½ï¿½[ï¿½ï¿½ï¿½Aï¿½bï¿½v
+//	ƒNƒŠ[ƒ“ƒAƒbƒv
 //
 //---------------------------------------------------------------------------
 void FASTCALL Sprite::Cleanup()
 {
-	// ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
+	// ƒƒ‚ƒŠ‰ğ•ú
 	if (sprite) {
 		delete[] sprite;
 		sprite = NULL;
@@ -102,13 +157,13 @@ void FASTCALL Sprite::Cleanup()
 		spr.pcg = NULL;
 	}
 
-	// ï¿½ï¿½{ï¿½Nï¿½ï¿½ï¿½Xï¿½ï¿½
+	// Šî–{ƒNƒ‰ƒX‚Ö
 	MemDevice::Cleanup();
 }
 
 //---------------------------------------------------------------------------
 //
-//	ï¿½ï¿½ï¿½Zï¿½bï¿½g
+//	ƒŠƒZƒbƒg
 //
 //---------------------------------------------------------------------------
 void FASTCALL Sprite::Reset()
@@ -116,13 +171,16 @@ void FASTCALL Sprite::Reset()
 	int i;
 
 	ASSERT(this);
-	LOG0(Log::Normal, "ï¿½ï¿½ï¿½Zï¿½bï¿½g");
+	LOG0(Log::Normal, "ƒŠƒZƒbƒg");
 
-	// ï¿½ï¿½ï¿½Wï¿½Xï¿½^ï¿½İ’ï¿½
+	// ƒŒƒWƒXƒ^ƒ[ƒN(EB0800-EB0811)‚ğƒNƒŠƒA
+	memset(&sprite[0x800], 0, 0x12);
+
+	// ƒŒƒWƒXƒ^İ’è
 	spr.connect = FALSE;
 	spr.disp = FALSE;
 
-	// BGï¿½yï¿½[ï¿½Wï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
+	// BGƒy[ƒW‰Šú‰»
 	for (i=0; i<2; i++) {
 		spr.bg_on[i] = FALSE;
 		spr.bg_area[i] = 0;
@@ -130,21 +188,29 @@ void FASTCALL Sprite::Reset()
 		spr.bg_scrly[i] = 0;
 	}
 
-	// BGï¿½Tï¿½Cï¿½Yï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
+	// BGƒTƒCƒY‰Šú‰»
 	spr.bg_size = FALSE;
 
-	// ï¿½^ï¿½Cï¿½~ï¿½ï¿½ï¿½Oï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
+	// ƒ^ƒCƒ~ƒ“ƒO‰Šú‰»
 	spr.h_total = 0;
 	spr.h_disp = 0;
 	spr.v_disp = 0;
 	spr.lowres = FALSE;
 	spr.v_res = 0;
 	spr.h_res = 0;
+
+	// ƒXƒvƒ‰ƒCƒg HSYNC—v‹
+	for (i=0; i<128; i++) {
+		sphsync[i] = 3;
+	}
+
+	// BG HSYNC—v‹
+	bghsync = 0x1f;
 }
 
 //---------------------------------------------------------------------------
 //
-//	ï¿½Zï¿½[ï¿½u
+//	ƒZ[ƒu
 //
 //---------------------------------------------------------------------------
 BOOL FASTCALL Sprite::Save(Fileio *fio, int /*ver*/)
@@ -155,20 +221,20 @@ BOOL FASTCALL Sprite::Save(Fileio *fio, int /*ver*/)
 	ASSERT(fio);
 	ASSERT(spr.mem);
 
-	LOG0(Log::Normal, "ï¿½Zï¿½[ï¿½u");
+	LOG0(Log::Normal, "ƒZ[ƒu");
 
-	// ï¿½Tï¿½Cï¿½Yï¿½ï¿½ï¿½Zï¿½[ï¿½u
+	// ƒTƒCƒY‚ğƒZ[ƒu
 	sz = sizeof(sprite_t);
 	if (!fio->Write(&sz, sizeof(sz))) {
 		return FALSE;
 	}
 
-	// ï¿½ï¿½ï¿½Ì‚ï¿½ï¿½Zï¿½[ï¿½u
+	// À‘Ì‚ğƒZ[ƒu
 	if (!fio->Write(&spr, (int)sz)) {
 		return FALSE;
 	}
 
-	// ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Zï¿½[ï¿½u
+	// ƒƒ‚ƒŠ‚ğƒZ[ƒu
 	if (!fio->Write(sprite, 0x10000)) {
 		return FALSE;
 	}
@@ -178,23 +244,20 @@ BOOL FASTCALL Sprite::Save(Fileio *fio, int /*ver*/)
 
 //---------------------------------------------------------------------------
 //
-//	ï¿½ï¿½ï¿½[ï¿½h
+//	ƒ[ƒh
 //
 //---------------------------------------------------------------------------
 BOOL FASTCALL Sprite::Load(Fileio *fio, int /*ver*/)
 {
 	size_t sz;
-	int i;
-	DWORD addr;
-	DWORD data;
 
 	ASSERT(this);
 	ASSERT(fio);
 	ASSERT(spr.mem);
 
-	LOG0(Log::Normal, "ï¿½ï¿½ï¿½[ï¿½h");
+	LOG0(Log::Normal, "ƒ[ƒh");
 
-	// ï¿½Tï¿½Cï¿½Yï¿½ï¿½ï¿½ï¿½ï¿½[ï¿½hï¿½Aï¿½Æï¿½
+	// ƒTƒCƒY‚ğƒ[ƒhAÆ‡
 	if (!fio->Read(&sz, sizeof(sz))) {
 		return FALSE;
 	}
@@ -202,73 +265,42 @@ BOOL FASTCALL Sprite::Load(Fileio *fio, int /*ver*/)
 		return FALSE;
 	}
 
-	// ï¿½ï¿½ï¿½Ì‚ï¿½ï¿½ï¿½ï¿½[ï¿½h
+	// À‘Ì‚ğƒ[ƒh
 	if (!fio->Read(&spr, (int)sz)) {
 		return FALSE;
 	}
 
-	// ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½[ï¿½h
+	// ƒƒ‚ƒŠ‚ğƒ[ƒh
 	if (!fio->Read(sprite, 0x10000)) {
 		return FALSE;
 	}
 
-	// ï¿½|ï¿½Cï¿½ï¿½ï¿½^ï¿½ï¿½ï¿½ã‘ï¿½ï¿½
+	// ƒ|ƒCƒ“ƒ^‚ğã‘‚«
 	spr.mem = &sprite[0x0000];
 	spr.pcg = &sprite[0x8000];
 
-	// ï¿½ï¿½ï¿½ï¿½ï¿½_ï¿½ï¿½ï¿½Ö’Ê’m(ï¿½ï¿½ï¿½Wï¿½Xï¿½^)
-	render->BGCtrl(4, spr.bg_size);
-	for (i=0; i<2; i++) {
-		// BGï¿½fï¿½[ï¿½^ï¿½Gï¿½ï¿½ï¿½A
-		if (spr.bg_area[i] & 1) {
-			render->BGCtrl(i + 2, TRUE);
-		}
-		else {
-			render->BGCtrl(i + 2, FALSE);
-		}
-
-		// BGï¿½\ï¿½ï¿½ON/OFF
-		render->BGCtrl(i, spr.bg_on[i]);
-
-		// BGï¿½Xï¿½Nï¿½ï¿½ï¿½[ï¿½ï¿½
-		render->BGScrl(i, spr.bg_scrlx[i], spr.bg_scrly[i]);
-	}
-
-	// ï¿½ï¿½ï¿½ï¿½ï¿½_ï¿½ï¿½ï¿½Ö’Ê’m(ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½:ï¿½ï¿½ï¿½ï¿½ï¿½Aï¿½hï¿½ï¿½ï¿½Xï¿½Ì‚ï¿½)
-	for (addr=0; addr<0x10000; addr+=2) {
-		if (addr < 0x400) {
-			data = *(WORD*)(&sprite[addr]);
-			render->SpriteReg(addr, data);
-			continue;
-		}
-		if (addr < 0x8000) {
-			continue;
-		}
-		if (addr >= 0xc000) {
-			data = *(WORD*)(&sprite[addr]);
-			render->BGMem(addr, (WORD)data);
-		}
-		render->PCGMem(addr);
-	}
+	// ƒŒƒ“ƒ_ƒ‰‚Ö’Ê’m
+	NotifyRender();
 
 	return TRUE;
 }
 
 //---------------------------------------------------------------------------
 //
-//	ï¿½İ’ï¿½Kï¿½p
+//	İ’è“K—p
 //
 //---------------------------------------------------------------------------
 void FASTCALL Sprite::ApplyCfg(const Config *config)
 {
 	ASSERT(config);
-	LOG0(Log::Normal, "ï¿½İ’ï¿½Kï¿½p");
-	printf("%p", (const void*)config);
+	LOG0(Log::Normal, "İ’è“K—p");
+
+	UNREFERENCED_PARAMETER(config);
 }
 
 //---------------------------------------------------------------------------
 //
-//	ï¿½oï¿½Cï¿½gï¿½Ç‚İï¿½ï¿½ï¿½
+//	ƒoƒCƒg“Ç‚İ‚İ
 //
 //---------------------------------------------------------------------------
 DWORD FASTCALL Sprite::ReadByte(DWORD addr)
@@ -276,37 +308,37 @@ DWORD FASTCALL Sprite::ReadByte(DWORD addr)
 	ASSERT(this);
 	ASSERT((addr >= memdev.first) && (addr <= memdev.last));
 
-	// ï¿½Iï¿½tï¿½Zï¿½bï¿½gï¿½Zï¿½o
+	// ƒIƒtƒZƒbƒgZo
 	addr &= 0xffff;
 
-	// 0800ï¿½`7FFFï¿½Íƒoï¿½Xï¿½Gï¿½ï¿½ï¿½[ï¿½Ì‰eï¿½ï¿½ï¿½ï¿½ï¿½ó‚¯‚È‚ï¿½
+	// ƒEƒFƒCƒg(ƒGƒgƒ[ƒ‹ƒvƒŠƒ“ƒZƒX)
+	if (addr & 1) {
+		if (spr.disp) {
+			scheduler->Wait(7);
+		}
+		else {
+			scheduler->Wait(4);
+		}
+	}
+
+	// 0800`7FFF‚ÍƒoƒXƒGƒ‰[‚Ì‰e‹¿‚ğó‚¯‚È‚¢
 	if ((addr >= 0x800) && (addr < 0x8000)) {
 		return sprite[addr ^ 1];
 	}
 
-	// ï¿½Ú‘ï¿½ï¿½`ï¿½Fï¿½bï¿½N
+	// Ú‘±ƒ`ƒFƒbƒN
 	if (!IsConnect()) {
 		cpu->BusErr(memdev.first + addr, TRUE);
 		return 0xff;
 	}
 
-	// ï¿½Eï¿½Fï¿½Cï¿½g(ï¿½Gï¿½gï¿½ï¿½ï¿½[ï¿½ï¿½ï¿½vï¿½ï¿½ï¿½ï¿½ï¿½Zï¿½X)
-	if (addr & 1) {
-		if (spr.disp) {
-			scheduler->Wait(4);
-		}
-		else {
-			scheduler->Wait(2);
-		}
-	}
-
-	// ï¿½Gï¿½ï¿½ï¿½fï¿½Bï¿½Aï¿½ï¿½ï¿½ğ”½“]ï¿½ï¿½ï¿½ï¿½ï¿½Ä“Ç‚İï¿½ï¿½ï¿½
+	// ƒGƒ“ƒfƒBƒAƒ“‚ğ”½“]‚³‚¹‚Ä“Ç‚İ‚İ
 	return sprite[addr ^ 1];
 }
 
 //---------------------------------------------------------------------------
 //
-//	ï¿½ï¿½ï¿½[ï¿½hï¿½Ç‚İï¿½ï¿½ï¿½
+//	ƒ[ƒh“Ç‚İ‚İ
 //
 //---------------------------------------------------------------------------
 DWORD FASTCALL Sprite::ReadWord(DWORD addr)
@@ -315,183 +347,290 @@ DWORD FASTCALL Sprite::ReadWord(DWORD addr)
 	ASSERT((addr >= memdev.first) && (addr <= memdev.last));
 	ASSERT((addr & 1) == 0);
 
-	// ï¿½Iï¿½tï¿½Zï¿½bï¿½gï¿½Zï¿½o
+	// ƒIƒtƒZƒbƒgZo
 	addr &= 0xffff;
 
-	// 0800ï¿½`7FFFï¿½Íƒoï¿½Xï¿½Gï¿½ï¿½ï¿½[ï¿½Ì‰eï¿½ï¿½ï¿½ï¿½ï¿½ó‚¯‚È‚ï¿½
+	// ƒEƒFƒCƒg(ƒGƒgƒ[ƒ‹ƒvƒŠƒ“ƒZƒX)
+	if (spr.disp) {
+		scheduler->Wait(7);
+	}
+	else {
+		scheduler->Wait(4);
+	}
+
+	// 0800`7FFF‚ÍƒoƒXƒGƒ‰[‚Ì‰e‹¿‚ğó‚¯‚È‚¢
 	if ((addr >= 0x800) && (addr < 0x8000)) {
 		return *(WORD *)(&sprite[addr]);
 	}
 
-	// ï¿½Ú‘ï¿½ï¿½`ï¿½Fï¿½bï¿½N
+	// Ú‘±ƒ`ƒFƒbƒN
 	if (!IsConnect()) {
 		cpu->BusErr(memdev.first + addr, TRUE);
-		return 0xff;
+		return 0xffff;
 	}
 
-	// ï¿½Eï¿½Fï¿½Cï¿½g(ï¿½Gï¿½gï¿½ï¿½ï¿½[ï¿½ï¿½ï¿½vï¿½ï¿½ï¿½ï¿½ï¿½Zï¿½X)
-	if (spr.disp) {
-		scheduler->Wait(4);
-	}
-	else {
-		scheduler->Wait(2);
-	}
-
-	// ï¿½Ç‚İï¿½ï¿½ï¿½
+	// “Ç‚İ‚İ
 	return *(WORD *)(&sprite[addr]);
 }
 
 //---------------------------------------------------------------------------
 //
-//	ï¿½oï¿½Cï¿½gï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
+//	ƒoƒCƒg‘‚«‚İ
 //
 //---------------------------------------------------------------------------
 void FASTCALL Sprite::WriteByte(DWORD addr, DWORD data)
 {
-	DWORD ctrl;
-
 	ASSERT(this);
 	ASSERT((addr >= memdev.first) && (addr <= memdev.last));
 	ASSERT(data < 0x100);
 
-	// ï¿½Iï¿½tï¿½Zï¿½bï¿½gï¿½Zï¿½o
+	// ƒIƒtƒZƒbƒgZo
 	addr &= 0xffff;
 
-	// ï¿½ï¿½vï¿½`ï¿½Fï¿½bï¿½N
-	if (sprite[addr ^ 1] == data) {
-		return;
+	// ƒEƒFƒCƒg(ƒGƒgƒ[ƒ‹ƒvƒŠƒ“ƒZƒX)
+	if (spr.disp) {
+		scheduler->Wait(7);
+	}
+	else {
+		scheduler->Wait(3);
 	}
 
-	// 800ï¿½`811ï¿½ÍƒRï¿½ï¿½ï¿½gï¿½ï¿½ï¿½[ï¿½ï¿½ï¿½ï¿½ï¿½Wï¿½Xï¿½^
+	// 800`811‚ÍƒRƒ“ƒgƒ[ƒ‹ƒŒƒWƒXƒ^
 	if ((addr >= 0x800) && (addr < 0x812)) {
-		// ï¿½fï¿½[ï¿½^ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
+		// ˆê’vƒ`ƒFƒbƒN
+		if (sprite[addr ^ 1] == data) {
+			return;
+		}
+
+		// ƒf[ƒ^‘‚«‚İ
 		sprite[addr ^ 1] = (BYTE)data;
 
-		if (addr & 1) {
-			// ï¿½ï¿½ï¿½Êï¿½ï¿½ï¿½ï¿½ï¿½ï¿½İBï¿½ï¿½Ê‚Æ‚ï¿½ï¿½í‚¹ï¿½ÄƒRï¿½ï¿½ï¿½gï¿½ï¿½ï¿½[ï¿½ï¿½
-			ctrl = (DWORD)sprite[addr];
-			ctrl <<= 8;
-			ctrl |= data;
-			Control((DWORD)(addr & 0xfffe), ctrl);
+		// ƒ[ƒhƒTƒCƒYƒf[ƒ^¶¬
+		addr &= 0xfffe;
+		data = *(WORD *)(&sprite[addr]);
+
+		// ƒŒƒWƒXƒ^ƒ}ƒXƒN
+		switch (addr & 0xff) {
+			// BGƒXƒNƒ[ƒ‹ƒŒƒWƒXƒ^
+			case 0x00:
+			case 0x02:
+			case 0x04:
+			case 0x06:
+				data &= 0x03ff;
+				break;
+
+			// BGƒRƒ“ƒgƒ[ƒ‹(bit10—LŒø)
+			case 0x08:
+				data &= 0x063f;
+				break;
+
+			// …•½ƒg[ƒ^ƒ‹
+			case 0x0a:
+				data &= 0x00ff;
+				break;
+
+			// …•½•\¦ˆÊ’u
+			case 0x0c:
+				data &= 0x003f;
+				break;
+
+			// ‚’¼•\¦ˆÊ’u
+			case 0x0e:
+				data &= 0x00ff;
+				break;
+
+			// ‰ğ‘œ“xİ’è
+			case 0x10:
+				data &= 0x001f;
+				break;
 		}
-		else {
-			// ï¿½ï¿½Êï¿½ï¿½ï¿½ï¿½ï¿½ï¿½İBï¿½ï¿½ï¿½Ê‚Æ‚ï¿½ï¿½í‚¹ï¿½ÄƒRï¿½ï¿½ï¿½gï¿½ï¿½ï¿½[ï¿½ï¿½
-			ctrl = data;
-			ctrl <<= 8;
-			ctrl |= (DWORD)sprite[addr];
-			Control(addr, ctrl);
-		}
+
+		// ƒ}ƒXƒNƒf[ƒ^‘‚«‚İ
+		*(WORD *)(&sprite[addr]) = (WORD)data;
+
+		// ƒRƒ“ƒgƒ[ƒ‹
+		Control(addr, data);
+		NotifyPx68kBGWrite(addr, (WORD)data);
 		return;
 	}
 
-	// 0812-7FFFï¿½Íƒï¿½ï¿½Uï¿½[ï¿½u(ï¿½oï¿½Xï¿½Gï¿½ï¿½ï¿½[ï¿½Ì‰eï¿½ï¿½ï¿½ï¿½ï¿½ó‚¯‚È‚ï¿½)
+	// 0812-7FFF‚ÍƒŠƒU[ƒu(ƒoƒXƒGƒ‰[‚Ì‰e‹¿‚ğó‚¯‚È‚¢)
 	if ((addr >= 0x812) && (addr < 0x8000)) {
 		return;
 	}
 
-	// ï¿½Ú‘ï¿½ï¿½`ï¿½Fï¿½bï¿½N
+	// Ú‘±ƒ`ƒFƒbƒN
 	if (!IsConnect()) {
 		cpu->BusErr(memdev.first + addr, FALSE);
 		return;
 	}
 
-	// ï¿½Eï¿½Fï¿½Cï¿½g(ï¿½Gï¿½gï¿½ï¿½ï¿½[ï¿½ï¿½ï¿½vï¿½ï¿½ï¿½ï¿½ï¿½Zï¿½X)
-	if (addr & 1) {
-		if (spr.disp) {
-			scheduler->Wait(4);
-		}
-		else {
-			scheduler->Wait(2);
-		}
-	}
-
-	// 0400-07FFï¿½Íƒï¿½ï¿½Uï¿½[ï¿½u(ï¿½oï¿½Xï¿½Gï¿½ï¿½ï¿½[ï¿½Ì‰eï¿½ï¿½ï¿½ï¿½ï¿½ó‚¯‚ï¿½)
+	// 0400-07FF‚ÍƒŠƒU[ƒu(ƒoƒXƒGƒ‰[‚Ì‰e‹¿‚ğó‚¯‚é)
 	if ((addr >= 0x400) && (addr < 0x800)) {
 		return;
 	}
 
-	// ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
-	sprite[addr ^ 1] = (BYTE)data;
-
-	// ï¿½ï¿½ï¿½ï¿½ï¿½_ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
+	// 0000-03FF‚Æ8000-FFFF‚ÍƒoƒCƒgƒAƒNƒZƒX‚Å‚«‚È‚¢
+	// ãˆÊA‰ºˆÊƒoƒCƒg‚ª“¯‚¶’l‚Åƒ[ƒhƒAƒNƒZƒX‚É‚È‚éB
+	data = (data<<8) | data;
 	addr &= 0xfffe;
-	if (addr < 0x400) {
-		ctrl = *(WORD*)(&sprite[addr]);
-		render->SpriteReg(addr, ctrl);
-		return;
-	}
-	if (addr >= 0x8000) {
-		render->PCGMem(addr);
-	}
-	if (addr >= 0xc000) {
-		ctrl = *(WORD*)(&sprite[addr]);
-		render->BGMem(addr, (WORD)ctrl);
-	}
+	WriteWord(memdev.first + addr, data);
 }
 
 //---------------------------------------------------------------------------
 //
-//	ï¿½ï¿½ï¿½[ï¿½hï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
+//	ƒ[ƒh‘‚«‚İ
 //
 //---------------------------------------------------------------------------
 void FASTCALL Sprite::WriteWord(DWORD addr, DWORD data)
 {
+	int index;
+
 	ASSERT(this);
 	ASSERT((addr >= memdev.first) && (addr <= memdev.last));
 	ASSERT((addr & 1) == 0);
 	ASSERT(data < 0x10000);
 
-	// ï¿½Iï¿½tï¿½Zï¿½bï¿½gï¿½Zï¿½o
+	// ƒIƒtƒZƒbƒgZo
 	addr &= 0xfffe;
 
-	// ï¿½ï¿½vï¿½`ï¿½Fï¿½bï¿½N
-	if (*(WORD *)(&sprite[addr]) == data) {
+	// ƒEƒFƒCƒg(ƒGƒgƒ[ƒ‹ƒvƒŠƒ“ƒZƒX)
+	if (spr.disp) {
+		scheduler->Wait(7);
+	}
+	else {
+		scheduler->Wait(3);
+	}
+
+	// 800`811‚ÍƒRƒ“ƒgƒ[ƒ‹ƒŒƒWƒXƒ^
+	if ((addr >= 0x800) && (addr < 0x812)) {
+		// ˆê’vƒ`ƒFƒbƒN
+		if (*(WORD *)(&sprite[addr]) == data) {
+			return;
+		}
+
+		// ƒŒƒWƒXƒ^ƒ}ƒXƒN
+		switch (addr & 0xff) {
+			// BGƒXƒNƒ[ƒ‹ƒŒƒWƒXƒ^
+			case 0x00:
+			case 0x02:
+			case 0x04:
+			case 0x06:
+				data &= 0x03ff;
+				break;
+
+			// BGƒRƒ“ƒgƒ[ƒ‹(bit10—LŒø)
+			case 0x08:
+				data &= 0x063f;
+				break;
+
+			// …•½ƒg[ƒ^ƒ‹
+			case 0x0a:
+				data &= 0x00ff;
+				break;
+
+			// …•½•\¦ˆÊ’u
+			case 0x0c:
+				data &= 0x003f;
+				break;
+
+			// ‚’¼•\¦ˆÊ’u
+			case 0x0e:
+				data &= 0x00ff;
+				break;
+
+			// ‰ğ‘œ“xİ’è
+			case 0x10:
+				data &= 0x001f;
+				break;
+		}
+
+		// ƒ}ƒXƒNƒf[ƒ^‘‚«‚İ
+		*(WORD *)(&sprite[addr]) = (WORD)data;
+
+		// ƒRƒ“ƒgƒ[ƒ‹
+		Control(addr, data);
+		NotifyPx68kBGWrite(addr, (WORD)data);
 		return;
 	}
 
-	// 800ï¿½`811ï¿½ÍƒRï¿½ï¿½ï¿½gï¿½ï¿½ï¿½[ï¿½ï¿½ï¿½ï¿½ï¿½Wï¿½Xï¿½^
-	if ((addr >= 0x800) && (addr < 0x812)) {
-		*(WORD *)(&sprite[addr]) = (WORD)data;
-		Control(addr, data);
-		return;
-	}
-	// 0812-7FFFï¿½Íƒï¿½ï¿½Uï¿½[ï¿½u(ï¿½oï¿½Xï¿½Gï¿½ï¿½ï¿½[ï¿½Ì‰eï¿½ï¿½ï¿½ï¿½ï¿½ó‚¯‚È‚ï¿½)
+	// 0812-7FFF‚ÍƒŠƒU[ƒu(ƒoƒXƒGƒ‰[‚Ì‰e‹¿‚ğó‚¯‚È‚¢)
 	if ((addr >= 0x812) && (addr < 0x8000)) {
 		return;
 	}
 
-	// ï¿½Eï¿½Fï¿½Cï¿½g(ï¿½Gï¿½gï¿½ï¿½ï¿½[ï¿½ï¿½ï¿½vï¿½ï¿½ï¿½ï¿½ï¿½Zï¿½X)
-	if (spr.disp) {
-		scheduler->Wait(4);
-	}
-	else {
-		scheduler->Wait(2);
+	// Ú‘±ƒ`ƒFƒbƒN
+	if (!IsConnect()) {
+		cpu->BusErr(memdev.first + addr, FALSE);
+		return;
 	}
 
-	// 0400-07FFï¿½Íƒï¿½ï¿½Uï¿½[ï¿½u(ï¿½oï¿½Xï¿½Gï¿½ï¿½ï¿½[ï¿½Ì‰eï¿½ï¿½ï¿½ï¿½ï¿½ó‚¯‚ï¿½)
+	// 0400-07FF‚ÍƒŠƒU[ƒu(ƒoƒXƒGƒ‰[‚Ì‰e‹¿‚ğó‚¯‚é)
 	if ((addr >= 0x400) && (addr < 0x800)) {
 		return;
 	}
 
-	// ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
-	*(WORD *)(&sprite[addr]) = (WORD)data;
-
-	// ï¿½ï¿½ï¿½ï¿½ï¿½_ï¿½ï¿½
-	if (addr < 0x400) {
-		render->SpriteReg(addr, data);
+	// ˆê’vƒ`ƒFƒbƒN
+	if (*(WORD *)(&sprite[addr]) == data) {
 		return;
 	}
+
+	// ƒXƒvƒ‰ƒCƒgƒXƒNƒ[ƒ‹ƒŒƒWƒXƒ^
+	if (addr < 0x400) {
+		// ƒŒƒWƒXƒ^ƒ}ƒXƒN
+		switch (addr & 0x07) {
+			// XPOS,YPOS
+			case 0x00:
+			case 0x02:
+				data &= 0x03ff;
+				break;
+
+			// VR|HR|COLOR|SPAT#
+			case 0x04:
+				data &= 0xcfff;
+				break;
+
+			// PRW(bit2—LŒø)
+			case 0x06:
+				data &= 0x0007;
+				break;
+		}
+
+		// ƒ}ƒXƒNƒf[ƒ^‘‚«‚İ
+		*(WORD *)(&sprite[addr]) = (WORD)data;
+
+		// ƒXƒvƒ‰ƒCƒgƒXƒNƒ[ƒ‹ƒŒƒWƒXƒ^‚Í‘‚«Š·‚¦Œã
+		// 3ƒ‰ƒXƒ^[Œã‚É‚µ‚©”½‰f‚µ‚È‚¢
+		index = (int)(addr >> 3);
+		NotifyPx68kBGWrite(addr, (WORD)data);
+
+		if (sphsync[index]==0) {
+			sphsync[index]=3;
+
+			// BG HSYNC—v‹
+			bghsync |= 0x10;
+		}
+		return;
+	}
+
+	// ‘‚«‚İ
+	*(WORD *)(&sprite[addr]) = (WORD)data;
+
 	if (addr >= 0x8000) {
 		render->PCGMem(addr);
 	}
+
 	if (addr >= 0xc000) {
 		render->BGMem(addr, (WORD)data);
+	}
+	if (addr >= 0x8000) {
+		NotifyPx68kBGWrite(addr, (WORD)data);
 	}
 }
 
 //---------------------------------------------------------------------------
 //
-//	ï¿½Ç‚İï¿½ï¿½İ‚Ì‚ï¿½
+//	“Ç‚İ‚İ‚Ì‚İ
 //
 //---------------------------------------------------------------------------
 DWORD FASTCALL Sprite::ReadOnly(DWORD addr) const
@@ -499,16 +638,16 @@ DWORD FASTCALL Sprite::ReadOnly(DWORD addr) const
 	ASSERT(this);
 	ASSERT((addr >= memdev.first) && (addr <= memdev.last));
 
-	// ï¿½Iï¿½tï¿½Zï¿½bï¿½gï¿½Zï¿½o
+	// ƒIƒtƒZƒbƒgZo
 	addr &= 0xffff;
 
-	// ï¿½Gï¿½ï¿½ï¿½fï¿½Bï¿½Aï¿½ï¿½ï¿½ğ”½“]ï¿½ï¿½ï¿½ï¿½ï¿½Ä“Ç‚İï¿½ï¿½ï¿½
+	// ƒGƒ“ƒfƒBƒAƒ“‚ğ”½“]‚³‚¹‚Ä“Ç‚İ‚İ
 	return sprite[addr ^ 1];
 }
 
 //---------------------------------------------------------------------------
 //
-//	ï¿½Rï¿½ï¿½ï¿½gï¿½ï¿½ï¿½[ï¿½ï¿½
+//	ƒRƒ“ƒgƒ[ƒ‹
 //
 //---------------------------------------------------------------------------
 void FASTCALL Sprite::Control(DWORD addr, DWORD data)
@@ -517,52 +656,58 @@ void FASTCALL Sprite::Control(DWORD addr, DWORD data)
 	ASSERT((addr & 1) == 0);
 	ASSERT(data < 0x10000);
 
-	// ï¿½Aï¿½hï¿½ï¿½ï¿½Xï¿½ğ®—ï¿½
+	// ƒAƒhƒŒƒX‚ğ®—
 	addr -= 0x800;
 	addr >>= 1;
 
 	switch (addr) {
-		// BG0ï¿½Xï¿½Nï¿½ï¿½ï¿½[ï¿½ï¿½X
+		// BG0ƒXƒNƒ[ƒ‹X
 		case 0:
 			spr.bg_scrlx[0] = data & 0x3ff;
-			render->BGScrl(0, spr.bg_scrlx[0], spr.bg_scrly[0]);
+			bghsync |= 0x01;
 			break;
 
-		// BG0ï¿½Xï¿½Nï¿½ï¿½ï¿½[ï¿½ï¿½Y
+		// BG0ƒXƒNƒ[ƒ‹Y
 		case 1:
 			spr.bg_scrly[0] = data & 0x3ff;
-			render->BGScrl(0, spr.bg_scrlx[0], spr.bg_scrly[0]);
+			bghsync |= 0x02;
 			break;
 
-		// BG1ï¿½Xï¿½Nï¿½ï¿½ï¿½[ï¿½ï¿½X
+		// BG1ƒXƒNƒ[ƒ‹X
 		case 2:
 			spr.bg_scrlx[1] = data & 0x3ff;
-			render->BGScrl(1, spr.bg_scrlx[1], spr.bg_scrly[1]);
+			bghsync |= 0x04;
 			break;
 
-		// BG1ï¿½Xï¿½Nï¿½ï¿½ï¿½[ï¿½ï¿½Y
+		// BG1ƒXƒNƒ[ƒ‹Y
 		case 3:
 			spr.bg_scrly[1] = data & 0x3ff;
-			render->BGScrl(1, spr.bg_scrlx[1], spr.bg_scrly[1]);
+			bghsync |= 0x08;
 			break;
 
-		// BGï¿½Rï¿½ï¿½ï¿½gï¿½ï¿½ï¿½[ï¿½ï¿½
+		// BGƒRƒ“ƒgƒ[ƒ‹
 		case 4:
 #if defined(SPRITE_LOG)
-			LOG1(Log::Normal, "BGï¿½Rï¿½ï¿½ï¿½gï¿½ï¿½ï¿½[ï¿½ï¿½ $%04X", data);
+			LOG1(Log::Normal, "BGƒRƒ“ƒgƒ[ƒ‹ $%04X", data);
 #endif	// SPRITE_LOG
 			// bit17 : DISP
 			if (data & 0x0200) {
-				spr.disp = TRUE;
+				if (!spr.disp) {
+					spr.disp = TRUE;
+					render->BGCtrl(5, TRUE);
+				}
 			}
 			else {
-				spr.disp = FALSE;
+				if (spr.disp) {
+					spr.disp = FALSE;
+					render->BGCtrl(5, FALSE);
+				}
 			}
 
 			// BG1
 			spr.bg_area[1] = (data >> 4) & 0x03;
 			if (spr.bg_area[1] & 2) {
-				LOG1(Log::Warning, "BG1ï¿½fï¿½[ï¿½^ï¿½Gï¿½ï¿½ï¿½Aï¿½ï¿½ï¿½ï¿½` $%02X", spr.bg_area[1]);
+				LOG1(Log::Warning, "BG1ƒf[ƒ^ƒGƒŠƒA–¢’è‹` $%02X", spr.bg_area[1]);
 			}
 			if (spr.bg_area[1] & 1) {
 				render->BGCtrl(3, TRUE);
@@ -581,7 +726,7 @@ void FASTCALL Sprite::Control(DWORD addr, DWORD data)
 			// BG0
 			spr.bg_area[0] = (data >> 1) & 0x03;
 			if (spr.bg_area[0] & 2) {
-				LOG1(Log::Warning, "BG0ï¿½fï¿½[ï¿½^ï¿½Gï¿½ï¿½ï¿½Aï¿½ï¿½ï¿½ï¿½` $%02X", spr.bg_area[0]);
+				LOG1(Log::Warning, "BG0ƒf[ƒ^ƒGƒŠƒA–¢’è‹` $%02X", spr.bg_area[0]);
 			}
 			if (spr.bg_area[0] & 1) {
 				render->BGCtrl(2, TRUE);
@@ -598,22 +743,22 @@ void FASTCALL Sprite::Control(DWORD addr, DWORD data)
 			render->BGCtrl(0, spr.bg_on[0]);
 			break;
 
-		// ï¿½ï¿½ï¿½ï¿½ï¿½gï¿½[ï¿½^ï¿½ï¿½
+		// …•½ƒg[ƒ^ƒ‹
 		case 5:
 			spr.h_total = data & 0xff;
 			break;
 
-		// ï¿½ï¿½ï¿½ï¿½ï¿½\ï¿½ï¿½
+		// …•½•\¦
 		case 6:
 			spr.h_disp = data & 0x3f;
 			break;
 
-		// ï¿½ï¿½ï¿½ï¿½ï¿½\ï¿½ï¿½
+		// ‚’¼•\¦
 		case 7:
 			spr.v_disp = data & 0xff;
 			break;
 
-		// ï¿½ï¿½Êƒï¿½ï¿½[ï¿½h
+		// ‰æ–Êƒ‚[ƒh
 		case 8:
 			spr.h_res = data & 0x03;
 			spr.v_res = (data >> 2) & 0x03;
@@ -626,7 +771,7 @@ void FASTCALL Sprite::Control(DWORD addr, DWORD data)
 				spr.lowres = TRUE;
 			}
 
-			// BGï¿½Tï¿½Cï¿½Y
+			// BGƒTƒCƒY
 			if (spr.h_res == 0) {
 				// 8x8
 				spr.bg_size = FALSE;
@@ -637,20 +782,95 @@ void FASTCALL Sprite::Control(DWORD addr, DWORD data)
 			}
 			render->BGCtrl(4, spr.bg_size);
 			if (spr.h_res & 2) {
-				LOG1(Log::Warning, "BG/ï¿½Xï¿½vï¿½ï¿½ï¿½Cï¿½g H-Resï¿½ï¿½ï¿½ï¿½` %d", spr.h_res);
+				LOG1(Log::Warning, "BG/ƒXƒvƒ‰ƒCƒg H-Res–¢’è‹` %d", spr.h_res);
 			}
 			break;
 
-		// ï¿½ï¿½ï¿½Ì‘ï¿½
+		// ‚»‚Ì‘¼
 		default:
 			ASSERT(FALSE);
 			break;
+	}
+
+	// •\¦ˆÊ’u’²®‚Ì‚½‚ßƒŒƒ“ƒ_ƒ‰‚Ö’Ê’m
+	if (addr > 4) {
+		render->SetCRTC();
 	}
 }
 
 //---------------------------------------------------------------------------
 //
-//	ï¿½ï¿½ï¿½ï¿½ï¿½fï¿½[ï¿½^ï¿½æ“¾
+//	ƒŒƒ“ƒ_ƒ‰‚Ö’Ê’m
+//
+//---------------------------------------------------------------------------
+void FASTCALL Sprite::NotifyPx68kBGWrite(DWORD addr, WORD data)
+{
+	if (!render) {
+		return;
+	}
+
+	addr = memdev.first + (addr & 0xffff);
+	render->SpriteBGWrite(addr, (BYTE)((data >> 8) & 0xff));
+	render->SpriteBGWrite(addr + 1, (BYTE)(data & 0xff));
+}
+
+void FASTCALL Sprite::NotifyRender()
+{
+	int i;
+	DWORD addr;
+	DWORD data;
+	DWORD reg[4];
+
+	// ƒŒƒWƒXƒ^
+	render->BGCtrl(4, spr.bg_size);
+	for (i=0; i<2; i++) {
+		// BGƒf[ƒ^ƒGƒŠƒA
+		if (spr.bg_area[i] & 1) {
+			render->BGCtrl(i + 2, TRUE);
+		}
+		else {
+			render->BGCtrl(i + 2, FALSE);
+		}
+
+		// BG•\¦ON/OFF
+		render->BGCtrl(i, spr.bg_on[i]);
+
+		// BGƒTƒCƒY
+		render->BGCtrl(4, spr.bg_size);
+
+		// DISP/CPU
+		render->BGCtrl(5, spr.disp);
+
+		// BGƒXƒNƒ[ƒ‹
+		render->BGScrl(i, spr.bg_scrlx[i], spr.bg_scrly[i]);
+	}
+
+	// ƒƒ‚ƒŠ:‹ô”ƒAƒhƒŒƒX‚Ì‚İ
+	for (addr=0; addr<0x10000; addr+=2) {
+		if (addr < 0x400) {
+			if ((addr & 7)==0) {
+				reg[0] = *(WORD*)(&sprite[addr  ]);
+				reg[1] = *(WORD*)(&sprite[addr+2]);
+				reg[2] = *(WORD*)(&sprite[addr+4]);
+				reg[3] = *(WORD*)(&sprite[addr+6]);
+				render->SpriteReg(addr, reg);
+			}
+			continue;
+		}
+		if (addr < 0x8000) {
+			continue;
+		}
+		if (addr >= 0xc000) {
+			data = *(WORD*)(&sprite[addr]);
+			render->BGMem(addr, (WORD)data);
+		}
+		render->PCGMem(addr);
+	}
+}
+
+//---------------------------------------------------------------------------
+//
+//	“à•”ƒf[ƒ^æ“¾
 //
 //---------------------------------------------------------------------------
 void FASTCALL Sprite::GetSprite(sprite_t *buffer) const
@@ -658,13 +878,13 @@ void FASTCALL Sprite::GetSprite(sprite_t *buffer) const
 	ASSERT(this);
 	ASSERT(buffer);
 
-	// ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½[ï¿½Nï¿½ï¿½ï¿½Rï¿½sï¿½[
+	// “à•”ƒ[ƒN‚ğƒRƒs[
 	*buffer = spr;
 }
 
 //---------------------------------------------------------------------------
 //
-//	ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Gï¿½ï¿½ï¿½Aï¿½æ“¾
+//	ƒƒ‚ƒŠƒGƒŠƒAæ“¾
 //
 //---------------------------------------------------------------------------
 const BYTE* FASTCALL Sprite::GetMem() const
@@ -677,7 +897,7 @@ const BYTE* FASTCALL Sprite::GetMem() const
 
 //---------------------------------------------------------------------------
 //
-//	PCGï¿½Gï¿½ï¿½ï¿½Aï¿½æ“¾
+//	PCGƒGƒŠƒAæ“¾
 //
 //---------------------------------------------------------------------------
 const BYTE* FASTCALL Sprite::GetPCG() const
@@ -686,4 +906,83 @@ const BYTE* FASTCALL Sprite::GetPCG() const
 	ASSERT(spr.pcg);
 
 	return spr.pcg;
+}
+
+//---------------------------------------------------------------------------
+//
+//	H-Sync’Ê’m
+//
+//---------------------------------------------------------------------------
+void FASTCALL Sprite::HSync()
+{
+	BOOL flag;
+	int i;
+	DWORD addr;
+	DWORD reg[4];
+
+	ASSERT(this);
+
+	// HSync‚ÅBG‚ÌXV‚ª•K—v‚©
+	if (bghsync == 0) {
+		return;
+	}
+
+	if (bghsync & 0x01) {
+		// BG0ƒXƒNƒ[ƒ‹X
+		render->BGScrl(0, spr.bg_scrlx[0], spr.bg_scrly[0]);
+		bghsync &= ~0x01;
+	}
+
+	if (bghsync & 0x02) {
+		// BG0ƒXƒNƒ[ƒ‹Y
+		render->BGScrl(0, spr.bg_scrlx[0], spr.bg_scrly[0]);
+		bghsync &= ~0x02;
+	}
+
+	if (bghsync & 0x04) {
+		// BG1ƒXƒNƒ[ƒ‹X
+		render->BGScrl(1, spr.bg_scrlx[1], spr.bg_scrly[1]);
+		bghsync &= ~0x04;
+	}
+
+	if (bghsync & 0x08) {
+		// BG1ƒXƒNƒ[ƒ‹Y
+		render->BGScrl(1, spr.bg_scrlx[1], spr.bg_scrly[1]);
+		bghsync &= ~0x08;
+	}
+
+		// ƒXƒvƒ‰ƒCƒgXV‘ÎÛŒŸõ
+	if (bghsync & 0x10) {
+		// Ÿ‰ñƒ`ƒFƒbƒN‚Í–³‚µ
+		flag = FALSE;
+
+		for (i=0; i<128; i++) {
+			// XV‘ÎÛ‚©
+			if (sphsync[i] == 0) {
+				continue;
+			}
+
+			// ƒJƒEƒ“ƒgƒ_ƒEƒ“
+			sphsync[i]--;
+
+			// 2ƒ‰ƒXƒ^[–Ú
+			if (sphsync[i] == 0) {
+				addr = i << 3;
+				reg[0] = *(WORD*)(&sprite[addr  ]);
+				reg[1] = *(WORD*)(&sprite[addr+2]);
+				reg[2] = *(WORD*)(&sprite[addr+4]);
+				reg[3] = *(WORD*)(&sprite[addr+6]);
+				render->SpriteReg(addr, reg);
+				continue;
+			}
+
+			// Ÿ‰ñƒ`ƒFƒbƒN‚Í‚â‚Á‚Ï‚è•K—v
+			flag = TRUE;
+		}
+
+		// Ÿ‰ñ•K—v‚È‚¯‚ê‚Îƒtƒ‰ƒOƒIƒt
+		if (!flag) {
+			bghsync &= ~0x10;
+		}
+	}
 }

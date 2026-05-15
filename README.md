@@ -64,15 +64,23 @@ Common files used by this project include:
 
 For RetroArch, point the system directory to the folder that contains those files.
 
+RetroArch also needs the Libretro metadata file for the core to show up correctly:
+
+- `xm6_libretro.info`
+
+Place that file in RetroArch's `info/` directory alongside the core.
+
 ## Libretro usage
 
 The Libretro core is designed to run inside RetroArch and similar front ends.
 
 Typical setup:
 
-1. Copy the core to RetroArch `cores/`
-2. Put the BIOS and system files in RetroArch `system/`
-3. Load the game image or disk set from the front end
+1. Copy the core binary to RetroArch `cores/`
+2. Copy `xm6_libretro.info` to RetroArch `info/`
+3. **Delete `core_info.cache`** from the RetroArch directory so the new core is detected (the cache is rebuilt automatically on next launch)
+4. Put the BIOS and system files in RetroArch `system/`
+5. Load the game image or disk set from the front end
 
 Where supported, the core also handles disk playlists and the usual RetroArch callbacks.
 
@@ -90,6 +98,14 @@ The initial public release includes:
 - Libretro Win32 build
 - Libretro Win64 build
 - Linux Libretro `.so`
+- Libretro `xm6_libretro.info`
+
+The libretro binaries are produced in release form as:
+
+- `libretro/Release/xm6_libretro.dll`
+- `libretro/Release_x64/xm6_libretro.dll`
+- `libretro/xm6_libretro.so`
+- `libretro/xm6_libretro.info`
 
 ## License and credits
 
@@ -99,6 +115,8 @@ This repository also includes third-party code and ideas from projects such as:
 
 - Musashi 68000 CPU core
 - fmgen / FM synthesis support
+- X68Sound sound synthesis (by m_u_g_e_n)
+- ymfm Yamaha FM emulation (by Aaron Giles)
 - windrv-style host/device bridging
 
 Each component keeps its own license and notice requirements. Check the source headers for details.
@@ -106,3 +124,8 @@ Each component keeps its own license and notice requirements. Check the source h
 ## Notes
 
 This repository focuses on keeping the classic XM6 codebase practical to build while adding modern Libretro support and cleaner release packaging.
+
+Some rendering, timing, and libretro integration ideas were informed by the
+[px68k-libretro](https://github.com/libretro/px68k-libretro) project, especially
+the work originally credited to hissorii, with c68k updates referenced there
+from kenyahiro.

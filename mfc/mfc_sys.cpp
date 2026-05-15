@@ -2,8 +2,8 @@
 //
 //	X68000 EMULATOR "XM6"
 //
-//	Copyright (C) 2001-2006 ＰＩ．(ytanaka@ipc-tokai.or.jp)
-//	[ MFC サブウィンドウ(システム) ]
+//	Copyright (C) 2001-2006 PI (ytanaka@ipc-tokai.or.jp)
+//	[ MFC Sub-Window (System) ]
 //
 //---------------------------------------------------------------------------
 
@@ -29,33 +29,33 @@
 
 //===========================================================================
 //
-//	ログウィンドウ
+//	Log Window
 //
 //===========================================================================
 
 //---------------------------------------------------------------------------
 //
-//	コンストラクタ
+//	Constructor
 //
 //---------------------------------------------------------------------------
 CLogWnd::CLogWnd() : CSubListWnd()
 {
-	// ウィンドウパラメータ定義
+	// Window parameter definition
 	m_dwID = MAKEID('L', 'O', 'G', 'L');
 	::GetMsg(IDS_SWND_LOG, m_strCaption);
 	m_nWidth = 64;
 	m_nHeight = 8;
 
-	// フォーカスなし
+	// No focus
 	m_nFocus = -1;
 
-	// その他
+	// Log
 	m_pLog = NULL;
 }
 
 //---------------------------------------------------------------------------
 //
-//	メッセージ マップ
+//	Message Map
 //
 //---------------------------------------------------------------------------
 BEGIN_MESSAGE_MAP(CLogWnd, CSubListWnd)
@@ -66,732 +66,732 @@ END_MESSAGE_MAP()
 
 //---------------------------------------------------------------------------
 //
-//	ウィンドウ作成
+//	Window creation
 //
 //---------------------------------------------------------------------------
 int CLogWnd::OnCreate(LPCREATESTRUCT lpcs)
 {
-	ASSERT(this);
+ ASSERT(this);
 
-	// 基本クラス
-	if (CSubListWnd::OnCreate(lpcs) != 0) {
-		return -1;
-	}
+ // Base class
+ if (CSubListWnd::OnCreate(lpcs) != 0) {
+  return -1;
+ }
 
-	// 文字列を読み込む
-	::GetMsg(IDS_SWND_LOG_DETAIL, m_strDetail);
-	::GetMsg(IDS_SWND_LOG_NORMAL, m_strNormal);
-	::GetMsg(IDS_SWND_LOG_WARNING, m_strWarning);
+ // Load messages
+ ::GetMsg(IDS_SWND_LOG_DETAIL, m_strDetail);
+ ::GetMsg(IDS_SWND_LOG_NORMAL, m_strNormal);
+ ::GetMsg(IDS_SWND_LOG_WARNING, m_strWarning);
 
-	// ログを取得
-	ASSERT(!m_pLog);
-	m_pLog = &(::GetVM()->log);
-	ASSERT(m_pLog);
+ // Get log
+ ASSERT(!m_pLog);
+ m_pLog = &(::GetVM()->log);
+ ASSERT(m_pLog);
 
-	return 0;
+ return 0;
 }
 
 //---------------------------------------------------------------------------
 //
-//	ダブルクリック
+//	Double click
 //
 //---------------------------------------------------------------------------
 void CLogWnd::OnDblClick(NMHDR* /*pNotifyStruct*/, LRESULT* /*result*/)
 {
-	Log::logdata_t logdata;
-	BOOL bSuccess;
-	CDrawView *pView;
-	CDisasmWnd *pDisWnd;
+ Log::logdata_t logdata;
+ BOOL bSuccess;
+ CDrawView *pView;
+ CDisasmWnd *pDisWnd;
 
-	ASSERT(this);
-	ASSERT_VALID(this);
+ ASSERT(this);
+ ASSERT_VALID(this);
 
-	// フォーカスがある場合に限る
-	if (m_nFocus < 0) {
-		return;
-	}
+ // Return if no focus
+ if (m_nFocus < 0) {
+  return;
+ }
 
-	// ログデータ取得、文字列バッファ解放
-	bSuccess = m_pLog->GetData(m_nFocus, &logdata);
-	if (!bSuccess) {
-		// バッファの解放必要性なし
-		return;
-	}
+ // Get log data and allocate working buffer
+ bSuccess = m_pLog->GetData(m_nFocus, &logdata);
+ if (!bSuccess) {
+  // Buffer doesn't need freeing
+  return;
+ }
 
-	// 逆アセンブルウィンドウへアドレス指定
-	pView = (CDrawView*)GetParent();
-	pDisWnd = (CDisasmWnd*)pView->SearchSWnd(MAKEID('D', 'I', 'S', 'A'));
-	if (pDisWnd) {
-		pDisWnd->SetAddr(logdata.pc);
-	}
+ // Set address in address window
+ pView = (CDrawView*)GetParent();
+ pDisWnd = (CDisasmWnd*)pView->SearchSWnd(MAKEID('D', 'I', 'S', 'A'));
+ if (pDisWnd) {
+  pDisWnd->SetAddr(logdata.pc);
+ }
 
-	// GetData()で確保したバッファを解放
-	delete[] logdata.string;
+ // Free buffer allocated by GetData()
+ delete[] logdata.string;
 }
 
 //---------------------------------------------------------------------------
 //
-//	オーナー描画
+//	Item draw
 //
 //---------------------------------------------------------------------------
 void CLogWnd::OnDrawItem(int nID, LPDRAWITEMSTRUCT lpDIS)
 {
-	CDC dc;
-	CDC mDC;
-	CBitmap Bitmap;
-	CBitmap *pBitmap;
-	CFont *pFont;
-	CRect rectItem(&lpDIS->rcItem);
-	CRect rectClient;
-	CString strText;
-	Log::logdata_t logdata;
-	CSize size;
-	int nItem;
-	int nWidth;
+ CDC dc;
+ CDC mDC;
+ CBitmap Bitmap;
+ CBitmap *pBitmap;
+ CFont *pFont;
+ CRect rectItem(&lpDIS->rcItem);
+ CRect rectClient;
+ CString strText;
+ Log::logdata_t logdata;
+ CSize size;
+ int nItem;
+ int nWidth;
 #if !defined(UNICODE)
-	wchar_t szWide[100];
+ wchar_t szWide[100];
 #endif	// UNICODE
 
-	ASSERT(this);
-	ASSERT(nID == 0);
-	ASSERT(lpDIS);
-	ASSERT_VALID(this);
+ ASSERT(this);
+ ASSERT(nID == 0);
+ ASSERT(lpDIS);
+ ASSERT_VALID(this);
 
-	// DCをアタッチ
-	VERIFY(dc.Attach(lpDIS->hDC));
+ // Attach DC
+ VERIFY(dc.Attach(lpDIS->hDC));
 
-	// 無効なら空白を描画
-	if (!m_bEnable) {
-		dc.FillSolidRect(&rectItem, ::GetSysColor(COLOR_WINDOW));
-		dc.Detach();
-		return;
-	}
+ // If disabled draw blank
+ if (!m_bEnable) {
+  dc.FillSolidRect(&rectItem, ::GetSysColor(COLOR_WINDOW));
+  dc.Detach();
+  return;
+ }
 
-	// ログデータ取得
-	if (!m_pLog->GetData(lpDIS->itemID, &logdata)) {
-		// なければ空白を表示
-		dc.FillSolidRect(&rectItem, ::GetSysColor(COLOR_WINDOW));
-		dc.Detach();
-		return;
-	}
+ // Get log data
+ if (!m_pLog->GetData(lpDIS->itemID, &logdata)) {
+  // If none display blank
+  dc.FillSolidRect(&rectItem, ::GetSysColor(COLOR_WINDOW));
+  dc.Detach();
+  return;
+ }
 
-	// 表示準備
-	VERIFY(mDC.CreateCompatibleDC(&dc));
-	VERIFY(Bitmap.CreateCompatibleBitmap(&dc, rectItem.Width(), rectItem.Height()));
-	pBitmap = mDC.SelectObject(&Bitmap);
-	ASSERT(pBitmap);
+ // Create compatible bitmap
+ VERIFY(mDC.CreateCompatibleDC(&dc));
+ VERIFY(Bitmap.CreateCompatibleBitmap(&dc, rectItem.Width(), rectItem.Height()));
+ pBitmap = mDC.SelectObject(&Bitmap);
+ ASSERT(pBitmap);
 
-	// フォント移転
-	pFont = mDC.SelectObject(m_ListCtrl.GetFont());
-	ASSERT(pFont);
+ // Select font
+ pFont = mDC.SelectObject(m_ListCtrl.GetFont());
+ ASSERT(pFont);
 
-	// 地色を決めてベタ塗りする
-	rectClient.left = 0;
-	rectClient.right = rectItem.Width();
-	rectClient.top = 0;
-	rectClient.bottom = rectItem.Height();
-	if (lpDIS->itemState & ODS_FOCUS) {
-		// フォーカス番号を記録するのを忘れずに
-		m_nFocus = lpDIS->itemID;
-		mDC.FillSolidRect(&rectClient, GetSysColor(COLOR_HIGHLIGHT));
-		mDC.SetTextColor(::GetSysColor(COLOR_HIGHLIGHTTEXT));
-		mDC.SetBkColor(::GetSysColor(COLOR_HIGHLIGHT));
-	}
-	else {
-		// フォーカスなし
-		mDC.FillSolidRect(&rectClient, ::GetSysColor(COLOR_WINDOW));
-		mDC.SetBkColor(::GetSysColor(COLOR_WINDOW));
-	}
+ // Set background color and determine highlight
+ rectClient.left = 0;
+ rectClient.right = rectItem.Width();
+ rectClient.top = 0;
+ rectClient.bottom = rectItem.Height();
+ if (lpDIS->itemState & ODS_FOCUS) {
+  // Remember focus number
+  m_nFocus = lpDIS->itemID;
+  mDC.FillSolidRect(&rectClient, GetSysColor(COLOR_HIGHLIGHT));
+  mDC.SetTextColor(::GetSysColor(COLOR_HIGHLIGHTTEXT));
+  mDC.SetBkColor(::GetSysColor(COLOR_HIGHLIGHT));
+ }
+ else {
+  // No focus
+  mDC.FillSolidRect(&rectClient, ::GetSysColor(COLOR_WINDOW));
+  mDC.SetBkColor(::GetSysColor(COLOR_WINDOW));
+ }
 
-	// サブアイテムを順番に表示
-	for (nItem=0; nItem<6; nItem++) {
-		// 座標作成
-		nWidth = m_ListCtrl.GetColumnWidth(nItem);
-		rectClient.right = rectClient.left + nWidth;
+ // Display sub-items by column
+ for (nItem=0; nItem<6; nItem++) {
+  // Create coordinates
+  nWidth = m_ListCtrl.GetColumnWidth(nItem);
+  rectClient.right = rectClient.left + nWidth;
 
-		// テキスト取得
-		TextSub(nItem, &logdata, strText);
+  // Get text
+  TextSub(nItem, &logdata, strText);
 
-		// 色設定
-		if (!(lpDIS->itemState & ODS_FOCUS)) {
-			mDC.SetTextColor(RGB(0, 0, 0));
-			if (nItem == 3) {
-				switch (logdata.level) {
-					// 詳細(灰色)
-					case Log::Detail:
-						mDC.SetTextColor(RGB(192, 192, 192));
-						break;
-					// 警告(赤色)
-					case Log::Warning:
-						mDC.SetTextColor(RGB(255, 0, 0));
-						break;
-				}
-			}
-		}
+  // Color settings
+  if (!(lpDIS->itemState & ODS_FOCUS)) {
+   mDC.SetTextColor(RGB(0, 0, 0));
+   if (nItem == 3) {
+    switch (logdata.level) {
+     // Detail (gray)
+     case Log::Detail:
+      mDC.SetTextColor(RGB(192, 192, 192));
+      break;
+     // Warning (red)
+     case Log::Warning:
+      mDC.SetTextColor(RGB(255, 0, 0));
+      break;
+    }
+   }
+  }
 
-		// 表示
-		switch (nItem) {
-			// No.(右詰め)
-			case 0:
-			// 仮想時間(右詰め)
-			case 1:
-				mDC.DrawText(strText, &rectClient, DT_SINGLELINE | DT_RIGHT | DT_VCENTER);
-				break;
+  // Display
+  switch (nItem) {
+   // No. (right align)
+   case 0:
+   // Time (right align)
+   case 1:
+    mDC.DrawText(strText, &rectClient, DT_SINGLELINE | DT_RIGHT | DT_VCENTER);
+    break;
 
-			// PC(中央揃え)
-			case 2:
-			// レベル(中央揃え)
-			case 3:
-			// デバイス(中央揃え)
-			case 4:
-				mDC.DrawText(strText, &rectClient, DT_SINGLELINE | DT_CENTER | DT_VCENTER);
-				break;
+   // PC (center align)
+   case 2:
+   // Level (center align)
+   case 3:
+   // Device (center align)
+   case 4:
+    mDC.DrawText(strText, &rectClient, DT_SINGLELINE | DT_CENTER | DT_VCENTER);
+    break;
 
-			// メッセージ(左詰め)
-			case 5:
+   // Message (left align)
+   case 5:
 #if !defined(UNICODE)
-				// 日本語なら、VMからのシフトJIS文字列をそのまま表示できる
-				if (::IsJapanese()) {
-					// 日本語
-					mDC.DrawText(strText, &rectClient, DT_SINGLELINE | DT_LEFT | DT_VCENTER);
-					break;
-				}
+    // If not Japanese, display VM's Shift-JIS as-is
+    if (::IsJapanese()) {
+     // Japanese
+     mDC.DrawText(strText, &rectClient, DT_SINGLELINE | DT_LEFT | DT_VCENTER);
+     break;
+    }
 
-				// CP932サポートか
-				if (::Support932()) {
-					// CP932サポート(UNICODEもサポートされている)
-					memset(&szWide[0], 0, sizeof(szWide));
-					if (_tcslen(strText) < 0x100) {
-						// シフトJISから、UNICODEへ変換する
-						::MultiByteToWideChar(932, MB_PRECOMPOSED, (LPCSTR)(LPCTSTR)strText, -1, szWide, 100);
+    // CP932 support
+    if (::Support932()) {
+     // CP932 support (UNICODE is supported)
+     memset(&szWide[0], 0, sizeof(szWide));
+     if (_tcslen(strText) < 0x100) {
+      // Convert Shift-JIS to UNICODE
+      ::MultiByteToWideChar(932, MB_PRECOMPOSED, (LPCSTR)(LPCTSTR)strText, -1, szWide, 100);
 
-						// UNICODEとして表示
-						::DrawTextWide(mDC.m_hDC, szWide, -1, rectClient, DT_SINGLELINE | DT_LEFT | DT_VCENTER);
-					}
-					break;
-				}
+      // Display as UNICODE
+      ::DrawTextWide(mDC.m_hDC, szWide, -1, rectClient, DT_SINGLELINE | DT_LEFT | DT_VCENTER);
+     }
+     break;
+    }
 
-				// 表示できない
-				if (::IsWinNT()) {
-					strText = _T("CP932(Japanese Shift-JIS) is required");
-				}
-				else {
-					strText = _T("(Japanese Text)");
-				}
+    // Cannot display
+    if (::IsWinNT()) {
+     strText = _T("CP932(Japanese Shift-JIS) is required");
+    }
+    else {
+     strText = _T("(Japanese Text)");
+    }
 #endif	// !UNICODE
-				mDC.DrawText(strText, &rectClient, DT_SINGLELINE | DT_LEFT | DT_VCENTER);
-				break;
+    mDC.DrawText(strText, &rectClient, DT_SINGLELINE | DT_LEFT | DT_VCENTER);
+    break;
 
-			// その他(ありえない)
-			default:
-				ASSERT(FALSE);
-		}
+   // Others (should not happen)
+   default:
+    ASSERT(FALSE);
+  }
 
-		// 矩形更新
-		rectClient.left += nWidth;
-	}
+  // Update rectangle
+  rectClient.left += nWidth;
+ }
 
-	// 表示終了
-	VERIFY(dc.BitBlt(rectItem.left, rectItem.top, rectItem.Width(), rectItem.Height(),
-						&mDC, 0, 0, SRCCOPY));
-	VERIFY(mDC.SelectObject(pFont));
-	VERIFY(mDC.SelectObject(pBitmap));
-	VERIFY(Bitmap.DeleteObject());
-	VERIFY(mDC.DeleteDC());
-	dc.Detach();
+ // Complete display
+ VERIFY(dc.BitBlt(rectItem.left, rectItem.top, rectItem.Width(), rectItem.Height(),
+   &mDC, 0, 0, SRCCOPY));
+ VERIFY(mDC.SelectObject(pFont));
+ VERIFY(mDC.SelectObject(pBitmap));
+ VERIFY(Bitmap.DeleteObject());
+ VERIFY(mDC.DeleteDC());
+ dc.Detach();
 
-	// 文字列バッファ解放
-	delete[] logdata.string;
-	nID = 0;
+ // Free working buffer
+ delete[] logdata.string;
+ nID = 0;
 }
 
 //---------------------------------------------------------------------------
 //
-//	リストコントロール初期化
+//	List control initialization
 //
 //---------------------------------------------------------------------------
 void FASTCALL CLogWnd::InitList()
 {
-	CString strHeader;
+ CString strHeader;
 
-	ASSERT(this);
-	ASSERT_VALID(this);
+ ASSERT(this);
+ ASSERT_VALID(this);
 
-	// カラム0(通し番号)
-	::GetMsg(IDS_SWND_LOG_NUMBER, strHeader);
-	m_ListCtrl.InsertColumn(0, strHeader, LVCFMT_RIGHT, m_tmWidth * 7, 0);
+ // Column 0 (Number)
+ ::GetMsg(IDS_SWND_LOG_NUMBER, strHeader);
+ m_ListCtrl.InsertColumn(0, strHeader, LVCFMT_RIGHT, m_tmWidth * 7, 0);
 
-	// カラム1(時間)
-	::GetMsg(IDS_SWND_LOG_TIME, strHeader);
-	m_ListCtrl.InsertColumn(1, strHeader, LVCFMT_RIGHT, m_tmWidth * 10, 1);
+ // Column 1 (Time)
+ ::GetMsg(IDS_SWND_LOG_TIME, strHeader);
+ m_ListCtrl.InsertColumn(1, strHeader, LVCFMT_RIGHT, m_tmWidth * 10, 1);
 
-	// カラム2(PC)
-	::GetMsg(IDS_SWND_LOG_PC, strHeader);
-	m_ListCtrl.InsertColumn(2, strHeader, LVCFMT_CENTER, m_tmWidth * 8, 2);
+ // Column 2 (PC)
+ ::GetMsg(IDS_SWND_LOG_PC, strHeader);
+ m_ListCtrl.InsertColumn(2, strHeader, LVCFMT_CENTER, m_tmWidth * 8, 2);
 
-	// カラム3(レベル)
-	::GetMsg(IDS_SWND_LOG_LEVEL, strHeader);
-	m_ListCtrl.InsertColumn(3, strHeader, LVCFMT_CENTER, m_tmWidth * 6, 3);
+ // Column 3 (Level)
+ ::GetMsg(IDS_SWND_LOG_LEVEL, strHeader);
+ m_ListCtrl.InsertColumn(3, strHeader, LVCFMT_CENTER, m_tmWidth * 6, 3);
 
-	// カラム4(デバイス)
-	::GetMsg(IDS_SWND_LOG_DEVICE, strHeader);
-	m_ListCtrl.InsertColumn(4, strHeader, LVCFMT_CENTER, m_tmWidth * 8, 4);
+ // Column 4 (Device)
+ ::GetMsg(IDS_SWND_LOG_DEVICE, strHeader);
+ m_ListCtrl.InsertColumn(4, strHeader, LVCFMT_CENTER, m_tmWidth * 8, 4);
 
-	// カラム5(メッセージ)
-	::GetMsg(IDS_SWND_LOG_MSG, strHeader);
-	m_ListCtrl.InsertColumn(5, strHeader, LVCFMT_LEFT, m_tmWidth * 32, 5);
+ // Column 5 (Message)
+ ::GetMsg(IDS_SWND_LOG_MSG, strHeader);
+ m_ListCtrl.InsertColumn(5, strHeader, LVCFMT_LEFT, m_tmWidth * 32, 5);
 
-	// 全て削除
-	m_ListCtrl.DeleteAllItems();
+ // Delete all
+ m_ListCtrl.DeleteAllItems();
 }
 
 //---------------------------------------------------------------------------
 //
-//	リフレッシュ
+//	Refresh
 //
 //---------------------------------------------------------------------------
 void FASTCALL CLogWnd::Refresh()
 {
-	// Updateでメッセージスレッドから処理するため、何もしない
+ // Since message thread updates via Update, do nothing
 }
 
 //---------------------------------------------------------------------------
 //
-//	メッセージスレッドからの更新
+//	Message thread update
 //
 //---------------------------------------------------------------------------
 void FASTCALL CLogWnd::Update()
 {
-	int nItem;
-	int nLog;
-	BOOL bRun;
-	CString strEmpty;
+ int nItem;
+ int nLog;
+ BOOL bRun;
+ CString strEmpty;
 
-	ASSERT(this);
-	ASSERT_VALID(this);
+ ASSERT(this);
+ ASSERT_VALID(this);
 
-	// 無効なら何もしない
-	if (!m_bEnable) {
-		return;
-	}
+ // If disabled do nothing
+ if (!m_bEnable) {
+  return;
+ }
 
-	// 現在の数を得て、アイテム数を調整
-	nItem = m_ListCtrl.GetItemCount();
-	nLog = m_pLog->GetNum();
+ // Get current count and increase items
+ nItem = m_ListCtrl.GetItemCount();
+ nLog = m_pLog->GetNum();
 
-	// 縮小
-	if (nItem > nLog) {
-		m_ListCtrl.DeleteAllItems();
-		nItem = 0;
-	}
+ // Reduce
+ if (nItem > nLog) {
+  m_ListCtrl.DeleteAllItems();
+  nItem = 0;
+ }
 
-	// 拡大
-	if (nItem < nLog) {
-		// ダミー文字列を用意
-		strEmpty.Empty();
+ // Increase
+ if (nItem < nLog) {
+  // Dummy string for insertion
+  strEmpty.Empty();
 
-		// 1024アイテム以上の場合、一旦VMを止めて、アイテムを増やす
-		if ((nLog - nItem) >= 0x400) {
-			// この拡大は時間がかかるため、VMを止める
-			bRun = m_pSch->IsEnable();
-			m_pSch->Enable(FALSE);
+  // If 1024 items or more, suspend VM and add items
+  if ((nLog - nItem) >= 0x400) {
+   // Suspend VM because bulk addition takes time
+   bRun = m_pSch->IsEnable();
+   m_pSch->Enable(FALSE);
 
-			// 拡大
-			while (nItem < nLog) {
-				m_ListCtrl.InsertItem(nItem, strEmpty);
-				nItem++;
-			}
+   // Add
+   while (nItem < nLog) {
+    m_ListCtrl.InsertItem(nItem, strEmpty);
+    nItem++;
+   }
 
-			// VMを復元
-			m_pSch->Enable(bRun);
-			m_pSch->Reset();
-		}
-		else {
-			// 1023アイテム以下なので、VMを実行しながら拡大
-			while (nItem < nLog) {
-				m_ListCtrl.InsertItem(nItem, strEmpty);
-				nItem++;
-			}
-		}
-	}
+   // Resume VM
+   m_pSch->Enable(bRun);
+   m_pSch->Reset();
+  }
+  else {
+   // Since less than 1024 items, add without VM suspension
+   while (nItem < nLog) {
+    m_ListCtrl.InsertItem(nItem, strEmpty);
+    nItem++;
+   }
+  }
+ }
 
-	// 特に描画指示はしない方がよい結果をもたらす
+ // Drawing update request is not needed since it only updates the list
 }
 
 //---------------------------------------------------------------------------
 //
-//	文字列セット
+//	Text format
 //
 //---------------------------------------------------------------------------
 void FASTCALL CLogWnd::TextSub(int nType, Log::logdata_t *pLogData, CString& string)
 {
-	DWORD dwTime;
-	CString strTemp;
+ DWORD dwTime;
+ CString strTemp;
 #if defined(UNICODE)
-	wchar_t szWide[100];
+ wchar_t szWide[100];
 #endif	// UNICODE
 
-	ASSERT(this);
-	ASSERT((nType >= 0) && (nType <= 5));
-	ASSERT(pLogData);
+ ASSERT(this);
+ ASSERT((nType >= 0) && (nType <= 5));
+ ASSERT(pLogData);
 
-	switch (nType) {
-		// 通し番号
-		case 0:
-			string.Format("%d", pLogData->number);
-			return;
+ switch (nType) {
+  // Number
+  case 0:
+   string.Format("%d", pLogData->number);
+   return;
 
-		// 時間 (s.ms.us)
-		case 1:
-			dwTime = pLogData->time;
-			dwTime /= 2;
-			strTemp.Format("%d.", dwTime / (1000 * 1000));
-			string = strTemp;
-			dwTime %= (1000 * 1000);
-			strTemp.Format("%03d.", dwTime / 1000);
-			string += strTemp;
-			dwTime %= 1000;
-			strTemp.Format("%03d", dwTime);
-			string += strTemp;
-			return;
+  // Time (s.ms.us)
+  case 1:
+   dwTime = pLogData->time;
+   dwTime /= 2;
+   strTemp.Format("%d.", dwTime / (1000 * 1000));
+   string = strTemp;
+   dwTime %= (1000 * 1000);
+   strTemp.Format("%03d.", dwTime / 1000);
+   string += strTemp;
+   dwTime %= 1000;
+   strTemp.Format("%03d", dwTime);
+   string += strTemp;
+   return;
 
-		// PC
-		case 2:
-			string.Format("$%06X", pLogData->pc);
-			return;
+  // PC
+  case 2:
+   string.Format("$%06X", pLogData->pc);
+   return;
 
-		// レベル
-		case 3:
-			switch (pLogData->level) {
-				// 詳細
-				case Log::Detail:
-					string = m_strDetail;
-					break;
-				// 通常
-				case Log::Normal:
-					string = m_strNormal;
-					break;
-				// 警告
-				case Log::Warning:
-					string = m_strWarning;
-					break;
-				// その他(ありえない)
-				default:
-					ASSERT(FALSE);
-					string.Empty();
-					break;
-			}
-			return;
+  // Level
+  case 3:
+   switch (pLogData->level) {
+    // Detail
+    case Log::Detail:
+     string = m_strDetail;
+     break;
+    // Normal
+    case Log::Normal:
+     string = m_strNormal;
+     break;
+    // Warning
+    case Log::Warning:
+     string = m_strWarning;
+     break;
+    // Others (should not happen)
+    default:
+     ASSERT(FALSE);
+     string.Empty();
+     break;
+   }
+   return;
 
-		// デバイス
-		case 4:
-			string.Format(_T("%c%c%c%c"),
-						(BYTE)(pLogData->id >> 24),
-						(BYTE)(pLogData->id >> 16),
-						(BYTE)(pLogData->id >> 8),
-						(BYTE)(pLogData->id));
-			return;
+  // Device
+  case 4:
+   string.Format(_T("%c%c%c%c"),
+    (BYTE)(pLogData->id >> 24),
+    (BYTE)(pLogData->id >> 16),
+    (BYTE)(pLogData->id >> 8),
+    (BYTE)(pLogData->id));
+   return;
 
-		// メッセージ
-		case 5:
+  // Message
+  case 5:
 #if defined(UNICODE)
-			// ここでCP932から変換しておく
-			if (::Support932()) {
-				// シフトJISから、UNICODEへ変換する
-				::MultiByteToWideChar(932, MB_PRECOMPOSED, (LPCSTR)pLogData->string, -1, szWide, 100);
+   // Convert from CP932 if supported
+   if (::Support932()) {
+    // Convert Shift-JIS to UNICODE
+    ::MultiByteToWideChar(932, MB_PRECOMPOSED, (LPCSTR)pLogData->string, -1, szWide, 100);
 
-				// セット
-				string = szWide;
-			}
-			else {
-				if (::IsWinNT()) {
-					// UNICODEサポートされているが、CP932が無い
-					string = _T("CP932(Japanese Shift-JIS) is required");
-				}
-				else {
-					// UNICODE指定なのに、Win9xで動かしている
-					string = _T("(Japanese Text)");
-				}
-			}
+    // Replace
+    string = szWide;
+   }
+   else {
+    if (::IsWinNT()) {
+     // UNICODE supported but CP932 not available
+     string = _T("CP932(Japanese Shift-JIS) is required");
+    }
+    else {
+     // Since not UNICODE, display on Win9x
+     string = _T("(Japanese Text)");
+    }
+   }
 #else
-			// UNICODEでないので、stringもマルチバイト
-			string = pLogData->string;
+   // Since not UNICODE, string is multibyte
+   string = pLogData->string;
 #endif	// UNICODE
-			return;
+   return;
 
-		// その他(ありえない)
-		default:
-			break;
-	}
+  // Others (should not happen)
+  default:
+   break;
+ }
 
-	// 通常、ここにはこない
-	ASSERT(FALSE);
+ // Should not happen normally
+ ASSERT(FALSE);
 }
 
 //===========================================================================
 //
-//	スケジューラウィンドウ
+//	Scheduler Window
 //
 //===========================================================================
 
 //---------------------------------------------------------------------------
 //
-//	コンストラクタ
+//	Constructor
 //
 //---------------------------------------------------------------------------
 CSchedulerWnd::CSchedulerWnd()
 {
-	// ウィンドウパラメータ定義
-	m_dwID = MAKEID('S', 'C', 'H', 'E');
-	::GetMsg(IDS_SWND_SCHEDULER, m_strCaption);
-	m_nWidth = 72;
-	m_nHeight = 23;
+ // Window parameter definition
+ m_dwID = MAKEID('S', 'C', 'H', 'E');
+ ::GetMsg(IDS_SWND_SCHEDULER, m_strCaption);
+ m_nWidth = 72;
+ m_nHeight = 23;
 
-	// スケジューラ取得
-	m_pScheduler = (Scheduler*)::GetVM()->SearchDevice(MAKEID('S', 'C', 'H', 'E'));
-	ASSERT(m_pScheduler);
+ // Get scheduler
+ m_pScheduler = (Scheduler*)::GetVM()->SearchDevice(MAKEID('S', 'C', 'H', 'E'));
+ ASSERT(m_pScheduler);
 }
 
 //---------------------------------------------------------------------------
 //
-//	セットアップ
+//	Setup
 //
 //---------------------------------------------------------------------------
 void FASTCALL CSchedulerWnd::Setup()
 {
-	int x;
-	int y;
-	int nIndex;
-	DWORD dwRate;
-	Event *pEvent;
-	Device *pDevice;
-	DWORD dwID;
-	CString strText;
-	Scheduler::scheduler_t sch;
+ int x;
+ int y;
+ int nIndex;
+ DWORD dwRate;
+ Event *pEvent;
+ Device *pDevice;
+ DWORD dwID;
+ CString strText;
+ Scheduler::scheduler_t sch;
 
-	ASSERT(this);
-	ASSERT(m_pSch);
-	ASSERT(m_pScheduler);
+ ASSERT(this);
+ ASSERT(m_pSch);
+ ASSERT(m_pScheduler);
 
-	// スケジューラ内部ワーク取得
-	m_pScheduler->GetScheduler(&sch);
+ // Get scheduler structure
+ m_pScheduler->GetScheduler(&sch);
 
-	// クリア
-	Clear();
-	x = 44;
+ // Clear
+ Clear();
+ x = 44;
 
-	// 左半分
-	y = 0;
+ // Left side
+ y = 0;
 
-	// トータル実行時間
-	SetString(0, y, _T("Passed Time"));
-	strText.Format(_T("%12dms"), sch.total / 2000);
-	SetString(15, y, strText);
-	y++;
+ // Passed time
+ SetString(0, y, _T("Passed Time"));
+ strText.Format(_T("%12dms"), sch.total / 2000);
+ SetString(15, y, strText);
+ y++;
 
-	// 微少実行時間
-	SetString(0, y, _T("Execution Time"));
-	strText.Format(_T("%6d.%1dus"), sch.one / 2, (sch.one & 1) * 5);
-	SetString(19, y, strText);
-	y++;
+ // Execution time
+ SetString(0, y, _T("Execution Time"));
+ strText.Format(_T("%6d.%1dus"), sch.one / 2, (sch.one & 1) * 5);
+ SetString(19, y, strText);
+ y++;
 
-	// フレームレート
-	dwRate = m_pSch->GetFrameRate();
-	SetString(0, y, _T("Frame Rate"));
-	strText.Format(_T("%2d.%1dfps"), dwRate / 10, (dwRate % 10));
-	SetString(22, y, strText);
+ // Frame rate
+ dwRate = m_pSch->GetFrameRate();
+ SetString(0, y, _T("Frame Rate"));
+ strText.Format(_T("%2d.%1dfps"), dwRate / 10, (dwRate % 10));
+ SetString(22, y, strText);
 
-	// 右半分
-	y = 0;
+ // Right side
+ y = 0;
 
-	// CPU情報(実効速度)
-	SetString(x, y, _T("MPU Speed"));
-	strText.Format(_T("%d.%02dMHz"), sch.speed / 100, sch.speed % 100);
-	if (sch.speed >= 1000) {
-		SetString(x + 20, y, strText);
-	}
-	else {
-		SetString(x + 21, y, strText);
-	}
-	y++;
+ // CPU usage (execution speed)
+ SetString(x, y, _T("MPU Speed"));
+ strText.Format(_T("%d.%02dMHz"), sch.speed / 100, sch.speed % 100);
+ if (sch.speed >= 1000) {
+  SetString(x + 20, y, strText);
+ }
+ else {
+  SetString(x + 21, y, strText);
+ }
+ y++;
 
-	// CPU情報(微小時間サイクル)
-	SetString(x, y, _T("MPU Over Cycle"));
-	strText.Format(_T("%5u"), sch.cycle);
-	SetString(x + 23, y, strText);
-	y++;
+ // CPU usage (over cycle)
+ SetString(x, y, _T("MPU Over Cycle"));
+ strText.Format(_T("%5u"), sch.cycle);
+ SetString(x + 23, y, strText);
+ y++;
 
-	// CPU情報(微小時間)
-	SetString(x, y, _T("MPU Over Time"));
-	strText.Format(_T("%3d.%1dus"), sch.time / 2, (sch.time & 1) * 5);
-	SetString(x + 21, y, strText);
-	y++;
+ // CPU usage (over time)
+ SetString(x, y, _T("MPU Over Time"));
+ strText.Format(_T("%3d.%1dus"), sch.time / 2, (sch.time & 1) * 5);
+ SetString(x + 21, y, strText);
+ y++;
 
-	// イベントガイド
-	y++;
-	SetString(0, y, _T("No."));
-	SetString(6, y, _T("Remain"));
-	SetString(20, y, _T("Time"));
-	SetString(34, y, _T("User"));
-	SetString(42, y, _T("Flag"));
-	SetString(48, y, _T("Device"));
-	SetString(56, y, _T("Description"));
-	y++;
+ // Event list header
+ y++;
+ SetString(0, y, _T("No."));
+ SetString(6, y, _T("Remain"));
+ SetString(20, y, _T("Time"));
+ SetString(34, y, _T("User"));
+ SetString(42, y, _T("Flag"));
+ SetString(48, y, _T("Device"));
+ SetString(56, y, _T("Description"));
+ y++;
 
-	// イベントループ
-	pEvent = m_pScheduler->GetFirstEvent();
-	nIndex = 0;
-	while (pEvent) {
-		// 基本パラメータ
-		strText.Format(_T("%2d %5d.%04dms (%5d.%04dms) $%08X "),
-			nIndex + 1,
-			pEvent->GetRemain() / 2000,
-			(pEvent->GetRemain() % 2000) * 5,
-			pEvent->GetTime() / 2000,
-			(pEvent->GetTime() % 2000) * 5,
-			pEvent->GetUser());
-		SetString(0, y, strText);
+ // Event loop
+ pEvent = m_pScheduler->GetFirstEvent();
+ nIndex = 0;
+ while (pEvent) {
+  // Basic parameters
+  strText.Format(_T("%2d %5d.%04dms (%5d.%04dms) $%08X "),
+   nIndex + 1,
+   pEvent->GetRemain() / 2000,
+   (pEvent->GetRemain() % 2000) * 5,
+   pEvent->GetTime() / 2000,
+   (pEvent->GetTime() % 2000) * 5,
+   pEvent->GetUser());
+  SetString(0, y, strText);
 
-		// 有効フラグ
-		if (pEvent->GetTime() != 0) {
-			SetString(42, y, _T("Enable"));
-		}
+  // Enable flag
+  if (pEvent->GetTime() != 0) {
+   SetString(42, y, _T("Enable"));
+  }
 
-		// デバイス名
-		pDevice = pEvent->GetDevice();
-		ASSERT(pDevice);
-		dwID = pDevice->GetID();
-		strText.Format(_T("%c%c%c%c"),
-						(BYTE)(dwID >> 24),
-						(BYTE)(dwID >> 16),
-						(BYTE)(dwID >> 8),
-						(BYTE)dwID);
-		SetString(49, y, strText);
+  // Device name
+  pDevice = pEvent->GetDevice();
+  ASSERT(pDevice);
+  dwID = pDevice->GetID();
+  strText.Format(_T("%c%c%c%c"),
+     (BYTE)(dwID >> 24),
+     (BYTE)(dwID >> 16),
+     (BYTE)(dwID >> 8),
+     (BYTE)dwID);
+  SetString(49, y, strText);
 
-		// 名称
-		SetString(54, y, pEvent->GetDesc());
+  // Description
+  SetString(54, y, pEvent->GetDesc());
 
-		// 次のイベントへ
-		pEvent = pEvent->GetNextEvent();
-		nIndex++;
-		y++;
-	}
+  // Next event
+  pEvent = pEvent->GetNextEvent();
+  nIndex++;
+  y++;
+ }
 }
 
 //---------------------------------------------------------------------------
 //
-//	メッセージスレッドからの更新
+//	Message thread update
 //
 //---------------------------------------------------------------------------
 void FASTCALL CSchedulerWnd::Update()
 {
-	int nNum;
+ int nNum;
 
-	ASSERT(this);
+ ASSERT(this);
 
-	// スケジューラのもつイベント数を取得し、リサイズ
-	nNum = m_pScheduler->GetEventNum();
-	ReSize(m_nWidth, nNum + 5);
+ // Get scheduler event count and resize
+ nNum = m_pScheduler->GetEventNum();
+ ReSize(m_nWidth, nNum + 5);
 }
 
 //===========================================================================
 //
-//	デバイスウィンドウ
+//	Device Window
 //
 //===========================================================================
 
 //---------------------------------------------------------------------------
 //
-//	コンストラクタ
+//	Constructor
 //
 //---------------------------------------------------------------------------
 CDeviceWnd::CDeviceWnd()
 {
-	// ウィンドウパラメータ定義
-	m_dwID = MAKEID('D', 'E', 'V', 'I');
-	::GetMsg(IDS_SWND_DEVICE, m_strCaption);
+ // Window parameter definition
+ m_dwID = MAKEID('D', 'E', 'V', 'I');
+ ::GetMsg(IDS_SWND_DEVICE, m_strCaption);
 
-	m_nWidth = 57;
-	m_nHeight = 32;
+ m_nWidth = 57;
+ m_nHeight = 32;
 }
 
 //---------------------------------------------------------------------------
 //
-//	セットアップ
+//	Setup
 //
 //---------------------------------------------------------------------------
 void FASTCALL CDeviceWnd::Setup()
 {
-	int nDevice;
-	const Device *pDevice;
-	const MemDevice *pMemDev;
-	CString strText;
-	CString strTemp;
-	DWORD dwID;
-	DWORD dwMemID;
-	BOOL bMem;
+ int nDevice;
+ const Device *pDevice;
+ const MemDevice *pMemDev;
+ CString strText;
+ CString strTemp;
+ DWORD dwID;
+ DWORD dwMemID;
+ BOOL bMem;
 
-	ASSERT(this);
+ ASSERT(this);
 
-	// クリア
-	Clear();
+ // Clear
+ Clear();
 
-	// 最初のデバイスを取得、メモリID作成
-	pDevice = ::GetVM()->GetFirstDevice();
-	ASSERT(pDevice);
-	dwMemID = MAKEID('M', 'E', 'M', ' ');
-	bMem = FALSE;
+ // Get first device and create header ID
+ pDevice = ::GetVM()->GetFirstDevice();
+ ASSERT(pDevice);
+ dwMemID = MAKEID('M', 'E', 'M', ' ');
+ bMem = FALSE;
 
-	SetString(0, 0, _T("No. Device Object"));
-	SetString(23, 0, _T("Address Range"));
-	SetString(41, 0, _T("Description"));
+ SetString(0, 0, _T("No. Device Object"));
+ SetString(23, 0, _T("Address Range"));
+ SetString(41, 0, _T("Description"));
 
-	// ループ
-	nDevice = 0;
-	while (pDevice) {
-		// 番号
-		strText.Format(_T("%2d  "), nDevice + 1);
+ // Loop
+ nDevice = 0;
+ while (pDevice) {
+  // Number
+  strText.Format(_T("%2d  "), nDevice + 1);
 
-		// ID
-		dwID = pDevice->GetID();
-		strTemp.Format(_T("%c%c%c%c"),
-						(BYTE)(dwID >> 24),
-						(BYTE)(dwID >> 16),
-						(BYTE)(dwID >> 8),
-						(BYTE)(dwID));
-		strText += strTemp;
+  // ID
+  dwID = pDevice->GetID();
+  strTemp.Format(_T("%c%c%c%c"),
+     (BYTE)(dwID >> 24),
+     (BYTE)(dwID >> 16),
+     (BYTE)(dwID >> 8),
+     (BYTE)(dwID));
+  strText += strTemp;
 
-		// ポインタ
-		strTemp.Format(_T("  %08x  "), pDevice);
-		strText += strTemp;
+  // Pointer
+  strTemp.Format(_T("  %08x  "), pDevice);
+  strText += strTemp;
 
-		// メモリフラグ
-		if (dwID == dwMemID) {
-			bMem = TRUE;
-		}
+  // Memory flag
+  if (dwID == dwMemID) {
+   bMem = TRUE;
+  }
 
-		// メモリ範囲
-		if (bMem) {
-			pMemDev = (MemDevice *)pDevice;
-			strTemp.Format(_T("$%06X - $%06X"),
-						pMemDev->GetFirstAddr(), pMemDev->GetLastAddr());
-		}
-		else {
-			strTemp = _T("(NO MEMORY)");
-		}
-		strText += strTemp;
+  // Address range
+  if (bMem) {
+   pMemDev = (MemDevice *)pDevice;
+   strTemp.Format(_T("$%06X - $%06X"),
+     pMemDev->GetFirstAddr(), pMemDev->GetLastAddr());
+  }
+  else {
+   strTemp = _T("(NO MEMORY)");
+  }
+  strText += strTemp;
 
-		// セット
-		SetString(0, nDevice + 1, strText);
+  // Set
+  SetString(0, nDevice + 1, strText);
 
-		// 名称
-		strText = pDevice->GetDesc();
-		SetString(39, nDevice + 1, strText);
+  // Description
+  strText = pDevice->GetDesc();
+  SetString(39, nDevice + 1, strText);
 
-		// 次へ
-		nDevice++;
-		pDevice = pDevice->GetNextDevice();
-	}
+  // Next
+  nDevice++;
+  pDevice = pDevice->GetNextDevice();
+ }
 }
 
 #endif	// _WIN32

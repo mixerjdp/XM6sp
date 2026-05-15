@@ -2,7 +2,7 @@
 //
 //	X68000 EMULATOR "XM6"
 //
-//	Copyright (C) 2001-2004 š°å•½D(ytanaka@ipc-tokai.or.jp)
+//	Copyright (C) 2001-2004 PI (ytanaka@ipc-tokai.or.jp)
 //	[ MFC Subwindow (renderer) ]
 //
 //---------------------------------------------------------------------------

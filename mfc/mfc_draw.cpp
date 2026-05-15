@@ -1,4 +1,4 @@
-//---------------------------------------------------------------------------
+﻿//---------------------------------------------------------------------------
 //
 // X68000 Emulator "XM6"
 //
@@ -81,6 +81,7 @@ CDrawView::CDrawView()
 	m_pFrmWnd = NULL;
 	m_bUseDX9 = TRUE;
 	m_lPresentPending = 0;
+	m_bRenderFastDummy = FALSE;
 	m_hRenderEvent = CreateEvent(NULL, FALSE, FALSE, NULL);
 	m_hRenderExitEvent = CreateEvent(NULL, FALSE, FALSE, NULL);
 	m_hRenderAckEvent = CreateEvent(NULL, FALSE, FALSE, NULL);
@@ -204,6 +205,50 @@ BOOL FASTCALL CDrawView::Init(CWnd *pParent, BOOL bShaderEnabled)
 	}
 
 	return TRUE;
+}
+
+//---------------------------------------------------------------------------
+//
+//	Render target callbacks
+//
+//---------------------------------------------------------------------------
+void FASTCALL CDrawView::DrawLine()
+{
+	if (!m_bEnable) {
+		return;
+	}
+	RequestPresent();
+}
+
+void FASTCALL CDrawView::DrawFrame()
+{
+	if (!m_bEnable) {
+		return;
+	}
+	RequestPresent();
+}
+
+BOOL FASTCALL CDrawView::SetRenderFastDummyEnabled(BOOL bEnable)
+{
+	Render *pRender;
+	BOOL bActive;
+
+	m_bRenderFastDummy = bEnable ? TRUE : FALSE;
+
+	pRender = m_Info.pRender;
+	if (!pRender) {
+		return m_bRenderFastDummy;
+	}
+
+	bActive = pRender->SetRenderFastDummyEnabled(m_bRenderFastDummy);
+	m_bRenderFastDummy = bActive;
+	RequestPresent();
+	return bActive;
+}
+
+BOOL FASTCALL CDrawView::IsRenderFastDummyEnabled() const
+{
+	return m_bRenderFastDummy;
 }
 
 //---------------------------------------------------------------------------
@@ -793,11 +838,10 @@ void FASTCALL CDrawView::SetupBitmap()
 	p = (BITMAPINFOHEADER*) new BYTE[sizeof(BITMAPINFOHEADER) + sizeof(RGBQUAD)];
 	memset(p, 0, sizeof(BITMAPINFOHEADER) + sizeof(RGBQUAD));
 
-	// Create bitmap information
-	m_Info.nBMPWidth = rect.Width();
-
-	/* Bitmap height is set here */
-	m_Info.nBMPHeight = (rect.Height() < 512) ? 512 : rect.Height();
+	// XM6p keeps a full 1024x1024 composition surface regardless of
+	// the current window size; the visible view is clipped/scaled later.
+	m_Info.nBMPWidth = 1024;
+	m_Info.nBMPHeight = 1024;
 	p->biSize = sizeof(BITMAPINFOHEADER);
 	p->biWidth = m_Info.nBMPWidth;
 	p->biHeight = -m_Info.nBMPHeight;
@@ -845,6 +889,15 @@ void FASTCALL CDrawView::Enable(BOOL bEnable)
 			if (m_Info.pBits) {
 				m_Info.pRender->SetMixBuf(m_Info.pBits, m_Info.nBMPWidth, m_Info.nBMPHeight);
 			}
+		}
+		if (m_Info.pRender) {
+			m_Info.pRender->SetRenderTarget(this);
+			m_bRenderFastDummy = m_Info.pRender->SetRenderFastDummyEnabled(m_bRenderFastDummy);
+		}
+	}
+	else {
+		if (m_Info.pRender) {
+			m_Info.pRender->SetRenderTarget(NULL);
 		}
 	}
 
@@ -1039,6 +1092,19 @@ void FASTCALL CDrawView::ShowRenderStatusOSD(BOOL bVSync)
 
 //---------------------------------------------------------------------------
 //
+// Reset OSD frame counter
+//
+//---------------------------------------------------------------------------
+void FASTCALL CDrawView::ResetFrameCounter()
+{
+	m_Info.dwDrawCount = 0;
+	m_dwPerfOSDLastTick = 0;
+	m_nPerfFPS = 0;
+	m_szPerfLine[0] = _T('\0');
+}
+
+//---------------------------------------------------------------------------
+//
 // Toggle CRT shader
 //
 //---------------------------------------------------------------------------
@@ -1196,9 +1262,11 @@ void FASTCALL CDrawView::RenderLoop()
 						CRect rect;
 						GetClientRect(&rect);
 						ReCalc(rect);
-						srcWidth = m_Info.nWidth;
-						srcHeight = m_Info.nHeight;
-						srcPitch = m_Info.nBMPWidth;
+						if (!CopyPx68kFrameToBits(&srcWidth, &srcHeight, &srcPitch)) {
+							srcWidth = m_Info.nWidth;
+							srcHeight = m_Info.nHeight;
+							srcPitch = m_Info.nBMPWidth;
+						}
 
 						if ((srcWidth > 0) && (srcHeight > 0) && (srcPitch >= srcWidth)) {
 							if (!m_pStagingBuffer || (m_nStagingWidth < srcWidth) || (m_nStagingHeight < srcHeight)) {
@@ -1268,6 +1336,7 @@ LRESULT CDrawView::OnPresentFrame(WPARAM /*wParam*/, LPARAM /*lParam*/)
 	if (m_bEnable && m_Info.hBitmap && m_Info.pWork && m_Info.pBits) {
 		CClientDC dc(this);
 		::LockVM();
+		CopyPx68kFrameToBits();
 		OnDraw(&dc);
 		::UnlockVM();
 	}
@@ -1297,6 +1366,93 @@ void FASTCALL CDrawView::FinishFrame()
 	m_Info.bBltAll = FALSE;
 }
 
+BOOL FASTCALL CDrawView::CopyPx68kFrameToBits(int *pWidth, int *pHeight, int *pPitch)
+{
+	const WORD *src;
+	int srcWidth;
+	int srcHeight;
+	int srcStride;
+	int copyWidth;
+	int copyHeight;
+	int px68kHMul;
+	int px68kVMul;
+	int displayWidth;
+	int x;
+	int y;
+
+	if (!m_Info.pRender || !m_Info.pBits) {
+		return FALSE;
+	}
+	if (!m_bRenderFastDummy && !m_Info.pRender->IsRenderFastDummyEnabled()) {
+		return FALSE;
+	}
+	m_bRenderFastDummy = TRUE;
+	src = NULL;
+	srcWidth = srcHeight = srcStride = 0;
+	if (!m_Info.pRender->GetPx68kScreen(&src, &srcWidth, &srcHeight, &srcStride) ||
+		!src || (srcWidth <= 0) || (srcHeight <= 0) || (srcStride < srcWidth)) {
+		return FALSE;
+	}
+
+	copyWidth = min(srcWidth, m_Info.nBMPWidth);
+	copyHeight = min(srcHeight, m_Info.nBMPHeight);
+	if ((copyWidth <= 0) || (copyHeight <= 0)) {
+		return FALSE;
+	}
+
+	px68kHMul = (copyWidth <= 256) ? 2 : 1;
+	px68kVMul = 1;
+	displayWidth = min(copyWidth * px68kHMul, m_Info.nBMPWidth);
+
+	for (y = 0; y < copyHeight; y++) {
+		const WORD *srcRow = src + (y * srcStride);
+		DWORD *dstRow = m_Info.pBits + (y * m_Info.nBMPWidth);
+		for (x = 0; x < copyWidth; x++) {
+			WORD c = srcRow[x];
+			DWORD r = (DWORD)((c >> 11) & 0x1f);
+			DWORD g = (DWORD)((c >> 5) & 0x3f);
+			DWORD b = (DWORD)(c & 0x1f);
+			r = (r << 3) | (r >> 2);
+			g = (g << 2) | (g >> 4);
+			b = (b << 3) | (b >> 2);
+			if (px68kHMul == 2) {
+				const int dx = x * 2;
+				if (dx + 1 < displayWidth) {
+					dstRow[dx] = (r << 16) | (g << 8) | b;
+					dstRow[dx + 1] = dstRow[dx];
+				}
+			}
+			else {
+				dstRow[x] = (r << 16) | (g << 8) | b;
+			}
+		}
+	}
+	if (displayWidth < m_Info.nBMPWidth) {
+		for (y = 0; y < copyHeight; y++) {
+			memset(m_Info.pBits + (y * m_Info.nBMPWidth) + displayWidth, 0,
+				(m_Info.nBMPWidth - displayWidth) * sizeof(DWORD));
+		}
+	}
+	if (copyHeight < m_Info.nBMPHeight) {
+		memset(m_Info.pBits + (copyHeight * m_Info.nBMPWidth), 0,
+			(m_Info.nBMPHeight - copyHeight) * m_Info.nBMPWidth * sizeof(DWORD));
+	}
+
+	m_Info.nWidth = displayWidth;
+	m_Info.nHeight = copyHeight;
+	m_Info.nRendWidth = displayWidth;
+	m_Info.nRendHeight = copyHeight;
+	m_Info.nRendHMul = 1;
+	m_Info.nRendVMul = px68kVMul;
+	m_Info.bBltAll = TRUE;
+	m_Info.dwDrawCount++;
+
+	if (pWidth) *pWidth = displayWidth;
+	if (pHeight) *pHeight = copyHeight;
+	if (pPitch) *pPitch = m_Info.nBMPWidth;
+	return TRUE;
+}
+
 //---------------------------------------------------------------------------
 //
 // Simple OSD
@@ -1309,7 +1465,8 @@ void FASTCALL CDrawView::DrawOSD(CDC *pDC)
 	}
 
 	DWORD now = GetTickCount();
-	if ((m_dwPerfOSDLastTick == 0) || ((now - m_dwPerfOSDLastTick) >= 1500)) {
+	// Reducimos el tick de 32ms para ver el contador en real-time
+	if ((m_dwPerfOSDLastTick == 0) || ((now - m_dwPerfOSDLastTick) >= 32)) {
 		m_dwPerfOSDLastTick = now;
 		m_nPerfFPS = (m_pScheduler) ? m_pScheduler->GetFrameRate() : 0;
 		if (m_nPerfFPS < 0) {
@@ -1317,23 +1474,27 @@ void FASTCALL CDrawView::DrawOSD(CDC *pDC)
 		}
 
 		BOOL bVSync = (m_pFrmWnd) ? m_pFrmWnd->m_bVSyncEnabled : FALSE;
-		_stprintf(m_szPerfLine, _T("%s | VSync:%s | FPS:%d.%d"),
+		_stprintf(m_szPerfLine, _T("%s | VSync:%s | FPS:%d.%d | Frame: %u"),
 			m_bUseDX9 ? _T("DirectX 9") : _T("GDI"),
 			bVSync ? _T("ON") : _T("OFF"),
 			m_nPerfFPS / 10,
-			m_nPerfFPS % 10);
+			m_nPerfFPS % 10,
+			(unsigned int)m_Info.dwDrawCount);
 	}
 
 	if (!pDC) {
 		return;
 	}
 
-	if (!m_bShowOSD && !m_szOSDText[0]) {
+	BOOL bShowStatus = m_bShowOSD;
+	BOOL bShowMsg = (m_szOSDText[0] && (now <= m_dwOSDUntil));
+
+	if (!bShowStatus && !bShowMsg) {
 		return;
 	}
 
-	BOOL bShowMsg = (m_szOSDText[0] && (now <= m_dwOSDUntil));
-	CRect rect(8, 8, 320, bShowMsg ? 46 : 28);
+	int nLines = (bShowStatus ? 1 : 0) + (bShowMsg ? 1 : 0);
+	CRect rect(8, 8, 320, 8 + (nLines * 18) + 2); // 28 para 1 línea, 46 para 2 líneas
 
 	pDC->FillSolidRect(&rect, RGB(0, 0, 0));
 	int oldBk = pDC->SetBkMode(TRANSPARENT);
@@ -1343,15 +1504,16 @@ void FASTCALL CDrawView::DrawOSD(CDC *pDC)
 	lineRect.left += 4;
 	lineRect.top += 2;
 	lineRect.bottom = lineRect.top + 16;
-	pDC->DrawText(m_szPerfLine, -1, &lineRect, DT_LEFT | DT_VCENTER | DT_SINGLELINE);
+
+	if (bShowStatus) {
+		pDC->DrawText(m_szPerfLine, -1, &lineRect, DT_LEFT | DT_VCENTER | DT_SINGLELINE);
+		lineRect.top += 18;
+		lineRect.bottom += 18;
+	}
 
 	if (bShowMsg) {
-		CRect msgRect = rect;
-		msgRect.left += 4;
-		msgRect.top = lineRect.bottom + 2;
-		msgRect.bottom = msgRect.top + 16;
 		pDC->SetTextColor(RGB(255, 220, 96));
-		pDC->DrawText(m_szOSDText, -1, &msgRect, DT_LEFT | DT_VCENTER | DT_SINGLELINE);
+		pDC->DrawText(m_szOSDText, -1, &lineRect, DT_LEFT | DT_VCENTER | DT_SINGLELINE);
 	}
 
 	pDC->SetTextColor(oldColor);
@@ -1391,6 +1553,9 @@ void FASTCALL CDrawView::ApplyCfg(const Config *pConfig)
 
 	// Shader (CRT)
 	SetShaderEnabled(pConfig->render_shader);
+
+	// Render fast dummy
+	SetRenderFastDummyEnabled(pConfig->render_fast_dummy);
 
 	// Subwindow handling
 	pWnd = m_pSubWnd;
@@ -1437,7 +1602,9 @@ void CDrawView::OnDraw(CDC *pDC)
 	}
 
 	// Recalculate
-	ReCalc(rect);
+	if (!CopyPx68kFrameToBits()) {
+		ReCalc(rect);
+	}
 
 	// Disconnect handling
 	if (::GetVM()->IsPower() != m_Info.bPower) {
@@ -2260,3 +2427,4 @@ LPCTSTR FASTCALL CDrawView::GetWndClassName() const
 }
 
 #endif	// _WIN32
+

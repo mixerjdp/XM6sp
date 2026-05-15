@@ -82,6 +82,10 @@ CInput::CInput(CFrmWnd *pWnd) : CComponent(pWnd)
 	m_pPPI = NULL;
 	m_dwJoyDevs = 0;
 	m_bJoyEnable = TRUE;
+	memset(m_bSmokeJoyButton, 0, sizeof(m_bSmokeJoyButton));
+	memset(m_bSmokeJoyAxisActive, 0, sizeof(m_bSmokeJoyAxisActive));
+	memset(m_dwSmokeJoyAxis, 0, sizeof(m_dwSmokeJoyAxis));
+	m_bSmokeJoyActive = FALSE;
 	for (i=0; i<JoyDevices; i++) {
 		// Device
 		m_lpDIJoy[i] = NULL;
@@ -2081,7 +2085,20 @@ void FASTCALL CInput::MakeJoy(BOOL bEnable)
 	// Disabling would be a good option
 	if (!bEnable) {
 		for (i=0; i<PPI::PortMax; i++) {
-			// Send data with no input
+			if (m_bSmokeJoyActive) {
+				for (nButton=0; nButton<PPI::ButtonMax; nButton++) {
+					if (m_bSmokeJoyButton[i][nButton]) {
+						ji[i].button[nButton] = TRUE;
+					}
+				}
+				for (nAxis=0; nAxis<PPI::AxisMax; nAxis++) {
+					if (m_bSmokeJoyAxisActive[i][nAxis]) {
+						ji[i].axis[nAxis] = m_dwSmokeJoyAxis[i][nAxis];
+					}
+				}
+			}
+
+			// Send data with no input, or with the smoke-test override
 			m_pPPI->SetJoyInfo(i, &ji[i]);
 
 			// Clear button sequence
@@ -2317,6 +2334,13 @@ void FASTCALL CInput::MakeJoy(BOOL bEnable)
 
 	// Combined with keyboard
 
+	for (i=0; i<PPI::PortMax; i++) {
+		for (nButton=0; nButton<PPI::ButtonMax; nButton++) {
+			if (m_bSmokeJoyButton[i][nButton]) {
+				ji[i].button[nButton] = TRUE;
+			}
+		}
+	}
 
 	// Send to PPI
 	for (i=0; i<PPI::PortMax; i++) {
@@ -2324,7 +2348,85 @@ void FASTCALL CInput::MakeJoy(BOOL bEnable)
 	}
 }
 
+//---------------------------------------------------------------------------
+//
+//	Smoke-test joystick button override
+//
+//---------------------------------------------------------------------------
+void FASTCALL CInput::SetSmokeJoyButton(int nPort, int nButton, BOOL bPressed)
+{
+	ASSERT(this);
+	ASSERT((nPort >= 0) && (nPort < PPI::PortMax));
+	ASSERT((nButton >= 0) && (nButton < PPI::ButtonMax));
 
+	if ((nPort < 0) || (nPort >= PPI::PortMax) ||
+		(nButton < 0) || (nButton >= PPI::ButtonMax)) {
+		return;
+	}
+	m_bSmokeJoyButton[nPort][nButton] = bPressed;
+	if (bPressed) {
+		m_bSmokeJoyActive = TRUE;
+	}
+	else {
+		int i;
+		int j;
+
+		m_bSmokeJoyActive = FALSE;
+		for (i=0; i<PPI::PortMax; i++) {
+			for (j=0; j<PPI::ButtonMax; j++) {
+				if (m_bSmokeJoyButton[i][j]) {
+					m_bSmokeJoyActive = TRUE;
+					return;
+				}
+			}
+		}
+	}
+}
+
+
+
+
+//---------------------------------------------------------------------------
+//
+//	Smoke-test joystick axis override
+//
+//---------------------------------------------------------------------------
+void FASTCALL CInput::SetSmokeJoyAxis(int nPort, int nAxis, BOOL bActive, DWORD dwValue)
+{
+	ASSERT(this);
+	ASSERT((nPort >= 0) && (nPort < PPI::PortMax));
+	ASSERT((nAxis >= 0) && (nAxis < PPI::AxisMax));
+
+	if ((nPort < 0) || (nPort >= PPI::PortMax) ||
+		(nAxis < 0) || (nAxis >= PPI::AxisMax)) {
+		return;
+	}
+	m_bSmokeJoyAxisActive[nPort][nAxis] = bActive;
+	m_dwSmokeJoyAxis[nPort][nAxis] = bActive ? dwValue : 0;
+	if (bActive) {
+		m_bSmokeJoyActive = TRUE;
+	}
+	else {
+		int i;
+		int j;
+
+		m_bSmokeJoyActive = FALSE;
+		for (i=0; i<PPI::PortMax; i++) {
+			for (j=0; j<PPI::ButtonMax; j++) {
+				if (m_bSmokeJoyButton[i][j]) {
+					m_bSmokeJoyActive = TRUE;
+					return;
+				}
+			}
+			for (j=0; j<PPI::AxisMax; j++) {
+				if (m_bSmokeJoyAxisActive[i][j]) {
+					m_bSmokeJoyActive = TRUE;
+					return;
+				}
+			}
+		}
+	}
+}
 
 //---------------------------------------------------------------------------
 //

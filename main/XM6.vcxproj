@@ -182,8 +182,9 @@
     <ClCompile Include="..\vm\ppi.cpp" />
     <ClCompile Include="..\vm\printer.cpp" />
     <ClCompile Include="..\vm\render.cpp" />
-    <ClCompile Include="..\vm\renderfast_compositor.cpp" />
     <ClCompile Include="..\vm\rend_soft.cpp" />
+    <ClCompile Include="..\vm\px68k_video_engine.cpp" />
+    <ClCompile Include="..\vm\px68k_render_adapter.cpp" />
     <ClCompile Include="..\vm\rtc.cpp" />
     <ClCompile Include="..\vm\sasi.cpp" />
     <ClCompile Include="..\vm\scc.cpp" />
@@ -321,7 +322,6 @@
     <ClInclude Include="..\vm\os.h" />
     <ClInclude Include="..\vm\ppi.h" />
     <ClInclude Include="..\vm\printer.h" />
-    <ClInclude Include="..\vm\rend_soft.h" />
     <ClInclude Include="..\vm\render.h" />
     <ClInclude Include="..\vm\renderin.h" />
     <ClInclude Include="..\vm\rtc.h" />

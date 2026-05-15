@@ -35,6 +35,8 @@ public:
 #endif	// _DEBUG
 
 	// Execution control
+	void FASTCALL Enable(BOOL bEnable);
+										// Enable control
 	void FASTCALL Reset();
 										// Reset time
 	void FASTCALL Run();
@@ -65,6 +67,8 @@ public:
 										// Get frame rate
 	void FASTCALL OnMainFramePresented();
 										// Async confirmation of frame consumed by UI
+	void FASTCALL StepFrame();
+										// Step one frame
 
 private:
 	static UINT ThreadFunc(LPVOID pParam);
@@ -109,6 +113,8 @@ private:
 										// Frame display time
 	DWORD m_dwDrawBackup;
 										// Frame display count (backup)
+	BOOL m_bStepFrame;
+										// Step frame flag
 	BOOL m_bMenu;
 										// Menu flag
 	BOOL m_bActivate;

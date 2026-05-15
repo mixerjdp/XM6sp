@@ -24,6 +24,9 @@
 #include "render.h"
 #include "crtc.h"
 #include "vc.h"
+#include "tvram.h"
+#include "gvram.h"
+#include "sprite.h"
 #include "keyboard.h"
 #include "mouse.h"
 #include "fdd.h"
@@ -56,10 +59,10 @@
 //
 //---------------------------------------------------------------------------
 static const char XM6CORE_VERSION[] = "XM6 Core 2.06";
-static const unsigned int k_video_probe_frames_after_mode_change = 12u;
+static const unsigned int k_video_probe_frames_after_mode_change = 1u;
 
 #ifndef XM6CORE_ENABLE_VIDEO_PROBE_LOG
-#define XM6CORE_ENABLE_VIDEO_PROBE_LOG 0
+#define XM6CORE_ENABLE_VIDEO_PROBE_LOG 1
 #endif
 
 //---------------------------------------------------------------------------
@@ -90,7 +93,8 @@ struct XM6Context {
 	unsigned int audio_rate;
 	unsigned int audio_buf_frames;
 	BOOL surround_enabled;
-	BOOL hq_adpcm_enabled;
+	int hq_adpcm_level;
+	int bass_enhancer_level;
 	int reverb_level;
 	int eq_sub_bass_level;
 	int eq_bass_level;
@@ -103,12 +107,20 @@ struct XM6Context {
 	Config runtime_config;
 	int surround_prev_l;
 	int surround_prev_r;
-	int hq_adpcm_prev_in_l;
-	int hq_adpcm_prev_in_r;
-	int hq_adpcm_prev2_in_l;
-	int hq_adpcm_prev2_in_r;
-	int hq_adpcm_prev_out_l;
-	int hq_adpcm_prev_out_r;
+	int hq_adpcm_hp_prev_input;
+	int hq_adpcm_hp_prev_output;
+	double hq_adpcm_envelope;
+	int hq_adpcm_last_level;
+	double bass_enhancer_low_pass;
+	double bass_enhancer_envelope;
+	double bass_enhancer_period_samples;
+	double bass_enhancer_sub_phase;
+	double bass_enhancer_sub_phase2;
+	double bass_enhancer_hp_prev_input;
+	double bass_enhancer_hp_prev_output;
+	double bass_enhancer_prev_low_pass;
+	int bass_enhancer_samples_since_zero_cross;
+	int bass_enhancer_last_level;
 	int x68sound_adpcm_prev_in_l;
 	int x68sound_adpcm_prev_in_r;
 	int x68sound_adpcm_prev2_in_l;
@@ -164,6 +176,11 @@ struct XM6Context {
 	int px68k_lpf_prev_r;
 	int px68k_last_out_l;
 	int px68k_last_out_r;
+	unsigned int *px68k_video_xrgb;
+	unsigned int px68k_video_xrgb_capacity;
+	unsigned int px68k_video_probe_signature;
+	BOOL px68k_video_probe_has_signature;
+	unsigned int px68k_watchdog_frame_count;
 };
 
 #include "x68sound_adpcm_core.h"
@@ -185,18 +202,230 @@ static inline bool ctx_valid(XM6Context *ctx)
 
 static void reset_px68k_audio_state(XM6Context *ctx);
 static void reset_hq_adpcm_state(XM6Context *ctx);
+static void reset_bass_enhancer_state(XM6Context *ctx);
 static void reset_x68sound_adpcm_state(XM6Context *ctx);
 static void apply_x68sound_adpcm_fx(XM6Context *ctx, DWORD *buffer, unsigned int frames);
 static void reset_reverb_state(XM6Context *ctx);
 static void reset_eq_state(XM6Context *ctx);
 static void sync_x68sound_state(XM6Context *ctx);
 static void apply_reverb_fx(XM6Context *ctx, short *buffer, unsigned int frames);
+static void apply_bass_enhancer_fx(XM6Context *ctx, short *buffer, unsigned int frames);
 static void configure_eq_filters(XM6Context *ctx, unsigned int sample_rate);
 static void apply_eq_fx(XM6Context *ctx, short *buffer, unsigned int frames);
 static bool ensure_px68k_audio_ring(XM6Context *ctx);
 static void produce_px68k_audio(XM6Context *ctx, DWORD hus);
 static int configure_audio_backend(XM6Context *ctx, unsigned int sample_rate);
 static inline short saturate_s16(int value);
+static unsigned int hash_u32(unsigned int h, unsigned int v);
+static void emit_messagef(XM6Context *ctx, const char *format, ...);
+
+static inline unsigned int px68k_rgb565_to_xrgb8888(WORD color)
+{
+	const unsigned int r5 = (unsigned int)((color >> 11) & 0x1f);
+	const unsigned int g5 = (unsigned int)((color >> 6) & 0x1f);
+	const unsigned int b5 = (unsigned int)(color & 0x1f);
+	const unsigned int r8 = (r5 << 3) | (r5 >> 2);
+	const unsigned int g8 = (g5 << 3) | (g5 >> 2);
+	const unsigned int b8 = (b5 << 3) | (b5 >> 2);
+	return (r8 << 16) | (g8 << 8) | b8;
+}
+
+static bool ensure_px68k_video_xrgb_buffer(XM6Context *ctx, unsigned int pixels)
+{
+	unsigned int *new_buf;
+
+	if (!ctx || pixels == 0) {
+		return false;
+	}
+	if (ctx->px68k_video_xrgb && ctx->px68k_video_xrgb_capacity >= pixels) {
+		return true;
+	}
+
+	new_buf = new (std::nothrow) unsigned int[pixels];
+	if (!new_buf) {
+		return false;
+	}
+
+	delete[] ctx->px68k_video_xrgb;
+	ctx->px68k_video_xrgb = new_buf;
+	ctx->px68k_video_xrgb_capacity = pixels;
+	return true;
+}
+
+static unsigned int px68k_frame_signature(const WORD *src, unsigned int width, unsigned int height, unsigned int stride, unsigned int *out_nonzero)
+{
+	unsigned int signature = 2166136261u;
+	unsigned int nonzero = 0;
+
+	if (!src || width == 0 || height == 0 || stride < width) {
+		if (out_nonzero) {
+			*out_nonzero = 0;
+		}
+		return 0;
+	}
+
+	for (unsigned int y = 0; y < height; y += 16) {
+		const WORD *row = src + ((size_t)y * (size_t)stride);
+		for (unsigned int x = 0; x < width; x += 16) {
+			const unsigned int v = (unsigned int)row[x];
+			if (v != 0) {
+				nonzero++;
+			}
+			signature = hash_u32(signature, v);
+		}
+	}
+
+	signature = hash_u32(signature, width);
+	signature = hash_u32(signature, height);
+	signature = hash_u32(signature, nonzero);
+	if (out_nonzero) {
+		*out_nonzero = nonzero;
+	}
+	return signature;
+}
+
+static unsigned int sampled_byte_stats(const BYTE *src, unsigned int size, unsigned int step, unsigned int *out_nonzero)
+{
+	unsigned int signature = 2166136261u;
+	unsigned int nonzero = 0;
+
+	if (!src || size == 0) {
+		if (out_nonzero) {
+			*out_nonzero = 0;
+		}
+		return 0;
+	}
+	if (step == 0) {
+		step = 1;
+	}
+
+	for (unsigned int i = 0; i < size; i += step) {
+		const unsigned int v = (unsigned int)src[i];
+		if (v != 0) {
+			nonzero++;
+		}
+		signature = hash_u32(signature, v);
+	}
+
+	if (out_nonzero) {
+		*out_nonzero = nonzero;
+	}
+	return signature;
+}
+
+static unsigned int sampled_word_stats(const WORD *src, unsigned int count, unsigned int step, unsigned int *out_nonzero)
+{
+	unsigned int signature = 2166136261u;
+	unsigned int nonzero = 0;
+
+	if (!src || count == 0) {
+		if (out_nonzero) {
+			*out_nonzero = 0;
+		}
+		return 0;
+	}
+	if (step == 0) {
+		step = 1;
+	}
+
+	for (unsigned int i = 0; i < count; i += step) {
+		const unsigned int v = (unsigned int)src[i];
+		if (v != 0) {
+			nonzero++;
+		}
+		signature = hash_u32(signature, v);
+	}
+
+	if (out_nonzero) {
+		*out_nonzero = nonzero;
+	}
+	return signature;
+}
+
+static void emit_px68k_watchdog(
+	XM6Context *ctx,
+	const WORD *framebuffer,
+	unsigned int width,
+	unsigned int height,
+	unsigned int stride,
+	unsigned int fb_nonzero,
+	unsigned int fb_signature)
+{
+	const VC::vc_t *vc_state = NULL;
+	const CRTC::crtc_t *crtc_state = NULL;
+	const Px68kCrtcStateView *crtc_view = NULL;
+	const BYTE *tvram_bytes = NULL;
+	const BYTE *gvram_bytes = NULL;
+	const WORD *palette_words = NULL;
+	unsigned int tv_nonzero = 0;
+	unsigned int gv_nonzero = 0;
+	unsigned int pal_nonzero = 0;
+	unsigned int tv_sig = 0;
+	unsigned int gv_sig = 0;
+	unsigned int pal_sig = 0;
+
+	if (!ctx || !ctx->vm) {
+		return;
+	}
+
+	Device *dev = ctx->vm->SearchDevice(MAKEID('V', 'C', ' ', ' '));
+	if (dev && dev->GetID() == MAKEID('V', 'C', ' ', ' ')) {
+		VC *vc = static_cast<VC*>(dev);
+		vc_state = vc->GetWorkAddr();
+		palette_words = (const WORD*)vc->GetPalette();
+	}
+
+	dev = ctx->vm->SearchDevice(MAKEID('C', 'R', 'T', 'C'));
+	if (dev && dev->GetID() == MAKEID('C', 'R', 'T', 'C')) {
+		CRTC *crtc = static_cast<CRTC*>(dev);
+		crtc_state = crtc->GetWorkAddr();
+		crtc_view = crtc->GetPx68kStateView();
+	}
+
+	dev = ctx->vm->SearchDevice(MAKEID('T', 'V', 'R', 'M'));
+	if (dev && dev->GetID() == MAKEID('T', 'V', 'R', 'M')) {
+		TVRAM *tvram = static_cast<TVRAM*>(dev);
+		tvram_bytes = tvram->GetTVRAM();
+	}
+
+	dev = ctx->vm->SearchDevice(MAKEID('G', 'V', 'R', 'M'));
+	if (dev && dev->GetID() == MAKEID('G', 'V', 'R', 'M')) {
+		GVRAM *gvram = static_cast<GVRAM*>(dev);
+		gvram_bytes = gvram->GetGVRAM();
+	}
+
+	tv_sig = sampled_byte_stats(tvram_bytes, 0x80000u, 257u, &tv_nonzero);
+	gv_sig = sampled_byte_stats(gvram_bytes, 0x80000u, 509u, &gv_nonzero);
+	pal_sig = sampled_word_stats(palette_words, 512u, 1u, &pal_nonzero);
+
+	emit_messagef(ctx,
+		"[xm6-core] PX68k watchdog fb=%ux%u stride=%u fb_nonzero=%u fb_sig=%08X "
+		"vc0=%02X vc1=%02X%02X vc2=%02X%02X ton=%u gon=%u son=%u gs=%u%u%u%u "
+		"crtc=%dx%d v=%d/%d mode=%02X view=%ux%u vv=%u "
+		"tv_nonzero=%u tv_sig=%08X gv_nonzero=%u gv_sig=%08X pal_nonzero=%u pal_sig=%08X",
+		width, height, stride, fb_nonzero, fb_signature,
+		vc_state ? (unsigned int)(((vc_state->siz ? 0x04u : 0x00u) | (vc_state->col & 0x03u)) & 0xffu) : 0u,
+		vc_state ? (unsigned int)(vc_state->vr1h & 0xffu) : 0u,
+		vc_state ? (unsigned int)(vc_state->vr1l & 0xffu) : 0u,
+		vc_state ? (unsigned int)(vc_state->vr2h & 0xffu) : 0u,
+		vc_state ? (unsigned int)(vc_state->vr2l & 0xffu) : 0u,
+		(vc_state && vc_state->ton) ? 1u : 0u,
+		(vc_state && vc_state->gon) ? 1u : 0u,
+		(vc_state && vc_state->son) ? 1u : 0u,
+		(vc_state && vc_state->gs[3]) ? 1u : 0u,
+		(vc_state && vc_state->gs[2]) ? 1u : 0u,
+		(vc_state && vc_state->gs[1]) ? 1u : 0u,
+		(vc_state && vc_state->gs[0]) ? 1u : 0u,
+		crtc_state ? crtc_state->h_dots : 0,
+		crtc_state ? crtc_state->v_dots : 0,
+		crtc_state ? crtc_state->v_scan : 0,
+		crtc_state ? crtc_state->v_count : 0,
+		crtc_view ? (unsigned int)(crtc_view->state.mode & 0xffu) : 0u,
+		crtc_view ? (unsigned int)crtc_view->state.textdotx : 0u,
+		crtc_view ? (unsigned int)crtc_view->state.textdoty : 0u,
+		crtc_view ? (unsigned int)crtc_view->state.visible_vline : 0xffffffffu,
+		tv_nonzero, tv_sig, gv_nonzero, gv_sig, pal_nonzero, pal_sig);
+}
 
 static const unsigned int k_opm_clock_hz = 4000000u;
 
@@ -737,31 +966,35 @@ static void apply_eq_fx(XM6Context *ctx, short *buffer, unsigned int frames)
 	ctx->eq_air_r = air_r;
 }
 
-static inline long long hq_adpcm_soft_clip(long long sample)
-{
-	const long long abs_sample = (sample < 0) ? -sample : sample;
-	const long long knee = 8192LL;
-	if (abs_sample <= knee) {
-		return sample;
-	}
-
-	const long long excess = abs_sample - knee;
-	const long long compressed = knee + ((excess * 5LL) >> 3);
-	return (sample < 0) ? -compressed : compressed;
-}
-
 static void reset_hq_adpcm_state(XM6Context *ctx)
 {
 	if (!ctx) {
 		return;
 	}
 
-	ctx->hq_adpcm_prev_in_l = 0;
-	ctx->hq_adpcm_prev_in_r = 0;
-	ctx->hq_adpcm_prev2_in_l = 0;
-	ctx->hq_adpcm_prev2_in_r = 0;
-	ctx->hq_adpcm_prev_out_l = 0;
-	ctx->hq_adpcm_prev_out_r = 0;
+	ctx->hq_adpcm_hp_prev_input = 0;
+	ctx->hq_adpcm_hp_prev_output = 0;
+	ctx->hq_adpcm_envelope = 0.0;
+	ctx->hq_adpcm_last_level = -1;
+	reset_bass_enhancer_state(ctx);
+}
+
+static void reset_bass_enhancer_state(XM6Context *ctx)
+{
+	if (!ctx) {
+		return;
+	}
+
+	ctx->bass_enhancer_low_pass = 0.0;
+	ctx->bass_enhancer_envelope = 0.0;
+	ctx->bass_enhancer_period_samples = 0.0;
+	ctx->bass_enhancer_sub_phase = 0.0;
+	ctx->bass_enhancer_sub_phase2 = 0.0;
+	ctx->bass_enhancer_hp_prev_input = 0.0;
+	ctx->bass_enhancer_hp_prev_output = 0.0;
+	ctx->bass_enhancer_prev_low_pass = 0.0;
+	ctx->bass_enhancer_samples_since_zero_cross = 0;
+	ctx->bass_enhancer_last_level = -1;
 }
 
 static void reset_x68sound_adpcm_state(XM6Context *ctx)
@@ -776,87 +1009,166 @@ static void apply_x68sound_adpcm_fx(XM6Context *ctx, DWORD *buffer, unsigned int
 
 static void apply_hq_adpcm_fx(XM6Context *ctx, DWORD *buffer, unsigned int frames)
 {
-	if (!ctx || !buffer || frames == 0 || !ctx->hq_adpcm_enabled) {
+	if (!ctx || !buffer || frames == 0 || ctx->hq_adpcm_level <= 0 || ctx->audio_rate == 0) {
 		return;
 	}
 
-	int prev_in_l = ctx->hq_adpcm_prev_in_l;
-	int prev_in_r = ctx->hq_adpcm_prev_in_r;
-	int prev2_in_l = ctx->hq_adpcm_prev2_in_l;
-	int prev2_in_r = ctx->hq_adpcm_prev2_in_r;
-	int prev_out_l = ctx->hq_adpcm_prev_out_l;
-	int prev_out_r = ctx->hq_adpcm_prev_out_r;
-	int *samples = (int*)buffer;
+	const int level = (ctx->hq_adpcm_level > 100) ? 100 : ctx->hq_adpcm_level;
+	if (ctx->hq_adpcm_last_level != level) {
+		reset_hq_adpcm_state(ctx);
+		ctx->hq_adpcm_last_level = level;
+	}
 
-	// Push the ADPCM a little closer to the Type G-style "analog" feel:
-	// Keep the low-end lift, but leave the treble close to normal and preserve
-	// only a gentle stereo spread / room feel.
-	enum {
-		kLowNum = 1,
-		kLowDen = 32,
-		kPresenceNum = 0,
-		kPresenceDen = 16,
-		kAirNum = 0,
-		kAirDen = 64,
-		kWidthNum = 9,
-		kWidthDen = 4,
-		kWetNum = 3,
-		kWetDen = 16
-	};
+	double prev_input = static_cast<double>(ctx->hq_adpcm_hp_prev_input);
+	double prev_output = static_cast<double>(ctx->hq_adpcm_hp_prev_output);
+	double envelope = ctx->hq_adpcm_envelope;
+	int *samples = reinterpret_cast<int*>(buffer);
+
+	const double sample_rate = static_cast<double>(ctx->audio_rate);
+	const double rc = 1.0 / (2.0 * 3.14159265358979323846 * 8000.0);
+	const double dt = 1.0 / sample_rate;
+	const double alpha = rc / (rc + dt);
+	const double gain = static_cast<double>(level) / 100.0;
 
 	for (unsigned int i = 0; i < frames; i++) {
-		const int old_prev_in_l = prev_in_l;
-		const int old_prev_in_r = prev_in_r;
-		long long input_l = samples[0];
-		long long input_r = samples[1];
-		input_l = hq_adpcm_soft_clip(input_l);
-		input_r = hq_adpcm_soft_clip(input_r);
+		const double dry_l = static_cast<double>(samples[0]) / 32768.0;
+		const double dry_r = static_cast<double>(samples[1]) / 32768.0;
+		const double input = (dry_l + dry_r) * 0.5;
 
-		const long long low_l = (input_l + prev_in_l) >> 1;
-		const long long low_r = (input_r + prev_in_r) >> 1;
-		const long long presence_l = input_l - prev_in_l;
-		const long long presence_r = input_r - prev_in_r;
-		const long long air_l = input_l - ((prev_in_l << 1) - prev2_in_l);
-		const long long air_r = input_r - ((prev_in_r << 1) - prev2_in_r);
+		const double high = alpha * (prev_output + input - prev_input);
+		prev_input = input;
+		prev_output = high;
 
-		long long shaped_l = input_l
-			+ ((low_l * kLowNum) / kLowDen)
-			+ ((presence_l * kPresenceNum) / kPresenceDen)
-			+ ((air_l * kAirNum) / kAirDen);
-		long long shaped_r = input_r
-			+ ((low_r * kLowNum) / kLowDen)
-			+ ((presence_r * kPresenceNum) / kPresenceDen)
-			+ ((air_r * kAirNum) / kAirDen);
+		envelope = (envelope * 0.985) + (fabs(high) * 0.015);
+		const double drive = 1.0 + (envelope * 3.25);
+		const double shaped = tanh(high * drive);
+		const double harmonic = shaped - (high * 0.55);
+		// Keep the exciter focused up to the 3rd harmonic without pushing a lot of
+		// extra upper-octave content.
+		double boosted = ((high * 0.82) + (harmonic * 1.35)) * gain * 2.0;
 
-		// Gentle shared tail to give the ADPCM a little room.
-		const long long tail_l = (prev_out_l * 5LL + prev_out_r * 3LL) >> 3;
-		const long long tail_r = (prev_out_r * 5LL + prev_out_l * 3LL) >> 3;
-		shaped_l += (tail_l * kWetNum) / kWetDen;
-		shaped_r += (tail_r * kWetNum) / kWetDen;
+		if (boosted > 1.0) {
+			boosted = 1.0 + ((boosted - 1.0) * 0.4);
+		} else if (boosted < -1.0) {
+			boosted = -1.0 + ((boosted + 1.0) * 0.4);
+		}
 
-		long long mid = (shaped_l + shaped_r) / 2;
-		long long side = (shaped_l - shaped_r) / 2;
-		side = (side * kWidthNum) / kWidthDen;
-
-		mid = (mid * 14LL) >> 4;
-		samples[0] = clamp_sample_32(mid + side);
-		samples[1] = clamp_sample_32(mid - side);
-
-		prev2_in_l = old_prev_in_l;
-		prev2_in_r = old_prev_in_r;
-		prev_in_l = (int)input_l;
-		prev_in_r = (int)input_r;
-		prev_out_l = samples[0];
-		prev_out_r = samples[1];
+		const double out_l = dry_l + boosted;
+		const double out_r = dry_r + boosted;
+		samples[0] = clamp_sample_32(static_cast<long long>(out_l * 32768.0));
+		samples[1] = clamp_sample_32(static_cast<long long>(out_r * 32768.0));
 		samples += 2;
 	}
 
-	ctx->hq_adpcm_prev_in_l = prev_in_l;
-	ctx->hq_adpcm_prev_in_r = prev_in_r;
-	ctx->hq_adpcm_prev2_in_l = prev2_in_l;
-	ctx->hq_adpcm_prev2_in_r = prev2_in_r;
-	ctx->hq_adpcm_prev_out_l = prev_out_l;
-	ctx->hq_adpcm_prev_out_r = prev_out_r;
+	ctx->hq_adpcm_hp_prev_input = static_cast<int>(prev_input);
+	ctx->hq_adpcm_hp_prev_output = static_cast<int>(prev_output);
+	ctx->hq_adpcm_envelope = envelope;
+}
+
+static void apply_bass_enhancer_fx(XM6Context *ctx, short *buffer, unsigned int frames)
+{
+	if (!ctx || !buffer || frames == 0 || ctx->bass_enhancer_level <= 0 || ctx->audio_rate == 0) {
+		return;
+	}
+
+	const int level = (ctx->bass_enhancer_level > 100) ? 100 : ctx->bass_enhancer_level;
+	if (ctx->bass_enhancer_last_level != level) {
+		reset_bass_enhancer_state(ctx);
+		ctx->bass_enhancer_last_level = level;
+	}
+
+	double low_pass = ctx->bass_enhancer_low_pass;
+	double envelope = ctx->bass_enhancer_envelope;
+	double period_samples = ctx->bass_enhancer_period_samples;
+	double sub_phase = ctx->bass_enhancer_sub_phase;
+	double sub_phase2 = ctx->bass_enhancer_sub_phase2;
+	double hp_prev_input = ctx->bass_enhancer_hp_prev_input;
+	double hp_prev_output = ctx->bass_enhancer_hp_prev_output;
+	double prev_low_pass = ctx->bass_enhancer_prev_low_pass;
+	int samples_since_zero_cross = ctx->bass_enhancer_samples_since_zero_cross;
+
+	const double sample_rate = static_cast<double>(ctx->audio_rate);
+	const double alpha = exp((-2.0 * 3.14159265358979323846 * 140.0) / sample_rate);
+	const double gain = static_cast<double>(level) / 100.0;
+	const double hp_rc = 1.0 / (2.0 * 3.14159265358979323846 * 25.0);
+	const double hp_dt = 1.0 / sample_rate;
+	const double hp_alpha = hp_rc / (hp_rc + hp_dt);
+
+	short *samples = buffer;
+	for (unsigned int i = 0; i < frames; i++) {
+		const double dry_l = static_cast<double>(samples[0]) / 32768.0;
+		const double dry_r = static_cast<double>(samples[1]) / 32768.0;
+		const double input = (dry_l + dry_r) * 0.5;
+
+		low_pass = (low_pass * alpha) + (input * (1.0 - alpha));
+		envelope = (envelope * 0.985) + (fabs(low_pass) * 0.015);
+
+		samples_since_zero_cross++;
+		if ((prev_low_pass <= 0.0) && (0.0 < low_pass)) {
+			const int min_period = (sample_rate > 120.0) ? (int)(sample_rate / 120.0) : 1;
+			if (min_period <= samples_since_zero_cross) {
+				const double detected_period = (double)samples_since_zero_cross;
+				if (period_samples <= 0.0) {
+					period_samples = detected_period;
+				} else {
+					period_samples = (period_samples * 0.85) + (detected_period * 0.15);
+				}
+			}
+			samples_since_zero_cross = 0;
+		}
+		prev_low_pass = low_pass;
+
+		double sub1 = 0.0;
+		double sub2 = 0.0;
+		if (period_samples > 0.0) {
+			const double sub_period1 = (period_samples * 2.0 < 4.0) ? 4.0 : (period_samples * 2.0);
+			const double sub_period2 = (period_samples * 4.0 < 8.0) ? 8.0 : (period_samples * 4.0);
+
+			sub_phase += (2.0 * 3.14159265358979323846) / sub_period1;
+			if (sub_phase > (2.0 * 3.14159265358979323846)) {
+				sub_phase -= (2.0 * 3.14159265358979323846);
+			}
+
+			sub_phase2 += (2.0 * 3.14159265358979323846) / sub_period2;
+			if (sub_phase2 > (2.0 * 3.14159265358979323846)) {
+				sub_phase2 -= (2.0 * 3.14159265358979323846);
+			}
+
+			sub1 = sin(sub_phase);
+			sub2 = sin(sub_phase2);
+		}
+
+		const double raw_enhanced =
+			((low_pass * 0.55) +
+			 (sub1 * envelope * 1.26) +
+			 (sub2 * envelope * 1.578)) * gain * 2.25;
+
+		double enhanced = hp_alpha * (hp_prev_output + raw_enhanced - hp_prev_input);
+		hp_prev_input = raw_enhanced;
+		hp_prev_output = enhanced;
+
+		if (enhanced > 1.0) {
+			enhanced = 1.0 + ((enhanced - 1.0) * 0.4);
+		} else if (enhanced < -1.0) {
+			enhanced = -1.0 + ((enhanced + 1.0) * 0.4);
+		}
+
+		const double out_l = dry_l + enhanced;
+		const double out_r = dry_r + enhanced;
+		samples[0] = saturate_s16((int)(out_l * 32768.0));
+		samples[1] = saturate_s16((int)(out_r * 32768.0));
+		samples += 2;
+	}
+
+	ctx->bass_enhancer_low_pass = low_pass;
+	ctx->bass_enhancer_envelope = envelope;
+	ctx->bass_enhancer_period_samples = period_samples;
+	ctx->bass_enhancer_sub_phase = sub_phase;
+	ctx->bass_enhancer_sub_phase2 = sub_phase2;
+	ctx->bass_enhancer_hp_prev_input = hp_prev_input;
+	ctx->bass_enhancer_hp_prev_output = hp_prev_output;
+	ctx->bass_enhancer_prev_low_pass = prev_low_pass;
+	ctx->bass_enhancer_samples_since_zero_cross = samples_since_zero_cross;
 }
 
 static void emit_messagef(XM6Context *ctx, const char *format, ...)
@@ -1008,6 +1320,25 @@ static unsigned int vc_gs_mask(const VC::vc_t *v)
 	return mask;
 }
 
+static unsigned int xm6_render_visible_height(const Render::render_t *r)
+{
+	if (!r || r->height <= 0) {
+		return 0;
+	}
+
+	unsigned int visible_h = (unsigned int)r->height;
+
+	if (r->mixmode != 1 && r->hres == 0) {
+		visible_h <<= 1;
+	}
+
+	if (r->mixheight > 0 && visible_h > (unsigned int)r->mixheight) {
+		visible_h = (unsigned int)r->mixheight;
+	}
+
+	return visible_h;
+}
+
 static void emit_video_probe_internal(XM6Context *ctx, const Render::render_t *r)
 {
 	if (!ctx || !r || !ctx->render) {
@@ -1071,14 +1402,6 @@ static void emit_video_probe_internal(XM6Context *ctx, const Render::render_t *r
 		ctx->video_probe_frames_remaining = k_video_probe_frames_after_mode_change;
 		ctx->video_probe_frame_index = 0;
 
-	/*	emit_messagef(ctx,
-			"[video-probe-int] core=xm6 mode-change raw=%ux%u hm=%u vm=%u low=%d mode=%s",
-			(unsigned int)r->width,
-			(unsigned int)r->height,
-			(unsigned int)r->h_mul,
-			(unsigned int)r->v_mul,
-			r->lowres ? 1 : 0,
-			(ctx->render->GetCompositorMode() == 1) ? "fast" : "original"); */
 	}
 
 	if (ctx->video_probe_frames_remaining == 0) {
@@ -1086,16 +1409,146 @@ static void emit_video_probe_internal(XM6Context *ctx, const Render::render_t *r
 	}
 
 #if XM6CORE_ENABLE_VIDEO_PROBE_LOG
+	const Px68kCrtcStateView *crtc_view = NULL;
+	const CRTC *crtc_dev = NULL;
+	const CRTC::crtc_t *crtc_work = NULL;
+	const Sprite *sprite_dev = NULL;
+	if (ctx->vm) {
+		Device *dev = ctx->vm->SearchDevice(MAKEID('C', 'R', 'T', 'C'));
+		if (dev && dev->GetID() == MAKEID('C', 'R', 'T', 'C')) {
+			crtc_dev = static_cast<const CRTC*>(dev);
+			crtc_view = crtc_dev->GetPx68kStateView();
+			crtc_work = crtc_dev->GetWorkAddr();
+		}
+		dev = ctx->vm->SearchDevice(MAKEID('S', 'P', 'R', ' '));
+		if (dev && dev->GetID() == MAKEID('S', 'P', 'R', ' ')) {
+			sprite_dev = static_cast<const Sprite*>(dev);
+		}
+	}
+	const unsigned int vstart = crtc_view ? (unsigned int)(crtc_view->state.vstart & 0x3ffu)
+		: (crtc_work ? ((((unsigned int)crtc_work->reg[0x0c] << 8) | (unsigned int)crtc_work->reg[0x0d]) & 0x3ffu) : 0u);
+	const unsigned int vend = crtc_view ? (unsigned int)(crtc_view->state.vend & 0x3ffu)
+		: (crtc_work ? ((((unsigned int)crtc_work->reg[0x0e] << 8) | (unsigned int)crtc_work->reg[0x0f]) & 0x3ffu) : 0u);
+	const unsigned int vstep = crtc_work ? (((crtc_work->reg[0x29] & 0x14) == 0x10) ? 1u : (((crtc_work->reg[0x29] & 0x14) == 0x04) ? 4u : 2u)) : 0u;
+	const unsigned int vscan = crtc_work ? (unsigned int)((crtc_work->v_scan >= 0) ? crtc_work->v_scan : 0) : 0u;
+	const unsigned int vdots = crtc_work ? (unsigned int)((crtc_work->v_dots >= 0) ? crtc_work->v_dots : 0) : 0u;
+	const unsigned int vcount = crtc_work ? (unsigned int)crtc_work->v_count : 0u;
+	const unsigned int vdisp = crtc_work ? (crtc_work->v_disp ? 1u : 0u) : 0u;
+	const unsigned int vblank = crtc_work ? (crtc_work->v_blank ? 1u : 0u) : 0u;
+	const unsigned int raster_count = crtc_work ? (unsigned int)crtc_work->raster_count : 0u;
+	const unsigned int crtc_vline_total = crtc_view ? (unsigned int)crtc_view->timing_view.crtc_vline_total : 0u;
+	const unsigned int crtc_vsync_high = crtc_view ? (unsigned int)crtc_view->timing_view.crtc_vsync_high : 0u;
+	const unsigned int crtc_intline = crtc_view ? (unsigned int)crtc_view->timing_view.crtc_intline : 0u;
+	const unsigned int crtc_vstep = crtc_view ? (unsigned int)crtc_view->timing_view.crtc_vstep : 0u;
+	const unsigned int crtc_mode = crtc_view ? (unsigned int)crtc_view->timing_view.crtc_mode : 0u;
+	const unsigned int crtc_fastclr = crtc_view ? (unsigned int)crtc_view->timing_view.crtc_fastclr : 0u;
+	const unsigned int visible_vline = (crtc_work && (crtc_work->v_scan >= 0) && (crtc_work->v_scan <= crtc_work->v_dots))
+		? (unsigned int)((((unsigned int)((crtc_work->v_scan > 0) ? (crtc_work->v_scan - 1) : 0)) * vstep) / 2u)
+		: 0xffffffffu;
+	const unsigned int textdoty = (vend > vstart) ? (((vend - vstart) * vstep) / 2u) : 0u;
+	unsigned int bg_vline = 0u;
+	unsigned int bg_reg_0f = 0u;
+	unsigned int bg_reg_11 = 0u;
+	unsigned int bg_on0 = 0u;
+	unsigned int bg_on1 = 0u;
+	unsigned int bg_size = 0u;
+	unsigned int bg_area0 = 0u;
+	unsigned int bg_area1 = 0u;
+	unsigned int bg_scrlx0 = 0u;
+	unsigned int bg_scrly0 = 0u;
+	unsigned int bg_scrlx1 = 0u;
+	unsigned int bg_scrly1 = 0u;
+	if (sprite_dev) {
+		Sprite::sprite_t spr;
+		sprite_dev->GetSprite(&spr);
+		bg_on0 = spr.bg_on[0] ? 1u : 0u;
+		bg_on1 = spr.bg_on[1] ? 1u : 0u;
+		bg_size = spr.bg_size ? 1u : 0u;
+		bg_area0 = spr.bg_area[0];
+		bg_area1 = spr.bg_area[1];
+		bg_scrlx0 = spr.bg_scrlx[0];
+		bg_scrly0 = spr.bg_scrly[0];
+		bg_scrlx1 = spr.bg_scrlx[1];
+		bg_scrly1 = spr.bg_scrly[1];
+		bg_reg_0f = (unsigned int)(spr.mem[0x800 + (0x0f ^ 1)] & 0xffu);
+		bg_reg_11 = (unsigned int)(spr.mem[0x800 + (0x11 ^ 1)] & 0xffu);
+		if (crtc_work) {
+			const unsigned int div = ((bg_reg_11 & 0x04u) != 0u) ? 1u : 2u;
+			bg_vline = (bg_reg_0f >= vstart) ? ((bg_reg_0f - vstart) / div) : 0u;
+			if ((vstart <= 2u) && (vend <= 2u) && (bg_vline >= 20u)) {
+				bg_vline -= 20u;
+			}
+		}
+	}
+	const char *mode_name = ctx->render->IsRenderFastDummyEnabled() ? "px68k" : "original";
+	static unsigned int transition_last_raw_w = 0u;
+	static unsigned int transition_last_raw_h = 0u;
+	if ((unsigned int)r->width != transition_last_raw_w || (unsigned int)r->height != transition_last_raw_h) {
+		const unsigned int sp0y = (unsigned int)(r->spreg[1] & 0x3ffu);
+		const unsigned int sp0ctrl = (unsigned int)(r->spreg[3] & 0xffu);
+
+		transition_last_raw_w = (unsigned int)r->width;
+		transition_last_raw_h = (unsigned int)r->height;
+
+		emit_messagef(ctx,
+			"[video-transition] core=xm6 mode=%s raw=%ux%u out=%ux%u hm=%u vm=%u low=%d grptype=%d mixpage=%d mixtype=%d bgsp=%d,%d vr2=%02X/%02X vis=%u textdot=%u vstart=%u vend=%u vstep=%u bgv=%u vscan=%u vdots=%u vcount=%u vdisp=%u vblank=%u rcount=%u c_vline_total=%u c_vsync_high=%u c_intline=%u c_vstep=%u c_mode=%u c_fastclr=%u sp0y=%u sp0ctrl=%u bgx0=%u bgy0=%u bg_on=%u,%u bg_size=%u bg_area=%u,%u bg_scrl=%u,%u/%u,%u bgreg0f=%u bgreg11=%u",
+			mode_name,
+			(unsigned int)r->width,
+			(unsigned int)r->height,
+			(unsigned int)r->width,
+			(unsigned int)r->height,
+			(unsigned int)r->h_mul,
+			(unsigned int)r->v_mul,
+			r->lowres ? 1 : 0,
+			r->grptype,
+			r->mixpage,
+			r->mixtype,
+			r->bgspflag ? 1 : 0,
+			r->bgspdisp ? 1 : 0,
+			vr2h,
+			vr2l,
+			visible_vline,
+			textdoty,
+			vstart,
+			vend,
+			vstep,
+			bg_vline,
+			vscan,
+			vdots,
+			vcount,
+			vdisp,
+			vblank,
+			raster_count,
+			crtc_vline_total,
+			crtc_vsync_high,
+			crtc_intline,
+			crtc_vstep,
+			crtc_mode,
+			crtc_fastclr,
+			sp0y,
+			sp0ctrl,
+			(unsigned int)r->bgx[0],
+			(unsigned int)r->bgy[0],
+			bg_on0,
+			bg_on1,
+			bg_size,
+			bg_area0,
+			bg_area1,
+			bg_scrlx0,
+			bg_scrly0,
+			bg_scrlx1,
+			bg_scrly1,
+			bg_reg_0f,
+			bg_reg_11);
+	}
 	emit_messagef(ctx,
-		"[video-probe-int] core=xm6 frame=%u/%u raw=%ux%u hm=%u vm=%u low=%d mode=%s grptype=%d mixpage=%d mixtype=%d pri=%u/%u/%u gp=%u,%u,%u,%u gs=%u,%u,%u,%u en=%u,%u,%u,%u grpen=%u,%u,%u,%u text=%d bgsp=%d,%d vr2=%02X/%02X ffb=%u",
-		ctx->video_probe_frame_index + 1,
-		k_video_probe_frames_after_mode_change,
+		"[video-probe-int] core=xm6 mode=%s raw=%ux%u hm=%u vm=%u low=%d grptype=%d mixpage=%d mixtype=%d pri=%u/%u/%u gp=%u,%u,%u,%u gs=%u,%u,%u,%u en=%u,%u,%u,%u grpen=%u,%u,%u,%u text=%d bgsp=%d,%d vr2=%02X/%02X vis=%u textdot=%u vstart=%u vend=%u vstep=%u bgv=%u vscan=%u vdots=%u vcount=%u vdisp=%u vblank=%u rcount=%u c_vline_total=%u c_vsync_high=%u c_intline=%u c_vstep=%u c_mode=%u c_fastclr=%u ffb=%u",
+		mode_name,
 		(unsigned int)r->width,
 		(unsigned int)r->height,
 		(unsigned int)r->h_mul,
 		(unsigned int)r->v_mul,
 		r->lowres ? 1 : 0,
-		(ctx->render->GetCompositorMode() == 1) ? "fast" : "original",
 		r->grptype,
 		r->mixpage,
 		r->mixtype,
@@ -1123,7 +1576,83 @@ static void emit_video_probe_internal(XM6Context *ctx, const Render::render_t *r
 		r->bgspdisp ? 1 : 0,
 		vr2h,
 		vr2l,
+		visible_vline,
+		textdoty,
+		vstart,
+		vend,
+		vstep,
+		bg_vline,
+		vscan,
+		vdots,
+		vcount,
+		vdisp,
+		vblank,
+		raster_count,
+		crtc_vline_total,
+		crtc_vsync_high,
+		crtc_intline,
+		crtc_vstep,
+		crtc_mode,
+		crtc_fastclr,
 		fast_fallback_count);
+
+	Render::fast_vertical_probe_snapshot_t fast_probe;
+	static const char *const fast_probe_labels[6] = {
+		"top0",
+		"top1",
+		"top2",
+		"bot0",
+		"bot1",
+		"bot2"
+	};
+	ctx->render->GetFastVerticalProbeSnapshot(&fast_probe);
+	if (fast_probe.valid) {
+		for (int probe_index = 0; probe_index < 6; ++probe_index) {
+			const Render::fast_vertical_probe_sample_t &sample = fast_probe.samples[probe_index];
+			if (!sample.valid) {
+				continue;
+			}
+
+			emit_messagef(ctx,
+				"[video-probe-fast] core=xm6 edge=%s frame=%ux%u mix=%ux%u framebgsp=%d,%d linebgsp=%d,%d sprite=%d slot=%d dst=%d src=%d pxv=%u spr=%d bg=%d lay=%d bgv=%d vlinebg=%d vis=%d bgon=%d bgopaq=%d gon=%d tron=%d pron=%d ton=%d vr2=%02X/%02X vscan=%d vdots=%d vcount=%u vblank=%d rcount=%d vstep=%d low=%d vmul=%d",
+				fast_probe_labels[probe_index],
+				(unsigned int)fast_probe.width,
+				(unsigned int)fast_probe.height,
+				(unsigned int)fast_probe.mixwidth,
+				(unsigned int)fast_probe.mixheight,
+				fast_probe.bgspflag ? 1 : 0,
+				fast_probe.bgspdisp ? 1 : 0,
+				sample.bgspflag ? 1 : 0,
+				sample.bgspdisp ? 1 : 0,
+				sample.sprite_enabled ? 1 : 0,
+				probe_index,
+				sample.dst_y,
+				sample.src_y,
+				(unsigned int)sample.px68k_vline,
+				sample.sprite_raster,
+				sample.bg_raster,
+				sample.layer_raster,
+				sample.bg_vline,
+				sample.vline_bg,
+				sample.visible ? 1 : 0,
+				sample.bg_on ? 1 : 0,
+				sample.bg_opaq ? 1 : 0,
+				sample.gon ? 1 : 0,
+				sample.tron ? 1 : 0,
+				sample.pron ? 1 : 0,
+				sample.ton ? 1 : 0,
+				sample.vr2h,
+				sample.vr2l,
+				sample.vscan,
+				sample.vdots,
+				sample.vcount,
+				sample.vblank ? 1 : 0,
+				sample.rcount,
+				sample.vstep,
+				sample.lowres ? 1 : 0,
+				sample.vmul);
+		}
+	}
 #endif
 
 	ctx->video_probe_frame_index++;
@@ -1437,6 +1966,7 @@ XM6CORE_API XM6Handle XM6CORE_CALL xm6_create(void)
 	ctx->ppi       = (PPI*)ctx->vm->SearchDevice(MAKEID('P', 'P', 'I', ' '));
 	ctx->audio_engine = XM6CORE_AUDIO_ENGINE_XM6;
 	ctx->reverb_level = 0;
+	ctx->bass_enhancer_level = 0;
 	ctx->eq_sub_bass_level = 50;
 	ctx->eq_bass_level = 50;
 	ctx->eq_mid_level = 50;
@@ -1505,6 +2035,11 @@ XM6CORE_API void XM6CORE_CALL xm6_destroy(XM6Handle handle)
 	delete[] ctx->px68k_ring;
 	ctx->px68k_ring = NULL;
 	ctx->px68k_ring_frames = 0;
+	delete[] ctx->px68k_video_xrgb;
+	ctx->px68k_video_xrgb = NULL;
+	ctx->px68k_video_xrgb_capacity = 0;
+	ctx->px68k_video_probe_signature = 0;
+	ctx->px68k_video_probe_has_signature = FALSE;
 
 	if (g_message_ctx == ctx) {
 		 g_message_ctx = NULL;
@@ -1699,6 +2234,29 @@ XM6CORE_API int XM6CORE_CALL xm6_exec_to_frame(XM6Handle handle)
 		total += CHUNK;
 
 		if (ctx->render->IsReady()) {
+			if (ctx->render->IsRenderFastDummyEnabled() && !ctx->px68k_video_probe_has_signature) {
+				const WORD *src = NULL;
+				int src_w = 0;
+				int src_h = 0;
+				int src_stride = 0;
+				if (ctx->render->GetPx68kScreen(&src, &src_w, &src_h, &src_stride) &&
+					src && (src_w > 0) && (src_h > 0) && (src_stride >= src_w)) {
+					const unsigned int visible_w = (unsigned int)src_w;
+					const unsigned int visible_h = (unsigned int)src_h;
+					if ((visible_w < 8u) || (visible_h < 8u)) {
+						ctx->render->Complete();
+						continue;
+					}
+					else {
+						unsigned int nonzero = 0;
+						(void)px68k_frame_signature(src, visible_w, visible_h, (unsigned int)src_stride, &nonzero);
+						if (nonzero == 0u) {
+							ctx->render->Complete();
+							continue;
+						}
+					}
+				}
+			}
 			break;
 		}
 	}
@@ -2140,6 +2698,71 @@ XM6CORE_API int XM6CORE_CALL xm6_video_poll(
 		return XM6CORE_ERR_INVALID_ARGUMENT;
 	}
 
+	if (ctx->render->IsRenderFastDummyEnabled()) {
+		const WORD *src = NULL;
+		int src_w = 0;
+		int src_h = 0;
+		int src_stride = 0;
+
+		if (!ctx->render->IsReady()) {
+			if (!ctx->render->EnsurePx68kFrame()) {
+				return XM6CORE_ERR_NOT_READY;
+			}
+		}
+		bool has_px68k_screen = ctx->render->GetPx68kScreen(&src, &src_w, &src_h, &src_stride);
+		if (!has_px68k_screen && ctx->render->EnsurePx68kFrame()) {
+			src = NULL;
+			src_w = 0;
+			src_h = 0;
+			src_stride = 0;
+			has_px68k_screen = ctx->render->GetPx68kScreen(&src, &src_w, &src_h, &src_stride);
+		}
+		if (has_px68k_screen &&
+			src && (src_w > 0) && (src_h > 0) && (src_stride >= src_w)) {
+			const unsigned int visible_w = (unsigned int)src_w;
+			const unsigned int visible_h = (unsigned int)src_h;
+			if ((visible_w < 8u) || (visible_h < 8u)) {
+				ctx->render->Complete();
+				return XM6CORE_ERR_NOT_READY;
+			}
+			unsigned int nonzero = 0;
+			const unsigned int signature = px68k_frame_signature(src, visible_w, visible_h, (unsigned int)src_stride, &nonzero);
+			const unsigned int pixels = visible_w * visible_h;
+
+			if (!ensure_px68k_video_xrgb_buffer(ctx, pixels)) {
+				return XM6CORE_ERR_NOT_READY;
+			}
+
+			for (unsigned int y = 0; y < visible_h; y++) {
+				const WORD *src_row = src + ((size_t)y * (size_t)src_stride);
+				unsigned int *dst_row = ctx->px68k_video_xrgb + ((size_t)y * (size_t)visible_w);
+				for (unsigned int x = 0; x < visible_w; x++) {
+					dst_row[x] = px68k_rgb565_to_xrgb8888(src_row[x]);
+				}
+			}
+
+			out_frame->pixels_argb32 = ctx->px68k_video_xrgb;
+			out_frame->width = visible_w;
+			out_frame->height = visible_h;
+			out_frame->stride_pixels = visible_w;
+			if (!ctx->px68k_video_probe_has_signature) {
+				ctx->px68k_video_probe_has_signature = TRUE;
+				ctx->px68k_video_probe_signature = signature;
+				emit_messagef(ctx,
+					"[xm6-core] PX68k framebuffer %ux%u stride=%d sampled_nonzero=%u signature=%08X",
+					visible_w, visible_h, src_stride, nonzero, signature);
+			}
+			ctx->px68k_watchdog_frame_count++;
+			if ((ctx->px68k_watchdog_frame_count == 1u) || (ctx->px68k_watchdog_frame_count >= 300u)) {
+				ctx->px68k_watchdog_frame_count = 1u;
+				emit_px68k_watchdog(ctx, src, visible_w, visible_h, (unsigned int)src_stride, nonzero, signature);
+			}
+			return XM6CORE_OK;
+		}
+		ctx->render->Complete();
+		return XM6CORE_ERR_NOT_READY;
+	}
+
 	// Verificar si el Render tiene un frame listo
 	if (!ctx->render->IsReady()) {
 		return XM6CORE_ERR_NOT_READY;
@@ -2156,7 +2779,7 @@ XM6CORE_API int XM6CORE_CALL xm6_video_poll(
 	}
 
 	unsigned int visible_w = (unsigned int)r->width;
-	unsigned int visible_h = (unsigned int)r->height;
+	unsigned int visible_h = xm6_render_visible_height(r);
 	unsigned int stride = (unsigned int)r->mixwidth;
 	unsigned int max_h = (unsigned int)r->mixheight;
 
@@ -2267,14 +2890,11 @@ XM6CORE_API int XM6CORE_CALL xm6_get_video_layout(
 		return XM6CORE_ERR_NOT_READY;
 	}
 
-	unsigned int h_mul = (r->h_mul > 0) ? (unsigned int)r->h_mul : 1u;
+	unsigned int h_mul = 1u;
 	unsigned int v_mul = 1u;
-	if (r->v_mul == 0 || r->v_mul == 1 || r->v_mul == 2) {
-		v_mul = (unsigned int)r->v_mul;
-	}
 
 	*out_width = (unsigned int)r->width;
-	*out_height = (unsigned int)r->height;
+	*out_height = xm6_render_visible_height(r);
 	*out_h_mul = h_mul;
 	*out_v_mul = v_mul;
 	*out_lowres = r->lowres ? 1 : 0;
@@ -2472,6 +3092,7 @@ static void produce_px68k_audio(XM6Context *ctx, DWORD hus)
 	const int fm_gain_q14 = px68k_opm_gain_q14(px68k_runtime_to_fm16(ctx->runtime_config.fm_volume));
 	const int adpcm_gain_q14 = px68k_adpcm_gain_q14(px68k_runtime_to_adpcm16(ctx->runtime_config.adpcm_volume));
 	const int px_drive_q14 = 19661; // 1.20x
+	const int px_output_boost_q14 = 22938; // 1.40x
 
 	while (frames_to_generate > 0) {
 		unsigned int batch = frames_to_generate;
@@ -2531,6 +3152,8 @@ static void produce_px68k_audio(XM6Context *ctx, DWORD hus)
 
 				left = (left * px_drive_q14) >> 14;
 				right = (right * px_drive_q14) >> 14;
+				left = (left * px_output_boost_q14) >> 14;
+				right = (right * px_output_boost_q14) >> 14;
 			}
 
 			ctx->px68k_lpf_prev_l = (ctx->px68k_lpf_prev_l * 3 + left) >> 2;
@@ -2684,6 +3307,7 @@ XM6CORE_API int XM6CORE_CALL xm6_audio_mix(
 	}
 
 	const bool use_reverb = (ctx->reverb_level > 0);
+	const bool use_bass_enhancer = (ctx->bass_enhancer_level > 0);
 	const bool use_eq = !(ctx->eq_sub_bass_level == 50 &&
 	                      ctx->eq_bass_level == 50 &&
 	                      ctx->eq_mid_level == 50 &&
@@ -2718,6 +3342,9 @@ XM6CORE_API int XM6CORE_CALL xm6_audio_mix(
 			out_interleaved_stereo[(i * 2) + 1] = saturate_s16(ctx->px68k_last_out_r);
 		}
 
+		if (use_bass_enhancer) {
+			apply_bass_enhancer_fx(ctx, out_interleaved_stereo, frames);
+		}
 		if (use_reverb) {
 			apply_reverb_fx(ctx, out_interleaved_stereo, frames);
 		}
@@ -2781,6 +3408,9 @@ XM6CORE_API int XM6CORE_CALL xm6_audio_mix(
 
 		if (ctx->surround_enabled) {
 			apply_surround_fx_s16(ctx, out_interleaved_stereo, frames);
+		}
+		if (use_bass_enhancer) {
+			apply_bass_enhancer_fx(ctx, out_interleaved_stereo, frames);
 		}
 		if (use_reverb) {
 			apply_reverb_fx(ctx, out_interleaved_stereo, frames);
@@ -2855,6 +3485,9 @@ XM6CORE_API int XM6CORE_CALL xm6_audio_mix(
 		out_interleaved_stereo[(i * 2) + 1] = saturate_s16(mixed_r);
 	}
 
+	if (use_bass_enhancer) {
+		apply_bass_enhancer_fx(ctx, out_interleaved_stereo, frames);
+	}
 	if (use_reverb) {
 		apply_reverb_fx(ctx, out_interleaved_stereo, frames);
 	}

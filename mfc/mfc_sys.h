@@ -2,8 +2,8 @@
 //
 //	X68000 EMULATOR "XM6"
 //
-//	Copyright (C) 2001-2006 ＰＩ．(ytanaka@ipc-tokai.or.jp)
-//	[ MFC サブウィンドウ(システム) ]
+//	Copyright (C) 2001-2006 PI (ytanaka@ipc-tokai.or.jp)
+//	[ MFC Sub-Window (System) ]
 //
 //---------------------------------------------------------------------------
 
@@ -17,79 +17,79 @@
 
 //===========================================================================
 //
-//	ログウィンドウ
+//	Log Window
 //
 //===========================================================================
 class CLogWnd : public CSubListWnd
 {
 public:
 	CLogWnd();
-										// コンストラクタ
+										// Constructor
 	void FASTCALL Refresh();
-										// リフレッシュ描画
+										// Refresh display
 	void FASTCALL Update();
-										// メッセージスレッドからの更新
+										// Update message thread
 
 protected:
 	afx_msg int OnCreate(LPCREATESTRUCT lpcs);
-										// ウィンドウ作成
+										// Create window
 	afx_msg void OnDblClick(NMHDR *pNotifyStruct, LRESULT *result);
-										// ダブルクリック
+										// Double click
 	afx_msg void OnDrawItem(int nID, LPDRAWITEMSTRUCT lpdis);
-										// オーナー描画
+										// Draw item
 	void FASTCALL InitList();
-										// リストコントロール初期化
+										// Initialize list control
 
 private:
 	void FASTCALL TextSub(int nType, Log::logdata_t *pLogData, CString& string);
-										// 文字列セット
+										// Format text
 	Log *m_pLog;
-										// ログ
+										// Log
 	CString m_strDetail;
-										// 詳細
+										// Detail
 	CString m_strNormal;
-										// 通常
+										// Normal
 	CString m_strWarning;
-										// 警告
+										// Warning
 	int m_nFocus;
-										// フォーカス番号
+										// Focus number
 
 	DECLARE_MESSAGE_MAP()
-										// メッセージ マップあり
+										// Message map
 };
 
 //===========================================================================
 //
-//	スケジューラウィンドウ
+//	Scheduler Window
 //
 //===========================================================================
 class CSchedulerWnd : public CSubTextWnd
 {
 public:
 	CSchedulerWnd();
-										// コンストラクタ
+										// Constructor
 	void FASTCALL Setup();
-										// セットアップ
+										// Setup
 	void FASTCALL Update();
-										// メッセージスレッドから更新
+										// Update message thread
 
 private:
 	Scheduler *m_pScheduler;
-										// スケジューラ
+										// Scheduler
 };
 
 //===========================================================================
 //
-//	デバイスウィンドウ
+//	Device Window
 //
 //===========================================================================
 class CDeviceWnd : public CSubTextWnd
 {
 public:
 	CDeviceWnd();
-										// コンストラクタ
+										// Constructor
 	void FASTCALL Setup();
-										// セットアップ
+										// Setup
 };
 
 #endif	// mfc_sys_h

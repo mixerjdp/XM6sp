@@ -2,7 +2,7 @@
 //
 //	X68000 EMULATOR "XM6"
 //
-//	Copyright (C) 2001-2006 ＰＩ．(ytanaka@ipc-tokai.or.jp)
+//Copyright (C) 2001-2006  PI.(ytanaka@ipc-tokai.or.jp)
 //	[ SASI ]
 //
 //---------------------------------------------------------------------------
@@ -31,23 +31,23 @@
 
 //---------------------------------------------------------------------------
 //
-//	コンストラクタ
+//	Constructor
 //
 //---------------------------------------------------------------------------
 SASI::SASI(VM *p) : MemDevice(p)
 {
-	// デバイスIDを初期化
+	//Initialize device ID
 	dev.id = MAKEID('S', 'A', 'S', 'I');
 	dev.desc = "SASI (IOSC-2)";
 
-	// 開始アドレス、終了アドレス
+	//Start address, end address
 	memdev.first = 0xe96000;
 	memdev.last = 0xe97fff;
 }
 
 //---------------------------------------------------------------------------
 //
-//	初期化
+//Init
 //
 //---------------------------------------------------------------------------
 BOOL FASTCALL SASI::Init()
@@ -56,40 +56,40 @@ BOOL FASTCALL SASI::Init()
 
 	ASSERT(this);
 
-	// 基本クラス
+	// Base class
 	if (!MemDevice::Init()) {
 		return FALSE;
 	}
 
-	// DMAC取得
+	//Get DMAC
 	dmac = (DMAC*)vm->SearchDevice(MAKEID('D', 'M', 'A', 'C'));
 	ASSERT(dmac);
 
-	// IOSC取得
+	//Get IOSC
 	iosc = (IOSC*)vm->SearchDevice(MAKEID('I', 'O', 'S', 'C'));
 	ASSERT(iosc);
 
-	// SRAM取得
+	//Get SRAM
 	sram = (SRAM*)vm->SearchDevice(MAKEID('S', 'R', 'A', 'M'));
 	ASSERT(sram);
 
-	// SCSI取得
+	//Get SCSI
 	scsi = (SCSI*)vm->SearchDevice(MAKEID('S', 'C', 'S', 'I'));
 	ASSERT(scsi);
 
-	// 内部データ初期化
+	//Initialize internal data
 	memset(&sasi, 0, sizeof(sasi));
 	sxsicpu = FALSE;
 
-	// ディスク作成
+	// Create disk
 	for (i=0; i<SASIMax; i++) {
 		sasi.disk[i] = new Disk(this);
 	}
 
-	// カレントなし
+	// No current
 	sasi.current = NULL;
 
-	// イベント作成
+	// Create event
 	event.SetDevice(this);
 	event.SetDesc("Data Transfer");
 	event.SetUser(0);
@@ -101,7 +101,7 @@ BOOL FASTCALL SASI::Init()
 
 //---------------------------------------------------------------------------
 //
-//	クリーンアップ
+//	Cleanup
 //
 //---------------------------------------------------------------------------
 void FASTCALL SASI::Cleanup()
@@ -110,7 +110,7 @@ void FASTCALL SASI::Cleanup()
 
 	ASSERT(this);
 
-	// ディスクを削除
+	// Delete disk
 	for (i=0; i<SASIMax; i++) {
 		if (sasi.disk[i]) {
 			delete sasi.disk[i];
@@ -118,13 +118,13 @@ void FASTCALL SASI::Cleanup()
 		}
 	}
 
-	// 基本クラスへ
+	// To base class
 	MemDevice::Cleanup();
 }
 
 //---------------------------------------------------------------------------
 //
-//	リセット
+//	Reset
 //
 //---------------------------------------------------------------------------
 void FASTCALL SASI::Reset()
@@ -134,31 +134,31 @@ void FASTCALL SASI::Reset()
 	int i;
 
 	ASSERT(this);
-	LOG0(Log::Normal, "リセット");
+	LOG0(Log::Normal, "Reset");
 
-	// SCSIタイプ(メモリに問い合わせる)
+	//SCSI type (Query memory)
 	memory = (Memory*)vm->SearchDevice(MAKEID('M', 'E', 'M', ' '));
 	ASSERT(memory);
 	type = memory->GetMemType();
 	switch (type) {
-		// SASIのみ
+		// SASI only
 		case Memory::None:
 		case Memory::SASI:
 			sasi.scsi_type = 0;
 			break;
 
-		// 外付
+		// External
 		case Memory::SCSIExt:
 			sasi.scsi_type = 1;
 			break;
 
-		// その他(内蔵)
+		//Other (Internal)
 		default:
 			sasi.scsi_type = 2;
 			break;
 	}
 
-	// SCSIを使う場合、SxSIとは排他とする(SxSI禁止)
+	//When using SCSI, exclusive with SxSI (SxSI forbidden)
 	if (sasi.scsi_type != 0) {
 		if (sasi.sxsi_drives != 0) {
 			sasi.sxsi_drives = 0;
@@ -166,30 +166,30 @@ void FASTCALL SASI::Reset()
 		}
 	}
 
-	// メモリスイッチ書き込み
+	//Memory switch write
 	if (sasi.memsw) {
-		// SASIが存在する場合のみ、セット
+		// Set only when SASI exists
 		if (sasi.scsi_type < 2) {
-			// $ED005A:SASIディスク数
+			//$ED005A: SASI disk count
 			sram->SetMemSw(0x5a, sasi.sasi_drives);
 		}
 		else {
-			// SASIインタフェースがないので0
+			//No SASI interface, so 0
 			sram->SetMemSw(0x5a, 0x00);
 		}
 
-		// SCSIが存在しない場合のみ、クリア
+		// Clear only when SCSI does not exist
 		if (sasi.scsi_type == 0) {
-			// $ED006F:SCSIフラグ('V'でSCSI有効)
+			//$ED006F: SCSI flag ('V' enables SCSI)
 			sram->SetMemSw(0x6f, 0x00);
-			// $ED0070:SCSI種別(本体/外付)+本体SCSI ID
+			//$ED0070: SCSI type (Internal/External) + Internal SCSI ID
 			sram->SetMemSw(0x70, 0x07);
-			// $ED0071:SCSIによるSASIエミュレーションフラグ
+			//$ED0071: SASI emulation flag by SCSI
 			sram->SetMemSw(0x71, 0x00);
 		}
 	}
 
-	// イベントリセット
+	// EventReset
 	// Reset attached disks/state so a VM reset behaves like a real bus reset.
 	for (i=0; i<SASIMax; i++) {
 		if (sasi.disk[i]) {
@@ -213,16 +213,16 @@ void FASTCALL SASI::Reset()
 	event.SetUser(0);
 	event.SetTime(0);
 
-	// バスリセット
+	// BusReset
 	BusFree();
 
-	// カレントデバイスなし
+	// No current device
 	sasi.current = NULL;
 }
 
 //---------------------------------------------------------------------------
 //
-//	セーブ
+//	Save
 //
 //---------------------------------------------------------------------------
 BOOL FASTCALL SASI::Save(Fileio *fio, int ver)
@@ -233,9 +233,9 @@ BOOL FASTCALL SASI::Save(Fileio *fio, int ver)
 	ASSERT(this);
 	ASSERT(fio);
 
-	LOG0(Log::Normal, "セーブ");
+	LOG0(Log::Normal, "Save");
 
-	// ディスクをフラッシュ
+	// Flush disk
 	for (i=0; i<SASIMax; i++) {
 		ASSERT(sasi.disk[i]);
 		if (!sasi.disk[i]->Flush()) {
@@ -243,23 +243,23 @@ BOOL FASTCALL SASI::Save(Fileio *fio, int ver)
 		}
 	}
 
-	// サイズをセーブ
+	// Size to Save
 	sz = sizeof(sasi_t);
 	if (!fio->Write(&sz, sizeof(sz))) {
 		return FALSE;
 	}
 
-	// 実体をセーブ
+	// Save entity
 	if (!fio->Write(&sasi, (int)sz)) {
 		return FALSE;
 	}
 
-	// イベントをセーブ
+	// Save event
 	if (!event.Save(fio, ver)) {
 		return FALSE;
 	}
 
-	// パスをセーブ
+	// Save path
 	for (i=0; i<SASIMax; i++) {
 		if (!sasihd[i].Save(fio, ver)) {
 			return FALSE;
@@ -274,12 +274,12 @@ BOOL FASTCALL SASI::Save(Fileio *fio, int ver)
 		return FALSE;
 	}
 
-	// version2.02拡張
+	// version2.02 extension
 	if (!fio->Write(&sxsicpu, sizeof(sxsicpu))) {
 		return FALSE;
 	}
 
-	// version2.03拡張
+	// version2.03 extension
 	for (i=0; i<SASIMax; i++) {
 		ASSERT(sasi.disk[i]);
 		if (!sasi.disk[i]->Save(fio, ver)) {
@@ -292,7 +292,7 @@ BOOL FASTCALL SASI::Save(Fileio *fio, int ver)
 
 //---------------------------------------------------------------------------
 //
-//	ロード
+//	Load
 //
 //---------------------------------------------------------------------------
 BOOL FASTCALL SASI::Load(Fileio *fio, int ver)
@@ -304,9 +304,9 @@ BOOL FASTCALL SASI::Load(Fileio *fio, int ver)
 	ASSERT(this);
 	ASSERT(fio);
 
-	LOG0(Log::Normal, "ロード");
+	LOG0(Log::Normal, "Load");
 
-	// サイズをロード、照合
+	// Load size, verify
 	if (!fio->Read(&sz, sizeof(sz))) {
 		return FALSE;
 	}
@@ -314,34 +314,34 @@ BOOL FASTCALL SASI::Load(Fileio *fio, int ver)
 		return FALSE;
 	}
 
-	// バッファへ実体をロード
+	// Load entity to buffer
 	if (!fio->Read(&buf, (int)sz)) {
 		return FALSE;
 	}
 
-	// ディスクを初期化
+	//Initialize disk
 	for (i=0; i<SASIMax; i++) {
 		ASSERT(sasi.disk[i]);
 		delete sasi.disk[i];
 		sasi.disk[i] = new Disk(this);
 	}
 
-	// ポインタを移す
+	// Move pointer
 	for (i=0; i<SASIMax; i++) {
 		buf.disk[i] = sasi.disk[i];
 	}
 
-	// 移動
+	// Move
 	sasi = buf;
 	sasi.mo = NULL;
 	sasi.current = NULL;
 
-	// イベントをロード
+	// Load event
 	if (!event.Load(fio, ver)) {
 		return FALSE;
 	}
 
-	// パスをロード
+	// Load path
 	for (i=0; i<SASIMax; i++) {
 		if (!sasihd[i].Load(fio, ver)) {
 			return FALSE;
@@ -356,7 +356,7 @@ BOOL FASTCALL SASI::Load(Fileio *fio, int ver)
 		return FALSE;
 	}
 
-	// version2.02拡張
+	// version2.02 extension
 	sxsicpu = FALSE;
 	if (ver >= 0x0202) {
 		if (!fio->Read(&sxsicpu, sizeof(sxsicpu))) {
@@ -364,10 +364,10 @@ BOOL FASTCALL SASI::Load(Fileio *fio, int ver)
 		}
 	}
 
-	// ディスクを作り直す
+	// Recreate disk
 	Construct();
 
-	// version2.03拡張
+	// version2.03 extension
 	if (ver >= 0x0203) {
 		for (i=0; i<SASIMax; i++) {
 			ASSERT(sasi.disk[i]);
@@ -382,7 +382,7 @@ BOOL FASTCALL SASI::Load(Fileio *fio, int ver)
 
 //---------------------------------------------------------------------------
 //
-//	設定適用
+//	Apply settings
 //
 //---------------------------------------------------------------------------
 void FASTCALL SASI::ApplyCfg(const Config *config)
@@ -392,40 +392,40 @@ void FASTCALL SASI::ApplyCfg(const Config *config)
 	ASSERT(this);
 	ASSERT(config);
 
-	LOG0(Log::Normal, "設定適用");
+	LOG0(Log::Normal, "Apply settings");
 
-	// SASIドライブ数
+	//SASI drive count
 	sasi.sasi_drives = config->sasi_drives;
 
-	// メモリスイッチ自動更新
+	//Auto update memory switch
 	sasi.memsw = config->sasi_sramsync;
 
-	// SASIファイル名
+	//SASI file name
 	for (i=0; i<SASIMax; i++) {
 		sasihd[i].SetPath(config->sasi_file[i]);
 	}
 
-	// パリティ回路付加
+	// Add parity circuit
 	sasi.parity = config->sasi_parity;
 
-	// SCSIドライブ数
+	//SCSI drive count
 	sasi.sxsi_drives = config->sxsi_drives;
 
-	// SCSIファイル名
+	//SCSI file name
 	for (i=0; i<SCSIMax; i++) {
 		scsihd[i].SetPath(config->sxsi_file[i]);
 	}
 
-	// MO優先フラグ
+	// MO priority flag
 	sasi.mo_first = config->sxsi_mofirst;
 
-	// ディスク再構築
+	// Rebuild disk
 	Construct();
 }
 
 //---------------------------------------------------------------------------
 //
-//	バイト読み込み
+//Byte read
 //
 //---------------------------------------------------------------------------
 DWORD FASTCALL SASI::ReadByte(DWORD addr)
@@ -435,18 +435,18 @@ DWORD FASTCALL SASI::ReadByte(DWORD addr)
 	ASSERT(this);
 	ASSERT((addr >= memdev.first) && (addr <= memdev.last));
 
-	// SCSI内蔵か
+	//Is SCSI internal
 	if (sasi.scsi_type >= 2) {
-		// 0x40単位でループ
+		//Loop in 0x40 units
 		addr &= 0x3f;
 
-		// 領域チェック
+		//Area check
 		if (addr >= 0x20) {
-			// SCSI領域
+			//SCSI area
 			return scsi->ReadByte(addr - 0x20);
 		}
 		if ((addr & 1) == 0) {
-			// 偶数バイトはデコードされていない
+			//Even bytes are not decoded
 			return 0xff;
 		}
 		addr &= 0x07;
@@ -456,20 +456,20 @@ DWORD FASTCALL SASI::ReadByte(DWORD addr)
 		return 0;
 	}
 
-	// 奇数アドレスのみ
+	//Odd addresses only
 	if (addr & 1) {
-		// 8バイト単位でループ
+		//Loop in 8-byte units
 		addr &= 0x07;
 
-		// ウェイト
+		//Wait
 		scheduler->Wait(1);
 
-		// データレジスタ
+		//Data register
 		if (addr == 1) {
 			return ReadData();
 		}
 
-		// ステータスレジスタ
+		//Status register
 		if (addr == 3) {
 			data = 0;
 			if (sasi.msg) {
@@ -490,17 +490,17 @@ DWORD FASTCALL SASI::ReadByte(DWORD addr)
 			return data;
 		}
 
-		// それ以外のレジスタはWrite Only
+		//Other registers are Write Only
 		return 0xff;
 	}
 
-	// 偶数アドレスはデコードされていない
+	//Even addresses are not decoded
 	return 0xff;
 }
 
 //---------------------------------------------------------------------------
 //
-//	ワード読み込み
+//Word read
 //
 //---------------------------------------------------------------------------
 DWORD FASTCALL SASI::ReadWord(DWORD addr)
@@ -514,7 +514,7 @@ DWORD FASTCALL SASI::ReadWord(DWORD addr)
 
 //---------------------------------------------------------------------------
 //
-//	バイト書き込み
+//Byte write
 //
 //---------------------------------------------------------------------------
 void FASTCALL SASI::WriteByte(DWORD addr, DWORD data)
@@ -523,67 +523,67 @@ void FASTCALL SASI::WriteByte(DWORD addr, DWORD data)
 	ASSERT((addr >= memdev.first) && (addr <= memdev.last));
 	ASSERT(data < 0x100);
 
-	// SCSI内蔵か
+	//Is SCSI internal
 	if (sasi.scsi_type >= 2) {
-		// 0x40単位でループ
+		//Loop in 0x40 units
 		addr &= 0x3f;
 
-		// 領域チェック
+		//Area check
 		if (addr >= 0x20) {
-			// SCSI領域
+			//SCSI area
 			scsi->WriteByte(addr - 0x20, data);
 		}
-		// SASI領域は、何もしない
+		//SASI area does nothing
 		return;
 	}
 
-	// 奇数アドレスのみ
+	//Odd addresses only
 	if (addr & 1) {
-		// 8バイト単位でループ
+		//Loop in 8-byte units
 		addr &= 0x07;
 		addr >>= 1;
 
-		// ウェイト
+		//Wait
 		scheduler->Wait(1);
 
 		switch (addr) {
-			// データ書き込み
+			//Data write
 			case 0:
 				WriteData(data);
 				return;
 
-			// SELつきデータ書き込み
+			//SEL with data write
 			case 1:
 				sasi.sel = FALSE;
 				WriteData(data);
 				return;
 
-			// バスリセット
+			// BusReset
 			case 2:
 #if defined(SASI_LOG)
-				LOG0(Log::Normal, "バスリセット");
+				LOG0(Log::Normal, "BusReset");
 #endif	// SASI_LOG
 				BusFree();
 				return;
 
-			// SELつきデータ書き込み
+			//SEL with data write
 			case 3:
 				sasi.sel = TRUE;
 				WriteData(data);
 				return;
 		}
 
-		// ここには来ない
+		//Never comes here
 		ASSERT(FALSE);
 		return;
 	}
 
-	// 偶数アドレスはデコードされていない
+	//Even addresses are not decoded
 }
 
 //---------------------------------------------------------------------------
 //
-//	ワード書き込み
+//Word write
 //
 //---------------------------------------------------------------------------
 void FASTCALL SASI::WriteWord(DWORD addr, DWORD data)
@@ -598,7 +598,7 @@ void FASTCALL SASI::WriteWord(DWORD addr, DWORD data)
 
 //---------------------------------------------------------------------------
 //
-//	読み込みのみ
+//Read only
 //
 //---------------------------------------------------------------------------
 DWORD FASTCALL SASI::ReadOnly(DWORD addr) const
@@ -608,18 +608,18 @@ DWORD FASTCALL SASI::ReadOnly(DWORD addr) const
 	ASSERT(this);
 	ASSERT((addr >= memdev.first) && (addr <= memdev.last));
 
-	// SCSI内蔵か
+	//Is SCSI internal
 	if (sasi.scsi_type >= 2) {
-		// 0x40単位でループ
+		//Loop in 0x40 units
 		addr &= 0x3f;
 
-		// 領域チェック
+		//Area check
 		if (addr >= 0x20) {
-			// SCSI領域
+			//SCSI area
 			return scsi->ReadOnly(addr - 0x20);
 		}
 		if ((addr & 1) == 0) {
-			// 偶数バイトはデコードされていない
+			//Even bytes are not decoded
 			return 0xff;
 		}
 		addr &= 0x07;
@@ -629,18 +629,18 @@ DWORD FASTCALL SASI::ReadOnly(DWORD addr) const
 		return 0;
 	}
 
-	// 奇数アドレスのみ
+	//Odd addresses only
 	if (addr & 1) {
-		// 8バイト単位でループ
+		//Loop in 8-byte units
 		addr &= 0x07;
 		addr >>= 1;
 
 		switch (addr) {
-			// データレジスタ
+			//Data register
 			case 0:
 				return 0;
 
-			// ステータスレジスタ
+			//Status register
 			case 1:
 				data = 0;
 				if (sasi.msg) {
@@ -661,17 +661,17 @@ DWORD FASTCALL SASI::ReadOnly(DWORD addr) const
 				return data;
 		}
 
-		// それ以外のレジスタはWrite Only
+		//Other registers are Write Only
 		return 0xff;
 	}
 
-	// 偶数アドレスはデコードされていない
+	//Even addresses are not decoded
 	return 0xff;
 }
 
 //---------------------------------------------------------------------------
 //
-//	イベントコールバック
+//Event callback
 //
 //---------------------------------------------------------------------------
 BOOL FASTCALL SASI::Callback(Event *ev)
@@ -682,56 +682,56 @@ BOOL FASTCALL SASI::Callback(Event *ev)
 	ASSERT(ev);
 
 	switch (ev->GetUser()) {
-		// 通常データ ホスト←→コントローラ
+		//Normal data: Host<->Controller
 		case 0:
-			// 時間調整
+			//Time adjustment
 			if (ev->GetTime() != 32) {
 				ev->SetTime(32);
 			}
 
-			// リクエスト
+			//Request
 			sasi.req = TRUE;
 			dmac->ReqDMA(1);
 
-			// DMA転送の結果によっては続く
+			//DMA transfer may continue
 			return TRUE;
 
-		// ブロックデータ コントローラ←→ホスト
+		//Block data: Controller<->Host
 		case 1:
-			// 時間を再設定
+			//Reset time
 			if (ev->GetTime() != 48) {
 				ev->SetTime(48);
 			}
 
-			// DMAがアクティブでなければ、リクエスト設定のみ
+			//If DMA not active, set request only
 			if (!dmac->IsAct(1)) {
 				if ((sasi.phase == read) || (sasi.phase == write)) {
 					sasi.req = TRUE;
 				}
 
-				// イベント継続
+				//Continue event
 				return TRUE;
 			}
 
-			// 1回のイベントで、余剰CPUパワーの2/3だけ転送する
+			//In one event, transfer 2/3 of excess CPU power
 			thres = (int)scheduler->GetCPUSpeed();
 			thres = (thres * 2) / 3;
 			while ((sasi.phase == read) || (sasi.phase == write)) {
-				// CPUパワーを見ながら途中で打ち切る
+				//Cut off midway watching CPU power
 				if (scheduler->GetCPUCycle() > thres) {
 					break;
 				}
 
-				// リクエスト設定
+				//Request setting
 				sasi.req = TRUE;
 
-				// SxSI CPUフラグが設定されていれば、ここまで(CPU転送させる)
+				//If SxSI CPU flag set, stop here (CPU transfer)
 				if (sxsicpu) {
 					LOG0(Log::Warning, "SxSI CPU転送を検出");
 					break;
 				}
 
-				// DMAリクエスト
+				//DMA request
 				dmac->ReqDMA(1);
 				if (sasi.req) {
 #if defined(SASI_LOG)
@@ -742,7 +742,7 @@ BOOL FASTCALL SASI::Callback(Event *ev)
 			}
 			return TRUE;
 
-		// それ以外はありえない
+		//Others are impossible
 		default:
 			ASSERT(FALSE);
 	}
@@ -752,7 +752,7 @@ BOOL FASTCALL SASI::Callback(Event *ev)
 
 //---------------------------------------------------------------------------
 //
-//	内部データ取得
+//Get internal data
 //
 //---------------------------------------------------------------------------
 void FASTCALL SASI::GetSASI(sasi_t *buffer) const
@@ -760,13 +760,13 @@ void FASTCALL SASI::GetSASI(sasi_t *buffer) const
 	ASSERT(this);
 	ASSERT(buffer);
 
-	// 内部ワークをコピー
+	//Copy internal work
 	*buffer = sasi;
 }
 
 //---------------------------------------------------------------------------
 //
-//	ディスク再構築
+//	Rebuild disk
 //
 //---------------------------------------------------------------------------
 void FASTCALL SASI::Construct()
@@ -788,7 +788,7 @@ void FASTCALL SASI::Construct()
 	ASSERT((sasi.sasi_drives >= 0) && (sasi.sasi_drives <= SASIMax));
 	ASSERT((sasi.sxsi_drives >= 0) && (sasi.sxsi_drives <= 7));
 
-	// MOドライブの状態を保存し、一旦禁止
+	//Save MO drive state, then disable
 	moready = FALSE;
 	moattn = FALSE;
 	mowritep = FALSE;
@@ -802,32 +802,32 @@ void FASTCALL SASI::Construct()
 	}
 	sasi.mo = NULL;
 
-	// 有効なSCSI-MO, SCSI-HD数を算出
+	//Calculate valid SCSI-MO, SCSI-HD count
 	i = (sasi.sasi_drives + 1) >> 1;
 	schd = 7 - i;
 
-	// SASI制限から可能な最大SCSIドライブ数
+	//Max SCSI drives from SASI limit
 	if (schd > 0) {
-		// 設定のSCSIドライブ数に制限される
+		//Limited by configured SCSI drive count
 		if (sasi.sxsi_drives < schd) {
-			// SCSIドライブ数確定
+			//Determine SCSI drive count
 			schd = sasi.sxsi_drives;
 		}
 	}
 
-	// MOの割り当て
+	//Assign MO
 	if (schd > 0) {
-		// ドライブが1台以上あれば、必ずMOを割り当てる
+		//If at least 1 drive, always assign MO
 		scmo = 1;
 		schd--;
 	}
 	else {
-		// ドライブがないので、MO,HDとも0
+		//No drives, so MO and HD both 0
 		scmo = 0;
 		schd = 0;
 	}
 
-	// パリティがなければSxSI使用不可
+	//Without parity, SxSI cannot be used
 	if (!sasi.parity) {
 		scmo = 0;
 		schd = 0;
@@ -837,109 +837,109 @@ void FASTCALL SASI::Construct()
 					sasi.sasi_drives, schd, scmo);
 #endif	// SASI_LOG
 
-	// マップを作成(0:NULL 1:SASI-HD 2:SCSI-HD 3:SCSI-MO)
+	//Create map (0:NULL 1:SASI-HD 2:SCSI-HD 3:SCSI-MO)
 	for (i=0; i<SASIMax; i++) {
-		// すべてNULL
+		//All NULL
 		map[i] = 0;
 	}
 	for (i=0; i<sasi.sasi_drives; i++) {
-		// 先にSASI
+		//First SASI
 		map[i] = 1;
 	}
 	if (scmo > 0) {
-		// SCSIあり
+		//SCSI exists
 		index = ((sasi.sasi_drives + 1) >> 1) << 1;
 		if (sasi.mo_first) {
-			// MO優先
+			//MO priority
 			map[index] = 3;
 			index += 2;
 
-			// SCSI-HDループ
+			//SCSI-HD loop
 			for (i=0; i<schd; i++) {
 				map[index] = 2;
 				index += 2;
 			}
 		}
 		else {
-			// HD優先
+			//HD priority
 			for (i=0; i<schd; i++) {
 				map[index] = 2;
 				index += 2;
 			}
 
-			// 最後にMO
+			//Finally MO
 			map[index] = 3;
 		}
 		ASSERT(index <= 16);
 	}
 
-	// SCSIハードディスクの連番インデックスをクリア
+	//Clear SCSI hard disk sequence index
 	index = 0;
 
-	// ループ
+	//Loop
 	for (i=0; i<SASIMax; i++) {
 		switch (map[i]) {
-			// ヌルディスク
+			//Null disk
 			case 0:
-				// ヌルディスクか
+				//Is null disk
 				if (!sasi.disk[i]->IsNULL()) {
-					// ヌルディスクに差し替える
+					//Replace with null disk
 					delete sasi.disk[i];
 					sasi.disk[i] = new Disk(this);
 				}
 				break;
 
-			// SASIハードディスク
+			//SASI hard disk
 			case 1:
-				// SASIハードディスクか
+				//Is SASI hard disk
 				if (sasi.disk[i]->IsSASI()) {
-					// パスを取得し、一致すればok
+					//Get path and verify match
 					sasi.disk[i]->GetPath(path);
 					if (path.CmpPath(sasihd[i])) {
-						// パスが一致している
+						//Path matches
 						break;
 					}
 				}
 
-				// SASIハードディスクを作成してオープンを試みる
+				//Create SASI hard disk and try open
 				sasitmp = new SASIHD(this);
 				if (sasitmp->Open(sasihd[i])) {
-					// LUN設定
+					//LUN setting
 					sasitmp->SetLUN(i & 1);
-					// 入れ替え
+					//Swap
 					delete sasi.disk[i];
 					sasi.disk[i] = sasitmp;
 				}
 				else {
-					// エラー
+					//Error
 					delete sasitmp;
 					delete sasi.disk[i];
 					sasi.disk[i] = new Disk(this);
 				}
 				break;
 
-			// SCSIハードディスク
+			//SCSI hard disk
 			case 2:
-				// SCSIハードディスクか
+				//Is SCSI hard disk
 				if (sasi.disk[i]->GetID() == MAKEID('S', 'C', 'H', 'D')) {
-					// パスを取得し、一致すればok
+					//Get path and verify match
 					sasi.disk[i]->GetPath(path);
 					if (path.CmpPath(scsihd[index])) {
-						// パスが一致している
+						//Path matches
 						index++;
 						break;
 					}
 				}
 
-				// SCSIハードディスクを作成してオープンを試みる
+				//Create SCSI hard disk and try open
 				scsitmp = new SCSIHD(this);
 				if (scsitmp->Open(scsihd[index])) {
-					// 入れ替え
+					//Swap
 					delete sasi.disk[i];
 					sasi.disk[i] = scsitmp;
 				}
 				else {
-					// エラー
+					//Error
 					delete scsitmp;
 					delete sasi.disk[i];
 					sasi.disk[i] = new Disk(this);
@@ -947,21 +947,21 @@ void FASTCALL SASI::Construct()
 				index++;
 				break;
 
-			// SCSI光磁気ディスク
+			//SCSI MO disk
 			case 3:
-				// SCSI光磁気ディスクか
+				//Is SCSI MO disk
 				if (sasi.disk[i]->GetID() == MAKEID('S', 'C', 'M', 'O')) {
-					// 記憶
+					//Remember
 					sasi.mo = (SCSIMO*)sasi.disk[i];
 				}
 				else {
-					// SCSI光磁気ディスクを作成して記憶
+					//Create SCSI MO disk and remember
 					delete sasi.disk[i];
 					sasi.disk[i] = new SCSIMO(this);
 					sasi.mo = (SCSIMO*)sasi.disk[i];
 				}
 
-				// 引き継がれていなければ、再オープン
+				//If not inherited, reopen
 				if (moready) {
 					if (!sasi.mo->IsReady()) {
 						if (sasi.mo->Open(mopath, moattn)) {
@@ -971,23 +971,23 @@ void FASTCALL SASI::Construct()
 				}
 				break;
 
-			// その他(あり得ない)
+			//Other (impossible)
 			default:
 				ASSERT(FALSE);
 				break;
 		}
 	}
 
-	// BUSY中なら、sasi.currentを更新
+	//If BUSY, update sasi.current
 	if (sasi.bsy) {
-		// ドライブ作成
+		//Create drive
 		ASSERT(sasi.ctrl < 8);
 		index = sasi.ctrl << 1;
 		if (sasi.cmd[1] & 0x20) {
 			index++;
 		}
 
-		// カレント設定
+		//Set current
 		sasi.current = sasi.disk[index];
 		ASSERT(sasi.current);
 	}
@@ -995,7 +995,7 @@ void FASTCALL SASI::Construct()
 
 //---------------------------------------------------------------------------
 //
-//	HD BUSYチェック
+//Check HD BUSY
 //
 //---------------------------------------------------------------------------
 BOOL FASTCALL SASI::IsBusy() const
@@ -1012,13 +1012,13 @@ BOOL FASTCALL SASI::IsBusy() const
 		return TRUE;
 	}
 
-	// どちらもFALSE
+	//Both FALSE
 	return FALSE;
 }
 
 //---------------------------------------------------------------------------
 //
-//	BUSYデバイス取得
+//Get BUSY device
 //
 //---------------------------------------------------------------------------
 DWORD FASTCALL SASI::GetBusyDevice() const
@@ -1027,8 +1027,8 @@ DWORD FASTCALL SASI::GetBusyDevice() const
 
 	// SASI
 	if (sasi.bsy) {
-		// セレクションフェーズ終了から実行フェーズ開始までの間は
-		// アクセス対象デバイスが確定しない
+		//From end of selection phase to start of execution phase
+		//Access target device is not determined
 		if (!sasi.current) {
 			return 0;
 		}
@@ -1045,7 +1045,7 @@ DWORD FASTCALL SASI::GetBusyDevice() const
 
 //---------------------------------------------------------------------------
 //
-//	データ読み込み
+//Data read
 //
 //---------------------------------------------------------------------------
 DWORD FASTCALL SASI::ReadData()
@@ -1055,32 +1055,32 @@ DWORD FASTCALL SASI::ReadData()
 	ASSERT(this);
 
 	switch (sasi.phase) {
-		// ステータスフェーズなら、ステータスを渡してメッセージフェーズへ
+		//If status phase, pass status and go to message phase
 		case status:
 			data = sasi.status;
 			sasi.req = FALSE;
 
-			// 割り込みリセットを兼ねる
+			//Also serves as interrupt reset
 			iosc->IntHDC(FALSE);
 			Message();
 
-			// イベント停止
+			//Stop event
 			event.SetTime(0);
 			return data;
 
-		// メッセージフェーズなら、メッセージを渡してバスフリーへ
+		//If message phase, pass message and go to bus free
 		case message:
 			data = sasi.message;
 			sasi.req = FALSE;
 			BusFree();
 
-			// イベント停止
+			//Stop event
 			event.SetTime(0);
 			return data;
 
-		// 読み込みフェーズなら、転送後ステータスフェーズへ
+		//If read phase, go to status phase after transfer
 		case read:
-			// Non-DMA転送なら、SxSI CPUフラグをトグル変化させる
+			//For Non-DMA transfer, toggle SxSI CPU flag
 			if (!dmac->IsDMA()) {
 #if defined(SASI_LOG)
 				LOG1(Log::Normal, "データINフェーズ CPU転送 オフセット=%d", sasi.offset);
@@ -1093,40 +1093,40 @@ DWORD FASTCALL SASI::ReadData()
 			sasi.length--;
 			sasi.req = FALSE;
 
-			// レングスチェック
+			//Length check
 			if (sasi.length == 0) {
-				// 転送すべきブロック数を下げる
+				//Decrement blocks to transfer
 				sasi.blocks--;
 
-				// 今回で終了か
+				//Is this the last
 				if (sasi.blocks == 0) {
-					// イベント停止、ステータスフェーズ
+					//Stop event, status phase
 					event.SetTime(0);
 					Status();
 					return data;
 				}
 
-				// 次のブロックを読む
+				//Read next block
 				sasi.length = sasi.current->Read(sasi.buffer, sasi.next);
 				if (sasi.length <= 0) {
-					// エラー
+					//Error
 					Error();
 					return data;
 				}
 
-				// 次のブロックok、ワーク設定
+				//Next block ok, set work
 				sasi.offset = 0;
 				sasi.next++;
 			}
 
-			// 読み込み継続
+			//Continue reading
 			return data;
 	}
 
-	// イベント停止
+	//Stop event
 	event.SetTime(0);
 
-	// それ以外のオペレーションは想定せず
+	//Other operations not expected
 	if (sasi.phase == busfree) {
 #if defined(SASI_LOG)
 		LOG0(Log::Normal, "バスフリー状態での読み込み。0を返す");
@@ -1141,7 +1141,7 @@ DWORD FASTCALL SASI::ReadData()
 
 //---------------------------------------------------------------------------
 //
-//	データ書き込み
+//Data write
 //
 //---------------------------------------------------------------------------
 void FASTCALL SASI::WriteData(DWORD data)
@@ -1150,7 +1150,7 @@ void FASTCALL SASI::WriteData(DWORD data)
 	ASSERT(data < 0x100);
 
 	switch (sasi.phase) {
-		// バスフリーフェーズなら、次に許されるのはセレクションフェーズ
+		//If bus free phase, next allowed is selection phase
 		case busfree:
 			if (sasi.sel) {
 				Selection(data);
@@ -1163,7 +1163,7 @@ void FASTCALL SASI::WriteData(DWORD data)
 			event.SetTime(0);
 			return;
 
-		// セレクションフェーズなら、SELを戻してコマンドフェーズへ
+		//If selection phase, release SEL and go to command phase
 		case selection:
 			if (!sasi.sel) {
 				Command();
@@ -1172,13 +1172,13 @@ void FASTCALL SASI::WriteData(DWORD data)
 			event.SetTime(0);
 			break;
 
-		// コマンドフェーズなら、6/10バイト受信
+		//If command phase, receive 6/10 bytes
 		case command:
-			// 最初のデータ(オフセット0)によりレングスを再設定
+			//Reset length from first data (offset 0)
 			sasi.cmd[sasi.offset] = data;
 			if (sasi.offset == 0) {
 				if ((data >= 0x20) && (data <= 0x3f)) {
-					// 10バイトCDB
+					//10-byte CDB
 					sasi.length = 10;
 				}
 			}
@@ -1186,19 +1186,19 @@ void FASTCALL SASI::WriteData(DWORD data)
 			sasi.length--;
 			sasi.req = FALSE;
 
-			// 終わりか
+			//Done?
 			if (sasi.length == 0) {
-				// イベント停止して実行フェーズへ
+				//Stop event and go to execution phase
 				event.SetTime(0);
 				Execute();
 				return;
 			}
-			// イベント継続
+			//Continue event
 			return;
 
-		// 書き込みフェーズなら、転送後ステータスフェーズへ
+		//If write phase, go to status phase after transfer
 		case write:
-			// Non-DMA転送なら、SxSI CPUフラグをトグル変化させる
+			//For Non-DMA transfer, toggle SxSI CPU flag
 			if (!dmac->IsDMA()) {
 #if defined(SASI_LOG)
 				LOG1(Log::Normal, "データOUTフェーズ CPU転送 オフセット=%d", sasi.offset);
@@ -1211,69 +1211,69 @@ void FASTCALL SASI::WriteData(DWORD data)
 			sasi.length--;
 			sasi.req = FALSE;
 
-			// 終わりか
+			//Done?
 			if (sasi.length > 0) {
 				return;
 			}
 
-			// WRITE(6)・WRITE(10)・WRITE&VERIFYは別処理
+			//WRITE(6), WRITE(10), WRITE&VERIFY are separate
 			switch (sasi.cmd[0]) {
 				case 0x0a:
 				case 0x2a:
 				case 0x2e:
 					break;
-				// WRITE DATA以外のコマンドはここで終了
+				//Non-WRITE DATA commands end here
 				default:
 					event.SetTime(0);
 					Status();
 					return;
 			}
 
-			// WRITEコマンドなら、現在のバッファで書き込み
+			//If WRITE command, write with current buffer
 			if (!sasi.current->Write(sasi.buffer, sasi.next - 1)) {
-				// エラー
+				//Error
 				Error();
 				return;
 			}
 
-			// 転送ブロック数を下げる
+			//Decrement transfer block count
 			sasi.blocks--;
 
-			// 最後のブロックか
+			//Is last block
 			if (sasi.blocks == 0) {
-				// イベント停止してステータスフェーズへ
+				//Stop event and go to status phase
 				event.SetTime(0);
 				Status();
 				return;
 			}
 
-			// 次のブロック準備
+			//Prepare next block
 			sasi.length = sasi.current->WriteCheck(sasi.next);
 			if (sasi.length <= 0) {
-				// エラー
+				//Error
 				Error();
 				return;
 			}
 
-			// 次のブロックを転送
+			//Transfer next block
 			sasi.next++;
 			sasi.offset = 0;
 
-			// イベント継続
+			//Continue event
 			return;
 	}
 
-	// イベント停止
+	//Stop event
 	event.SetTime(0);
 
-	// それ以外のオペレーションは想定せず
+	//Other operations not expected
 	LOG1(Log::Warning, "想定していないデータ書き込み $%02X", data);
 	BusFree();
 }
 
 //---------------------------------------------------------------------------
 //
-//	バスフリーフェーズ
+//Bus free phase
 //
 //---------------------------------------------------------------------------
 void FASTCALL SASI::BusFree()
@@ -1284,7 +1284,7 @@ void FASTCALL SASI::BusFree()
 	LOG0(Log::Normal, "バスフリーフェーズ");
 #endif	// SASI_LOG
 
-	// バスリセット
+	// BusReset
 	sasi.sel = FALSE;
 	sasi.msg = FALSE;
 	sasi.cd = FALSE;
@@ -1292,22 +1292,22 @@ void FASTCALL SASI::BusFree()
 	sasi.bsy = FALSE;
 	sasi.req = FALSE;
 
-	// バスフリーフェーズ
+	//Bus free phase
 	sasi.phase = busfree;
 
-	// イベントを停止
+	//Stop event
 	event.SetTime(0);
 
-	// 割り込みリセット
+	//Interrupt reset
 	iosc->IntHDC(FALSE);
 
-	// SxSI CPU転送フラグ
+	//SxSI CPU transfer flag
 	sxsicpu = FALSE;
 }
 
 //---------------------------------------------------------------------------
 //
-//	セレクションフェーズ
+//Selection phase
 //
 //---------------------------------------------------------------------------
 void FASTCALL SASI::Selection(DWORD data)
@@ -1317,7 +1317,7 @@ void FASTCALL SASI::Selection(DWORD data)
 
 	ASSERT(this);
 
-	// セレクトされたコントローラを知る
+	//Know selected controller
 	c = 8;
 	for (i=0; i<8; i++) {
 		if (data & 1) {
@@ -1327,7 +1327,7 @@ void FASTCALL SASI::Selection(DWORD data)
 		data >>= 1;
 	}
 
-	// ビットがなければバスフリーフェーズ
+	//If no bit, bus free phase
 	if (c >= 8) {
 		BusFree();
 		return;
@@ -1337,7 +1337,7 @@ void FASTCALL SASI::Selection(DWORD data)
 	LOG1(Log::Normal, "セレクションフェーズ コントローラ%d", c);
 #endif	// SASI_LOG
 
-	// ドライブが存在しなければバスフリーフェーズ
+	//If drive does not exist, bus free phase
 	if (sasi.disk[(c << 1) + 0]->IsNULL()) {
 		if (sasi.disk[(c << 1) + 1]->IsNULL()) {
 			BusFree();
@@ -1345,7 +1345,7 @@ void FASTCALL SASI::Selection(DWORD data)
 		}
 	}
 
-	// BSYを上げてセレクションフェーズ
+	//Raise BSY and selection phase
 	sasi.ctrl = (DWORD)c;
 	sasi.phase = selection;
 	sasi.bsy = TRUE;
@@ -1353,7 +1353,7 @@ void FASTCALL SASI::Selection(DWORD data)
 
 //---------------------------------------------------------------------------
 //
-//	コマンドフェーズ
+//Command phase
 //
 //---------------------------------------------------------------------------
 void FASTCALL SASI::Command()
@@ -1364,7 +1364,7 @@ void FASTCALL SASI::Command()
 	LOG0(Log::Normal, "コマンドフェーズ");
 #endif	// SASI_LOG
 
-	// コマンドフェーズ
+	//Command phase
 	sasi.phase = command;
 
 	// I/O=0, C/D=1, MSG=0
@@ -1373,18 +1373,18 @@ void FASTCALL SASI::Command()
 	sasi.sel = FALSE;
 	sasi.msg = FALSE;
 
-	// コマンド残り長さは6バイト(一部コマンドは10バイト。WriteByteで再設定)
+	//Remaining command length is 6 bytes (some commands are 10. Reset with WriteByte)
 	sasi.offset = 0;
 	sasi.length = 6;
 
-	// コマンドデータを要求
+	//Request command data
 	event.SetUser(0);
 	event.SetTime(32);
 }
 
 //---------------------------------------------------------------------------
 //
-//	実行フェーズ
+//Execution phase
 //
 //---------------------------------------------------------------------------
 void FASTCALL SASI::Execute()
@@ -1393,17 +1393,17 @@ void FASTCALL SASI::Execute()
 
 	ASSERT(this);
 
-	// 実行フェーズ
+	//Execution phase
 	sasi.phase = execute;
 
-	// ドライブ作成
+	//Create drive
 	ASSERT(sasi.ctrl < 8);
 	drive = sasi.ctrl << 1;
 	if (sasi.cmd[1] & 0x20) {
 		drive++;
 	}
 
-	// カレント設定
+	//Set current
 	sasi.current = sasi.disk[drive];
 	ASSERT(sasi.current);
 
@@ -1412,33 +1412,33 @@ void FASTCALL SASI::Execute()
 #endif	// SASI_LOG
 
 #if 0
-	// アテンションならエラーを出す(MOのメディア入れ替えを通知)
+	//Output error for attention (notify MO media change)
 	if (sasi.current->IsAttn()) {
 #if defined(SASI_LOG)
 	LOG0(Log::Normal, "メディア交換通知のためのアテンションエラー");
 #endif	// SASI_LOG
 
-		// アテンションをクリア
+		//Clear attention
 		sasi.current->ClrAttn();
 
-		// エラー(リクエストセンスを要求)
+		//Error (request sense)
 		Error();
 		return;
 	}
 #endif
 
-	// 0x12以上0x2f以下のコマンドは、SCSI専用
+	//Commands 0x12 to 0x2f are SCSI only
 	if ((sasi.cmd[0] >= 0x12) && (sasi.cmd[0] <= 0x2f)) {
 		ASSERT(sasi.current);
 		if (sasi.current->IsSASI()) {
-			// SASIなので、未実装コマンドエラー
+			//SASI only, unimplemented command error
 			sasi.current->InvalidCmd();
 			Error();
 			return;
 		}
 	}
 
-	// コマンド別処理
+	//Command specific processing
 	switch (sasi.cmd[0]) {
 		// TEST UNIT READY
 		case 0x00:
@@ -1485,78 +1485,78 @@ void FASTCALL SASI::Execute()
 			Seek6();
 			return;
 
-		// ASSIGN(SASIのみ)
+		// ASSIGN(SASI only)
 		case 0x0e:
 			Assign();
 			return;
 
-		// INQUIRY(SCSIのみ)
+		//INQUIRY (SCSI only)
 		case 0x12:
 			Inquiry();
 			return;
 
-		// MODE SENSE(SCSIのみ)
+		//MODE SENSE (SCSI only)
 		case 0x1a:
 			ModeSense();
 			return;
 
-		// START STOP UNIT(SCSIのみ)
+		//START STOP UNIT (SCSI only)
 		case 0x1b:
 			StartStop();
 			return;
 
-		// PREVENT/ALLOW MEDIUM REMOVAL(SCSIのみ)
+		//PREVENT/ALLOW MEDIUM REMOVAL (SCSI only)
 		case 0x1e:
 			Removal();
 			return;
 
-		// READ CAPACITY(SCSIのみ)
+		//READ CAPACITY (SCSI only)
 		case 0x25:
 			ReadCapacity();
 			return;
 
-		// READ(10)(SCSIのみ)
+		//READ(10) (SCSI only)
 		case 0x28:
 			Read10();
 			return;
 
-		// WRITE(10)(SCSIのみ)
+		//WRITE(10) (SCSI only)
 		case 0x2a:
 			Write10();
 			return;
 
-		// SEEK(10)(SCSIのみ)
+		//SEEK(10) (SCSI only)
 		case 0x2b:
 			Seek10();
 			return;
 
-		// WRITE and VERIFY(SCSIのみ)
+		//WRITE and VERIFY (SCSI only)
 		case 0x2e:
 			Write10();
 			return;
 
-		// VERIFY(SCSIのみ)
+		//VERIFY (SCSI only)
 		case 0x2f:
 			Verify();
 			return;
 
-		// SPECIFY(SASIのみ)
+		// SPECIFY(SASI only)
 		case 0xc2:
 			Specify();
 			return;
 	}
 
-	// それ以外は対応していない
+	//Others not supported
 	LOG1(Log::Warning, "未対応コマンド $%02X", sasi.cmd[0]);
 	sasi.current->InvalidCmd();
 
-	// エラー
+	//Error
 	Error();
 }
 
 //---------------------------------------------------------------------------
 //
-//	ステータスフェーズ
+//Status phase
 //
 //---------------------------------------------------------------------------
 void FASTCALL SASI::Status()
@@ -1567,7 +1567,7 @@ void FASTCALL SASI::Status()
 	LOG1(Log::Normal, "ステータスフェーズ ステータス$%02X", sasi.status);
 #endif	// SASI_LOG
 
-	// ステータスフェーズ
+	//Status phase
 	sasi.phase = status;
 
 	// I/O=1 C/D=1 MSG=0
@@ -1575,16 +1575,16 @@ void FASTCALL SASI::Status()
 	sasi.cd = TRUE;
 	ASSERT(!sasi.msg);
 
-	// ステータスデータの引き取りを要求
+	//Request status data
 	sasi.req = TRUE;
 
-	// 割り込みリクエスト
+	//Interrupt request
 	iosc->IntHDC(TRUE);
 }
 
 //---------------------------------------------------------------------------
 //
-//	メッセージフェーズ
+//Message phase
 //
 //---------------------------------------------------------------------------
 void FASTCALL SASI::Message()
@@ -1595,7 +1595,7 @@ void FASTCALL SASI::Message()
 	LOG1(Log::Normal, "メッセージフェーズ メッセージ$%02X", sasi.message);
 #endif	// SASI_LOG
 
-	// メッセージフェーズ
+	//Message phase
 	sasi.phase = message;
 
 	// I/O=1 C/D=1 MSG=1
@@ -1603,13 +1603,13 @@ void FASTCALL SASI::Message()
 	ASSERT(sasi.cd);
 	sasi.msg = 1;
 
-	// ステータスデータの引き取りを要求
+	//Request status data
 	sasi.req = TRUE;
 }
 
 //---------------------------------------------------------------------------
 //
-//	共通エラー
+//Common error
 //
 //---------------------------------------------------------------------------
 void FASTCALL SASI::Error()
@@ -1620,14 +1620,14 @@ void FASTCALL SASI::Error()
 	LOG0(Log::Normal, "エラー(ステータスフェーズへ)");
 #endif	// SASI_LOG
 
-	// ステータスとメッセージを設定(CHECK CONDITION)
+	//Set status and message (CHECK CONDITION)
 	sasi.status = (sasi.current->GetLUN() << 5) | 0x02;
 	sasi.message = 0x00;
 
-	// イベント停止
+	//Stop event
 	event.SetTime(0);
 
-	// ステータスフェーズ
+	//Status phase
 	Status();
 }
 
@@ -1647,19 +1647,19 @@ void FASTCALL SASI::TestUnitReady()
 	LOG0(Log::Normal, "TEST UNIT READYコマンド");
 #endif	// SASI_LOG
 
-	// ドライブでコマンド処理
+	//Process command on drive
 	status = sasi.current->TestUnitReady(sasi.cmd);
 	if (!status) {
-		// 失敗(エラー)
+		//Failed (error)
 		Error();
 		return;
 	}
 
-	// 成功
+	//Success
 	sasi.status = 0x00;
 	sasi.message = 0x00;
 
-	// ステータスフェーズ
+	//Status phase
 	Status();
 }
 
@@ -1679,19 +1679,19 @@ void FASTCALL SASI::Rezero()
 	LOG0(Log::Normal, "REZEROコマンド");
 #endif	// SASI_LOG
 
-	// ドライブでコマンド処理
+	//Process command on drive
 	status = sasi.current->Rezero(sasi.cmd);
 	if (!status) {
-		// 失敗(エラー)
+		//Failed (error)
 		Error();
 		return;
 	}
 
-	// 成功
+	//Success
 	sasi.status = 0x00;
 	sasi.message = 0x00;
 
-	// ステータスフェーズ
+	//Status phase
 	Status();
 }
 
@@ -1709,10 +1709,10 @@ void FASTCALL SASI::RequestSense()
 	LOG0(Log::Normal, "REQUEST SENSEコマンド");
 #endif	// SASI_LOG
 
-	// ドライブでコマンド処理
+	//Process command on drive
 	sasi.length = sasi.current->RequestSense(sasi.cmd, sasi.buffer);
 	if (sasi.length <= 0) {
-		// 失敗(エラー)
+		//Failed (error)
 		Error();
 		return;
 	}
@@ -1721,18 +1721,18 @@ void FASTCALL SASI::RequestSense()
 	LOG1(Log::Normal, "センスキー $%02X", sasi.buffer[2]);
 #endif
 
-	// ドライブから返却されたデータを返信。I/O=1, C/D=0
+	//Return data from drive. I/O=1, C/D=0
 	sasi.offset = 0;
 	sasi.blocks = 1;
 	sasi.phase = read;
 	sasi.io = TRUE;
 	sasi.cd = FALSE;
 
-	// エラーステータスをクリア
+	//Clear error status
 	sasi.status = 0x00;
 	sasi.message = 0x00;
 
-	// イベント設定、データの引き取りを要求
+	//Set event, request data
 	event.SetUser(0);
 	event.SetTime(48);
 }
@@ -1753,26 +1753,26 @@ void FASTCALL SASI::Format()
 	LOG0(Log::Normal, "FORMAT UNITコマンド");
 #endif	// SASI_LOG
 
-	// ドライブでコマンド処理
+	//Process command on drive
 	status = sasi.current->Format(sasi.cmd);
 	if (!status) {
-		// 失敗(エラー)
+		//Failed (error)
 		Error();
 		return;
 	}
 
-	// 成功
+	//Success
 	sasi.status = 0x00;
 	sasi.message = 0x00;
 
-	// ステータスフェーズ
+	//Status phase
 	Status();
 }
 
 //---------------------------------------------------------------------------
 //
 //	REASSIGN BLOCKS
-//	※SASIのみ(規格上はSCSIもあり)
+//SASI only (by spec, SCSI also possible)
 //
 //---------------------------------------------------------------------------
 void FASTCALL SASI::Reassign()
@@ -1786,26 +1786,26 @@ void FASTCALL SASI::Reassign()
 	LOG0(Log::Normal, "REASSIGN BLOCKSコマンド");
 #endif	// SASI_LOG
 
-	// SASI以外はエラーとする(欠陥リストを送信しないため)
+	//Error if not SASI (no defect list sent)
 	if (!sasi.current->IsSASI()) {
 		sasi.current->InvalidCmd();
 		Error();
 		return;
 	}
 
-	// ドライブでコマンド処理
+	//Process command on drive
 	status = sasi.current->Reassign(sasi.cmd);
 	if (!status) {
-		// 失敗(エラー)
+		//Failed (error)
 		Error();
 		return;
 	}
 
-	// 成功
+	//Success
 	sasi.status = 0x00;
 	sasi.message = 0x00;
 
-	// ステータスフェーズ
+	//Status phase
 	Status();
 }
 
@@ -1821,7 +1821,7 @@ void FASTCALL SASI::Read6()
 	ASSERT(this);
 	ASSERT(sasi.current);
 
-	// レコード番号とブロック数を取得
+	//Get record number and block count
 	record = sasi.cmd[1] & 0x1f;
 	record <<= 8;
 	record |= sasi.cmd[2];
@@ -1836,28 +1836,28 @@ void FASTCALL SASI::Read6()
 	LOG2(Log::Normal, "READ(6)コマンド レコード=%06X ブロック=%d", record, sasi.blocks);
 #endif	// SASI_LOG
 
-	// ドライブでコマンド処理
+	//Process command on drive
 	sasi.length = sasi.current->Read(sasi.buffer, record);
 	if (sasi.length <= 0) {
-		// 失敗(エラー)
+		//Failed (error)
 		Error();
 		return;
 	}
 
-	// ステータスをOKに
+	//Set status to OK
 	sasi.status = 0x00;
 	sasi.message = 0x00;
 
-	// 次のブロックok、ワーク設定
+	//Next block ok, set work
 	sasi.offset = 0;
 	sasi.next = record + 1;
 
-	// 読み込みフェーズ, I/O=1, C/D=0
+	//Read phase, I/O=1, C/D=0
 	sasi.phase = read;
 	sasi.io = TRUE;
 	sasi.cd = FALSE;
 
-	// イベントを設定、データの引き取りを要求
+	//Set event, request data
 	event.SetUser(1);
 	event.SetTime(48);
 }
@@ -1874,7 +1874,7 @@ void FASTCALL SASI::Write6()
 	ASSERT(this);
 	ASSERT(sasi.current);
 
-	// レコード番号とブロック数を取得
+	//Get record number and block count
 	record = sasi.cmd[1] & 0x1f;
 	record <<= 8;
 	record |= sasi.cmd[2];
@@ -1889,27 +1889,27 @@ void FASTCALL SASI::Write6()
 	LOG2(Log::Normal, "WRITE(6)コマンド レコード=%06X ブロック=%d", record, sasi.blocks);
 #endif	// SASI_LOG
 
-	// ドライブでコマンド処理
+	//Process command on drive
 	sasi.length = sasi.current->WriteCheck(record);
 	if (sasi.length <= 0) {
-		// 失敗(エラー)
+		//Failed (error)
 		Error();
 		return;
 	}
 
-	// ステータスをOKに
+	//Set status to OK
 	sasi.status = 0x00;
 	sasi.message = 0x00;
 
-	// 転送ワーク
+	//Transfer work
 	sasi.next = record + 1;
 	sasi.offset = 0;
 
-	// 書き込みフェーズ, C/D=0
+	//Write phase, C/D=0
 	sasi.phase = write;
 	sasi.cd = FALSE;
 
-	// イベントを設定、データの書き込みを要求
+	//Set event, request data write
 	event.SetUser(1);
 	event.SetTime(48);
 }
@@ -1930,26 +1930,26 @@ void FASTCALL SASI::Seek6()
 	LOG0(Log::Normal, "SEEK(6)コマンド");
 #endif	// SASI_LOG
 
-	// ドライブでコマンド処理
+	//Process command on drive
 	status = sasi.current->Seek(sasi.cmd);
 	if (!status) {
-		// 失敗(エラー)
+		//Failed (error)
 		Error();
 		return;
 	}
 
-	// 成功
+	//Success
 	sasi.status = 0x00;
 	sasi.message = 0x00;
 
-	// ステータスフェーズ
+	//Status phase
 	Status();
 }
 
 //---------------------------------------------------------------------------
 //
 //	ASSIGN
-//	※SASIのみ
+//SASI only
 //
 //---------------------------------------------------------------------------
 void FASTCALL SASI::Assign()
@@ -1961,26 +1961,26 @@ void FASTCALL SASI::Assign()
 	LOG0(Log::Normal, "ASSIGNコマンド");
 #endif	// SASI_LOG
 
-	// SASI以外はエラー(ベンダユニークコマンド)
+	//Error if not SASI (vendor unique command)
 	if (!sasi.current->IsSASI()) {
 		sasi.current->InvalidCmd();
 		Error();
 		return;
 	}
 
-	// ステータスをOKに
+	//Set status to OK
 	sasi.status = 0x00;
 	sasi.message = 0x00;
 
-	// 4バイトのデータをリクエスト
+	//Request 4 bytes of data
 	sasi.phase = write;
 	sasi.length = 4;
 	sasi.offset = 0;
 
-	// C/Dは0(データ書き込み)
+	//C/D is 0 (data write)
 	sasi.cd = FALSE;
 
-	// イベント設定、データの書き込みを要求
+	//Set event, request data write
 	event.SetUser(0);
 	event.SetTime(48);
 }
@@ -1988,7 +1988,7 @@ void FASTCALL SASI::Assign()
 //---------------------------------------------------------------------------
 //
 //	INQUIRY
-//	※SCSIのみ
+//SCSI only
 //
 //---------------------------------------------------------------------------
 void FASTCALL SASI::Inquiry()
@@ -2000,26 +2000,26 @@ void FASTCALL SASI::Inquiry()
 	LOG0(Log::Normal, "INQUIRYコマンド");
 #endif	// SASI_LOG
 
-	// ドライブでコマンド処理
+	//Process command on drive
 	sasi.length = sasi.current->Inquiry(sasi.cmd, sasi.buffer);
 	if (sasi.length <= 0) {
-		// 失敗(エラー)
+		//Failed (error)
 		Error();
 		return;
 	}
 
-	// ステータスをOKに
+	//Set status to OK
 	sasi.status = 0x00;
 	sasi.message = 0x00;
 
-	// ドライブから返却されたデータを返信。I/O=1, C/D=0
+	//Return data from drive. I/O=1, C/D=0
 	sasi.offset = 0;
 	sasi.blocks = 1;
 	sasi.phase = read;
 	sasi.io = TRUE;
 	sasi.cd = FALSE;
 
-	// イベント設定、データの引き取りを要求
+	//Set event, request data
 	event.SetUser(0);
 	event.SetTime(48);
 }
@@ -2027,7 +2027,7 @@ void FASTCALL SASI::Inquiry()
 //---------------------------------------------------------------------------
 //
 //	MODE SENSE
-//	※SCSIのみ
+//SCSI only
 //
 //---------------------------------------------------------------------------
 void FASTCALL SASI::ModeSense()
@@ -2041,12 +2041,12 @@ void FASTCALL SASI::ModeSense()
 	LOG0(Log::Normal, "MODE SENSEコマンド");
 #endif	// SASI_LOG
 
-	// ドライブでコマンド処理
+	//Process command on drive
 	length = sasi.current->ModeSense(sasi.cmd, sasi.buffer);
 
-	// 結果評価
+	//Result evaluation
 	if (length > 0) {
-		// ステータスをOKに
+		//Set status to OK
 		sasi.status = 0x00;
 		sasi.message = 0x00;
 		sasi.length = length;
@@ -2056,21 +2056,21 @@ void FASTCALL SASI::ModeSense()
 		Error();
 		return;
 #else
-		// ステータスをエラーに
+		//Set status to error
 		sasi.status = (sasi.current->GetLUN() << 5) | 0x02;
 		sasi.message = 0;
 		sasi.length = -length;
 #endif
 	}
 
-	// ドライブから返却されたデータを返信。I/O=1, C/D=0
+	//Return data from drive. I/O=1, C/D=0
 	sasi.offset = 0;
 	sasi.blocks = 1;
 	sasi.phase = read;
 	sasi.io = TRUE;
 	sasi.cd = FALSE;
 
-	// イベント設定、データの引き取りを要求
+	//Set event, request data
 	event.SetUser(0);
 	event.SetTime(48);
 }
@@ -2078,7 +2078,7 @@ void FASTCALL SASI::ModeSense()
 //---------------------------------------------------------------------------
 //
 //	START STOP UNIT
-//	※SCSIのみ
+//SCSI only
 //
 //---------------------------------------------------------------------------
 void FASTCALL SASI::StartStop()
@@ -2092,26 +2092,26 @@ void FASTCALL SASI::StartStop()
 	LOG0(Log::Normal, "START STOP UNITコマンド");
 #endif	// SASI_LOG
 
-	// ドライブでコマンド処理
+	//Process command on drive
 	status = sasi.current->StartStop(sasi.cmd);
 	if (!status) {
-		// 失敗(エラー)
+		//Failed (error)
 		Error();
 		return;
 	}
 
-	// 成功
+	//Success
 	sasi.status = 0x00;
 	sasi.message = 0x00;
 
-	// ステータスフェーズ
+	//Status phase
 	Status();
 }
 
 //---------------------------------------------------------------------------
 //
 //	PREVENT/ALLOW MEDIUM REMOVAL
-//	※SCSIのみ
+//SCSI only
 //
 //---------------------------------------------------------------------------
 void FASTCALL SASI::Removal()
@@ -2125,26 +2125,26 @@ void FASTCALL SASI::Removal()
 	LOG0(Log::Normal, "PREVENT/ALLOW MEDIUM REMOVALコマンド");
 #endif	// SASI_LOG
 
-	// ドライブでコマンド処理
+	//Process command on drive
 	status = sasi.current->Removal(sasi.cmd);
 	if (!status) {
-		// 失敗(エラー)
+		//Failed (error)
 		Error();
 		return;
 	}
 
-	// 成功
+	//Success
 	sasi.status = 0x00;
 	sasi.message = 0x00;
 
-	// ステータスフェーズ
+	//Status phase
 	Status();
 }
 
 //---------------------------------------------------------------------------
 //
 //	READ CAPACITY
-//	※SCSIのみ
+//SCSI only
 //
 //---------------------------------------------------------------------------
 void FASTCALL SASI::ReadCapacity()
@@ -2158,37 +2158,37 @@ void FASTCALL SASI::ReadCapacity()
 	LOG0(Log::Normal, "READ CAPACITYコマンド");
 #endif	// SASI_LOG
 
-	// ドライブでコマンド処理
+	//Process command on drive
 	length = sasi.current->ReadCapacity(sasi.cmd, sasi.buffer);
 
-	// 結果評価
+	//Result evaluation
 	if (length > 0) {
-		// ステータスをOKに
+		//Set status to OK
 		sasi.status = 0x00;
 		sasi.message = 0x00;
 		sasi.length = length;
 	}
 	else {
 #if 1
-		// 失敗(エラー)
+		//Failed (error)
 		Error();
 		return;
 #else
-		// ステータスをエラーに
+		//Set status to error
 		sasi.status = (sasi.current->GetLUN() << 5) | 0x02;
 		sasi.message = 0x00;
 		sasi.length = -length;
 #endif
 	}
 
-	// ドライブから返却されたデータを返信。I/O=1, C/D=0
+	//Return data from drive. I/O=1, C/D=0
 	sasi.offset = 0;
 	sasi.blocks = 1;
 	sasi.phase = read;
 	sasi.io = TRUE;
 	sasi.cd = FALSE;
 
-	// イベント設定、データの引き取りを要求
+	//Set event, request data
 	event.SetUser(0);
 	event.SetTime(48);
 }
@@ -2196,7 +2196,7 @@ void FASTCALL SASI::ReadCapacity()
 //---------------------------------------------------------------------------
 //
 //	READ(10)
-//	※SCSIのみ
+//SCSI only
 //
 //---------------------------------------------------------------------------
 void FASTCALL SASI::Read10()
@@ -2206,7 +2206,7 @@ void FASTCALL SASI::Read10()
 	ASSERT(this);
 	ASSERT(sasi.current);
 
-	// レコード番号とブロック数を取得
+	//Get record number and block count
 	record = sasi.cmd[2];
 	record <<= 8;
 	record |= sasi.cmd[3];
@@ -2222,7 +2222,7 @@ void FASTCALL SASI::Read10()
 	LOG2(Log::Normal, "READ(10)コマンド レコード=%08X ブロック=%d", record, sasi.blocks);
 #endif	// SASI_LOG
 
-	// ブロック数0は処理しない
+	//Block count 0 not processed
 	if (sasi.blocks == 0) {
 		sasi.status = 0x00;
 		sasi.message = 0x00;
@@ -2230,28 +2230,28 @@ void FASTCALL SASI::Read10()
 		return;
 	}
 
-	// ドライブでコマンド処理
+	//Process command on drive
 	sasi.length = sasi.current->Read(sasi.buffer, record);
 	if (sasi.length <= 0) {
-		// 失敗(エラー)
+		//Failed (error)
 		Error();
 		return;
 	}
 
-	// ステータスをOKに
+	//Set status to OK
 	sasi.status = 0x00;
 	sasi.message = 0x00;
 
-	// 次のブロックok、ワーク設定
+	//Next block ok, set work
 	sasi.offset = 0;
 	sasi.next = record + 1;
 
-	// 読み込みフェーズ, I/O=1, C/D=0
+	//Read phase, I/O=1, C/D=0
 	sasi.phase = read;
 	sasi.io = TRUE;
 	sasi.cd = FALSE;
 
-	// イベントを設定、データの引き取りを要求
+	//Set event, request data
 	event.SetUser(1);
 	event.SetTime(48);
 }
@@ -2259,7 +2259,7 @@ void FASTCALL SASI::Read10()
 //---------------------------------------------------------------------------
 //
 //	WRITE(10)
-//	※SCSIのみ
+//SCSI only
 //
 //---------------------------------------------------------------------------
 void FASTCALL SASI::Write10()
@@ -2269,7 +2269,7 @@ void FASTCALL SASI::Write10()
 	ASSERT(this);
 	ASSERT(sasi.current);
 
-	// レコード番号とブロック数を取得
+	//Get record number and block count
 	record = sasi.cmd[2];
 	record <<= 8;
 	record |= sasi.cmd[3];
@@ -2285,7 +2285,7 @@ void FASTCALL SASI::Write10()
 	LOG2(Log::Normal, "WRITE(10)コマンド レコード=%08X ブロック=%d", record, sasi.blocks);
 #endif	// SASI_LOG
 
-	// ブロック数0は処理しない
+	//Block count 0 not processed
 	if (sasi.blocks == 0) {
 		sasi.status = 0x00;
 		sasi.message = 0x00;
@@ -2293,27 +2293,27 @@ void FASTCALL SASI::Write10()
 		return;
 	}
 
-	// ドライブでコマンド処理
+	//Process command on drive
 	sasi.length = sasi.current->WriteCheck(record);
 	if (sasi.length <= 0) {
-		// 失敗(エラー)
+		//Failed (error)
 		Error();
 		return;
 	}
 
-	// ステータスをOKに
+	//Set status to OK
 	sasi.status = 0x00;
 	sasi.message = 0x00;
 
-	// 転送ワーク
+	//Transfer work
 	sasi.next = record + 1;
 	sasi.offset = 0;
 
-	// 書き込みフェーズ, C/D=0
+	//Write phase, C/D=0
 	sasi.phase = write;
 	sasi.cd = FALSE;
 
-	// イベントを設定、データの書き込みを要求
+	//Set event, request data write
 	event.SetUser(1);
 	event.SetTime(48);
 }
@@ -2321,7 +2321,7 @@ void FASTCALL SASI::Write10()
 //---------------------------------------------------------------------------
 //
 //	SEEK(10)
-//	※SCSIのみ
+//SCSI only
 //
 //---------------------------------------------------------------------------
 void FASTCALL SASI::Seek10()
@@ -2335,26 +2335,26 @@ void FASTCALL SASI::Seek10()
 	LOG0(Log::Normal, "SEEK(10)コマンド");
 #endif	// SASI_LOG
 
-	// ドライブでコマンド処理(論理ブロックは関係ないのでSeekを呼ぶ)
+	//Process command (seek called since logical blocks not related)
 	status = sasi.current->Seek(sasi.cmd);
 	if (!status) {
-		// 失敗(エラー)
+		//Failed (error)
 		Error();
 		return;
 	}
 
-	// 成功
+	//Success
 	sasi.status = 0x00;
 	sasi.message = 0x00;
 
-	// ステータスフェーズ
+	//Status phase
 	Status();
 }
 
 //---------------------------------------------------------------------------
 //
 //	VERIFY
-//	※SCSIのみ
+//SCSI only
 //
 //---------------------------------------------------------------------------
 void FASTCALL SASI::Verify()
@@ -2368,26 +2368,26 @@ void FASTCALL SASI::Verify()
 	LOG0(Log::Normal, "VERIFYコマンド");
 #endif	// SASI_LOG
 
-	// ドライブでコマンド処理
+	//Process command on drive
 	status = sasi.current->Verify(sasi.cmd);
 	if (!status) {
-		// 失敗(エラー)
+		//Failed (error)
 		Error();
 		return;
 	}
 
-	// 成功
+	//Success
 	sasi.status = 0x00;
 	sasi.message = 0x00;
 
-	// ステータスフェーズ
+	//Status phase
 	Status();
 }
 
 //---------------------------------------------------------------------------
 //
 //	SPECIFY
-//	※SASIのみ
+//SASI only
 //
 //---------------------------------------------------------------------------
 void FASTCALL SASI::Specify()
@@ -2399,232 +2399,232 @@ void FASTCALL SASI::Specify()
 	LOG0(Log::Normal, "SPECIFYコマンド");
 #endif	// SASI_LOG
 
-	// SASI以外はエラー(ベンダユニークコマンド)
+	//Error if not SASI (vendor unique command)
 	if (!sasi.current->IsSASI()) {
 		sasi.current->InvalidCmd();
 		Error();
 		return;
 	}
 
-	// ステータスOK
+	//Status OK
 	sasi.status = 0x00;
 	sasi.message = 0x00;
 
-	// 10バイトのデータをリクエスト
+	//Request 10 bytes of data
 	sasi.phase = write;
 	sasi.length = 10;
 	sasi.offset = 0;
 
-	// C/Dは0(データ書き込み)
+	//C/D is 0 (data write)
 	sasi.cd = FALSE;
 
-	// イベント設定、データの書き込みを要求
+	//Set event, request data write
 	event.SetUser(0);
 	event.SetTime(48);
 }
 
 //---------------------------------------------------------------------------
 //
-//	MO オープン
+//MO open
 //
 //---------------------------------------------------------------------------
 BOOL FASTCALL SASI::Open(const Filepath& path)
 {
 	ASSERT(this);
 
-	// SCSIが有効であれば、SCSIにまかせる
+	//If SCSI enabled, let SCSI handle
 	if (sasi.scsi_type != 0) {
 		return scsi->Open(path);
 	}
 
-	// 有効でなければエラー
+	//Error if not enabled
 	if (!IsValid()) {
 		return FALSE;
 	}
 
-	// イジェクト
+	//Eject
 	Eject(FALSE);
 
-	// ノットレディでなければエラー
+	//Error if not ready
 	if (IsReady()) {
 		return FALSE;
 	}
 
-	// ドライブに任せる
+	//Leave to drive
 	ASSERT(sasi.mo);
 	if (sasi.mo->Open(path, TRUE)) {
-		// 成功であれば、ファイルパスと書き込み禁止状態を記憶
+		//If successful, remember file path and write protect state
 		sasi.writep = sasi.mo->IsWriteP();
 		sasi.mo->GetPath(scsimo);
 		return TRUE;
 	}
 
-	// 失敗
+	//Failed
 	return FALSE;
 }
 
 //---------------------------------------------------------------------------
 //
-//	MO イジェクト
+//MO Eject
 //
 //---------------------------------------------------------------------------
 void FASTCALL SASI::Eject(BOOL force)
 {
 	ASSERT(this);
 
-	// SCSIが有効であれば、SCSIにまかせる
+	//If SCSI enabled, let SCSI handle
 	if (sasi.scsi_type != 0) {
 		scsi->Eject(force);
 		return;
 	}
 
-	// レディでなければ何もしない
+	//If not ready, do nothing
 	if (!IsReady()) {
 		return;
 	}
 
-	// ドライブに通知
+	//Notify drive
 	ASSERT(sasi.mo);
 	sasi.mo->Eject(force);
 }
 
 //---------------------------------------------------------------------------
 //
-//	MO 書き込み禁止
+//MO write protect
 //
 //---------------------------------------------------------------------------
 void FASTCALL SASI::WriteP(BOOL flag)
 {
 	ASSERT(this);
 
-	// SCSIが有効であれば、SCSIにまかせる
+	//If SCSI enabled, let SCSI handle
 	if (sasi.scsi_type != 0) {
 		scsi->WriteP(flag);
 		return;
 	}
 
-	// レディでなければ何もしない
+	//If not ready, do nothing
 	if (!IsReady()) {
 		return;
 	}
 
-	// ライトプロテクト設定を試みる
+	//Try setting write protect
 	ASSERT(sasi.mo);
 	sasi.mo->WriteP(flag);
 
-	// 現状を保存
+	//Save current state
 	sasi.writep = sasi.mo->IsWriteP();
 }
 
 //---------------------------------------------------------------------------
 //
-//	MO 書き込み禁止取得
+//Get MO write protect
 //
 //---------------------------------------------------------------------------
 BOOL FASTCALL SASI::IsWriteP() const
 {
 	ASSERT(this);
 
-	// SCSIが有効であれば、SCSIにまかせる
+	//If SCSI enabled, let SCSI handle
 	if (sasi.scsi_type != 0) {
 		return scsi->IsWriteP();
 	}
 
-	// レディでなければライトプロテクトでない
+	//If not ready, not write protected
 	if (!IsReady()) {
 		return FALSE;
 	}
 
-	// ドライブに聞く
+	//Ask drive
 	ASSERT(sasi.mo);
 	return sasi.mo->IsWriteP();
 }
 
 //---------------------------------------------------------------------------
 //
-//	MO Read Onlyチェック
+//Check MO Read Only
 //
 //---------------------------------------------------------------------------
 BOOL FASTCALL SASI::IsReadOnly() const
 {
 	ASSERT(this);
 
-	// SCSIが有効であれば、SCSIにまかせる
+	//If SCSI enabled, let SCSI handle
 	if (sasi.scsi_type != 0) {
 		return scsi->IsReadOnly();
 	}
 
-	// レディでなければリードオンリーでない
+	//If not ready, not read only
 	if (!IsReady()) {
 		return FALSE;
 	}
 
-	// ドライブに聞く
+	//Ask drive
 	ASSERT(sasi.mo);
 	return sasi.mo->IsReadOnly();
 }
 
 //---------------------------------------------------------------------------
 //
-//	MO Lockedチェック
+//Check MO Locked
 //
 //---------------------------------------------------------------------------
 BOOL FASTCALL SASI::IsLocked() const
 {
 	ASSERT(this);
 
-	// SCSIが有効であれば、SCSIにまかせる
+	//If SCSI enabled, let SCSI handle
 	if (sasi.scsi_type != 0) {
 		return scsi->IsLocked();
 	}
 
-	// ドライブが存在するか
+	//Does drive exist
 	if (!sasi.mo) {
 		return FALSE;
 	}
 
-	// ドライブに聞く
+	//Ask drive
 	return sasi.mo->IsLocked();
 }
 
 //---------------------------------------------------------------------------
 //
-//	MO Readyチェック
+//Check MO Ready
 //
 //---------------------------------------------------------------------------
 BOOL FASTCALL SASI::IsReady() const
 {
 	ASSERT(this);
 
-	// SCSIが有効であれば、SCSIにまかせる
+	//If SCSI enabled, let SCSI handle
 	if (sasi.scsi_type != 0) {
 		return scsi->IsReady();
 	}
 
-	// ドライブが存在するか
+	//Does drive exist
 	if (!sasi.mo) {
 		return FALSE;
 	}
 
-	// ドライブに聞く
+	//Ask drive
 	return sasi.mo->IsReady();
 }
 
 //---------------------------------------------------------------------------
 //
-//	MO 有効チェック
+//Check MO valid
 //
 //---------------------------------------------------------------------------
 BOOL FASTCALL SASI::IsValid() const
 {
 	ASSERT(this);
 
-	// SCSIが有効であれば、SCSIにまかせる
+	//If SCSI enabled, let SCSI handle
 	if (sasi.scsi_type != 0) {
 		return scsi->IsValid();
 	}
 
-	// ポインタで判別
+	//Distinguish by pointer
 	if (sasi.mo) {
 		return TRUE;
 	}
@@ -2635,14 +2635,14 @@ BOOL FASTCALL SASI::IsValid() const
 
 //---------------------------------------------------------------------------
 //
-//	MO パス取得
+//Get MO path
 //
 //---------------------------------------------------------------------------
 void FASTCALL SASI::GetPath(Filepath& path) const
 {
 	ASSERT(this);
 
-	// SCSIが有効であれば、SCSIにまかせる
+	//If SCSI enabled, let SCSI handle
 	if (sasi.scsi_type != 0) {
 		scsi->GetPath(path);
 		return;
@@ -2650,12 +2650,12 @@ void FASTCALL SASI::GetPath(Filepath& path) const
 
 	if (sasi.mo) {
 		if (sasi.mo->IsReady()) {
-			// MOディスクから
+			//From MO disk
 			sasi.mo->GetPath(path);
 			return;
 		}
 	}
 
-	// 有効なパスでないので、クリア
+	//If not valid path, clear
 	path.Clear();
 }

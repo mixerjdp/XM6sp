@@ -34,6 +34,8 @@ Cuando se reutilice parte o la totalidad de los archivos fuente, deberán seguir
 Elementos funcionales empotrados para asistir emulaciones directas:
 *   Módulo emulador puro de procesador **Musashi** Motorola 68000 (derechos atados explícitamente a Karl Stenerud y colaboradores del proyecto Musashi / MAME).
 *   Wrapper virtual y temporizador sonoro del proyecto de síntesis **fmgen** (derechos atados explícitamente a cisc).
+*   Núcleo de síntesis sonora **X68Sound** (derechos atados explícitamente a m_u_g_e_n).
+*   Emulación de oscilador Yamaha FM **ymfm** (derechos atados explícitamente a Aaron Giles).
 *   Abstracción nativa de puenteo I/O de **windrv** (derechos asimilados como aporte investigativo atados explícitamente a co).
 
 *(Nota Arquitectónica: El antiguo compilador dinámico Starscream en ensamblador x86 ha sido formalmente reemplazado por el motor multiplataforma Musashi, dictaminando su obsolescencia material en el actual repositorio).*

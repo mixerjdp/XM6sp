@@ -34,6 +34,8 @@ When reusing part or all of the source files, these rules must be followed in or
 Functional elements embedded to assist direct emulations:
 *   Pure MPU emulator module **Musashi** Motorola 68000 (rights explicitly tied to Karl Stenerud and contributors to the Musashi / MAME project).
 *   Virtual wrapper and sound timer of the **fmgen** synthesis project (rights explicitly tied to cisc).
+*   Sound synthesis core **X68Sound** (rights explicitly tied to m_u_g_e_n).
+*   Yamaha FM oscillator emulation **ymfm** (rights explicitly tied to Aaron Giles).
 *   Native I/O bridging abstraction of **windrv** (rights assimilated as an investigative contribution explicitly tied to co).
 
 *(Architectural Note: The old dynamic compiler Starscream in x86 assembly has been formally replaced by the multiplatform Musashi engine, rendering it materially obsolete in the current repository).*

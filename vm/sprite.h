@@ -3,6 +3,7 @@
 //	X68000 EMULATOR "XM6"
 //
 //	Copyright (C) 2001-2004 ＰＩ．(ytanaka@ipc-tokai.or.jp)
+//	Copyright (C) 2010-2014 GIMONS
 //	[ スプライト(CYNTHIA) ]
 //
 //---------------------------------------------------------------------------
@@ -82,17 +83,25 @@ public:
 	const BYTE* FASTCALL GetMem() const;
 										// メモリエリア取得
 	const BYTE* FASTCALL GetPCG() const;
-										// PCGエリア取得 
-
+										// PCGエリア取得
+	void FASTCALL HSync();
+										// H-Sync通知
 private:
 	void FASTCALL Control(DWORD addr, DWORD ctrl);
 										// コントロール
+	void FASTCALL NotifyRender();
+	void FASTCALL NotifyPx68kBGWrite(DWORD addr, WORD data);
+										// レンダラ通知
 	sprite_t spr;
 										// 内部データ
 	Render *render;
 										// レンダラ
 	BYTE *sprite;
 										// スプライトRAM(64KB)
+	DWORD sphsync[128];
+										// スプライトHSYNC要求
+	DWORD bghsync;
+										// BG HSYNC要求
 };
 
 #endif	// sprite_h

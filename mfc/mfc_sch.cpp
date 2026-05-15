@@ -61,6 +61,7 @@ CScheduler::CScheduler(CFrmWnd *pFrmWnd) : CComponent(pFrmWnd)
 	m_bBackup = TRUE;
 	m_bSavedValid = FALSE;
 	m_bSavedEnable = FALSE;
+	m_bStepFrame = FALSE;
 }
 
 //---------------------------------------------------------------------------
@@ -110,6 +111,23 @@ BOOL FASTCALL CScheduler::Init()
 	}
 
 	return TRUE;
+}
+
+//---------------------------------------------------------------------------
+//
+//	Enable control
+//
+//---------------------------------------------------------------------------
+void FASTCALL CScheduler::Enable(BOOL bEnable)
+{
+	ASSERT(this);
+	ASSERT_VALID(this);
+
+	if (!bEnable) {
+		m_bStepFrame = FALSE;
+	}
+
+	CComponent::Enable(bEnable);
 }
 
 //---------------------------------------------------------------------------
@@ -194,6 +212,9 @@ void FASTCALL CScheduler::Reset()
 	m_dwDrawBackup = 0;
 	m_dwDrawCount = 0;
 	m_dwDrawPrev = 0;
+	if (m_pFrmWnd && m_pFrmWnd->GetView()) {
+		m_pFrmWnd->GetView()->ResetFrameCounter();
+	}
 }
 
 //---------------------------------------------------------------------------
@@ -437,7 +458,7 @@ void FASTCALL CScheduler::Run()
 			continue;
 		}
 
-		while (accumulator >= 1000) {
+		while (m_bEnable && accumulator >= 1000) {
 			// Determine if rendering is possible: if less than 2000 remain,
 			// this is the last cycle "up to date"
 			if (accumulator < 2000) {
@@ -553,6 +574,11 @@ void FASTCALL CScheduler::Refresh()
 			m_pRender->Complete();
 		}
 		m_dwDrawCount++;
+
+		if (m_bStepFrame) {
+			m_bStepFrame = FALSE;
+			m_bEnable = FALSE;
+		}
 	}
 
 	// Next window
@@ -675,6 +701,23 @@ void FASTCALL CScheduler::OnMainFramePresented()
 {
 	// Kept for compatibility. Counter and Complete
 	// are now updated in Refresh() to preserve original timing
+}
+
+//---------------------------------------------------------------------------
+//
+//	Step Frame
+//
+//---------------------------------------------------------------------------
+void FASTCALL CScheduler::StepFrame()
+{
+	ASSERT(this);
+	ASSERT_VALID(this);
+
+	// Solo avanzamos si estamos pausados
+	if (!m_bEnable) {
+		m_bStepFrame = TRUE;
+		m_bEnable = TRUE;
+	}
 }
 
 #endif	// _WIN32

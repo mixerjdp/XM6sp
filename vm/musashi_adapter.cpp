@@ -91,6 +91,47 @@ static int musashi_executing = 0;
 // the real CPU instruction cycles (matching Starscream's odometer).
 static int musashi_wait_cycles = 0;
 
+// Pending wait cycles that have been requested by Scheduler::Wait()
+// but have not yet been pushed into Musashi's remaining timeslice.
+static int musashi_wait_pending = 0;
+
+// Render mode gate for timing behavior.
+static int musashi_render_mode = 0;
+
+static bool UseWaitBatching(void)
+{
+	(void)musashi_render_mode;
+	return false;
+}
+
+static void FlushPendingWaitTimeslice(bool force)
+{
+	if (!musashi_executing) {
+		return;
+	}
+	if (musashi_wait_pending <= 0) {
+		return;
+	}
+	if (!UseWaitBatching() || force) {
+		m68k_modify_timeslice(-musashi_wait_pending);
+		musashi_wait_cycles += musashi_wait_pending;
+		musashi_wait_pending = 0;
+	}
+}
+
+void musashi_flush_timeslice(void)
+{
+	FlushPendingWaitTimeslice(true);
+}
+
+void musashi_set_render_mode(int mode)
+{
+	musashi_render_mode = mode;
+	if (!UseWaitBatching() && musashi_executing && musashi_wait_pending > 0) {
+		FlushPendingWaitTimeslice(true);
+	}
+}
+
 
 //---------------------------------------------------------------------------
 //
@@ -186,6 +227,7 @@ unsigned s68000exec(int n)
 	// Track that we're executing
 	musashi_executing = 1;
 	musashi_wait_cycles = 0;
+	musashi_wait_pending = 0;
 
 	// Set up I/O cycle counter for Scheduler::Wait
 	// CRITICAL: Must be set to 'n' (not -1) so that Scheduler::Wait()
@@ -205,6 +247,7 @@ unsigned s68000exec(int n)
 
 	// Sync state back to context
 	musashi_executing = 0;
+	musashi_wait_pending = 0;
 	SyncContextFromMusashi();
 	s68000context.odometer = (unsigned)cycles_used;
 
@@ -322,6 +365,9 @@ unsigned s68000controlOdometer(int n)
 void s68000releaseTimeslice(void)
 {
 	if (musashi_executing) {
+		if (musashi_wait_pending > 0) {
+			FlushPendingWaitTimeslice(true);
+		}
 		m68k_end_timeslice();
 	}
 }
@@ -355,8 +401,14 @@ int s68000fetch(unsigned address)
 unsigned s68000wait(unsigned cycle)
 {
 	if (musashi_executing) {
-		m68k_modify_timeslice(-(int)cycle);
-		musashi_wait_cycles += (int)cycle;
+		if (UseWaitBatching()) {
+			musashi_wait_pending += (int)cycle;
+			FlushPendingWaitTimeslice(false);
+		}
+		else {
+			m68k_modify_timeslice(-(int)cycle);
+			musashi_wait_cycles += (int)cycle;
+		}
 	}
 	return 0;
 }
@@ -370,11 +422,21 @@ unsigned s68000wait(unsigned cycle)
 void musashi_adjust_timeslice(int cycles)
 {
 	if (musashi_executing) {
-		m68k_modify_timeslice(cycles);
-		// Track how many cycles Wait() consumed so s68000exec
-		// can subtract them from the return value
-		if (cycles < 0) {
-			musashi_wait_cycles += (-cycles);
+		if (UseWaitBatching()) {
+			if (cycles < 0) {
+				musashi_wait_pending += (-cycles);
+				FlushPendingWaitTimeslice(false);
+			}
+			else if (cycles > 0) {
+				// Positive adjustments are rare; apply them immediately.
+				m68k_modify_timeslice(cycles);
+			}
+		}
+		else {
+			if (cycles < 0) {
+				musashi_wait_cycles += -cycles;
+			}
+			m68k_modify_timeslice(cycles);
 		}
 	}
 }

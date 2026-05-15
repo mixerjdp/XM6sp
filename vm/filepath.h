@@ -76,6 +76,8 @@ public:
 										// Get short path (const char*)
 	const TCHAR* FASTCALL GetFileExt() const;
 										// Get extension (LPCTSTR)
+	const TCHAR* FASTCALL GetFileName() const { return m_szFile; }
+										// Get filename without extension (LPCTSTR)
 	BOOL FASTCALL CmpPath(const Filepath& path) const;
 										// Compare path
 

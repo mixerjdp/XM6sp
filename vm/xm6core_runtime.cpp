@@ -1,7 +1,8 @@
-#include "os.h"
+﻿#include "os.h"
 #include "xm6.h"
 #include "xm6core.h"
 #include "vm.h"
+#include "crtc.h"
 #include "render.h"
 #include "opm.h"
 #include "adpcm.h"
@@ -30,7 +31,8 @@ struct XM6ContextRuntimeShim {
 	unsigned int audio_rate;
 	unsigned int audio_buf_frames;
 	BOOL surround_enabled;
-	BOOL hq_adpcm_enabled;
+	int hq_adpcm_level;
+	int bass_enhancer_level;
 	int reverb_level;
 	int eq_sub_bass_level;
 	int eq_bass_level;
@@ -276,7 +278,7 @@ extern "C" XM6CORE_API int XM6CORE_CALL xm6_set_surround_enabled(XM6Handle handl
 	return XM6CORE_OK;
 }
 
-extern "C" XM6CORE_API int XM6CORE_CALL xm6_set_hq_adpcm_enabled(XM6Handle handle, int enabled)
+extern "C" XM6CORE_API int XM6CORE_CALL xm6_set_hq_adpcm_level(XM6Handle handle, int level)
 {
 	if (!handle) {
 		return XM6CORE_ERR_INVALID_HANDLE;
@@ -287,7 +289,34 @@ extern "C" XM6CORE_API int XM6CORE_CALL xm6_set_hq_adpcm_enabled(XM6Handle handl
 		return XM6CORE_ERR_INVALID_HANDLE;
 	}
 
-	ctx->hq_adpcm_enabled = enabled ? TRUE : FALSE;
+	if (level < 0) {
+		level = 0;
+	} else if (level > 100) {
+		level = 100;
+	}
+
+	ctx->hq_adpcm_level = level;
+	return XM6CORE_OK;
+}
+
+extern "C" XM6CORE_API int XM6CORE_CALL xm6_set_bass_enhancer_level(XM6Handle handle, int level)
+{
+	if (!handle) {
+		return XM6CORE_ERR_INVALID_HANDLE;
+	}
+
+	XM6ContextRuntimeShim *ctx = reinterpret_cast<XM6ContextRuntimeShim*>(handle);
+	if (!ctx->vm) {
+		return XM6CORE_ERR_INVALID_HANDLE;
+	}
+
+	if (level < 0) {
+		level = 0;
+	} else if (level > 100) {
+		level = 100;
+	}
+
+	ctx->bass_enhancer_level = level;
 	return XM6CORE_OK;
 }
 
@@ -529,30 +558,6 @@ extern "C" XM6CORE_API int XM6CORE_CALL xm6_set_mouse_swap(XM6Handle handle, int
 	return XM6CORE_OK;
 }
 
-extern "C" XM6CORE_API int XM6CORE_CALL xm6_set_render_mode(XM6Handle handle, int mode)
-{
-	if (!handle) {
-		return XM6CORE_ERR_INVALID_HANDLE;
-	}
-	if (mode != XM6CORE_RENDER_MODE_ORIGINAL && mode != XM6CORE_RENDER_MODE_FAST) {
-		return XM6CORE_ERR_INVALID_ARGUMENT;
-	}
-
-	XM6ContextRuntimeShim *ctx = reinterpret_cast<XM6ContextRuntimeShim*>(handle);
-	if (!ctx->vm) {
-		return XM6CORE_ERR_INVALID_HANDLE;
-	}
-
-	if (!ctx->vm->SetRenderMode(mode)) {
-		return XM6CORE_ERR_INVALID_ARGUMENT;
-	}
-
-	if (ctx->render) {
-		ctx->render->Complete();
-	}
-	return XM6CORE_OK;
-}
-
 extern "C" XM6CORE_API int XM6CORE_CALL xm6_set_legacy_dmac_cnt(XM6Handle handle, int enabled)
 {
 	if (!handle) {
@@ -585,7 +590,11 @@ extern "C" XM6CORE_API int XM6CORE_CALL xm6_set_alt_raster(XM6Handle handle, int
 	}
 
 	ctx->runtime_config.alt_raster = enabled ? TRUE : FALSE;
-	ctx->vm->ApplyCfg(&ctx->runtime_config);
+	CRTC *crtc = (CRTC*)ctx->vm->SearchDevice(MAKEID('C', 'R', 'T', 'C'));
+	if (!crtc) {
+		return XM6CORE_ERR_NOT_READY;
+	}
+	crtc->ApplyCfg(&ctx->runtime_config);
 	return XM6CORE_OK;
 }
 
@@ -642,7 +651,7 @@ extern "C" XM6CORE_API int XM6CORE_CALL xm6_set_transparency_enabled(XM6Handle h
 	return XM6CORE_OK;
 }
 
-extern "C" XM6CORE_API int XM6CORE_CALL xm6_get_render_mode(XM6Handle handle)
+extern "C" XM6CORE_API int XM6CORE_CALL xm6_set_render_fast_dummy(XM6Handle handle, int enabled)
 {
 	if (!handle) {
 		return XM6CORE_ERR_INVALID_HANDLE;
@@ -653,7 +662,22 @@ extern "C" XM6CORE_API int XM6CORE_CALL xm6_get_render_mode(XM6Handle handle)
 		return XM6CORE_ERR_INVALID_HANDLE;
 	}
 
-	return ctx->vm->GetRenderMode();
+	Render *render = ctx->render;
+	if (!render) {
+		render = (Render*)ctx->vm->SearchDevice(MAKEID('R', 'E', 'N', 'D'));
+		ctx->render = render;
+	}
+
+	if (render) {
+		ctx->runtime_config.render_fast_dummy = enabled ? TRUE : FALSE;
+		render->SetRenderFastDummyEnabled(enabled ? TRUE : FALSE);
+		// Keep runtime toggle behavior consistent with other video options:
+		// force a full recomposition and clear "ready" so the next frame is fresh.
+		render->ForceRecompose();
+		render->Complete();
+	}
+
+	return XM6CORE_OK;
 }
 
 extern "C" XM6CORE_API int XM6CORE_CALL xm6_set_midi_enabled(XM6Handle handle, int enabled)
@@ -762,4 +786,5 @@ extern "C" XM6CORE_API int XM6CORE_CALL xm6_midi_write_input(
 	midi->SetRecvData((const BYTE*)bytes, (DWORD)count);
 	return XM6CORE_OK;
 }
+
 

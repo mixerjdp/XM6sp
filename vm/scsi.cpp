@@ -2,7 +2,7 @@
 //
 //	X68000 EMULATOR "XM6"
 //
-//	Copyright (C) 2001-2006 ＰＩ．(ytanaka@ipc-tokai.or.jp)
+//	Copyright (C) 2001-2006 PI. (ytanaka@ipc-tokai.or.jp)
 //	[ SCSI(MB89352) ]
 //
 //---------------------------------------------------------------------------
@@ -29,30 +29,30 @@
 
 //---------------------------------------------------------------------------
 //
-//	コンストラクタ
+//	Constructor
 //
 //---------------------------------------------------------------------------
 SCSI::SCSI(VM *p) : MemDevice(p)
 {
-	// デバイスIDを初期化
+	// Initialize device ID
 	dev.id = MAKEID('S', 'C', 'S', 'I');
 	dev.desc = "SCSI (MB89352)";
 
-	// 開始アドレス、終了アドレス
+	// Start address, end address
 	memdev.first = 0xea0000;
 	memdev.last = 0xea1fff;
 
-	// ワーク初期化
+	// Initialize work
 	memset(&scsi, 0, sizeof(scsi));
 
-	// デバイス
+	// Devices
 	memory = NULL;
 	sram = NULL;
 }
 
 //---------------------------------------------------------------------------
 //
-//	初期化
+//	Initialize
 //
 //---------------------------------------------------------------------------
 BOOL FASTCALL SCSI::Init()
@@ -61,22 +61,22 @@ BOOL FASTCALL SCSI::Init()
 
 	ASSERT(this);
 
-	// 基本クラス
+	// Base class
 	if (!MemDevice::Init()) {
 		return FALSE;
 	}
 
-	// メモリ取得
+	// Get memory
 	ASSERT(!memory);
 	memory = (Memory*)vm->SearchDevice(MAKEID('M', 'E', 'M', ' '));
 	ASSERT(memory);
 
-	// SRAM取得
+	// Get SRAM
 	ASSERT(!sram);
 	sram = (SRAM*)vm->SearchDevice(MAKEID('S', 'R', 'A', 'M'));
 	ASSERT(sram);
 
-	// ワーク初期化
+	// Initialize work
 	scsi.bdid = 0x80;
 	scsi.ilevel = 2;
 	scsi.vector = -1;
@@ -85,11 +85,11 @@ BOOL FASTCALL SCSI::Init()
 		scsi.cmd[i] = 0;
 	}
 
-	// コンフィグ初期化
+	// Initialize configuration
 	scsi.memsw = TRUE;
 	scsi.mo_first = FALSE;
 
-	// イベント初期化
+	// Initialize events
 	event.SetDevice(this);
 	event.SetDesc("Selection");
 	event.SetUser(0);
@@ -99,7 +99,7 @@ BOOL FASTCALL SCSI::Init()
 	cdda.SetUser(1);
 	cdda.SetTime(0);
 
-	// ディスク初期化
+	// Initialize disks
 	for (i=0; i<DeviceMax; i++) {
 		scsi.disk[i] = NULL;
 	}
@@ -114,7 +114,7 @@ BOOL FASTCALL SCSI::Init()
 
 //---------------------------------------------------------------------------
 //
-//	クリーンアップ
+//	Cleanup
 //
 //---------------------------------------------------------------------------
 void FASTCALL SCSI::Cleanup()
@@ -123,7 +123,7 @@ void FASTCALL SCSI::Cleanup()
 
 	ASSERT(this);
 
-	// HD削除
+	// Delete HD
 	for (i=0; i<HDMax; i++) {
 		if (scsi.hd[i]) {
 			delete scsi.hd[i];
@@ -131,25 +131,25 @@ void FASTCALL SCSI::Cleanup()
 		}
 	}
 
-	// MO削除
+	// Delete MO
 	if (scsi.mo) {
 		delete scsi.mo;
 		scsi.mo = NULL;
 	}
 
-	// CD削除
+	// Delete CD
 	if (scsi.cdrom) {
 		delete scsi.cdrom;
 		scsi.cdrom = NULL;
 	}
 
-	// 基本クラスへ
+	// To base class
 	MemDevice::Cleanup();
 }
 
 //---------------------------------------------------------------------------
 //
-//	リセット
+//	Reset
 //
 //---------------------------------------------------------------------------
 void FASTCALL SCSI::Reset()
@@ -158,75 +158,75 @@ void FASTCALL SCSI::Reset()
 	int i;
 
 	ASSERT(this);
-	LOG0(Log::Normal, "リセット");
+	LOG0(Log::Normal, "Reset");
 
-	// SCSIタイプ(メモリに問い合わせる)
+	// SCSI type (query memory)
 	type = memory->GetMemType();
 	switch (type) {
-		// SASIのみ
+		// SASI only
 		case Memory::None:
 		case Memory::SASI:
 			scsi.type = 0;
 			break;
 
-		// 外付
+		// External
 		case Memory::SCSIExt:
 			scsi.type = 1;
 			break;
 
-		// その他(内蔵)
+		// Other (internal)
 		default:
 			scsi.type = 2;
 			break;
 	}
 
-	// イベントを動的に追加・削除
+	// Dynamically add/remove events
 	if (scsi.type == 0) {
-		// イベント削除
+		// Remove events
 		if (scheduler->HasEvent(&event)) {
 			scheduler->DelEvent(&event);
 			scheduler->DelEvent(&cdda);
 		}
 	}
 	else {
-		// イベント追加
+		// Add events
 		if (!scheduler->HasEvent(&event)) {
 			scheduler->AddEvent(&event);
 			scheduler->AddEvent(&cdda);
 		}
 	}
 
-	// メモリスイッチ書き込み
+	// Write memory switch
 	if (scsi.memsw) {
-		// SCSIが存在する場合のみ
+		// Only if SCSI exists
 		if (scsi.type != 0) {
-			// $ED006F:SCSIフラグ('V'でSCSI有効)
+			// $ED006F: SCSI flag ('V' for SCSI enabled)
 			if (sram->GetMemSw(0x6f) != 'V') {
 				sram->SetMemSw(0x6f, 'V');
 
-				// 本体IDを7に初期化
+				// Initialize host ID to 7
 				sram->SetMemSw(0x70, 0x07);
 			}
 
-			// $ED0070:ボード種別+本体ID
+			// $ED0070: Board type + host ID
 			if (scsi.type == 1) {
-				// 外付
+				// External
 				sram->SetMemSw(0x70, sram->GetMemSw(0x70) | 0x08);
 			}
 			else {
-				// 内蔵
+				// Internal
 				sram->SetMemSw(0x70, sram->GetMemSw(0x70) & ~0x08);
 			}
 
-			// $ED0071:SASIエミュレーションフラグ
+			// $ED0071: SASI emulation flag
 			sram->SetMemSw(0x71, 0x00);
 		}
 	}
 
-	// ディスク再構築
+	// Rebuild disks
 	Construct();
 
-	// ディスクリセット
+	// Reset disks
 	for (i=0; i<HDMax; i++) {
 		if (scsi.hd[i]) {
 			scsi.hd[i]->Reset();
@@ -239,21 +239,21 @@ void FASTCALL SCSI::Reset()
 		scsi.cdrom->Reset();
 	}
 
-	// コマンドクリア
+	// Clear command
 	for (i=0; i<sizeof(scsi.cmd); i++) {
 		scsi.cmd[i] = 0;
 	}
 
-	// レジスタリセット
+	// Reset registers
 	ResetReg();
 
-	// バスフリーフェーズ
+	// Bus free phase
 	BusFree();
 }
 
 //---------------------------------------------------------------------------
 //
-//	セーブ
+//	Save
 //
 //---------------------------------------------------------------------------
 BOOL FASTCALL SCSI::Save(Fileio *fio, int ver)
@@ -265,9 +265,9 @@ BOOL FASTCALL SCSI::Save(Fileio *fio, int ver)
 	ASSERT(this);
 	ASSERT(fio);
 
-	LOG0(Log::Normal, "セーブ");
+	LOG0(Log::Normal, "Save");
 
-	// ディスクをフラッシュ
+	// Flush disks
 	for (i=0; i<HDMax; i++) {
 		if (scsi.hd[i]) {
 			if (!scsi.hd[i]->Flush()) {
@@ -286,18 +286,18 @@ BOOL FASTCALL SCSI::Save(Fileio *fio, int ver)
 		}
 	}
 
-	// サイズをセーブ
+	// Save size
 	sz = sizeof(scsi_t);
 	if (!fio->Write(&sz, sizeof(sz))) {
 		return FALSE;
 	}
 
-	// 実体をセーブ
+	// Save entity
 	if (!fio->Write(&scsi, (int)sz)) {
 		return FALSE;
 	}
 
-	// イベントをセーブ
+	// Save events
 	if (!event.Save(fio, ver)) {
 		return FALSE;
 	}
@@ -305,14 +305,14 @@ BOOL FASTCALL SCSI::Save(Fileio *fio, int ver)
 		return FALSE;
 	}
 
-	// パスをセーブ
+	// Save paths
 	for (i=0; i<HDMax; i++) {
 		if (!scsihd[i].Save(fio, ver)) {
 			return FALSE;
 		}
 	}
 
-	// ディスクをセーブ
+	// Save disks
 	for (i=0; i<HDMax; i++) {
 		if (scsi.hd[i]) {
 			if (!scsi.hd[i]->Save(fio, ver)) {
@@ -320,7 +320,7 @@ BOOL FASTCALL SCSI::Save(Fileio *fio, int ver)
 			}
 		}
 		else {
-			// 数あわせのため、ダミーでもよいから保存する(version2.04)
+			// Save dummy for count alignment (version 2.04)
 			disk = new SCSIHD(this);
 			if (!disk->Save(fio, ver)) {
 				delete disk;
@@ -345,7 +345,7 @@ BOOL FASTCALL SCSI::Save(Fileio *fio, int ver)
 
 //---------------------------------------------------------------------------
 //
-//	ロード
+//	Load
 //
 //---------------------------------------------------------------------------
 BOOL FASTCALL SCSI::Load(Fileio *fio, int ver)
@@ -358,15 +358,15 @@ BOOL FASTCALL SCSI::Load(Fileio *fio, int ver)
 	ASSERT(fio);
 	ASSERT(ver >= 0x0200);
 
-	LOG0(Log::Normal, "ロード");
+	LOG0(Log::Normal, "Load");
 
-	// version2.01以前は、SCSIをサポートしていない
+	// Versions 2.01 and earlier do not support SCSI
 	if (ver <= 0x201) {
-		// SCSIなし、ドライブ数0
+		// No SCSI, drive count 0
 		scsi.type = 0;
 		scsi.scsi_drives = 0;
 
-		// イベント削除
+		// Remove events
 		if (scheduler->HasEvent(&event)) {
 			scheduler->DelEvent(&event);
 			scheduler->DelEvent(&cdda);
@@ -374,7 +374,7 @@ BOOL FASTCALL SCSI::Load(Fileio *fio, int ver)
 		return TRUE;
 	}
 
-	// ディスクを削除し、一旦初期化する
+	// Delete disks and initialize
 	for (i=0; i<HDMax; i++) {
 		if (scsi.hd[i]) {
 			delete scsi.hd[i];
@@ -392,7 +392,7 @@ BOOL FASTCALL SCSI::Load(Fileio *fio, int ver)
 	scsi.type = 0;
 	scsi.scsi_drives = 0;
 
-	// サイズをロード、照合
+	// Load size and compare
 	if (!fio->Read(&sz, sizeof(sz))) {
 		return FALSE;
 	}
@@ -400,40 +400,40 @@ BOOL FASTCALL SCSI::Load(Fileio *fio, int ver)
 		return FALSE;
 	}
 
-	// 実体をロード
+	// Load entity
 	if (!fio->Read(&scsi, (int)sz)) {
 		return FALSE;
 	}
 
-	// ディスクをクリア(ロード時に上書きされるため)
+	// Clear disks (will be overwritten during load)
 	for (i=0; i<HDMax; i++) {
 		scsi.hd[i] = NULL;
 	}
 	scsi.mo = NULL;
 	scsi.cdrom = NULL;
 
-	// イベントをロード
+	// Load events
 	if (!event.Load(fio, ver)) {
 		return FALSE;
 	}
 	if (ver >= 0x0203) {
-		// version2.03で、CD-DAイベントが追加された
+		// CD-DA event added in version 2.03
 		if (!cdda.Load(fio, ver)) {
 			return FALSE;
 		}
 	}
 
-	// パスをロード
+	// Load paths
 	for (i=0; i<HDMax; i++) {
 		if (!scsihd[i].Load(fio, ver)) {
 			return FALSE;
 		}
 	}
 
-	// ディスク再構築
+	// Rebuild disks
 	Construct();
 
-	// ディスクをロード(version2.03で追加)
+	// Load disks (added in version 2.03)
 	if (ver >= 0x0203) {
 		for (i=0; i<HDMax; i++) {
 			if (scsi.hd[i]) {
@@ -442,7 +442,7 @@ BOOL FASTCALL SCSI::Load(Fileio *fio, int ver)
 				}
 			}
 			else {
-				// 数あわせのため、ダミーでもよいのでロード(version2.04)
+				// Load dummy for count alignment (version 2.04)
 				if (ver >= 0x0204) {
 					disk = new SCSIHD(this);
 					if (!disk->Load(fio, ver)) {
@@ -465,16 +465,16 @@ BOOL FASTCALL SCSI::Load(Fileio *fio, int ver)
 		}
 	}
 
-	// イベントを動的に追加・削除
+	// Dynamically add/remove events
 	if (scsi.type == 0) {
-		// イベント削除
+		// Remove events
 		if (scheduler->HasEvent(&event)) {
 			scheduler->DelEvent(&event);
 			scheduler->DelEvent(&cdda);
 		}
 	}
 	else {
-		// イベント追加
+		// Add events
 		if (!scheduler->HasEvent(&event)) {
 			scheduler->AddEvent(&event);
 			scheduler->AddEvent(&cdda);
@@ -486,7 +486,7 @@ BOOL FASTCALL SCSI::Load(Fileio *fio, int ver)
 
 //---------------------------------------------------------------------------
 //
-//	設定適用
+//	Apply configuration
 //
 //---------------------------------------------------------------------------
 void FASTCALL SCSI::ApplyCfg(const Config *config)
@@ -495,35 +495,35 @@ void FASTCALL SCSI::ApplyCfg(const Config *config)
 
 	ASSERT(this);
 	ASSERT(config);
-	LOG0(Log::Normal, "設定適用");
+	LOG0(Log::Normal, "Apply configuration");
 
-	// SCSIドライブ数
+	// SCSI drive count
 	scsi.scsi_drives = config->scsi_drives;
 
-	// メモリスイッチ自動更新
+	// Memory switch auto update
 	scsi.memsw = config->scsi_sramsync;
 
-	// MO優先フラグ
+	// MO priority flag
 	scsi.mo_first = config->scsi_mofirst;
 
-	// SCSIファイル名
+	// SCSI file names
 	for (i=0; i<HDMax; i++) {
 		scsihd[i].SetPath(config->scsi_file[i]);
 	}
 
-	// ディスク再構築
+	// Rebuild disks
 	Construct();
 }
 
 #if !defined(NDEBUG)
 //---------------------------------------------------------------------------
 //
-//	診断
+//	Diagnostics
 //
 //---------------------------------------------------------------------------
 void FASTCALL SCSI::AssertDiag() const
 {
-	// 基本クラス
+	// Base class
 	MemDevice::AssertDiag();
 
 	ASSERT(this);
@@ -544,7 +544,7 @@ void FASTCALL SCSI::AssertDiag() const
 
 //---------------------------------------------------------------------------
 //
-//	バイト読み込み
+//	Byte read
 //
 //---------------------------------------------------------------------------
 DWORD FASTCALL SCSI::ReadByte(DWORD addr)
@@ -554,41 +554,41 @@ DWORD FASTCALL SCSI::ReadByte(DWORD addr)
 	ASSERT(this);
 	ASSERT(addr <= 0xffffff);
 
-	// 通常の読み込みの場合
+	// For normal reads
 	if (addr >= memdev.first) {
-		// SASIのみ or 内蔵の場合、この空間は見えない
+		// SASI only or internal, this space is not visible
 		if (scsi.type != 1) {
-			// バスエラー
+			// Bus error
 			cpu->BusErr(addr, TRUE);
 			return 0xff;
 		}
 	}
 
-	// アドレスマスク
+	// Address mask
 	addr &= 0x1fff;
 
-	// ROMデータ
+	// ROM data
 	if (addr >= 0x20) {
-		// ウェイト
+		// Wait
 		scheduler->Wait(1);
 
-		// ROMを返す
+		// Return ROM
 		rom = memory->GetSCSI();
 		return rom[addr];
 	}
 
-	// レジスタ
+	// Register
 	if ((addr & 1) == 0) {
-		// 偶数アドレスはデコードされていない
+		// Even address is not decoded
 		return 0xff;
 	}
 	addr &= 0x1f;
 	addr >>= 1;
 
-	// ウェイト
+	// Wait
 	scheduler->Wait(1);
 
-	// レジスタ別
+	// By register
 	switch (addr) {
 		// BDID
 		case 0:
@@ -602,7 +602,7 @@ DWORD FASTCALL SCSI::ReadByte(DWORD addr)
 		case 2:
 			return scsi.scmd;
 
-		// リザーブ
+		// Reserved
 		case 3:
 			return 0xff;
 
@@ -650,19 +650,19 @@ DWORD FASTCALL SCSI::ReadByte(DWORD addr)
 		case 14:
 			return (BYTE)scsi.tc;
 
-		// リザーブ
+		// Reserved
 		case 15:
 			return 0xff;
 	}
 
-	// 通常、ここには来ない
-	LOG1(Log::Warning, "未定義レジスタ読み込み R%d", addr);
+	// Normally should not reach here
+	LOG1(Log::Warning, "Undefined register read R%d", addr);
 	return 0xff;
 }
 
 //---------------------------------------------------------------------------
 //
-//	ワード読み込み
+//	Word read
 //
 //---------------------------------------------------------------------------
 DWORD FASTCALL SCSI::ReadWord(DWORD addr)
@@ -675,7 +675,7 @@ DWORD FASTCALL SCSI::ReadWord(DWORD addr)
 
 //---------------------------------------------------------------------------
 //
-//	バイト書き込み
+//	Byte write
 //
 //---------------------------------------------------------------------------
 void FASTCALL SCSI::WriteByte(DWORD addr, DWORD data)
@@ -684,37 +684,37 @@ void FASTCALL SCSI::WriteByte(DWORD addr, DWORD data)
 	ASSERT(addr <= 0xffffff);
 	ASSERT(data < 0x100);
 
-	// 通常の読み込みの場合
+	// For normal reads
 	if (addr >= memdev.first) {
-		// SASIのみ or 内蔵の場合、この空間は見えない
+		// SASI only or internal, this space is not visible
 		if (scsi.type != 1) {
-			// バスエラー
+			// Bus error
 			cpu->BusErr(addr, FALSE);
 			return;
 		}
 	}
 
-	// アドレスマスク
+	// Address mask
 	addr &= 0x1fff;
 
-	// ROMデータ
+	// ROM data
 	if (addr >= 0x20) {
-		// ROMへの書き込み
+		// Write to ROM
 		return;
 	}
 
-	// レジスタ
+	// Register
 	if ((addr & 1) == 0) {
-		// 偶数アドレスはデコードされていない
+		// Even address is not decoded
 		return;
 	}
 	addr &= 0x1f;
 	addr >>= 1;
 
-	// ウェイト
+	// Wait
 	scheduler->Wait(1);
 
-	// レジスタ別
+	// By register
 	switch (addr) {
 		// BDID
 		case 0:
@@ -731,7 +731,7 @@ void FASTCALL SCSI::WriteByte(DWORD addr, DWORD data)
 			SetSCMD(data);
 			return;
 
-		// リザーブ
+		// Reserved
 		case 3:
 			break;
 
@@ -747,7 +747,7 @@ void FASTCALL SCSI::WriteByte(DWORD addr, DWORD data)
 
 		// SSTS(Read Only)
 		case 6:
-			// SCSIドライバv1.04の修正パッチで、時間稼ぎのために書き込んでいる様子
+			// SCSI driver v1.04 patch seems to write for timing delay
 			return;
 
 		// SERR(Read Only)
@@ -788,18 +788,18 @@ void FASTCALL SCSI::WriteByte(DWORD addr, DWORD data)
 			SetTCL(data);
 			return;
 
-		// リザーブ
+		// Reserved
 		case 15:
 			break;
 	}
 
-	// 通常、ここには来ない
-	LOG2(Log::Warning, "未定義レジスタ書き込み R%d <- $%02X", addr, data);
+	// Normally should not reach here
+	LOG2(Log::Warning, "Undefined register write R%d <- $%02X", addr, data);
 }
 
 //---------------------------------------------------------------------------
 //
-//	ワード書き込み
+//	Word write
 //
 //---------------------------------------------------------------------------
 void FASTCALL SCSI::WriteWord(DWORD addr, DWORD data)
@@ -813,7 +813,7 @@ void FASTCALL SCSI::WriteWord(DWORD addr, DWORD data)
 
 //---------------------------------------------------------------------------
 //
-//	読み込みのみ
+//	Read only
 //
 //---------------------------------------------------------------------------
 DWORD FASTCALL SCSI::ReadOnly(DWORD addr) const
@@ -822,33 +822,33 @@ DWORD FASTCALL SCSI::ReadOnly(DWORD addr) const
 
 	ASSERT(this);
 
-	// 通常の読み込みの場合
+	// For normal reads
 	if (addr >= memdev.first) {
-		// SASIのみ or 内蔵の場合、この空間は見えない
+		// SASI only or internal, this space is not visible
 		if (scsi.type != 1) {
 			return 0xff;
 		}
 	}
 
-	// アドレスマスク
+	// Address mask
 	addr &= 0x1fff;
 
-	// ROMデータ
+	// ROM data
 	if (addr >= 0x20) {
-		// ROMを返す
+		// Return ROM
 		rom = memory->GetSCSI();
 		return rom[addr];
 	}
 
-	// レジスタ
+	// Register
 	if ((addr & 1) == 0) {
-		// 偶数アドレスはデコードされていない
+		// Even address is not decoded
 		return 0xff;
 	}
 	addr &= 0x1f;
 	addr >>= 1;
 
-	// レジスタ別
+	// By register
 	switch (addr) {
 		// BDID
 		case 0:
@@ -862,7 +862,7 @@ DWORD FASTCALL SCSI::ReadOnly(DWORD addr) const
 		case 2:
 			return scsi.scmd;
 
-		// リザーブ
+		// Reserved
 		case 3:
 			break;
 
@@ -910,7 +910,7 @@ DWORD FASTCALL SCSI::ReadOnly(DWORD addr) const
 		case 14:
 			return (BYTE)scsi.tc;
 
-		// リザーブ
+		// Reserved
 		case 15:
 			break;
 	}
@@ -920,7 +920,7 @@ DWORD FASTCALL SCSI::ReadOnly(DWORD addr) const
 
 //---------------------------------------------------------------------------
 //
-//	内部データ取得
+//	Get internal data
 //
 //---------------------------------------------------------------------------
 void FASTCALL SCSI::GetSCSI(scsi_t *buffer) const
@@ -929,13 +929,13 @@ void FASTCALL SCSI::GetSCSI(scsi_t *buffer) const
 	ASSERT(buffer);
 	ASSERT_DIAG();
 
-	// 内部ワークをコピー
+	// Copy internal work
 	*buffer = scsi;
 }
 
 //---------------------------------------------------------------------------
 //
-//	イベントコールバック
+//	Event callback
 //
 //---------------------------------------------------------------------------
 BOOL FASTCALL SCSI::Callback(Event* ev)
@@ -946,58 +946,58 @@ BOOL FASTCALL SCSI::Callback(Event* ev)
 	ASSERT(ev);
 	ASSERT_DIAG();
 
-	// CD-DAイベント専用処理
+	// CD-DA event specific processing
 	if (ev->GetUser() == 1) {
 		if (scsi.cdrom) {
-			// CD-ROMへ通知
+			// Notify CD-ROM
 			if (scsi.cdrom->NextFrame()) {
-				// 通常速度
+				// Normal speed
 				ev->SetTime(26666);
 			}
 			else {
-				// 75回に1回だけ、補正する
+				// Correct once per 75 times
 				ev->SetTime(26716);
 			}
 		}
 
-		// 継続
+		// Continue
 		return TRUE;
 	}
 
-	// セレクションフェーズのみ有効
+	// Selection phase only valid
 	ASSERT(ev->GetUser() == 0);
 	if (scsi.phase != selection) {
-		// 単発
+		// One-shot
 		return FALSE;
 	}
 
-	// 成功フラグ作成
+	// Create success flag
 	success = FALSE;
 	if (scsi.id != -1) {
-		// IDがイニシエータとターゲット、両方指定されていて
+		// ID has both initiator and target specified
 		if (scsi.disk[scsi.id]) {
-			// 有効なディスクがマウントされている
+			// Valid disk is mounted
 			success = TRUE;
 		}
 	}
 
-	// 成功フラグにより分ける
+	// Branch by success flag
 	if (success) {
 #if defined(SCSI_LOG)
-		LOG1(Log::Normal, "セレクション成功 ID=%d", scsi.id);
+		LOG1(Log::Normal, "Selection success ID=%d", scsi.id);
 #endif	// SCSI_LOG
 
-		// TCをデクリメント
+		// Decrement TC
 		scsi.tc &= 0x00ffff00;
 		scsi.tc -= 0x2800;
 
-		// コンプリート(セレクション成功)
+		// Complete (selection success)
 		Interrupt(4, TRUE);
 
-		// ここでBSY=1
+		// BSY=1 here
 		scsi.bsy = TRUE;
 
-		// ATN=1ならメッセージアウトフェーズ、そうでなければコマンドフェーズ
+		// ATN=1 means message out phase, otherwise command phase
 		if (scsi.atn) {
 			MsgOut();
 		}
@@ -1007,28 +1007,28 @@ BOOL FASTCALL SCSI::Callback(Event* ev)
 	}
 	else {
 #if defined(SCSI_LOG)
-		LOG1(Log::Normal, "セレクション失敗 TEMP=$%02X", scsi.temp);
+		LOG1(Log::Normal, "Selection failed TEMP=$%02X", scsi.temp);
 #endif	// SCSI_LOG
 
-		// TC=0とする(タイムアウト)
+		// Set TC=0 (timeout)
 		scsi.tc = 0;
 
-		// タイムアウト(セレクション失敗)
+		// Timeout (selection failed)
 		Interrupt(2, TRUE);
 
-		// BSY=FALSEならバスフリー
+		// BSY=FALSE means bus free
 		if (!scsi.bsy) {
 			BusFree();
 		}
 	}
 
-	// 単発
+	// One-shot
 	return FALSE;
 }
 
 //---------------------------------------------------------------------------
 //
-//	レジスタリセット
+//	Reset registers
 //
 //---------------------------------------------------------------------------
 void FASTCALL SCSI::ResetReg()
@@ -1036,16 +1036,16 @@ void FASTCALL SCSI::ResetReg()
 	ASSERT(this);
 
 #if defined(SCSI_LOG)
-	LOG0(Log::Normal, "レジスタリセット");
+	LOG0(Log::Normal, "Reset registers");
 #endif	// SCSI_LOG
 
-	// カレントID
+	// Current ID
 	scsi.id = -1;
 
-	// 割り込み
+	// Interrupt
 	scsi.vector = -1;
 
-	// レジスタ
+	// Registers
 	scsi.bdid = 0x80;
 	scsi.sctl = 0x80;
 	scsi.scmd = 0;
@@ -1056,19 +1056,19 @@ void FASTCALL SCSI::ResetReg()
 	scsi.temp = 0;
 	scsi.tc = 0;
 
-	// 転送コマンド停止
+	// Stop transfer command
 	scsi.trans = FALSE;
 
-	// フェーズ(SPCはバスフリーのつもり)
+	// Phase (SPC intends bus free)
 	scsi.phase = busfree;
 
-	// 割り込みチェック
+	// Interrupt check
 	IntCheck();
 }
 
 //---------------------------------------------------------------------------
 //
-//	転送リセット
+//	Reset transfer
 //
 //---------------------------------------------------------------------------
 void FASTCALL SCSI::ResetCtrl()
@@ -1076,16 +1076,16 @@ void FASTCALL SCSI::ResetCtrl()
 	ASSERT(this);
 
 #if defined(SCSI_LOG)
-	LOG0(Log::Normal, "転送リセット");
+	LOG0(Log::Normal, "Reset transfer");
 #endif	// SCSI_LOG
 
-	// 転送コマンド停止
+	// Stop transfer command
 	scsi.trans = FALSE;
 }
 
 //---------------------------------------------------------------------------
 //
-//	バスリセット
+//	Reset bus
 //
 //---------------------------------------------------------------------------
 void FASTCALL SCSI::ResetBus(BOOL reset)
@@ -1095,17 +1095,17 @@ void FASTCALL SCSI::ResetBus(BOOL reset)
 
 #if defined(SCSI_LOG)
 	if (reset) {
-		LOG0(Log::Normal, "SCSIバス リセット");
+		LOG0(Log::Normal, "SCSI bus reset");
 	}
 	else {
-		LOG0(Log::Normal, "SCSIバス リセット解除");
+		LOG0(Log::Normal, "SCSI bus reset release");
 	}
 #endif	// SCSI_LOG
 
-	// 記憶
+	// Store
 	scsi.rst = reset;
 
-	// 信号線(バスフリーと同じ)
+	// Signal lines (same as bus free)
 	scsi.bsy = FALSE;
 	scsi.sel = FALSE;
 	scsi.atn = FALSE;
@@ -1115,19 +1115,19 @@ void FASTCALL SCSI::ResetBus(BOOL reset)
 	scsi.req = FALSE;
 	scsi.ack = FALSE;
 
-	// 転送コマンド停止
+	// Stop transfer command
 	scsi.trans = FALSE;
 
-	// フェーズ(SPCはバスフリーのつもり)
+	// Phase (SPC intends bus free)
 	scsi.phase = busfree;
 
-	// バスリセット割り込み発生・解除
+	// Generate/cancel bus reset interrupt
 	Interrupt(0, reset);
 }
 
 //---------------------------------------------------------------------------
 //
-//	BDID設定
+//	Set BDID
 //
 //---------------------------------------------------------------------------
 void FASTCALL SCSI::SetBDID(DWORD data)
@@ -1137,17 +1137,17 @@ void FASTCALL SCSI::SetBDID(DWORD data)
 	ASSERT(this);
 	ASSERT(data < 0x100);
 
-	// 3bitのみ有効
+	// Only 3 bits valid
 	data &= 0x07;
 
 #if defined(SCSI_LOG)
-	LOG1(Log::Normal, "ボードID設定 ID%d", data);
+	LOG1(Log::Normal, "Set board ID ID%d", data);
 #endif	// SCSI_LOG
 
-	// 数値からビットへ変換
+	// Convert from number to bit
 	bdid = (DWORD)(1 << data);
 
-	// 異なるときは、ディスク再構築が必要
+	// If different, need to rebuild disks
 	if (scsi.bdid != bdid) {
 		scsi.bdid = bdid;
 		Construct();
@@ -1156,7 +1156,7 @@ void FASTCALL SCSI::SetBDID(DWORD data)
 
 //---------------------------------------------------------------------------
 //
-//	SCTL設定
+//	Set SCTL
 //
 //---------------------------------------------------------------------------
 void FASTCALL SCSI::SetSCTL(DWORD data)
@@ -1165,30 +1165,30 @@ void FASTCALL SCSI::SetSCTL(DWORD data)
 	ASSERT(data < 0x100);
 
 #if defined(SCSI_LOG)
-	LOG1(Log::Normal, "SCTL設定 $%02X", data);
+	LOG1(Log::Normal, "Set SCTL $%02X", data);
 #endif	// SCSI_LOG
 
 	scsi.sctl = data;
 
-	// bit7:Reset & Disable
+	// bit7: Reset & Disable
 	if (scsi.sctl & 0x80) {
-		// レジスタリセット
+		// Reset registers
 		ResetReg();
 	}
 
-	// bit6:Reset Control
+	// bit6: Reset Control
 	if (scsi.sctl & 0x40) {
-		// 転送リセット
+		// Reset transfer
 		ResetCtrl();
 	}
 
-	// 割り込みチェック
+	// Interrupt check
 	IntCheck();
 }
 
 //---------------------------------------------------------------------------
 //
-//	SCMD設定
+//	Set SCMD
 //
 //---------------------------------------------------------------------------
 void FASTCALL SCSI::SetSCMD(DWORD data)
@@ -1200,27 +1200,27 @@ void FASTCALL SCSI::SetSCMD(DWORD data)
 	// bit4: RST Out
 	if (data & 0x10) {
 		if ((scsi.scmd & 0x10) == 0) {
-			// RSTが0→1
+			// RST 0->1
 			if ((scsi.sctl & 0x80) == 0) {
-				// SPCがリセット中でない
+				// SPC not in reset
 				ResetBus(TRUE);
 			}
 		}
 	}
 	else {
 		if (scsi.scmd & 0x10) {
-			// RSTが1→0
+			// RST 1->0
 			if ((scsi.sctl & 0x80) == 0) {
-				// SPCがリセット中でない
+				// SPC not in reset
 				ResetBus(FALSE);
 			}
 		}
 	}
 
-	// コマンド記憶
+	// Store command
 	scsi.scmd = data;
 
-	// bit7-5:Command
+	// bit7-5: Command
 	switch (scsi.scmd >> 5) {
 		// Bus Release
 		case 0:
@@ -1262,7 +1262,7 @@ void FASTCALL SCSI::SetSCMD(DWORD data)
 			SetACKREQ();
 			break;
 
-		// その他(ありえない)
+		// Other (impossible)
 		default:
 			ASSERT(FALSE);
 			break;
@@ -1271,7 +1271,7 @@ void FASTCALL SCSI::SetSCMD(DWORD data)
 
 //---------------------------------------------------------------------------
 //
-//	INTS設定
+//	Set INTS
 //
 //---------------------------------------------------------------------------
 void FASTCALL SCSI::SetINTS(DWORD data)
@@ -1281,19 +1281,19 @@ void FASTCALL SCSI::SetINTS(DWORD data)
 	ASSERT_DIAG();
 
 #if defined(SCSI_LOG)
-	LOG1(Log::Normal, "割り込みクリア $%02X", data);
+	LOG1(Log::Normal, "Clear interrupt $%02X", data);
 #endif	// SCSI_LOG
 
-	// ビットを立てた割り込みを取り下げる
+	// Withdraw interrupt with bit set
 	scsi.ints &= ~data;
 
-	// 割り込みチェック
+	// Interrupt check
 	IntCheck();
 }
 
 //---------------------------------------------------------------------------
 //
-//	PSNS取得
+//	Get PSNS
 //
 //---------------------------------------------------------------------------
 DWORD FASTCALL SCSI::GetPSNS() const
@@ -1303,45 +1303,45 @@ DWORD FASTCALL SCSI::GetPSNS() const
 	ASSERT(this);
 	ASSERT_DIAG();
 
-	// データ初期化
+	// Initialize data
 	data = 0;
 
-	// bit7:REQ
+	// bit7: REQ
 	if (scsi.req) {
 		data |= 0x80;
 	}
 
-	// bit6:ACK
+	// bit6: ACK
 	if (scsi.ack) {
 		data |= 0x40;
 	}
 
-	// bit5:ATN
+	// bit5: ATN
 	if (scsi.atn) {
 		data |= 0x20;
 	}
 
-	// bit4:SEL
+	// bit4: SEL
 	if (scsi.sel) {
 		data |= 0x10;
 	}
 
-	// bit3:BSY
+	// bit3: BSY
 	if (scsi.bsy) {
 		data |= 0x08;
 	}
 
-	// bit2:MSG
+	// bit2: MSG
 	if (scsi.msg) {
 		data |= 0x04;
 	}
 
-	// bit1:C/D
+	// bit1: C/D
 	if (scsi.cd) {
 		data |= 0x02;
 	}
 
-	// bit0:I/O
+	// bit0: I/O
 	if (scsi.io) {
 		data |= 0x01;
 	}
@@ -1351,7 +1351,7 @@ DWORD FASTCALL SCSI::GetPSNS() const
 
 //---------------------------------------------------------------------------
 //
-//	SDGC設定
+//	Set SDGC
 //
 //---------------------------------------------------------------------------
 void FASTCALL SCSI::SetSDGC(DWORD data)
@@ -1360,7 +1360,7 @@ void FASTCALL SCSI::SetSDGC(DWORD data)
 	ASSERT(data < 0x100);
 
 #if defined(SCSI_LOG)
-	LOG1(Log::Normal, "SDGC設定 $%02X", data);
+	LOG1(Log::Normal, "Set SDGC $%02X", data);
 #endif	// SCSI_LOG
 
 	scsi.sdgc = data;
@@ -1368,7 +1368,7 @@ void FASTCALL SCSI::SetSDGC(DWORD data)
 
 //---------------------------------------------------------------------------
 //
-//	SSTS取得
+//	Get SSTS
 //
 //---------------------------------------------------------------------------
 DWORD FASTCALL SCSI::GetSSTS() const
@@ -1378,62 +1378,62 @@ DWORD FASTCALL SCSI::GetSSTS() const
 	ASSERT(this);
 	ASSERT_DIAG();
 
-	// データ初期化
+	// Initialize data
 	data = 0;
 
-	// bit6-7:Connected
+	// bit6-7: Connected
 	if (scsi.phase != busfree) {
-		// バスフリー以外は、イニシエータとして結合中
+		// Not bus free means connected as initiator
 		data = 0x80;
 	}
 
-	// bit5:SPC BUSY
+	// bit5: SPC BUSY
 	if (scsi.bsy) {
 		data |= 0x20;
 	}
 
-	// bit4:Transfer Progress
+	// bit4: Transfer Progress
 	if (scsi.trans) {
 		data |= 0x10;
 	}
 
-	// bit3:Reset
+	// bit3: Reset
 	if (scsi.rst) {
 		data |= 0x08;
 	}
 
-	// bit2:TC=0
+	// bit2: TC=0
 	if (scsi.tc == 0) {
 		data |= 0x04;
 	}
 
-	// bit0-1:FIFO数 (00:1～7バイト, 01:Empty, 10:8バイト, 11:未使用)
+	// bit0-1: FIFO count (00:1-7 bytes, 01:Empty, 10:8 bytes, 11:unused)
 	if (scsi.trans) {
-		// 転送中で
+		// During transfer
 		if (scsi.io) {
-			// Read時に限り、FIFOにデータが溜まる可能性がある
+			// Only during Read, data may accumulate in FIFO
 			if ((scsi.length > 0) && (scsi.tc > 0)) {
 				if ((scsi.length >= 8) && (scsi.tc >= 8)) {
-					// 8バイト以上(TS-6BS1mkIII)
+					// 8 or more bytes (TS-6BS1mkIII)
 					data |= 0x02;
 					return data;
 				}
 				else {
-					// 7バイト以下
+					// 7 or fewer bytes
 					return data;
 				}
 			}
 		}
 	}
 
-	// FIFOにデータはない
+	// No data in FIFO
 	data |= 0x01;
 	return data;
 }
 
 //---------------------------------------------------------------------------
 //
-//	SERR取得
+//	Get SERR
 //
 //---------------------------------------------------------------------------
 DWORD FASTCALL SCSI::GetSERR() const
@@ -1441,23 +1441,23 @@ DWORD FASTCALL SCSI::GetSERR() const
 	ASSERT(this);
 	ASSERT_DIAG();
 
-	// プログラム転送時、リクエスト信号を出すなら
+	// During program transfer, if request signal is output
 	if (scsi.sdgc & 0x20) {
 		if (scsi.trans) {
 			if (scsi.tc != 0) {
-				// Xfer Outを示す
+				// Indicate Xfer Out
 				return 0x20;
 			}
 		}
 	}
 
-	// それ以外は0
+	// Otherwise 0
 	return 0x00;
 }
 
 //---------------------------------------------------------------------------
 //
-//	PCTL設定
+//	Set PCTL
 //
 //---------------------------------------------------------------------------
 void FASTCALL SCSI::SetPCTL(DWORD data)
@@ -1471,7 +1471,7 @@ void FASTCALL SCSI::SetPCTL(DWORD data)
 
 //---------------------------------------------------------------------------
 //
-//	DREG取得
+//	Get DREG
 //
 //---------------------------------------------------------------------------
 DWORD FASTCALL SCSI::GetDREG()
@@ -1481,22 +1481,22 @@ DWORD FASTCALL SCSI::GetDREG()
 	ASSERT(this);
 	ASSERT_DIAG();
 
-	// 転送中でなければ、FFを返す
+	// If not transferring, return FF
 	if (!scsi.trans) {
 		return 0xff;
 	}
 
-	// リクエストが上がっていなければ、FFを返す
+	// If request is not asserted, return FF
 	if (!scsi.req) {
 		return 0xff;
 	}
 
-	// TCが0なら、FFを返す
+	// If TC is 0, return FF
 	if (scsi.tc == 0) {
 		return 0xff;
 	}
 
-	// REQ-ACKハンドシェークを自動で行う
+	// Perform REQ-ACK handshake automatically
 	Xfer(&data);
 	XferNext();
 
@@ -1506,25 +1506,25 @@ DWORD FASTCALL SCSI::GetDREG()
 	// TC
 	scsi.tc--;
 	if (scsi.tc == 0) {
-		// 転送完了(scsi.length != 0なら、SCSIバスはロック)
+		// Transfer complete (if scsi.length != 0, SCSI bus is locked)
 		TransComplete();
 		return data;
 	}
 
-	// ステータスフェーズになっていれば、転送完了orエラー
+	// If in status phase, transfer complete or error
 	if (scsi.phase == status) {
-		// 転送完了
+		// Transfer complete
 		TransComplete();
 		return data;
 	}
 
-	// 読み込み継続
+	// Continue reading
 	return data;
 }
 
 //---------------------------------------------------------------------------
 //
-//	DREG設定
+//	Set DREG
 //
 //---------------------------------------------------------------------------
 void FASTCALL SCSI::SetDREG(DWORD data)
@@ -1533,22 +1533,22 @@ void FASTCALL SCSI::SetDREG(DWORD data)
 	ASSERT(data < 0x100);
 	ASSERT_DIAG();
 
-	// 転送中でなければ、何もしない
+	// If not transferring, do nothing
 	if (!scsi.trans) {
 		return;
 	}
 
-	// リクエストが上がっていなければ、何もしない
+	// If request is not asserted, do nothing
 	if (!scsi.req) {
 		return;
 	}
 
-	// TCが0なら、何もしない
+	// If TC is 0, do nothing
 	if (scsi.tc == 0) {
 		return;
 	}
 
-	// REQ-ACKハンドシェークを自動で行う
+	// Perform REQ-ACK handshake automatically
 	Xfer(&data);
 	XferNext();
 
@@ -1558,14 +1558,14 @@ void FASTCALL SCSI::SetDREG(DWORD data)
 	// TC
 	scsi.tc--;
 	if (scsi.tc == 0) {
-		// 転送完了(scsi.length != 0なら、SCSIバスはロック)
+		// Transfer complete (if scsi.length != 0, SCSI bus is locked)
 		TransComplete();
 		return;
 	}
 
-	// ステータスフェーズになっていれば、転送完了orエラー
+	// If in status phase, transfer complete or error
 	if (scsi.phase == status) {
-		// 転送完了
+		// Transfer complete
 		TransComplete();
 		return;
 	}
@@ -1573,7 +1573,7 @@ void FASTCALL SCSI::SetDREG(DWORD data)
 
 //---------------------------------------------------------------------------
 //
-//	TEMP設定
+//	Set TEMP
 //
 //---------------------------------------------------------------------------
 void FASTCALL SCSI::SetTEMP(DWORD data)
@@ -1583,7 +1583,7 @@ void FASTCALL SCSI::SetTEMP(DWORD data)
 
 	scsi.temp = data;
 
-	// セレクションフェーズの場合、0x00のセットによりSEL=0となる
+	// In selection phase, setting 0x00 makes SEL=0
 	if (scsi.phase == selection) {
 		if (data == 0x00) {
 			// SEL=0, BSY=0
@@ -1595,7 +1595,7 @@ void FASTCALL SCSI::SetTEMP(DWORD data)
 
 //---------------------------------------------------------------------------
 //
-//	TCH設定
+//	Set TCH
 //
 //---------------------------------------------------------------------------
 void FASTCALL SCSI::SetTCH(DWORD data)
@@ -1604,19 +1604,19 @@ void FASTCALL SCSI::SetTCH(DWORD data)
 	ASSERT(data < 0x100);
 	ASSERT_DIAG();
 
-	// b23-b16に設定
+	// Set to b23-b16
 	scsi.tc &= 0x0000ffff;
 	data <<= 16;
 	scsi.tc |= data;
 
 #if defined(SCSI_LOG)
-	LOG1(Log::Normal, "TCH設定 TC=$%06X", scsi.tc);
+	LOG1(Log::Normal, "Set TCH TC=$%06X", scsi.tc);
 #endif	// SCSI_LOG
 }
 
 //---------------------------------------------------------------------------
 //
-//	TCM設定
+//	Set TCM
 //
 //---------------------------------------------------------------------------
 void FASTCALL SCSI::SetTCM(DWORD data)
@@ -1624,19 +1624,19 @@ void FASTCALL SCSI::SetTCM(DWORD data)
 	ASSERT(this);
 	ASSERT(data < 0x100);
 
-	// b15-b8に設定
+	// Set to b15-b8
 	scsi.tc &= 0x00ff00ff;
 	data <<= 8;
 	scsi.tc |= data;
 
 #if defined(SCSI_LOG)
-	LOG1(Log::Normal, "TCM設定 TC=$%06X", scsi.tc);
+	LOG1(Log::Normal, "Set TCM TC=$%06X", scsi.tc);
 #endif	// SCSI_LOG
 }
 
 //---------------------------------------------------------------------------
 //
-//	TCL設定
+//	Set TCL
 //
 //---------------------------------------------------------------------------
 void FASTCALL SCSI::SetTCL(DWORD data)
@@ -1644,15 +1644,15 @@ void FASTCALL SCSI::SetTCL(DWORD data)
 	ASSERT(this);
 	ASSERT(data < 0x100);
 
-	// b7-b0に設定
+	// Set to b7-b0
 	scsi.tc &= 0x00ffff00;
 	scsi.tc |= data;
 
 #if defined(SCSI_LOG)
-	LOG1(Log::Normal, "TCL設定 TC=$%06X", scsi.tc);
+	LOG1(Log::Normal, "Set TCL TC=$%06X", scsi.tc);
 #endif	// SCSI_LOG
 
-	// SCMDが$20なら、セレクション継続
+	// If SCMD is $20, continue selection
 	if ((scsi.scmd & 0xe0) == 0x20) {
 		SelectTime();
 	}
@@ -1660,7 +1660,7 @@ void FASTCALL SCSI::SetTCL(DWORD data)
 
 //---------------------------------------------------------------------------
 //
-//	バスリリース
+//	Bus release
 //
 //---------------------------------------------------------------------------
 void FASTCALL SCSI::BusRelease()
@@ -1669,16 +1669,16 @@ void FASTCALL SCSI::BusRelease()
 	ASSERT_DIAG();
 
 #if defined(SCSI_LOG)
-	LOG0(Log::Normal, "Bus Releaseコマンド");
+	LOG0(Log::Normal, "Bus Release command");
 #endif	// SCSI_LOG
 
-	// バスフリー
+	// Bus free
 	BusFree();
 }
 
 //---------------------------------------------------------------------------
 //
-//	セレクト
+//	Select
 //
 //---------------------------------------------------------------------------
 void FASTCALL SCSI::Select()
@@ -1687,10 +1687,10 @@ void FASTCALL SCSI::Select()
 	ASSERT_DIAG();
 
 #if defined(SCSI_LOG)
-	LOG0(Log::Normal, "Selectコマンド");
+	LOG0(Log::Normal, "Select command");
 #endif	// SCSI_LOG
 
-	// SPCリセット中、SCSIバスリセット中は、処理されない
+	// Not processed during SPC reset or SCSI bus reset
 	if (scsi.sctl & 0x80) {
 		return;
 	}
@@ -1698,25 +1698,25 @@ void FASTCALL SCSI::Select()
 		return;
 	}
 
-	// SCTLのbit4が1なら、アービトレーションフェーズが先に実行される
+	// If SCTL bit4 is 1, arbitration phase runs first
 	if (scsi.sctl & 0x10) {
 		Arbitration();
 	}
 
-	// PCTLのbit0が1なら、リセレクション(ターゲットのみ許される)
+	// If PCTL bit0 is 1, reselection (target only allowed)
 	if (scsi.pctl & 1) {
-		LOG0(Log::Warning, "リセレクションフェーズ");
+		LOG0(Log::Warning, "Reselection phase");
 		BusFree();
 		return;
 	}
 
-	// セレクションフェーズ
+	// Selection phase
 	Selection();
 }
 
 //---------------------------------------------------------------------------
 //
-//	ATNリセット
+//	Reset ATN
 //
 //---------------------------------------------------------------------------
 void FASTCALL SCSI::ResetATN()
@@ -1725,16 +1725,16 @@ void FASTCALL SCSI::ResetATN()
 	ASSERT_DIAG();
 
 #if defined(SCSI_LOG)
-	LOG0(Log::Normal, "Reset ATNコマンド");
+	LOG0(Log::Normal, "Reset ATN command");
 #endif	// SCSI_LOG
 
-	// イニシエータが操作する信号線
+	// Signal line operated by initiator
 	scsi.atn = FALSE;
 }
 
 //---------------------------------------------------------------------------
 //
-//	ATNセット
+//	Set ATN
 //
 //---------------------------------------------------------------------------
 void FASTCALL SCSI::SetATN()
@@ -1743,16 +1743,16 @@ void FASTCALL SCSI::SetATN()
 	ASSERT_DIAG();
 
 #if defined(SCSI_LOG)
-	LOG0(Log::Normal, "Set ATNコマンド");
+	LOG0(Log::Normal, "Set ATN command");
 #endif	// SCSI_LOG
 
-	// イニシエータが操作する信号線
+	// Signal line operated by initiator
 	scsi.atn = TRUE;
 }
 
 //---------------------------------------------------------------------------
 //
-//	転送
+//	Transfer
 //
 //---------------------------------------------------------------------------
 void FASTCALL SCSI::Transfer()
@@ -1762,31 +1762,31 @@ void FASTCALL SCSI::Transfer()
 	ASSERT(scsi.req);
 
 #if defined(SCSI_LOG)
-	LOG0(Log::Normal, "Transferコマンド");
+	LOG0(Log::Normal, "Transfer command");
 #endif	// SCSI_LOG
 
-	// デバイス側の準備ができているか
+	// Check if device side is ready
 	if (scsi.length <= 0) {
-		// Service Required(フェーズが合わない)
+		// Service Required (phase mismatch)
 		Interrupt(3, TRUE);
 		return;
 	}
 
-	// フェーズが一致しているか
+	// Check if phase matches
 
-	// コントローラ側の準備ができているか
+	// Check if controller side is ready
 	if (scsi.tc == 0) {
-		// コンプリート(転送終了)
+		// Complete (transfer end)
 		Interrupt(4, TRUE);
 	}
 
-	// 転送コマンド開始
+	// Start transfer command
 	scsi.trans = TRUE;
 }
 
 //---------------------------------------------------------------------------
 //
-//	転送中断
+//	Transfer pause
 //
 //---------------------------------------------------------------------------
 void FASTCALL SCSI::TransPause()
@@ -1794,13 +1794,13 @@ void FASTCALL SCSI::TransPause()
 	ASSERT(this);
 	ASSERT_DIAG();
 
-	// ターゲットのみ発行できる
-	LOG0(Log::Warning, "Transfer Pauseコマンド");
+	// Only target can issue
+	LOG0(Log::Warning, "Transfer Pause command");
 }
 
 //---------------------------------------------------------------------------
 //
-//	転送完了
+//	Transfer complete
 //
 //---------------------------------------------------------------------------
 void FASTCALL SCSI::TransComplete()
@@ -1810,16 +1810,16 @@ void FASTCALL SCSI::TransComplete()
 	ASSERT(scsi.trans);
 	ASSERT_DIAG();
 
-	// 転送完了
+	// Transfer complete
 	scsi.trans = FALSE;
 
-	// 転送完了割り込み
+	// Transfer complete interrupt
 	Interrupt(4, TRUE);
 }
 
 //---------------------------------------------------------------------------
 //
-//	ACKREQリセット
+//	Reset ACK/REQ
 //
 //---------------------------------------------------------------------------
 void FASTCALL SCSI::ResetACKREQ()
@@ -1827,21 +1827,21 @@ void FASTCALL SCSI::ResetACKREQ()
 	ASSERT(this);
 	ASSERT_DIAG();
 
-	// ACKが上がっている場合のみ意味を持つ
+	// Only meaningful if ACK is asserted
 	if (!scsi.ack) {
 		return;
 	}
 
-	// ACKが上がるフェーズは限られる
+	// Phases where ACK is asserted are limited
 	ASSERT((scsi.phase >= command) && (scsi.phase != execute));
 
-	// データ転送を次に進める
+	// Advance data transfer
 	XferNext();
 }
 
 //---------------------------------------------------------------------------
 //
-//	ACK/REQセット
+//	Set ACK/REQ
 //
 //---------------------------------------------------------------------------
 void FASTCALL SCSI::SetACKREQ()
@@ -1849,21 +1849,21 @@ void FASTCALL SCSI::SetACKREQ()
 	ASSERT(this);
 	ASSERT_DIAG();
 
-	// REQが上がっている場合のみ意味を持つ
+	// Only meaningful if REQ is asserted
 	if (!scsi.req) {
 		return;
 	}
 
-	// REQが上がるフェーズは限られる
+	// Phases where REQ is asserted are limited
 	ASSERT((scsi.phase >= command) && (scsi.phase != execute));
 
-	// TEMPレジスタ-SCSIデータバス間のデータ転送を行う
+	// Transfer data between TEMP register and SCSI data bus
 	Xfer(&scsi.temp);
 }
 
 //---------------------------------------------------------------------------
 //
-//	データ転送
+//	Data transfer
 //
 //---------------------------------------------------------------------------
 void FASTCALL SCSI::Xfer(DWORD *reg)
@@ -1872,78 +1872,78 @@ void FASTCALL SCSI::Xfer(DWORD *reg)
 	ASSERT(reg);
 	ASSERT_DIAG();
 
-	// REQが上がっていること
+	// REQ must be asserted
 	ASSERT(scsi.req);
 	ASSERT(!scsi.ack);
 	ASSERT((scsi.phase >= command) && (scsi.phase != execute));
 
-	// イニシエータが操作する信号線
+	// Signal line operated by initiator
 	scsi.ack = TRUE;
 
-	// SCSIデータバスにデータを乗せる
+	// Put data on SCSI data bus
 	switch (scsi.phase) {
-		// コマンドフェーズ
+		// Command phase
 		case command:
 #if defined(SCSI_LOG)
-			LOG1(Log::Normal, "コマンドフェーズ $%02X", *reg);
+			LOG1(Log::Normal, "Command phase $%02X", *reg);
 #endif	// SCSI_LOG
-			// 最初のデータ(オフセット0)によりレングスを再設定
+			// Reset length by first data (offset 0)
 			scsi.cmd[scsi.offset] = *reg;
 			if (scsi.offset == 0) {
 				if (scsi.temp >= 0x20) {
-					// 10バイトCDB
+					// 10-byte CDB
 					scsi.length = 10;
 				}
 			}
 			break;
 
-		// メッセージインフェーズ
+		// Message in phase
 		case msgin:
 			*reg = scsi.message;
 #if defined(SCSI_LOG)
-			LOG1(Log::Normal, "メッセージインフェーズ $%02X", *reg);
+			LOG1(Log::Normal, "Message in phase $%02X", *reg);
 #endif	// SCSI_LOG
 			break;
 
-		// メッセージアウトフェーズ
+		// Message out phase
 		case msgout:
 			scsi.message = *reg;
 #if defined(SCSI_LOG)
-			LOG1(Log::Normal, "メッセージアウトフェーズ $%02X", *reg);
+			LOG1(Log::Normal, "Message out phase $%02X", *reg);
 #endif	// SCSI_LOG
 			break;
 
-		// データインフェーズ
+		// Data in phase
 		case datain:
 			*reg = (DWORD)scsi.buffer[scsi.offset];
 			break;
 
-		// データアウトフェーズ
+		// Data out phase
 		case dataout:
 			scsi.buffer[scsi.offset] = (BYTE)*reg;
 			break;
 
-		// ステータスフェーズ
+		// Status phase
 		case status:
 			*reg = scsi.status;
 #if defined(SCSI_LOG)
-			LOG1(Log::Normal, "ステータスフェーズ $%02X", *reg);
+			LOG1(Log::Normal, "Status phase $%02X", *reg);
 #endif	// SCSI_LOG
 			break;
 
-		// その他(ありえない)
+		// Other (impossible)
 		default:
 			ASSERT(FALSE);
 			break;
 	}
 
-	// ターゲットが操作する信号線
+	// Signal line operated by target
 	scsi.req = FALSE;
 }
 
 //---------------------------------------------------------------------------
 //
-//	データ転送継続
+//	Continue data transfer
 //
 //---------------------------------------------------------------------------
 void FASTCALL SCSI::XferNext()
@@ -1953,70 +1953,70 @@ void FASTCALL SCSI::XferNext()
 	ASSERT(this);
 	ASSERT_DIAG();
 
-	// ACKが上がっていること
+	// ACK must be asserted
 	ASSERT(!scsi.req);
 	ASSERT(scsi.ack);
 	ASSERT((scsi.phase >= command) && (scsi.phase != execute));
 
-	// オフセットとレングス
+	// Offset and length
 	ASSERT(scsi.length >= 1);
 	scsi.offset++;
 	scsi.length--;
 
-	// イニシエータが操作する信号線
+	// Signal line operated by initiator
 	scsi.ack = FALSE;
 
-	// レングス!=0なら、再びreqをセット
+	// If length != 0, set req again
 	if (scsi.length != 0) {
 		scsi.req = TRUE;
 		return;
 	}
 
-	// ブロック減算、リザルト初期化
+	// Block decrement, initialize result
 	scsi.blocks--;
 	result = TRUE;
 
-	// データ受理後の処理(フェーズ別)
+	// Processing after data acceptance (by phase)
 	switch (scsi.phase) {
-		// データインフェーズ
+		// Data in phase
 		case datain:
 			if (scsi.blocks != 0) {
-				// 次のバッファを設定(offset, lengthをセットすること)
+				// Set next buffer (set offset, length)
 				result = XferIn();
 			}
 			break;
 
-		// データアウトフェーズ
+		// Data out phase
 		case dataout:
 			if (scsi.blocks == 0) {
-				// このバッファで終了
+				// End with this buffer
 				result = XferOut(FALSE);
 			}
 			else {
-				// 次のバッファに続く(offset, lengthをセットすること)
+				// Continue to next buffer (set offset, length)
 				result = XferOut(TRUE);
 			}
 			break;
 
-		// メッセージアウトフェーズ
+		// Message out phase
 		case msgout:
 			if (!XferMsg(scsi.message)) {
-				// メッセージアウトに失敗したら、即座にバスフリー
+				// If message out fails, immediately bus free
 				BusFree();
 				return;
 			}
-			// メッセージインに備え、メッセージデータをクリアしておく
+			// Clear message data for message in
 			scsi.message = 0x00;
 			break;
 	}
 
-	// リザルトFALSEなら、ステータスフェーズへ移行
+	// If result FALSE, transition to status phase
 	if (!result) {
 		Error();
 		return;
 	}
 
-	// ブロック!=0なら、再びreqをセット
+	// If blocks != 0, set req again
 	if (scsi.blocks != 0){
 		ASSERT(scsi.length > 0);
 		ASSERT(scsi.offset == 0);
@@ -2024,45 +2024,45 @@ void FASTCALL SCSI::XferNext()
 		return;
 	}
 
-	// 次フェーズに移動
+	// Move to next phase
 	switch (scsi.phase) {
-		// コマンドフェーズ
+		// Command phase
 		case command:
-			// 実行フェーズ
+			// Execute phase
 			Execute();
 			break;
 
-		// メッセージインフェーズ
+		// Message in phase
 		case msgin:
-			// バスフリーフェーズ
+			// Bus free phase
 			BusFree();
 			break;
 
-		// メッセージアウトフェーズ
+		// Message out phase
 		case msgout:
-			// コマンドフェーズ
+			// Command phase
 			Command();
 			break;
 
-		// データインフェーズ
+		// Data in phase
 		case datain:
-			// ステータスフェーズ
+			// Status phase
 			Status();
 			break;
 
-		// データアウトフェーズ
+		// Data out phase
 		case dataout:
-			// ステータスフェーズ
+			// Status phase
 			Status();
 			break;
 
-		// ステータスフェーズ
+		// Status phase
 		case status:
-			// メッセージインフェーズ
+			// Message in phase
 			MsgIn();
 			break;
 
-		// その他(ありえない)
+		// Other (impossible)
 		default:
 			ASSERT(FALSE);
 			break;
@@ -2071,8 +2071,8 @@ void FASTCALL SCSI::XferNext()
 
 //---------------------------------------------------------------------------
 //
-//	データ転送IN
-//	※offset, lengthを再設定すること
+//	Data transfer IN
+//	Note: Must reset offset, length
 //
 //---------------------------------------------------------------------------
 BOOL FASTCALL SCSI::XferIn()
@@ -2082,46 +2082,46 @@ BOOL FASTCALL SCSI::XferIn()
 	ASSERT(scsi.disk[scsi.id]);
 	ASSERT_DIAG();
 
-	// ステートロードによりディスクが無くなった場合
+	// If disk is gone due to state load
 	if (!scsi.disk[scsi.id]) {
-		// データイン中止
+		// Abort data in
 		return FALSE;
 	}
 
-	// READ系コマンドに限る
+	// Only READ commands
 	switch (scsi.cmd[0]) {
 		// READ(6)
 		case 0x08:
 		// READ(10)
 		case 0x28:
-			// ディスクから読み取りを行う
+			// Read from disk
 			scsi.length = scsi.disk[scsi.id]->Read(scsi.buffer, scsi.next);
 			scsi.next++;
 
-			// エラーなら、ステータスフェーズへ
+			// If error, go to status phase
 			if (scsi.length <= 0) {
-				// データイン中止
+				// Abort data in
 				return FALSE;
 			}
 
-			// 正常なら、ワーク設定
+			// If normal, set work
 			scsi.offset = 0;
 			break;
 
-		// その他(ありえない)
+		// Other (impossible)
 		default:
 			ASSERT(FALSE);
 			return FALSE;
 	}
 
-	// バッファ設定に成功した
+	// Buffer setup successful
 	return TRUE;
 }
 
 //---------------------------------------------------------------------------
 //
-//	データ転送OUT
-//	※cont=TRUEの場合、offset, lengthを再設定すること
+//	Data transfer OUT
+//	Note: If cont=TRUE, must reset offset, length
 //
 //---------------------------------------------------------------------------
 BOOL FASTCALL SCSI::XferOut(BOOL cont)
@@ -2131,18 +2131,18 @@ BOOL FASTCALL SCSI::XferOut(BOOL cont)
 	ASSERT(scsi.disk[scsi.id]);
 	ASSERT_DIAG();
 
-	// ステートロードによりディスクが無くなった場合
+	// If disk is gone due to state load
 	if (!scsi.disk[scsi.id]) {
-		// データアウト中止
+		// Abort data out
 		return FALSE;
 	}
 
-	// MODE SELECTまたは、WRITE系
+	// MODE SELECT or WRITE
 	switch (scsi.cmd[0]) {
 		// MODE SELECT
 		case 0x15:
 			if (!scsi.disk[scsi.id]->ModeSelect(scsi.buffer, scsi.offset)) {
-				// MODE SELECTに失敗
+				// MODE SELECT failed
 				return FALSE;
 			}
 			break;
@@ -2151,37 +2151,37 @@ BOOL FASTCALL SCSI::XferOut(BOOL cont)
 		case 0x0a:
 		// WRITE(10)
 		case 0x2a:
-			// 書き込みを行う
+			// Perform write
 			if (!scsi.disk[scsi.id]->Write(scsi.buffer, scsi.next - 1)) {
-				// 書き込み失敗
+				// Write failed
 				return FALSE;
 			}
 
-			// 次のブロックが必要ないならここまで
+			// End here if next block not needed
 			scsi.next++;
 			if (!cont) {
 				break;
 			}
 
-			// 次のブロックをチェック
+			// Check next block
 			scsi.length = scsi.disk[scsi.id]->WriteCheck(scsi.next);
 			if (scsi.length <= 0) {
-				// 書き込みできない
+				// Cannot write
 				return FALSE;
 			}
 
-			// 正常なら、ワーク設定
+			// If normal, set work
 			scsi.offset = 0;
 			break;
 	}
 
-	// バッファ保存に成功した
+	// Buffer save successful
 	return TRUE;
 }
 
 //---------------------------------------------------------------------------
 //
-//	データ転送MSG
+//	Data transfer MSG
 //
 //---------------------------------------------------------------------------
 BOOL FASTCALL SCSI::XferMsg(DWORD /*msg*/)
@@ -2195,7 +2195,7 @@ BOOL FASTCALL SCSI::XferMsg(DWORD /*msg*/)
 
 //---------------------------------------------------------------------------
 //
-//	バスフリーフェーズ
+//	Bus free phase
 //
 //---------------------------------------------------------------------------
 void FASTCALL SCSI::BusFree()
@@ -2204,13 +2204,13 @@ void FASTCALL SCSI::BusFree()
 	ASSERT_DIAG();
 
 #if defined(SCSI_LOG)
-	LOG0(Log::Normal, "バスフリーフェーズ");
+	LOG0(Log::Normal, "Bus free phase");
 #endif	// SCSI_LOG
 
-	// フェーズ設定
+	// Set phase
 	scsi.phase = busfree;
 
-	// 信号線
+	// Signal lines
 	scsi.bsy = FALSE;
 	scsi.sel = FALSE;
 	scsi.atn = FALSE;
@@ -2220,27 +2220,27 @@ void FASTCALL SCSI::BusFree()
 	scsi.req = FALSE;
 	scsi.ack = FALSE;
 
-	// ステータスとメッセージを初期化(GOOD)
+	// Initialize status and message (GOOD)
 	scsi.status = 0x00;
 	scsi.message = 0x00;
 
-	// イベント停止
+	// Stop event
 	event.SetTime(0);
 
-	// PCTLのBusfree INT Enableをチェック
+	// Check PCTL Busfree INT Enable
 	if (scsi.pctl & 0x8000) {
-		// Disconnect割り込み
+		// Disconnect interrupt
 		Interrupt(5, TRUE);
 	}
 	else {
-		// 割り込みオフ
+		// Interrupt off
 		Interrupt(5, FALSE);
 	}
 }
 
 //---------------------------------------------------------------------------
 //
-//	アービトレーションフェーズ
+//	Arbitration phase
 //
 //---------------------------------------------------------------------------
 void FASTCALL SCSI::Arbitration()
@@ -2249,20 +2249,20 @@ void FASTCALL SCSI::Arbitration()
 	ASSERT_DIAG();
 
 #if defined(SCSI_LOG)
-	LOG0(Log::Normal, "アービトレーションフェーズ");
+	LOG0(Log::Normal, "Arbitration phase");
 #endif	// SCSI_LOG
 
-	// フェーズ設定
+	// Set phase
 	scsi.phase = arbitration;
 
-	// 信号線
+	// Signal lines
 	scsi.bsy = TRUE;
 	scsi.sel = TRUE;
 }
 
 //---------------------------------------------------------------------------
 //
-//	セレクションフェーズ
+//	Selection phase
 //
 //---------------------------------------------------------------------------
 void FASTCALL SCSI::Selection()
@@ -2273,19 +2273,19 @@ void FASTCALL SCSI::Selection()
 	ASSERT(this);
 	ASSERT_DIAG();
 
-	// フェーズ設定
+	// Set phase
 	scsi.phase = selection;
 
-	// ターゲットID初期化
+	// Initialize target ID
 	scsi.id = -1;
 
-	// TEMPレジスタにはイニシエータとターゲット、両方のビットが必要
+	// TEMP register needs both initiator and target bits
 	temp = scsi.temp;
 	if ((temp & scsi.bdid) == scsi.bdid) {
-		// イニシエータのビットを削除
+		// Remove initiator bit
 		temp &= ~(scsi.bdid);
 
-		// ターゲットを探す
+		// Find target
 		for (i=0; i<8; i++) {
 			if (temp == (DWORD)(1 << i)) {
 				scsi.id = i;
@@ -2297,24 +2297,24 @@ void FASTCALL SCSI::Selection()
 #if defined(SCSI_LOG)
 	if (scsi.id != -1) {
 		if (scsi.disk[scsi.id]) {
-			LOG1(Log::Normal, "セレクションフェーズ ID=%d (デバイスあり)", scsi.id);
+			LOG1(Log::Normal, "Selection phase ID=%d (device present)", scsi.id);
 		}
 		else {
-			LOG1(Log::Normal, "セレクションフェーズ ID=%d (未接続)", scsi.id);
+			LOG1(Log::Normal, "Selection phase ID=%d (not connected)", scsi.id);
 		}
 	}
 	else {
-		LOG0(Log::Normal, "セレクションフェーズ (無効)");
+		LOG0(Log::Normal, "Selection phase (invalid)");
 	}
 #endif	// SCSI_LOG
 
-	// セレクションタイム決定
+	// Determine selection time
 	SelectTime();
 }
 
 //---------------------------------------------------------------------------
 //
-//	セレクションフェーズ 時間設定
+//	Selection phase time setting
 //
 //---------------------------------------------------------------------------
 void FASTCALL SCSI::SelectTime()
@@ -2327,41 +2327,41 @@ void FASTCALL SCSI::SelectTime()
 
 	tc = scsi.tc;
 	if (tc == 0) {
-		LOG0(Log::Warning, "セレクションタイムアウトが無限大");
+		LOG0(Log::Warning, "Selection timeout is infinite");
 		tc = 0x1000000;
 	}
 	tc &= 0x00ffff00;
 	tc += 15;
 
-	// さらにTCLを考慮する
+	// Further consider TCL
 	tc += (((scsi.tc & 0xff) + 7) >> 1);
 
-	// 400ns単位から、500ns単位(hus)へ変換
+	// Convert from 400ns units to 500ns units (us)
 	tc = (tc * 4 / 5);
 
-	// フェーズ
+	// Phase
 	scsi.phase = selection;
 
-	// 信号線
+	// Signal lines
 	scsi.sel = TRUE;
 
-	// イベントタイム設定
+	// Set event time
 	event.SetDesc("Selection");
 	if (scsi.id != -1) {
 		if (scsi.disk[scsi.id]) {
-			// 指定IDが正常の場合、16usでセレクションを成功させる
+			// If specified ID is valid, succeed selection in 16us
 			event.SetTime(32);
 			return;
 		}
 	}
 
-	// タイムアウトの場合、TC通りに設定
+	// For timeout, set as per TC
 	event.SetTime(tc);
 }
 
 //---------------------------------------------------------------------------
 //
-//	コマンドフェーズ
+//	Command phase
 //
 //---------------------------------------------------------------------------
 void FASTCALL SCSI::Command()
@@ -2372,39 +2372,39 @@ void FASTCALL SCSI::Command()
 	ASSERT_DIAG();
 
 #if defined(SCSI_LOG)
-	LOG0(Log::Normal, "コマンドフェーズ");
+	LOG0(Log::Normal, "Command phase");
 #endif	// SCSI_LOG
 
-	// ステートロードによりディスクが無くなった場合
+	// If disk is gone due to state load
 	if (!scsi.disk[scsi.id]) {
-		// コマンドフェーズ中止
+		// Abort command phase
 		BusFree();
 		return;
 	}
 
-	// フェーズ設定
+	// Set phase
 	scsi.phase = command;
 
-	// イニシエータが操作する信号線
+	// Signal line operated by initiator
 	scsi.atn = FALSE;
 
-	// ターゲットが操作する信号線
+	// Signal lines operated by target
 	scsi.msg = FALSE;
 	scsi.cd = TRUE;
 	scsi.io = FALSE;
 
-	// データ転送は6バイトx1ブロック
+	// Data transfer is 6 bytes x 1 block
 	scsi.offset = 0;
 	scsi.length = 6;
 	scsi.blocks = 1;
 
-	// コマンドを要求
+	// Request command
 	scsi.req = TRUE;
 }
 
 //---------------------------------------------------------------------------
 //
-//	実行フェーズ
+//	Execute phase
 //
 //---------------------------------------------------------------------------
 void FASTCALL SCSI::Execute()
@@ -2415,24 +2415,24 @@ void FASTCALL SCSI::Execute()
 	ASSERT_DIAG();
 
 #if defined(SCSI_LOG)
-	LOG1(Log::Normal, "実行フェーズ コマンド$%02X", scsi.cmd[0]);
+	LOG1(Log::Normal, "Execute phase command $%02X", scsi.cmd[0]);
 #endif	// SCSI_LOG
 
-	// ステートロードによりディスクが無くなった場合
+	// If disk is gone due to state load
 	if (!scsi.disk[scsi.id]) {
-		// コマンドフェーズ中止
+		// Abort command phase
 		Error();
 		return;
 	}
 
-	// フェーズ設定
+	// Set phase
 	scsi.phase = execute;
 
-	// データ転送のための初期化
+	// Initialize for data transfer
 	scsi.offset = 0;
 	scsi.blocks = 1;
 
-	// コマンド別処理
+	// Process by command
 	switch (scsi.cmd[0]) {
 		// TEST UNIT READY
 		case 0x00:
@@ -2484,7 +2484,7 @@ void FASTCALL SCSI::Execute()
 			ModeSelect();
 			return;
 
-		// MDOE SENSE
+		// MODE SENSE
 		case 0x1a:
 			ModeSense();
 			return;
@@ -2555,17 +2555,17 @@ void FASTCALL SCSI::Execute()
 			return;
 	}
 
-	// それ以外は対応していない
-	LOG1(Log::Warning, "未対応コマンド $%02X", scsi.cmd[0]);
+	// Others not supported
+	LOG1(Log::Warning, "Unsupported command $%02X", scsi.cmd[0]);
 	scsi.disk[scsi.id]->InvalidCmd();
 
-	// エラー
+	// Error
 	Error();
 }
 
 //---------------------------------------------------------------------------
 //
-//	メッセージインフェーズ
+//	Message in phase
 //
 //---------------------------------------------------------------------------
 void FASTCALL SCSI::MsgIn()
@@ -2574,29 +2574,29 @@ void FASTCALL SCSI::MsgIn()
 	ASSERT_DIAG();
 
 #if defined(SCSI_LOG)
-	LOG0(Log::Normal, "メッセージインフェーズ");
+	LOG0(Log::Normal, "Message in phase");
 #endif	// SCSI_LOG
 
-	// フェーズ設定
+	// Set phase
 	scsi.phase = msgin;
 
-	// ターゲットが操作する信号線
+	// Signal lines operated by target
 	scsi.msg = TRUE;
 	scsi.cd = TRUE;
 	scsi.io = TRUE;
 
-	// データ転送は1バイトx1ブロック
+	// Data transfer is 1 byte x 1 block
 	scsi.offset = 0;
 	scsi.length = 1;
 	scsi.blocks = 1;
 
-	// メッセージを要求
+	// Request message
 	scsi.req = TRUE;
 }
 
 //---------------------------------------------------------------------------
 //
-//	メッセージアウトフェーズ
+//	Message out phase
 //
 //---------------------------------------------------------------------------
 void FASTCALL SCSI::MsgOut()
@@ -2605,29 +2605,29 @@ void FASTCALL SCSI::MsgOut()
 	ASSERT_DIAG();
 
 #if defined(SCSI_LOG)
-	LOG0(Log::Normal, "メッセージアウトフェーズ");
+	LOG0(Log::Normal, "Message out phase");
 #endif	// SCSI_LOG
 
-	// フェーズ設定
+	// Set phase
 	scsi.phase = msgout;
 
-	// ターゲットが操作する信号線
+	// Signal lines operated by target
 	scsi.msg = TRUE;
 	scsi.cd = TRUE;
 	scsi.io = FALSE;
 
-	// データ転送は1バイトx1ブロック
+	// Data transfer is 1 byte x 1 block
 	scsi.offset = 0;
 	scsi.length = 1;
 	scsi.blocks = 1;
 
-	// メッセージを要求
+	// Request message
 	scsi.req = TRUE;
 }
 
 //---------------------------------------------------------------------------
 //
-//	データインフェーズ
+//	Data in phase
 //
 //---------------------------------------------------------------------------
 void FASTCALL SCSI::DataIn()
@@ -2637,35 +2637,35 @@ void FASTCALL SCSI::DataIn()
 	ASSERT_DIAG();
 
 #if defined(SCSI_LOG)
-	LOG0(Log::Normal, "データインフェーズ");
+	LOG0(Log::Normal, "Data in phase");
 #endif	// SCSI_LOG
 
-	// レングス0なら、ステータスフェーズへ
+	// If length 0, go to status phase
 	if (scsi.length == 0) {
 		Status();
 		return;
 	}
 
-	// フェーズ設定
+	// Set phase
 	scsi.phase = datain;
 
-	// ターゲットが操作する信号線
+	// Signal lines operated by target
 	scsi.msg = FALSE;
 	scsi.cd = FALSE;
 	scsi.io = TRUE;
 
-	// length, blocksは設定済み
+	// length, blocks already set
 	ASSERT(scsi.length > 0);
 	ASSERT(scsi.blocks > 0);
 	scsi.offset = 0;
 
-	// データを要求
+	// Request data
 	scsi.req = TRUE;
 }
 
 //---------------------------------------------------------------------------
 //
-//	データアウトフェーズ
+//	Data out phase
 //
 //---------------------------------------------------------------------------
 void FASTCALL SCSI::DataOut()
@@ -2675,35 +2675,35 @@ void FASTCALL SCSI::DataOut()
 	ASSERT_DIAG();
 
 #if defined(SCSI_LOG)
-	LOG0(Log::Normal, "データアウトフェーズ");
+	LOG0(Log::Normal, "Data out phase");
 #endif	// SCSI_LOG
 
-	// レングス0なら、ステータスフェーズへ
+	// If length 0, go to status phase
 	if (scsi.length == 0) {
 		Status();
 		return;
 	}
 
-	// フェーズ設定
+	// Set phase
 	scsi.phase = dataout;
 
-	// ターゲットが操作する信号線
+	// Signal lines operated by target
 	scsi.msg = FALSE;
 	scsi.cd = FALSE;
 	scsi.io = FALSE;
 
-	// length, blocksは設定済み
+	// length, blocks already set
 	ASSERT(scsi.length > 0);
 	ASSERT(scsi.blocks > 0);
 	scsi.offset = 0;
 
-	// データを要求
+	// Request data
 	scsi.req = TRUE;
 }
 
 //---------------------------------------------------------------------------
 //
-//	ステータスフェーズ
+//	Status phase
 //
 //---------------------------------------------------------------------------
 void FASTCALL SCSI::Status()
@@ -2712,29 +2712,29 @@ void FASTCALL SCSI::Status()
 	ASSERT_DIAG();
 
 #if defined(SCSI_LOG)
-	LOG0(Log::Normal, "ステータスフェーズ");
+	LOG0(Log::Normal, "Status phase");
 #endif	// SCSI_LOG
 
-	// フェーズ設定
+	// Set phase
 	scsi.phase = status;
 
-	// ターゲットが操作する信号線
+	// Signal lines operated by target
 	scsi.msg = FALSE;
 	scsi.cd = TRUE;
 	scsi.io = TRUE;
 
-	// データ転送は1バイトx1ブロック
+	// Data transfer is 1 byte x 1 block
 	scsi.offset = 0;
 	scsi.length = 1;
 	scsi.blocks = 1;
 
-	// ステータスを要求
+	// Request status
 	scsi.req = TRUE;
 }
 
 //---------------------------------------------------------------------------
 //
-//	割り込み要求
+//	Interrupt request
 //
 //---------------------------------------------------------------------------
 void FASTCALL SCSI::Interrupt(int type, BOOL flag)
@@ -2745,20 +2745,20 @@ void FASTCALL SCSI::Interrupt(int type, BOOL flag)
 	ASSERT((type >= 0) && (type <= 7));
 	ASSERT_DIAG();
 
-	// INTSのバックアップを取る
+	// Backup INTS
 	ints = scsi.ints;
 
-	// INTSレジスタ設定
+	// Set INTS register
 	if (flag) {
-		// 割り込み要求
+		// Interrupt request
 		scsi.ints |= (1 << type);
 	}
 	else {
-		// 割り込みキャンセル
+		// Cancel interrupt
 		scsi.ints &= ~(1 << type);
 	}
 
-	// 変化していれば、割り込みチェック
+	// If changed, check interrupt
 	if (ints != scsi.ints) {
 		IntCheck();
 	}
@@ -2766,7 +2766,7 @@ void FASTCALL SCSI::Interrupt(int type, BOOL flag)
 
 //---------------------------------------------------------------------------
 //
-//	割り込みチェック
+//	Interrupt check
 //
 //---------------------------------------------------------------------------
 void FASTCALL SCSI::IntCheck()
@@ -2777,56 +2777,56 @@ void FASTCALL SCSI::IntCheck()
 	ASSERT(this);
 	ASSERT_DIAG();
 
-	// 割り込みレベル設定
+	// Set interrupt level
 	if (scsi.type == 1) {
-		// 外付(レベルは2または4から選択)
+		// External (level selectable from 2 or 4)
 		lev = scsi.ilevel;
 	}
 	else {
-		// 内蔵(レベルは1固定)
+		// Internal (level fixed at 1)
 		lev = 1;
 	}
 
-	// 要求ベクタ作成
+	// Create request vector
 	v = -1;
 	if (scsi.sctl & 0x01) {
-		// 割り込み許可
+		// Interrupt enabled
 		if (scsi.ints != 0) {
-			// 割り込み要求あり。ベクタを作成
+			// Interrupt request present. Create vector
 			if (scsi.type == 1) {
-				// 外付(ベクタは$F6)
+				// External (vector is $F6)
 				v = 0xf6;
 			}
 			else {
-				// 内蔵(ベクタは$6C)
+				// Internal (vector is $6C)
 				v = 0x6c;
 			}
 		}
 	}
 
-	// 一致していればOK
+	// If matching, OK
 	if (scsi.vector == v) {
 		return;
 	}
 
-	// 既に割り込み要求されていれば、キャンセル
+	// If interrupt already requested, cancel
 	if (scsi.vector >= 0) {
 		cpu->IntCancel(lev);
 	}
 
-	// キャンセル要求なら、ここまで
+	// If cancel request, done
 	if (v < 0) {
 #if defined(SCSI_LOG)
-		LOG2(Log::Normal, "割り込みキャンセル レベル%d ベクタ$%02X",
+		LOG2(Log::Normal, "Cancel interrupt level %d vector $%02X",
 							lev, scsi.vector);
 #endif	// SCSI_LOG
 		scsi.vector = -1;
 		return;
 	}
 
-	// 割り込み要求
+	// Interrupt request
 #if defined(SCSI_LOG)
-	LOG3(Log::Normal, "割り込み要求 レベル%d ベクタ$%02X INTS=%02X",
+	LOG3(Log::Normal, "Interrupt request level %d vector $%02X INTS=%02X",
 						lev, v, scsi.ints);
 #endif	// SCSI_LOG
 	cpu->Interrupt(lev, v);
@@ -2835,7 +2835,7 @@ void FASTCALL SCSI::IntCheck()
 
 //---------------------------------------------------------------------------
 //
-//	割り込みACK
+//	Interrupt ACK
 //
 //---------------------------------------------------------------------------
 void FASTCALL SCSI::IntAck(int level)
@@ -2844,35 +2844,35 @@ void FASTCALL SCSI::IntAck(int level)
 	ASSERT((level == 1) || (level == 2) || (level == 4));
 	ASSERT_DIAG();
 
-	// リセット直後に、CPUから割り込みが間違って入る場合か、または他のデバイス
+	// Interrupt from CPU incorrectly after reset, or other device
 	if (scsi.vector < 0) {
 		return;
 	}
 
-	// 割り込みレベルが異なっていれば、他のデバイス
+	// If interrupt level differs, other device
 	if (scsi.type == 1) {
-		// 外付(レベルは2または4から選択)
+		// External (level selectable from 2 or 4)
 		if (level != scsi.ilevel) {
 			return;
 		}
 	}
 	else {
-		// 内蔵(レベルは1固定)
+		// Internal (level fixed at 1)
 		if (level != 1) {
 			return;
 		}
 	}
 
-	// 割り込みなし
+	// No interrupt
 	scsi.vector = -1;
 
-	// 割り込みチェック
+	// Interrupt check
 	IntCheck();
 }
 
 //---------------------------------------------------------------------------
 //
-//	SCSI-ID取得
+//	Get SCSI-ID
 //
 //---------------------------------------------------------------------------
 int FASTCALL SCSI::GetSCSIID() const
@@ -2883,20 +2883,20 @@ int FASTCALL SCSI::GetSCSIID() const
 	ASSERT(this);
 	ASSERT_DIAG();
 
-	// 存在しなければ7固定
+	// If not present, fixed at 7
 	if (scsi.type == 0) {
 		return 7;
 	}
 
-	// BDIDから作成
+	// Create from BDID
 	ASSERT(scsi.bdid != 0);
 	ASSERT(scsi.bdid < 0x100);
 
-	// 初期化
+	// Initialize
 	id = 0;
 	bdid = scsi.bdid;
 
-	// ビットから数値へ変換
+	// Convert from bit to number
 	while ((bdid & 1) == 0) {
 		bdid >>= 1;
 		id++;
@@ -2908,7 +2908,7 @@ int FASTCALL SCSI::GetSCSIID() const
 
 //---------------------------------------------------------------------------
 //
-//	BUSYチェック
+//	BUSY check
 //
 //---------------------------------------------------------------------------
 BOOL FASTCALL SCSI::IsBusy() const
@@ -2916,12 +2916,12 @@ BOOL FASTCALL SCSI::IsBusy() const
 	ASSERT(this);
 	ASSERT_DIAG();
 
-	// BSYが立っていなければFALSE
+	// If BSY not set, FALSE
 	if (!scsi.bsy) {
 		return FALSE;
 	}
 
-	// セレクションフェーズならFALSE
+	// If selection phase, FALSE
 	if (scsi.phase == selection) {
 		return FALSE;
 	}
@@ -2932,7 +2932,7 @@ BOOL FASTCALL SCSI::IsBusy() const
 
 //---------------------------------------------------------------------------
 //
-//	BUSYチェック
+//	BUSY check
 //
 //---------------------------------------------------------------------------
 DWORD FASTCALL SCSI::GetBusyDevice() const
@@ -2940,21 +2940,21 @@ DWORD FASTCALL SCSI::GetBusyDevice() const
 	ASSERT(this);
 	ASSERT_DIAG();
 
-	// BSYが立っていなければ0
+	// If BSY not set, 0
 	if (!scsi.bsy) {
 		return 0;
 	}
 
-	// セレクションフェーズなら0
+	// If selection phase, 0
 	if (scsi.phase == selection) {
 		return 0;
 	}
 
-	// セレクションが終わっているので、通常はデバイスが存在する
+	// Selection finished, so normally device exists
 	ASSERT((scsi.id >= 0) && (scsi.id <= 7));
 	ASSERT(scsi.disk[scsi.id]);
 
-	// デバイスがなければ0
+	// If no device, 0
 	if (!scsi.disk[scsi.id]) {
 		return 0;
 	}
@@ -2964,7 +2964,7 @@ DWORD FASTCALL SCSI::GetBusyDevice() const
 
 //---------------------------------------------------------------------------
 //
-//	共通エラー
+//	Common error
 //
 //---------------------------------------------------------------------------
 void FASTCALL SCSI::Error()
@@ -2973,17 +2973,17 @@ void FASTCALL SCSI::Error()
 	ASSERT_DIAG();
 
 #if defined(SCSI_LOG)
-	LOG0(Log::Normal, "エラー(ステータスフェーズへ)");
+	LOG0(Log::Normal, "Error (to status phase)");
 #endif	// SCSI_LOG
 
-	// ステータスとメッセージを設定(CHECK CONDITION)
+	// Set status and message (CHECK CONDITION)
 	scsi.status = 0x02;
 	scsi.message = 0x00;
 
-	// イベント停止
+	// Stop event
 	event.SetTime(0);
 
-	// ステータスフェーズ
+	// Status phase
 	Status();
 }
 
@@ -3001,18 +3001,18 @@ void FASTCALL SCSI::TestUnitReady()
 	ASSERT_DIAG();
 
 #if defined(SCSI_LOG)
-	LOG0(Log::Normal, "TEST UNIT READYコマンド");
+	LOG0(Log::Normal, "TEST UNIT READY command");
 #endif	// SCSI_LOG
 
-	// ドライブでコマンド処理
+	// Process command in drive
 	status = scsi.disk[scsi.id]->TestUnitReady(scsi.cmd);
 	if (!status) {
-		// 失敗(エラー)
+		// Failed (error)
 		Error();
 		return;
 	}
 
-	// ステータスフェーズ
+	// Status phase
 	Status();
 }
 
@@ -3030,18 +3030,18 @@ void FASTCALL SCSI::Rezero()
 	ASSERT_DIAG();
 
 #if defined(SCSI_LOG)
-	LOG0(Log::Normal, "REZERO UNITコマンド");
+	LOG0(Log::Normal, "REZERO UNIT command");
 #endif	// SCSI_LOG
 
-	// ドライブでコマンド処理
+	// Process command in drive
 	status = scsi.disk[scsi.id]->Rezero(scsi.cmd);
 	if (!status) {
-		// 失敗(エラー)
+		// Failed (error)
 		Error();
 		return;
 	}
 
-	// ステータスフェーズ
+	// Status phase
 	Status();
 }
 
@@ -3057,18 +3057,18 @@ void FASTCALL SCSI::RequestSense()
 	ASSERT_DIAG();
 
 #if defined(SCSI_LOG)
-	LOG0(Log::Normal, "REQUEST SENSEコマンド");
+	LOG0(Log::Normal, "REQUEST SENSE command");
 #endif	// SCSI_LOG
 
-	// ドライブでコマンド処理
+	// Process command in drive
 	scsi.length = scsi.disk[scsi.id]->RequestSense(scsi.cmd, scsi.buffer);
 	ASSERT(scsi.length > 0);
 
 #if defined(SCSI_LOG)
-	LOG1(Log::Normal, "センスキー $%02X", scsi.buffer[2]);
+	LOG1(Log::Normal, "Sense key $%02X", scsi.buffer[2]);
 #endif
 
-	// データインフェーズ
+	// Data in phase
 	DataIn();
 }
 
@@ -3086,18 +3086,18 @@ void FASTCALL SCSI::Format()
 	ASSERT_DIAG();
 
 #if defined(SCSI_LOG)
-	LOG0(Log::Normal, "FORMAT UNITコマンド");
+	LOG0(Log::Normal, "FORMAT UNIT command");
 #endif	// SCSI_LOG
 
-	// ドライブでコマンド処理
+	// Process command in drive
 	status = scsi.disk[scsi.id]->Format(scsi.cmd);
 	if (!status) {
-		// 失敗(エラー)
+		// Failed (error)
 		Error();
 		return;
 	}
 
-	// ステータスフェーズ
+	// Status phase
 	Status();
 }
 
@@ -3115,18 +3115,18 @@ void FASTCALL SCSI::Reassign()
 	ASSERT_DIAG();
 
 #if defined(SCSI_LOG)
-	LOG0(Log::Normal, "REASSIGN BLOCKSコマンド");
+	LOG0(Log::Normal, "REASSIGN BLOCKS command");
 #endif	// SCSI_LOG
 
-	// ドライブでコマンド処理
+	// Process command in drive
 	status = scsi.disk[scsi.id]->Reassign(scsi.cmd);
 	if (!status) {
-		// 失敗(エラー)
+		// Failed (error)
 		Error();
 		return;
 	}
 
-	// ステータスフェーズ
+	// Status phase
 	Status();
 }
 
@@ -3143,7 +3143,7 @@ void FASTCALL SCSI::Read6()
 	ASSERT(scsi.disk[scsi.id]);
 	ASSERT_DIAG();
 
-	// レコード番号とブロック数を取得
+	// Get record number and block count
 	record = scsi.cmd[1] & 0x1f;
 	record <<= 8;
 	record |= scsi.cmd[2];
@@ -3155,21 +3155,21 @@ void FASTCALL SCSI::Read6()
 	}
 
 #if defined(SCSI_LOG)
-	LOG2(Log::Normal, "READ(6)コマンド レコード=%06X ブロック=%d", record, scsi.blocks);
+	LOG2(Log::Normal, "READ(6) command record=%06X block=%d", record, scsi.blocks);
 #endif	// SCSI_LOG
 
-	// ドライブでコマンド処理
+	// Process command in drive
 	scsi.length = scsi.disk[scsi.id]->Read(scsi.buffer, record);
 	if (scsi.length <= 0) {
-		// 失敗(エラー)
+		// Failed (error)
 		Error();
 		return;
 	}
 
-	// 次のブロックを設定
+	// Set next block
 	scsi.next = record + 1;
 
-	// データインフェーズ
+	// Data in phase
 	DataIn();
 }
 
@@ -3186,7 +3186,7 @@ void FASTCALL SCSI::Write6()
 	ASSERT(scsi.disk[scsi.id]);
 	ASSERT_DIAG();
 
-	// レコード番号とブロック数を取得
+	// Get record number and block count
 	record = scsi.cmd[1] & 0x1f;
 	record <<= 8;
 	record |= scsi.cmd[2];
@@ -3198,21 +3198,21 @@ void FASTCALL SCSI::Write6()
 	}
 
 #if defined(SCSI_LOG)
-	LOG2(Log::Normal, "WRITE(6)コマンド レコード=%06X ブロック=%d", record, scsi.blocks);
+	LOG2(Log::Normal, "WRITE(6) command record=%06X block=%d", record, scsi.blocks);
 #endif	// SCSI_LOG
 
-	// ドライブでコマンド処理
+	// Process command in drive
 	scsi.length = scsi.disk[scsi.id]->WriteCheck(record);
 	if (scsi.length <= 0) {
-		// 失敗(エラー)
+		// Failed (error)
 		Error();
 		return;
 	}
 
-	// 次のブロックを設定
+	// Set next block
 	scsi.next = record + 1;
 
-	// データアウトフェーズ
+	// Data out phase
 	DataOut();
 }
 
@@ -3230,18 +3230,18 @@ void FASTCALL SCSI::Seek6()
 	ASSERT_DIAG();
 
 #if defined(SCSI_LOG)
-	LOG0(Log::Normal, "SEEK(6)コマンド");
+	LOG0(Log::Normal, "SEEK(6) command");
 #endif	// SCSI_LOG
 
-	// ドライブでコマンド処理
+	// Process command in drive
 	status = scsi.disk[scsi.id]->Seek(scsi.cmd);
 	if (!status) {
-		// 失敗(エラー)
+		// Failed (error)
 		Error();
 		return;
 	}
 
-	// ステータスフェーズ
+	// Status phase
 	Status();
 }
 
@@ -3257,18 +3257,18 @@ void FASTCALL SCSI::Inquiry()
 	ASSERT_DIAG();
 
 #if defined(SCSI_LOG)
-	LOG0(Log::Normal, "INQUIRYコマンド");
+	LOG0(Log::Normal, "INQUIRY command");
 #endif	// SCSI_LOG
 
-	// ドライブでコマンド処理
+	// Process command in drive
 	scsi.length = scsi.disk[scsi.id]->Inquiry(scsi.cmd, scsi.buffer);
 	if (scsi.length <= 0) {
-		// 失敗(エラー)
+		// Failed (error)
 		Error();
 		return;
 	}
 
-	// データインフェーズ
+	// Data in phase
 	DataIn();
 }
 
@@ -3284,18 +3284,18 @@ void FASTCALL SCSI::ModeSelect()
 	ASSERT_DIAG();
 
 #if defined(SCSI_LOG)
-	LOG0(Log::Normal, "MODE SELECTコマンド");
+	LOG0(Log::Normal, "MODE SELECT command");
 #endif	// SCSI_LOG
 
-	// ドライブでコマンド処理
+	// Process command in drive
 	scsi.length = scsi.disk[scsi.id]->SelectCheck(scsi.cmd);
 	if (scsi.length <= 0) {
-		// 失敗(エラー)
+		// Failed (error)
 		Error();
 		return;
 	}
 
-	// データアウトフェーズ
+	// Data out phase
 	DataOut();
 }
 
@@ -3311,21 +3311,21 @@ void FASTCALL SCSI::ModeSense()
 	ASSERT_DIAG();
 
 #if defined(SCSI_LOG)
-	LOG0(Log::Normal, "MODE SENSEコマンド");
+	LOG0(Log::Normal, "MODE SENSE command");
 #endif	// SCSI_LOG
 
-	// ドライブでコマンド処理
+	// Process command in drive
 	scsi.length = scsi.disk[scsi.id]->ModeSense(scsi.cmd, scsi.buffer);
 	ASSERT(scsi.length >= 0);
 	if (scsi.length == 0) {
-		LOG1(Log::Warning, "サポートしていないMODE SENSEページ $%02X", scsi.cmd[2]);
+		LOG1(Log::Warning, "Unsupported MODE SENSE page $%02X", scsi.cmd[2]);
 
-		// 失敗(エラー)
+		// Failed (error)
 		Error();
 		return;
 	}
 
-	// データインフェーズ
+	// Data in phase
 	DataIn();
 }
 
@@ -3343,18 +3343,18 @@ void FASTCALL SCSI::StartStop()
 	ASSERT_DIAG();
 
 #if defined(SCSI_LOG)
-	LOG0(Log::Normal, "START STOP UNITコマンド");
+	LOG0(Log::Normal, "START STOP UNIT command");
 #endif	// SCSI_LOG
 
-	// ドライブでコマンド処理
+	// Process command in drive
 	status = scsi.disk[scsi.id]->StartStop(scsi.cmd);
 	if (!status) {
-		// 失敗(エラー)
+		// Failed (error)
 		Error();
 		return;
 	}
 
-	// ステータスフェーズ
+	// Status phase
 	Status();
 }
 
@@ -3372,18 +3372,18 @@ void FASTCALL SCSI::SendDiag()
 	ASSERT_DIAG();
 
 #if defined(SCSI_LOG)
-	LOG0(Log::Normal, "SEND DIAGNOSTICコマンド");
+	LOG0(Log::Normal, "SEND DIAGNOSTIC command");
 #endif	// SCSI_LOG
 
-	// ドライブでコマンド処理
+	// Process command in drive
 	status = scsi.disk[scsi.id]->SendDiag(scsi.cmd);
 	if (!status) {
-		// 失敗(エラー)
+		// Failed (error)
 		Error();
 		return;
 	}
 
-	// ステータスフェーズ
+	// Status phase
 	Status();
 }
 
@@ -3401,18 +3401,18 @@ void FASTCALL SCSI::Removal()
 	ASSERT_DIAG();
 
 #if defined(SCSI_LOG)
-	LOG0(Log::Normal, "PREVENT/ALLOW MEDIUM REMOVALコマンド");
+	LOG0(Log::Normal, "PREVENT/ALLOW MEDIUM REMOVAL command");
 #endif	// SCSI_LOG
 
-	// ドライブでコマンド処理
+	// Process command in drive
 	status = scsi.disk[scsi.id]->Removal(scsi.cmd);
 	if (!status) {
-		// 失敗(エラー)
+		// Failed (error)
 		Error();
 		return;
 	}
 
-	// ステータスフェーズ
+	// Status phase
 	Status();
 }
 
@@ -3430,10 +3430,10 @@ void FASTCALL SCSI::ReadCapacity()
 	ASSERT_DIAG();
 
 #if defined(SCSI_LOG)
-	LOG0(Log::Normal, "READ CAPACITYコマンド");
+	LOG0(Log::Normal, "READ CAPACITY command");
 #endif	// SCSI_LOG
 
-	// ドライブでコマンド処理
+	// Process command in drive
 	length = scsi.disk[scsi.id]->ReadCapacity(scsi.cmd, scsi.buffer);
 	ASSERT(length >= 0);
 	if (length <= 0) {
@@ -3441,10 +3441,10 @@ void FASTCALL SCSI::ReadCapacity()
 		return;
 	}
 
-	// レングス設定
+	// Set length
 	scsi.length = length;
 
-	// データインフェーズ
+	// Data in phase
 	DataIn();
 }
 
@@ -3461,7 +3461,7 @@ void FASTCALL SCSI::Read10()
 	ASSERT(scsi.disk[scsi.id]);
 	ASSERT_DIAG();
 
-	// レコード番号とブロック数を取得
+	// Get record number and block count
 	record = scsi.cmd[2];
 	record <<= 8;
 	record |= scsi.cmd[3];
@@ -3474,27 +3474,27 @@ void FASTCALL SCSI::Read10()
 	scsi.blocks |= scsi.cmd[8];
 
 #if defined(SCSI_LOG)
-	LOG2(Log::Normal, "READ(10)コマンド レコード=%08X ブロック=%d", record, scsi.blocks);
+	LOG2(Log::Normal, "READ(10) command record=%08X block=%d", record, scsi.blocks);
 #endif	// SCSI_LOG
 
-	// ブロック数0は処理しない
+	// Block count 0 is not processed
 	if (scsi.blocks == 0) {
 		Status();
 		return;
 	}
 
-	// ドライブでコマンド処理
+	// Process command in drive
 	scsi.length = scsi.disk[scsi.id]->Read(scsi.buffer, record);
 	if (scsi.length <= 0) {
-		// 失敗(エラー)
+		// Failed (error)
 		Error();
 		return;
 	}
 
-	// 次のブロックを設定
+	// Set next block
 	scsi.next = record + 1;
 
-	// データインフェーズ
+	// Data in phase
 	DataIn();
 }
 
@@ -3511,7 +3511,7 @@ void FASTCALL SCSI::Write10()
 	ASSERT(scsi.disk[scsi.id]);
 	ASSERT_DIAG();
 
-	// レコード番号とブロック数を取得
+	// Get record number and block count
 	record = scsi.cmd[2];
 	record <<= 8;
 	record |= scsi.cmd[3];
@@ -3524,27 +3524,27 @@ void FASTCALL SCSI::Write10()
 	scsi.blocks |= scsi.cmd[8];
 
 #if defined(SCSI_LOG)
-	LOG2(Log::Normal, "WRTIE(10)コマンド レコード=%08X ブロック=%d", record, scsi.blocks);
+	LOG2(Log::Normal, "WRITE(10) command record=%08X block=%d", record, scsi.blocks);
 #endif	// SCSI_LOG
 
-	// ブロック数0は処理しない
+	// Block count 0 is not processed
 	if (scsi.blocks == 0) {
 		Status();
 		return;
 	}
 
-	// ドライブでコマンド処理
+	// Process command in drive
 	scsi.length = scsi.disk[scsi.id]->WriteCheck(record);
 	if (scsi.length <= 0) {
-		// 失敗(エラー)
+		// Failed (error)
 		Error();
 		return;
 	}
 
-	// 次のブロックを設定
+	// Set next block
 	scsi.next = record + 1;
 
-	// データアウトフェーズ
+	// Data out phase
 	DataOut();
 }
 
@@ -3562,18 +3562,18 @@ void FASTCALL SCSI::Seek10()
 	ASSERT_DIAG();
 
 #if defined(SCSI_LOG)
-	LOG0(Log::Normal, "SEEK(10)コマンド");
+	LOG0(Log::Normal, "SEEK(10) command");
 #endif	// SCSI_LOG
 
-	// ドライブでコマンド処理
+	// Process command in drive
 	status = scsi.disk[scsi.id]->Seek(scsi.cmd);
 	if (!status) {
-		// 失敗(エラー)
+		// Failed (error)
 		Error();
 		return;
 	}
 
-	// ステータスフェーズ
+	// Status phase
 	Status();
 }
 
@@ -3591,7 +3591,7 @@ void FASTCALL SCSI::Verify()
 	ASSERT(scsi.disk[scsi.id]);
 	ASSERT_DIAG();
 
-	// レコード番号とブロック数を取得
+	// Get record number and block count
 	record = scsi.cmd[2];
 	record <<= 8;
 	record |= scsi.cmd[3];
@@ -3604,42 +3604,42 @@ void FASTCALL SCSI::Verify()
 	scsi.blocks |= scsi.cmd[8];
 
 #if defined(SCSI_LOG)
-	LOG2(Log::Normal, "VERIFYコマンド レコード=%08X ブロック=%d", record, scsi.blocks);
+	LOG2(Log::Normal, "VERIFY command record=%08X block=%d", record, scsi.blocks);
 #endif	// SCSI_LOG
 
-	// ブロック数0は処理しない
+	// Block count 0 is not processed
 	if (scsi.blocks == 0) {
 		Status();
 		return;
 	}
 
-	// BytChk=0なら
+	// If BytChk=0
 	if ((scsi.cmd[1] & 0x02) == 0) {
-		// ドライブでコマンド処理
+		// Process command in drive
 		status = scsi.disk[scsi.id]->Seek(scsi.cmd);
 		if (!status) {
-			// 失敗(エラー)
+			// Failed (error)
 			Error();
 			return;
 		}
 
-		// ステータスフェーズ
+		// Status phase
 		Status();
 		return;
 	}
 
-	// テスト読み込み
+	// Test read
 	scsi.length = scsi.disk[scsi.id]->Read(scsi.buffer, record);
 	if (scsi.length <= 0) {
-		// 失敗(エラー)
+		// Failed (error)
 		Error();
 		return;
 	}
 
-	// 次のブロックを設定
+	// Set next block
 	scsi.next = record + 1;
 
-	// データアウトフェーズ
+	// Data out phase
 	DataOut();
 }
 
@@ -3654,15 +3654,15 @@ void FASTCALL SCSI::ReadToc()
 	ASSERT(scsi.disk[scsi.id]);
 	ASSERT_DIAG();
 
-	// ドライブでコマンド処理
+	// Process command in drive
 	scsi.length = scsi.disk[scsi.id]->ReadToc(scsi.cmd, scsi.buffer);
 	if (scsi.length <= 0) {
-		// 失敗(エラー)
+		// Failed (error)
 		Error();
 		return;
 	}
 
-	// データインフェーズ
+	// Data in phase
 	DataIn();
 }
 
@@ -3679,20 +3679,20 @@ void FASTCALL SCSI::PlayAudio10()
 	ASSERT(scsi.disk[scsi.id]);
 	ASSERT_DIAG();
 
-	// ドライブでコマンド処理
+	// Process command in drive
 	status = scsi.disk[scsi.id]->PlayAudio(scsi.cmd);
 	if (!status) {
-		// 失敗(エラー)
+		// Failed (error)
 		Error();
 		return;
 	}
 
-	// CD-DAイベントスタート(26666×74+26716で、合計1sec)
+	// Start CD-DA event (26666 x 74 + 26716 = 1 second total)
 	if (cdda.GetTime() == 0) {
 		cdda.SetTime(26666);
 	}
 
-	// ステータスフェーズ
+	// Status phase
 	Status();
 }
 
@@ -3709,20 +3709,20 @@ void FASTCALL SCSI::PlayAudioMSF()
 	ASSERT(scsi.disk[scsi.id]);
 	ASSERT_DIAG();
 
-	// ドライブでコマンド処理
+	// Process command in drive
 	status = scsi.disk[scsi.id]->PlayAudioMSF(scsi.cmd);
 	if (!status) {
-		// 失敗(エラー)
+		// Failed (error)
 		Error();
 		return;
 	}
 
-	// CD-DAイベントスタート(26666×74+26716で、合計1sec)
+	// Start CD-DA event (26666 x 74 + 26716 = 1 second total)
 	if (cdda.GetTime() == 0) {
 		cdda.SetTime(26666);
 	}
 
-	// ステータスフェーズ
+	// Status phase
 	Status();
 }
 
@@ -3739,26 +3739,26 @@ void FASTCALL SCSI::PlayAudioTrack()
 	ASSERT(scsi.disk[scsi.id]);
 	ASSERT_DIAG();
 
-	// ドライブでコマンド処理
+	// Process command in drive
 	status = scsi.disk[scsi.id]->PlayAudioTrack(scsi.cmd);
 	if (!status) {
-		// 失敗(エラー)
+		// Failed (error)
 		Error();
 		return;
 	}
 
-	// CD-DAイベントスタート(26666×74+26716で、合計1sec)
+	// Start CD-DA event (26666 x 74 + 26716 = 1 second total)
 	if (cdda.GetTime() == 0) {
 		cdda.SetTime(26666);
 	}
 
-	// ステータスフェーズ
+	// Status phase
 	Status();
 }
 
 //---------------------------------------------------------------------------
 //
-//	ディスク再構築
+//	Rebuild disks
 //
 //---------------------------------------------------------------------------
 void FASTCALL SCSI::Construct()
@@ -3774,7 +3774,7 @@ void FASTCALL SCSI::Construct()
 	ASSERT(this);
 	ASSERT_DIAG();
 
-	// 一旦クリア
+	// Clear first
 	hd = 0;
 	mo = FALSE;
 	cd = FALSE;
@@ -3782,7 +3782,7 @@ void FASTCALL SCSI::Construct()
 		scsi.disk[i] = NULL;
 	}
 
-	// SCSIが存在しないなら、ディスク削除して終了
+	// If SCSI not present, delete disks and exit
 	if (scsi.type == 0) {
 		for (i=0; i<HDMax; i++) {
 			if (scsi.hd[i]) {
@@ -3801,15 +3801,15 @@ void FASTCALL SCSI::Construct()
 		return;
 	}
 
-	// ディスク数を決定
+	// Determine disk count
 	switch (scsi.scsi_drives) {
-		// 0台
+		// 0 drives
 		case 0:
 			break;
 
-		// 1台
+		// 1 drive
 		case 1:
-			// MO優先か、HD優先かで分ける
+			// MO priority or HD priority
 			if (scsi.mo_first) {
 				mo = TRUE;
 			}
@@ -3818,21 +3818,21 @@ void FASTCALL SCSI::Construct()
 			}
 			break;
 
-		// 2台
+		// 2 drives
 		case 2:
-			// HD,MOとも1台
+			// 1 HD, 1 MO
 			hd = 1;
 			mo = TRUE;
 			break;
 
-		// 3台
+		// 3 drives
 		case 3:
-			// HD,MO,CDとも1台
+			// 1 HD, 1 MO, 1 CD
 			hd = 1;
 			mo = TRUE;
 			cd = TRUE;
 
-		// 4台以上
+		// 4 or more drives
 		default:
 			ASSERT(scsi.scsi_drives <= 7);
 			hd = scsi.scsi_drives - 2;
@@ -3841,9 +3841,9 @@ void FASTCALL SCSI::Construct()
 			break;
 	}
 
-	// HD作成
+	// Create HD
 	for (i=0; i<HDMax; i++) {
-		// 個数を超えていれば、削除
+		// If count exceeded, delete
 		if (i >= hd) {
 			if (scsi.hd[i]) {
 				delete scsi.hd[i];
@@ -3852,7 +3852,7 @@ void FASTCALL SCSI::Construct()
 			continue;
 		}
 
-		// ディスク種別を確認
+		// Check disk type
 		if (scsi.hd[i]) {
 			if (scsi.hd[i]->GetID() != MAKEID('S', 'C', 'H', 'D')) {
 				delete scsi.hd[i];
@@ -3860,32 +3860,32 @@ void FASTCALL SCSI::Construct()
 			}
 		}
 
-		// ディスクがあって
+		// If disk exists
 		if (scsi.hd[i]) {
-			// パスを取得し、一致すればok
+			// Get path, if match then OK
 			scsi.hd[i]->GetPath(path);
 			if (path.CmpPath(scsihd[i])) {
-				// パスが一致している
+				// Path matches
 				continue;
 			}
 
-			// パスが違うので、ディスクをいったん削除
+			// Path differs, delete disk temporarily
 			delete scsi.hd[i];
 			scsi.hd[i] = NULL;
 		}
 
-		// SCSIハードディスクを作成してオープンを試みる
+		// Create SCSI hard disk and try to open
 		scsi.hd[i] = new SCSIHD(this);
 		if (!scsi.hd[i]->Open(scsihd[i])) {
-			// オープン失敗。この番号のscsi.diskはNULLとする
+			// Open failed. Set scsi.disk for this number to NULL
 			delete scsi.hd[i];
 			scsi.hd[i] = NULL;
 		}
 	}
 
-	// MO作成
+	// Create MO
 	if (mo) {
-		// MOあり
+		// MO present
 		if (scsi.mo) {
 			if (scsi.mo->GetID() != MAKEID('S', 'C', 'M', 'O')) {
 				delete scsi.mo;
@@ -3897,16 +3897,16 @@ void FASTCALL SCSI::Construct()
 		}
 	}
 	else {
-		// MOなし
+		// No MO
 		if (scsi.mo) {
 			delete scsi.mo;
 			scsi.mo = NULL;
 		}
 	}
 
-	// CD-ROM作成
+	// Create CD-ROM
 	if (cd) {
-		// CD-ROMあり
+		// CD-ROM present
 		if (scsi.cdrom) {
 			if (scsi.cdrom->GetID() != MAKEID('S', 'C', 'C', 'D')) {
 				delete scsi.cdrom;
@@ -3918,23 +3918,23 @@ void FASTCALL SCSI::Construct()
 		}
 	}
 	else {
-		// CD-ROMなし
+		// No CD-ROM
 		if (scsi.cdrom) {
 			delete scsi.cdrom;
 			scsi.cdrom = NULL;
 		}
 	}
 
-	// ホスト・MO優先を考慮して、ディスクを並べる
+	// Arrange disks considering host/MO priority
 	init = GetSCSIID();
 	index = 0;
 	for (i=0; i<DeviceMax; i++) {
-		// ホスト(イニシエータ)はスキップ
+		// Skip host (initiator)
 		if (i == init) {
 			continue;
 		}
 
-		// MO優先の場合、MOを並べる
+		// If MO priority, place MO first
 		if (scsi.mo_first) {
 			if (mo) {
 				ASSERT(scsi.mo);
@@ -3944,15 +3944,15 @@ void FASTCALL SCSI::Construct()
 			}
 		}
 
-		// HDを並べる
+		// Place HD
 		if (index < hd) {
-			// NULLでもよい
+			// NULL is OK
 			scsi.disk[i] = scsi.hd[index];
 			index++;
 			continue;
 		}
 
-		// MOを並べる
+		// Place MO
 		if (mo) {
 			ASSERT(scsi.mo);
 			scsi.disk[i] = scsi.mo;
@@ -3961,7 +3961,7 @@ void FASTCALL SCSI::Construct()
 		}
 	}
 
-	// CDはID6固定。ID6が一杯ならID7
+	// CD is fixed at ID6. If ID6 full, ID7
 	if (cd) {
 		ASSERT(scsi.cdrom);
 		if (!scsi.disk[6]) {
@@ -3976,30 +3976,30 @@ void FASTCALL SCSI::Construct()
 #if defined(SCSI_LOG)
 	for (i=0; i<DeviceMax; i++) {
 		if (!scsi.disk[i]) {
-			LOG1(Log::Detail, "ID=%d : 未接続またはイニシエータ", i);
+			LOG1(Log::Detail, "ID=%d : Not connected or initiator", i);
 			continue;
 		}
 		switch (scsi.disk[i]->GetID()) {
 			case MAKEID('S', 'C', 'H', 'D'):
-				LOG1(Log::Detail, "ID=%d : SCSI ハードディスク", i);
+				LOG1(Log::Detail, "ID=%d : SCSI hard disk", i);
 				break;
 			case MAKEID('S', 'C', 'M', 'O'):
-				LOG1(Log::Detail, "ID=%d : SCSI MOディスク", i);
+				LOG1(Log::Detail, "ID=%d : SCSI MO disk", i);
 				break;
 			case MAKEID('S', 'C', 'C', 'D'):
-				LOG1(Log::Detail, "ID=%d : SCSI CD-ROMドライブ", i);
+				LOG1(Log::Detail, "ID=%d : SCSI CD-ROM drive", i);
 				break;
 			default:
-				LOG2(Log::Detail, "ID=%d : 未定義(%08X)", i, scsi.disk[i]->GetID());
+				LOG2(Log::Detail, "ID=%d : Undefined(%08X)", i, scsi.disk[i]->GetID());
 				break;
 		}
 	}
-#endif	//	SCSI_LOG
+#endif	// SCSI_LOG
 }
 
 //---------------------------------------------------------------------------
 //
-//	MO/CD オープン
+//	MO/CD open
 //
 //---------------------------------------------------------------------------
 BOOL FASTCALL SCSI::Open(const Filepath& path, BOOL mo)
@@ -4007,42 +4007,42 @@ BOOL FASTCALL SCSI::Open(const Filepath& path, BOOL mo)
 	ASSERT(this);
 	ASSERT_DIAG();
 
-	// 有効でなければエラー
+	// If not valid, error
 	if (!IsValid(mo)) {
 		return FALSE;
 	}
 
-	// イジェクト
+	// Eject
 	Eject(FALSE, mo);
 
-	// ノットレディでなければエラー
+	// If not not ready, error
 	if (IsReady(mo)) {
 		return FALSE;
 	}
 
-	// ドライブに任せる
+	// Leave to drive
 	if (mo) {
 		ASSERT(scsi.mo);
 		if (scsi.mo->Open(path, TRUE)) {
-			// 成功(MO)
+			// Success (MO)
 			return TRUE;
 		}
 	}
 	else {
 		ASSERT(scsi.cdrom);
 		if (scsi.cdrom->Open(path, TRUE)) {
-			// 成功(CD)
+			// Success (CD)
 			return TRUE;
 		}
 	}
 
-	// 失敗
+	// Failed
 	return FALSE;
 }
 
 //---------------------------------------------------------------------------
 //
-//	MO/CD イジェクト
+//	MO/CD eject
 //
 //---------------------------------------------------------------------------
 void FASTCALL SCSI::Eject(BOOL force, BOOL mo)
@@ -4050,12 +4050,12 @@ void FASTCALL SCSI::Eject(BOOL force, BOOL mo)
 	ASSERT(this);
 	ASSERT_DIAG();
 
-	// レディでなければ何もしない
+	// If not ready, do nothing
 	if (!IsReady(mo)) {
 		return;
 	}
 
-	// ドライブに通知
+	// Notify drive
 	if (mo) {
 		ASSERT(scsi.mo);
 		scsi.mo->Eject(force);
@@ -4068,7 +4068,7 @@ void FASTCALL SCSI::Eject(BOOL force, BOOL mo)
 
 //---------------------------------------------------------------------------
 //
-//	MO 書き込み禁止
+//	MO write protect
 //
 //---------------------------------------------------------------------------
 void FASTCALL SCSI::WriteP(BOOL flag)
@@ -4076,19 +4076,19 @@ void FASTCALL SCSI::WriteP(BOOL flag)
 	ASSERT(this);
 	ASSERT_DIAG();
 
-	// レディでなければ何もしない
+	// If not ready, do nothing
 	if (!IsReady()) {
 		return;
 	}
 
-	// ライトプロテクト設定を試みる
+	// Try to set write protect
 	ASSERT(scsi.mo);
 	scsi.mo->WriteP(flag);
 }
 
 //---------------------------------------------------------------------------
 //
-//	MO 書き込み禁止取得
+//	Get MO write protect
 //
 //---------------------------------------------------------------------------
 BOOL FASTCALL SCSI::IsWriteP() const
@@ -4096,19 +4096,19 @@ BOOL FASTCALL SCSI::IsWriteP() const
 	ASSERT(this);
 	ASSERT_DIAG();
 
-	// レディでなければライトプロテクトでない
+	// If not ready, not write protected
 	if (!IsReady()) {
 		return FALSE;
 	}
 
-	// ドライブに聞く
+	// Ask drive
 	ASSERT(scsi.mo);
 	return scsi.mo->IsWriteP();
 }
 
 //---------------------------------------------------------------------------
 //
-//	MO ReadOnlyチェック
+//	MO read-only check
 //
 //---------------------------------------------------------------------------
 BOOL FASTCALL SCSI::IsReadOnly() const
@@ -4116,19 +4116,19 @@ BOOL FASTCALL SCSI::IsReadOnly() const
 	ASSERT(this);
 	ASSERT_DIAG();
 
-	// レディでなければリードオンリーでない
+	// If not ready, not read-only
 	if (!IsReady()) {
 		return FALSE;
 	}
 
-	// ドライブに聞く
+	// Ask drive
 	ASSERT(scsi.mo);
 	return scsi.mo->IsReadOnly();
 }
 
 //---------------------------------------------------------------------------
 //
-//	MO/CD Lockedチェック
+//	MO/CD locked check
 //
 //---------------------------------------------------------------------------
 BOOL FASTCALL SCSI::IsLocked(BOOL mo) const
@@ -4137,28 +4137,28 @@ BOOL FASTCALL SCSI::IsLocked(BOOL mo) const
 	ASSERT_DIAG();
 
 	if (mo) {
-		// ドライブが存在するか(MO)
+		// Does drive exist (MO)
 		if (!scsi.mo) {
 			return FALSE;
 		}
 
-		// ドライブに聞く(MO)
+		// Ask drive (MO)
 		return scsi.mo->IsLocked();
 	}
 	else {
-		// ドライブが存在するか(CD)
+		// Does drive exist (CD)
 		if (!scsi.cdrom) {
 			return FALSE;
 		}
 
-		// ドライブに聞く(CD)
+		// Ask drive (CD)
 		return scsi.cdrom->IsLocked();
 	}
 }
 
 //---------------------------------------------------------------------------
 //
-//	MO/CD Readyチェック
+//	MO/CD ready check
 //
 //---------------------------------------------------------------------------
 BOOL FASTCALL SCSI::IsReady(BOOL mo) const
@@ -4167,28 +4167,28 @@ BOOL FASTCALL SCSI::IsReady(BOOL mo) const
 	ASSERT_DIAG();
 
 	if (mo) {
-		// ドライブが存在するか(MO)
+		// Does drive exist (MO)
 		if (!scsi.mo) {
 			return FALSE;
 		}
 
-		// ドライブに聞く(MO)
+		// Ask drive (MO)
 		return scsi.mo->IsReady();
 	}
 	else {
-		// ドライブが存在するか(CD)
+		// Does drive exist (CD)
 		if (!scsi.cdrom) {
 			return FALSE;
 		}
 
-		// ドライブに聞く(CD)
+		// Ask drive (CD)
 		return scsi.cdrom->IsReady();
 	}
 }
 
 //---------------------------------------------------------------------------
 //
-//	MO/CD 有効チェック
+//	MO/CD valid check
 //
 //---------------------------------------------------------------------------
 BOOL FASTCALL SCSI::IsValid(BOOL mo) const
@@ -4197,25 +4197,25 @@ BOOL FASTCALL SCSI::IsValid(BOOL mo) const
 	ASSERT_DIAG();
 
 	if (mo) {
-		// ポインタで判別(MO)
+		// Determine by pointer (MO)
 		if (scsi.mo) {
 			return TRUE;
 		}
 	}
 	else {
-		// ポインタで判別(CD)
+		// Determine by pointer (CD)
 		if (scsi.cdrom) {
 			return TRUE;
 		}
 	}
 
-	// ドライブなし
+	// No drive
 	return FALSE;
 }
 
 //---------------------------------------------------------------------------
 //
-//	MO/CD パス取得
+//	Get MO/CD path
 //
 //---------------------------------------------------------------------------
 void FASTCALL SCSI::GetPath(Filepath& path, BOOL mo) const
@@ -4226,9 +4226,9 @@ void FASTCALL SCSI::GetPath(Filepath& path, BOOL mo) const
 	if (mo) {
 		// MO
 		if (scsi.mo) {
-			// レディか
+			// Is ready?
 			if (scsi.mo->IsReady()) {
-				// パス取得
+				// Get path
 				scsi.mo->GetPath(path);
 				return;
 			}
@@ -4237,22 +4237,22 @@ void FASTCALL SCSI::GetPath(Filepath& path, BOOL mo) const
 	else {
 		// CD
 		if (scsi.cdrom) {
-			// レディか
+			// Is ready?
 			if (scsi.cdrom->IsReady()) {
-				// パス取得
+				// Get path
 				scsi.cdrom->GetPath(path);
 				return;
 			}
 		}
 	}
 
-	// 有効なパスでないので、クリア
+	// Not a valid path, clear
 	path.Clear();
 }
 
 //---------------------------------------------------------------------------
 //
-//	CD-DAバッファ取得
+//	Get CD-DA buffer
 //
 //---------------------------------------------------------------------------
 void FASTCALL SCSI::GetBuf(DWORD *buffer, int samples, DWORD rate)
@@ -4264,11 +4264,11 @@ void FASTCALL SCSI::GetBuf(DWORD *buffer, int samples, DWORD rate)
 	ASSERT((rate % 100) == 0);
 	ASSERT_DIAG();
 
-	// インタフェースが有効で
+	// Interface is valid
 	if (scsi.type != 0) {
-		// CD-ROMが存在する場合に限る
+		// Only if CD-ROM exists
 		if (scsi.cdrom) {
-			// CD-ROMから要求
+			// Request from CD-ROM
 			scsi.cdrom->GetBuf(buffer, samples, rate);
 		}
 	}

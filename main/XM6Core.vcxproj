@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <Project DefaultTargets="Build" ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup Label="ProjectConfigurations">
     <ProjectConfiguration Include="Debug|Win32">
@@ -46,7 +46,8 @@
     <CharacterSet>MultiByte</CharacterSet>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
-  <ImportGroup Label="ExtensionSettings"></ImportGroup>
+  <ImportGroup Label="ExtensionSettings">
+  </ImportGroup>
   <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="PropertySheets">
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
   </ImportGroup>
@@ -237,8 +238,7 @@
     <ClCompile Include="..\vm\ppi.cpp" />
     <ClCompile Include="..\vm\printer.cpp" />
     <ClCompile Include="..\vm\render.cpp" />
-    <ClCompile Include="..\vm\renderfast_compositor.cpp" />
-    <ClCompile Include="..\vm\rend_soft.cpp" />
+    <ClCompile Include="..\vm\px68k_video_engine.cpp" />
     <ClCompile Include="..\vm\rtc.cpp" />
     <ClCompile Include="..\vm\sasi.cpp" />
     <ClCompile Include="..\vm\scc.cpp" />
@@ -348,6 +348,7 @@
       <CompileAs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">CompileAsCpp</CompileAs>
       <CompileAs Condition="'$(Configuration)|$(Platform)'=='Release|x64'">CompileAsCpp</CompileAs>
     </ClCompile>
+    <ClCompile Include="..\vm\px68k_render_adapter.cpp" />
   </ItemGroup>
   <!-- Public API and browse headers -->
   <ItemGroup>
@@ -433,7 +434,6 @@
     <ClInclude Include="..\vm\render.h" />
     <ClInclude Include="..\vm\renderin.h" />
     <ClInclude Include="..\vm\rend_asm.h" />
-    <ClInclude Include="..\vm\rend_soft.h" />
     <ClInclude Include="..\vm\rtc.h" />
     <ClInclude Include="..\vm\sasi.h" />
     <ClInclude Include="..\vm\scc.h" />
@@ -450,7 +450,10 @@
     <ClInclude Include="..\vm\windrv.h" />
     <ClInclude Include="..\vm\xm6.h" />
     <ClInclude Include="..\vm\xm6core.h" />
+    <ClInclude Include="..\vm\px68k_video_engine.h" />
+    <ClInclude Include="..\vm\px68k_render_adapter.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
-  <ImportGroup Label="ExtensionTargets"></ImportGroup>
+  <ImportGroup Label="ExtensionTargets">
+  </ImportGroup>
 </Project>

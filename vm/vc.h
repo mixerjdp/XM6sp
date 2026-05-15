@@ -3,6 +3,7 @@
 //	X68000 EMULATOR "XM6"
 //
 //	Copyright (C) 2001-2005 ＰＩ．(ytanaka@ipc-tokai.or.jp)
+//	Copyright (C) 2010-2014 GIMONS
 //	[ ビデオコントローラ(CATHY & VIPS) ]
 //
 //---------------------------------------------------------------------------
@@ -23,9 +24,9 @@ public:
 	// 内部データ定義
 	typedef struct {
 		DWORD vr1h;						// VR1(H)バックアップ
-		DWORD vr1l;						// VR1(H)バックアップ
+		DWORD vr1l;						// VR1(L)バックアップ
 		DWORD vr2h;						// VR2(H)バックアップ
-		DWORD vr2l;						// VR2(H)バックアップ
+		DWORD vr2l;						// VR2(L)バックアップ
 		BOOL siz;						// 実画面サイズ
 		DWORD col;						// 色モード
 		DWORD sp;						// スプライトプライオリティ
@@ -77,13 +78,14 @@ public:
 										// 読み込みのみ
 
 	// 外部API
+	void FASTCALL HSync();
+										// H-Sync通知
 	void FASTCALL GetVC(vc_t *buffer);
 										// 内部データ取得
 	const BYTE* FASTCALL GetPalette() const	{ return palette; }
 										// パレットRAM取得
 	const vc_t* FASTCALL GetWorkAddr() const{ return &vc; }
 										// ワークアドレス取得
-
 private:
 	// レジスタアクセス
 	void FASTCALL SetVR0L(DWORD data);
@@ -104,12 +106,20 @@ private:
 										// レジスタ2取得
 
 	// データ
+	Sprite *sprite;
+										// スプライトコントローラ
 	Render *render;
 										// レンダラ
 	vc_t vc;
 										// 内部データ
 	BYTE palette[0x400];
 										// パレットRAM
+	BOOL vr1h;
+										// レジスタ1(H)変更フラグ
+	BOOL vr2h;
+										// レジスタ2(H)変更フラグ
+	int palette_wait;
+										// パレットウェイト
 };
 
 #endif	// vc_h

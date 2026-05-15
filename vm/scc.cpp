@@ -2,7 +2,7 @@
 //
 //	X68000 EMULATOR "XM6"
 //
-//	Copyright (C) 2001-2006 ＰＩ．(ytanaka@ipc-tokai.or.jp)
+//Copyright (C) 2001-2006  PI.(ytanaka@ipc-tokai.or.jp)
 //	[ SCC(Z8530) ]
 //
 //---------------------------------------------------------------------------
@@ -27,35 +27,35 @@
 
 //---------------------------------------------------------------------------
 //
-//	コンストラクタ
+//Constructor
 //
 //---------------------------------------------------------------------------
 SCC::SCC(VM *p) : MemDevice(p)
 {
-	// デバイスIDを初期化
+	//Initialize device ID
 	dev.id = MAKEID('S', 'C', 'C', ' ');
 	dev.desc = "SCC (Z8530)";
 
-	// 開始アドレス、終了アドレス
+	//Start address, end address
 	memdev.first = 0xe98000;
 	memdev.last = 0xe99fff;
 }
 
 //---------------------------------------------------------------------------
 //
-//	初期化
+//Initialize
 //
 //---------------------------------------------------------------------------
 BOOL FASTCALL SCC::Init()
 {
 	ASSERT(this);
 
-	// 基本クラス
+	//Base class
 	if (!MemDevice::Init()) {
 		return FALSE;
 	}
 
-	// ワーククリア(ハードウェアリセットでも一部状態は残る)
+	//Work clear (some state remains even after hardware reset)
 	memset(&scc, 0, sizeof(scc));
 	scc.ch[0].index = 0;
 	scc.ch[1].index = 1;
@@ -63,11 +63,11 @@ BOOL FASTCALL SCC::Init()
 	scc.vector = -1;
 	clkup = FALSE;
 
-	// マウス取得
+	//Get mouse
 	mouse = (Mouse*)vm->SearchDevice(MAKEID('M', 'O', 'U', 'S'));
 	ASSERT(mouse);
 
-	// イベント追加
+	//Add event
 	event[0].SetDevice(this);
 	event[0].SetDesc("Channel-A");
 	event[0].SetUser(0);
@@ -84,18 +84,18 @@ BOOL FASTCALL SCC::Init()
 
 //---------------------------------------------------------------------------
 //
-//	クリーンアップ
+//Cleanup
 //
 //---------------------------------------------------------------------------
 void FASTCALL SCC::Cleanup()
 {
-	// 基本クラスへ
+	//To base class
 	MemDevice::Cleanup();
 }
 
 //---------------------------------------------------------------------------
 //
-//	リセット
+//Reset
 //
 //---------------------------------------------------------------------------
 void FASTCALL SCC::Reset()
@@ -105,12 +105,12 @@ void FASTCALL SCC::Reset()
 	ASSERT(this);
 	LOG0(Log::Normal, "リセット");
 
-	// RESET信号によるリセット(チャネルリセットとは別)
+	//Reset by RESET signal (different from channel reset)
 	ResetSCC(&scc.ch[0]);
 	ResetSCC(&scc.ch[1]);
 	ResetSCC(NULL);
 
-	// 速度
+	//Speed
 	for (i=0; i<2; i++ ){
 		scc.ch[i].brgen = FALSE;
 		scc.ch[i].speed = 0;
@@ -120,7 +120,7 @@ void FASTCALL SCC::Reset()
 
 //---------------------------------------------------------------------------
 //
-//	セーブ
+//Save
 //
 //---------------------------------------------------------------------------
 BOOL FASTCALL SCC::Save(Fileio *fio, int ver)
@@ -130,7 +130,7 @@ BOOL FASTCALL SCC::Save(Fileio *fio, int ver)
 	ASSERT(this);
 	LOG0(Log::Normal, "セーブ");
 
-	// サイズをセーブ
+	//Save size
 	sz = sizeof(scc_t);
 	if (!fio->Write(&sz, sizeof(sz))) {
 		return FALSE;
@@ -139,7 +139,7 @@ BOOL FASTCALL SCC::Save(Fileio *fio, int ver)
 		return FALSE;
 	}
 
-	// イベントをセーブ
+	//Save event
 	if (!event[0].Save(fio, ver)) {
 		return FALSE;
 	}
@@ -152,7 +152,7 @@ BOOL FASTCALL SCC::Save(Fileio *fio, int ver)
 
 //---------------------------------------------------------------------------
 //
-//	ロード
+//Load
 //
 //---------------------------------------------------------------------------
 BOOL FASTCALL SCC::Load(Fileio *fio, int ver)
@@ -162,7 +162,7 @@ BOOL FASTCALL SCC::Load(Fileio *fio, int ver)
 	ASSERT(this);
 	LOG0(Log::Normal, "ロード");
 
-	// 本体をロード
+	//Load main
 	if (!fio->Read(&sz, sizeof(sz))) {
 		return FALSE;
 	}
@@ -173,7 +173,7 @@ BOOL FASTCALL SCC::Load(Fileio *fio, int ver)
 		return FALSE;
 	}
 
-	// イベント
+	//Event
 	if (!event[0].Load(fio, ver)) {
 		return FALSE;
 	}
@@ -181,7 +181,7 @@ BOOL FASTCALL SCC::Load(Fileio *fio, int ver)
 		return FALSE;
 	}
 
-	// 速度再計算
+	//Recalculate speed
 	ClockSCC(&scc.ch[0]);
 	ClockSCC(&scc.ch[1]);
 
@@ -190,7 +190,7 @@ BOOL FASTCALL SCC::Load(Fileio *fio, int ver)
 
 //---------------------------------------------------------------------------
 //
-//	設定適用
+//Apply settings
 //
 //---------------------------------------------------------------------------
 void FASTCALL SCC::ApplyCfg(const Config *config)
@@ -199,12 +199,12 @@ void FASTCALL SCC::ApplyCfg(const Config *config)
 	ASSERT(config);
 	LOG0(Log::Normal, "設定適用");
 
-	// SCCクロック
+	//SCC clock
 	if (clkup != config->scc_clkup) {
-		// 違っているので設定して
+		//Different, so set it
 		clkup = config->scc_clkup;
 
-		// 速度再計算
+		//Recalculate speed
 		ClockSCC(&scc.ch[0]);
 		ClockSCC(&scc.ch[1]);
 	}
@@ -212,7 +212,7 @@ void FASTCALL SCC::ApplyCfg(const Config *config)
 
 //---------------------------------------------------------------------------
 //
-//	バイト読み込み
+//Byte read
 //
 //---------------------------------------------------------------------------
 DWORD FASTCALL SCC::ReadByte(DWORD addr)
@@ -225,20 +225,20 @@ DWORD FASTCALL SCC::ReadByte(DWORD addr)
 	ASSERT(this);
 	ASSERT((addr >= memdev.first) && (addr <= memdev.last));
 
-	// 奇数アドレスのみデコードされている
+	//Only odd addresses are decoded
 	if ((addr & 1) != 0) {
-		// 8バイト単位でループ
+		//Loop in 8-byte units
 		addr &= 7;
 		addr >>= 1;
 
-		// ウェイト
+		//Wait
 		scheduler->Wait(3);
 
-		// レジスタ振り分け
+		//Register distribution
 		switch (addr) {
-			// チャネルBコマンドポート
+			//Channel B command port
 			case 0:
-				// レジスタ決定
+				//Determine register
 				ASSERT(scc.ch[1].reg <= 7);
 				if (scc.ch[1].ph) {
 					reg = table[scc.ch[1].reg + 8];
@@ -247,20 +247,20 @@ DWORD FASTCALL SCC::ReadByte(DWORD addr)
 					reg = table[scc.ch[1].reg];
 				}
 
-				// セレクト＆ハイポイント
+				//Select & high point
 				scc.ch[1].reg = 0;
 				scc.ch[1].ph = FALSE;
 
-				// データリード
+				//Data read
 				return (BYTE)ReadSCC(&scc.ch[1], reg);
 
-			// チャネルBデータポート
+			//Channel B data port
 			case 1:
 				return (BYTE)ReadRR8(&scc.ch[1]);
 
-			// チャネルAコマンドポート
+			//Channel A command port
 			case 2:
-				// レジスタ決定
+				//Determine register
 				ASSERT(scc.ch[0].reg <= 7);
 				if (scc.ch[0].ph) {
 					reg = table[scc.ch[0].reg + 8];
@@ -269,30 +269,30 @@ DWORD FASTCALL SCC::ReadByte(DWORD addr)
 					reg = table[scc.ch[0].reg];
 				}
 
-				// セレクト＆ハイポイント
+				//Select & high point
 				scc.ch[0].reg = 0;
 				scc.ch[0].ph = FALSE;
 
-				// データリード
+				//Data read
 				return (BYTE)ReadSCC(&scc.ch[0], reg);
 
-			// チャネルAデータポート
+			//Channel A data port
 			case 3:
 				return (BYTE)ReadRR8(&scc.ch[0]);
 		}
 
-		// ここには来ない
+		//Never comes here
 		ASSERT(FALSE);
 		return 0xff;
 	}
 
-	// 偶数アドレスは$FFを返す
+	//Even addresses return $FF
 	return 0xff;
 }
 
 //---------------------------------------------------------------------------
 //
-//	ワード読み込み
+//Word read
 //
 //---------------------------------------------------------------------------
 DWORD FASTCALL SCC::ReadWord(DWORD addr)
@@ -306,7 +306,7 @@ DWORD FASTCALL SCC::ReadWord(DWORD addr)
 
 //---------------------------------------------------------------------------
 //
-//	バイト書き込み
+//Byte write
 //
 //---------------------------------------------------------------------------
 void FASTCALL SCC::WriteByte(DWORD addr, DWORD data)
@@ -316,73 +316,73 @@ void FASTCALL SCC::WriteByte(DWORD addr, DWORD data)
 	ASSERT(this);
 	ASSERT((addr >= memdev.first) && (addr <= memdev.last));
 
-	// 奇数アドレスのみデコードされている
+	//Only odd addresses are decoded
 	if ((addr & 1) != 0) {
-		// 8バイト単位でループ
+		//Loop in 8-byte units
 		addr &= 7;
 		addr >>= 1;
 
-		// ウェイト
+		//Wait
 		scheduler->Wait(3);
 
-		// レジスタ振り分け
+		//Register distribution
 		switch (addr) {
-			// チャネルBコマンドポート
+			//Channel B command port
 			case 0:
-				// レジスタ決定
+				//Determine register
 				ASSERT(scc.ch[1].reg <= 7);
 				reg = scc.ch[1].reg;
 				if (scc.ch[1].ph) {
 					reg += 8;
 				}
 
-				// セレクト＆ハイポイント
+				//Select & high point
 				scc.ch[1].reg = 0;
 				scc.ch[1].ph = FALSE;
 
-				// データライト
+				//Data write
 				WriteSCC(&scc.ch[1], reg, (DWORD)data);
 				return;
 
-			// チャネルBデータポート
+			//Channel B data port
 			case 1:
 				WriteWR8(&scc.ch[1], (DWORD)data);
 				return;
 
-			// チャネルAコマンドポート
+			//Channel A command port
 			case 2:
-				// レジスタ決定
+				//Determine register
 				ASSERT(scc.ch[0].reg <= 7);
 				reg = scc.ch[0].reg;
 				if (scc.ch[0].ph) {
 					reg += 8;
 				}
 
-				// セレクト＆ハイポイント
+				//Select & high point
 				scc.ch[0].reg = 0;
 				scc.ch[0].ph = FALSE;
 
-				// データライト
+				//Data write
 				WriteSCC(&scc.ch[0], reg, (DWORD)data);
 				return;
 
-			// チャネルAデータポート
+			//Channel A data port
 			case 3:
 				WriteWR8(&scc.ch[0], (DWORD)data);
 				return;
 		}
 
-		// ここには来ない
+		//Never comes here
 		ASSERT(FALSE);
 		return;
 	}
 
-	// 偶数アドレスはデコードされていない
+	//Even addresses are not decoded
 }
 
 //---------------------------------------------------------------------------
 //
-//	ワード書き込み
+//Word write
 //
 //---------------------------------------------------------------------------
 void FASTCALL SCC::WriteWord(DWORD addr, DWORD data)
@@ -396,7 +396,7 @@ void FASTCALL SCC::WriteWord(DWORD addr, DWORD data)
 
 //---------------------------------------------------------------------------
 //
-//	読み込みのみ
+//Read only
 //
 //---------------------------------------------------------------------------
 DWORD FASTCALL SCC::ReadOnly(DWORD addr) const
@@ -409,17 +409,17 @@ DWORD FASTCALL SCC::ReadOnly(DWORD addr) const
 	ASSERT(this);
 	ASSERT((addr >= memdev.first) && (addr <= memdev.last));
 
-	// 奇数アドレスのみデコードされている
+	//Only odd addresses are decoded
 	if ((addr & 1) != 0) {
-		// 8バイト単位でループ
+		//Loop in 8-byte units
 		addr &= 7;
 		addr >>= 1;
 
-		// レジスタ振り分け
+		//Register distribution
 		switch (addr) {
-			// チャネルBコマンドポート
+			//Channel B command port
 			case 0:
-				// レジスタ決定
+				//Determine register
 				ASSERT(scc.ch[1].reg <= 7);
 				if (scc.ch[1].ph) {
 					reg = table[scc.ch[1].reg + 8];
@@ -428,16 +428,16 @@ DWORD FASTCALL SCC::ReadOnly(DWORD addr) const
 					reg = table[scc.ch[1].reg];
 				}
 
-				// データリード
+				//Data read
 				return (BYTE)ROSCC(&scc.ch[1], reg);
 
-			// チャネルBデータポート
+			//Channel B data port
 			case 1:
 				return (BYTE)ROSCC(&scc.ch[1], 8);
 
-			// チャネルAコマンドポート
+			//Channel A command port
 			case 2:
-				// レジスタ決定
+				//Determine register
 				ASSERT(scc.ch[0].reg <= 7);
 				if (scc.ch[0].ph) {
 					reg = table[scc.ch[0].reg + 8];
@@ -446,26 +446,26 @@ DWORD FASTCALL SCC::ReadOnly(DWORD addr) const
 					reg = table[scc.ch[0].reg];
 				}
 
-				// データリード
+				//Data read
 				return (BYTE)ROSCC(&scc.ch[0], reg);
 
-			// チャネルAデータポート
+			//Channel A data port
 			case 3:
 				return (BYTE)ROSCC(&scc.ch[0], 8);
 		}
 
-		// ここには来ない
+		//Never comes here
 		ASSERT(FALSE);
 		return 0xff;
 	}
 
-	// 偶数アドレスは$FFを返す
+	//Even addresses return $FF
 	return 0xff;
 }
 
 //---------------------------------------------------------------------------
 //
-//	内部データ取得
+//Get internal data
 //
 //---------------------------------------------------------------------------
 void FASTCALL SCC::GetSCC(scc_t *buffer) const
@@ -473,26 +473,26 @@ void FASTCALL SCC::GetSCC(scc_t *buffer) const
 	ASSERT(this);
 	ASSERT(buffer);
 
-	// 内部ワークをコピー
+	//Copy internal work
 	*buffer = scc;
 }
 
 //---------------------------------------------------------------------------
 //
-//	内部ワーク取得
+//Get internal work
 //
 //---------------------------------------------------------------------------
 const SCC::scc_t* FASTCALL SCC::GetWork() const
 {
 	ASSERT(this);
 
-	// 内部ワークを返す
+	//Return internal work
 	return (const scc_t*)&scc;
 }
 
 //---------------------------------------------------------------------------
 //
-//	ベクタ取得
+//Get vector
 //
 //---------------------------------------------------------------------------
 DWORD FASTCALL SCC::GetVector(int type) const
@@ -502,15 +502,15 @@ DWORD FASTCALL SCC::GetVector(int type) const
 	ASSERT(this);
 	ASSERT((type >= 0) && (type < 8));
 
-	// NV=1なら、0固定
+	//If NV=1, fixed at 0
 	if (scc.nv) {
 		return 0;
 	}
 
-	// 基準ベクタを設定
+	//Set base vector
 	vector = scc.vbase;
 
-	// bit3-1か、bit6-4か
+	//bit3-1 or bit6-4
 	if (scc.vis) {
 		if (scc.shsl) {
 			// bit6-4
@@ -529,7 +529,7 @@ DWORD FASTCALL SCC::GetVector(int type) const
 
 //---------------------------------------------------------------------------
 //
-//	チャネルリセット
+//Channel reset
 //
 //---------------------------------------------------------------------------
 void FASTCALL SCC::ResetSCC(ch_t *p)
@@ -538,7 +538,7 @@ void FASTCALL SCC::ResetSCC(ch_t *p)
 
 	ASSERT(this);
 
-	// NULLを与えるとハードウェアリセット
+	//NULL triggers hardware reset
 	if (p == NULL) {
 #if defined(SCC_LOG)
 		LOG0(Log::Normal, "ハードウェアリセット");
@@ -613,16 +613,16 @@ void FASTCALL SCC::ResetSCC(ch_t *p)
 	p->dcdie = TRUE;
 	p->zcie = FALSE;
 
-	// 受信FIFO
+	//Receive FIFO
 	p->rxfifo = 0;
 
-	// 受信バッファ
+	//Receive buffer
 	p->rxnum = 0;
 	p->rxread = 0;
 	p->rxwrite = 0;
 	p->rxtotal = 0;
 
-	// 送信バッファ
+	//Send buffer
 	p->txnum = 0;
 	p->txread = 0;
 	p->txwrite = 0;
@@ -630,13 +630,13 @@ void FASTCALL SCC::ResetSCC(ch_t *p)
 	p->txtotal = 0;
 	p->txwait = FALSE;
 
-	// 割り込み
+	//Interrupt
 	IntCheck();
 }
 
 //---------------------------------------------------------------------------
 //
-//	チャネル読み出し
+//Channel read
 //
 //---------------------------------------------------------------------------
 DWORD FASTCALL SCC::ReadSCC(ch_t *p, DWORD reg)
@@ -651,39 +651,39 @@ DWORD FASTCALL SCC::ReadSCC(ch_t *p, DWORD reg)
 #endif	// SCC_LOG
 
 	switch (reg) {
-		// RR0 - 拡張ステータス
+		//RR0 - Extended status
 		case 0:
 			return ReadRR0(p);
 
-		// RR1 - スペシャルRxコンディション
+		//RR1 - Special Rx condition
 		case 1:
 			return ReadRR1(p);
 
-		// RR2 - ベクタ
+		//RR2 - Vector
 		case 2:
 			return ReadRR2(p);
 
-		// RR3 - 割り込みペンディング
+		//RR3 - Interrupt pending
 		case 3:
 			return ReadRR3(p);
 
-		// RR8 - 受信データ
+		//RR8 - Receive data
 		case 8:
 			return ReadRR8(p);
 
-		// RR10 - SDLCループモード
+		//RR10 - SDLC loop mode
 		case 10:
 			return 0;
 
-		// RR12 - ボーレート下位
+		//RR12 - Baud rate low
 		case 12:
 			return p->tc;
 
-		// RR13 - ボーレート上位
+		//RR13 - Baud rate high
 		case 13:
 			return (p->tc >> 8);
 
-		// RR15 - 外部ステータス割り込み制御
+		//RR15 - External status interrupt control
 		case 15:
 			return ReadRR15(p);
 	}
@@ -697,7 +697,7 @@ DWORD FASTCALL SCC::ReadSCC(ch_t *p, DWORD reg)
 
 //---------------------------------------------------------------------------
 //
-//	RR0読み出し
+//Read RR0
 //
 //---------------------------------------------------------------------------
 DWORD FASTCALL SCC::ReadRR0(const ch_t *p) const
@@ -708,48 +708,48 @@ DWORD FASTCALL SCC::ReadRR0(const ch_t *p) const
 	ASSERT(p);
 	ASSERT((p->index == 0) || (p->index == 1));
 
-	// 初期化
+	//Initialize
 	data = 0;
 
-	// bit7 : Break/Abortステータス
+	//bit7: Break/Abort status
 	if (p->ba) {
 		data |= 0x80;
 	}
 
-	// bit6 : 送信アンダーランステータス
+	//bit6: Send underrun status
 	if (p->tu) {
 		data |= 0x40;
 	}
 
-	// bit5 : CTSステータス
+	//bit5: CTS status
 	if (p->cts) {
 		data |= 0x20;
 	}
 
-	// bit5 : Sync/Huntステータス
+	//bit5: Sync/Hunt status
 	if (p->sync) {
 		data |= 0x10;
 	}
 
-	// bit3 : DCDステータス
+	//bit3: DCD status
 	if (p->dcd) {
 		data |= 0x08;
 	}
 
-	// bit2 : 送信バッファエンプティステータス
+	//bit2: Send buffer empty status
 	if (!p->txwait) {
-		// 送信ウェイト時は常にバッファフル
+		//Always buffer full when waiting to send
 		if (!p->tdf) {
 			data |= 0x04;
 		}
 	}
 
-	// bit1 : ゼロカウントステータス
+	//bit1: Zero count status
 	if (p->zc) {
 		data |= 0x02;
 	}
 
-	// bit0 : 受信バッファ有効ステータス
+	//bit0: Receive buffer valid status
 	if (p->rxfifo > 0) {
 		data |= 0x01;
 	}
@@ -759,7 +759,7 @@ DWORD FASTCALL SCC::ReadRR0(const ch_t *p) const
 
 //---------------------------------------------------------------------------
 //
-//	RR1読み出し
+//Read RR1
 //
 //---------------------------------------------------------------------------
 DWORD FASTCALL SCC::ReadRR1(const ch_t *p) const
@@ -770,25 +770,25 @@ DWORD FASTCALL SCC::ReadRR1(const ch_t *p) const
 	ASSERT(p);
 	ASSERT((p->index == 0) || (p->index == 1));
 
-	// 初期化
+	//Initialize
 	data = 0x06;
 
-	// bit6 : フレーミングエラー
+	//bit6: Framing error
 	if (p->framing) {
 		data |= 0x40;
 	}
 
-	// bit5 : オーバーランエラー
+	//bit5: Overrun error
 	if (p->overrun) {
 		data |= 0x20;
 	}
 
-	// bit4 : パリティエラー
+	//bit4: Parity error
 	if (p->parerr) {
 		data |= 0x10;
 	}
 
-	// bit0 : 送信完了
+	//bit0: Send complete
 	if (p->txsent) {
 		data |= 0x01;
 	}
@@ -798,7 +798,7 @@ DWORD FASTCALL SCC::ReadRR1(const ch_t *p) const
 
 //---------------------------------------------------------------------------
 //
-//	RR2読み出し
+//Read RR2
 //
 //---------------------------------------------------------------------------
 DWORD FASTCALL SCC::ReadRR2(ch_t *p)
@@ -809,22 +809,22 @@ DWORD FASTCALL SCC::ReadRR2(ch_t *p)
 	ASSERT(p);
 	ASSERT((p->index == 0) || (p->index == 1));
 
-	// チャネル判別
+	//Channel identification
 	if (p->index == 0) {
-		// チャネルAはWR2の内容をそのまま返す
+		//Channel A returns WR2 content as-is
 		data = scc.vbase;
 	}
 	else {
-		// チャネルBは現在要求している割り込みベクタ
+		//Channel B returns currently requested interrupt vector
 		data = scc.request;
 	}
 
-	// 割り込み要求中でなければ何もしない
+	//Do nothing if no interrupt requested
 	if (scc.ireq < 0) {
 		return data;
 	}
 
-	// ここで、次の割り込みに移る(Macエミュレータ)
+	//Move to next interrupt here (Mac emulator)
 	ASSERT((scc.ireq >= 0) && (scc.ireq <= 7));
 	if (scc.ireq >= 4) {
 		p = &scc.ch[1];
@@ -852,16 +852,16 @@ DWORD FASTCALL SCC::ReadRR2(ch_t *p)
 	}
 	scc.ireq = -1;
 
-	// 割り込みチェック
+	//Check interrupt
 	IntCheck();
 
-	// データ返す
+	//Return data
 	return data;
 }
 
 //---------------------------------------------------------------------------
 //
-//	RR3読み出し
+//Read RR3
 //
 //---------------------------------------------------------------------------
 DWORD FASTCALL SCC::ReadRR3(const ch_t *p) const
@@ -873,19 +873,19 @@ DWORD FASTCALL SCC::ReadRR3(const ch_t *p) const
 	ASSERT(p);
 	ASSERT((p->index == 0) || (p->index == 1));
 
-	// チャネルAのみ有効。チャネルBは0を返す
+	//Only valid for Channel A. Channel B returns 0
 	if (p->index == 1) {
 		return 0;
 	}
 
-	// クリア
+	//Clear
 	data = 0;
 
-	// bit0からext,tx,rxで、チャネルB→チャネルAの順
+	//From bit0: ext,tx,rx, in order Channel B -> Channel A
 	for (i=0; i<2; i++) {
 		data <<= 3;
 
-		// 有効な(要求したい)割り込みビットをすべて立てる
+		//Set all valid (requested) interrupt bits
 		if (scc.ch[i].extip) {
 			data |= 0x01;
 		}
@@ -905,7 +905,7 @@ DWORD FASTCALL SCC::ReadRR3(const ch_t *p) const
 
 //---------------------------------------------------------------------------
 //
-//	RR8読み出し
+//Read RR8
 //
 //---------------------------------------------------------------------------
 DWORD FASTCALL SCC::ReadRR8(ch_t *p)
@@ -916,7 +916,7 @@ DWORD FASTCALL SCC::ReadRR8(ch_t *p)
 	ASSERT(p);
 	ASSERT((p->index == 0) || (p->index == 1));
 
-	// 受信データがあるか
+	//Is there receive data
 	if (p->rxfifo == 0) {
 		if (p->index == 0) {
 			LOG1(Log::Warning, "チャネル%d 受信データ空読み", p->index);
@@ -924,20 +924,20 @@ DWORD FASTCALL SCC::ReadRR8(ch_t *p)
 		return 0;
 	}
 
-	// 必ず最後尾にデータがある
+	//Data is always at the tail
 #if defined(SCC_LOG)
 	LOG2(Log::Normal, "チャネル%d データ引き取り$%02X", p->index, p->rxdata[2]);
 #endif
 	data = p->rxdata[2];
 
-	// 受信FIFO移動
+	//Move receive FIFO
 	p->rxdata[2] = p->rxdata[1];
 	p->rxdata[1] = p->rxdata[0];
 
-	// 個数を下げる
+	//Decrement count
 	p->rxfifo--;
 
-	// 一旦割り込みを落とす。FIFOの残りがあれば次のイベントで
+	//Drop interrupt first. If FIFO has more, next event
 	IntSCC(p, rxi, FALSE);
 
 #if defined(SCC_LOG)
@@ -949,7 +949,7 @@ DWORD FASTCALL SCC::ReadRR8(ch_t *p)
 
 //---------------------------------------------------------------------------
 //
-//	RR15読み出し
+//Read RR15
 //
 //---------------------------------------------------------------------------
 DWORD FASTCALL SCC::ReadRR15(const ch_t *p) const
@@ -960,35 +960,35 @@ DWORD FASTCALL SCC::ReadRR15(const ch_t *p) const
 	ASSERT(p);
 	ASSERT((p->index == 0) || (p->index == 1));
 
-	// データ初期化
+	//Initialize data
 	data = 0;
 
-	// bit7 - Break/Abort割り込み
+	//bit7 - Break/Abort interrupt
 	if (p->baie) {
 		data |= 0x80;
 	}
 
-	// bit6 - Txアンダーラン割り込み
+	//bit6 - Tx underrun interrupt
 	if (p->tuie) {
 		data |= 0x40;
 	}
 
-	// bit5 - CTS割り込み
+	//bit5 - CTS interrupt
 	if (p->ctsie) {
 		data |= 0x20;
 	}
 
-	// bit4 - SYNC割り込み
+	//bit4 - SYNC interrupt
 	if (p->syncie) {
 		data |= 0x10;
 	}
 
-	// bit3 - DCD割り込み
+	//bit3 - DCD interrupt
 	if (p->dcdie) {
 		data |= 0x08;
 	}
 
-	// bit1 - ゼロカウント割り込み
+	//bit1 - Zero count interrupt
 	if (p->zcie) {
 		data |= 0x02;
 	}
@@ -998,7 +998,7 @@ DWORD FASTCALL SCC::ReadRR15(const ch_t *p) const
 
 //---------------------------------------------------------------------------
 //
-//	読み出しのみ
+//Read only
 //
 //---------------------------------------------------------------------------
 DWORD FASTCALL SCC::ROSCC(const ch_t *p, DWORD reg) const
@@ -1010,50 +1010,50 @@ DWORD FASTCALL SCC::ROSCC(const ch_t *p, DWORD reg) const
 	ASSERT((p->index == 0) || (p->index == 1));
 
 	switch (reg) {
-		// RR0 - 拡張ステータス
+		//RR0 - Extended status
 		case 0:
 			return ReadRR0(p);
 
-		// RR1 - スペシャルRxコンディション
+		//RR1 - Special Rx condition
 		case 1:
 			return ReadRR1(p);
 
-		// RR2 - ベクタ
+		//RR2 - Vector
 		case 2:
 			if (p->index == 0) {
 				return scc.vbase;
 			}
 			return scc.request;
 
-		// RR3 - 割り込みペンディング
+		//RR3 - Interrupt pending
 		case 3:
 			return ReadRR3(p);
 
-		// RR8 - 受信データ
+		//RR8 - Receive data
 		case 8:
 			break;
 
-		// RR10 - SDLCループモード
+		//RR10 - SDLC loop mode
 		case 10:
 			return 0;
 
-		// RR12 - ボーレート下位
+		//RR12 - Baud rate low
 		case 12:
 			return p->tc;
 
-		// RR13 - ボーレート上位
+		//RR13 - Baud rate high
 		case 13:
 			return (p->tc >> 8);
 
-		// RR15 - 外部ステータス割り込み制御
+		//RR15 - External status interrupt control
 		case 15:
 			return ReadRR15(p);
 	}
 
-	// データ初期化
+	//Initialize data
 	data = 0xff;
 
-	// 受信FIFOが有効なら、返す
+	//If receive FIFO is valid, return
 	if (p->rxfifo > 0) {
 		data = p->rxdata[2];
 	}
@@ -1063,7 +1063,7 @@ DWORD FASTCALL SCC::ROSCC(const ch_t *p, DWORD reg) const
 
 //---------------------------------------------------------------------------
 //
-//	チャネル書き込み
+//Channel write
 //
 //---------------------------------------------------------------------------
 void FASTCALL SCC::WriteSCC(ch_t *p, DWORD reg, DWORD data)
@@ -1078,72 +1078,72 @@ void FASTCALL SCC::WriteSCC(ch_t *p, DWORD reg, DWORD data)
 #endif	// SCC_LOG
 
 	switch (reg) {
-		// WR0 - 全体コントロール
+		//WR0 - Global control
 		case 0:
 			WriteWR0(p, data);
 			return;
 
-		// WR1 - 割り込み許可
+		//WR1 - Interrupt enable
 		case 1:
 			WriteWR1(p, data);
 			return;
 
-		// WR2 - ベクタベース
+		//WR2 - Vector base
 		case 2:
 			LOG1(Log::Detail, "割り込みベクタベース $%02X", data);
 			scc.vbase = data;
 			return;
 
-		// WR3 - 受信コントロール
+		//WR3 - Receive control
 		case 3:
 			WriteWR3(p, data);
 			return;
 
-		// WR4 - 通信モード設定
+		//WR4 - Communication mode setting
 		case 4:
 			WriteWR4(p, data);
 			return;
 
-		// WR5 - 送信コントロール
+		//WR5 - Send control
 		case 5:
 			WriteWR5(p, data);
 			return;
 
-		// WR8 - 送信バッファ
+		//WR8 - Send buffer
 		case 8:
 			WriteWR8(p, data);
 			return;
 
-		// WR9 - 割り込みコントロール
+		//WR9 - Interrupt control
 		case 9:
 			WriteWR9(data);
 			return;
 
-		// WR10 - SDLCコントロール
+		//WR10 - SDLC control
 		case 10:
 			WriteWR10(p, data);
 			return;
 
-		// WR11 - クロック・端子選択
+		//WR11 - Clock/terminal select
 		case 11:
 			WriteWR11(p, data);
 
-		// WR12 - ボーレート下位
+		//WR12 - Baud rate low
 		case 12:
 			WriteWR12(p, data);
 			return;
 
-		// WR13 - ボーレート上位
+		//WR13 - Baud rate high
 		case 13:
 			WriteWR13(p, data);
 			return;
 
-		// WR14 - クロックコントロール
+		//WR14 - Clock control
 		case 14:
 			WriteWR14(p, data);
 			return;
 
-		// WR15 - 拡張ステータス割り込みコントロール
+		//WR15 - Extended status interrupt control
 		case 15:
 			WriteWR15(p, data);
 			return;
@@ -1155,7 +1155,7 @@ void FASTCALL SCC::WriteSCC(ch_t *p, DWORD reg, DWORD data)
 
 //---------------------------------------------------------------------------
 //
-//	WR0書き込み
+//Write WR0
 //
 //---------------------------------------------------------------------------
 void FASTCALL SCC::WriteWR0(ch_t *p, DWORD data)
@@ -1165,30 +1165,30 @@ void FASTCALL SCC::WriteWR0(ch_t *p, DWORD data)
 	ASSERT((p->index == 0) || (p->index == 1));
 	ASSERT(data < 0x100);
 
-	// bit2-0 : アクセスレジスタ
+	//bit2-0: Access register
 	p->reg = (data & 0x07);
 
-	// bit5-3 : SCC動作コマンド
+	//bit5-3: SCC command
 	data >>= 3;
 	data &= 0x07;
 	switch (data) {
-		// 000:ヌルコード
+		//000: Null code
 		case 0:
 			break;
 
-		// 001:上位レジスタ選択
+		//001: Select upper register
 		case 1:
 			p->ph = TRUE;
 			break;
 
-		// 010:外部ステータスリセット
+		//010: Reset external status
 		case 2:
 #if defined(SCC_LOG)
 			LOG1(Log::Normal, "チャネル%d 外部ステータスリセット", p->index);
 #endif	// SCC_LOG
 			break;
 
-		// 100:受信データリセット
+		//100: Reset receive data
 		case 4:
 #if defined(SCC_LOG)
 			LOG1(Log::Normal, "チャネル%d 受信データリセット", p->index);
@@ -1196,7 +1196,7 @@ void FASTCALL SCC::WriteWR0(ch_t *p, DWORD data)
 			p->rxno = TRUE;
 			break;
 
-		// 101:送信割り込みペンディングリセット
+		//101: Reset send interrupt pending
 		case 5:
 #if defined(SCC_LOG)
 			LOG1(Log::Normal, "チャネル%d 送信割り込みペンディングリセット", p->index);
@@ -1204,7 +1204,7 @@ void FASTCALL SCC::WriteWR0(ch_t *p, DWORD data)
 			p->txpend = TRUE;
 			IntSCC(p, txi, FALSE);
 
-		// 110:受信エラーリセット
+		//110: Reset receive error
 		case 6:
 #if defined(SCC_LOG)
 			LOG1(Log::Normal, "チャネル%d 受信エラーリセット", p->index);
@@ -1215,11 +1215,11 @@ void FASTCALL SCC::WriteWR0(ch_t *p, DWORD data)
 			IntSCC(p, rsi, FALSE);
 			break;
 
-		// 111:最高位インサービスリセット
+		//111: Reset highest in-service
 		case 7:
 			break;
 
-		// その他
+		//Other
 		default:
 			LOG2(Log::Warning, "チャネル%d SCC未サポートコマンド $%02X",
 								p->index, data);
@@ -1229,7 +1229,7 @@ void FASTCALL SCC::WriteWR0(ch_t *p, DWORD data)
 
 //---------------------------------------------------------------------------
 //
-//	WR1書き込み
+//Write WR1
 //
 //---------------------------------------------------------------------------
 void FASTCALL SCC::WriteWR1(ch_t *p, DWORD data)
@@ -1239,10 +1239,10 @@ void FASTCALL SCC::WriteWR1(ch_t *p, DWORD data)
 	ASSERT((p->index == 0) || (p->index == 1));
 	ASSERT(data < 0x100);
 
-	// bit4-3 : Rx割り込みモード
+	//bit4-3: Rx interrupt mode
 	p->rxim = (data >> 3) & 0x03;
 
-	// bit2 : パリティエラーをスペシャルRxコンディション割り込みに
+	//bit2: Parity error to special Rx condition interrupt
 	if (data & 0x04) {
 		p->parsp = TRUE;
 	}
@@ -1250,7 +1250,7 @@ void FASTCALL SCC::WriteWR1(ch_t *p, DWORD data)
 		p->parsp = FALSE;
 	}
 
-	// bit1 : 送信割り込み許可
+	//bit1: Send interrupt enable
 	if (data & 0x02) {
 		p->txie = TRUE;
 	}
@@ -1258,7 +1258,7 @@ void FASTCALL SCC::WriteWR1(ch_t *p, DWORD data)
 		p->txie = FALSE;
 	}
 
-	// bit0 : 外部ステータス割り込み許可
+	//bit0: External status interrupt enable
 	if (data & 0x01) {
 		p->extie = TRUE;
 	}
@@ -1269,7 +1269,7 @@ void FASTCALL SCC::WriteWR1(ch_t *p, DWORD data)
 
 //---------------------------------------------------------------------------
 //
-//	WR3書き込み
+//Write WR3
 //
 //---------------------------------------------------------------------------
 void FASTCALL SCC::WriteWR3(ch_t *p, DWORD data)
@@ -1279,11 +1279,11 @@ void FASTCALL SCC::WriteWR3(ch_t *p, DWORD data)
 	ASSERT((p->index == 0) || (p->index == 1));
 	ASSERT(data < 0x100);
 
-	// bit7-6 : 受信キャラクタ長
+	//bit7-6: Receive character length
 	p->rxbit = ((data & 0xc0) >> 6) + 5;
 	ASSERT((p->rxbit >= 5) && (p->rxbit <= 8));
 
-	// bit5 : オートイネーブル
+	//bit5: Auto enable
 	if (data & 0x20) {
 		p->aen = TRUE;
 	}
@@ -1291,22 +1291,22 @@ void FASTCALL SCC::WriteWR3(ch_t *p, DWORD data)
 		p->aen = FALSE;
 	}
 
-	// bit0 : 受信イネーブル
+	//bit0: Receive enable
 	if (data & 0x01) {
 		if (!p->rxen) {
-			// エラー状態をクリア
+			//Clear error state
 			p->framing = FALSE;
 			p->overrun = FALSE;
 			p->parerr = FALSE;
 			IntSCC(p, rsi, FALSE);
 
-			// 受信バッファをクリア
+			//Clear receive buffer
 			p->rxnum = 0;
 			p->rxread = 0;
 			p->rxwrite = 0;
 			p->rxfifo = 0;
 
-			// 受信イネーブル
+			//Receive enable
 			p->rxen = TRUE;
 		}
 	}
@@ -1314,13 +1314,13 @@ void FASTCALL SCC::WriteWR3(ch_t *p, DWORD data)
 		p->rxen = FALSE;
 	}
 
-	// ボーレートを再計算
+	//Recalculate baud rate
 	ClockSCC(p);
 }
 
 //---------------------------------------------------------------------------
 //
-//	WR4書き込み
+//Write WR4
 //
 //---------------------------------------------------------------------------
 void FASTCALL SCC::WriteWR4(ch_t *p, DWORD data)
@@ -1330,53 +1330,53 @@ void FASTCALL SCC::WriteWR4(ch_t *p, DWORD data)
 	ASSERT((p->index == 0) || (p->index == 1));
 	ASSERT(data < 0x100);
 
-	// bit7-6 : クロックモード
+	//bit7-6: Clock mode
 	switch ((data & 0xc0) >> 6) {
-		// x1クロックモード
+		//x1 clock mode
 		case 0:
 			p->clkm = 1;
 			break;
-		// x16クロックモード
+		//x16 clock mode
 		case 1:
 			p->clkm = 16;
 			break;
-		// x32クロックモード
+		//x32 clock mode
 		case 2:
 			p->clkm = 32;
 			break;
-		// x64クロックモード
+		//x64 clock mode
 		case 3:
 			p->clkm = 64;
 			break;
-		// その他(ありえない)
+		//Other (impossible)
 		default:
 			ASSERT(FALSE);
 			break;
 	}
 
-	// bit3-2 : ストップビット
+	//bit3-2: Stop bits
 	p->stopbit = (data & 0x0c) >> 2;
 	if (p->stopbit == 0) {
 		LOG1(Log::Warning, "チャネル%d 同期モード", p->index);
 	}
 
-	// bit1-0 : パリティ
+	//bit1-0: Parity
 	if (data & 1) {
-		// 1:奇数パリティ、2:偶数パリティ
+		//1: Odd parity, 2: Even parity
 		p->parity = ((data & 2) >> 1) + 1;
 	}
 	else {
-		// 0:パリティなし
+		//0: No parity
 		p->parity = 0;
 	}
 
-	// ボーレートを再計算
+	//Recalculate baud rate
 	ClockSCC(p);
 }
 
 //---------------------------------------------------------------------------
 //
-//	WR5書き込み
+//Write WR5
 //
 //---------------------------------------------------------------------------
 void FASTCALL SCC::WriteWR5(ch_t *p, DWORD data)
@@ -1386,7 +1386,7 @@ void FASTCALL SCC::WriteWR5(ch_t *p, DWORD data)
 	ASSERT((p->index == 0) || (p->index == 1));
 	ASSERT(data < 0x100);
 
-	// bit7 : DTR制御(Lowアクティブ,p->dtrreqも見ること)
+	//bit7: DTR control (Low active, also see p->dtrreq)
 	if (data & 0x80) {
 		p->dtr = TRUE;
 	}
@@ -1394,11 +1394,11 @@ void FASTCALL SCC::WriteWR5(ch_t *p, DWORD data)
 		p->dtr = FALSE;
 	}
 
-	// bit6-5 : 送信キャラクタビット長
+	//bit6-5: Send character bit length
 	p->txbit = ((data & 0x60) >> 5) + 5;
 	ASSERT((p->txbit >= 5) && (p->txbit <= 8));
 
-	// bit4 : ブレーク信号送出
+	//bit4: Send break signal
 	if (data & 0x10) {
 #if defined(SCC_LOG)
 		LOG1(Log::Normal, "チャネル%d ブレーク信号ON", p->index);
@@ -1412,21 +1412,21 @@ void FASTCALL SCC::WriteWR5(ch_t *p, DWORD data)
 		p->brk = FALSE;
 	}
 
-	// bit3 : 送信イネーブル
+	//bit3: Send enable
 	if (data & 0x08) {
 		if (!p->txen) {
-			// 送信バッファをクリア
+			//Clear send buffer
 			p->txnum = 0;
 			if (!p->txpend) {
 				IntSCC(p, txi, TRUE);
 			}
 
-			// 送信ワークをクリア
+			//Clear send work
 			p->txsent = FALSE;
 			p->tdf = FALSE;
 			p->txwait = FALSE;
 
-			// 送信イネーブル
+			//Send enable
 			p->txen = TRUE;
 		}
 	}
@@ -1434,7 +1434,7 @@ void FASTCALL SCC::WriteWR5(ch_t *p, DWORD data)
 		p->txen = FALSE;
 	}
 
-	// bit1 : RTS制御
+	//bit1: RTS control
 	if (data & 0x02) {
 #if defined(SCC_LOG)
 		LOG1(Log::Normal, "チャネル%d RTS信号ON", p->index);
@@ -1448,16 +1448,16 @@ void FASTCALL SCC::WriteWR5(ch_t *p, DWORD data)
 		p->rts = FALSE;
 	}
 
-	// チャネルBの場合は、マウスにMSCTRLを伝える
+	//If Channel B, tell mouse about MSCTRL
 	if (p->index == 1) {
-		// RTSはLowアクティブ、その先にインバータがついている(回路図参照)
+		//RTS is Low active, followed by inverter (see circuit diagram)
 		mouse->MSCtrl(!(p->rts), 1);
 	}
 }
 
 //---------------------------------------------------------------------------
 //
-//	WR8書き込み
+//Write WR8
 //
 //---------------------------------------------------------------------------
 void FASTCALL SCC::WriteWR8(ch_t *p, DWORD data)
@@ -1467,20 +1467,20 @@ void FASTCALL SCC::WriteWR8(ch_t *p, DWORD data)
 	ASSERT((p->index == 0) || (p->index == 1));
 	ASSERT(data < 0x100);
 
-	// 送信データを記憶、送信データあり
+	//Remember send data, send data exists
 	p->tdr = data;
 	p->tdf = TRUE;
 
-	// 送信割り込みを取り下げ
+	//Cancel send interrupt
 	IntSCC(p, txi, FALSE);
 
-	// 送信割り込みペンディングを自動オフ
+	//Auto off send interrupt pending
 	p->txpend = FALSE;
 }
 
 //---------------------------------------------------------------------------
 //
-//	WR9書き込み
+//Write WR9
 //
 //---------------------------------------------------------------------------
 void FASTCALL SCC::WriteWR9(DWORD data)
@@ -1488,7 +1488,7 @@ void FASTCALL SCC::WriteWR9(DWORD data)
 	ASSERT(this);
 	ASSERT(data < 0x100);
 
-	// bit7-6 : リセット
+	//bit7-6: Reset
 	switch ((data & 0xc0) >> 3) {
 		case 1:
 			ResetSCC(&scc.ch[0]);
@@ -1505,7 +1505,7 @@ void FASTCALL SCC::WriteWR9(DWORD data)
 			break;
 	}
 
-	// bit4 : 割り込み変化モード選択
+	//bit4: Interrupt change mode select
 	if (data & 0x10) {
 #if defined(SCC_LOG)
 		LOG0(Log::Warning, "割り込みベクタ変化モード bit4-bit6");
@@ -1519,7 +1519,7 @@ void FASTCALL SCC::WriteWR9(DWORD data)
 		scc.shsl = FALSE;
 	}
 
-	// bit3 : 割り込みイネーブル
+	//bit3: Interrupt enable
 	if (data & 0x08) {
 #if defined(SCC_LOG)
 		LOG0(Log::Normal, "割り込みイネーブル");
@@ -1533,7 +1533,7 @@ void FASTCALL SCC::WriteWR9(DWORD data)
 		scc.mie = FALSE;
 	}
 
-	// bit2 : ディジーチェイン禁止
+	//bit2: Disable digit chain
 	if (data & 0x04) {
 		scc.dlc = TRUE;
 	}
@@ -1541,7 +1541,7 @@ void FASTCALL SCC::WriteWR9(DWORD data)
 		scc.dlc = FALSE;
 	}
 
-	// bit1 : 割り込みベクタ応答なし
+	//bit1: No interrupt vector response
 	if (data & 0x02) {
 		scc.nv = TRUE;
 #if defined(SCC_LOG)
@@ -1555,7 +1555,7 @@ void FASTCALL SCC::WriteWR9(DWORD data)
 		scc.nv = FALSE;
 	}
 
-	// bit0 : 割り込みベクタ変動
+	//bit0: Interrupt vector variable
 	if (data & 0x01) {
 		scc.vis = TRUE;
 #if defined(SCC_LOG)
@@ -1569,13 +1569,13 @@ void FASTCALL SCC::WriteWR9(DWORD data)
 #endif	// SCC_LOG
 	}
 
-	// 割り込みチェック
+	//Check interrupt
 	IntCheck();
 }
 
 //---------------------------------------------------------------------------
 //
-//	WR10書き込み
+//Write WR10
 //
 //---------------------------------------------------------------------------
 void FASTCALL SCC::WriteWR10(ch_t* /*p*/, DWORD data)
@@ -1591,7 +1591,7 @@ void FASTCALL SCC::WriteWR10(ch_t* /*p*/, DWORD data)
 
 //---------------------------------------------------------------------------
 //
-//	WR11書き込み
+//Write WR11
 //
 //---------------------------------------------------------------------------
 void FASTCALL SCC::WriteWR11(ch_t *p, DWORD data)
@@ -1601,12 +1601,12 @@ void FASTCALL SCC::WriteWR11(ch_t *p, DWORD data)
 	ASSERT((p->index == 0) || (p->index == 1));
 	ASSERT(data < 0x100);
 
-	// bit7 : RTxC水晶あり・なし
+	//bit7: RTxC crystal present/absent
 	if (data & 0x80) {
 		LOG1(Log::Warning, "チャネル%d bRTxCとbSYNCでクロック作成", p->index);
 	}
 
-	// bit6-5 : 受信クロック源選択
+	//bit6-5: Receive clock source select
 	if ((data & 0x60) != 0x40) {
 		LOG1(Log::Warning, "チャネル%d ボーレートジェネレータ出力を使わない", p->index);
 	}
@@ -1614,7 +1614,7 @@ void FASTCALL SCC::WriteWR11(ch_t *p, DWORD data)
 
 //---------------------------------------------------------------------------
 //
-//	WR12書き込み
+//Write WR12
 //
 //---------------------------------------------------------------------------
 void FASTCALL SCC::WriteWR12(ch_t *p, DWORD data)
@@ -1624,17 +1624,17 @@ void FASTCALL SCC::WriteWR12(ch_t *p, DWORD data)
 	ASSERT((p->index == 0) || (p->index == 1));
 	ASSERT(data < 0x100);
 
-	// 下位8bitのみ
+	//Lower 8 bits only
 	p->tc &= 0xff00;
 	p->tc |= data;
 
-	// ボーレートを再計算
+	//Recalculate baud rate
 	ClockSCC(p);
 }
 
 //---------------------------------------------------------------------------
 //
-//	WR13書き込み
+//Write WR13
 //
 //---------------------------------------------------------------------------
 void FASTCALL SCC::WriteWR13(ch_t *p, DWORD data)
@@ -1644,17 +1644,17 @@ void FASTCALL SCC::WriteWR13(ch_t *p, DWORD data)
 	ASSERT((p->index == 0) || (p->index == 1));
 	ASSERT(data < 0x100);
 
-	// 上位8bitのみ
+	//Upper 8 bits only
 	p->tc &= 0x00ff;
 	p->tc |= (data << 8);
 
-	// ボーレートを再計算
+	//Recalculate baud rate
 	ClockSCC(p);
 }
 
 //---------------------------------------------------------------------------
 //
-//	WR14書き込み
+//Write WR14
 //
 //---------------------------------------------------------------------------
 void FASTCALL SCC::WriteWR14(ch_t *p, DWORD data)
@@ -1664,7 +1664,7 @@ void FASTCALL SCC::WriteWR14(ch_t *p, DWORD data)
 	ASSERT((p->index == 0) || (p->index == 1));
 	ASSERT(data < 0x100);
 
-	// bit4 : ローカルループバック
+	//bit4: Local loopback
 	if (data & 0x10) {
 #if defined(SCC_LOG)
 		LOG1(Log::Normal, "チャネル%d ローカルループバックモード", p->index);
@@ -1675,7 +1675,7 @@ void FASTCALL SCC::WriteWR14(ch_t *p, DWORD data)
 		p->loopback = FALSE;
 	}
 
-	// bit3 : オートエコー
+	//bit3: Auto echo
 	if (data & 0x08) {
 #if defined(SCC_LOG)
 		LOG1(Log::Normal, "チャネル%d オートエコーモード", p->index);
@@ -1686,7 +1686,7 @@ void FASTCALL SCC::WriteWR14(ch_t *p, DWORD data)
 		p->aecho = FALSE;
 	}
 
-	// bit2 : DTR/REQセレクト
+	// bit2 : DTR/REQbit2: DTR/REQ select
 	if (data & 0x04) {
 		p->dtrreq = TRUE;
 	}
@@ -1694,7 +1694,7 @@ void FASTCALL SCC::WriteWR14(ch_t *p, DWORD data)
 		p->dtrreq = FALSE;
 	}
 
-	// bit1 : ボーレートジェネレータクロック供給元
+	//bit1: Baud rate generator clock source
 	if (data & 0x02) {
 		p->brgsrc = TRUE;
 	}
@@ -1702,7 +1702,7 @@ void FASTCALL SCC::WriteWR14(ch_t *p, DWORD data)
 		p->brgsrc = FALSE;
 	}
 
-	// bit0 : ボーレートジェネレータイネーブル
+	//bit0: Baud rate generator enable
 	if (data & 0x01) {
 		p->brgen = TRUE;
 	}
@@ -1710,13 +1710,13 @@ void FASTCALL SCC::WriteWR14(ch_t *p, DWORD data)
 		p->brgen = FALSE;
 	}
 
-	// ボーレートを再計算
+	//Recalculate baud rate
 	ClockSCC(p);
 }
 
 //---------------------------------------------------------------------------
 //
-//	ボーレート再計算
+//Recalculate baud rate
 //
 //---------------------------------------------------------------------------
 void FASTCALL SCC::ClockSCC(ch_t *p)
@@ -1728,14 +1728,14 @@ void FASTCALL SCC::ClockSCC(ch_t *p)
 	ASSERT(p);
 	ASSERT((p->index == 0) || (p->index == 1));
 
-	// ボーレートジェネレータが有効でなければ、イベント停止
+	//If baud rate generator not valid, stop event
 	if (!p->brgsrc || !p->brgen) {
 		event[p->index].SetTime(0);
 		p->speed = 0;
 		return;
 	}
 
-	// 基準クロック
+	//Reference clock
 	if (clkup) {
 		p->baudrate = 3750000;
 	}
@@ -1743,34 +1743,34 @@ void FASTCALL SCC::ClockSCC(ch_t *p)
 		p->baudrate = 2500000;
 	}
 
-	// ボーレート設定値とクロック倍率から、ボーレートを算出
+	//Calculate baud rate from setting and clock multiplier
 	speed = (p->tc + 2);
 	speed *= p->clkm;
 	p->baudrate /= speed;
 
-	// データビット長、パリティ、ストップビットから2バイトレングスを算出
+	//Calculate 2-byte length from data bits, parity, stop bits
 	len = p->rxbit + 1;
 	if (p->parity != 0) {
 		len++;
 	}
 	len <<= 1;
 	switch (p->stopbit) {
-		// ストップビットなし
+		//No stop bits
 		case 0:
 			break;
-		// ストップビット1bit
+		//1 stop bit
 		case 1:
 			len += 2;
 			break;
-		// ストップビット1.5bit
+		//1.5 stop bits
 		case 2:
 			len += 3;
-		// ストップビット2bit
+		//2 stop bits
 		case 3:
 			len += 4;
 	}
 
-	// CPSに設定しておく
+	//Set to CPS
 	if (clkup) {
 		p->cps = 3750000;
 	}
@@ -1779,7 +1779,7 @@ void FASTCALL SCC::ClockSCC(ch_t *p)
 	}
 	p->cps /= ((len * speed) >> 1);
 
-	// 最終速度計算
+	//Final speed calculation
 	p->speed = 100;
 	p->speed *= (len * speed);
 	if (clkup) {
@@ -1789,7 +1789,7 @@ void FASTCALL SCC::ClockSCC(ch_t *p)
 		p->speed /= 250;
 	}
 
-	// 設定
+	//Settings
 	if (event[p->index].GetTime() == 0) {
 		event[p->index].SetTime(p->speed);
 	}
@@ -1797,7 +1797,7 @@ void FASTCALL SCC::ClockSCC(ch_t *p)
 
 //---------------------------------------------------------------------------
 //
-//	WR15書き込み
+//Write WR15
 //
 //---------------------------------------------------------------------------
 void FASTCALL SCC::WriteWR15(ch_t *p, DWORD data)
@@ -1807,7 +1807,7 @@ void FASTCALL SCC::WriteWR15(ch_t *p, DWORD data)
 	ASSERT((p->index == 0) || (p->index == 1));
 	ASSERT(data < 0x100);
 
-	// bit7 - Break/Abort割り込み
+	//bit7 - Break/Abort interrupt
 	if (data & 0x80) {
 		p->baie = TRUE;
 	}
@@ -1815,7 +1815,7 @@ void FASTCALL SCC::WriteWR15(ch_t *p, DWORD data)
 		p->baie = FALSE;
 	}
 
-	// bit6 - Txアンダーラン割り込み
+	//bit6 - Tx underrun interrupt
 	if (data & 0x40) {
 		p->tuie = TRUE;
 	}
@@ -1823,7 +1823,7 @@ void FASTCALL SCC::WriteWR15(ch_t *p, DWORD data)
 		p->tuie = FALSE;
 	}
 
-	// bit5 - CTS割り込み
+	//bit5 - CTS interrupt
 	if (data & 0x20) {
 		p->ctsie = TRUE;
 	}
@@ -1831,7 +1831,7 @@ void FASTCALL SCC::WriteWR15(ch_t *p, DWORD data)
 		p->ctsie = FALSE;
 	}
 
-	// bit4 - SYNC割り込み
+	//bit4 - SYNC interrupt
 	if (data & 0x10) {
 		p->syncie = TRUE;
 	}
@@ -1839,7 +1839,7 @@ void FASTCALL SCC::WriteWR15(ch_t *p, DWORD data)
 		p->syncie = FALSE;
 	}
 
-	// bit3 - DCD割り込み
+	//bit3 - DCD interrupt
 	if (data & 0x08) {
 		p->dcdie = TRUE;
 	}
@@ -1847,7 +1847,7 @@ void FASTCALL SCC::WriteWR15(ch_t *p, DWORD data)
 		p->dcdie = FALSE;
 	}
 
-	// bit1 - ゼロカウント割り込み
+	//bit1 - Zero count interrupt
 	if (data & 0x02) {
 		p->zcie = TRUE;
 	}
@@ -1858,7 +1858,7 @@ void FASTCALL SCC::WriteWR15(ch_t *p, DWORD data)
 
 //---------------------------------------------------------------------------
 //
-//	割り込みリクエスト
+//Interrupt request
 //
 //---------------------------------------------------------------------------
 void FASTCALL SCC::IntSCC(ch_t *p, itype_t type, BOOL flag)
@@ -1867,9 +1867,9 @@ void FASTCALL SCC::IntSCC(ch_t *p, itype_t type, BOOL flag)
 	ASSERT(p);
 	ASSERT((p->index == 0) || (p->index == 1));
 
-	// 割り込み有効なら、ペンディングビットを上げる
+	//If interrupt valid, raise pending bit
 	switch (type) {
-		// 受信割り込み
+		//Receive interrupt
 		case rxi:
 			p->rxip = FALSE;
 			if (flag) {
@@ -1879,7 +1879,7 @@ void FASTCALL SCC::IntSCC(ch_t *p, itype_t type, BOOL flag)
 			}
 			break;
 
-		// スペシャルRxコンディション割り込み
+		//Special Rx condition interrupt
 		case rsi:
 			p->rsip = FALSE;
 			if (flag) {
@@ -1889,7 +1889,7 @@ void FASTCALL SCC::IntSCC(ch_t *p, itype_t type, BOOL flag)
 			}
 			break;
 
-		// 送信割り込み
+		//Send interrupt
 		case txi:
 			p->txip = FALSE;
 			if (flag) {
@@ -1899,7 +1899,7 @@ void FASTCALL SCC::IntSCC(ch_t *p, itype_t type, BOOL flag)
 			}
 			break;
 
-		// 外部ステータス変化割り込み
+		//External status change interrupt
 		case exti:
 			p->extip = FALSE;
 			if (flag) {
@@ -1909,19 +1909,19 @@ void FASTCALL SCC::IntSCC(ch_t *p, itype_t type, BOOL flag)
 			}
 			break;
 
-		// その他(ありえない)
+		//Other (impossible)
 		default:
 			ASSERT(FALSE);
 			break;
 	}
 
-	// 割り込みチェック
+	//Check interrupt
 	IntCheck();
 }
 
 //---------------------------------------------------------------------------
 //
-//	割り込みチェック
+//Check interrupt
 //
 //---------------------------------------------------------------------------
 void FASTCALL SCC::IntCheck()
@@ -1931,15 +1931,15 @@ void FASTCALL SCC::IntCheck()
 
 	ASSERT(this);
 
-	// 要求割り込みをクリア
+	//Clear requested interrupt
 	scc.ireq = -1;
 
-	// マスタ割り込み許可
+	//Master interrupt enable
 	if (scc.mie) {
 
-		// チャネルA→チャネルBの順
+		//Channel A -> Channel B order
 		for (i=0; i<2; i++) {
-			// Rs,Rx,Tx,Extの順でペンディングビットを見る
+			//Check pending bits in Rs,Rx,Tx,Ext order
 			if (scc.ch[i].rsip) {
 				scc.ireq = (i << 2) + 0;
 				break;
@@ -1958,12 +1958,12 @@ void FASTCALL SCC::IntCheck()
 			}
 		}
 
-		// タイプを見て、割り込みベクタ作成
+		//Create interrupt vector based on type
 		if (scc.ireq >= 0) {
-			// 基準ベクタを取得
+			//Get base vector
 			v = scc.vbase;
 
-			// bit3-1か、bit6-4か
+			//bit3-1 or bit6-4
 			if (scc.shsl) {
 				// bit6-4
 				v &= 0x8f;
@@ -1975,28 +1975,28 @@ void FASTCALL SCC::IntCheck()
 				v |= ((7 - scc.ireq) << 1);
 			}
 
-			// 割り込みベクタ記憶
+			//Store interrupt vector
 			scc.request = v;
 
-			// RR2から読めるベクタはWR9のVISによらず常に変化させる
-			// データシートの記述とは異なる(Macエミュレータ)
+			//Vector readable from RR2 always changes regardless of WR9 VIS
+			//Differs from data sheet description (Mac emulator)
 			if (!scc.vis) {
 				v = scc.vbase;
 			}
 
-			// NV(No Vector)が上がっていなければ割り込み要求
+			//Interrupt request if NV (No Vector) not raised
 			if (!scc.nv) {
-				// 既に要求していればOK
+				//OK if already requested
 				if (scc.vector == (int)v) {
 					return;
 				}
 
-				// 別のベクタを要求していれば、一度キャンセル
+				//Cancel if different vector requested
 				if (scc.vector >= 0) {
 					cpu->IntCancel(5);
 				}
 
-				// 割り込み要求
+				//Interrupt request
 #if defined(SCC_LOG)
 				LOG2(Log::Normal, "割り込み要求 リクエスト$%02X ベクタ$%02X ", scc.request, v);
 #endif	// SCC_LOG
@@ -2007,10 +2007,10 @@ void FASTCALL SCC::IntCheck()
 		}
 	}
 
-	// 要求割り込みなしのベクタを生成
+	//Generate vector without interrupt request
 	scc.request = scc.vbase;
 
-	// bit3-1か、bit6-4か
+	//bit3-1 or bit6-4
 	if (scc.shsl) {
 		// bit6-4
 		scc.request &= 0x8f;
@@ -2022,7 +2022,7 @@ void FASTCALL SCC::IntCheck()
 		scc.request |= 0x06;
 	}
 
-	// 既に要求していれば割り込みキャンセル
+	//Cancel interrupt if already requested
 	if (scc.vector >= 0) {
 		cpu->IntCancel(5);
 		scc.vector = -1;
@@ -2031,14 +2031,14 @@ void FASTCALL SCC::IntCheck()
 
 //---------------------------------------------------------------------------
 //
-//	割り込み応答
+//Interrupt acknowledge
 //
 //---------------------------------------------------------------------------
 void FASTCALL SCC::IntAck()
 {
 	ASSERT(this);
 
-	// リセット直後に、CPUから割り込みが間違って入る場合がある
+	//Sometimes CPU incorrectly generates interrupt right after reset
 	if (scc.vector < 0) {
 		LOG0(Log::Warning, "要求していない割り込み");
 		return;
@@ -2048,16 +2048,16 @@ void FASTCALL SCC::IntAck()
 	LOG1(Log::Normal, "割り込み応答 ベクタ$%02X", scc.vector);
 #endif
 
-	// 要求ベクタなし
+	//No vector requested
 	scc.vector = -1;
 
-	// ここで一旦割り込みを解除する。rxi割り込み継続の場合は次の
-	// イベントで(ノスタルジア1907、悪魔城ドラキュラ)
+	//Release interrupt here. If rxi interrupt continues, next
+	//event (Nostalgia 1907, Demon Castle Dracula)
 }
 
 //---------------------------------------------------------------------------
 //
-//	データ送信
+//Send data
 //
 //---------------------------------------------------------------------------
 void FASTCALL SCC::Send(int channel, DWORD data)
@@ -2067,17 +2067,17 @@ void FASTCALL SCC::Send(int channel, DWORD data)
 	ASSERT(this);
 	ASSERT((channel == 0) || (channel == 1));
 
-	// BYTEに制限(マウスからはsigned intの変換でくるため)
+	//Limit to BYTE (comes as signed int from mouse)
 	data &= 0xff;
 
 #if defined(SCC_LOG)
 	LOG2(Log::Normal, "チャネル%d データ送信$%02X", channel, data);
 #endif	// SCC_LOG
 
-	// ポインタ設定
+	//Set pointer
 	p = &scc.ch[channel];
 
-	// 受信バッファへ挿入
+	//Insert into receive buffer
 	p->rxbuf[p->rxwrite] = (BYTE)data;
 	p->rxwrite = (p->rxwrite + 1) & (sizeof(p->rxbuf) - 1);
 	p->rxnum++;
@@ -2090,7 +2090,7 @@ void FASTCALL SCC::Send(int channel, DWORD data)
 
 //----------------------------------------------------------------------------
 //
-//	パリティエラー
+//Parity error
 //
 //---------------------------------------------------------------------------
 void FASTCALL SCC::ParityErr(int channel)
@@ -2100,17 +2100,17 @@ void FASTCALL SCC::ParityErr(int channel)
 	ASSERT(this);
 	ASSERT((channel == 0) || (channel == 1));
 
-	// ポインタ設定
+	//Set pointer
 	p = &scc.ch[channel];
 
 	if (!p->parerr) {
 		LOG1(Log::Normal, "チャネル%d パリティエラー", p->index);
 	}
 
-	// フラグ上げ
+	//Raise flag
 	p->parerr = TRUE;
 
-	// 割り込み
+	//Interrupt
 	if (p->parsp) {
 		if (p->rxim >= 2) {
 			IntSCC(p, rsi, TRUE);
@@ -2120,7 +2120,7 @@ void FASTCALL SCC::ParityErr(int channel)
 
 //---------------------------------------------------------------------------
 //
-//	フレーミングエラー
+//Framing error
 //
 //---------------------------------------------------------------------------
 void FASTCALL SCC::FramingErr(int channel)
@@ -2130,17 +2130,17 @@ void FASTCALL SCC::FramingErr(int channel)
 	ASSERT(this);
 	ASSERT((channel == 0) || (channel == 1));
 
-	// ポインタ設定
+	//Set pointer
 	p = &scc.ch[channel];
 
 	if (!p->framing) {
 		LOG1(Log::Normal, "チャネル%d フレーミングエラー", p->index);
 	}
 
-	// フラグ上げ
+	//Raise flag
 	p->framing = TRUE;
 
-	// 割り込み
+	//Interrupt
 	if (p->rxim >= 2) {
 		IntSCC(p, rsi, TRUE);
 	}
@@ -2148,7 +2148,7 @@ void FASTCALL SCC::FramingErr(int channel)
 
 //---------------------------------------------------------------------------
 //
-//	受信イネーブルか
+//Is receive enabled
 //
 //---------------------------------------------------------------------------
 BOOL FASTCALL SCC::IsRxEnable(int channel) const
@@ -2158,7 +2158,7 @@ BOOL FASTCALL SCC::IsRxEnable(int channel) const
 	ASSERT(this);
 	ASSERT((channel == 0) || (channel == 1));
 
-	// ポインタ設定
+	//Set pointer
 	p = &scc.ch[channel];
 
 	return p->rxen;
@@ -2166,7 +2166,7 @@ BOOL FASTCALL SCC::IsRxEnable(int channel) const
 
 //---------------------------------------------------------------------------
 //
-//	受信バッファが空いているか
+//Is receive buffer empty
 //
 //---------------------------------------------------------------------------
 BOOL FASTCALL SCC::IsRxBufEmpty(int channel) const
@@ -2176,7 +2176,7 @@ BOOL FASTCALL SCC::IsRxBufEmpty(int channel) const
 	ASSERT(this);
 	ASSERT((channel == 0) || (channel == 1));
 
-	// ポインタ設定
+	//Set pointer
 	p = &scc.ch[channel];
 
 	if (p->rxnum == 0) {
@@ -2187,7 +2187,7 @@ BOOL FASTCALL SCC::IsRxBufEmpty(int channel) const
 
 //---------------------------------------------------------------------------
 //
-//	ボーレートチェック
+//Baud rate check
 //
 //---------------------------------------------------------------------------
 BOOL FASTCALL SCC::IsBaudRate(int channel, DWORD baudrate) const
@@ -2199,14 +2199,14 @@ BOOL FASTCALL SCC::IsBaudRate(int channel, DWORD baudrate) const
 	ASSERT((channel == 0) || (channel == 1));
 	ASSERT(baudrate >= 75);
 
-	// ポインタ設定
+	//Set pointer
 	p = &scc.ch[channel];
 
-	// 与えられたボーレートの5%を計算
+	//Calculate 5% of given baud rate
 	offset = baudrate * 5;
 	offset /= 100;
 
-	// 範囲内ならOK
+	//OK if within range
 	if (p->baudrate < (baudrate - offset)) {
 		return FALSE;
 	}
@@ -2219,7 +2219,7 @@ BOOL FASTCALL SCC::IsBaudRate(int channel, DWORD baudrate) const
 
 //---------------------------------------------------------------------------
 //
-//	受信データビット長取得
+//Get receive data bit length
 //
 //---------------------------------------------------------------------------
 DWORD FASTCALL SCC::GetRxBit(int channel) const
@@ -2229,7 +2229,7 @@ DWORD FASTCALL SCC::GetRxBit(int channel) const
 	ASSERT(this);
 	ASSERT((channel == 0) || (channel == 1));
 
-	// ポインタ設定
+	//Set pointer
 	p = &scc.ch[channel];
 
 	return p->rxbit;
@@ -2237,7 +2237,7 @@ DWORD FASTCALL SCC::GetRxBit(int channel) const
 
 //---------------------------------------------------------------------------
 //
-//	ストップビット長取得
+//Get stop bit length
 //
 //---------------------------------------------------------------------------
 DWORD FASTCALL SCC::GetStopBit(int channel) const
@@ -2247,7 +2247,7 @@ DWORD FASTCALL SCC::GetStopBit(int channel) const
 	ASSERT(this);
 	ASSERT((channel == 0) || (channel == 1));
 
-	// ポインタ設定
+	//Set pointer
 	p = &scc.ch[channel];
 
 	return p->stopbit;
@@ -2255,7 +2255,7 @@ DWORD FASTCALL SCC::GetStopBit(int channel) const
 
 //---------------------------------------------------------------------------
 //
-//	パリティ取得
+//Get parity
 //
 //---------------------------------------------------------------------------
 DWORD FASTCALL SCC::GetParity(int channel) const
@@ -2265,7 +2265,7 @@ DWORD FASTCALL SCC::GetParity(int channel) const
 	ASSERT(this);
 	ASSERT((channel == 0) || (channel == 1));
 
-	// ポインタ設定
+	//Set pointer
 	p = &scc.ch[channel];
 
 	return p->parity;
@@ -2273,7 +2273,7 @@ DWORD FASTCALL SCC::GetParity(int channel) const
 
 //---------------------------------------------------------------------------
 //
-//	データ受信
+//Data receive
 //
 //---------------------------------------------------------------------------
 DWORD FASTCALL SCC::Receive(int channel)
@@ -2284,15 +2284,15 @@ DWORD FASTCALL SCC::Receive(int channel)
 	ASSERT(this);
 	ASSERT((channel == 0) || (channel == 1));
 
-	// ポインタ設定
+	//Set pointer
 	p = &scc.ch[channel];
 
-	// データ初期化
+	//Initialize data
 	data = 0;
 
-	// データがあれば
+	//If data exists
 	if (p->txnum > 0) {
-		// 送信バッファから取り出し
+		//Take from send buffer
 		data = p->txbuf[p->txread];
 		p->txread = (p->txread + 1) & (sizeof(p->txbuf) - 1);
 		p->txnum--;
@@ -2303,7 +2303,7 @@ DWORD FASTCALL SCC::Receive(int channel)
 
 //---------------------------------------------------------------------------
 //
-//	送信バッファエンプティチェック
+//Check send buffer empty
 //
 //---------------------------------------------------------------------------
 BOOL FASTCALL SCC::IsTxEmpty(int channel)
@@ -2313,10 +2313,10 @@ BOOL FASTCALL SCC::IsTxEmpty(int channel)
 	ASSERT(this);
 	ASSERT((channel == 0) || (channel == 1));
 
-	// ポインタ設定
+	//Set pointer
 	p = &scc.ch[channel];
 
-	// 送信バッファが空いていればTRUEを返す
+	//Return TRUE if send buffer empty
 	if (p->txnum == 0) {
 		return TRUE;
 	}
@@ -2325,7 +2325,7 @@ BOOL FASTCALL SCC::IsTxEmpty(int channel)
 
 //---------------------------------------------------------------------------
 //
-//	送信バッファフルチェック
+//Check send buffer full
 //
 //---------------------------------------------------------------------------
 BOOL FASTCALL SCC::IsTxFull(int channel)
@@ -2335,10 +2335,10 @@ BOOL FASTCALL SCC::IsTxFull(int channel)
 	ASSERT(this);
 	ASSERT((channel == 0) || (channel == 1));
 
-	// ポインタ設定
+	//Set pointer
 	p = &scc.ch[channel];
 
-	// 送信バッファが3/4以上埋まっていれば、TRUE
+	//TRUE if send buffer 3/4 or more full
 	if (p->txnum >= (sizeof(p->txbuf) * 3 / 4)) {
 		return TRUE;
 	}
@@ -2347,7 +2347,7 @@ BOOL FASTCALL SCC::IsTxFull(int channel)
 
 //---------------------------------------------------------------------------
 //
-//	送信ブロック
+//Send block
 //
 //---------------------------------------------------------------------------
 void FASTCALL SCC::WaitTx(int channel, BOOL wait)
@@ -2357,23 +2357,23 @@ void FASTCALL SCC::WaitTx(int channel, BOOL wait)
 	ASSERT(this);
 	ASSERT((channel == 0) || (channel == 1));
 
-	// ポインタ設定
+	//Set pointer
 	p = &scc.ch[channel];
 
-	// 解除するなら、フラグ操作が必要
+	//If releasing, need flag operation
 	if (!wait) {
 		if (p->txwait) {
 			p->txsent = TRUE;
 		}
 	}
 
-	// 設定
+	//Settings
 	p->txwait = wait;
 }
 
 //---------------------------------------------------------------------------
 //
-//	ブレークセット
+//Set break
 //
 //---------------------------------------------------------------------------
 void FASTCALL SCC::SetBreak(int channel, BOOL flag)
@@ -2383,21 +2383,21 @@ void FASTCALL SCC::SetBreak(int channel, BOOL flag)
 	ASSERT(this);
 	ASSERT((channel == 0) || (channel == 1));
 
-	// ポインタ設定
+	//Set pointer
 	p = &scc.ch[channel];
 
-	// 割り込みチェック
+	//Check interrupt
 	if (p->baie) {
-		// 割り込み生成コード
+		//Interrupt generation code
 	}
 
-	// セット
+	//Set
 	p->ba = flag;
 }
 
 //---------------------------------------------------------------------------
 //
-//	CTSセット
+//Set CTS
 //
 //---------------------------------------------------------------------------
 void FASTCALL SCC::SetCTS(int channel, BOOL flag)
@@ -2407,21 +2407,21 @@ void FASTCALL SCC::SetCTS(int channel, BOOL flag)
 	ASSERT(this);
 	ASSERT((channel == 0) || (channel == 1));
 
-	// ポインタ設定
+	//Set pointer
 	p = &scc.ch[channel];
 
-	// 割り込みチェック
+	//Check interrupt
 	if (p->ctsie) {
-		// 割り込み生成コード
+		//Interrupt generation code
 	}
 
-	// セット
+	//Set
 	p->cts = flag;
 }
 
 //---------------------------------------------------------------------------
 //
-//	DCDセット
+//Set DCD
 //
 //---------------------------------------------------------------------------
 void FASTCALL SCC::SetDCD(int channel, BOOL flag)
@@ -2431,21 +2431,21 @@ void FASTCALL SCC::SetDCD(int channel, BOOL flag)
 	ASSERT(this);
 	ASSERT((channel == 0) || (channel == 1));
 
-	// ポインタ設定
+	//Set pointer
 	p = &scc.ch[channel];
 
-	// 割り込みチェック
+	//Check interrupt
 	if (p->dcdie) {
-		// 割り込み生成コード
+		//Interrupt generation code
 	}
 
-	// セット
+	//Set
 	p->dcd = flag;
 }
 
 //---------------------------------------------------------------------------
 //
-//	ブレーク取得
+//Get break
 //
 //---------------------------------------------------------------------------
 BOOL FASTCALL SCC::GetBreak(int channel)
@@ -2455,16 +2455,16 @@ BOOL FASTCALL SCC::GetBreak(int channel)
 	ASSERT(this);
 	ASSERT((channel == 0) || (channel == 1));
 
-	// ポインタ設定
+	//Set pointer
 	p = &scc.ch[channel];
 
-	// そのまま
+	//As is
 	return p->brk;
 }
 
 //---------------------------------------------------------------------------
 //
-//	RTS取得
+//Get RTS
 //
 //---------------------------------------------------------------------------
 BOOL FASTCALL SCC::GetRTS(int channel)
@@ -2474,16 +2474,16 @@ BOOL FASTCALL SCC::GetRTS(int channel)
 	ASSERT(this);
 	ASSERT((channel == 0) || (channel == 1));
 
-	// ポインタ設定
+	//Set pointer
 	p = &scc.ch[channel];
 
-	// そのまま
+	//As is
 	return p->rts;
 }
 
 //---------------------------------------------------------------------------
 //
-//	DTR取得
+//Get DTR
 //
 //---------------------------------------------------------------------------
 BOOL FASTCALL SCC::GetDTR(int channel)
@@ -2493,15 +2493,15 @@ BOOL FASTCALL SCC::GetDTR(int channel)
 	ASSERT(this);
 	ASSERT((channel == 0) || (channel == 1));
 
-	// ポインタ設定
+	//Set pointer
 	p = &scc.ch[channel];
 
-	// DTR/REQがFALSEなら、ソフトウェア指定
+	//If DTR/REQ FALSE, software specified
 	if (!p->dtrreq) {
 		return p->dtr;
 	}
 
-	// 送信バッファがエンプティかどうかを示す
+	//Indicates if send buffer is empty
 	if (p->txwait) {
 		return FALSE;
 	}
@@ -2510,7 +2510,7 @@ BOOL FASTCALL SCC::GetDTR(int channel)
 
 //---------------------------------------------------------------------------
 //
-//	イベントコールバック
+//Event callback
 //
 //---------------------------------------------------------------------------
 BOOL FASTCALL SCC::Callback(Event *ev)
@@ -2521,33 +2521,33 @@ BOOL FASTCALL SCC::Callback(Event *ev)
 	ASSERT(this);
 	ASSERT(ev);
 
-	// チャネル取り出し
+	//Take channel
 	channel = ev->GetUser();
 	ASSERT((channel == 0) || (channel == 1));
 	p = &scc.ch[channel];
 
-	// 受信
+	//Receive
 	if (p->rxen) {
 		EventRx(p);
 	}
 
-	// 送信
+	//Send
 	if (p->txen) {
 		EventTx(p);
 	}
 
-	// 速度変更
+	//Speed change
 	if (ev->GetTime() != p->speed) {
 		ev->SetTime(p->speed);
 	}
 
-	// インターバル継続
+	//Continue interval
 	return TRUE;
 }
 
 //---------------------------------------------------------------------------
 //
-//	イベント(受信)
+//Event (receive)
 //
 //---------------------------------------------------------------------------
 void FASTCALL SCC::EventRx(ch_t *p)
@@ -2559,24 +2559,24 @@ void FASTCALL SCC::EventRx(ch_t *p)
 	ASSERT((p->index == 0) || (p->index == 1));
 	ASSERT(p->rxen);
 
-	// 受信フラグ
+	//Receive flag
 	flag = TRUE;
 
-	// DCDのチェック
+	//Check DCD
 	if (p->dcd && p->aen) {
-		// ループバックが下がっていれば受信できない
+		// If loopback down, cannot receive
 		if (!p->loopback) {
-			// 受信しない
+			//Do not receive
 			flag = FALSE;
 		}
 	}
 
-	// 受信バッファが有効であれば、FIFOに挿入
+	//If receive buffer valid, insert into FIFO
 	if ((p->rxnum > 0) && flag) {
 		if (p->rxfifo >= 3) {
 			ASSERT(p->rxfifo == 3);
 
-			// 既にFIFOは一杯。オーバーラン
+			//FIFO already full. Overrun
 #if defined(SCC_LOG)
 			LOG1(Log::Normal, "チャネル%d オーバーランエラー", p->index);
 #endif	// SCC_LOG
@@ -2590,29 +2590,29 @@ void FASTCALL SCC::EventRx(ch_t *p)
 
 		ASSERT(p->rxfifo <= 2);
 
-		// 受信FIFOに挿入
+		//Insert into receive FIFO
 		p->rxdata[2 - p->rxfifo] = (DWORD)p->rxbuf[p->rxread];
 		p->rxread = (p->rxread + 1) & (sizeof(p->rxbuf) - 1);
 		p->rxnum--;
 		p->rxfifo++;
 
-		// 受信トータル増加
+		//Increase receive total
 		p->rxtotal++;
 	}
 
-	// 受信FIFOが有効であれば、割り込み
+	//If receive FIFO valid, interrupt
 	if (p->rxfifo > 0) {
-		// 割り込み発生
+		//Interrupt occurs
 		switch (p->rxim) {
-			// 初回のみ割り込み
+			//Interrupt only first time
 			case 1:
 				if (!p->rxno) {
 					break;
 				}
 				p->rxno = FALSE;
-				// そのまま続ける
+				//Continue as is
 
-			// 常に割り込み
+			//Always interrupt
 			case 2:
 				IntSCC(p, rxi, TRUE);
 				break;
@@ -2622,7 +2622,7 @@ void FASTCALL SCC::EventRx(ch_t *p)
 
 //---------------------------------------------------------------------------
 //
-//	イベント(送信)
+//Event (send)
 //
 //---------------------------------------------------------------------------
 void FASTCALL SCC::EventTx(ch_t *p)
@@ -2632,53 +2632,53 @@ void FASTCALL SCC::EventTx(ch_t *p)
 	ASSERT((p->index == 0) || (p->index == 1));
 	ASSERT(p->txen);
 
-	// ウェイトモードでなければ、前回の送信が完了
+	//If not wait mode, previous send completed
 	if (!p->txwait) {
 		p->txsent = TRUE;
 	}
 
-	// CTSのチェック
+	//Check CTS
 	if (p->cts && p->aen) {
-		// テストモード時はCTSに関わらず送信できる
+		//In test mode, can send regardless of CTS
 		if (!p->aecho && !p->loopback) {
 			return;
 		}
 	}
 
-	// データがあるか
+	//Is there data
 	if (p->tdf) {
-		// オートエコーモードでないか
+		//Not in auto echo mode
 		if (!p->aecho) {
-			// 送信バッファへ挿入
+			//Insert into send buffer
 			p->txbuf[p->txwrite] = (BYTE)p->tdr;
 			p->txwrite = (p->txwrite + 1) & (sizeof(p->txbuf) - 1);
 			p->txnum++;
 
-			// あふれたら、古いデータから捨てる
+			//If overflow, discard old data
 			if (p->txnum >= sizeof(p->txbuf)) {
 				LOG1(Log::Warning, "チャネル%d 送信バッファオーバーフロー", p->index);
 				p->txnum = sizeof(p->txbuf);
 				p->txread = p->txwrite;
 			}
 
-			// 送信トータル増加
+			// Increase send total
 			p->txtotal++;
 		}
 
-		// 送信実行中
+		//Send in progress
 		p->txsent = FALSE;
 
-		// 送信バッファエンプティ
+		//Send buffer empty
 		p->tdf = FALSE;
 
-		// ローカルループバックモードであれば、データを受信側へ入れる
+		//If local loopback mode, put data to receiver
 		if (p->loopback && !p->aecho) {
-			// 受信バッファへ挿入
+			//Insert into receive buffer
 			p->rxbuf[p->rxwrite] = (BYTE)p->tdr;
 			p->rxwrite = (p->rxwrite + 1) & (sizeof(p->rxbuf) - 1);
 			p->rxnum++;
 
-			// あふれたら、古いデータから順次捨てる
+			//If overflow, discard old data sequentially
 			if (p->rxnum >= sizeof(p->rxbuf)) {
 				LOG1(Log::Warning, "チャネル%d 受信バッファオーバーフロー", p->index);
 				p->rxnum = sizeof(p->rxbuf);
@@ -2687,7 +2687,7 @@ void FASTCALL SCC::EventTx(ch_t *p)
 		}
 	}
 
-	// 送信ペンディングがなければ割り込み
+	//Interrupt if no send pending
 	if (!p->txpend) {
 		IntSCC(p, txi, TRUE);
 	}

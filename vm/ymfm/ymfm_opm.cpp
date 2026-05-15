@@ -536,4 +536,8 @@ void ym2151::generate(output_data *output, uint32_t numsamples)
 	}
 }
 
+template uint32_t fm_engine_base<opm_registers>::clock(uint32_t chanmask);
+template void fm_engine_base<opm_registers>::output(output_data &output, uint32_t rshift, int32_t clipmax, uint32_t chanmask) const;
+template class fm_engine_base<opm_registers>;
+
 }

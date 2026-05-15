@@ -2,7 +2,7 @@
 //
 //	X68000 EMULATOR "XM6"
 //
-//	Copyright (C) 2001-2006 ＰＩ．(ytanaka@ipc-tokai.or.jp)
+//	Copyright (C) 2001-2006 PI. (ytanaka@ipc-tokai.or.jp)
 //	[ SCSI(MB89352) ]
 //
 //---------------------------------------------------------------------------
@@ -24,330 +24,330 @@ class SCSICD;
 class SCSI : public MemDevice
 {
 public:
-	// 最大数
+	// Maximum counts
 	enum {
-		DeviceMax = 8,					// 最大SCSIデバイス数
-		HDMax = 5						// 最大SCSI HD数
+		DeviceMax = 8,					// Maximum SCSI devices
+		HDMax = 5						// Maximum SCSI HDs
 	};
 
-	// フェーズ定義
+	// Phase definitions
 	enum phase_t {
-		busfree,						// バスフリーフェーズ
-		arbitration,					// アービトレーションフェーズ
-		selection,						// セレクションフェーズ
-		reselection,					// リセレクションフェーズ
-		command,						// コマンドフェーズ
-		execute,						// 実行フェーズ
-		msgin,							// メッセージインフェーズ
-		msgout,							// メッセージアウトフェーズ
-		datain,							// データインフェーズ
-		dataout,						// データアウトフェーズ
-		status							// ステータスフェーズ
+		busfree,						// Bus free phase
+		arbitration,					// Arbitration phase
+		selection,						// Selection phase
+		reselection,					// Reselection phase
+		command,						// Command phase
+		execute,						// Execute phase
+		msgin,							// Message in phase
+		msgout,							// Message out phase
+		datain,							// Data in phase
+		dataout,						// Data out phase
+		status							// Status phase
 	};
 
-	// 内部データ定義
+	// Internal data definition
 	typedef struct {
-		// 全般
-		int type;						// SCSIタイプ(0:なし 1:外付 2:内蔵)
-		phase_t phase;					// フェーズ
-		int id;							// カレントID(0-7)
+		// General
+		int type;						// SCSI type (0:none 1:external 2:internal)
+		phase_t phase;					// Phase
+		int id;							// Current ID (0-7)
 
-		// 割り込み
-		int vector;						// 要求ベクタ(-1で要求なし)
-		int ilevel;						// 割り込みレベル
+		// Interrupt
+		int vector;						// Request vector (-1 if no request)
+		int ilevel;						// Interrupt level
 
-		// 信号
-		BOOL bsy;						// Busy信号
-		BOOL sel;						// Select信号
-		BOOL atn;						// Attention信号
-		BOOL msg;						// Message信号
-		BOOL cd;						// Command/Data信号
-		BOOL io;						// Input/Output信号
-		BOOL req;						// Request信号
-		BOOL ack;						// Ack信号
-		BOOL rst;						// Reset信号
+		// Signals
+		BOOL bsy;						// Busy signal
+		BOOL sel;						// Select signal
+		BOOL atn;						// Attention signal
+		BOOL msg;						// Message signal
+		BOOL cd;						// Command/Data signal
+		BOOL io;						// Input/Output signal
+		BOOL req;						// Request signal
+		BOOL ack;						// Ack signal
+		BOOL rst;						// Reset signal
 
-		// レジスタ
-		DWORD bdid;						// BDIDレジスタ(ビット表示)
-		DWORD sctl;						// SCTLレジスタ
-		DWORD scmd;						// SCMDレジスタ
-		DWORD ints;						// INTSレジスタ
-		DWORD sdgc;						// SDGCレジスタ
-		DWORD pctl;						// PCTLレジスタ
-		DWORD mbc;						// MBCレジスタ
-		DWORD temp;						// TEMPレジスタ
-		DWORD tc;						// TCH,TCM,TCLレジスタ
+		// Registers
+		DWORD bdid;						// BDID register (bit representation)
+		DWORD sctl;						// SCTL register
+		DWORD scmd;						// SCMD register
+		DWORD ints;						// INTS register
+		DWORD sdgc;						// SDGC register
+		DWORD pctl;						// PCTL register
+		DWORD mbc;						// MBC register
+		DWORD temp;						// TEMP register
+		DWORD tc;						// TCH, TCM, TCL registers
 
-		// コマンド
-		DWORD cmd[10];					// コマンドデータ
-		DWORD status;					// ステータスデータ
-		DWORD message;					// メッセージデータ
+		// Command
+		DWORD cmd[10];					// Command data
+		DWORD status;					// Status data
+		DWORD message;					// Message data
 
-		// 転送
-		BOOL trans;						// 転送フラグ
-		BYTE buffer[0x800];				// 転送バッファ
-		DWORD blocks;					// 転送ブロック数
-		DWORD next;						// 次のレコード
-		DWORD offset;					// 転送オフセット
-		DWORD length;					// 転送残り長さ
+		// Transfer
+		BOOL trans;						// Transfer flag
+		BYTE buffer[0x800];				// Transfer buffer
+		DWORD blocks;					// Transfer block count
+		DWORD next;						// Next record
+		DWORD offset;					// Transfer offset
+		DWORD length;					// Transfer remaining length
 
-		// コンフィグ
-		int scsi_drives;				// SCSIドライブ数
-		BOOL memsw;						// メモリスイッチ更新
-		BOOL mo_first;					// MO優先フラグ(SxSI)
+		// Configuration
+		int scsi_drives;				// SCSI drive count
+		BOOL memsw;						// Memory switch update
+		BOOL mo_first;					// MO priority flag (SxSI)
 
-		// ディスク
-		Disk *disk[DeviceMax];			// デバイス
+		// Disk
+		Disk *disk[DeviceMax];			// Devices
 		Disk *hd[HDMax];				// HD
 		SCSIMO *mo;						// MO
 		SCSICD *cdrom;					// CD-ROM
 	} scsi_t;
 
 public:
-	// 基本ファンクション
+	// Basic functions
 	SCSI(VM *p);
-										// コンストラクタ
+									// Constructor
 	BOOL FASTCALL Init();
-										// 初期化
+									// Initialize
 	void FASTCALL Cleanup();
-										// クリーンアップ
+									// Cleanup
 	void FASTCALL Reset();
-										// リセット
+									// Reset
 	BOOL FASTCALL Save(Fileio *fio, int ver);
-										// セーブ
+									// Save
 	BOOL FASTCALL Load(Fileio *fio, int ver);
-										// ロード
+									// Load
 	void FASTCALL ApplyCfg(const Config *config);
-										// 設定適用
+									// Apply configuration
 #if !defined(NDEBUG)
 	void FASTCALL AssertDiag() const;
-										// 診断
+									// Diagnostics
 #endif	// NDEBUG
 
-	// メモリデバイス
+	// Memory device
 	DWORD FASTCALL ReadByte(DWORD addr);
-										// バイト読み込み
+									// Byte read
 	DWORD FASTCALL ReadWord(DWORD addr);
-										// ワード読み込み
+									// Word read
 	void FASTCALL WriteByte(DWORD addr, DWORD data);
-										// バイト書き込み
+									// Byte write
 	void FASTCALL WriteWord(DWORD addr, DWORD data);
-										// ワード書き込み
+									// Word write
 	DWORD FASTCALL ReadOnly(DWORD addr) const;
-										// 読み込みのみ
+									// Read only
 
-	// 外部API
+	// External API
 	void FASTCALL GetSCSI(scsi_t *buffer) const;
-										// 内部データ取得
+									// Get internal data
 	BOOL FASTCALL Callback(Event *ev);
-										// イベントコールバック
+									// Event callback
 	void FASTCALL IntAck(int level);
-										// 割り込みACK
+									// Interrupt ACK
 	int FASTCALL GetSCSIID() const;
-										// SCSI-ID取得
+									// Get SCSI-ID
 	BOOL FASTCALL IsBusy() const;
-										// BUSYか
+									// Is BUSY
 	DWORD FASTCALL GetBusyDevice() const;
-										// BUSYデバイス取得
+									// Get BUSY device
 
-	// MO/CDアクセス
+	// MO/CD access
 	BOOL FASTCALL Open(const Filepath& path, BOOL mo = TRUE);
-										// MO/CD オープン
+									// MO/CD open
 	void FASTCALL Eject(BOOL force, BOOL mo = TRUE);
-										// MO/CD イジェクト
+									// MO/CD eject
 	void FASTCALL WriteP(BOOL writep);
-										// MO 書き込み禁止
+									// MO write protect
 	BOOL FASTCALL IsWriteP() const;
-										// MO 書き込み禁止チェック
+									// MO write protect check
 	BOOL FASTCALL IsReadOnly() const;
-										// MO ReadOnlyチェック
+									// MO read-only check
 	BOOL FASTCALL IsLocked(BOOL mo = TRUE) const;
-										// MO/CD Lockチェック
+									// MO/CD lock check
 	BOOL FASTCALL IsReady(BOOL mo = TRUE) const;
-										// MO/CD Readyチェック
+									// MO/CD ready check
 	BOOL FASTCALL IsValid(BOOL mo = TRUE) const;
-										// MO/CD 有効チェック
+									// MO/CD valid check
 	void FASTCALL GetPath(Filepath &path, BOOL mo = TRUE) const;
-										// MO/CD パス取得
+									// Get MO/CD path
 
 	// CD-DA
 	void FASTCALL GetBuf(DWORD *buffer, int samples, DWORD rate);
-										// CD-DAバッファ取得
+									// Get CD-DA buffer
 
 private:
-	// レジスタ
+	// Registers
 	void FASTCALL ResetReg();
-										// レジスタリセット
+									// Reset registers
 	void FASTCALL ResetCtrl();
-										// 転送リセット
+									// Reset transfer
 	void FASTCALL ResetBus(BOOL reset);
-										// バスリセット
+									// Reset bus
 	void FASTCALL SetBDID(DWORD data);
-										// BDID設定
+									// Set BDID
 	void FASTCALL SetSCTL(DWORD data);
-										// SCTL設定
+									// Set SCTL
 	void FASTCALL SetSCMD(DWORD data);
-										// SCMD設定
+									// Set SCMD
 	void FASTCALL SetINTS(DWORD data);
-										// INTS設定
+									// Set INTS
 	DWORD FASTCALL GetPSNS() const;
-										// PSNS取得
+									// Get PSNS
 	void FASTCALL SetSDGC(DWORD data);
-										// SDGC設定
+									// Set SDGC
 	DWORD FASTCALL GetSSTS() const;
-										// SSTS取得
+									// Get SSTS
 	DWORD FASTCALL GetSERR() const;
-										// SERR取得
+									// Get SERR
 	void FASTCALL SetPCTL(DWORD data);
-										// PCTL設定
+									// Set PCTL
 	DWORD FASTCALL GetDREG();
-										// DREG取得
+									// Get DREG
 	void FASTCALL SetDREG(DWORD data);
-										// DREG設定
+									// Set DREG
 	void FASTCALL SetTEMP(DWORD data);
-										// TEMP設定
+									// Set TEMP
 	void FASTCALL SetTCH(DWORD data);
-										// TCH設定
+									// Set TCH
 	void FASTCALL SetTCM(DWORD data);
-										// TCM設定
+									// Set TCM
 	void FASTCALL SetTCL(DWORD data);
-										// TCL設定
+									// Set TCL
 
-	// SPCコマンド
+	// SPC commands
 	void FASTCALL BusRelease();
-										// バスリリース
+									// Bus release
 	void FASTCALL Select();
-										// セレクション/リセレクション
+									// Selection/Reselection
 	void FASTCALL ResetATN();
-										// ATNライン=0
+									// ATN line = 0
 	void FASTCALL SetATN();
-										// ATNライン=1
+									// ATN line = 1
 	void FASTCALL Transfer();
-										// 転送
+									// Transfer
 	void FASTCALL TransPause();
-										// 転送中断
+									// Transfer pause
 	void FASTCALL TransComplete();
-										// 転送完了
+									// Transfer complete
 	void FASTCALL ResetACKREQ();
-										// ACK/REQライン=0
+									// ACK/REQ line = 0
 	void FASTCALL SetACKREQ();
-										// ACK/REQライン=1
+									// ACK/REQ line = 1
 
-	// データ転送
+	// Data transfer
 	void FASTCALL Xfer(DWORD *reg);
-										// データ転送
+									// Data transfer
 	void FASTCALL XferNext();
-										// データ転送継続
+									// Continue data transfer
 	BOOL FASTCALL XferIn();
-										// データ転送IN
+									// Data transfer IN
 	BOOL FASTCALL XferOut(BOOL cont);
-										// データ転送OUT
+									// Data transfer OUT
 	BOOL FASTCALL XferMsg(DWORD msg);
-										// データ転送MSG
+									// Data transfer MSG
 
-	// フェーズ
+	// Phases
 	void FASTCALL BusFree();
-										// バスフリーフェーズ
+									// Bus free phase
 	void FASTCALL Arbitration();
-										// アービトレーションフェーズ
+									// Arbitration phase
 	void FASTCALL Selection();
-										// セレクションフェーズ
+									// Selection phase
 	void FASTCALL SelectTime();
-										// セレクションフェーズ(時間設定)
+									// Selection phase (time setting)
 	void FASTCALL Command();
-										// コマンドフェーズ
+									// Command phase
 	void FASTCALL Execute();
-										// 実行フェーズ
+									// Execute phase
 	void FASTCALL MsgIn();
-										// メッセージインフェーズ
+									// Message in phase
 	void FASTCALL MsgOut();
-										// メッセージアウトフェーズ
+									// Message out phase
 	void FASTCALL DataIn();
-										// データインフェーズ
+									// Data in phase
 	void FASTCALL DataOut();
-										// データアウトフェーズ
+									// Data out phase
 	void FASTCALL Status();
-										// ステータスフェーズ
+									// Status phase
 
-	// 割り込み
+	// Interrupt
 	void FASTCALL Interrupt(int type, BOOL flag);
-										// 割り込み要求
+									// Interrupt request
 	void FASTCALL IntCheck();
-										// 割り込みチェック
+									// Interrupt check
 
-	// SCSIコマンド共通
+	// SCSI command common
 	void FASTCALL Error();
-										// 共通エラー
+									// Common error
 
-	// SCSIコマンド別
+	// SCSI commands
 	void FASTCALL TestUnitReady();
-										// TEST UNIT READYコマンド
+									// TEST UNIT READY command
 	void FASTCALL Rezero();
-										// REZERO UNITコマンド
+									// REZERO UNIT command
 	void FASTCALL RequestSense();
-										// REQUEST SENSEコマンド
+									// REQUEST SENSE command
 	void FASTCALL Format();
-										// FORMAT UNITコマンド
+									// FORMAT UNIT command
 	void FASTCALL Reassign();
-										// REASSIGN BLOCKSコマンド
+									// REASSIGN BLOCKS command
 	void FASTCALL Read6();
-										// READ(6)コマンド
+									// READ(6) command
 	void FASTCALL Write6();
-										// WRITE(6)コマンド
+									// WRITE(6) command
 	void FASTCALL Seek6();
-										// SEEK(6)コマンド
+									// SEEK(6) command
 	void FASTCALL Inquiry();
-										// INQUIRYコマンド
+									// INQUIRY command
 	void FASTCALL ModeSelect();
-										// MODE SELECTコマンド
+									// MODE SELECT command
 	void FASTCALL ModeSense();
-										// MODE SENSEコマンド
+									// MODE SENSE command
 	void FASTCALL StartStop();
-										// START STOP UNITコマンド
+									// START STOP UNIT command
 	void FASTCALL SendDiag();
-										// SEND DIAGNOSTICコマンド
+									// SEND DIAGNOSTIC command
 	void FASTCALL Removal();
-										// PREVENT/ALLOW MEDIUM REMOVALコマンド
+									// PREVENT/ALLOW MEDIUM REMOVAL command
 	void FASTCALL ReadCapacity();
-										// READ CAPACITYコマンド
+									// READ CAPACITY command
 	void FASTCALL Read10();
-										// READ(10)コマンド
+									// READ(10) command
 	void FASTCALL Write10();
-										// WRITE(10)コマンド
+									// WRITE(10) command
 	void FASTCALL Seek10();
-										// SEEK(10)コマンド
+									// SEEK(10) command
 	void FASTCALL Verify();
-										// VERIFYコマンド
+									// VERIFY command
 	void FASTCALL ReadToc();
-										// READ TOCコマンド
+									// READ TOC command
 	void FASTCALL PlayAudio10();
-										// PLAY AUDIO(10)コマンド
+									// PLAY AUDIO(10) command
 	void FASTCALL PlayAudioMSF();
-										// PLAY AUDIO MSFコマンド
+									// PLAY AUDIO MSF command
 	void FASTCALL PlayAudioTrack();
-										// PLAY AUDIO TRACK INDEXコマンド
+									// PLAY AUDIO TRACK INDEX command
 
-	// CD-ROM・CD-DA
+	// CD-ROM/CD-DA
 	Event cdda;
-										// フレームイベント
+									// Frame event
 
-	// ドライブ・ファイルパス
+	// Drive/FilePath
 	void FASTCALL Construct();
-										// ドライブ構築
+									// Build drives
 	Filepath scsihd[DeviceMax];
-										// SCSI-HDファイルパス
+									// SCSI-HD file path
 
-	// その他
+	// Other
 	scsi_t scsi;
-										// 内部データ
+									// Internal data
 	BYTE verifybuf[0x800];
-										// ベリファイバッファ
+									// Verify buffer
 	Event event;
-										// イベント
+									// Event
 	Memory *memory;
-										// メモリ
+									// Memory
 	SRAM *sram;
-										// SRAM
+									// SRAM
 };
 
 #endif	// scsi_h

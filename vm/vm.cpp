@@ -47,6 +47,7 @@
 #include "neptune.h"
 #include "filepath.h"
 #include "fileio.h"
+#include "musashi_adapter.h"
 #include <vector>
 #include <algorithm>
 
@@ -383,7 +384,7 @@ DWORD FASTCALL VM::OriginalSave(Fileio& fio)
 
 //---------------------------------------------------------------------------
 //
-//	���[�h
+//	Load
 //
 //---------------------------------------------------------------------------
 DWORD FASTCALL VM::Load(const Filepath& path)
@@ -471,7 +472,7 @@ void FASTCALL VM::GetPath(Filepath& path) const
 
 //---------------------------------------------------------------------------
 //
-//	�p�X�N���A
+//	Path clear
 //
 //---------------------------------------------------------------------------
 void FASTCALL VM::Clear()
@@ -483,7 +484,7 @@ void FASTCALL VM::Clear()
 
 //---------------------------------------------------------------------------
 //
-//	�ݒ�K�p
+//	Apply settings
 //
 //---------------------------------------------------------------------------
 
@@ -509,7 +510,11 @@ BOOL FASTCALL VM::SetRenderMode(int mode)
 	if (!render) {
 		return FALSE;
 	}
-	return render->SetCompositorMode(mode);
+	if (!render->SetCompositorMode(mode)) {
+		return FALSE;
+	}
+	musashi_set_render_mode(mode);
+	return TRUE;
 }
 
 int FASTCALL VM::GetRenderMode() const
@@ -525,8 +530,8 @@ int FASTCALL VM::GetRenderMode() const
 }
 //---------------------------------------------------------------------------
 //
-//	�f�o�C�X�ǉ�
-//	���ǉ�������Device����Ăяo��
+//	Device add
+//	The Device is called when added
 //
 //---------------------------------------------------------------------------
 void FASTCALL VM::AddDevice(Device *device)
@@ -536,29 +541,29 @@ void FASTCALL VM::AddDevice(Device *device)
 	ASSERT(this);
 	ASSERT(device);
 
-	// �ŏ��̃f�o�C�X��
+	// First device
 	if (!first_device) {
-		// ���̃f�o�C�X���ŏ��B�o�^����
+		// This device becomes the first registered
 		first_device = device;
 		ASSERT(!device->GetNextDevice());
 		return;
 	}
 
-	// �I�[��T��
+	// Search for terminal
 	dev = first_device;
 	while (dev->GetNextDevice()) {
 		dev = dev->GetNextDevice();
 	}
 
-	// dev�̌��ɒǉ�
+	// Add after dev
 	dev->SetNextDevice(device);
 	ASSERT(!device->GetNextDevice());
 }
 
 //---------------------------------------------------------------------------
 //
-//	�f�o�C�X�폜
-//	���폜������Device����Ăяo��
+//	Device delete
+//	The Device is called when deleted
 //
 //---------------------------------------------------------------------------
 void FASTCALL VM::DelDevice(const Device *device)
@@ -568,9 +573,9 @@ void FASTCALL VM::DelDevice(const Device *device)
 	ASSERT(this);
 	ASSERT(device);
 
-	// �ŏ��̃f�o�C�X��
+	// First device
 	if (first_device == device) {
-		// ��������Ȃ�A����o�^�B�Ȃ����NULL
+		// If present, unlink and set to NULL if not registered
 		if (device->GetNextDevice()) {
 			first_device = device->GetNextDevice();
 		}
@@ -580,21 +585,21 @@ void FASTCALL VM::DelDevice(const Device *device)
 		return;
 	}
 
-	// device��L�����Ă���T�u�E�B���h�E��T��
+	// Search for the sub-device containing device
 	dev = first_device;
 	while (dev->GetNextDevice() != device) {
 		ASSERT(dev->GetNextDevice());
 		dev = dev->GetNextDevice();
 	}
 
-	// device->next_device��Adev�Ɍ��т��X�L�b�v������
+	// Skip device->next_device and link to dev
 	dev->SetNextDevice(device->GetNextDevice());
 }
 
 //---------------------------------------------------------------------------
 //
-//	�f�o�C�X����
-//	��������Ȃ����NULL��Ԃ�
+//	Device search
+//	Returns NULL if not found
 //
 //---------------------------------------------------------------------------
 Device* FASTCALL VM::SearchDevice(DWORD id) const
@@ -603,27 +608,27 @@ Device* FASTCALL VM::SearchDevice(DWORD id) const
 
 	ASSERT(this);
 
-	// �f�o�C�X�������
+	// Search from first device
 	dev = first_device;
 
-	// �������[�v
+	// Linear search
 	while (dev) {
-		// ID����v���邩�`�F�b�N
+		// Check if ID matches
 		if (dev->GetID() == id) {
 			return dev;
 		}
 
-		// ����
+		// Next
 		dev = dev->GetNextDevice();
 	}
 
-	// ������Ȃ�����
+	// Not found
 	return NULL;
 }
 
 //---------------------------------------------------------------------------
 //
-//	���s
+//	Execute
 //
 //---------------------------------------------------------------------------
 BOOL FASTCALL VM::Exec(DWORD hus)
@@ -633,19 +638,19 @@ BOOL FASTCALL VM::Exec(DWORD hus)
 	ASSERT(this);
 	ASSERT(scheduler);
 
-	// �d���`�F�b�N
+	// Power check
 	if (power) {
-		// ���s���[�v
+		// Execution loop
 		while (hus > 0) {
 			ret = scheduler->Exec(hus);
 
-			// ����Ȃ�A�c��^�C������炷
+			// If valid, advance the virtual time
 			if (ret < 0x80000000) {
 				hus -= ret;
 				continue;
 			}
 
-			// �u���[�N������AFALSE�ŏI��
+			// Return FALSE if stopped by break
 			return FALSE;
 		}
 	}
@@ -655,7 +660,7 @@ BOOL FASTCALL VM::Exec(DWORD hus)
 
 //---------------------------------------------------------------------------
 //
-//	�g���[�X
+//	Trace
 //
 //---------------------------------------------------------------------------
 void FASTCALL VM::Trace()
@@ -663,12 +668,12 @@ void FASTCALL VM::Trace()
 	ASSERT(this);
 	ASSERT(scheduler);
 
-	// �d���`�F�b�N
+	// Power check
 	if (!power) {
 		return;
 	}
 
-	// 0�ȊO���o��܂Ŏ��s
+	// Execute until break
 	for (;;) {
 		if (scheduler->Trace(100) != 0) {
 			return;
@@ -678,27 +683,27 @@ void FASTCALL VM::Trace()
 
 //---------------------------------------------------------------------------
 //
-//	�d���X�C�b�`����
+//	Power switch processing
 //
 //---------------------------------------------------------------------------
 void FASTCALL VM::PowerSW(BOOL sw)
 {
 	ASSERT(this);
 
-	// ���݂̏�ԂƓ����Ȃ牽����Ȃ�
+	// If the current state and switch are the same, do nothing
 	if (power_sw == sw) {
 		return;
 	}
 
-	// �L������
+	// Save
 	power_sw = sw;
 
-	// �d���I�t�Ȃ�A�d���I���Ń��Z�b�g
+	// When power is off/on, reset with power on/off
 	if (sw) {
 		SetPower(TRUE);
 	}
 
-	// MFP�ɑ΂��A�d������`����
+	// For MFP, set the power signal
 	ASSERT(mfp);
 	if (sw) {
 		mfp->SetGPIP(2, 0);
@@ -710,57 +715,57 @@ void FASTCALL VM::PowerSW(BOOL sw)
 
 //---------------------------------------------------------------------------
 //
-//	�d���̏�Ԃ�ݒ�
+//	Power state setting
 //
 //---------------------------------------------------------------------------
 void FASTCALL VM::SetPower(BOOL flag)
 {
-	ASSERT(this);
+ ASSERT(this);
 
-	// ��v���Ă���Ή�����Ȃ�
-	if (flag == power) {
-		return;
-	}
+ // If it matches the power already, do nothing
+ if (flag == power) {
+  return;
+ }
 
-	// ��v
-	power = flag;
+ // Power
+ power = flag;
 
-	if (flag) {
-		// �d��ON(�����A�W���X�g��s��)
-		Reset();
-		ASSERT(rtc);
-		rtc->Adjust(FALSE);
-	}
+ if (flag) {
+  // Power ON (performs a reset)
+  Reset();
+  ASSERT(rtc);
+  rtc->Adjust(FALSE);
+ }
 }
 
 //---------------------------------------------------------------------------
 //
-//	�o�[�W�����ݒ�
+//	Version setting
 //
 //---------------------------------------------------------------------------
 void FASTCALL VM::SetVersion(DWORD major, DWORD minor)
 {
-	ASSERT(this);
-	ASSERT(major < 0x100);
-	ASSERT(minor < 0x100);
+ASSERT(this);
+ASSERT(major < 0x100);
+ASSERT(minor < 0x100);
 
-	major_ver = major;
-	minor_ver = minor;
+major_ver = major;
+minor_ver = minor;
 }
 
 //---------------------------------------------------------------------------
 //
-//	�o�[�W�����擾
+//	Version get
 //
 //---------------------------------------------------------------------------
 void FASTCALL VM::GetVersion(DWORD& major, DWORD& minor)
 {
-	ASSERT(this);
-	ASSERT(major_ver < 0x100);
-	ASSERT(minor_ver < 0x100);
+ASSERT(this);
+ASSERT(major_ver < 0x100);
+ASSERT(minor_ver < 0x100);
 
-	major = major_ver;
-	minor = minor_ver;
+major = major_ver;
+minor = minor_ver;
 }
 
 

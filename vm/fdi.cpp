@@ -2,8 +2,8 @@
 //
 //	X68000 EMULATOR "XM6"
 //
-//	Copyright (C) 2001-2006 ‚o‚hD(ytanaka@ipc-tokai.or.jp)
-//	[ ƒtƒƒbƒs[ƒfƒBƒXƒNƒCƒ[ƒW ]
+//	Copyright (C) 2001-2006 PI (ytanaka@ipc-tokai.or.jp)
+//	[ Floppy Disk Image ]
 //
 //---------------------------------------------------------------------------
 
@@ -16,13 +16,13 @@
 
 //===========================================================================
 //
-//	FDIƒZƒNƒ^
+//	FDI Sector
 //
 //===========================================================================
 
 //---------------------------------------------------------------------------
 //
-//	ƒRƒ“ƒXƒgƒ‰ƒNƒ^
+//	Constructor
 //
 //---------------------------------------------------------------------------
 FDISector::FDISector(BOOL mfm, const DWORD *chrn)
@@ -31,13 +31,13 @@ FDISector::FDISector(BOOL mfm, const DWORD *chrn)
 
 	ASSERT(chrn);
 
-	// CHRN,MFM‹L‰¯
+	// Store CHRN, MFM
 	for (i=0; i<4; i++) {
 		sec.chrn[i] = chrn[i];
 	}
 	sec.mfm = mfm;
 
-	// ‚»‚Ì‘¼‰Šú‰»
+	// Initialize other fields
 	sec.error = FDD_NODATA;
 	sec.length = 0;
 	sec.gap3 = 0;
@@ -49,12 +49,12 @@ FDISector::FDISector(BOOL mfm, const DWORD *chrn)
 
 //---------------------------------------------------------------------------
 //
-//	ƒfƒXƒgƒ‰ƒNƒ^
+//	Destructor
 //
 //---------------------------------------------------------------------------
 FDISector::~FDISector()
 {
-	// ƒƒ‚ƒŠ‰ğ•ú
+	// Free memory
 	if (sec.buffer) {
 		delete[] sec.buffer;
 		sec.buffer = NULL;
@@ -63,7 +63,7 @@ FDISector::~FDISector()
 
 //---------------------------------------------------------------------------
 //
-//	‰Šúƒ[ƒh
+//	Initial load
 //
 //---------------------------------------------------------------------------
 void FASTCALL FDISector::Load(const BYTE *buf, int len, int gap, int err)
@@ -75,10 +75,10 @@ void FASTCALL FDISector::Load(const BYTE *buf, int len, int gap, int err)
 	ASSERT(len > 0);
 	ASSERT(gap > 0);
 
-	// ƒŒƒ“ƒOƒX‚¾‚¯æ‚Éİ’è
+	// Set length first
 	sec.length = len;
 
-	// ƒoƒbƒtƒ@Šm•Û
+	// Allocate buffer
 	try {
 		sec.buffer = new BYTE[len];
 	}
@@ -90,10 +90,10 @@ void FASTCALL FDISector::Load(const BYTE *buf, int len, int gap, int err)
 		sec.length = 0;
 	}
 
-	// “]‘—
+	// Transfer
 	memcpy(sec.buffer, buf, sec.length);
 
-	// ƒ[ƒNİ’è
+	// Work settings
 	sec.gap3 = gap;
 	sec.error = err;
 	sec.changed = FALSE;
@@ -101,7 +101,7 @@ void FASTCALL FDISector::Load(const BYTE *buf, int len, int gap, int err)
 
 //---------------------------------------------------------------------------
 //
-//	ƒZƒNƒ^ƒ}ƒbƒ`‚·‚é‚©
+//	Check if sector matches
 //
 //---------------------------------------------------------------------------
 BOOL FASTCALL FDISector::IsMatch(BOOL mfm, const DWORD *chrn) const
@@ -111,19 +111,19 @@ BOOL FASTCALL FDISector::IsMatch(BOOL mfm, const DWORD *chrn) const
 	ASSERT(this);
 	ASSERT(chrn);
 
-	// MFM‚ğ”äŠr
+	// Compare MFM
 	if (sec.mfm != mfm) {
 		return FALSE;
 	}
 
-	// CHR‚ğ”äŠr
+	// Compare CHR
 	for (i=0; i<3; i++) {
 		if (chrn[i] != sec.chrn[i]) {
 			return FALSE;
 		}
 	}
 
-	// ˆø”‚ÌN‚ª!=0‚Ìê‡‚Ì‚İAN”äŠr
+	// Compare N only if argument N is != 0
 	if (chrn[3] != 0) {
 		if (chrn[3] != sec.chrn[3]) {
 			return FALSE;
@@ -135,7 +135,7 @@ BOOL FASTCALL FDISector::IsMatch(BOOL mfm, const DWORD *chrn) const
 
 //---------------------------------------------------------------------------
 //
-//	CHRN‚ğæ“¾
+//	Get CHRN
 //
 //---------------------------------------------------------------------------
 void FASTCALL FDISector::GetCHRN(DWORD *chrn) const
@@ -152,7 +152,7 @@ void FASTCALL FDISector::GetCHRN(DWORD *chrn) const
 
 //---------------------------------------------------------------------------
 //
-//	ƒŠ[ƒh
+//	Read
 //
 //---------------------------------------------------------------------------
 int FASTCALL FDISector::Read(BYTE *buf) const
@@ -160,19 +160,19 @@ int FASTCALL FDISector::Read(BYTE *buf) const
 	ASSERT(this);
 	ASSERT(buf);
 
-	// ƒZƒNƒ^ƒoƒbƒtƒ@‚ª‚È‚¯‚ê‚Î‰½‚à‚µ‚È‚¢
+	// Do nothing if no sector buffer
 	if (!sec.buffer) {
 		return sec.error;
 	}
 
-	// “]‘—{ƒGƒ‰[‚ğ•Ô‚·
+	// Transfer and return error
 	memcpy(buf, sec.buffer, sec.length);
 	return sec.error;
 }
 
 //---------------------------------------------------------------------------
 //
-//	ƒ‰ƒCƒg
+//	Write
 //
 //---------------------------------------------------------------------------
 int FASTCALL FDISector::Write(const BYTE *buf, BOOL deleted)
@@ -180,34 +180,34 @@ int FASTCALL FDISector::Write(const BYTE *buf, BOOL deleted)
 	ASSERT(this);
 	ASSERT(buf);
 
-	// ƒZƒNƒ^ƒoƒbƒtƒ@‚ª‚È‚¯‚ê‚Î‰½‚à‚µ‚È‚¢
+	// Do nothing if no sector buffer
 	if (!sec.buffer) {
 		return sec.error;
 	}
 
-	// ƒGƒ‰[ˆ—‚ğæ‚És‚¤
+	// Process errors first
 	sec.error &= ~FDD_DATACRC;
 	sec.error &= ~FDD_DDAM;
 	if (deleted) {
 		sec.error |= FDD_DDAM;
 	}
 
-	// ˆê’v‚·‚ê‚Î‰½‚à‚µ‚È‚¢
+	// Do nothing if they match
 	if (memcmp(sec.buffer, buf, sec.length) == 0) {
 		return sec.error;
 	}
 
-	// “]‘—
+	// Transfer
 	memcpy(sec.buffer, buf, sec.length);
 
-	// XVƒtƒ‰ƒO‚ğ‚½‚ÄAƒGƒ‰[‚ğ•Ô‚·
+	// Set update flag and return error
 	sec.changed = TRUE;
 	return sec.error;
 }
 
 //---------------------------------------------------------------------------
 //
-//	ƒtƒBƒ‹
+//	Fill
 //
 //---------------------------------------------------------------------------
 int FASTCALL FDISector::Fill(DWORD d)
@@ -217,26 +217,26 @@ int FASTCALL FDISector::Fill(DWORD d)
 
 	ASSERT(this);
 
-	// ƒZƒNƒ^ƒoƒbƒtƒ@‚ª‚È‚¯‚ê‚Î‰½‚à‚µ‚È‚¢
+	// Do nothing if no sector buffer
 	if (!sec.buffer) {
 		return sec.error;
 	}
 
-	// ”äŠr‚µ‚È‚ª‚ç‘‚«‚İ
+	// Write while comparing
 	changed = FALSE;
 	for (i=0; i<sec.length; i++) {
 		if (sec.buffer[i] != (BYTE)d) {
-			// 1‰ñ‚Å‚àˆá‚Á‚½‚çAƒtƒBƒ‹‚µ‚Äbreak
+			// If different even once, fill and break
 			memset(sec.buffer, d, sec.length);
 			changed = TRUE;
 			break;
 		}
 	}
 
-	// ‘‚«‚İ‚Å‚Íƒf[ƒ^CRC‚Í”­¶‚µ‚È‚¢‚à‚Ì‚Æ‚·‚é
+	// Assume data CRC does not occur on write
 	sec.error &= ~FDD_DATACRC;
 
-	// XVƒtƒ‰ƒO‚ğ‚½‚ÄAƒGƒ‰[‚ğ•Ô‚·
+	// Set update flag and return error
 	if (changed) {
 		sec.changed = TRUE;
 	}
@@ -245,13 +245,13 @@ int FASTCALL FDISector::Fill(DWORD d)
 
 //===========================================================================
 //
-//	FDIƒgƒ‰ƒbƒN
+//	FDI Track
 //
 //===========================================================================
 
 //---------------------------------------------------------------------------
 //
-//	ƒRƒ“ƒXƒgƒ‰ƒNƒ^
+//	Constructor
 //
 //---------------------------------------------------------------------------
 FDITrack::FDITrack(FDIDisk *disk, int track, BOOL hd)
@@ -259,11 +259,11 @@ FDITrack::FDITrack(FDIDisk *disk, int track, BOOL hd)
 	ASSERT(disk);
 	ASSERT((track >= 0) && (track <= 163));
 
-	// ƒfƒBƒXƒNAƒgƒ‰ƒbƒN‹L‰¯
+	// Store disk, track
 	trk.disk = disk;
 	trk.track = track;
 
-	// ‚»‚Ì‘¼ƒ[ƒNƒGƒŠƒA
+	// Other work area
 	trk.init = FALSE;
 	trk.sectors[0] = 0;
 	trk.sectors[1] = 0;
@@ -276,19 +276,19 @@ FDITrack::FDITrack(FDIDisk *disk, int track, BOOL hd)
 
 //---------------------------------------------------------------------------
 //
-//	ƒfƒXƒgƒ‰ƒNƒ^
+//	Destructor
 //
 //---------------------------------------------------------------------------
 FDITrack::~FDITrack()
 {
-	// ƒNƒŠƒA
+	// Clear
 	ClrSector();
 }
 
 //---------------------------------------------------------------------------
 //
-//	ƒZ[ƒu
-//	¦2HD,DIM‚È‚Ç‚ÌƒZƒNƒ^˜A‘±‘‚«‚İƒ^ƒCƒvŒü‚¯
+//	Save
+//	Note: For 2HD, DIM sector continuous write types
 //
 //---------------------------------------------------------------------------
 BOOL FASTCALL FDITrack::Save(const Filepath& path, DWORD offset)
@@ -299,12 +299,12 @@ BOOL FASTCALL FDITrack::Save(const Filepath& path, DWORD offset)
 
 	ASSERT(this);
 
-	// ‰Šú‰»‚³‚ê‚Ä‚¢‚È‚¯‚ê‚Î‘‚«‚Ş•K—v‚È‚µ
+	// No need to write if not initialized
 	if (!IsInit()) {
 		return TRUE;
 	}
 
-	// ƒZƒNƒ^‚ğ‚Ü‚í‚Á‚ÄA‘‚«‚Ü‚ê‚Ä‚¢‚éƒZƒNƒ^‚ª‚ ‚é‚©
+	// Check sectors for any that are written
 	sector = GetFirst();
 	changed = FALSE;
 	while (sector) {
@@ -314,55 +314,55 @@ BOOL FASTCALL FDITrack::Save(const Filepath& path, DWORD offset)
 		sector = sector->GetNext();
 	}
 
-	// ‚Ç‚ê‚à‘‚«‚Ü‚ê‚Ä‚¢‚È‚¯‚ê‚Î‰½‚à‚µ‚È‚¢
+	// Do nothing if none are written
 	if (!changed) {
 		return TRUE;
 	}
 
-	// ƒtƒ@ƒCƒ‹ƒI[ƒvƒ“
+	// Open file
 	if (!fio.Open(path, Fileio::ReadWrite)) {
 		return FALSE;
 	}
 
-	// ƒ‹[ƒv
+	// Loop
 	sector = GetFirst();
 	while (sector) {
-		// •ÏX‚³‚ê‚Ä‚¢‚È‚¯‚ê‚ÎAŸ‚Ö
+		// If not changed, go to next
 		if (!sector->IsChanged()) {
 			offset += sector->GetLength();
 			sector = sector->GetNext();
 			continue;
 		}
 
-		// ƒV[ƒN
+		// Seek
 		if (!fio.Seek(offset)) {
 			fio.Close();
 			return FALSE;
 		}
 
-		// ‘‚«‚İ
+		// Write
 		if (!fio.Write(sector->GetSector(), sector->GetLength())) {
 			fio.Close();
 			return FALSE;
 		}
 
-		// ƒtƒ‰ƒO‚ğ—‚Æ‚·
+		// Clear flag
 		sector->ClrChanged();
 
-		// Ÿ‚Ö
+		// Next
 		offset += sector->GetLength();
 		sector = sector->GetNext();
 	}
 
-	// I—¹
+	// End
 	fio.Close();
 	return TRUE;
 }
 
 //---------------------------------------------------------------------------
 //
-//	ƒZ[ƒu
-//	¦2HD,DIM‚È‚Ç‚ÌƒZƒNƒ^˜A‘±‘‚«‚İƒ^ƒCƒvŒü‚¯
+//	Save
+//	Note: For 2HD, DIM sector continuous write types
 //
 //---------------------------------------------------------------------------
 BOOL FASTCALL FDITrack::Save(Fileio *fio, DWORD offset)
@@ -373,12 +373,12 @@ BOOL FASTCALL FDITrack::Save(Fileio *fio, DWORD offset)
 	ASSERT(this);
 	ASSERT(fio);
 
-	// ‰Šú‰»‚³‚ê‚Ä‚¢‚È‚¯‚ê‚Î‘‚«‚Ş•K—v‚È‚µ
+	// No need to write if not initialized
 	if (!IsInit()) {
 		return TRUE;
 	}
 
-	// ƒZƒNƒ^‚ğ‚Ü‚í‚Á‚ÄA‘‚«‚Ü‚ê‚Ä‚¢‚éƒZƒNƒ^‚ª‚ ‚é‚©
+	// Check sectors for any that are written
 	sector = GetFirst();
 	changed = FALSE;
 	while (sector) {
@@ -388,64 +388,64 @@ BOOL FASTCALL FDITrack::Save(Fileio *fio, DWORD offset)
 		sector = sector->GetNext();
 	}
 
-	// ‚Ç‚ê‚à‘‚«‚Ü‚ê‚Ä‚¢‚È‚¯‚ê‚Î‰½‚à‚µ‚È‚¢
+	// Do nothing if none are written
 	if (!changed) {
 		return TRUE;
 	}
 
-	// ƒ‹[ƒv
+	// Loop
 	sector = GetFirst();
 	while (sector) {
-		// •ÏX‚³‚ê‚Ä‚¢‚È‚¯‚ê‚ÎAŸ‚Ö
+		// If not changed, go to next
 		if (!sector->IsChanged()) {
 			offset += sector->GetLength();
 			sector = sector->GetNext();
 			continue;
 		}
 
-		// ƒV[ƒN
+		// Seek
 		if (!fio->Seek(offset)) {
 			return FALSE;
 		}
 
-		// ‘‚«‚İ
+		// Write
 		if (!fio->Write(sector->GetSector(), sector->GetLength())) {
 			return FALSE;
 		}
 
-		// ƒtƒ‰ƒO‚ğ—‚Æ‚·
+		// Clear flag
 		sector->ClrChanged();
 
-		// Ÿ‚Ö
+		// Next
 		offset += sector->GetLength();
 		sector = sector->GetNext();
 	}
 
-	// I—¹
+	// End
 	return TRUE;
 }
 
 //---------------------------------------------------------------------------
 //
-//	•¨—ƒtƒH[ƒ}ƒbƒg
-//	¦ƒZ[ƒu‚Í•Ê‚És‚¤‚±‚Æ
+//	Physical format
+//	Note: Save separately
 //
 //---------------------------------------------------------------------------
 void FASTCALL FDITrack::Create(DWORD phyfmt)
 {
 	ASSERT(this);
 
-	// ‚·‚×‚Ä‚ÌƒZƒNƒ^‚ğíœ
+	// Delete all sectors
 	ClrSector();
 
-	// •¨—ƒtƒH[ƒ}ƒbƒg•Ê
+	// By physical format type
 	switch (phyfmt) {
-		// •W€2HD
+		// Standard 2HD
 		case FDI_2HD:
 			Create2HD(153);
 			break;
 
-		// ƒI[ƒoƒgƒ‰ƒbƒN2HD
+		// Over-track 2HD
 		case FDI_2HDA:
 			Create2HD(159);
 			break;
@@ -485,13 +485,13 @@ void FASTCALL FDITrack::Create(DWORD phyfmt)
 			Create2DD();
 			break;
 
-		// ‚»‚Ì‘¼
+		// Other
 		default:
 			ASSERT(FALSE);
 			return;
 	}
 
-	// ƒZƒNƒ^‚ª‚ ‚é‚È‚çAŒã‚Å•K‚¸ƒZ[ƒu‚³‚¹‚é‚½‚ß‚ÉA‰Šú‰»•‘S•ÏXó‘Ô‚Æ‚·‚é
+	// If sectors exist, initialize and mark all changed to force save later
 	if (GetAllSectors() > 0) {
 		trk.init = TRUE;
 		ForceChanged();
@@ -500,7 +500,7 @@ void FASTCALL FDITrack::Create(DWORD phyfmt)
 
 //---------------------------------------------------------------------------
 //
-//	•¨—ƒtƒH[ƒ}ƒbƒg(2HD, 2HDA)
+//	Physical format(2HD, 2HDA)
 //
 //---------------------------------------------------------------------------
 void FASTCALL FDITrack::Create2HD(int lim)
@@ -513,38 +513,38 @@ void FASTCALL FDITrack::Create2HD(int lim)
 	ASSERT(this);
 	ASSERT(trk.hd);
 
-	// ƒgƒ‰ƒbƒN‚Íw’è”‚Ü‚Å
+	// Track up to specified number
 	if (trk.track > lim) {
 		return;
 	}
 
-	// C,H,Nì¬
+	// Create C, H, N
 	chrn[0] = trk.track >> 1;
 	chrn[1] = trk.track & 0x01;
 	chrn[3] = 0x03;
 
-	// ƒoƒbƒtƒ@‰Šú‰»
+	// Initialize buffer
 	memset(buf, 0xe5, sizeof(buf));
 
-	// ƒŒƒ“ƒOƒX3~8ƒZƒNƒ^(MFM)
+	// Length 3x8 sectors (MFM)
 	for (i=0; i<8; i++) {
-		// Rì¬
+		// Create R
 		chrn[2] = i + 1;
 
-		// ƒZƒNƒ^ì¬
+		// Create sector
 		sector = new FDISector(TRUE, chrn);
 
-		// ƒf[ƒ^ƒ[ƒh
+		// Load data
 		sector->Load(buf, 0x400, 0x74, FDD_NOERROR);
 
-		// ’Ç‰Á
+		// Add
 		AddSector(sector);
 	}
 }
 
 //---------------------------------------------------------------------------
 //
-//	•¨—ƒtƒH[ƒ}ƒbƒg(2HS)
+//	Physical format(2HS)
 //
 //---------------------------------------------------------------------------
 void FASTCALL FDITrack::Create2HS()
@@ -557,22 +557,22 @@ void FASTCALL FDITrack::Create2HS()
 	ASSERT(this);
 	ASSERT(trk.hd);
 
-	// ƒgƒ‰ƒbƒN‚Í159‚Ü‚Å
+	// Track up to 159
 	if (trk.track > 159) {
 		return;
 	}
 
-	// C,H,Nì¬
+	// Create C, H, N
 	chrn[0] = trk.track >> 1;
 	chrn[1] = trk.track & 0x01;
 	chrn[3] = 0x03;
 
-	// ƒoƒbƒtƒ@‰Šú‰»
+	// Initialize buffer
 	memset(buf, 0xe5, sizeof(buf));
 
-	// ƒŒƒ“ƒOƒX3~9ƒZƒNƒ^(MFM)
+	// Length 3x9 sectors (MFM)
 	for (i=0; i<9; i++) {
-		// Rì¬(“Á—á‚ ‚è)
+		// Create R (special case exists)
 		if ((trk.track == 0) && (i == 0)) {
 			chrn[2] = 0x01;
 		}
@@ -580,20 +580,20 @@ void FASTCALL FDITrack::Create2HS()
 			chrn[2] = 10 + i;
 		}
 
-		// ƒZƒNƒ^ì¬
+		// Create sector
 		sector = new FDISector(TRUE, chrn);
 
-		// ƒf[ƒ^ƒ[ƒh
+		// Load data
 		sector->Load(buf, 0x400, 0x39, FDD_NOERROR);
 
-		// ’Ç‰Á
+		// Add
 		AddSector(sector);
 	}
 }
 
 //---------------------------------------------------------------------------
 //
-//	•¨—ƒtƒH[ƒ}ƒbƒg(2HC)
+//	Physical format(2HC)
 //
 //---------------------------------------------------------------------------
 void FASTCALL FDITrack::Create2HC()
@@ -606,38 +606,38 @@ void FASTCALL FDITrack::Create2HC()
 	ASSERT(this);
 	ASSERT(trk.hd);
 
-	// ƒgƒ‰ƒbƒN‚Í159‚Ü‚Å
+	// Track up to 159
 	if (trk.track > 159) {
 		return;
 	}
 
-	// C,H,Nì¬
+	// Create C, H, N
 	chrn[0] = trk.track >> 1;
 	chrn[1] = trk.track & 0x01;
 	chrn[3] = 0x02;
 
-	// ƒoƒbƒtƒ@‰Šú‰»
+	// Initialize buffer
 	memset(buf, 0xe5, sizeof(buf));
 
-	// ƒŒƒ“ƒOƒX2~15ƒZƒNƒ^(MFM)
+	// Length 2x15 sectors (MFM)
 	for (i=0; i<15; i++) {
-		// Rì¬
+		// Create R
 		chrn[2] = i + 1;
 
-		// ƒZƒNƒ^ì¬
+		// Create sector
 		sector = new FDISector(TRUE, chrn);
 
-		// ƒf[ƒ^ƒ[ƒh
+		// Load data
 		sector->Load(buf, 0x200, 0x54, FDD_NOERROR);
 
-		// ’Ç‰Á
+		// Add
 		AddSector(sector);
 	}
 }
 
 //---------------------------------------------------------------------------
 //
-//	•¨—ƒtƒH[ƒ}ƒbƒg(2HDE)
+//	Physical format(2HDE)
 //
 //---------------------------------------------------------------------------
 void FASTCALL FDITrack::Create2HDE()
@@ -650,43 +650,43 @@ void FASTCALL FDITrack::Create2HDE()
 	ASSERT(this);
 	ASSERT(trk.hd);
 
-	// ƒgƒ‰ƒbƒN‚Í159‚Ü‚Å
+	// Track up to 159
 	if (trk.track > 159) {
 		return;
 	}
 
-	// C,Nì¬
+	// C,NCreate
 	chrn[0] = trk.track >> 1;
 	chrn[3] = 0x03;
 
-	// ƒoƒbƒtƒ@‰Šú‰»
+	// Initialize buffer
 	memset(buf, 0xe5, sizeof(buf));
 
-	// ƒŒƒ“ƒOƒX3~9ƒZƒNƒ^(MFM)
+	// Length 3x9 sectors (MFM)
 	for (i=0; i<9; i++) {
-		// Hì¬(“Á—á‚ ‚è)
+		// Create H (special case exists)
 		chrn[1] = 0x80 + (trk.track & 1);
 		if ((trk.track == 0) && (i == 0)) {
 			chrn[1] = 0x00;
 		}
 
-		// Rì¬
+		// Create R
 		chrn[2] = i + 1;
 
-		// ƒZƒNƒ^ì¬
+		// Create sector
 		sector = new FDISector(TRUE, chrn);
 
-		// ƒf[ƒ^ƒ[ƒh
+		// Load data
 		sector->Load(buf, 0x400, 0x39, FDD_NOERROR);
 
-		// ’Ç‰Á
+		// Add
 		AddSector(sector);
 	}
 }
 
 //---------------------------------------------------------------------------
 //
-//	•¨—ƒtƒH[ƒ}ƒbƒg(2HQ)
+//	Physical format(2HQ)
 //
 //---------------------------------------------------------------------------
 void FASTCALL FDITrack::Create2HQ()
@@ -699,38 +699,38 @@ void FASTCALL FDITrack::Create2HQ()
 	ASSERT(this);
 	ASSERT(trk.hd);
 
-	// ƒgƒ‰ƒbƒN‚Í159‚Ü‚Å
+	// Track up to 159
 	if (trk.track > 159) {
 		return;
 	}
 
-	// C,H,Nì¬
+	// Create C, H, N
 	chrn[0] = trk.track >> 1;
 	chrn[1] = trk.track & 0x01;
 	chrn[3] = 0x02;
 
-	// ƒoƒbƒtƒ@‰Šú‰»
+	// Initialize buffer
 	memset(buf, 0xe5, sizeof(buf));
 
-	// ƒŒƒ“ƒOƒX2~18ƒZƒNƒ^(MFM)
+	// Length 2x18 sectors (MFM)
 	for (i=0; i<18; i++) {
-		// Rì¬
+		// Create R
 		chrn[2] = i + 1;
 
-		// ƒZƒNƒ^ì¬
+		// Create sector
 		sector = new FDISector(TRUE, chrn);
 
-		// ƒf[ƒ^ƒ[ƒh
+		// Load data
 		sector->Load(buf, 0x200, 0x54, FDD_NOERROR);
 
-		// ’Ç‰Á
+		// Add
 		AddSector(sector);
 	}
 }
 
 //---------------------------------------------------------------------------
 //
-//	•¨—ƒtƒH[ƒ}ƒbƒg(N88-BASIC)
+//	Physical format(N88-BASIC)
 //
 //---------------------------------------------------------------------------
 void FASTCALL FDITrack::CreateN88B()
@@ -743,58 +743,58 @@ void FASTCALL FDITrack::CreateN88B()
 	ASSERT(this);
 	ASSERT(trk.hd);
 
-	// ƒgƒ‰ƒbƒN‚Í153‚Ü‚Å
+	// Track up to 153
 	if (trk.track > 153) {
 		return;
 	}
 
-	// C,Hì¬
+	// C,HCreate
 	chrn[0] = trk.track >> 1;
 	chrn[1] = trk.track & 0x01;
 
-	// ƒoƒbƒtƒ@‰Šú‰»
+	// Initialize buffer
 	memset(buf, 0xe5, sizeof(buf));
 
-	// ƒgƒ‰ƒbƒN0‚Í—áŠO
+	// Track 0 is exception
 	if (trk.track == 0) {
-		// ƒŒƒ“ƒOƒX0~26ƒZƒNƒ^(FM)
+		// Length 0x26 sectors (FM)
 		chrn[3] = 0;
 		for (i=0; i<26; i++) {
-			// Rì¬
+			// Create R
 			chrn[2] = i + 1;
 
-			// ƒZƒNƒ^ì¬
+			// Create sector
 			sector = new FDISector(FALSE, chrn);
 
-			// ƒf[ƒ^ƒ[ƒh
+			// Load data
 			sector->Load(buf, 0x80, 0x1a, FDD_NOERROR);
 
-			// ’Ç‰Á
+			// Add
 			AddSector(sector);
 		}
 		return;
 	}
 
-	// ƒŒƒ“ƒOƒX1~26ƒZƒNƒ^(MFM)
+	// Length 1x26 sectors (MFM)
 	chrn[3] = 1;
 	for (i=0; i<26; i++) {
-		// Rì¬
+		// Create R
 		chrn[2] = i + 1;
 
-		// ƒZƒNƒ^ì¬
+		// Create sector
 		sector = new FDISector(TRUE, chrn);
 
-		// ƒf[ƒ^ƒ[ƒh
+		// Load data
 		sector->Load(buf, 0x100, 0x33, FDD_NOERROR);
 
-		// ’Ç‰Á
+		// Add
 		AddSector(sector);
 	}
 }
 
 //---------------------------------------------------------------------------
 //
-//	•¨—ƒtƒH[ƒ}ƒbƒg(OS-9/68000)
+//	Physical format(OS-9/68000)
 //
 //---------------------------------------------------------------------------
 void FASTCALL FDITrack::CreateOS9()
@@ -807,38 +807,38 @@ void FASTCALL FDITrack::CreateOS9()
 	ASSERT(this);
 	ASSERT(trk.hd);
 
-	// ƒgƒ‰ƒbƒN‚Í153‚Ü‚Å
+	// Track up to 153
 	if (trk.track > 153) {
 		return;
 	}
 
-	// C,H,Nì¬
+	// Create C, H, N
 	chrn[0] = trk.track >> 1;
 	chrn[1] = trk.track & 0x01;
 	chrn[3] = 1;
 
-	// ƒoƒbƒtƒ@‰Šú‰»
+	// Initialize buffer
 	memset(buf, 0xe5, sizeof(buf));
 
-	// ƒŒƒ“ƒOƒX1~26ƒZƒNƒ^(MFM)
+	// Length 1x26 sectors (MFM)
 	for (i=0; i<26; i++) {
-		// Rì¬
+		// Create R
 		chrn[2] = i + 1;
 
-		// ƒZƒNƒ^ì¬
+		// Create sector
 		sector = new FDISector(TRUE, chrn);
 
-		// ƒf[ƒ^ƒ[ƒh
+		// Load data
 		sector->Load(buf, 0x100, 0x33, FDD_NOERROR);
 
-		// ’Ç‰Á
+		// Add
 		AddSector(sector);
 	}
 }
 
 //---------------------------------------------------------------------------
 //
-//	•¨—ƒtƒH[ƒ}ƒbƒg(2DD)
+//	Physical format(2DD)
 //
 //---------------------------------------------------------------------------
 void FASTCALL FDITrack::Create2DD()
@@ -851,43 +851,43 @@ void FASTCALL FDITrack::Create2DD()
 	ASSERT(this);
 	ASSERT(!trk.hd);
 
-	// ƒgƒ‰ƒbƒN‚Í159‚Ü‚Å
+	// Track up to 159
 	if (trk.track > 159) {
 		return;
 	}
 
-	// C,H,Nì¬
+	// Create C, H, N
 	chrn[0] = trk.track >> 1;
 	chrn[1] = trk.track & 0x01;
 	chrn[3] = 0x02;
 
-	// ƒoƒbƒtƒ@‰Šú‰»
+	// Initialize buffer
 	memset(buf, 0xe5, sizeof(buf));
 
-	// ƒŒƒ“ƒOƒX2~9ƒZƒNƒ^(MFM)
+	// Length 2x9 sectors (MFM)
 	for (i=0; i<9; i++) {
-		// Rì¬
+		// Create R
 		chrn[2] = i + 1;
 
-		// ƒZƒNƒ^ì¬
+		// Create sector
 		sector = new FDISector(TRUE, chrn);
 
-		// ƒf[ƒ^ƒ[ƒh
+		// Load data
 		sector->Load(buf, 0x200, 0x54, FDD_NOERROR);
 
-		// ’Ç‰Á
+		// Add
 		AddSector(sector);
 	}
 }
 
 //---------------------------------------------------------------------------
 //
-//	ƒŠ[ƒhID
-//	¦Ÿ‚ÌƒXƒe[ƒ^ƒX‚ğ•Ô‚·(ƒGƒ‰[‚ÍOR‚³‚ê‚é)
-//		FDD_NOERROR		ƒGƒ‰[‚È‚µ
-//		FDD_MAM			w’è–§“x‚Å‚ÍƒAƒ“ƒtƒH[ƒ}ƒbƒg
-//		FDD_NODATA		w’è–§“x‚Å‚ÍƒAƒ“ƒtƒH[ƒ}ƒbƒg‚©A
-//						‚Ü‚½‚Í—LŒø‚ÈƒZƒNƒ^‚·‚×‚ÄID CRC
+//	ReadID
+//	Note: Returns the following status (errors are ORed)
+//		FDD_NOERROR		No error
+//		FDD_MAM			Unformatted at specified density
+//		FDD_NODATA		Unformatted at specified density, or
+//						or all valid sectors have ID CRC
 //
 //---------------------------------------------------------------------------
 int FASTCALL FDITrack::ReadID(DWORD *buf, BOOL mfm)
@@ -902,10 +902,10 @@ int FASTCALL FDITrack::ReadID(DWORD *buf, BOOL mfm)
 	ASSERT(buf);
 	ASSERT(trk.disk);
 
-	// ƒXƒe[ƒ^ƒX‰Šú‰»
+	// Initialize status
 	status = FDD_NOERROR;
 
-	// HDƒtƒ‰ƒO‚ª‡‚í‚È‚¯‚ê‚ÎAƒGƒ‰[ˆ—‚·‚é
+	// If HD flag does not match, process error
 	if (GetDisk()->IsHD() != trk.hd) {
 		status |= FDD_MAM;
 		status |= FDD_NODATA;
@@ -915,16 +915,16 @@ int FASTCALL FDITrack::ReadID(DWORD *buf, BOOL mfm)
 		return status;
 	}
 
-	// –§“x‚ª‡‚¢AID CRC‚Ì‚È‚¢ƒZƒNƒ^‚ÌŒÂ”‚ğ”‚¦‚é
+	// Count sectors with matching density and no ID CRC
 	num = 0;
 	match = 0;
 	sector = GetFirst();
 	while (sector) {
-		// –§“x‚ªƒ}ƒbƒ`‚·‚é‚©
+		// Check if density matches
 		if (sector->IsMFM() == mfm) {
 			match++;
 
-			// ID CRCƒGƒ‰[‚ª‚È‚¢‚©
+			// Check if no ID CRC error
 			if (!(sector->GetError() & FDD_IDCRC)) {
 				num++;
 			}
@@ -932,17 +932,17 @@ int FASTCALL FDITrack::ReadID(DWORD *buf, BOOL mfm)
 		sector = sector->GetNext();
 	}
 
-	// –§“x‚ªƒ}ƒbƒ`‚·‚éƒf[ƒ^‚ª‚È‚¢
+	// No data with matching density
 	if (match == 0) {
 		status |= FDD_MAM;
 	}
 
-	// ID CRC‚Ì‚È‚¢ƒZƒNƒ^‚ª‚È‚¢
+	// No sectors without ID CRC
 	if (num == 0) {
 		status |= FDD_NODATA;
 	}
 
-	// ‚Ç‚¿‚ç‚Å‚à¸”sBŒŸõ‚É‚©‚©‚éŠÔ‚ÍƒCƒ“ƒfƒbƒNƒXƒz[ƒ‹‚Q‰ñŒŸo
+	// Both failed. Search time is 2 index hole detections
 	if (status != FDD_NOERROR) {
 		pos = GetDisk()->GetRotationTime();
 		pos = (pos * 2) - GetDisk()->GetRotationPos();
@@ -950,7 +950,7 @@ int FASTCALL FDITrack::ReadID(DWORD *buf, BOOL mfm)
 		return status;
 	}
 
-	// ƒJƒŒƒ“ƒgƒ|ƒWƒVƒ‡ƒ“ˆÈ~‚ÌÅ‰‚ÌƒZƒNƒ^‚ğæ“¾B‚½‚¾‚µ–§“x‚ª‡‚¤‚±‚Æ
+	// Get first sector after current position. Must match density
 	sector = GetCurSector();
 	ASSERT(sector);
 	for (;;) {
@@ -959,46 +959,46 @@ int FASTCALL FDITrack::ReadID(DWORD *buf, BOOL mfm)
 		}
 		ASSERT(sector);
 
-		// –§“x‚ªˆê’v‚µ‚È‚¯‚ê‚ÎƒXƒLƒbƒv
+		// Skip if density does not match
 		if (sector->IsMFM() != mfm) {
 			sector = sector->GetNext();
 			continue;
 		}
 
-		// ID CRC‚È‚çƒXƒLƒbƒv
+		// Skip if ID CRC
 		if (sector->GetError() & FDD_IDCRC) {
 			sector = sector->GetNext();
 			continue;
 		}
 
-		// I—¹
+		// End
 		break;
 	}
 
-	// CHRN‚ğæ“¾
+	// Get CHRN
 	sector->GetCHRN(buf);
 
-	// ŒŸõ‚É‚©‚©‚éŠÔ‚ğİ’è
+	// Set search time
 	pos = sector->GetPos();
 	GetDisk()->CalcSearch(pos);
 
-	// ƒGƒ‰[–³‚µ
+	// No error
 	return status;
 }
 
 //---------------------------------------------------------------------------
 //
-//	ƒŠ[ƒhƒZƒNƒ^
-//	¦Ÿ‚ÌƒXƒe[ƒ^ƒX‚ğ•Ô‚·(ƒGƒ‰[‚ÍOR‚³‚ê‚é)
-//		FDD_NOERROR		ƒGƒ‰[‚È‚µ
-//		FDD_MAM			w’è–§“x‚Å‚ÍƒAƒ“ƒtƒH[ƒ}ƒbƒg
-//		FDD_NODATA		w’è–§“x‚Å‚ÍƒAƒ“ƒtƒH[ƒ}ƒbƒg‚©A
-//						‚Ü‚½‚Í—LŒø‚ÈƒZƒNƒ^‚ğ‘SŒŸõ‚µ‚ÄR‚ªˆê’v‚µ‚È‚¢
-//		FDD_NOCYL		ŒŸõ’†‚ÉID‚ÌC‚ªˆê’v‚¹‚¸AFF‚Å‚È‚¢ƒZƒNƒ^‚ğŒ©‚Â‚¯‚½
-//		FDD_BADCYL		ŒŸõ’†‚ÉID‚ÌC‚ªˆê’v‚¹‚¸AFF‚Æ‚È‚Á‚Ä‚¢‚éƒZƒNƒ^‚ğŒ©‚Â‚¯‚½
-//		FDD_IDCRC		IDƒtƒB[ƒ‹ƒh‚ÉCRCƒGƒ‰[‚ª‚ ‚é
-//		FDD_DATACRC		DATAƒtƒB[ƒ‹ƒh‚ÉCRCƒGƒ‰[‚ª‚ ‚é
-//		FDD_DDAM		ƒfƒŠ[ƒeƒbƒhƒZƒNƒ^‚Å‚ ‚é
+//	Read sector
+//	Note: Returns the following status (errors are ORed)
+//		FDD_NOERROR		No error
+//		FDD_MAM			Unformatted at specified density
+//		FDD_NODATA		Unformatted at specified density, or
+//						or R does not match after searching all valid sectors
+//		FDD_NOCYL		Found sector where C in ID does not match and is not FF during search
+//		FDD_BADCYL		Found sector where C in ID does not match and is FF during search
+//		FDD_IDCRC		CRC error in ID field
+//		FDD_DATACRC		CRC error in DATA field
+//		FDD_DDAM		Is deleted sector
 //
 //---------------------------------------------------------------------------
 int FASTCALL FDITrack::ReadSector(BYTE *buf, int *len, BOOL mfm, const DWORD *chrn)
@@ -1014,7 +1014,7 @@ int FASTCALL FDITrack::ReadSector(BYTE *buf, int *len, BOOL mfm, const DWORD *ch
 	ASSERT(len);
 	ASSERT(chrn);
 
-	// –§“x‚ª‡‚¤ƒZƒNƒ^”‚ğæ“¾
+	// Get sector count with matching density
 	if (mfm) {
 		num = GetMFMSectors();
 	}
@@ -1022,24 +1022,24 @@ int FASTCALL FDITrack::ReadSector(BYTE *buf, int *len, BOOL mfm, const DWORD *ch
 		num = GetFMSectors();
 	}
 
-	// HDƒtƒ‰ƒO‚ª‡‚í‚È‚¯‚ê‚ÎA‹­§“I‚ÉƒZƒNƒ^”0‚Æ‚·‚é
+	// Force sector count to 0 if HD flag does not match
 	if (GetDisk()->IsHD() != trk.hd) {
 		num = 0;
 	}
 
-	// 0‚È‚çMAM,NODATA(ƒZƒNƒ^‚Í‚P‚Â‚à‚È‚¢)
+	// If 0, MAM, NODATA (no sectors)
 	if (num == 0) {
-		// ŒŸõ‚É‚©‚©‚éŠÔ‚ÍƒCƒ“ƒfƒbƒNƒXƒz[ƒ‹‚Q‰ñŒŸo
+		// Search time is 2 index hole detections
 		pos = GetDisk()->GetRotationTime();
 		pos = (pos * 2) - GetDisk()->GetRotationPos();
 		GetDisk()->SetSearch(pos);
 		return FDD_NODATA | FDD_MAM;
 	}
 
-	// ƒJƒŒƒ“ƒgƒ|ƒWƒVƒ‡ƒ“ˆÈ~‚ÌÅ‰‚ÌƒZƒNƒ^‚ğæ“¾
+	// Get first sector after current position
 	sector = GetCurSector();
 
-	// Number‚¾‚¯ƒ‹[ƒvAƒZƒNƒ^ŒŸõ(R‚µ‚©Œ©‚È‚¢)
+	// Loop by Number only, sector search (only check R)
 	status = FDD_NOERROR;
 	num = GetAllSectors();
 	for (i=0; i<num; i++) {
@@ -1048,13 +1048,13 @@ int FASTCALL FDITrack::ReadSector(BYTE *buf, int *len, BOOL mfm, const DWORD *ch
 		}
 		ASSERT(sector);
 
-		// –§“x‚ªƒ}ƒbƒ`‚µ‚È‚¯‚ê‚ÎŒJ‚è•Ô‚·
+		// Repeat if density does not match
 		if (sector->IsMFM() != mfm) {
 			sector = sector->GetNext();
 			continue;
 		}
 
-		// CHRN‚ğæ“¾AC‚ğƒ`ƒFƒbƒN
+		// Get CHRN, check C
 		sector->GetCHRN(work);
 		if (work[0] != chrn[0]) {
 			if (work[0] == 0xff) {
@@ -1065,31 +1065,31 @@ int FASTCALL FDITrack::ReadSector(BYTE *buf, int *len, BOOL mfm, const DWORD *ch
 			}
 		}
 
-		// Rˆê’v‚Å”²‚¯‚é
+		// Break on R match
 		if (work[2] == chrn[2]) {
 			break;
 		}
 
-		// Ÿ‚ÌƒZƒNƒ^‚Ö
+		// Go to next sector
 		sector = sector->GetNext();
 	}
 
-	// Rˆê’v‚µ‚È‚¯‚ê‚ÎANODATA‚Å•Ô‚·
+	// If R does not match, return NODATA
 	if (work[2] != chrn[2]) {
 		status |= FDD_NODATA;
 
-		// ŒŸõ‚É‚©‚©‚éŠÔ‚ÍƒCƒ“ƒfƒbƒNƒXƒz[ƒ‹‚Q‰ñŒŸo
+		// Search time is 2 index hole detections
 		pos = GetDisk()->GetRotationTime();
 		pos = (pos * 2) - GetDisk()->GetRotationPos();
 		GetDisk()->SetSearch(pos);
 		return status;
 	}
 
-	// ŒŸõ‚É‚©‚©‚éŠÔ‚ğİ’è
+	// Set search time
 	pos = sector->GetPos();
 	GetDisk()->CalcSearch(pos);
 
-	// buf‚ªw’è‚³‚ê‚Ä‚¢‚éê‡‚Ì‚İAƒoƒbƒtƒ@‚Öƒf[ƒ^‚ğ“ü‚ê‚éBNULL‚È‚çƒXƒe[ƒ^ƒX‚Ì‚İ
+	// Put data in buffer only if buf is specified. If NULL, status only
 	*len = sector->GetLength();
 	if (buf) {
 		status = sector->Read(buf);
@@ -1098,23 +1098,23 @@ int FASTCALL FDITrack::ReadSector(BYTE *buf, int *len, BOOL mfm, const DWORD *ch
 		status = sector->GetError();
 	}
 
-	// ƒXƒe[ƒ^ƒX‚ğƒ}ƒXƒN
+	// Mask status
 	status &= (FDD_IDCRC | FDD_DATACRC | FDD_DDAM);
 	return status;
 }
 
 //---------------------------------------------------------------------------
 //
-//	ƒ‰ƒCƒgƒZƒNƒ^
-//	¦Ÿ‚ÌƒXƒe[ƒ^ƒX‚ğ•Ô‚·(ƒGƒ‰[‚ÍOR‚³‚ê‚é)
-//		FDD_NOERROR		ƒGƒ‰[‚È‚µ
-//		FDD_MAM			w’è–§“x‚Å‚ÍƒAƒ“ƒtƒH[ƒ}ƒbƒg
-//		FDD_NODATA		w’è–§“x‚Å‚ÍƒAƒ“ƒtƒH[ƒ}ƒbƒg‚©A
-//						‚Ü‚½‚Í—LŒø‚ÈƒZƒNƒ^‚ğ‘SŒŸõ‚µ‚ÄCHRN‚ªˆê’v‚µ‚È‚¢
-//		FDD_NOCYL		ŒŸõ’†‚ÉID‚ÌC‚ªˆê’v‚¹‚¸AFF‚Å‚È‚¢ƒZƒNƒ^‚ğŒ©‚Â‚¯‚½
-//		FDD_BADCYL		ŒŸõ’†‚ÉID‚ÌC‚ªˆê’v‚¹‚¸AFF‚Æ‚È‚Á‚Ä‚¢‚éƒZƒNƒ^‚ğŒ©‚Â‚¯‚½
-//		FDD_IDCRC		IDƒtƒB[ƒ‹ƒh‚ÉCRCƒGƒ‰[‚ª‚ ‚é
-//		FDD_DDAM		ƒfƒŠ[ƒeƒbƒhƒZƒNƒ^‚Å‚ ‚é
+//	Write sector
+//	Note: Returns the following status (errors are ORed)
+//		FDD_NOERROR		No error
+//		FDD_MAM			Unformatted at specified density
+//		FDD_NODATA		Unformatted at specified density, or
+//						or CHRN does not match after searching all valid sectors
+//		FDD_NOCYL		Found sector where C in ID does not match and is not FF during search
+//		FDD_BADCYL		Found sector where C in ID does not match and is FF during search
+//		FDD_IDCRC		CRC error in ID field
+//		FDD_DDAM		Is deleted sector
 //
 //---------------------------------------------------------------------------
 int FASTCALL FDITrack::WriteSector(const BYTE *buf, int *len, BOOL mfm, const DWORD *chrn, BOOL deleted)
@@ -1130,7 +1130,7 @@ int FASTCALL FDITrack::WriteSector(const BYTE *buf, int *len, BOOL mfm, const DW
 	ASSERT(len);
 	ASSERT(chrn);
 
-	// –§“x‚ª‡‚¤ƒZƒNƒ^”‚ğæ“¾
+	// Get sector count with matching density
 	if (mfm) {
 		num = GetMFMSectors();
 	}
@@ -1138,24 +1138,24 @@ int FASTCALL FDITrack::WriteSector(const BYTE *buf, int *len, BOOL mfm, const DW
 		num = GetFMSectors();
 	}
 
-	// HDƒtƒ‰ƒO‚ª‡‚í‚È‚¯‚ê‚ÎA‹­§“I‚ÉƒZƒNƒ^”0‚Æ‚·‚é
+	// Force sector count to 0 if HD flag does not match
 	if (GetDisk()->IsHD() != trk.hd) {
 		num = 0;
 	}
 
-	// 0‚È‚çMAM,NODATA(ƒZƒNƒ^‚Í‚P‚Â‚à‚È‚¢)
+	// If 0, MAM, NODATA (no sectors)
 	if (num == 0) {
-		// ŒŸõ‚É‚©‚©‚éŠÔ‚ÍƒCƒ“ƒfƒbƒNƒXƒz[ƒ‹‚Q‰ñŒŸo
+		// Search time is 2 index hole detections
 		pos = GetDisk()->GetRotationTime();
 		pos = (pos * 2) - GetDisk()->GetRotationPos();
 		GetDisk()->SetSearch(pos);
 		return FDD_NODATA | FDD_MAM;
 	}
 
-	// ƒJƒŒƒ“ƒgƒ|ƒWƒVƒ‡ƒ“ˆÈ~‚ÌÅ‰‚ÌƒZƒNƒ^‚ğæ“¾
+	// Get first sector after current position
 	sector = GetCurSector();
 
-	// Number‚¾‚¯ƒ‹[ƒvAƒZƒNƒ^ŒŸõ(CHRNƒ`ƒFƒbƒN)
+	// Loop by Number only, sector search (check CHRN)
 	status = FDD_NOERROR;
 	num = GetAllSectors();
 	for (i=0; i<num; i++) {
@@ -1164,13 +1164,13 @@ int FASTCALL FDITrack::WriteSector(const BYTE *buf, int *len, BOOL mfm, const DW
 		}
 		ASSERT(sector);
 
-		// –§“x‚ªƒ}ƒbƒ`‚µ‚È‚¯‚ê‚ÎŒJ‚è•Ô‚·
+		// Repeat if density does not match
 		if (sector->IsMFM() != mfm) {
 			sector = sector->GetNext();
 			continue;
 		}
 
-		// CHRN‚ğæ“¾AC‚ğƒ`ƒFƒbƒN
+		// Get CHRN, check C
 		sector->GetCHRN(work);
 		if (work[0] != chrn[0]) {
 			if (work[0] == 0xff) {
@@ -1181,31 +1181,31 @@ int FASTCALL FDITrack::WriteSector(const BYTE *buf, int *len, BOOL mfm, const DW
 			}
 		}
 
-		// CHRNˆê’v‚Å”²‚¯‚é
+		// Break on CHRN match
 		if (sector->IsMatch(mfm, chrn)) {
 			break;
 		}
 
-		// Ÿ‚ÌƒZƒNƒ^‚Ö
+		// Go to next sector
 		sector = sector->GetNext();
 	}
 
-	// ƒZƒNƒ^‚ªŒ©‚Â‚©‚ç‚È‚¯‚ê‚ÎANODATA
+	// If sector not found, NODATA
 	if (i >= num) {
 		status |= FDD_NODATA;
 
-		// ŒŸõ‚É‚©‚©‚éŠÔ‚ÍƒCƒ“ƒfƒbƒNƒXƒz[ƒ‹‚Q‰ñŒŸo
+		// Search time is 2 index hole detections
 		pos = GetDisk()->GetRotationTime();
 		pos = (pos * 2) - GetDisk()->GetRotationPos();
 		GetDisk()->SetSearch(pos);
 		return status;
 	}
 
-	// ŒŸõ‚É‚©‚©‚éŠÔ‚ğİ’è
+	// Set search time
 	pos = sector->GetPos();
 	GetDisk()->CalcSearch(pos);
 
-	// buf‚ªw’è‚³‚ê‚Ä‚¢‚éê‡‚Ì‚İA‘‚«‚ŞBNULL‚È‚çƒXƒe[ƒ^ƒX‚Ì‚İ
+	// Write only if buf is specified. If NULL, status only
 	*len = sector->GetLength();
 	if (buf) {
 		status = sector->Write(buf, deleted);
@@ -1214,22 +1214,22 @@ int FASTCALL FDITrack::WriteSector(const BYTE *buf, int *len, BOOL mfm, const DW
 		status = sector->GetError();
 	}
 
-	// ƒXƒe[ƒ^ƒX‚ğƒ}ƒXƒN
+	// Mask status
 	status &= (FDD_IDCRC | FDD_DDAM);
 	return status;
 }
 
 //---------------------------------------------------------------------------
 //
-//	ƒŠ[ƒhƒ_ƒCƒAƒO
-//	¦Ÿ‚ÌƒXƒe[ƒ^ƒX‚ğ•Ô‚·(ƒGƒ‰[‚ÍOR‚³‚ê‚é)
-//		FDD_NOERROR		ƒGƒ‰[‚È‚µ
-//		FDD_MAM			w’è–§“x‚Å‚ÍƒAƒ“ƒtƒH[ƒ}ƒbƒg
-//		FDD_NODATA		w’è–§“x‚Å‚ÍƒAƒ“ƒtƒH[ƒ}ƒbƒg‚©A
-//						‚Ü‚½‚Í—LŒø‚ÈƒZƒNƒ^‚ğ‘SŒŸõ‚µ‚ÄR‚ªˆê’v‚µ‚È‚¢
-//		FDD_IDCRC		IDƒtƒB[ƒ‹ƒh‚ÉCRCƒGƒ‰[‚ª‚ ‚é
-//		FDD_DATACRC		ƒf[ƒ^ƒtƒB[ƒ‹ƒh‚ÉCRCƒGƒ‰[‚ª‚ ‚é
-//		FDD_DDAM		ƒfƒŠ[ƒeƒbƒhƒZƒNƒ^‚Å‚ ‚é
+//	Read diag
+//	Note: Returns the following status (errors are ORed)
+//		FDD_NOERROR		No error
+//		FDD_MAM			Unformatted at specified density
+//		FDD_NODATA		Unformatted at specified density, or
+//						or R does not match after searching all valid sectors
+//		FDD_IDCRC		CRC error in ID field
+//		FDD_DATACRC		CRC error in DATA field
+//		FDD_DDAM		Is deleted sector
 //
 //---------------------------------------------------------------------------
 int FASTCALL FDITrack::ReadDiag(BYTE *buf, int *len, BOOL mfm, const DWORD *chrn)
@@ -1250,7 +1250,7 @@ int FASTCALL FDITrack::ReadDiag(BYTE *buf, int *len, BOOL mfm, const DWORD *chrn
 	ASSERT(len);
 	ASSERT(chrn);
 
-	// –§“x‚ª‡‚¤ƒZƒNƒ^”‚ğæ“¾
+	// Get sector count with matching density
 	if (mfm) {
 		num = GetMFMSectors();
 	}
@@ -1258,21 +1258,21 @@ int FASTCALL FDITrack::ReadDiag(BYTE *buf, int *len, BOOL mfm, const DWORD *chrn
 		num = GetFMSectors();
 	}
 
-	// HDƒtƒ‰ƒO‚ª‡‚í‚È‚¯‚ê‚ÎA‹­§“I‚ÉƒZƒNƒ^”0‚Æ‚·‚é
+	// Force sector count to 0 if HD flag does not match
 	if (GetDisk()->IsHD() != trk.hd) {
 		num = 0;
 	}
 
-	// 0‚È‚çMAM,NODATA(ƒZƒNƒ^‚Í‚P‚Â‚à‚È‚¢)
+	// If 0, MAM, NODATA (no sectors)
 	if (num == 0) {
-		// ŒŸõ‚É‚©‚©‚éŠÔ‚ÍƒCƒ“ƒfƒbƒNƒXƒz[ƒ‹2‰ñŒŸo
+		// Search time is 2 index hole detections
 		pos = GetDisk()->GetRotationTime();
 		pos = (pos * 2) - GetDisk()->GetRotationPos();
 		GetDisk()->SetSearch(pos);
 		return FDD_NODATA | FDD_MAM;
 	}
 
-	// ƒ[ƒNŠm•Û
+	// Allocate work
 	try {
 		ptr = new BYTE[0x4000];
 	}
@@ -1283,40 +1283,40 @@ int FASTCALL FDITrack::ReadDiag(BYTE *buf, int *len, BOOL mfm, const DWORD *chrn
 		return FDD_NODATA | FDD_MAM;
 	}
 
-	// ƒŒƒ“ƒOƒX‚ğŒˆ‚ß‚éBÅ‘åN=7(4000h)
+	// Determine length. Max N=7 (4000h)
 	length = chrn[3];
 	if (length > 7) {
 		length = 7;
 	}
 	length = 1 << (length + 7);
 
-	// ŒŸõ‚É‚©‚©‚éŠÔ‚Íæ“ªƒZƒNƒ^æ“¾ŠÔ
+	// Search time is first sector acquisition time
 	sector = GetFirst();
 	pos = sector->GetPos();
 	GetDisk()->SetSearch(pos);
 
-	// ƒXƒe[ƒ^ƒX‰Šú‰»
+	// Initialize status
 	status = FDD_NOERROR;
 
-	// GAP1ì¬
+	// Create GAP1
 	total = MakeGAP1(ptr, 0);
 
-	// ƒ‹[ƒv
+	// Loop
 	found = FALSE;
 	while (sector) {
-		// ƒZƒNƒ^‚ÌMFM‚ªˆê’v‚µ‚È‚¯‚ê‚ÎAcontinue
+		// If sector MFM does not match, continue
 		if (sector->IsMFM() != mfm) {
 			sector = sector->GetNext();
 			continue;
 		}
 
-		// ƒZƒNƒ^ƒf[ƒ^‚ğì¬
+		// Create sector data
 		total = MakeSector(ptr, total, sector);
 
-		// CHRNæ“¾
+		// Get CHRN
 		sector->GetCHRN(work);
 
-		// R, N‚Æ‚à‚Éˆê’v‚µ‚½ê‡‚Ì‚İAfound
+		// found only if both R and N match
 		if (work[2] == chrn[2]) {
 			if (work[3] == chrn[3]) {
 				found = TRUE;
@@ -1328,27 +1328,27 @@ int FASTCALL FDITrack::ReadDiag(BYTE *buf, int *len, BOOL mfm, const DWORD *chrn
 		error &= (FDD_IDCRC | FDD_DATACRC | FDD_DDAM);
 		status |= error;
 
-		// Ÿ‚Ö
+		// Next
 		sector = sector->GetNext();
 	}
 
-	// Œ‹‰Ê‚ğŒ©‚é
+	// Check result
 	if (!found) {
-		// (ƒOƒ[ƒfƒBƒAŒn)
+		// (GLODEA type)
 		status |= (FDD_NODATA | FDD_DATAERR);
 	}
 
-	// GAP4ì¬
+	// Create GAP4
 	total = MakeGAP4(ptr, total);
 
-	// ƒoƒbƒtƒ@‚ª—^‚¦‚ç‚ê‚Ä‚¢‚È‚¯‚ê‚ÎA‚±‚±‚ÅI—¹
+	// End here if no buffer given
 	if (!buf) {
 		*len = 0;
 		delete[] ptr;
 		return status;
 	}
 
-	// ƒXƒ^[ƒgˆÊ’u‚ğŒˆ‚ß‚é(Å‰‚ÌƒZƒNƒ^‚Ìƒf[ƒ^’¼‘O‚Ü‚ÅƒXƒLƒbƒv)
+	// Determine start position (skip to just before first sector data)
 	if (mfm) {
 		start = 60 + GetGAP1();
 	}
@@ -1356,7 +1356,7 @@ int FASTCALL FDITrack::ReadDiag(BYTE *buf, int *len, BOOL mfm, const DWORD *chrn
 		start = 31 + GetGAP1();
 	}
 
-	// ‚P‰ñ‚ÅI‚í‚éê‡
+	// If ends in one pass
 	if (length <= (total - start)) {
 		memcpy(buf, &ptr[start], length);
 		*len = length;
@@ -1364,41 +1364,41 @@ int FASTCALL FDITrack::ReadDiag(BYTE *buf, int *len, BOOL mfm, const DWORD *chrn
 		return status;
 	}
 
-	// Å‰‚Ì1‰ñ‚ğˆ—
+	// Process first pass
 	memcpy(buf, &ptr[start], (total - start));
 	*len = (total - start);
 	length -= (total - start);
 	buf += (total - start);
 
-	// Ÿ‚Ìƒ‹[ƒv
+	// Next loop
 	while (length > 0) {
 		if (length <= total) {
-			// û‚Ü‚é
+			// Fits
 			memcpy(buf, ptr, length);
 			*len += length;
 			break;
 		}
-		// ‘S‚Ä“ü‚ê‚é
+		// Put all
 		memcpy(buf, ptr, total);
 		*len += total;
 		length -= total;
 		buf += total;
 	}
 
-	// ptr‰ğ•ú
+	// Free ptr
 	delete[] ptr;
 
-	// I—¹
+	// End
 	return status;
 }
 
 //---------------------------------------------------------------------------
 //
-//	ƒ‰ƒCƒgID
-//	¦2HD,DIM‚È‚Ç‚ÌƒZƒNƒ^ŒÅ’èƒ^ƒCƒvŒü‚¯
-//	¦Ÿ‚ÌƒXƒe[ƒ^ƒX‚ğ•Ô‚·(ƒGƒ‰[‚ÍOR‚³‚ê‚é)
-//		FDD_NOERROR		ƒGƒ‰[‚È‚µ
-//		FDD_NOTWRITE	‘‚«‚İ‹Ö~
+//	WriteID
+//	Note: For 2HD, DIM fixed sector types
+//	Note: Returns the following status (errors are ORed)
+//		FDD_NOERROR		No error
+//		FDD_NOTWRITE	Write protected
 //
 //---------------------------------------------------------------------------
 int FASTCALL FDITrack::WriteID(const BYTE *buf, DWORD d, int sc, BOOL mfm, int /*gpl*/)
@@ -1412,7 +1412,7 @@ int FASTCALL FDITrack::WriteID(const BYTE *buf, DWORD d, int sc, BOOL mfm, int /
 	ASSERT(this);
 	ASSERT(sc > 0);
 
-	// Œ»İ‚ÌƒZƒNƒ^‚ğæ“¾
+	// Get current sector
 	if (IsMFM()) {
 		num = GetMFMSectors();
 	}
@@ -1420,35 +1420,35 @@ int FASTCALL FDITrack::WriteID(const BYTE *buf, DWORD d, int sc, BOOL mfm, int /
 		num = GetFMSectors();
 	}
 
-	// HDƒtƒ‰ƒO‚ª‡‚í‚È‚¯‚ê‚ÎA‹­§“I‚ÉƒZƒNƒ^”0‚Æ‚·‚é
+	// Force sector count to 0 if HD flag does not match
 	if (GetDisk()->IsHD() != trk.hd) {
 		num = 0;
 	}
 
-	// ƒZƒNƒ^”‚ªˆê’v‚µ‚Ä‚¢‚é‚±‚Æ‚ª•K—v
+	// Sector count must match
 	if (num != sc) {
 		return FDD_NOTWRITE;
 	}
 
-	// ’P”{¬İ‚Í•s‰Â
+	// Single existence not allowed
 	if (GetAllSectors() != num) {
 		return FDD_NOTWRITE;
 	}
 
-	// ŠÔ‚ğİ’è(index‚Ü‚Å)
+	// Set time (until index)
 	pos = GetDisk()->GetRotationTime();
 	pos -= GetDisk()->GetRotationPos();
 	GetDisk()->SetSearch(pos);
 
-	// buf‚ª—^‚¦‚ç‚ê‚Ä‚¢‚È‚¯‚ê‚Î‚±‚±‚Ü‚Å
+	// End here if no buf given
 	if (!buf) {
 		return FDD_NOERROR;
 	}
 
-	// CHRN‚ªd•¡‚È‚­Aˆê’v‚µ‚Ä‚¢‚é‚±‚Æ
+	// CHRN must match without duplicates
 	sector = GetFirst();
 	while (sector) {
-		// buf‚Ì’†‚©‚ç’²‚×‚é
+		// Check inside buf
 		for (i=0; i<sc; i++) {
 			chrn[0] = (DWORD)buf[i * 4 + 0];
 			chrn[1] = (DWORD)buf[i * 4 + 1];
@@ -1459,17 +1459,17 @@ int FASTCALL FDITrack::WriteID(const BYTE *buf, DWORD d, int sc, BOOL mfm, int /
 			}
 		}
 
-		// ˆê’v‚·‚é‚à‚Ì‚ª‚È‚©‚Á‚½
+		// No match found
 		if (i >= sc) {
 			ASSERT(i == sc);
 			return FDD_NOTWRITE;
 		}
 
-		// Ÿ‚Ö
+		// Next
 		sector = sector->GetNext();
 	}
 
-	// ‘‚«‚İƒ‹[ƒv(‘SƒZƒNƒ^‚ğ–„‚ß‚é)
+	// Write loop (fill all sectors)
 	sector = GetFirst();
 	while (sector) {
 		sector->Fill(d);
@@ -1481,7 +1481,7 @@ int FASTCALL FDITrack::WriteID(const BYTE *buf, DWORD d, int sc, BOOL mfm, int /
 
 //---------------------------------------------------------------------------
 //
-//	•ÏXƒ`ƒFƒbƒN
+//	Check for changes
 //
 //---------------------------------------------------------------------------
 BOOL FASTCALL FDITrack::IsChanged() const
@@ -1491,11 +1491,11 @@ BOOL FASTCALL FDITrack::IsChanged() const
 
 	ASSERT(this);
 
-	// ‰Šú‰»
+	// Initialize
 	changed = FALSE;
 	sector = GetFirst();
 
-	// OR‚Å
+	// Using OR
 	while (sector) {
 		if (sector->IsChanged()) {
 			changed = TRUE;
@@ -1508,7 +1508,7 @@ BOOL FASTCALL FDITrack::IsChanged() const
 
 //---------------------------------------------------------------------------
 //
-//	ƒZƒNƒ^ƒŒƒ“ƒOƒX—İŒvZo
+//	Calculate total sector length
 //
 //---------------------------------------------------------------------------
 DWORD FASTCALL FDITrack::GetTotalLength() const
@@ -1518,11 +1518,11 @@ DWORD FASTCALL FDITrack::GetTotalLength() const
 
 	ASSERT(this);
 
-	// ‰Šú‰»
+	// Initialize
 	total = 0;
 	sector = GetFirst();
 
-	// ƒ‹[ƒv
+	// Loop
 	while (sector) {
 		total += sector->GetLength();
 		sector = sector->GetNext();
@@ -1533,7 +1533,7 @@ DWORD FASTCALL FDITrack::GetTotalLength() const
 
 //---------------------------------------------------------------------------
 //
-//	‹­§•ÏX
+//	Force change
 //
 //---------------------------------------------------------------------------
 void FASTCALL FDITrack::ForceChanged()
@@ -1542,10 +1542,10 @@ void FASTCALL FDITrack::ForceChanged()
 
 	ASSERT(this);
 
-	// ‰Šú‰»
+	// Initialize
 	sector = GetFirst();
 
-	// ƒ‹[ƒv
+	// Loop
 	while (sector) {
 		sector->ForceChanged();
 		sector = sector->GetNext();
@@ -1554,7 +1554,7 @@ void FASTCALL FDITrack::ForceChanged()
 
 //---------------------------------------------------------------------------
 //
-//	ƒZƒNƒ^’Ç‰Á
+//	Add sector
 //
 //---------------------------------------------------------------------------
 void FASTCALL FDITrack::AddSector(FDISector *sector)
@@ -1564,27 +1564,27 @@ void FASTCALL FDITrack::AddSector(FDISector *sector)
 	ASSERT(this);
 	ASSERT(sector);
 
-	// ƒZƒNƒ^‚ğ‚Á‚Ä‚¢‚È‚¯‚ê‚ÎA‚»‚Ì‚Ü‚Ü’Ç‰Á
+	// If no sectors, add as is
 	if (!trk.first) {
 		trk.first = sector;
 		sector->SetNext(NULL);
 
-		// MFMŒˆ’è
+		// Determine MFM
 		trk.mfm = sector->IsMFM();
 	}
 	else {
-		// ÅIƒZƒNƒ^‚ğ“¾‚é
+		// Get last sector
 		ptr = trk.first;
 			while (ptr->GetNext()) {
 			ptr = ptr->GetNext();
 		}
 
-		// ÅIƒZƒNƒ^‚É’Ç‰Á
+		// Add to last sector
 		ptr->SetNext(sector);
 		sector->SetNext(NULL);
 	}
 
-	// ŒÂ”‰ÁZ
+	// Increment count
 	trk.sectors[0]++;
 	if (sector->IsMFM()) {
 		trk.sectors[1]++;
@@ -1596,7 +1596,7 @@ void FASTCALL FDITrack::AddSector(FDISector *sector)
 
 //---------------------------------------------------------------------------
 //
-//	ƒZƒNƒ^‘Síœ
+//	Delete all sectors
 //
 //---------------------------------------------------------------------------
 void FASTCALL FDITrack::ClrSector()
@@ -1605,14 +1605,14 @@ void FASTCALL FDITrack::ClrSector()
 
 	ASSERT(this);
 
-	// ƒZƒNƒ^‚ğ‚·‚×‚Äíœ
+	// Delete all sectors
 	while (trk.first) {
 		sector = trk.first->GetNext();
 		delete trk.first;
 		trk.first = sector;
 	}
 
-	// ŒÂ”0
+	// Count 0
 	trk.sectors[0] = 0;
 	trk.sectors[1] = 0;
 	trk.sectors[2] = 0;
@@ -1620,7 +1620,7 @@ void FASTCALL FDITrack::ClrSector()
 
 //---------------------------------------------------------------------------
 //
-//	ƒZƒNƒ^ŒŸõ
+//	Search sector
 //
 //---------------------------------------------------------------------------
 FDISector* FASTCALL FDITrack::Search(BOOL mfm, const DWORD *chrn)
@@ -1630,12 +1630,12 @@ FDISector* FASTCALL FDITrack::Search(BOOL mfm, const DWORD *chrn)
 	ASSERT(this);
 	ASSERT(chrn);
 
-	// Å‰‚ÌƒZƒNƒ^‚ğæ“¾
+	// Get first sector
 	sector = GetFirst();
 
-	// ƒ‹[ƒv
+	// Loop
 	while (sector) {
-		// ƒ}ƒbƒ`‚·‚ê‚Î‚»‚ÌƒZƒNƒ^‚ğ•Ô‚·
+		// If match, return that sector
 		if (sector->IsMatch(mfm, chrn)) {
 			return sector;
 		}
@@ -1643,13 +1643,13 @@ FDISector* FASTCALL FDITrack::Search(BOOL mfm, const DWORD *chrn)
 		sector = sector->GetNext();
 	}
 
-	// ƒ}ƒbƒ`‚µ‚È‚¢
+	// No match
 	return NULL;
 }
 
 //---------------------------------------------------------------------------
 //
-//	GAP1‚Ì’·‚³‚ğæ“¾
+//	Get GAP1 length
 //
 //---------------------------------------------------------------------------
 int FASTCALL FDITrack::GetGAP1() const
@@ -1657,27 +1657,27 @@ int FASTCALL FDITrack::GetGAP1() const
 	ASSERT(this);
 
 	if (IsMFM()) {
-		// GAP4a 80ƒoƒCƒgASYNC12ƒoƒCƒgAIAM4ƒoƒCƒgAGAP1 50ƒoƒCƒg
+		// GAP4a 80 bytes, SYNC 12 bytes, IAM 4 bytes, GAP1 50 bytes
 		return 146;
 	}
 	else {
-		// GAP4a 40ƒoƒCƒgASYNC6ƒoƒCƒgAIAM1ƒoƒCƒgAGAP1 26ƒoƒCƒg
+		// GAP4a 40 bytes, SYNC 6 bytes, IAM 1 byte, GAP1 26 bytes
 		return 73;
 	}
 }
 
 //---------------------------------------------------------------------------
 //
-//	ƒg[ƒ^ƒ‹‚Ì’·‚³‚ğæ“¾
+//	Get total length
 //
 //---------------------------------------------------------------------------
 int FASTCALL FDITrack::GetTotal() const
 {
 	ASSERT(this);
 
-	// 2DD‚Í•Êˆµ‚¢
+	// 2DD is handled separately
 	if (!trk.hd) {
-		// PC-9801BX4‚Å‚ÌÀ‘ª’l
+		// Measured value on PC-9801BX4
 		if (IsMFM()) {
 			return 6034 + GetGAP1() + 60;
 		}
@@ -1686,7 +1686,7 @@ int FASTCALL FDITrack::GetTotal() const
 		}
 	}
 
-	// XVI‚Å‚ÌÀ‘ª’l
+	// Measured value on XVI
 	if (IsMFM()) {
 		return 10193 + GetGAP1() + 60;
 	}
@@ -1697,7 +1697,7 @@ int FASTCALL FDITrack::GetTotal() const
 
 //---------------------------------------------------------------------------
 //
-//	ŠeƒZƒNƒ^æ“ª‚ÌˆÊ’u‚ğZo
+//	Calculate position of each sector start
 //
 //---------------------------------------------------------------------------
 void FASTCALL FDITrack::CalcPos()
@@ -1710,27 +1710,27 @@ void FASTCALL FDITrack::CalcPos()
 
 	ASSERT(this);
 
-	// Å‰‚ÌƒZƒNƒ^‚ğƒZƒbƒg
+	// Set first sector
 	sector = GetFirst();
 
-	// ƒ‹[ƒv
+	// Loop
 	while (sector) {
 		// GAP1
 		prev = GetGAP1();
 
-		// ‘S‚Ä‚ÌƒZƒNƒ^‚ğ‚Ü‚í‚Á‚ÄAƒTƒCƒY‚ğ“¾‚é
+		// Get size by iterating all sectors
 		p = GetFirst();
 		while (p) {
 			if (p == sector) {
 				break;
 			}
 
-			// ‚Ü‚¾Œ»‚ê‚Ä‚¢‚È‚¯‚ê‚ÎAprev‚ğ‰ÁZ
+			// Add to prev if not yet appeared
 			prev += GetSize(p);
 			p = p->GetNext();
 		}
 
-		// IDƒtƒB[ƒ‹ƒh‚ÆSYNC‚Ì•”•ª‚ğ‰Á‚¦‚é
+		// Add ID field and SYNC portion
 		if (sector->IsMFM()) {
 			prev += 60;
 		}
@@ -1738,10 +1738,10 @@ void FASTCALL FDITrack::CalcPos()
 			prev += 31;
 		}
 
-		// GAP4‚ğ‰Á‚¦‚½ƒg[ƒ^ƒ‹‚Ì’l‚ğ“¾‚é
+		// Get total value including GAP4
 		total = GetTotal();
 
-		// prev‚Ætotal‚Ì”ä‚ğZoB‚Pü‚ÅGetDisk()->GetRotationTime()‚É‚È‚é‚æ‚¤‚É
+		// Calculate ratio of prev to total. Should equal GetDisk()->GetRotationTime() in 1 revolution
 		if (prev >= total) {
 			prev = total;
 		}
@@ -1755,17 +1755,17 @@ void FASTCALL FDITrack::CalcPos()
 			prev = hus - 1;
 		}
 
-		// Ši”[
+		// Store
 		sector->SetPos(prev);
 
-		// Ÿ‚Ö
+		// Next
 		sector = sector->GetNext();
 	}
 }
 
 //---------------------------------------------------------------------------
 //
-//	ƒZƒNƒ^‚ÌƒTƒCƒY‚ğ“¾‚é
+//	Get sector size
 //
 //---------------------------------------------------------------------------
 DWORD FASTCALL FDITrack::GetSize(FDISector *sector) const
@@ -1775,29 +1775,29 @@ DWORD FASTCALL FDITrack::GetSize(FDISector *sector) const
 	ASSERT(this);
 	ASSERT(sector);
 
-	// ‚Ü‚¸ƒZƒNƒ^‚ÌÀƒf[ƒ^—Ìˆæ+CRC+GAP3
+	// First, sector actual data area + CRC + GAP3
 	len = sector->GetLength();
 	len += 2;
 	len += sector->GetGAP3();
 
 	if (sector->IsMFM()) {
-		// SYNC12ƒoƒCƒg
+		// SYNC 12 bytes
 		len += 12;
 
-		// IDƒAƒhƒŒƒXƒ}[ƒNACHRNACRC2ƒoƒCƒg
+		// ID address mark, CHRN, CRC 2 bytes
 		len += 10;
 
-		// GAP2ASYNCAƒf[ƒ^ƒ}[ƒN
+		// GAP2, SYNC, data mark
 		len += 38;
 	}
 	else {
-		// SYNC6ƒoƒCƒg
+		// SYNC 6 bytes
 		len += 6;
 
-		// IDƒAƒhƒŒƒXƒ}[ƒNACHRNACRC2ƒoƒCƒg
+		// ID address mark, CHRN, CRC 2 bytes
 		len += 7;
 
-		// GAP2ASYNCAƒf[ƒ^ƒ}[ƒN
+		// GAP2, SYNC, data mark
 		len += 18;
 	}
 
@@ -1806,7 +1806,7 @@ DWORD FASTCALL FDITrack::GetSize(FDISector *sector) const
 
 //---------------------------------------------------------------------------
 //
-//	ƒJƒŒƒ“ƒgƒ|ƒWƒVƒ‡ƒ“ˆÈ~‚ÌƒZƒNƒ^‚ğæ“¾
+//	Get sector after current position
 //
 //---------------------------------------------------------------------------
 FDISector* FASTCALL FDITrack::GetCurSector() const
@@ -1817,16 +1817,16 @@ FDISector* FASTCALL FDITrack::GetCurSector() const
 
 	ASSERT(this);
 
-	// ƒJƒŒƒ“ƒgƒ|ƒWƒVƒ‡ƒ“‚ğ“¾‚é
+	// Get current position
 	cur = GetDisk()->GetRotationPos();
 
-	// æ“ªƒZƒNƒ^‚ğ“¾‚é
+	// Get first sector
 	sector = GetFirst();
 	if (!sector) {
 		return NULL;
 	}
 
-	// ƒZƒNƒ^‚ğ“ª‚©‚çŒ©‚ÄAˆÈã‚Å‚ ‚ê‚Îok
+	// Check sectors from head, ok if above
 	while (sector) {
 		pos = sector->GetPos();
 		if (pos >= cur) {
@@ -1835,13 +1835,13 @@ FDISector* FASTCALL FDITrack::GetCurSector() const
 		sector = sector->GetNext();
 	}
 
-	// ÅIƒZƒNƒ^‚ÌˆÊ’u‚ğ’´‚¦‚é‚Æ‚±‚ë‚ªw’è‚³‚ê‚Ä‚¢‚é‚Ì‚ÅAæ“ª‚É–ß‚·
+	// Specified position exceeds last sector position, return to head
 	return GetFirst();
 }
 
 //---------------------------------------------------------------------------
 //
-//	GAP1ì¬
+//	Create GAP1
 //
 //---------------------------------------------------------------------------
 int FASTCALL FDITrack::MakeGAP1(BYTE *buf, int offset) const
@@ -1850,11 +1850,11 @@ int FASTCALL FDITrack::MakeGAP1(BYTE *buf, int offset) const
 	ASSERT(buf);
 	ASSERT(offset >= 0);
 
-	// MFM‚©
+	// Is MFM
 	if (IsMFM()) {
 		ASSERT(GetMFMSectors() > 0);
 
-		// GAP1ì¬
+		// Create GAP1
 		offset = MakeData(buf, offset, 0x4e, 80);
 		offset = MakeData(buf, offset, 0x00, 12);
 		offset = MakeData(buf, offset, 0xc2, 3);
@@ -1866,7 +1866,7 @@ int FASTCALL FDITrack::MakeGAP1(BYTE *buf, int offset) const
 	// FM
 	ASSERT(GetFMSectors() > 0);
 
-	// GAP1ì¬
+	// Create GAP1
 	offset = MakeData(buf, offset, 0xff, 40);
 	offset = MakeData(buf, offset, 0x00, 6);
 	offset = MakeData(buf, offset, 0xfc, 1);
@@ -1876,7 +1876,7 @@ int FASTCALL FDITrack::MakeGAP1(BYTE *buf, int offset) const
 
 //---------------------------------------------------------------------------
 //
-//	ƒZƒNƒ^ƒf[ƒ^ì¬
+//	Create sector data
 //
 //---------------------------------------------------------------------------
 int FASTCALL FDITrack::MakeSector(BYTE *buf, int offset, FDISector *sector) const
@@ -1892,14 +1892,14 @@ int FASTCALL FDITrack::MakeSector(BYTE *buf, int offset, FDISector *sector) cons
 	ASSERT(offset >= 0);
 	ASSERT(sector);
 
-	// CHRNAƒZƒNƒ^ƒf[ƒ^AƒŒƒ“ƒOƒXæ“¾
+	// Get CHRN, sector data, length
 	sector->GetCHRN(chrn);
 	ptr = sector->GetSector();
 	len = sector->GetLength();
 
-	// MFM‚©
+	// Is MFM
 	if (sector->IsMFM()) {
-		// MFM(ID•”)
+		// MFM (ID part)
 		offset = MakeData(buf, offset, 0x00, 12);
 		offset = MakeData(buf, offset, 0xa1, 3);
 		offset = MakeData(buf, offset, 0xfe, 1);
@@ -1913,7 +1913,7 @@ int FASTCALL FDITrack::MakeSector(BYTE *buf, int offset, FDISector *sector) cons
 		offset += 2;
 		offset = MakeData(buf, offset, 0x4e, 22);
 
-		// MFM(ƒf[ƒ^•”)
+		// MFM (data part)
 		offset = MakeData(buf, offset, 0x00, 12);
 		offset = MakeData(buf, offset, 0xa1, 3);
 		if (sector->GetError() & FDD_DDAM) {
@@ -1932,7 +1932,7 @@ int FASTCALL FDITrack::MakeSector(BYTE *buf, int offset, FDISector *sector) cons
 		return offset;
 	}
 
-	// FM(ID•”)
+	// FM (ID part)
 	offset = MakeData(buf, offset, 0x00, 6);
 	offset = MakeData(buf, offset, 0xfe, 1);
 	for (i=0; i<4; i++) {
@@ -1945,7 +1945,7 @@ int FASTCALL FDITrack::MakeSector(BYTE *buf, int offset, FDISector *sector) cons
 	offset += 2;
 	offset = MakeData(buf, offset, 0xff, 11);
 
-	// FM(ƒf[ƒ^•”)
+	// FM (data part)
 	offset = MakeData(buf, offset, 0x00, 6);
 	if (sector->GetError() & FDD_DDAM) {
 		offset = MakeData(buf, offset, 0xf8, 1);
@@ -1966,7 +1966,7 @@ int FASTCALL FDITrack::MakeSector(BYTE *buf, int offset, FDISector *sector) cons
 
 //---------------------------------------------------------------------------
 //
-//	GAP4ì¬
+//	Create GAP4
 //
 //---------------------------------------------------------------------------
 int FASTCALL FDITrack::MakeGAP4(BYTE *buf, int offset) const
@@ -1985,7 +1985,7 @@ int FASTCALL FDITrack::MakeGAP4(BYTE *buf, int offset) const
 
 //---------------------------------------------------------------------------
 //
-//	CRCZo
+//	Calculate CRC
 //
 //---------------------------------------------------------------------------
 WORD FASTCALL FDITrack::CalcCRC(BYTE *ptr, int len) const
@@ -1997,10 +1997,10 @@ WORD FASTCALL FDITrack::CalcCRC(BYTE *ptr, int len) const
 	ASSERT(ptr);
 	ASSERT(len >= 0);
 
-	// ‰Šú‰»
+	// Initialize
 	crc = 0xffff;
 
-	// ƒ‹[ƒv
+	// Loop
 	for (i=0; i<len; i++) {
 		crc = (WORD)((crc << 8) ^ CRCTable[ (BYTE)(crc >> 8) ^ (BYTE)*ptr++ ]);
 	}
@@ -2010,7 +2010,7 @@ WORD FASTCALL FDITrack::CalcCRC(BYTE *ptr, int len) const
 
 //---------------------------------------------------------------------------
 //
-//	CRCZoƒe[ƒuƒ‹
+//	CRC calculation table
 //
 //---------------------------------------------------------------------------
 const WORD FDITrack::CRCTable[0x100] = {
@@ -2050,7 +2050,7 @@ const WORD FDITrack::CRCTable[0x100] = {
 
 //---------------------------------------------------------------------------
 //
-//	Diagƒf[ƒ^ì¬
+//	Create Diag data
 //
 //---------------------------------------------------------------------------
 int FASTCALL FDITrack::MakeData(BYTE *buf, int offset, BYTE data, int length) const
@@ -2071,62 +2071,62 @@ int FASTCALL FDITrack::MakeData(BYTE *buf, int offset, BYTE data, int length) co
 
 //===========================================================================
 //
-//	FDIƒfƒBƒXƒN
+//	FDI Disk
 //
 //===========================================================================
 
 //---------------------------------------------------------------------------
 //
-//	ƒRƒ“ƒXƒgƒ‰ƒNƒ^
+//	Constructor
 //
 //---------------------------------------------------------------------------
 FDIDisk::FDIDisk(int index, FDI *fdi)
 {
 	ASSERT((index >= 0) && (index < 0x10));
 
-	// ƒCƒ“ƒfƒbƒNƒXAIDw’è
+	// Specify index, ID
 	disk.index = index;
 	disk.fdi = fdi;
 	disk.id = MAKEID('I', 'N', 'I', 'T');
 
-	// ó‘Ô
+	// State
 	disk.writep = FALSE;
 	disk.readonly = FALSE;
 
-	// –¼Ì‚È‚µ
+	// No name
 	disk.name[0] = '\0';
 	disk.offset = 0;
 
-	// •Ûƒgƒ‰ƒbƒN‚È‚µ
+	// No held tracks
 	disk.first = NULL;
 	disk.head[0] = NULL;
 	disk.head[1] = NULL;
 
-	// ƒ|ƒWƒVƒ‡ƒ“
+	// Position
 	disk.search = 0;
 
-	// ƒŠƒ“ƒN‚È‚µ
+	// No link
 	disk.next = NULL;
 }
 
 //---------------------------------------------------------------------------
 //
-//	ƒfƒXƒgƒ‰ƒNƒ^
-//	¦”h¶ƒNƒ‰ƒX‚Ì’ˆÓ“_F
-//		Œ»İ‚Ìhead[]‚ğƒtƒ@ƒCƒ‹‚É‘‚«–ß‚·
+//	Destructor
+//	Note for derived classes:
+//		Write current head[] back to file
 //
 //---------------------------------------------------------------------------
 FDIDisk::~FDIDisk()
 {
-	// ƒNƒŠƒA
+	// Clear
 	ClrTrack();
 }
 
 //---------------------------------------------------------------------------
 //
-//	ì¬
-//	¦”h¶ƒNƒ‰ƒX‚Ì’ˆÓ“_F
-//		•¨—ƒtƒH[ƒ}ƒbƒg‚ğs‚¤(‰¼‘zŠÖ”‚ÌÅŒã‚ÅA‚±‚±‚ğŒÄ‚Ô‚±‚Æ)
+//	Create
+//	Note for derived classes:
+//		Perform physical format (call here at end of virtual function)
 //
 //---------------------------------------------------------------------------
 BOOL FASTCALL FDIDisk::Create(const Filepath& /*path*/, const option_t *opt)
@@ -2134,12 +2134,12 @@ BOOL FASTCALL FDIDisk::Create(const Filepath& /*path*/, const option_t *opt)
 	ASSERT(this);
 	ASSERT(opt);
 
-	// ˜_—ƒtƒH[ƒ}ƒbƒg‚ª•K—v‚È‚¯‚ê‚ÎI—¹
+	// End if logical format not needed
 	if (!opt->logfmt) {
 		return TRUE;
 	}
 
-	// •¨—ƒtƒH[ƒ}ƒbƒg•Ê‚ÉA˜_—ƒtƒH[ƒ}ƒbƒg‚ğs‚¤
+	// Perform logical format by physical format type
 	switch (opt->phyfmt) {
 		// 2HD
 		case FDI_2HD:
@@ -2176,7 +2176,7 @@ BOOL FASTCALL FDIDisk::Create(const Filepath& /*path*/, const option_t *opt)
 			Create2DD();
 			break;
 
-		// ‚»‚Ì‘¼
+		// Other
 		default:
 			return FALSE;
 	}
@@ -2186,7 +2186,7 @@ BOOL FASTCALL FDIDisk::Create(const Filepath& /*path*/, const option_t *opt)
 
 //---------------------------------------------------------------------------
 //
-//	˜_—ƒtƒH[ƒ}ƒbƒg(2HD,2HDA)
+//	Logical format (2HD, 2HDA)
 //
 //---------------------------------------------------------------------------
 void FASTCALL FDIDisk::Create2HD(BOOL flag2hd)
@@ -2199,10 +2199,10 @@ void FASTCALL FDIDisk::Create2HD(BOOL flag2hd)
 
 	ASSERT(this);
 
-	// ’Êí‰Šú‰»
+	// Normal initialization
 	memset(buf, 0, sizeof(buf));
 
-	// ƒgƒ‰ƒbƒN0ƒZƒNƒ^1`8‚Ö‚·‚×‚Ä‘‚«‚Ş
+	// Write to all of track 0 sectors 1-8
 	track = Search(0);
 	ASSERT(track);
 	chrn[0] = 0;
@@ -2215,7 +2215,7 @@ void FASTCALL FDIDisk::Create2HD(BOOL flag2hd)
 		sector->Write(buf, FALSE);
 	}
 
-	// ƒgƒ‰ƒbƒN1ƒZƒNƒ^1`3‚Ö‚·‚×‚Ä‘‚«‚Ş
+	// Write to all of track 1 sectors 1-3
 	track = Search(1);
 	ASSERT(track);
 	chrn[0] = 0;
@@ -2228,14 +2228,14 @@ void FASTCALL FDIDisk::Create2HD(BOOL flag2hd)
 		sector->Write(buf, FALSE);
 	}
 
-	// ƒgƒ‰ƒbƒN0‚ÖƒV[ƒN
+	// Seek to track 0
 	track = Search(0);
 	ASSERT(track);
 
-	// IPL‘‚«‚İ
+	// IPLWrite
 	memcpy(buf, IPL2HD, 0x200);
 	if (!flag2hd) {
-		// 2HDA‚Í˜_—ƒZƒNƒ^”=1280ƒZƒNƒ^
+		// 2HDA has logical sector count = 1280 sectors
 		buf[0x13] = 0x00;
 		buf[0x14] = 0x05;
 	}
@@ -2247,13 +2247,13 @@ void FASTCALL FDIDisk::Create2HD(BOOL flag2hd)
 	ASSERT(sector);
 	sector->Write(buf, FALSE);
 
-	// FATæ“ªƒZƒNƒ^‰Šú‰»
+	// Initialize FAT first sector
 	memset(buf, 0, sizeof(buf));
 	buf[0] = 0xfe;
 	buf[1] = 0xff;
 	buf[2] = 0xff;
 
-	// ‘æ1FAT‘‚«‚İ
+	// Write 1st FAT
 	chrn[0] = 0;
 	chrn[1] = 0;
 	chrn[2] = 2;
@@ -2262,7 +2262,7 @@ void FASTCALL FDIDisk::Create2HD(BOOL flag2hd)
 	ASSERT(sector);
 	sector->Write(buf, FALSE);
 
-	// ‘æ2FAT‘‚«‚İ
+	// Write 2nd FAT
 	chrn[0] = 0;
 	chrn[1] = 0;
 	chrn[2] = 4;
@@ -2274,8 +2274,8 @@ void FASTCALL FDIDisk::Create2HD(BOOL flag2hd)
 
 //---------------------------------------------------------------------------
 //
-//	IPL(2HD,2HDA)
-//	¦FORMAT.x v2.31‚æ‚èæ“¾‚µ‚½‚à‚Ì
+//	IPL (2HD, 2HDA)
+//	Obtained from FORMAT.x v2.31
 //
 //---------------------------------------------------------------------------
 const BYTE FDIDisk::IPL2HD[0x200] = {
@@ -2347,7 +2347,7 @@ const BYTE FDIDisk::IPL2HD[0x200] = {
 
 //---------------------------------------------------------------------------
 //
-//	˜_—ƒtƒH[ƒ}ƒbƒg(2HS)
+//	Logical format (2HS)
 //
 //---------------------------------------------------------------------------
 void FASTCALL FDIDisk::Create2HS()
@@ -2360,10 +2360,10 @@ void FASTCALL FDIDisk::Create2HS()
 
 	ASSERT(this);
 
-	// ’Êí‰Šú‰»
+	// Normal initialization
 	memset(buf, 0, sizeof(buf));
 
-	// ‡Œv10ƒZƒNƒ^‚Ö‘‚«‚Ş(1ƒgƒ‰ƒbƒN‚ ‚½‚è9ƒZƒNƒ^)
+	// Write to total 10 sectors (9 sectors per track)
 	track = Search(0);
 	ASSERT(track);
 	chrn[0] = 0;
@@ -2385,11 +2385,11 @@ void FASTCALL FDIDisk::Create2HS()
 	ASSERT(sector);
 	sector->Write(buf, FALSE);
 
-	// ƒgƒ‰ƒbƒN0‚ÖƒV[ƒN
+	// Seek to track 0
 	track = Search(0);
 	ASSERT(track);
 
-	// IPL‘‚«‚İ(1)
+	// IPLWrite(1)
 	chrn[0] = 0;
 	chrn[1] = 0;
 	chrn[2] = 1;
@@ -2398,7 +2398,7 @@ void FASTCALL FDIDisk::Create2HS()
 	ASSERT(sector);
 	sector->Write(&IPL2HS[0x000], FALSE);
 
-	// IPL‘‚«‚İ(2)
+	// IPLWrite(2)
 	chrn[0] = 0;
 	chrn[1] = 0;
 	chrn[2] = 13;
@@ -2407,12 +2407,12 @@ void FASTCALL FDIDisk::Create2HS()
 	ASSERT(sector);
 	sector->Write(&IPL2HS[0x400], FALSE);
 
-	// FATæ“ªƒZƒNƒ^‰Šú‰»
+	// Initialize FAT first sector
 	buf[0] = 0xfb;
 	buf[1] = 0xff;
 	buf[2] = 0xff;
 
-	// FAT‘‚«‚İ
+	// FATWrite
 	chrn[0] = 0;
 	chrn[1] = 0;
 	chrn[2] = 11;
@@ -2424,8 +2424,8 @@ void FASTCALL FDIDisk::Create2HS()
 
 //---------------------------------------------------------------------------
 //
-//	IPL(2HS)
-//	¦9scdrv.x v3.00‚æ‚èæ“¾‚µ‚½‚à‚Ì
+//	IPL (2HS)
+//	Obtained from 9scdrv.x v3.00
 //
 //---------------------------------------------------------------------------
 const BYTE FDIDisk::IPL2HS[0x800] = {
@@ -2689,7 +2689,7 @@ const BYTE FDIDisk::IPL2HS[0x800] = {
 
 //---------------------------------------------------------------------------
 //
-//	˜_—ƒtƒH[ƒ}ƒbƒg(2HC)
+//	Logical format (2HC)
 //
 //---------------------------------------------------------------------------
 void FASTCALL FDIDisk::Create2HC()
@@ -2702,10 +2702,10 @@ void FASTCALL FDIDisk::Create2HC()
 
 	ASSERT(this);
 
-	// ’Êí‰Šú‰»
+	// Normal initialization
 	memset(buf, 0, sizeof(buf));
 
-	// ‡Œv29ƒZƒNƒ^‚Ö‘‚«‚Ş(1ƒgƒ‰ƒbƒN‚ ‚½‚è15ƒZƒNƒ^)
+	// Write to total 29 sectors (15 sectors per track)
 	track = Search(0);
 	ASSERT(track);
 	chrn[0] = 0;
@@ -2729,11 +2729,11 @@ void FASTCALL FDIDisk::Create2HC()
 		sector->Write(buf, FALSE);
 	}
 
-	// ƒgƒ‰ƒbƒN0‚ÖƒV[ƒN
+	// Seek to track 0
 	track = Search(0);
 	ASSERT(track);
 
-	// IPL‘‚«‚İ
+	// IPLWrite
 	chrn[0] = 0;
 	chrn[1] = 0;
 	chrn[2] = 1;
@@ -2742,12 +2742,12 @@ void FASTCALL FDIDisk::Create2HC()
 	ASSERT(sector);
 	sector->Write(IPL2HC, FALSE);
 
-	// FATæ“ªƒZƒNƒ^‰Šú‰»
+	// Initialize FAT first sector
 	buf[0] = 0xf9;
 	buf[1] = 0xff;
 	buf[2] = 0xff;
 
-	// ‘æ1FAT‘‚«‚İ
+	// Write 1st FAT
 	chrn[0] = 0;
 	chrn[1] = 0;
 	chrn[2] = 2;
@@ -2756,7 +2756,7 @@ void FASTCALL FDIDisk::Create2HC()
 	ASSERT(sector);
 	sector->Write(buf, FALSE);
 
-	// ‘æ2FAT‘‚«‚İ
+	// Write 2nd FAT
 	chrn[0] = 0;
 	chrn[1] = 0;
 	chrn[2] = 9;
@@ -2768,8 +2768,8 @@ void FASTCALL FDIDisk::Create2HC()
 
 //---------------------------------------------------------------------------
 //
-//	IPL(2HC)
-//	¦FORMAT.x v2.31‚æ‚èæ“¾‚µ‚½‚à‚Ì
+//	IPL (2HC)
+//	Obtained from FORMAT.x v2.31
 //
 //---------------------------------------------------------------------------
 const BYTE FDIDisk::IPL2HC[0x200] = {
@@ -2841,7 +2841,7 @@ const BYTE FDIDisk::IPL2HC[0x200] = {
 
 //---------------------------------------------------------------------------
 //
-//	˜_—ƒtƒH[ƒ}ƒbƒg(2HDE)
+//	Logical format (2HDE)
 //
 //---------------------------------------------------------------------------
 void FASTCALL FDIDisk::Create2HDE()
@@ -2854,10 +2854,10 @@ void FASTCALL FDIDisk::Create2HDE()
 
 	ASSERT(this);
 
-	// ’Êí‰Šú‰»
+	// Normal initialization
 	memset(buf, 0, sizeof(buf));
 
-	// ‡Œv13ƒZƒNƒ^‚Ö‘‚«‚Ş(1ƒgƒ‰ƒbƒN‚ ‚½‚è9ƒZƒNƒ^)
+	// Write to total 13 sectors (9 sectors per track)
 	track = Search(0);
 	ASSERT(track);
 	chrn[0] = 0;
@@ -2881,11 +2881,11 @@ void FASTCALL FDIDisk::Create2HDE()
 		sector->Write(buf, FALSE);
 	}
 
-	// ƒgƒ‰ƒbƒN0‚ÖƒV[ƒN
+	// Seek to track 0
 	track = Search(0);
 	ASSERT(track);
 
-	// IPL‘‚«‚İ(1)
+	// IPLWrite(1)
 	chrn[0] = 0;
 	chrn[1] = 0;
 	chrn[2] = 1;
@@ -2894,7 +2894,7 @@ void FASTCALL FDIDisk::Create2HDE()
 	ASSERT(sector);
 	sector->Write(&IPL2HDE[0x000], FALSE);
 
-	// IPL‘‚«‚İ(2)
+	// IPLWrite(2)
 	chrn[0] = 0;
 	chrn[1] = 0x80;
 	chrn[2] = 4;
@@ -2903,12 +2903,12 @@ void FASTCALL FDIDisk::Create2HDE()
 	ASSERT(sector);
 	sector->Write(&IPL2HDE[0x400], FALSE);
 
-	// FATæ“ªƒZƒNƒ^‰Šú‰»
+	// Initialize FAT first sector
 	buf[0] = 0xf8;
 	buf[1] = 0xff;
 	buf[2] = 0xff;
 
-	// ‘æ1FAT‘‚«‚İ
+	// Write 1st FAT
 	chrn[0] = 0;
 	chrn[1] = 0x80;
 	chrn[2] = 2;
@@ -2917,7 +2917,7 @@ void FASTCALL FDIDisk::Create2HDE()
 	ASSERT(sector);
 	sector->Write(buf, FALSE);
 
-	// ‘æ2FAT‘‚«‚İ
+	// Write 2nd FAT
 	chrn[0] = 0;
 	chrn[1] = 0x80;
 	chrn[2] = 5;
@@ -2929,8 +2929,8 @@ void FASTCALL FDIDisk::Create2HDE()
 
 //---------------------------------------------------------------------------
 //
-//	IPL(2HDE)
-//	¦9scdrv.x v3.00‚æ‚èæ“¾‚µ‚½‚à‚Ì
+//	IPL (2HDE)
+//	Obtained from 9scdrv.x v3.00
 //
 //---------------------------------------------------------------------------
 const BYTE FDIDisk::IPL2HDE[0x800] = {
@@ -3194,7 +3194,7 @@ const BYTE FDIDisk::IPL2HDE[0x800] = {
 
 //---------------------------------------------------------------------------
 //
-//	˜_—ƒtƒH[ƒ}ƒbƒg(2HQ)
+//	Logical format (2HQ)
 //
 //---------------------------------------------------------------------------
 void FASTCALL FDIDisk::Create2HQ()
@@ -3207,10 +3207,10 @@ void FASTCALL FDIDisk::Create2HQ()
 
 	ASSERT(this);
 
-	// ’Êí‰Šú‰»
+	// Normal initialization
 	memset(buf, 0, sizeof(buf));
 
-	// ‡Œv33ƒZƒNƒ^‚Ö‘‚«‚Ş(1ƒgƒ‰ƒbƒN‚ ‚½‚è18ƒZƒNƒ^)
+	// Write to total 33 sectors (18 sectors per track)
 	track = Search(0);
 	ASSERT(track);
 	chrn[0] = 0;
@@ -3234,11 +3234,11 @@ void FASTCALL FDIDisk::Create2HQ()
 		sector->Write(buf, FALSE);
 	}
 
-	// ƒgƒ‰ƒbƒN0‚ÖƒV[ƒN
+	// Seek to track 0
 	track = Search(0);
 	ASSERT(track);
 
-	// IPL‘‚«‚İ
+	// IPLWrite
 	chrn[0] = 0;
 	chrn[1] = 0;
 	chrn[2] = 1;
@@ -3247,12 +3247,12 @@ void FASTCALL FDIDisk::Create2HQ()
 	ASSERT(sector);
 	sector->Write(IPL2HQ, FALSE);
 
-	// FATæ“ªƒZƒNƒ^‰Šú‰»
+	// Initialize FAT first sector
 	buf[0] = 0xf0;
 	buf[1] = 0xff;
 	buf[2] = 0xff;
 
-	// ‘æ1FAT‘‚«‚İ
+	// Write 1st FAT
 	chrn[0] = 0;
 	chrn[1] = 0;
 	chrn[2] = 2;
@@ -3261,7 +3261,7 @@ void FASTCALL FDIDisk::Create2HQ()
 	ASSERT(sector);
 	sector->Write(buf, FALSE);
 
-	// ‘æ2FAT‘‚«‚İ
+	// Write 2nd FAT
 	chrn[0] = 0;
 	chrn[1] = 0;
 	chrn[2] = 11;
@@ -3273,8 +3273,8 @@ void FASTCALL FDIDisk::Create2HQ()
 
 //---------------------------------------------------------------------------
 //
-//	IPL(2HQ)
-//	¦FORMAT.x v2.31‚æ‚èæ“¾‚µ‚½‚à‚Ì
+//	IPL (2HQ)
+//	Obtained from FORMAT.x v2.31
 //
 //---------------------------------------------------------------------------
 const BYTE FDIDisk::IPL2HQ[0x200] = {
@@ -3346,7 +3346,7 @@ const BYTE FDIDisk::IPL2HQ[0x200] = {
 
 //---------------------------------------------------------------------------
 //
-//	˜_—ƒtƒH[ƒ}ƒbƒg(2DD)
+//	Logical format (2DD)
 //
 //---------------------------------------------------------------------------
 void FASTCALL FDIDisk::Create2DD()
@@ -3359,10 +3359,10 @@ void FASTCALL FDIDisk::Create2DD()
 
 	ASSERT(this);
 
-	// ’Êí‰Šú‰»
+	// Normal initialization
 	memset(buf, 0, sizeof(buf));
 
-	// ‡Œv14ƒZƒNƒ^‚Ö‘‚«‚Ş(1ƒgƒ‰ƒbƒN‚ ‚½‚è18ƒZƒNƒ^)
+	// Write to total 14 sectors (18 sectors per track)
 	track = Search(0);
 	ASSERT(track);
 	chrn[0] = 0;
@@ -3386,11 +3386,11 @@ void FASTCALL FDIDisk::Create2DD()
 		sector->Write(buf, FALSE);
 	}
 
-	// ƒgƒ‰ƒbƒN0‚ÖƒV[ƒN
+	// Seek to track 0
 	track = Search(0);
 	ASSERT(track);
 
-	// IPL‰ÁH(2HQ—p‚ğƒx[ƒX‚Éì¬)
+	// Process IPL (created based on 2HQ version)
 	memcpy(buf, IPL2HQ, sizeof(buf));
 	buf[0] = 0x60;
 	buf[1] = 0x3c;
@@ -3406,7 +3406,7 @@ void FASTCALL FDIDisk::Create2DD()
 	buf[0x16b] = 0x09;
 	buf[0x16f] = 0x0c;
 
-	// IPL‘‚«‚İ
+	// IPLWrite
 	chrn[0] = 0;
 	chrn[1] = 0;
 	chrn[2] = 1;
@@ -3416,12 +3416,12 @@ void FASTCALL FDIDisk::Create2DD()
 	sector->Write(buf, FALSE);
 	memset(buf, 0, sizeof(buf));
 
-	// FATæ“ªƒZƒNƒ^‰Šú‰»
+	// Initialize FAT first sector
 	buf[0] = 0xf9;
 	buf[1] = 0xff;
 	buf[2] = 0xff;
 
-	// ‘æ1FAT‘‚«‚İ
+	// Write 1st FAT
 	chrn[0] = 0;
 	chrn[1] = 0;
 	chrn[2] = 2;
@@ -3430,7 +3430,7 @@ void FASTCALL FDIDisk::Create2DD()
 	ASSERT(sector);
 	sector->Write(buf, FALSE);
 
-	// ‘æ2FAT‘‚«‚İ
+	// Write 2nd FAT
 	chrn[0] = 0;
 	chrn[1] = 0;
 	chrn[2] = 5;
@@ -3442,56 +3442,56 @@ void FASTCALL FDIDisk::Create2DD()
 
 //---------------------------------------------------------------------------
 //
-//	ƒI[ƒvƒ“
-//	¦”h¶ƒNƒ‰ƒX‚Ì’ˆÓ“_F
-//		writep, readonly‚ğ“KØ‚Éİ’è‚·‚é
-//		path, name‚ğ“KØ‚Éİ’è‚·‚é
-//	¦ãˆÊƒNƒ‰ƒX‚Ì’ˆÓ“_F
-//		ŒÄ‚Ño‚µ‚½Œã‚ÅAŒ»İ‚ÌƒVƒŠƒ“ƒ_‚ÖƒV[ƒN‚·‚é
+//	Open
+//	Note for derived classes:
+//		Set writep, readonly appropriately
+//		Set path, name appropriately
+//	Note for parent class:
+//		Seek to current cylinder after calling
 //
 //---------------------------------------------------------------------------
 BOOL FASTCALL FDIDisk::Open(const Filepath& /*path*/, DWORD /*offset*/)
 {
-	// ƒˆ‰¼‘zƒNƒ‰ƒX“I
+	// Pure virtual class style
 	ASSERT(FALSE);
 	return FALSE;
 }
 
 //---------------------------------------------------------------------------
 //
-//	‘‚«‚İ‹Ö~İ’è
+//	Write protectedSet
 //
 //---------------------------------------------------------------------------
 void FASTCALL FDIDisk::WriteP(BOOL flag)
 {
 	ASSERT(this);
 
-	// ReadOnly‚È‚çAí‚É‘‚«‚İ‹Ö~
+	// If ReadOnly, always write protected
 	if (IsReadOnly()) {
 		disk.writep = TRUE;
 		return;
 	}
 
-	// İ’è
+	// Set
 	disk.writep = flag;
 }
 
 //---------------------------------------------------------------------------
 //
-//	ƒtƒ‰ƒbƒVƒ…
+//	Flush
 //
 //---------------------------------------------------------------------------
 BOOL FASTCALL FDIDisk::Flush()
 {
 	ASSERT(this);
 
-	// ‰½‚à‚µ‚È‚¢
+	// Do nothing
 	return TRUE;
 }
 
 //---------------------------------------------------------------------------
 //
-//	ƒfƒBƒXƒN–¼æ“¾
+//	Get disk name
 //
 //---------------------------------------------------------------------------
 void FASTCALL FDIDisk::GetName(char *buf) const
@@ -3504,22 +3504,22 @@ void FASTCALL FDIDisk::GetName(char *buf) const
 
 //---------------------------------------------------------------------------
 //
-//	ƒpƒX–¼æ“¾
+//	Get path name
 //
 //---------------------------------------------------------------------------
 void FASTCALL FDIDisk::GetPath(Filepath& path) const
 {
 	ASSERT(this);
 
-	// ‘ã“ü
+	// Assign
 	path = disk.path;
 }
 
 //---------------------------------------------------------------------------
 //
-//	ƒV[ƒN
-//	¦”h¶ƒNƒ‰ƒX‚Ì’ˆÓ“_F
-//		Œ»İ‚Ìhead[]‚ğƒtƒ@ƒCƒ‹‚É‘‚«–ß‚µAV‚µ‚¢ƒgƒ‰ƒbƒN‚ğƒ[ƒhAhead[]‚ÖƒZƒbƒg
+//	Seek
+//	Note for derived classes:
+//		Write current head[] back to file, load new track, set to head[]
 //
 //---------------------------------------------------------------------------
 void FASTCALL FDIDisk::Seek(int /*c*/)
@@ -3529,12 +3529,12 @@ void FASTCALL FDIDisk::Seek(int /*c*/)
 
 //---------------------------------------------------------------------------
 //
-//	ƒŠ[ƒhID
-//	¦Ÿ‚ÌƒXƒe[ƒ^ƒX‚ğ•Ô‚·(ƒGƒ‰[‚ÍOR‚³‚ê‚é)
-//		FDD_NOERROR		ƒGƒ‰[‚È‚µ
-//		FDD_MAM			w’è–§“x‚Å‚ÍƒAƒ“ƒtƒH[ƒ}ƒbƒg
-//		FDD_NODATA		w’è–§“x‚Å‚ÍƒAƒ“ƒtƒH[ƒ}ƒbƒg‚©A
-//						‚Ü‚½‚Í—LŒø‚ÈƒZƒNƒ^‚·‚×‚ÄID CRC
+//	ReadID
+//	Note: Returns the following status (errors are ORed)
+//		FDD_NOERROR		No error
+//		FDD_MAM			Unformatted at specified density
+//		FDD_NODATA		Unformatted at specified density, or
+//						or all valid sectors have ID CRC
 //
 //---------------------------------------------------------------------------
 int FASTCALL FDIDisk::ReadID(DWORD *buf, BOOL mfm, int hd)
@@ -3546,7 +3546,7 @@ int FASTCALL FDIDisk::ReadID(DWORD *buf, BOOL mfm, int hd)
 	ASSERT(buf);
 	ASSERT((hd == 0) || (hd == 4));
 
-	// ƒgƒ‰ƒbƒNæ“¾
+	// Get track
 	if (hd == 0) {
 		track = GetHead(0);
 	}
@@ -3554,32 +3554,32 @@ int FASTCALL FDIDisk::ReadID(DWORD *buf, BOOL mfm, int hd)
 		track = GetHead(1);
 	}
 
-	// NULL‚È‚çNODATA
+	// If NULL, NODATA
 	if (!track) {
-		// ŒŸõ‚É‚©‚©‚éŠÔ‚ğİ’è
+		// Set search time
 		pos = GetRotationTime();
 		pos = (pos * 2) - GetRotationPos();
 		SetSearch(pos);
 		return FDD_MAM | FDD_NODATA;
 	}
 
-	// ƒgƒ‰ƒbƒN‚É”C‚¹‚é
+	// Delegate to track
 	return track->ReadID(buf, mfm);
 }
 
 //---------------------------------------------------------------------------
 //
-//	ƒŠ[ƒhƒZƒNƒ^
-//	¦Ÿ‚ÌƒXƒe[ƒ^ƒX‚ğ•Ô‚·(ƒGƒ‰[‚ÍOR‚³‚ê‚é)
-//		FDD_NOERROR		ƒGƒ‰[‚È‚µ
-//		FDD_MAM			w’è–§“x‚Å‚ÍƒAƒ“ƒtƒH[ƒ}ƒbƒg
-//		FDD_NODATA		w’è–§“x‚Å‚ÍƒAƒ“ƒtƒH[ƒ}ƒbƒg‚©A
-//						‚Ü‚½‚Í—LŒø‚ÈƒZƒNƒ^‚ğ‘SŒŸõ‚µ‚ÄR‚ªˆê’v‚µ‚È‚¢
-//		FDD_NOCYL		ŒŸõ’†‚ÉID‚ÌC‚ªˆê’v‚Å‚¸AFF‚Å‚È‚¢ƒZƒNƒ^‚ğŒ©‚Â‚¯‚½
-//		FDD_BADCYL		ŒŸõ’†‚ÉID‚ÌC‚ªˆê’v‚¹‚¸AFF‚Æ‚È‚Á‚Ä‚¢‚éƒZƒNƒ^‚ğŒ©‚Â‚¯‚½
-//		FDD_IDCRC		IDƒtƒB[ƒ‹ƒh‚ÉCRCƒGƒ‰[‚ª‚ ‚é
-//		FDD_DATACRC		DATAƒtƒB[ƒ‹ƒh‚ÉCRCƒGƒ‰[‚ª‚ ‚é
-//		FDD_DDAM		ƒfƒŠ[ƒeƒbƒhƒZƒNƒ^‚Å‚ ‚é
+//	Read sector
+//	Note: Returns the following status (errors are ORed)
+//		FDD_NOERROR		No error
+//		FDD_MAM			Unformatted at specified density
+//		FDD_NODATA		Unformatted at specified density, or
+//						or R does not match after searching all valid sectors
+//		FDD_NOCYL		Found sector where C in ID does not match and is not FF during search
+//		FDD_BADCYL		Found sector where C in ID does not match and is FF during search
+//		FDD_IDCRC		CRC error in ID field
+//		FDD_DATACRC		CRC error in DATA field
+//		FDD_DDAM		Is deleted sector
 //
 //---------------------------------------------------------------------------
 int FASTCALL FDIDisk::ReadSector(BYTE *buf, int *len, BOOL mfm, const DWORD *chrn, int hd)
@@ -3592,7 +3592,7 @@ int FASTCALL FDIDisk::ReadSector(BYTE *buf, int *len, BOOL mfm, const DWORD *chr
 	ASSERT(chrn);
 	ASSERT((hd == 0) || (hd == 4));
 
-	// ƒgƒ‰ƒbƒNæ“¾
+	// Get track
 	if (hd == 0) {
 		track = GetHead(0);
 	}
@@ -3600,32 +3600,32 @@ int FASTCALL FDIDisk::ReadSector(BYTE *buf, int *len, BOOL mfm, const DWORD *chr
 		track = GetHead(1);
 	}
 
-	// NULL‚È‚çNODATA
+	// If NULL, NODATA
 	if (!track) {
-		// ŒŸõ‚É‚©‚©‚éŠÔ‚ğİ’è
+		// Set search time
 		pos = GetRotationTime();
 		pos = (pos * 2) - GetRotationPos();
 		SetSearch(pos);
 		return FDD_MAM | FDD_NODATA;
 	}
 
-	// ƒgƒ‰ƒbƒN‚É”C‚¹‚é
+	// Delegate to track
 	return track->ReadSector(buf, len, mfm, chrn);
 }
 
 //---------------------------------------------------------------------------
 //
-//	ƒ‰ƒCƒgƒZƒNƒ^
-//	¦Ÿ‚ÌƒXƒe[ƒ^ƒX‚ğ•Ô‚·(ƒGƒ‰[‚ÍOR‚³‚ê‚é)
-//		FDD_NOERROR		ƒGƒ‰[‚È‚µ
-//		FDD_NOTWRITE	ƒƒfƒBƒA‚Í‘‚«‚İ‹Ö~
-//		FDD_MAM			w’è–§“x‚Å‚ÍƒAƒ“ƒtƒH[ƒ}ƒbƒg
-//		FDD_NODATA		w’è–§“x‚Å‚ÍƒAƒ“ƒtƒH[ƒ}ƒbƒg‚©A
-//						‚Ü‚½‚Í—LŒø‚ÈƒZƒNƒ^‚ğ‘SŒŸõ‚µ‚ÄR‚ªˆê’v‚µ‚È‚¢
-//		FDD_NOCYL		ŒŸõ’†‚ÉID‚ÌC‚ªˆê’v‚Å‚¸AFF‚Å‚È‚¢ƒZƒNƒ^‚ğŒ©‚Â‚¯‚½
-//		FDD_BADCYL		ŒŸõ’†‚ÉID‚ÌC‚ªˆê’v‚¹‚¸AFF‚Æ‚È‚Á‚Ä‚¢‚éƒZƒNƒ^‚ğŒ©‚Â‚¯‚½
-//		FDD_IDCRC		IDƒtƒB[ƒ‹ƒh‚ÉCRCƒGƒ‰[‚ª‚ ‚é
-//		FDD_DDAM		ƒfƒŠ[ƒeƒbƒhƒZƒNƒ^‚Å‚ ‚é
+//	Write sector
+//	Note: Returns the following status (errors are ORed)
+//		FDD_NOERROR		No error
+//		FDD_NOTWRITE	Media is write protected
+//		FDD_MAM			Unformatted at specified density
+//		FDD_NODATA		Unformatted at specified density, or
+//						or R does not match after searching all valid sectors
+//		FDD_NOCYL		Found sector where C in ID does not match and is not FF during search
+//		FDD_BADCYL		Found sector where C in ID does not match and is FF during search
+//		FDD_IDCRC		CRC error in ID field
+//		FDD_DDAM		Is deleted sector
 //
 //---------------------------------------------------------------------------
 int FASTCALL FDIDisk::WriteSector(const BYTE *buf, int *len, BOOL mfm, const DWORD *chrn, int hd, BOOL deleted)
@@ -3638,12 +3638,12 @@ int FASTCALL FDIDisk::WriteSector(const BYTE *buf, int *len, BOOL mfm, const DWO
 	ASSERT(chrn);
 	ASSERT((hd == 0) || (hd == 4));
 
-	// ‘‚«‚İƒ`ƒFƒbƒN
+	// Write check
 	if (IsWriteP()) {
 		return FDD_NOTWRITE;
 	}
 
-	// ƒgƒ‰ƒbƒNæ“¾
+	// Get track
 	if (hd == 0) {
 		track = GetHead(0);
 	}
@@ -3651,30 +3651,30 @@ int FASTCALL FDIDisk::WriteSector(const BYTE *buf, int *len, BOOL mfm, const DWO
 		track = GetHead(1);
 	}
 
-	// NULL‚È‚çNODATA
+	// If NULL, NODATA
 	if (!track) {
-		// ŒŸõ‚É‚©‚©‚éŠÔ‚ğİ’è
+		// Set search time
 		pos = GetRotationTime();
 		pos = (pos * 2) - GetRotationPos();
 		SetSearch(pos);
 		return FDD_MAM | FDD_NODATA;
 	}
 
-	// ƒgƒ‰ƒbƒN‚É”C‚¹‚é
+	// Delegate to track
 	return track->WriteSector(buf, len, mfm, chrn, deleted);
 }
 
 //---------------------------------------------------------------------------
 //
-//	ƒŠ[ƒhƒ_ƒCƒAƒO
-//	¦Ÿ‚ÌƒXƒe[ƒ^ƒX‚ğ•Ô‚·(ƒGƒ‰[‚ÍOR‚³‚ê‚é)
-//		FDD_NOERROR		ƒGƒ‰[‚È‚µ
-//		FDD_MAM			w’è–§“x‚Å‚ÍƒAƒ“ƒtƒH[ƒ}ƒbƒg
-//		FDD_NODATA		w’è–§“x‚Å‚ÍƒAƒ“ƒtƒH[ƒ}ƒbƒg‚©A
-//						‚Ü‚½‚Í—LŒø‚ÈƒZƒNƒ^‚ğ‘SŒŸõ‚µ‚ÄR‚ªˆê’v‚µ‚È‚¢
-//		FDD_IDCRC		IDƒtƒB[ƒ‹ƒh‚ÉCRCƒGƒ‰[‚ª‚ ‚é
-//		FDD_DATACRC		ƒf[ƒ^ƒtƒB[ƒ‹ƒh‚ÉCRCƒGƒ‰[‚ª‚ ‚é
-//		FDD_DDAM		ƒfƒŠ[ƒeƒbƒhƒZƒNƒ^‚Å‚ ‚é
+//	Read diag
+//	Note: Returns the following status (errors are ORed)
+//		FDD_NOERROR		No error
+//		FDD_MAM			Unformatted at specified density
+//		FDD_NODATA		Unformatted at specified density, or
+//						or R does not match after searching all valid sectors
+//		FDD_IDCRC		CRC error in ID field
+//		FDD_DATACRC		CRC error in DATA field
+//		FDD_DDAM		Is deleted sector
 //
 //---------------------------------------------------------------------------
 int FASTCALL FDIDisk::ReadDiag(BYTE *buf, int *len, BOOL mfm, const DWORD *chrn, int hd)
@@ -3687,7 +3687,7 @@ int FASTCALL FDIDisk::ReadDiag(BYTE *buf, int *len, BOOL mfm, const DWORD *chrn,
 	ASSERT(chrn);
 	ASSERT((hd == 0) || (hd == 4));
 
-	// ƒgƒ‰ƒbƒNæ“¾
+	// Get track
 	if (hd == 0) {
 		track = GetHead(0);
 	}
@@ -3695,25 +3695,25 @@ int FASTCALL FDIDisk::ReadDiag(BYTE *buf, int *len, BOOL mfm, const DWORD *chrn,
 		track = GetHead(1);
 	}
 
-	// NULL‚È‚çNODATA
+	// If NULL, NODATA
 	if (!track) {
-		// ŒŸõ‚É‚©‚©‚éŠÔ‚ğİ’è
+		// Set search time
 		pos = GetRotationTime();
 		pos = (pos * 2) - GetRotationPos();
 		SetSearch(pos);
 		return FDD_MAM | FDD_NODATA;
 	}
 
-	// ƒgƒ‰ƒbƒN‚É”C‚¹‚é
+	// Delegate to track
 	return track->ReadDiag(buf, len, mfm, chrn);
 }
 
 //---------------------------------------------------------------------------
 //
-//	ƒ‰ƒCƒgID
-//	¦Ÿ‚ÌƒXƒe[ƒ^ƒX‚ğ•Ô‚·(ƒGƒ‰[‚ÍOR‚³‚ê‚é)
-//		FDD_NOERROR		ƒGƒ‰[‚È‚µ
-//		FDD_NOTWRITE	ƒƒfƒBƒA‚Í‘‚«‚İ‹Ö~
+//	WriteID
+//	Note: Returns the following status (errors are ORed)
+//		FDD_NOERROR		No error
+//		FDD_NOTWRITE	Media is write protected
 //
 //---------------------------------------------------------------------------
 int FASTCALL FDIDisk::WriteID(const BYTE *buf, DWORD d, int sc, BOOL mfm, int hd, int gpl)
@@ -3723,12 +3723,12 @@ int FASTCALL FDIDisk::WriteID(const BYTE *buf, DWORD d, int sc, BOOL mfm, int hd
 	ASSERT(this);
 	ASSERT(sc > 0);
 
-	// ‘‚«‚İƒ`ƒFƒbƒN
+	// Write check
 	if (IsWriteP()) {
 		return FDD_NOTWRITE;
 	}
 
-	// ƒgƒ‰ƒbƒNæ“¾
+	// Get track
 	if (hd == 0) {
 		track = GetHead(0);
 	}
@@ -3736,18 +3736,18 @@ int FASTCALL FDIDisk::WriteID(const BYTE *buf, DWORD d, int sc, BOOL mfm, int hd
 		track = GetHead(1);
 	}
 
-	// NULL‚È‚çNo Error‚Æ‚·‚é(format.x v2.20‚Å154ƒgƒ‰ƒbƒN‚ÉWrite ID)
+	// If NULL, treat as No Error (Write ID to 154 tracks in format.x v2.20)
 	if (!track) {
 		return FDD_NOERROR;
 	}
 
-	// ƒgƒ‰ƒbƒN‚É”C‚¹‚é
+	// Delegate to track
 	return track->WriteID(buf, d, sc, mfm, gpl);
 }
 
 //---------------------------------------------------------------------------
 //
-//	‰ñ“]ˆÊ’uæ“¾
+//	Get rotation position
 //
 //---------------------------------------------------------------------------
 DWORD FASTCALL FDIDisk::GetRotationPos() const
@@ -3755,13 +3755,13 @@ DWORD FASTCALL FDIDisk::GetRotationPos() const
 	ASSERT(this);
 	ASSERT(GetFDI());
 
-	// e‚É•·‚­
+	// Ask parent
 	return GetFDI()->GetRotationPos();
 }
 
 //---------------------------------------------------------------------------
 //
-//	‰ñ“]ŠÔæ“¾
+//	Get rotation time
 //
 //---------------------------------------------------------------------------
 DWORD FASTCALL FDIDisk::GetRotationTime() const
@@ -3770,13 +3770,13 @@ DWORD FASTCALL FDIDisk::GetRotationTime() const
 
 	ASSERT(GetFDI());
 
-	// e‚É•·‚­
+	// Ask parent
 	return GetFDI()->GetRotationTime();
 }
 
 //---------------------------------------------------------------------------
 //
-//	ŒŸõ’·‚³Zo
+//	Calculate search length
 //
 //---------------------------------------------------------------------------
 void FASTCALL FDIDisk::CalcSearch(DWORD pos)
@@ -3786,17 +3786,17 @@ void FASTCALL FDIDisk::CalcSearch(DWORD pos)
 
 	ASSERT(this);
 
-	// æ“¾
+	// Get
 	cur = GetRotationPos();
 	hus = GetRotationTime();
 
-	// ƒJƒŒƒ“ƒg<ƒ|ƒWƒVƒ‡ƒ“‚È‚çA·‚ğo‚·‚Ì‚İ
+	// If current < position, output difference only
 	if (cur < pos) {
 		SetSearch(pos - cur);
 		return;
 	}
 
-	// ƒ|ƒWƒVƒ‡ƒ“ < ƒJƒŒƒ“ƒg‚ÍA‚Pü‚ğ’´‚¦‚Ä‚¢‚é
+	// If position < current, exceeds 1 revolution
 	ASSERT(cur <= hus);
 	pos += (hus - cur);
 	SetSearch(pos);
@@ -3804,7 +3804,7 @@ void FASTCALL FDIDisk::CalcSearch(DWORD pos)
 
 //---------------------------------------------------------------------------
 //
-//	HDƒtƒ‰ƒOæ“¾
+//	Get HD flag
 //
 //---------------------------------------------------------------------------
 BOOL FASTCALL FDIDisk::IsHD() const
@@ -3812,13 +3812,13 @@ BOOL FASTCALL FDIDisk::IsHD() const
 	ASSERT(this);
 	ASSERT(GetFDI());
 
-	// e‚É•·‚­
+	// Ask parent
 	return GetFDI()->IsHD();
 }
 
 //---------------------------------------------------------------------------
 //
-//	ƒgƒ‰ƒbƒN’Ç‰Á
+//	Add track
 //
 //---------------------------------------------------------------------------
 void FASTCALL FDIDisk::AddTrack(FDITrack *track)
@@ -3828,27 +3828,27 @@ void FASTCALL FDIDisk::AddTrack(FDITrack *track)
 	ASSERT(this);
 	ASSERT(track);
 
-	// ƒgƒ‰ƒbƒN‚ğ‚Á‚Ä‚¢‚È‚¯‚ê‚ÎA‚»‚Ì‚Ü‚Ü’Ç‰Á
+	// If no tracks, add as is
 	if (!disk.first) {
 		disk.first = track;
 		disk.first->SetNext(NULL);
 		return;
 	}
 
-	// ÅIƒgƒ‰ƒbƒN‚ğ“¾‚é
+	// Get last track
 	ptr = disk.first;
 	while (ptr->GetNext()) {
 		ptr = ptr->GetNext();
 	}
 
-	// ÅIƒgƒ‰ƒbƒN‚É’Ç‰Á
+	// Add to last track
 	ptr->SetNext(track);
 	track->SetNext(NULL);
 }
 
 //---------------------------------------------------------------------------
 //
-//	ƒgƒ‰ƒbƒN‘Síœ
+//	Delete all tracks
 //
 //---------------------------------------------------------------------------
 void FASTCALL FDIDisk::ClrTrack()
@@ -3857,7 +3857,7 @@ void FASTCALL FDIDisk::ClrTrack()
 
 	ASSERT(this);
 
-	// ƒgƒ‰ƒbƒN‚ğ‚·‚×‚Äíœ
+	// Delete all tracks
 	while (disk.first) {
 		track = disk.first->GetNext();
 		delete disk.first;
@@ -3867,7 +3867,7 @@ void FASTCALL FDIDisk::ClrTrack()
 
 //---------------------------------------------------------------------------
 //
-//	ƒgƒ‰ƒbƒNƒT[ƒ`
+//	Search track
 //
 //---------------------------------------------------------------------------
 FDITrack* FASTCALL FDIDisk::Search(int track) const
@@ -3877,10 +3877,10 @@ FDITrack* FASTCALL FDIDisk::Search(int track) const
 	ASSERT(this);
 	ASSERT((track >= 0) && (track <= 163));
 
-	// Å‰‚Ìƒgƒ‰ƒbƒN‚ğæ“¾
+	// Get first track
 	p = GetFirst();
 
-	// ƒ‹[ƒv
+	// Loop
 	while (p) {
 		if (p->GetTrack() == track) {
 			return p;
@@ -3888,7 +3888,7 @@ FDITrack* FASTCALL FDIDisk::Search(int track) const
 		p = p->GetNext();
 	}
 
-	// Œ©‚Â‚©‚ç‚È‚¢
+	// Not found
 	return NULL;
 }
 
@@ -3900,14 +3900,14 @@ FDITrack* FASTCALL FDIDisk::Search(int track) const
 
 //---------------------------------------------------------------------------
 //
-//	ƒRƒ“ƒXƒgƒ‰ƒNƒ^
+//	Constructor
 //
 //---------------------------------------------------------------------------
 FDI::FDI(FDD *fdd)
 {
 	ASSERT(fdd);
 
-	// ƒ[ƒN‰Šú‰»
+	// Initialize work
 	fdi.fdd = fdd;
 	fdi.disks = 0;
 	fdi.first = NULL;
@@ -3916,7 +3916,7 @@ FDI::FDI(FDD *fdd)
 
 //---------------------------------------------------------------------------
 //
-//	ƒfƒXƒgƒ‰ƒNƒ^
+//	Destructor
 //
 //---------------------------------------------------------------------------
 FDI::~FDI()
@@ -3926,9 +3926,9 @@ FDI::~FDI()
 
 //---------------------------------------------------------------------------
 //
-//	ƒI[ƒvƒ“
-//	¦ãˆÊƒNƒ‰ƒX‚Ì’ˆÓ“_F
-//		ŒÄ‚Ño‚µ‚½Œã‚ÅAŒ»İ‚ÌƒVƒŠƒ“ƒ_‚ÖƒV[ƒN‚·‚é
+//	Open
+//	Note for parent class:
+//		Seek to current cylinder after calling
 //
 //---------------------------------------------------------------------------
 BOOL FASTCALL FDI::Open(const Filepath& path, int media = 0)
@@ -3946,36 +3946,36 @@ BOOL FASTCALL FDI::Open(const Filepath& path, int media = 0)
 	ASSERT(this);
 	ASSERT((media >= 0) && (media < 0x10));
 
-	// Šù‚ÉƒI[ƒvƒ“‚³‚ê‚Ä‚¢‚é‚È‚ç‚¨‚©‚µ‚¢
+	// Already open, this is wrong
 	ASSERT(!GetDisk());
 	ASSERT(!GetFirst());
 	ASSERT(fdi.disks == 0);
 
-	// DIMƒtƒ@ƒCƒ‹‚Æ‚µ‚Äƒgƒ‰ƒC
+	// Try as DIM file
 	diskdim = new FDIDiskDIM(0, this);
 	if (diskdim->Open(path, 0)) {
 		AddDisk(diskdim);
 		fdi.disk = diskdim;
 		return TRUE;
 	}
-	// ¸”s
+	// Failed
 	delete diskdim;
 
-	// D68ƒtƒ@ƒCƒ‹‚Æ‚µ‚Äƒgƒ‰ƒC(–‡”‚ğ”‚¦‚é)
+	// Try as D68 file (count disks)
 	num = FDIDiskD68::CheckDisks(path, offset);
 	if (num > 0) {
-		// D68ƒfƒBƒXƒNì¬ƒ‹[ƒv(–‡”•ª‚¾‚¯’Ç‰Á)
+		// D68 disk creation loop (add for disk count)
 		for (i=0; i<num; i++) {
 			diskd68 = new FDIDiskD68(i, this);
 			if (!diskd68->Open(path, offset[i])) {
-				// ¸”s
+				// Failed
 				delete diskd68;
 				ClrDisk();
 				return FALSE;
 			}
 			AddDisk(diskd68);
 		}
-		// ƒƒfƒBƒAƒZƒŒƒNƒg
+		// Media select
 		fdi.disk = Search(media);
 		if (!fdi.disk) {
 			ClrDisk();
@@ -3984,78 +3984,78 @@ BOOL FASTCALL FDI::Open(const Filepath& path, int media = 0)
 		return TRUE;
 	}
 
-	// 2HDƒtƒ@ƒCƒ‹‚Æ‚µ‚Äƒgƒ‰ƒC
+	// Try as 2HD file
 	disk2hd = new FDIDisk2HD(0, this);
 	if (disk2hd->Open(path, 0)) {
 		AddDisk(disk2hd);
 		fdi.disk = disk2hd;
 		return TRUE;
 	}
-	// ¸”s
+	// Failed
 	delete disk2hd;
 
-	// 2DDƒtƒ@ƒCƒ‹‚Æ‚µ‚Äƒgƒ‰ƒC
+	// Try as 2DD file
 	disk2dd = new FDIDisk2DD(0, this);
 	if (disk2dd->Open(path, 0)) {
 		AddDisk(disk2dd);
 		fdi.disk = disk2dd;
 		return TRUE;
 	}
-	// ¸”s
+	// Failed
 	delete disk2dd;
 
-	// 2HQƒtƒ@ƒCƒ‹‚Æ‚µ‚Äƒgƒ‰ƒC
+	// Try as 2HQ file
 	disk2hq = new FDIDisk2HQ(0, this);
 	if (disk2hq->Open(path, 0)) {
 		AddDisk(disk2hq);
 		fdi.disk = disk2hq;
 		return TRUE;
 	}
-	// ¸”s
+	// Failed
 	delete disk2hq;
 
-	// BADƒtƒ@ƒCƒ‹‚Æ‚µ‚Äƒgƒ‰ƒC
+	// Try as BAD file
 	diskbad = new FDIDiskBAD(0, this);
 	if (diskbad->Open(path, 0)) {
 		AddDisk(diskbad);
 		fdi.disk = diskbad;
 		return TRUE;
 	}
-	// ¸”s
+	// Failed
 	delete diskbad;
 
-	// ƒGƒ‰[
+	// Error
 	return FALSE;
 }
 
 //---------------------------------------------------------------------------
 //
-//	IDæ“¾
+//	IDGet
 //
 //---------------------------------------------------------------------------
 DWORD FASTCALL FDI::GetID() const
 {
 	ASSERT(this);
 
-	// ƒmƒbƒgƒŒƒfƒB‚È‚çNULL
+	// If not ready, NULL
 	if (!IsReady()) {
 		return MAKEID('N', 'U', 'L', 'L');
 	}
 
-	// ƒfƒBƒXƒN‚É•·‚­
+	// Ask disk
 	return GetDisk()->GetID();
 }
 
 //---------------------------------------------------------------------------
 //
-//	ƒ}ƒ‹ƒ`ƒfƒBƒXƒN‚©
+//	Is multi-disk
 //
 //---------------------------------------------------------------------------
 BOOL FASTCALL FDI::IsMulti() const
 {
 	ASSERT(this);
 
-	// ƒfƒBƒXƒN‚ª2–‡ˆÈã‚È‚çTRUE
+	// TRUE if 2 or more disks
 	if (GetDisks() >= 2) {
 		return TRUE;
 	}
@@ -4064,25 +4064,25 @@ BOOL FASTCALL FDI::IsMulti() const
 
 //---------------------------------------------------------------------------
 //
-//	ƒƒfƒBƒA”Ô†‚ğæ“¾
+//	Get media number
 //
 //---------------------------------------------------------------------------
 int FASTCALL FDI::GetMedia() const
 {
 	ASSERT(this);
 
-	// ƒfƒBƒXƒN‚ª‚È‚¯‚ê‚Î0
+	// If no disk, 0
 	if (!GetDisk()) {
 		return 0;
 	}
 
-	// ƒfƒBƒXƒN‚É•·‚­‚¾‚¯
+	// Just ask disk
 	return GetDisk()->GetIndex();
 }
 
 //---------------------------------------------------------------------------
 //
-//	ƒfƒBƒXƒN–¼æ“¾
+//	Get disk name
 //
 //---------------------------------------------------------------------------
 void FASTCALL FDI::GetName(char *buf, int index) const
@@ -4094,20 +4094,20 @@ void FASTCALL FDI::GetName(char *buf, int index) const
 	ASSERT(index >= -1);
 	ASSERT(index < GetDisks());
 
-	// -1‚Ì‚ÍAƒJƒŒƒ“ƒg‚ğˆÓ–¡‚·‚é
+	// When -1, means current
 	if (index < 0) {
-		// ƒmƒbƒgƒŒƒfƒB‚È‚çA‹ó•¶š—ñ
+		// If not ready, empty string
 		if (!IsReady()) {
 			buf[0] = '\0';
 			return;
 		}
 
-		// ƒJƒŒƒ“ƒg‚É•·‚­
+		// Ask current
 		GetDisk()->GetName(buf);
 		return;
 	}
 
-	// ƒCƒ“ƒfƒbƒNƒX‚Â‚«‚È‚Ì‚ÅAŒŸõ
+	// Has index, so search
 	disk = Search(index);
 	if (!disk) {
 		buf[0] = '\0';
@@ -4118,33 +4118,33 @@ void FASTCALL FDI::GetName(char *buf, int index) const
 
 //---------------------------------------------------------------------------
 //
-//	ƒpƒXæ“¾
+//	Get path
 //
 //---------------------------------------------------------------------------
 void FASTCALL FDI::GetPath(Filepath& path) const
 {
 	ASSERT(this);
 
-	// ƒmƒbƒgƒŒƒfƒB‚È‚çA‹ó•¶š—ñ
+	// If not ready, empty string
 	if (!IsReady()) {
 		path.Clear();
 		return;
 	}
 
-	// ƒfƒBƒXƒN‚É•·‚­
+	// Ask disk
 	GetDisk()->GetPath(path);
 }
 
 //---------------------------------------------------------------------------
 //
-//	ƒŒƒfƒBƒ`ƒFƒbƒN
+//	Check ready
 //
 //---------------------------------------------------------------------------
 BOOL FASTCALL FDI::IsReady() const
 {
 	ASSERT(this);
 
-	// ƒJƒŒƒ“ƒgƒƒfƒBƒA‚ª‚ ‚ê‚ÎTRUEA‚È‚¯‚ê‚ÎFALSE
+	// TRUE if current media exists, FALSE otherwise
 	if (GetDisk()) {
 		return TRUE;
 	}
@@ -4153,46 +4153,46 @@ BOOL FASTCALL FDI::IsReady() const
 
 //---------------------------------------------------------------------------
 //
-//	‘‚«‚İ‹Ö~‚©
+//	Is write protected
 //
 //---------------------------------------------------------------------------
 BOOL FASTCALL FDI::IsWriteP() const
 {
-	// ƒmƒbƒgƒŒƒfƒB‚È‚çFALSE
+	// If not ready, FALSE
 	if (!IsReady()) {
 		return FALSE;
 	}
 
-	// ƒfƒBƒXƒN‚É•·‚­
+	// Ask disk
 	return GetDisk()->IsWriteP();
 }
 
 //---------------------------------------------------------------------------
 //
-//	Read OnlyƒfƒBƒXƒNƒCƒ[ƒW‚©
+//	Is read-only disk image
 //
 //---------------------------------------------------------------------------
 BOOL FASTCALL FDI::IsReadOnly() const
 {
-	// ƒmƒbƒgƒŒƒfƒB‚È‚çFALSE
+	// If not ready, FALSE
 	if (!IsReady()) {
 		return FALSE;
 	}
 
-	// ƒfƒBƒXƒN‚É•·‚­
+	// Ask disk
 	return GetDisk()->IsReadOnly();
 }
 
 //---------------------------------------------------------------------------
 //
-//	‘‚«‚İ‹Ö~ƒZƒbƒg
+//	Set write protection
 //
 //---------------------------------------------------------------------------
 void FASTCALL FDI::WriteP(BOOL flag)
 {
 	ASSERT(this);
 
-	// ƒŒƒfƒB‚È‚çAw¦
+	// If ready, instruct
 	if (IsReady()) {
 		GetDisk()->WriteP(flag);
 	}
@@ -4200,7 +4200,7 @@ void FASTCALL FDI::WriteP(BOOL flag)
 
 //---------------------------------------------------------------------------
 //
-//	ƒV[ƒN
+//	Seek
 //
 //---------------------------------------------------------------------------
 void FASTCALL FDI::Seek(int c)
@@ -4208,24 +4208,24 @@ void FASTCALL FDI::Seek(int c)
 	ASSERT(this);
 	ASSERT((c >= 0) && (c < 82));
 
-	// ƒmƒbƒgƒŒƒfƒB‚È‚ç‰½‚à‚µ‚È‚¢
+	// If not ready, do nothing
 	if (!IsReady()) {
 		return;
 	}
 
-	// ƒfƒBƒXƒN‚É’Ê’m
+	// Notify disk
 	GetDisk()->Seek(c);
 }
 
 //---------------------------------------------------------------------------
 //
-//	ƒŠ[ƒhID
-//	¦Ÿ‚ÌƒXƒe[ƒ^ƒX‚ğ•Ô‚·(ƒGƒ‰[‚ÍOR‚³‚ê‚é)
-//		FDD_NOERROR		ƒGƒ‰[‚È‚µ
-//		FDD_NOTREADY	ƒmƒbƒgƒŒƒfƒB
-//		FDD_MAM			w’è–§“x‚Å‚ÍƒAƒ“ƒtƒH[ƒ}ƒbƒg
-//		FDD_NODATA		w’è–§“x‚Å‚ÍƒAƒ“ƒtƒH[ƒ}ƒbƒg‚©A
-//						‚Ü‚½‚Í—LŒø‚ÈƒZƒNƒ^‚·‚×‚ÄID CRC
+//	ReadID
+//	Note: Returns the following status (errors are ORed)
+//		FDD_NOERROR		No error
+//		FDD_NOTREADY	Not ready
+//		FDD_MAM			Unformatted at specified density
+//		FDD_NODATA		Unformatted at specified density, or
+//						or all valid sectors have ID CRC
 //
 //---------------------------------------------------------------------------
 int FASTCALL FDI::ReadID(DWORD *buf, BOOL mfm, int hd)
@@ -4234,29 +4234,29 @@ int FASTCALL FDI::ReadID(DWORD *buf, BOOL mfm, int hd)
 	ASSERT(buf);
 	ASSERT((hd == 0) || (hd == 4));
 
-	// ƒmƒbƒgƒŒƒfƒB”»’è
+	// Determine not ready
 	if (!IsReady()) {
 		return FDD_NOTREADY;
 	}
 
-	// ƒfƒBƒXƒN‚É”C‚¹‚é
+	// Delegate to disk
 	return GetDisk()->ReadID(buf, mfm, hd);
 }
 
 //---------------------------------------------------------------------------
 //
-//	ƒŠ[ƒhƒZƒNƒ^
-//	¦Ÿ‚ÌƒXƒe[ƒ^ƒX‚ğ•Ô‚·(ƒGƒ‰[‚ÍOR‚³‚ê‚é)
-//		FDD_NOERROR		ƒGƒ‰[‚È‚µ
-//		FDD_NOTREADY	ƒmƒbƒgƒŒƒfƒB
-//		FDD_MAM			w’è–§“x‚Å‚ÍƒAƒ“ƒtƒH[ƒ}ƒbƒg
-//		FDD_NODATA		w’è–§“x‚Å‚ÍƒAƒ“ƒtƒH[ƒ}ƒbƒg‚©A
-//						‚Ü‚½‚Í—LŒø‚ÈƒZƒNƒ^‚ğ‘SŒŸõ‚µ‚ÄR‚ªˆê’v‚µ‚È‚¢
-//		FDD_NOCYL		ŒŸõ’†‚ÉID‚ÌC‚ªˆê’v‚Å‚¸AFF‚Å‚È‚¢ƒZƒNƒ^‚ğŒ©‚Â‚¯‚½
-//		FDD_BADCYL		ŒŸõ’†‚ÉID‚ÌC‚ªˆê’v‚¹‚¸AFF‚Æ‚È‚Á‚Ä‚¢‚éƒZƒNƒ^‚ğŒ©‚Â‚¯‚½
-//		FDD_IDCRC		IDƒtƒB[ƒ‹ƒh‚ÉCRCƒGƒ‰[‚ª‚ ‚é
-//		FDD_DATACRC		DATAƒtƒB[ƒ‹ƒh‚ÉCRCƒGƒ‰[‚ª‚ ‚é
-//		FDD_DDAM		ƒfƒŠ[ƒeƒbƒhƒZƒNƒ^‚Å‚ ‚é
+//	Read sector
+//	Note: Returns the following status (errors are ORed)
+//		FDD_NOERROR		No error
+//		FDD_NOTREADY	Not ready
+//		FDD_MAM			Unformatted at specified density
+//		FDD_NODATA		Unformatted at specified density, or
+//						or R does not match after searching all valid sectors
+//		FDD_NOCYL		Found sector where C in ID does not match and is not FF during search
+//		FDD_BADCYL		Found sector where C in ID does not match and is FF during search
+//		FDD_IDCRC		CRC error in ID field
+//		FDD_DATACRC		CRC error in DATA field
+//		FDD_DDAM		Is deleted sector
 //
 //---------------------------------------------------------------------------
 int FASTCALL FDI::ReadSector(BYTE *buf, int *len, BOOL mfm, const DWORD *chrn, int hd)
@@ -4266,29 +4266,29 @@ int FASTCALL FDI::ReadSector(BYTE *buf, int *len, BOOL mfm, const DWORD *chrn, i
 	ASSERT(chrn);
 	ASSERT((hd == 0) || (hd == 4));
 
-	// ƒmƒbƒgƒŒƒfƒB”»’è
+	// Determine not ready
 	if (!IsReady()) {
 		return FDD_NOTREADY;
 	}
 
-	// ƒfƒBƒXƒN‚É”C‚¹‚é
+	// Delegate to disk
 	return GetDisk()->ReadSector(buf, len, mfm, chrn, hd);
 }
 
 //---------------------------------------------------------------------------
 //
-//	ƒ‰ƒCƒgƒZƒNƒ^
-//	¦Ÿ‚ÌƒXƒe[ƒ^ƒX‚ğ•Ô‚·(ƒGƒ‰[‚ÍOR‚³‚ê‚é)
-//		FDD_NOERROR		ƒGƒ‰[‚È‚µ
-//		FDD_NOTREADY	ƒmƒbƒgƒŒƒfƒB
-//		FDD_NOTWRITE	ƒƒfƒBƒA‚Í‘‚«‚İ‹Ö~
-//		FDD_MAM			w’è–§“x‚Å‚ÍƒAƒ“ƒtƒH[ƒ}ƒbƒg
-//		FDD_NODATA		w’è–§“x‚Å‚ÍƒAƒ“ƒtƒH[ƒ}ƒbƒg‚©A
-//						‚Ü‚½‚Í—LŒø‚ÈƒZƒNƒ^‚ğ‘SŒŸõ‚µ‚ÄR‚ªˆê’v‚µ‚È‚¢
-//		FDD_NOCYL		ŒŸõ’†‚ÉID‚ÌC‚ªˆê’v‚Å‚¸AFF‚Å‚È‚¢ƒZƒNƒ^‚ğŒ©‚Â‚¯‚½
-//		FDD_BADCYL		ŒŸõ’†‚ÉID‚ÌC‚ªˆê’v‚¹‚¸AFF‚Æ‚È‚Á‚Ä‚¢‚éƒZƒNƒ^‚ğŒ©‚Â‚¯‚½
-//		FDD_IDCRC		IDƒtƒB[ƒ‹ƒh‚ÉCRCƒGƒ‰[‚ª‚ ‚é
-//		FDD_DDAM		ƒfƒŠ[ƒeƒbƒhƒZƒNƒ^‚Å‚ ‚é
+//	Write sector
+//	Note: Returns the following status (errors are ORed)
+//		FDD_NOERROR		No error
+//		FDD_NOTREADY	Not ready
+//		FDD_NOTWRITE	Media is write protected
+//		FDD_MAM			Unformatted at specified density
+//		FDD_NODATA		Unformatted at specified density, or
+//						or R does not match after searching all valid sectors
+//		FDD_NOCYL		Found sector where C in ID does not match and is not FF during search
+//		FDD_BADCYL		Found sector where C in ID does not match and is FF during search
+//		FDD_IDCRC		CRC error in ID field
+//		FDD_DDAM		Is deleted sector
 //
 //---------------------------------------------------------------------------
 int FASTCALL FDI::WriteSector(const BYTE *buf, int *len, BOOL mfm, const DWORD *chrn, int hd, BOOL deleted)
@@ -4298,26 +4298,26 @@ int FASTCALL FDI::WriteSector(const BYTE *buf, int *len, BOOL mfm, const DWORD *
 	ASSERT(chrn);
 	ASSERT((hd == 0) || (hd == 4));
 
-	// ƒmƒbƒgƒŒƒfƒB”»’è
+	// Determine not ready
 	if (!IsReady()) {
 		return FDD_NOTREADY;
 	}
 
-	// ƒfƒBƒXƒN‚É”C‚¹‚é
+	// Delegate to disk
 	return GetDisk()->WriteSector(buf, len, mfm, chrn, hd, deleted);
 }
 
 //---------------------------------------------------------------------------
 //
-//	ƒŠ[ƒhƒ_ƒCƒAƒO
-//	¦Ÿ‚ÌƒXƒe[ƒ^ƒX‚ğ•Ô‚·(ƒGƒ‰[‚ÍOR‚³‚ê‚é)
-//		FDD_NOERROR		ƒGƒ‰[‚È‚µ
-//		FDD_MAM			w’è–§“x‚Å‚ÍƒAƒ“ƒtƒH[ƒ}ƒbƒg
-//		FDD_NODATA		w’è–§“x‚Å‚ÍƒAƒ“ƒtƒH[ƒ}ƒbƒg‚©A
-//						‚Ü‚½‚Í—LŒø‚ÈƒZƒNƒ^‚ğ‘SŒŸõ‚µ‚ÄR‚ªˆê’v‚µ‚È‚¢
-//		FDD_IDCRC		IDƒtƒB[ƒ‹ƒh‚ÉCRCƒGƒ‰[‚ª‚ ‚é
-//		FDD_DATACRC		ƒf[ƒ^ƒtƒB[ƒ‹ƒh‚ÉCRCƒGƒ‰[‚ª‚ ‚é
-//		FDD_DDAM		ƒfƒŠ[ƒeƒbƒhƒZƒNƒ^‚Å‚ ‚é
+//	Read diag
+//	Note: Returns the following status (errors are ORed)
+//		FDD_NOERROR		No error
+//		FDD_MAM			Unformatted at specified density
+//		FDD_NODATA		Unformatted at specified density, or
+//						or R does not match after searching all valid sectors
+//		FDD_IDCRC		CRC error in ID field
+//		FDD_DATACRC		CRC error in DATA field
+//		FDD_DDAM		Is deleted sector
 //
 //---------------------------------------------------------------------------
 int FASTCALL FDI::ReadDiag(BYTE *buf, int *len, BOOL mfm, const DWORD *chrn, int hd)
@@ -4327,22 +4327,22 @@ int FASTCALL FDI::ReadDiag(BYTE *buf, int *len, BOOL mfm, const DWORD *chrn, int
 	ASSERT(chrn);
 	ASSERT((hd == 0) || (hd == 4));
 
-	// ƒmƒbƒgƒŒƒfƒB”»’è
+	// Determine not ready
 	if (!IsReady()) {
 		return FDD_NOTREADY;
 	}
 
-	// ƒfƒBƒXƒN‚É”C‚¹‚é
+	// Delegate to disk
 	return GetDisk()->ReadDiag(buf, len, mfm, chrn, hd);
 }
 
 //---------------------------------------------------------------------------
 //
-//	ƒ‰ƒCƒgID
-//	¦Ÿ‚ÌƒXƒe[ƒ^ƒX‚ğ•Ô‚·(ƒGƒ‰[‚ÍOR‚³‚ê‚é)
-//		FDD_NOERROR		ƒGƒ‰[‚È‚µ
-//		FDD_NOTREADY	ƒmƒbƒgƒŒƒfƒB
-//		FDD_NOTWRITE	ƒƒfƒBƒA‚Í‘‚«‚İ‹Ö~
+//	WriteID
+//	Note: Returns the following status (errors are ORed)
+//		FDD_NOERROR		No error
+//		FDD_NOTREADY	Not ready
+//		FDD_NOTWRITE	Media is write protected
 //
 //---------------------------------------------------------------------------
 int FASTCALL FDI::WriteID(const BYTE *buf, DWORD d, int sc, BOOL mfm, int hd, int gpl)
@@ -4351,18 +4351,18 @@ int FASTCALL FDI::WriteID(const BYTE *buf, DWORD d, int sc, BOOL mfm, int hd, in
 	ASSERT(sc > 0);
 	ASSERT((hd == 0) || (hd == 4));
 
-	// ƒmƒbƒgƒŒƒfƒB”»’è
+	// Determine not ready
 	if (!IsReady()) {
 		return FDD_NOTREADY;
 	}
 
-	// ƒfƒBƒXƒN‚É”C‚¹‚é
+	// Delegate to disk
 	return GetDisk()->WriteID(buf, d, sc, mfm, hd, gpl);
 }
 
 //---------------------------------------------------------------------------
 //
-//	‰ñ“]ˆÊ’uæ“¾
+//	Get rotation position
 //
 //---------------------------------------------------------------------------
 DWORD FASTCALL FDI::GetRotationPos() const
@@ -4370,13 +4370,13 @@ DWORD FASTCALL FDI::GetRotationPos() const
 	ASSERT(this);
 	ASSERT(GetFDD());
 
-	// e‚É•·‚­
+	// Ask parent
 	return GetFDD()->GetRotationPos();
 }
 
 //---------------------------------------------------------------------------
 //
-//	‰ñ“]ŠÔæ“¾
+//	Get rotation time
 //
 //---------------------------------------------------------------------------
 DWORD FASTCALL FDI::GetRotationTime() const
@@ -4384,13 +4384,13 @@ DWORD FASTCALL FDI::GetRotationTime() const
 	ASSERT(this);
 	ASSERT(GetFDD());
 
-	// e‚É•·‚­
+	// Ask parent
 	return GetFDD()->GetRotationTime();
 }
 
 //---------------------------------------------------------------------------
 //
-//	ŒŸõŠÔæ“¾
+//	Get search time
 //
 //---------------------------------------------------------------------------
 DWORD FASTCALL FDI::GetSearch() const
@@ -4399,19 +4399,19 @@ DWORD FASTCALL FDI::GetSearch() const
 
 	ASSERT(this);
 
-	// ƒmƒbƒgƒŒƒfƒB‚È‚çí‚É0
+	// If not ready, always 0
 	disk = GetDisk();
 	if (!disk) {
 		return 0;
 	}
 
-	// ƒfƒBƒXƒN‚É•·‚­
+	// Ask disk
 	return disk->GetSearch();
 }
 
 //---------------------------------------------------------------------------
 //
-//	HDƒtƒ‰ƒOæ“¾
+//	Get HD flag
 //
 //---------------------------------------------------------------------------
 BOOL FASTCALL FDI::IsHD() const
@@ -4419,13 +4419,13 @@ BOOL FASTCALL FDI::IsHD() const
 	ASSERT(this);
 	ASSERT(GetFDD());
 
-	// e‚É•·‚­
+	// Ask parent
 	return GetFDD()->IsHD();
 }
 
 //---------------------------------------------------------------------------
 //
-//	ƒfƒBƒXƒN’Ç‰Á
+//	Add disk
 //
 //---------------------------------------------------------------------------
 void FASTCALL FDI::AddDisk(FDIDisk *disk)
@@ -4435,33 +4435,33 @@ void FASTCALL FDI::AddDisk(FDIDisk *disk)
 	ASSERT(this);
 	ASSERT(disk);
 
-	// ƒfƒBƒXƒN‚ğ‚Á‚Ä‚¢‚È‚¯‚ê‚ÎA‚»‚Ì‚Ü‚Ü’Ç‰Á
+	// If no disks, add as is
 	if (!fdi.first) {
 		fdi.first = disk;
 		fdi.first->SetNext(NULL);
 
-		// ƒJƒEƒ“ƒ^Up
+		// Increment counter
 		fdi.disks++;
 		return;
 	}
 
-	// ÅIƒfƒBƒXƒN‚ğ“¾‚é
+	// Get last disk
 	ptr = fdi.first;
 	while (ptr->GetNext()) {
 		ptr = ptr->GetNext();
 	}
 
-	// ÅIƒfƒBƒXƒN‚É’Ç‰Á
+	// Add to last disk
 	ptr->SetNext(disk);
 	disk->SetNext(NULL);
 
-	// ƒJƒEƒ“ƒ^Up
+	// Increment counter
 	fdi.disks++;
 }
 
 //---------------------------------------------------------------------------
 //
-//	ƒfƒBƒXƒN‘Síœ
+//	Delete all disks
 //
 //---------------------------------------------------------------------------
 void FASTCALL FDI::ClrDisk()
@@ -4470,20 +4470,20 @@ void FASTCALL FDI::ClrDisk()
 
 	ASSERT(this);
 
-	// ƒfƒBƒXƒN‚ğ‚·‚×‚Äíœ
+	// Delete all disks
 	while (fdi.first) {
 		disk = fdi.first->GetNext();
 		delete fdi.first;
 		fdi.first = disk;
 	}
 
-	// ƒJƒEƒ“ƒ^0
+	// Counter 0
 	fdi.disks = 0;
 }
 
 //---------------------------------------------------------------------------
 //
-//	ƒfƒBƒXƒNŒŸõ
+//	Search disk
 //
 //---------------------------------------------------------------------------
 FDIDisk* FASTCALL FDI::Search(int index) const
@@ -4494,26 +4494,26 @@ FDIDisk* FASTCALL FDI::Search(int index) const
 	ASSERT(index >= 0);
 	ASSERT(index < GetDisks());
 
-	// Å‰‚ÌƒfƒBƒXƒN‚ğæ“¾
+	// Get first disk
 	disk = GetFirst();
 
-	// ”äŠrƒ‹[ƒv
+	// Comparison loop
 	while (disk) {
 		if (disk->GetIndex() == index) {
 			return disk;
 		}
 
-		// Ÿ‚Ö
+		// Next
 		disk = disk->GetNext();
 	}
 
-	// Œ©‚Â‚©‚ç‚È‚¢
+	// Not found
 	return NULL;
 }
 
 //---------------------------------------------------------------------------
 //
-//	ƒZ[ƒu
+//	Save
 //
 //---------------------------------------------------------------------------
 BOOL FASTCALL FDI::Save(Fileio *fio, int ver)
@@ -4528,18 +4528,18 @@ BOOL FASTCALL FDI::Save(Fileio *fio, int ver)
 	ASSERT(this);
 	ASSERT(fio);
 
-	// ƒŒƒfƒBƒtƒ‰ƒO‚ğ‘‚«‚Ş
+	// Write ready flag
 	ready = IsReady();
 	if (!fio->Write(&ready, sizeof(ready))) {
 		return FALSE;
 	}
 
-	// ƒŒƒfƒB‚Å‚È‚¯‚ê‚ÎI—¹
+	// If not ready, end
 	if (!ready) {
 		return TRUE;
 	}
 
-	// ‘SƒƒfƒBƒA‚ğƒtƒ‰ƒbƒVƒ…
+	// Flush all media
 	disks = GetDisks();
 	for (i=0; i<disks; i++) {
 		disk = Search(i);
@@ -4549,13 +4549,13 @@ BOOL FASTCALL FDI::Save(Fileio *fio, int ver)
 		}
 	}
 
-	// ƒƒfƒBƒA‚ğ‘‚«‚Ş
+	// Write media
 	media = GetMedia();
 	if (!fio->Write(&media, sizeof(media))) {
 		return FALSE;
 	}
 
-	// ƒpƒX‚ğ‘‚«‚Ş
+	// Write path
 	GetPath(path);
 	if (!path.Save(fio, ver)) {
 		return FALSE;
@@ -4566,7 +4566,7 @@ BOOL FASTCALL FDI::Save(Fileio *fio, int ver)
 
 //---------------------------------------------------------------------------
 //
-//	ƒ[ƒh
+//	Load
 //
 //---------------------------------------------------------------------------
 BOOL FASTCALL FDI::Load(Fileio *fio, int ver, BOOL *ready, int *media, Filepath& path)
@@ -4578,22 +4578,22 @@ BOOL FASTCALL FDI::Load(Fileio *fio, int ver, BOOL *ready, int *media, Filepath&
 	ASSERT(!IsReady());
 	ASSERT(GetDisks() == 0);
 
-	// ƒŒƒfƒBƒtƒ‰ƒO‚ğ“Ç‚İ‚Ş
+	// Read ready flag
 	if (!fio->Read(ready, sizeof(BOOL))) {
 		return FALSE;
 	}
 
-	// ƒŒƒfƒB‚Å‚È‚¯‚ê‚ÎI—¹
+	// If not ready, end
 	if (!(*ready)) {
 		return TRUE;
 	}
 
-	// ƒƒfƒBƒA‚ğ“Ç‚İ‚Ş
+	// Read media
 	if (!fio->Read(media, sizeof(int))) {
 		return FALSE;
 	}
 
-	// ƒpƒX‚ğ“Ç‚İ‚Ş
+	// Read path
 	if (!path.Load(fio, ver)) {
 		return FALSE;
 	}
@@ -4603,7 +4603,7 @@ BOOL FASTCALL FDI::Load(Fileio *fio, int ver, BOOL *ready, int *media, Filepath&
 
 //---------------------------------------------------------------------------
 //
-//	’²®(“Áê)
+//	Adjust (special)
 //
 //---------------------------------------------------------------------------
 void FASTCALL FDI::Adjust()
@@ -4613,14 +4613,14 @@ void FASTCALL FDI::Adjust()
 
 	ASSERT(this);
 
-	// •¡”ƒCƒ[ƒW‚Ìê‡‚Ì‚İ
+	// Only for multiple images
 	if (!IsMulti()) {
 		return;
 	}
 
 	disk = GetFirst();
 	while (disk) {
-		// D68‚Ìê‡‚Ì‚İ
+		// Only for D68
 		if (disk->GetID() == MAKEID('D', '6', '8', ' ')) {
 			disk68 = (FDIDiskD68*)disk;
 			disk68->AdjustOffset();
@@ -4632,13 +4632,13 @@ void FASTCALL FDI::Adjust()
 
 //===========================================================================
 //
-//	FDIƒgƒ‰ƒbƒN(2HD)
+//	FDI Track(2HD)
 //
 //===========================================================================
 
 //---------------------------------------------------------------------------
 //
-//	ƒRƒ“ƒXƒgƒ‰ƒNƒ^
+//	Constructor
 //
 //---------------------------------------------------------------------------
 FDITrack2HD::FDITrack2HD(FDIDisk *disk, int track) : FDITrack(disk, track)
@@ -4648,7 +4648,7 @@ FDITrack2HD::FDITrack2HD(FDIDisk *disk, int track) : FDITrack(disk, track)
 
 //---------------------------------------------------------------------------
 //
-//	ƒ[ƒh
+//	Load
 //
 //---------------------------------------------------------------------------
 BOOL FASTCALL FDITrack2HD::Load(const Filepath& path, DWORD offset)
@@ -4663,83 +4663,83 @@ BOOL FASTCALL FDITrack2HD::Load(const Filepath& path, DWORD offset)
 	ASSERT((offset & 0x1fff) == 0);
 	ASSERT(offset < 0x134000);
 
-	// ‰Šú‰»Ï‚İ‚È‚ç•s—v(ƒV[ƒN–ˆ‚ÉŒÄ‚Î‚ê‚é‚Ì‚ÅA‚P“x‚¾‚¯“Ç‚ñ‚ÅƒLƒƒƒbƒVƒ…‚·‚é)
+	// Not needed if already initialized (called each seek, read once and cache)
 	if (IsInit()) {
 		return TRUE;
 	}
 
-	// ƒZƒNƒ^‚ª‘¶İ‚µ‚È‚¢‚±‚Æ
+	// Sector does not exist
 	ASSERT(!GetFirst());
 	ASSERT(GetAllSectors() == 0);
 	ASSERT(GetMFMSectors() == 0);
 	ASSERT(GetFMSectors() == 0);
 
-	// CEHENŒˆ’è
+	// Determine C, H, N
 	chrn[0] = GetTrack() >> 1;
 	chrn[1] = GetTrack() & 1;
 	chrn[3] = 3;
 
-	// “Ç‚İ‚İƒI[ƒvƒ“
+	// Open for reading
 	if (!fio.Open(path, Fileio::ReadOnly)) {
 		return FALSE;
 	}
 
-	// ƒV[ƒN
+	// Seek
 	if (!fio.Seek(offset)) {
 		fio.Close();
 		return FALSE;
 	}
 
-	// ƒ‹[ƒv
+	// Loop
 	for (i=0; i<8; i++) {
-		// ƒf[ƒ^“Ç‚İ‚İ
+		// Read data
 		if (!fio.Read(buf, sizeof(buf))) {
-			// “r’†‚Ü‚Å’Ç‰Á‚µ‚½•ª‚ğíœ‚·‚é
+			// Delete partially added sectors
 			ClrSector();
 			fio.Close();
 			return FALSE;
 		}
 
-		// ƒZƒNƒ^ì¬
+		// Create sector
 		chrn[2] = i + 1;
 		sector = new FDISector(TRUE, chrn);
 		sector->Load(buf, sizeof(buf), 0x74, FDD_NOERROR);
 
-		// ƒZƒNƒ^’Ç‰Á
+		// Add sector
 		AddSector(sector);
 	}
 
-	// ƒNƒ[ƒY
+	// Close
 	fio.Close();
 
-	// ƒ|ƒWƒVƒ‡ƒ“ŒvZ
+	// Calculate position
 	CalcPos();
 
-	// ‰Šú‰»ok
+	// Initializeok
 	trk.init = TRUE;
 	return TRUE;
 }
 
 //===========================================================================
 //
-//	FDIƒfƒBƒXƒN(2HD)
+//	FDI Disk(2HD)
 //
 //===========================================================================
 
 //---------------------------------------------------------------------------
 //
-//	ƒRƒ“ƒXƒgƒ‰ƒNƒ^
+//	Constructor
 //
 //---------------------------------------------------------------------------
 FDIDisk2HD::FDIDisk2HD(int index, FDI *fdi) : FDIDisk(index, fdi)
 {
-	// IDİ’è
+	// IDSet
 	disk.id = MAKEID('2', 'H', 'D', ' ');
 }
 
 //---------------------------------------------------------------------------
 //
-//	ƒfƒXƒgƒ‰ƒNƒ^
+//	Destructor
 //
 //---------------------------------------------------------------------------
 FDIDisk2HD::~FDIDisk2HD()
@@ -4748,19 +4748,19 @@ FDIDisk2HD::~FDIDisk2HD()
 	DWORD offset;
 	FDITrack *track;
 
-	// ÅŒã‚Ìƒgƒ‰ƒbƒNƒf[ƒ^‚ğ‘‚«‚Ş
+	// Write last track data
 	for (i=0; i<2; i++) {
-		// ƒgƒ‰ƒbƒN‚ª‚ ‚é‚©
+		// Is there a track
 		track = GetHead(i);
 		if (!track) {
 			continue;
 		}
 
-		// ƒgƒ‰ƒbƒNƒiƒ“ƒo‚©‚çAƒIƒtƒZƒbƒg‚ğZo(x8KB)
+		// Calculate offset from track number (x8KB)
 		offset = track->GetTrack();
 		offset <<= 13;
 
-		// ‘‚«‚İ
+		// Write
 		track->Save(disk.path, offset);
 		disk.head[i] = NULL;
 	}
@@ -4768,7 +4768,7 @@ FDIDisk2HD::~FDIDisk2HD()
 
 //---------------------------------------------------------------------------
 //
-//	ƒI[ƒvƒ“
+//	Open
 //
 //---------------------------------------------------------------------------
 BOOL FASTCALL FDIDisk2HD::Open(const Filepath& path, DWORD offset)
@@ -4784,23 +4784,23 @@ BOOL FASTCALL FDIDisk2HD::Open(const Filepath& path, DWORD offset)
 	ASSERT(!GetHead(0));
 	ASSERT(!GetHead(1));
 
-	// ‘‚«‚İ‰Â”\‚Æ‚µ‚Ä‰Šú‰»
+	// Initialize as writable
 	disk.writep = FALSE;
 	disk.readonly = FALSE;
 
-	// ƒI[ƒvƒ“‚Å‚«‚é‚±‚Æ‚ğŠm‚©‚ß‚é
+	// Verify can open
 	if (!fio.Open(path, Fileio::ReadWrite)) {
-		// “Ç‚İ‚İƒI[ƒvƒ“‚ğ‚İ‚é
+		// Try to open for reading
 		if (!fio.Open(path, Fileio::ReadOnly)) {
 			return FALSE;
 		}
 
-		// “Ç‚İ‚İ‚Í‰Â”
+		// Reading is allowed
 		disk.writep = TRUE;
 		disk.readonly = TRUE;
 	}
 
-	// ƒtƒ@ƒCƒ‹ƒTƒCƒY‚ª1261568‚Å‚ ‚é‚±‚Æ‚ğŠm‚©‚ß‚é
+	// Verify file size is 1261568
 	size = fio.GetFileSize();
 	if (size != 1261568) {
 		fio.Close();
@@ -4808,26 +4808,26 @@ BOOL FASTCALL FDIDisk2HD::Open(const Filepath& path, DWORD offset)
 	}
 	fio.Close();
 
-	// ƒpƒXAƒIƒtƒZƒbƒg‚ğ‹L‰¯
+	// Store path, offset
 	disk.path = path;
 	disk.offset = offset;
 
-	// ƒfƒBƒXƒN–¼‚Íƒtƒ@ƒCƒ‹–¼{Šg’£q‚Æ‚·‚é
+	// Disk name is filename + extension
 	strcpy(disk.name, path.GetShort());
 
-	// ƒgƒ‰ƒbƒN‚ğì¬(0`76ƒVƒŠƒ“ƒ_‚Ü‚ÅA77*2ƒgƒ‰ƒbƒN)
+	// Create tracks (0-76 cylinders, 77*2 tracks)
 	for (i=0; i<154; i++) {
 		track = new FDITrack2HD(this, i);
 		AddTrack(track);
 	}
 
-	// I—¹
+	// End
 	return TRUE;
 }
 
 //---------------------------------------------------------------------------
 //
-//	ƒV[ƒN
+//	Seek
 //
 //---------------------------------------------------------------------------
 void FASTCALL FDIDisk2HD::Seek(int c)
@@ -4839,48 +4839,48 @@ void FASTCALL FDIDisk2HD::Seek(int c)
 	ASSERT(this);
 	ASSERT((c >= 0) && (c < 82));
 
-	// ƒgƒ‰ƒbƒNƒf[ƒ^‚ğ‘‚«‚Ş
+	// Write track data
 	for (i=0; i<2; i++) {
-		// ƒgƒ‰ƒbƒN‚ª‚ ‚é‚©
+		// Is there a track
 		track = (FDITrack2HD*)GetHead(i);
 		if (!track) {
 			continue;
 		}
 
-		// ƒgƒ‰ƒbƒNƒiƒ“ƒo‚©‚çAƒIƒtƒZƒbƒg‚ğZo(x8KB)
+		// Calculate offset from track number (x8KB)
 		offset = track->GetTrack();
 		offset <<= 13;
 
-		// ‘‚«‚İ
+		// Write
 		track->Save(disk.path, offset);
 	}
 
-	// c‚Í75‚Ü‚Å‹–‰ÂB”ÍˆÍŠO‚Å‚ ‚ê‚Îhead[i]=NULL‚Æ‚·‚é
+	// Allow c up to 75. If out of range, set head[i]=NULL
 	if ((c < 0) || (c > 76)) {
 		disk.head[0] = NULL;
 		disk.head[1] = NULL;
 		return;
 	}
 
-	// ŠY“–‚·‚éƒgƒ‰ƒbƒN‚ğŒŸõ‚µAƒ[ƒh
+	// Search and load corresponding track
 	for (i=0; i<2; i++) {
-		// ƒgƒ‰ƒbƒN‚ğŒŸõ
+		// Search track
 		track = (FDITrack2HD*)Search(c * 2 + i);
 		ASSERT(track);
 		disk.head[i] = track;
 
-		// ƒgƒ‰ƒbƒNƒiƒ“ƒo‚©‚çAƒIƒtƒZƒbƒg‚ğZo(x8KB)
+		// Calculate offset from track number (x8KB)
 		offset = track->GetTrack();
 		offset <<= 13;
 
-		// ƒ[ƒh
+		// Load
 		track->Load(disk.path, offset);
 	}
 }
 
 //---------------------------------------------------------------------------
 //
-//	V‹KƒfƒBƒXƒNì¬
+//	Create new disk
 //
 //---------------------------------------------------------------------------
 BOOL FASTCALL FDIDisk2HD::Create(const Filepath& path, const option_t *opt)
@@ -4893,63 +4893,63 @@ BOOL FASTCALL FDIDisk2HD::Create(const Filepath& path, const option_t *opt)
 	ASSERT(this);
 	ASSERT(opt);
 
-	// •¨—ƒtƒH[ƒ}ƒbƒg‚Í2HD‚Ì‚İ‹–‰Â
+	// Physical format only allows 2HD
 	if (opt->phyfmt != FDI_2HD) {
 		return FALSE;
 	}
 
-	// ƒtƒ@ƒCƒ‹ì¬‚ğ‚İ‚é
+	// Try to create file
 	if (!fio.Open(path, Fileio::WriteOnly)) {
 		return FALSE;
 	}
 
-	// ‘‚«‚İ‰Â”\‚Æ‚µ‚Ä‰Šú‰»
+	// Initialize as writable
 	disk.writep = FALSE;
 	disk.readonly = FALSE;
 
-	// ƒpƒX–¼AƒIƒtƒZƒbƒg‚ğ‹L˜^
+	// Store path, offset
 	disk.path = path;
 	disk.offset = 0;
 
-	// ƒfƒBƒXƒN–¼‚Íƒtƒ@ƒCƒ‹–¼{Šg’£q‚Æ‚·‚é
+	// Disk name is filename + extension
 	strcpy(disk.name, path.GetShort());
 
-	// 0`153‚ÉŒÀ‚èAƒgƒ‰ƒbƒN‚ğì¬‚µ‚Ä•¨—ƒtƒH[ƒ}ƒbƒg
+	// Create tracks and physical format only for 0-153
 	for (i=0; i<154; i++) {
 		track = new FDITrack2HD(this, i);
 		track->Create(opt->phyfmt);
 		AddTrack(track);
 	}
 
-	// ˜_—ƒtƒH[ƒ}ƒbƒg
+	// Logical format
 	FDIDisk::Create(path, opt);
 
-	// ‘‚«‚İƒ‹[ƒv
+	// WriteLoop
 	offset = 0;
 	for (i=0; i<154; i++) {
-		// ƒgƒ‰ƒbƒNæ“¾
+		// Get track
 		track = (FDITrack2HD*)Search(i);
 		ASSERT(track);
 		ASSERT(track->IsChanged());
 
-		// ‘‚«‚İ
+		// Write
 		if (!track->Save(&fio, offset)) {
 			fio.Close();
 			return FALSE;
 		}
 
-		// Ÿ‚Ö
+		// Next
 		offset += (0x400 * 8);
 	}
 
-	// ¬Œ÷
+	// Success
 	fio.Close();
 	return TRUE;
 }
 
 //---------------------------------------------------------------------------
 //
-//	ƒtƒ‰ƒbƒVƒ…
+//	Flush
 //
 //---------------------------------------------------------------------------
 BOOL FASTCALL FDIDisk2HD::Flush()
@@ -4960,19 +4960,19 @@ BOOL FASTCALL FDIDisk2HD::Flush()
 
 	ASSERT(this);
 
-	// ÅŒã‚Ìƒgƒ‰ƒbƒNƒf[ƒ^‚ğ‘‚«‚Ş
+	// Write last track data
 	for (i=0; i<2; i++) {
-		// ƒgƒ‰ƒbƒN‚ª‚ ‚é‚©
+		// Is there a track
 		track = GetHead(i);
 		if (!track) {
 			continue;
 		}
 
-		// ƒgƒ‰ƒbƒNƒiƒ“ƒo‚©‚çAƒIƒtƒZƒbƒg‚ğZo(x8KB)
+		// Calculate offset from track number (x8KB)
 		offset = track->GetTrack();
 		offset <<= 13;
 
-		// ‘‚«‚İ
+		// Write
 		if (!track->Save(disk.path, offset)) {
 			return FALSE;
 		}
@@ -4983,55 +4983,55 @@ BOOL FASTCALL FDIDisk2HD::Flush()
 
 //===========================================================================
 //
-//	FDIƒgƒ‰ƒbƒN(DIM)
+//	FDI Track(DIM)
 //
 //===========================================================================
 
 //---------------------------------------------------------------------------
 //
-//	ƒRƒ“ƒXƒgƒ‰ƒNƒ^
+//	Constructor
 //
 //---------------------------------------------------------------------------
 FDITrackDIM::FDITrackDIM(FDIDisk *disk, int track, int type) : FDITrack(disk, track)
 {
-	// ƒ^ƒCƒv‚É‰‚¶‚Ädim_mfm, dim_secs, dim_n‚ğŒˆ‚ß‚é
+	// Determine dim_mfm, dim_secs, dim_n based on type
 	switch (type) {
-		// 2HD (N=3,8ƒZƒNƒ^)
+		// 2HD (N=3, 8 sectors)
 		case 0:
 			dim_mfm = TRUE;
 			dim_secs = 8;
 			dim_n = 3;
 			break;
 
-		// 2HS (N=3,9ƒZƒNƒ^)
+		// 2HS (N=3, 9 sectors)
 		case 1:
 			dim_mfm = TRUE;
 			dim_secs = 9;
 			dim_n = 3;
 			break;
 
-		// 2HC (N=2,15ƒZƒNƒ^)
+		// 2HC (N=2, 15 sectors)
 		case 2:
 			dim_mfm = TRUE;
 			dim_secs = 15;
 			dim_n = 2;
 			break;
 
-		// 2HDE (N=3,9ƒZƒNƒ^)
+		// 2HDE (N=3, 9 sectors)
 		case 3:
 			dim_mfm = TRUE;
 			dim_secs = 9;
 			dim_n = 3;
 			break;
 
-		// 2HQ (N=2,18ƒZƒNƒ^)
+		// 2HQ (N=2, 18 sectors)
 		case 9:
 			dim_mfm = TRUE;
 			dim_secs = 18;
 			dim_n = 2;
 			break;
 
-		// N88-BASIC (26ƒZƒNƒ^Aƒgƒ‰ƒbƒN0‚Ì‚İ’P–§)
+		// N88-BASIC (26 sectors, track 0 only single density)
 		case 17:
 			dim_secs = 26;
 			if (track == 0) {
@@ -5044,7 +5044,7 @@ FDITrackDIM::FDITrackDIM(FDIDisk *disk, int track, int type) : FDITrack(disk, tr
 			}
 			break;
 
-		// ‚»‚Ì‘¼
+		// Other
 		default:
 			ASSERT(FALSE);
 			break;
@@ -5055,7 +5055,7 @@ FDITrackDIM::FDITrackDIM(FDIDisk *disk, int track, int type) : FDITrack(disk, tr
 
 //---------------------------------------------------------------------------
 //
-//	ƒ[ƒh
+//	Load
 //
 //---------------------------------------------------------------------------
 BOOL FASTCALL FDITrackDIM::Load(const Filepath& path, DWORD offset, BOOL load)
@@ -5071,35 +5071,35 @@ BOOL FASTCALL FDITrackDIM::Load(const Filepath& path, DWORD offset, BOOL load)
 
 	ASSERT(this);
 
-	// ‰Šú‰»Ï‚İ‚È‚ç•s—v(ƒV[ƒN–ˆ‚ÉŒÄ‚Î‚ê‚é‚Ì‚ÅA‚P“x‚¾‚¯“Ç‚ñ‚ÅƒLƒƒƒbƒVƒ…‚·‚é)
+	// Not needed if already initialized (called each seek, read once and cache)
 	if (IsInit()) {
 		return TRUE;
 	}
 
-	// ƒZƒNƒ^‚ª‘¶İ‚µ‚È‚¢‚±‚Æ
+	// Sector does not exist
 	ASSERT(!GetFirst());
 	ASSERT(GetAllSectors() == 0);
 	ASSERT(GetMFMSectors() == 0);
 	ASSERT(GetFMSectors() == 0);
 
-	// CEHENŒˆ’è
+	// Determine C, H, N
 	chrn[0] = GetTrack() >> 1;
 	chrn[3] = GetDIMN();
 
-	// “Ç‚İ‚İƒI[ƒvƒ“
+	// Open for reading
 	if (load) {
 		if (!fio.Open(path, Fileio::ReadOnly)) {
 			return FALSE;
 		}
 
-		// ƒV[ƒN
+		// Seek
 		if (!fio.Seek(offset)) {
 			fio.Close();
 			return FALSE;
 		}
 	}
 
-	// ƒ[ƒh€”õ
+	// Prepare for load
 	num = GetDIMSectors();
 	len = 1 << (GetDIMN() + 7);
 	ASSERT(len <= sizeof(buf));
@@ -5127,22 +5127,22 @@ BOOL FASTCALL FDITrackDIM::Load(const Filepath& path, DWORD offset, BOOL load)
 			return FALSE;
 	}
 
-	// ‰Šúƒf[ƒ^ì¬(load==FALSE‚Ìê‡)
+	// Create initial data (if load==FALSE)
 	memset(buf, 0xe5, len);
 
-	// ƒ‹[ƒv
+	// Loop
 	for (i=0; i<num; i++) {
-		// ƒf[ƒ^“Ç‚İ‚İ
+		// Read data
 		if (load) {
 			if (!fio.Read(buf, len)) {
-				// “r’†‚Ü‚Å’Ç‰Á‚µ‚½•ª‚ğíœ‚·‚é
+				// Delete partially added sectors
 				ClrSector();
 				fio.Close();
 				return FALSE;
 			}
 		}
 
-		// H‚ÆR‚ğŒˆ‚ß‚é (2HS, 2HDE‚Å“Á—á‚ ‚è)
+		// Determine H and R (special cases for 2HS, 2HDE)
 		chrn[1] = GetTrack() & 1;
 		chrn[2] = i + 1;
 		if (dim_type == 1) {
@@ -5158,58 +5158,58 @@ BOOL FASTCALL FDITrackDIM::Load(const Filepath& path, DWORD offset, BOOL load)
 			}
 		}
 
-		// ƒZƒNƒ^ì¬
+		// Create sector
 		sector = new FDISector(IsDIMMFM(), chrn);
 		sector->Load(buf, len, gap, FDD_NOERROR);
 
-		// ƒZƒNƒ^’Ç‰Á
+		// Add sector
 		AddSector(sector);
 	}
 
-	// ƒNƒ[ƒY
+	// Close
 	if (load) {
 		fio.Close();
 	}
 
-	// ƒ|ƒWƒVƒ‡ƒ“ŒvZ
+	// Calculate position
 	CalcPos();
 
-	// ‰Šú‰»ok
+	// Initializeok
 	trk.init = TRUE;
 	return TRUE;
 }
 
 //===========================================================================
 //
-//	FDIƒfƒBƒXƒN(DIM)
+//	FDI Disk(DIM)
 //
 //===========================================================================
 
 //---------------------------------------------------------------------------
 //
-//	ƒRƒ“ƒXƒgƒ‰ƒNƒ^
+//	Constructor
 //
 //---------------------------------------------------------------------------
 FDIDiskDIM::FDIDiskDIM(int index, FDI *fdi) : FDIDisk(index, fdi)
 {
-	// IDİ’è
+	// IDSet
 	disk.id = MAKEID('D', 'I', 'M', ' ');
 
-	// ƒwƒbƒ_‚ğƒNƒŠƒA
+	// Clear header
 	memset(dim_hdr, 0, sizeof(dim_hdr));
 
-	// ƒ[ƒh‚È‚µ
+	// No load
 	dim_load = FALSE;
 }
 
 //---------------------------------------------------------------------------
 //
-//	ƒfƒXƒgƒ‰ƒNƒ^
+//	Destructor
 //
 //---------------------------------------------------------------------------
 FDIDiskDIM::~FDIDiskDIM()
 {
-	// ƒ[ƒh‚³‚ê‚Ä‚¢‚ê‚Î‘‚«‚İ
+	// Write if loaded
 	if (dim_load) {
 		Save();
 	}
@@ -5217,7 +5217,7 @@ FDIDiskDIM::~FDIDiskDIM()
 
 //---------------------------------------------------------------------------
 //
-//	ƒI[ƒvƒ“
+//	Open
 //
 //---------------------------------------------------------------------------
 BOOL FASTCALL FDIDiskDIM::Open(const Filepath& path, DWORD offset)
@@ -5233,65 +5233,65 @@ BOOL FASTCALL FDIDiskDIM::Open(const Filepath& path, DWORD offset)
 	ASSERT(!GetHead(0));
 	ASSERT(!GetHead(1));
 
-	// ‘‚«‚İ‰Â”\‚Æ‚µ‚Ä‰Šú‰»
+	// Initialize as writable
 	disk.writep = FALSE;
 	disk.readonly = FALSE;
 
-	// ƒI[ƒvƒ“‚Å‚«‚é‚±‚Æ‚ğŠm‚©‚ß‚é
+	// Verify can open
 	if (!fio.Open(path, Fileio::ReadWrite)) {
-		// “Ç‚İ‚İƒI[ƒvƒ“‚ğ‚İ‚é
+		// Try to open for reading
 		if (!fio.Open(path, Fileio::ReadOnly)) {
 			return FALSE;
 		}
 
-		// “Ç‚İ‚İ‚Í‰Â”
+		// Reading is allowed
 		disk.writep = TRUE;
 		disk.readonly = TRUE;
 	}
 
-	// ƒtƒ@ƒCƒ‹ƒTƒCƒY‚ª256ˆÈã‚ ‚é‚±‚Æ‚ğŠm‚©‚ß‚é
+	// Verify file size is at least 256
 	size = fio.GetFileSize();
 	if (size < 0x100) {
 		fio.Close();
 		return FALSE;
 	}
 
-	// ƒwƒbƒ_“Ç‚İ‚İA”F¯•¶š—ñƒ`ƒFƒbƒN
+	// Read header, check recognition string
 	fio.Read(dim_hdr, sizeof(dim_hdr));
 	fio.Close();
 	if (strcmp((char*)&dim_hdr[171], "DIFC HEADER  ") != 0) {
 		return FALSE;
 	}
 
-	// ƒpƒX–¼{ƒIƒtƒZƒbƒg‚ğ‹L˜^
+	// Store path + offset
 	disk.path = path;
 	disk.offset = offset;
 
-	// ƒRƒƒ“ƒg‚ª‚ ‚é‚©
+	// Is there a comment
 	if (dim_hdr[0xc2] != '\0') {
-		// ƒfƒBƒXƒN–¼‚ÍƒRƒƒ“ƒg‚Æ‚·‚é(•K‚¸60•¶š‚ÅØ‚é)
+		// Use comment as disk name (truncate to 60 chars)
 		dim_hdr[0xc2 + 60] = '\0';
 		strcpy(disk.name, (char*)&dim_hdr[0xc2]);
 	}
 	else {
-		// ƒfƒBƒXƒN–¼‚Íƒtƒ@ƒCƒ‹–¼{Šg’£q‚Æ‚·‚é
+		// Disk name is filename + extension
 		strcpy(disk.name, path.GetShort());
 	}
 
-	// ƒgƒ‰ƒbƒN‚ğì¬(0`81ƒVƒŠƒ“ƒ_‚Ü‚ÅA82*2ƒgƒ‰ƒbƒN)
+	// Create tracks (0-81 cylinders, 82*2 tracks)
 	for (i=0; i<164; i++) {
 		track = new FDITrackDIM(this, i, dim_hdr[0]);
 		AddTrack(track);
 	}
 
-	// ƒtƒ‰ƒOUpAI—¹
+	// Set flag, end
 	dim_load = TRUE;
 	return TRUE;
 }
 
 //---------------------------------------------------------------------------
 //
-//	ƒV[ƒN
+//	Seek
 //
 //---------------------------------------------------------------------------
 void FASTCALL FDIDiskDIM::Seek(int c)
@@ -5305,30 +5305,30 @@ void FASTCALL FDIDiskDIM::Seek(int c)
 	ASSERT((c >= 0) && (c < 82));
 	ASSERT(dim_load);
 
-	// ŠY“–‚·‚éƒgƒ‰ƒbƒN‚ğŒŸõ‚µAƒ[ƒh
+	// Search and load corresponding track
 	for (i=0; i<2; i++) {
-		// ƒgƒ‰ƒbƒN‚ğŒŸõ
+		// Search track
 		track = (FDITrackDIM*)Search(c * 2 + i);
 		ASSERT(track);
 		disk.head[i] = track;
 
-		// ƒ}ƒbƒv‚ğŒ©‚ÄA—LŒøƒgƒ‰ƒbƒN‚È‚çƒ[ƒh
+		// Check map, load if valid track
 		flag = FALSE;
 		offset = 0;
 		if (GetDIMMap(c * 2 + i)) {
-			// ƒIƒtƒZƒbƒgŒvZ
+			// Calculate offset
 			offset = GetDIMOffset(c * 2 + i);
 			flag = TRUE;
 		}
 
-		// ƒ[ƒh‚Ü‚½‚Íì¬
+		// Load or create
 		track->Load(disk.path, offset, flag);
 	}
 }
 
 //---------------------------------------------------------------------------
 //
-//	DIMƒgƒ‰ƒbƒNƒ}ƒbƒv‚ğæ“¾
+//	Get DIM track map
 //
 //---------------------------------------------------------------------------
 BOOL FASTCALL FDIDiskDIM::GetDIMMap(int track) const
@@ -5345,7 +5345,7 @@ BOOL FASTCALL FDIDiskDIM::GetDIMMap(int track) const
 
 //---------------------------------------------------------------------------
 //
-//	DIMƒgƒ‰ƒbƒNƒIƒtƒZƒbƒg‚ğæ“¾
+//	Get DIM track offset
 //
 //---------------------------------------------------------------------------
 DWORD FASTCALL FDIDiskDIM::GetDIMOffset(int track) const
@@ -5359,12 +5359,12 @@ DWORD FASTCALL FDIDiskDIM::GetDIMOffset(int track) const
 	ASSERT((track >= 0) && (track <= 163));
 	ASSERT(dim_load);
 
-	// ƒx[ƒX‚Í256
+	// Base is 256
 	offset = 0x100;
 
-	// ‘O‚ÌƒZƒNƒ^‚Ü‚Å‚Ì‡Z‚Æ‚·‚é
+	// Sum up to previous sector
 	for (i=0; i<track; i++) {
-		// —LŒøƒgƒ‰ƒbƒN‚È‚ç‡Z
+		// Sum if valid track
 		if (GetDIMMap(i)) {
 			dim = (FDITrackDIM*)Search(track);
 			ASSERT(dim);
@@ -5379,7 +5379,7 @@ DWORD FASTCALL FDIDiskDIM::GetDIMOffset(int track) const
 
 //---------------------------------------------------------------------------
 //
-//	ƒZ[ƒu
+//	Save
 //
 //---------------------------------------------------------------------------
 BOOL FASTCALL FDIDiskDIM::Save()
@@ -5395,11 +5395,11 @@ BOOL FASTCALL FDIDiskDIM::Save()
 	ASSERT(this);
 	ASSERT(dim_load);
 
-	// ƒ}ƒbƒvˆÈŠO‚Ìƒgƒ‰ƒbƒN‚Å•ÏX‚³‚ê‚½‚à‚Ì‚ª‚ ‚é‚©A‚Ü‚¸’²‚×‚é
+	// First check if any tracks outside map are changed
 	changed = FALSE;
 	for (i=0; i<164; i++) {
 		if (!GetDIMMap(i)) {
-			// ƒ}ƒbƒv‚É‚È‚¢ƒgƒ‰ƒbƒNB•ÏX‚ ‚é‚©
+			// Track not in map. Any changes?
 			track = (FDITrackDIM*)Search(i);
 			ASSERT(track);
 			if (track->IsChanged()) {
@@ -5408,13 +5408,13 @@ BOOL FASTCALL FDIDiskDIM::Save()
 		}
 	}
 
-	// •ÏX‚ªƒ}ƒbƒv‚Ì‚İ‚È‚çAŒÂ•Ê‘Î‰
+	// If only map changed, handle individually
 	if (!changed) {
 		for (i=0; i<164; i++) {
 			track = (FDITrackDIM*)Search(i);
 			ASSERT(track);
 			if (track->IsChanged()) {
-				// ƒ}ƒbƒvÏ‚İ‚Ìƒgƒ‰ƒbƒN
+				// Mapped track
 				ASSERT(GetDIMMap(i));
 				offset = GetDIMOffset(i);
 				if (!track->Save(disk.path, offset)) {
@@ -5422,11 +5422,11 @@ BOOL FASTCALL FDIDiskDIM::Save()
 				}
 			}
 		}
-		// ‘Sƒgƒ‰ƒbƒNI—¹
+		// End all tracks
 		return TRUE;
 	}
 
-	// ƒ}ƒbƒvÏ‚İƒgƒ‰ƒbƒN‚ğ‚·‚×‚Äƒ[ƒh
+	// Load all mapped tracks
 	for (i=0; i<164; i++) {
 		if (GetDIMMap(i)) {
 			track = (FDITrackDIM*)Search(i);
@@ -5438,25 +5438,25 @@ BOOL FASTCALL FDIDiskDIM::Save()
 		}
 	}
 
-	// ƒ}ƒbƒv‚³‚ê‚Ä‚¢‚È‚­‚Ä¡‰ñ’Ç‰Á‚³‚ê‚½‚Æ‚±‚ë‚ğƒ}ƒbƒvB“¯‚Éƒg[ƒ^ƒ‹ƒTƒCƒY‚ğ“¾‚é
+	// Map newly added unmapped tracks. Also get total size
 	total = 0;
 	for (i=0; i<164; i++) {
 		track = (FDITrackDIM*)Search(i);
 		ASSERT(track);
 		if (!GetDIMMap(i)) {
 			if (track->IsChanged()) {
-				// V‚µ‚­ƒ}ƒbƒv‚É’Ç‰Á
+				// Add to map
 				dim_hdr[i + 1] = 0x01;
 				total += track->GetTotalLength();
 			}
 		}
 		else {
-			// Šù‚Éƒ}ƒbƒv‚³‚ê‚Ä‚¢‚é
+			// Already mapped
 			total += track->GetTotalLength();
 		}
 	}
 
-	// 2HD‚Å154ƒgƒ‰ƒbƒNˆÈ~‚ªg‚í‚ê‚Ä‚¢‚ê‚ÎAOverTrackƒtƒ‰ƒO‚ğ—§‚Ä‚é
+	// Set OverTrack flag if 2HD uses track 154 or later
 	dim_hdr[0xff] = 0x00;
 	if (dim_hdr[0] == 0x00) {
 		for (i=154; i<164; i++) {
@@ -5466,7 +5466,7 @@ BOOL FASTCALL FDIDiskDIM::Save()
 		}
 	}
 
-	// V‹KƒZ[ƒu(ƒTƒCƒY‚ğ‚Â‚­‚é)
+	// New save (create size)
 	if (!fio.Open(disk.path, Fileio::WriteOnly)) {
 		return FALSE;
 	}
@@ -5475,7 +5475,7 @@ BOOL FASTCALL FDIDiskDIM::Save()
 		return FALSE;
 	}
 
-	// 256ƒoƒCƒg‚Ìƒwƒbƒ_ˆÈ~‚ÍAE5ƒf[ƒ^‚ğÅ‰‚ÉƒZ[ƒu
+	// After 256-byte header, save E5 data first
 	try {
 		ptr = new BYTE[total];
 	}
@@ -5495,7 +5495,7 @@ BOOL FASTCALL FDIDiskDIM::Save()
 	}
 	delete[] ptr;
 
-	// ‘S‚Ä‘‚«‚Ş(ƒtƒ@ƒCƒ‹‚ÍŠJ‚¢‚½‚Ü‚Ü)
+	// Write all (keep file open)
 	for (i=0; i<164; i++) {
 		if (GetDIMMap(i)) {
 			track = (FDITrackDIM*)Search(i);
@@ -5514,7 +5514,7 @@ BOOL FASTCALL FDIDiskDIM::Save()
 
 //---------------------------------------------------------------------------
 //
-//	V‹KƒfƒBƒXƒNì¬
+//	Create new disk
 //
 //---------------------------------------------------------------------------
 BOOL FASTCALL FDIDiskDIM::Create(const Filepath& path, const option_t *opt)
@@ -5529,12 +5529,12 @@ BOOL FASTCALL FDIDiskDIM::Create(const Filepath& path, const option_t *opt)
 	ASSERT(this);
 	ASSERT(opt);
 
-	// ƒwƒbƒ_‚ğƒNƒŠƒA
+	// Clear header
 	memset(dim_hdr, 0, sizeof(dim_hdr));
 
-	// ƒtƒH[ƒ}ƒbƒg‚Ìƒ`ƒFƒbƒN‚Æƒ^ƒCƒv‘‚«‚İ
+	// Check format and write type
 	switch (opt->phyfmt) {
-		// 2HD(ƒI[ƒo[ƒgƒ‰ƒbƒNg—p‚ğŠÜ‚Ş)
+		// 2HD (including over-track usage)
 		case FDI_2HD:
 		case FDI_2HDA:
 			dim_hdr[0] = 0x00;
@@ -5565,12 +5565,12 @@ BOOL FASTCALL FDIDiskDIM::Create(const Filepath& path, const option_t *opt)
 			dim_hdr[0] = 0x11;
 			break;
 
-		// ƒTƒ|[ƒg‚µ‚Ä‚¢‚È‚¢•¨—ƒtƒH[ƒ}ƒbƒg
+		// Unsupported physical format
 		default:
 			return FALSE;
 	}
 
-	// ƒwƒbƒ_c‚è(“ú•t‚Í2001-03-22 00:00:00‚Æ‚·‚é; XM6ŠJ”­ŠJn“ú)
+	// Remaining header (date is 2001-03-22 00:00:00; XM6 development start date)
 	strcpy((char*)&dim_hdr[0xab], "DIFC HEADER  ");
 	dim_hdr[0xfe] = 0x19;
 	if (opt->phyfmt == FDI_2HDA) {
@@ -5580,7 +5580,7 @@ BOOL FASTCALL FDIDiskDIM::Create(const Filepath& path, const option_t *opt)
 	ASSERT(strlen(opt->name) < 60);
 	strcpy((char*)&dim_hdr[0xc2], opt->name);
 
-	// ƒwƒbƒ_‘‚«‚İ
+	// Write header
 	if (!fio.Open(path, Fileio::WriteOnly)) {
 		return FALSE;
 	}
@@ -5589,75 +5589,75 @@ BOOL FASTCALL FDIDiskDIM::Create(const Filepath& path, const option_t *opt)
 	}
 	fio.Close();
 
-	// ƒtƒ‰ƒOİ’è
+	// Set flag
 	disk.writep = FALSE;
 	disk.readonly = FALSE;
 	dim_load = TRUE;
 
-	// ƒpƒX–¼{ƒIƒtƒZƒbƒg‚ğ‹L˜^
+	// Store path + offset
 	disk.path = path;
 	disk.offset = 0;
 
-	// ƒfƒBƒXƒN–¼‚Íƒtƒ@ƒCƒ‹–¼{Šg’£q‚Æ‚·‚é
+	// Disk name is filename + extension
 	strcpy(disk.name, path.GetShort());
 
-	// ƒgƒ‰ƒbƒN‚ğì¬‚µ‚Ä•¨—ƒtƒH[ƒ}ƒbƒg
+	// Create track and physical format
 	for (i=0; i<164; i++) {
 		track = new FDITrackDIM(this, i, dim_hdr[0x00]);
 		track->Create(opt->phyfmt);
 		AddTrack(track);
 	}
 
-	// ˜_—ƒtƒH[ƒ}ƒbƒg
+	// Logical format
 	FDIDisk::Create(path, opt);
 
-	// •Û‘¶
+	// Save
 	if (!Save()) {
 		return FALSE;
 	}
 
-	// ¬Œ÷
+	// Success
 	return TRUE;
 }
 
 //---------------------------------------------------------------------------
 //
-//	ƒtƒ‰ƒbƒVƒ…
+//	Flush
 //
 //---------------------------------------------------------------------------
 BOOL FASTCALL FDIDiskDIM::Flush()
 {
 	ASSERT(this);
 
-	// ƒ[ƒh‚³‚ê‚Ä‚¢‚ê‚Î‘‚«‚İ
+	// Write if loaded
 	if (dim_load) {
 		return Save();
 	}
 
-	// ƒ[ƒh‚³‚ê‚Ä‚¢‚È‚¢
+	// Not loaded
 	return TRUE;
 }
 
 //===========================================================================
 //
-//	FDIƒgƒ‰ƒbƒN(D68)
+//	FDI Track(D68)
 //
 //===========================================================================
 
 //---------------------------------------------------------------------------
 //
-//	ƒRƒ“ƒXƒgƒ‰ƒNƒ^
+//	Constructor
 //
 //---------------------------------------------------------------------------
 FDITrackD68::FDITrackD68(FDIDisk *disk, int track, BOOL hd) : FDITrack(disk, track, hd)
 {
-	// ƒtƒH[ƒ}ƒbƒg•ÏX‚È‚µ
+	// No format change
 	d68_format = FALSE;
 }
 
 //---------------------------------------------------------------------------
 //
-//	ƒ[ƒh
+//	Load
 //
 //---------------------------------------------------------------------------
 BOOL FASTCALL FDITrackD68::Load(const Filepath& path, DWORD offset)
@@ -5679,18 +5679,18 @@ BOOL FASTCALL FDITrackD68::Load(const Filepath& path, DWORD offset)
 	ASSERT(this);
 	ASSERT(offset > 0);
 
-	// ‰Šú‰»Ï‚İ‚È‚ç•s—v(ƒV[ƒN–ˆ‚ÉŒÄ‚Î‚ê‚é‚Ì‚ÅA‚P“x‚¾‚¯“Ç‚ñ‚ÅƒLƒƒƒbƒVƒ…‚·‚é)
+	// Not needed if already initialized (called each seek, read once and cache)
 	if (IsInit()) {
 		return TRUE;
 	}
 
-	// ƒZƒNƒ^‚ª‘¶İ‚µ‚È‚¢‚±‚Æ
+	// Sector does not exist
 	ASSERT(!GetFirst());
 	ASSERT(GetAllSectors() == 0);
 	ASSERT(GetMFMSectors() == 0);
 	ASSERT(GetFMSectors() == 0);
 
-	// ƒI[ƒvƒ“‚ÆƒV[ƒN
+	// Open and seek
 	if (!fio.Open(path, Fileio::ReadOnly)) {
 		return FALSE;
 	}
@@ -5698,16 +5698,16 @@ BOOL FASTCALL FDITrackD68::Load(const Filepath& path, DWORD offset)
 		return FALSE;
 	}
 
-	// Å’á1‚Â‚ÍƒZƒNƒ^‚ª‚ ‚é‚Æ‰¼’è(ƒIƒtƒZƒbƒg!=0‚Ì‚½‚ß)
+	// Assume at least one sector exists (offset != 0)
 	i = 0;
 	num = 1;
 	while (i < num) {
-		// ƒwƒbƒ_“Ç‚İ
+		// Read header
 		if (!fio.Read(header, sizeof(header))) {
 			break;
 		}
 
-		// ‰‰ñ‚ÍƒZƒNƒ^”‚ğæ“¾
+		// Get sector count on first pass
 		if (i == 0) {
 			ptr = &header[0x04];
 			num = (int)ptr[1];
@@ -5721,17 +5721,17 @@ BOOL FASTCALL FDITrackD68::Load(const Filepath& path, DWORD offset)
 			mfm = FALSE;
 		}
 
-		// ƒŒƒ“ƒOƒX
+		// Length
 		ptr = &header[0x0e];
 		len = (int)ptr[1];
 		len <<= 8;
 		len |= (int)ptr[0];
 
-		// GAP3(D68ƒtƒ@ƒCƒ‹‚É‚Íî•ñ‚ª‚È‚¢‚Ì‚ÅA‚æ‚­‚ ‚éƒpƒ^[ƒ“‚ğ—pˆÓ)
+		// GAP3 (D68 file has no info, use common pattern)
 		gap = 0x12;
 		table = &Gap3Table[0];
 		while (table[0] != 0) {
-			// GAPƒe[ƒuƒ‹ŒŸõ
+			// Search GAP table
 			if ((table[0] == num) && (table[1] == (int)header[3])) {
 				gap = table[2];
 				break;
@@ -5739,7 +5739,7 @@ BOOL FASTCALL FDITrackD68::Load(const Filepath& path, DWORD offset)
 			table += 3;
 		}
 
-		// DELETED SECTOR‚ğŠÜ‚ŞƒXƒe[ƒ^ƒX
+		// Status including deleted sector
 		stat = FDD_NOERROR;
 		if (header[0x07] != 0) {
 			stat |= FDD_DDAM;
@@ -5748,7 +5748,7 @@ BOOL FASTCALL FDITrackD68::Load(const Filepath& path, DWORD offset)
 			stat |= FDD_DATACRC;
 		}
 
-		// ƒoƒbƒtƒ@‚Öƒf[ƒ^‚ğƒ[ƒh
+		// Load data to buffer
 		if (sizeof(buf) < len) {
 			break;
 		}
@@ -5756,7 +5756,7 @@ BOOL FASTCALL FDITrackD68::Load(const Filepath& path, DWORD offset)
 			break;
 		}
 
-		// ƒZƒNƒ^ì¬
+		// Create sector
 		chrn[0] = (DWORD)header[0];
 		chrn[1] = (DWORD)header[1];
 		chrn[2] = (DWORD)header[2];
@@ -5764,24 +5764,24 @@ BOOL FASTCALL FDITrackD68::Load(const Filepath& path, DWORD offset)
 		sector = new FDISector(mfm, chrn);
 		sector->Load(buf, len, gap, stat);
 
-		// Ÿ‚Ö
+		// Next
 		AddSector(sector);
 		i++;
 	}
 
 	fio.Close();
 
-	// ƒ|ƒWƒVƒ‡ƒ“ŒvZ
+	// Calculate position
 	CalcPos();
 
-	// ‰Šú‰»ok
+	// Initializeok
 	trk.init = TRUE;
 	return TRUE;
 }
 
 //---------------------------------------------------------------------------
 //
-//	ƒZ[ƒu
+//	Save
 //
 //---------------------------------------------------------------------------
 BOOL FASTCALL FDITrackD68::Save(const Filepath& path, DWORD offset)
@@ -5797,19 +5797,19 @@ BOOL FASTCALL FDITrackD68::Save(const Filepath& path, DWORD offset)
 	ASSERT(this);
 	ASSERT(offset > 0);
 
-	// ƒZƒNƒ^‰Šú‰»
+	// Initialize sector
 	sector = GetFirst();
 
 	while (sector) {
 		if (!sector->IsChanged()) {
-			// •ÏX‚³‚ê‚Ä‚¢‚È‚¢‚Ì‚ÅƒXƒLƒbƒv
+			// Skip if not changed
 			offset += 0x10;
 			offset += sector->GetLength();
 			sector = sector->GetNext();
 			continue;
 		}
 
-		// •ÏX‚³‚ê‚Ä‚¢‚éBƒwƒbƒ_‚ğì‚é
+		// Changed. Create header
 		memset(header, 0, sizeof(header));
 		sector->GetCHRN(chrn);
 		header[0] = (BYTE)chrn[0];
@@ -5837,9 +5837,9 @@ BOOL FASTCALL FDITrackD68::Save(const Filepath& path, DWORD offset)
 		ptr[1] = (BYTE)(len >> 8);
 		ptr[0] = (BYTE)len;
 
-		// ‘‚«‚İ
+		// Write
 		if (!fio.IsValid()) {
-			// ‰‰ñ‚È‚çƒtƒ@ƒCƒ‹ƒI[ƒvƒ“
+			// Open file if first time
 			if (!fio.Open(path, Fileio::ReadWrite)) {
 				return FALSE;
 			}
@@ -5857,28 +5857,28 @@ BOOL FASTCALL FDITrackD68::Save(const Filepath& path, DWORD offset)
 			return FALSE;
 		}
 
-		// ‘‚«‚İŠ®—¹
+		// Write complete
 		sector->ClrChanged();
 
-		// Ÿ‚Ö
+		// Next
 		offset += 0x10;
 		offset += sector->GetLength();
 		sector = sector->GetNext();
 	}
 
-	// —LŒø‚È‚çƒtƒ@ƒCƒ‹ƒNƒ[ƒY
+	// Close file if valid
 	if (fio.IsValid()) {
 		fio.Close();
 	}
 
-	// ƒtƒH[ƒ}ƒbƒgƒtƒ‰ƒO‚à~‚ë‚µ‚Ä‚¨‚­
+	// Also clear format flag
 	d68_format = FALSE;
 	return TRUE;
 }
 
 //---------------------------------------------------------------------------
 //
-//	ƒZ[ƒu
+//	Save
 //
 //---------------------------------------------------------------------------
 BOOL FASTCALL FDITrackD68::Save(Fileio *fio, DWORD offset)
@@ -5894,19 +5894,19 @@ BOOL FASTCALL FDITrackD68::Save(Fileio *fio, DWORD offset)
 	ASSERT(fio);
 	ASSERT(offset > 0);
 
-	// ƒZƒNƒ^‰Šú‰»
+	// Initialize sector
 	sector = GetFirst();
 
 	while (sector) {
 		if (!sector->IsChanged()) {
-			// •ÏX‚³‚ê‚Ä‚¢‚È‚¢‚Ì‚ÅƒXƒLƒbƒv
+			// Skip if not changed
 			offset += 0x10;
 			offset += sector->GetLength();
 			sector = sector->GetNext();
 			continue;
 		}
 
-		// •ÏX‚³‚ê‚Ä‚¢‚éBƒwƒbƒ_‚ğì‚é
+		// Changed. Create header
 		memset(header, 0, sizeof(header));
 		sector->GetCHRN(chrn);
 		header[0] = (BYTE)chrn[0];
@@ -5934,7 +5934,7 @@ BOOL FASTCALL FDITrackD68::Save(Fileio *fio, DWORD offset)
 		ptr[1] = (BYTE)(len >> 8);
 		ptr[0] = (BYTE)len;
 
-		// ‘‚«‚İ
+		// Write
 		fio->Seek(offset);
 		if (!fio->Write(header, sizeof(header))) {
 			return FALSE;
@@ -5943,26 +5943,26 @@ BOOL FASTCALL FDITrackD68::Save(Fileio *fio, DWORD offset)
 			return FALSE;
 		}
 
-		// ‘‚«‚İŠ®—¹
+		// Write complete
 		sector->ClrChanged();
 
-		// Ÿ‚Ö
+		// Next
 		offset += 0x10;
 		offset += sector->GetLength();
 		sector = sector->GetNext();
 	}
 
-	// ƒtƒH[ƒ}ƒbƒgƒtƒ‰ƒO‚à~‚ë‚µ‚Ä‚¨‚­
+	// Also clear format flag
 	d68_format = FALSE;
 	return TRUE;
 }
 
 //---------------------------------------------------------------------------
 //
-//	ƒ‰ƒCƒgID
-//	¦Ÿ‚ÌƒXƒe[ƒ^ƒX‚ğ•Ô‚·(ƒGƒ‰[‚ÍOR‚³‚ê‚é)
-//		FDD_NOERROR		ƒGƒ‰[‚È‚µ
-//		FDD_NOTWRITE	‘‚«‚İ‹Ö~
+//	WriteID
+//	Note: Returns the following status (errors are ORed)
+//		FDD_NOERROR		No error
+//		FDD_NOTWRITE	Write protected
 //
 //---------------------------------------------------------------------------
 int FASTCALL FDITrackD68::WriteID(const BYTE *buf, DWORD d, int sc, BOOL mfm, int gpl)
@@ -5977,39 +5977,39 @@ int FASTCALL FDITrackD68::WriteID(const BYTE *buf, DWORD d, int sc, BOOL mfm, in
 	ASSERT(this);
 	ASSERT(sc > 0);
 
-	// ƒIƒŠƒWƒiƒ‹‚ğŒÄ‚Ô(ƒ‰ƒCƒgƒvƒƒeƒNƒg‚Ìƒ`ƒFƒbƒN‚ÍFDIDisk‚ÅŠù‚És‚í‚ê‚Ä‚¢‚é)
+	// Call original (write protection check already done in FDIDisk)
 	stat = FDITrack::WriteID(buf, d, sc, mfm, gpl);
 	if (stat == FDD_NOERROR) {
-		// ƒtƒH[ƒ}ƒbƒg¬Œ÷(ˆÈ‘O‚Æ“¯ˆê‚Ì•¨—ƒtƒH[ƒ}ƒbƒg)
+		// Format success (same physical format as before)
 		return stat;
 	}
 
-	// ˆÙ‚È‚éƒtƒH[ƒ}ƒbƒg
+	// Different format
 	d68_format = TRUE;
 
-	// ŠÔ‚ğİ’è(index‚Ü‚Å)
+	// Set time (until index)
 	pos = GetDisk()->GetRotationTime();
 	pos -= GetDisk()->GetRotationPos();
 	GetDisk()->SetSearch(pos);
 
-	// buf‚ª—^‚¦‚ç‚ê‚Ä‚¢‚È‚¯‚ê‚Î‚±‚±‚Ü‚Å
+	// End here if no buf given
 	if (!buf) {
 		return FDD_NOERROR;
 	}
 
-	// ƒZƒNƒ^‚ğƒNƒŠƒA
+	// Clear sector
 	ClrSector();
 	memset(fillbuf, d, sizeof(fillbuf));
 
-	// ‡‚ÉƒZƒNƒ^‚ğì¬
+	// Create sectors in order
 	for (i=0; i<sc; i++) {
-		// ƒŒƒ“ƒOƒX>=7‚ÍƒAƒ“ƒtƒH[ƒ}ƒbƒg
+		// Length >= 7 is unformatted
 		if (buf[i * 4 + 3] >= 0x07) {
 			ClrSector();
 			return FDD_NOERROR;
 		}
 
-		// ƒZƒNƒ^‚ğì¬
+		// Create sector
 		chrn[0] = (DWORD)buf[i * 4 + 0];
 		chrn[1] = (DWORD)buf[i * 4 + 1];
 		chrn[2] = (DWORD)buf[i * 4 + 2];
@@ -6017,11 +6017,11 @@ int FASTCALL FDITrackD68::WriteID(const BYTE *buf, DWORD d, int sc, BOOL mfm, in
 		sector = new FDISector(mfm, chrn);
 		sector->Load(fillbuf, 1 << (buf[i * 4 + 3] + 7), gpl, FDD_NOERROR);
 
-		// ƒZƒNƒ^‚ğ’Ç‰Á
+		// Add sector
 		AddSector(sector);
 	}
 
-	// ƒ|ƒWƒVƒ‡ƒ“ŒvZ
+	// Calculate position
 	CalcPos();
 
 	return FDD_NOERROR;
@@ -6029,7 +6029,7 @@ int FASTCALL FDITrackD68::WriteID(const BYTE *buf, DWORD d, int sc, BOOL mfm, in
 
 //---------------------------------------------------------------------------
 //
-//	D68‚Å‚Ì’·‚³æ“¾
+//	Get length in D68 format
 //
 //---------------------------------------------------------------------------
 DWORD FASTCALL FDITrackD68::GetD68Length() const
@@ -6039,11 +6039,11 @@ DWORD FASTCALL FDITrackD68::GetD68Length() const
 
 	ASSERT(this);
 
-	// ‰Šú‰»
+	// Initialize
 	length = 0;
 	sector = GetFirst();
 
-	// ƒ‹[ƒv
+	// Loop
 	while (sector) {
 		length += 0x10;
 		length += sector->GetLength();
@@ -6055,7 +6055,7 @@ DWORD FASTCALL FDITrackD68::GetD68Length() const
 
 //---------------------------------------------------------------------------
 //
-//	GAP3ƒe[ƒuƒ‹
+//	GAP3 table
 //
 //---------------------------------------------------------------------------
 const int FDITrackD68::Gap3Table[] = {
@@ -6075,35 +6075,35 @@ const int FDITrackD68::Gap3Table[] = {
 
 //===========================================================================
 //
-//	FDIƒfƒBƒXƒN(D68)
+//	FDI Disk(D68)
 //
 //===========================================================================
 
 //---------------------------------------------------------------------------
 //
-//	ƒRƒ“ƒXƒgƒ‰ƒNƒ^
+//	Constructor
 //
 //---------------------------------------------------------------------------
 FDIDiskD68::FDIDiskD68(int index, FDI *fdi) : FDIDisk(index, fdi)
 {
-	// IDİ’è
+	// IDSet
 	disk.id = MAKEID('D', '6', '8', ' ');
 
-	// ƒwƒbƒ_‚ğƒNƒŠƒA
+	// Clear header
 	memset(d68_hdr, 0, sizeof(d68_hdr));
 
-	// ƒ[ƒh‚È‚µ
+	// No load
 	d68_load = FALSE;
 }
 
 //---------------------------------------------------------------------------
 //
-//	ƒfƒXƒgƒ‰ƒNƒ^
+//	Destructor
 //
 //---------------------------------------------------------------------------
 FDIDiskD68::~FDIDiskD68()
 {
-	// ƒ[ƒh‚³‚ê‚Ä‚¢‚ê‚Î‘‚«‚İ
+	// Write if loaded
 	if (d68_load) {
 		Save();
 	}
@@ -6111,7 +6111,7 @@ FDIDiskD68::~FDIDiskD68()
 
 //---------------------------------------------------------------------------
 //
-//	ƒI[ƒvƒ“
+//	Open
 //
 //---------------------------------------------------------------------------
 BOOL FASTCALL FDIDiskD68::Open(const Filepath& path, DWORD offset)
@@ -6126,23 +6126,23 @@ BOOL FASTCALL FDIDiskD68::Open(const Filepath& path, DWORD offset)
 	ASSERT(!GetHead(0));
 	ASSERT(!GetHead(1));
 
-	// ‘‚«‚İ‰Â”\‚Æ‚µ‚Ä‰Šú‰»
+	// Initialize as writable
 	disk.writep = FALSE;
 	disk.readonly = FALSE;
 
-	// ƒI[ƒvƒ“‚Å‚«‚é‚±‚Æ‚ğŠm‚©‚ß‚é
+	// Verify can open
 	if (!fio.Open(path, Fileio::ReadWrite)) {
-		// “Ç‚İ‚İƒI[ƒvƒ“‚ğ‚İ‚é
+		// Try to open for reading
 		if (!fio.Open(path, Fileio::ReadOnly)) {
 			return FALSE;
 		}
 
-		// “Ç‚İ‚İ‚Í‰Â”
+		// Reading is allowed
 		disk.writep = TRUE;
 		disk.readonly = TRUE;
 	}
 
-	// ƒV[ƒNAƒwƒbƒ_“Ç‚İ‚İ
+	// Including seek and read header
 	if (!fio.Seek(offset)) {
 		fio.Close();
 		return FALSE;
@@ -6153,14 +6153,14 @@ BOOL FASTCALL FDIDiskD68::Open(const Filepath& path, DWORD offset)
 	}
 	fio.Close();
 
-	// ƒpƒX–¼{ƒIƒtƒZƒbƒg‚ğ‹L˜^
+	// Store path + offset
 	disk.path = path;
 	disk.offset = offset;
 
-	// ƒfƒBƒXƒN–¼(•K‚¸16•¶š‚ÅØ‚é)
+	// Disk name (truncate to 16 chars)
 	d68_hdr[0x10] = 0;
 	strcpy(disk.name, (char*)d68_hdr);
-	// ‚½‚¾‚µƒVƒ“ƒOƒ‹ƒfƒBƒXƒN‚ÅANULL‚©Default‚È‚çƒtƒ@ƒCƒ‹–¼+Šg’£q
+	// But for single disk, if NULL or default, use filename + extension
 	if (!GetFDI()->IsMulti()) {
 		if (strcmp(disk.name, "Default") == 0) {
 			strcpy(disk.name, path.GetShort());
@@ -6170,12 +6170,12 @@ BOOL FASTCALL FDIDiskD68::Open(const Filepath& path, DWORD offset)
 		}
 	}
 
-	// ƒ‰ƒCƒgƒvƒƒeƒNƒg
+	// Write protected
 	if (d68_hdr[0x1a] != 0) {
 		disk.writep = TRUE;
 	}
 
-	// HDƒtƒ‰ƒO
+	// HD flag
 	switch (d68_hdr[0x1b]) {
 		// 2D,2DD
 		case 0x00:
@@ -6190,20 +6190,20 @@ BOOL FASTCALL FDIDiskD68::Open(const Filepath& path, DWORD offset)
 			return FALSE;
 	}
 
-	// ƒgƒ‰ƒbƒN‚ğì¬(0`81ƒVƒŠƒ“ƒ_‚Ü‚ÅA82*2ƒgƒ‰ƒbƒN)
+	// Create tracks (0-81 cylinders, 82*2 tracks)
 	for (i=0; i<164; i++) {
 		track = new FDITrackD68(this, i, hd);
 		AddTrack(track);
 	}
 
-	// ƒtƒ‰ƒOUpAI—¹
+	// Set flag, end
 	d68_load = TRUE;
 	return TRUE;
 }
 
 //---------------------------------------------------------------------------
 //
-//	ƒV[ƒN
+//	Seek
 //
 //---------------------------------------------------------------------------
 void FASTCALL FDIDiskD68::Seek(int c)
@@ -6216,14 +6216,14 @@ void FASTCALL FDIDiskD68::Seek(int c)
 	ASSERT((c >= 0) && (c < 82));
 	ASSERT(d68_load);
 
-	// ŠY“–‚·‚éƒgƒ‰ƒbƒN‚ğŒŸõ‚µAƒ[ƒh
+	// Search and load corresponding track
 	for (i=0; i<2; i++) {
-		// ƒgƒ‰ƒbƒN‚ğŒŸõ
+		// Search track
 		track = (FDITrackD68*)Search(c * 2 + i);
 		ASSERT(track);
 		disk.head[i] = track;
 
-		// ƒIƒtƒZƒbƒgæ“¾A—LŒøƒgƒ‰ƒbƒN‚È‚çƒ[ƒh
+		// Get offset, load if valid track
 		if (d68_hdr[0x1b] == 0x00) {
 			// 2D
 			if (c == 0) {
@@ -6231,11 +6231,11 @@ void FASTCALL FDIDiskD68::Seek(int c)
 			}
 			else {
 				if (c & 1) {
-					// 1,3,5...Šï”ƒVƒŠƒ“ƒ_‚Í‚»‚ê‚¼‚ê1,2,3ƒVƒŠƒ“ƒ_
+					// 1,3,5... odd cylinders are 1,2,3 cylinders respectively
 					offset = GetD68Offset(c + 1 + i);
 				}
 				else {
-					// 2,4,6...‹ô”ƒVƒŠƒ“ƒ_‚ÍUnformat
+					// 2,4,6... even cylinders are unformatted
 					offset = 0;
 				}
 			}
@@ -6252,8 +6252,8 @@ void FASTCALL FDIDiskD68::Seek(int c)
 
 //---------------------------------------------------------------------------
 //
-//	D68ƒgƒ‰ƒbƒNƒIƒtƒZƒbƒg‚ğæ“¾
-//	¦–³Œøƒgƒ‰ƒbƒN‚Í0
+//	Get D68 track offset
+//	Note: Invalid track is 0
 //
 //---------------------------------------------------------------------------
 DWORD FASTCALL FDIDiskD68::GetD68Offset(int track) const
@@ -6265,10 +6265,10 @@ DWORD FASTCALL FDIDiskD68::GetD68Offset(int track) const
 	ASSERT((track >= 0) && (track <= 163));
 	ASSERT(d68_load);
 
-	// ƒ|ƒCƒ“ƒ^æ“¾
+	// Get pointer
 	ptr = &d68_hdr[0x20 + (track << 2)];
 
-	// ƒIƒtƒZƒbƒgæ“¾(ƒŠƒgƒ‹ƒGƒ“ƒfƒBƒAƒ“)
+	// Get offset (little endian)
 	offset = (DWORD)ptr[2];
 	offset <<= 8;
 	offset |= (DWORD)ptr[1];
@@ -6280,7 +6280,7 @@ DWORD FASTCALL FDIDiskD68::GetD68Offset(int track) const
 
 //---------------------------------------------------------------------------
 //
-//	ƒZ[ƒu
+//	Save
 //
 //---------------------------------------------------------------------------
 BOOL FASTCALL FDIDiskD68::Save()
@@ -6298,17 +6298,17 @@ BOOL FASTCALL FDIDiskD68::Save()
 
 	ASSERT(this);
 
-	// ƒ[ƒh‚³‚ê‚Ä‚¢‚È‚¯‚ê‚Î‰½‚à‚µ‚È‚¢
+	// Do nothing if not loaded
 	if (!d68_load) {
 		return TRUE;
 	}
 
-	// ƒIƒtƒZƒbƒg‚ğÄæ“¾‚·‚é
+	// Re-get offset
 	memset(diskoff, 0, sizeof(diskoff));
 	CheckDisks(disk.path, diskoff);
 	disk.offset = diskoff[disk.index];
 
-	// ƒtƒH[ƒ}ƒbƒg‚Ì•ÏX‚ª¶‚¶‚Ä‚¢‚é‚©‚Ç‚¤‚©’²‚×‚é
+	// Check if format has changed
 	format = FALSE;
 	for (i=0; i<164; i++) {
 		track = (FDITrackD68*)Search(i);
@@ -6318,7 +6318,7 @@ BOOL FASTCALL FDIDiskD68::Save()
 		}
 	}
 
-	// ¶‚¶‚Ä‚¢‚È‚¯‚ê‚ÎAƒgƒ‰ƒbƒN’PˆÊ‚Å•Û‘¶
+	// If not changed, save per track
 	if (!format) {
 		for (i=0; i<164; i++) {
 			track = (FDITrackD68*)Search(i);
@@ -6331,7 +6331,7 @@ BOOL FASTCALL FDIDiskD68::Save()
 			}
 		}
 
-		// ƒ‰ƒCƒgƒvƒƒeƒNƒg‚ÌH‚¢ˆá‚¢‚ª‚ ‚ê‚ÎA‚»‚±‚¾‚¯•Û‘¶
+		// If write protection differs, save only that
 		i = 0;
 		if (IsWriteP()) {
 			i = 0x10;
@@ -6354,7 +6354,7 @@ BOOL FASTCALL FDIDiskD68::Save()
 		return TRUE;
 	}
 
-	// ƒtƒ@ƒCƒ‹‚ğ‘S‚Äƒƒ‚ƒŠ‚É—‚Æ‚·
+	// Load entire file into memory
 	if (!fio.Open(disk.path, Fileio::ReadOnly)) {
 		return FALSE;
 	}
@@ -6377,7 +6377,7 @@ BOOL FASTCALL FDIDiskD68::Save()
 	}
 	fio.Close();
 
-	// ƒwƒbƒ_‚ğÄ\’z
+	// Rebuild header
 	offset = sizeof(d68_hdr);
 	for (i=0; i<164; i++) {
 		track = (FDITrackD68*)Search(i);
@@ -6405,7 +6405,7 @@ BOOL FASTCALL FDIDiskD68::Save()
 	ptr[1] = (BYTE)(offset >> 8);
 	ptr[0] = (BYTE)offset;
 
-	// ƒtƒ@ƒCƒ‹‚Ì‘O‚ğ•Û‘¶
+	// Save front of file
 	if (!fio.Open(disk.path, Fileio::WriteOnly)) {
 		delete[] fileptr;
 		return FALSE;
@@ -6418,7 +6418,7 @@ BOOL FASTCALL FDIDiskD68::Save()
 		}
 	}
 
-	// ƒwƒbƒ_‚ğ•Û‘¶
+	// Save header
 	if (!fio.Write(d68_hdr, sizeof(d68_hdr))) {
 		delete[] fileptr;
 		fio.Close();
@@ -6426,9 +6426,9 @@ BOOL FASTCALL FDIDiskD68::Save()
 	}
 	offset -= sizeof(d68_hdr);
 
-	// ƒTƒCƒY•ª‚ğ‚Â‚­‚é
+	// Create size portion
 	while (offset > 0) {
-		// 1‰ñ‚Å‘‚«‚İ‚ªÏ‚Şê‡
+		// If write completes in one pass
 		if (offset < filelen) {
 			if (!fio.Write(fileptr, offset)) {
 				delete[] fileptr;
@@ -6438,7 +6438,7 @@ BOOL FASTCALL FDIDiskD68::Save()
 			break;
 		}
 
-		// •¡”‰ñ‚É‚í‚½‚éê‡
+		// If multiple passes needed
 		if (!fio.Write(fileptr, filelen)) {
 			delete[] fileptr;
 			fio.Close();
@@ -6447,7 +6447,7 @@ BOOL FASTCALL FDIDiskD68::Save()
 		offset -= filelen;
 	}
 
-	// ƒtƒ@ƒCƒ‹‚ÌŒã‚ğ•Û‘¶
+	// Save rest of file
 	if (diskoff[disk.index + 1] != 0) {
 		ASSERT(filelen >= diskoff[disk.index + 1]);
 		if (!fio.Write(&fileptr[ diskoff[disk.index + 1] ],
@@ -6459,7 +6459,7 @@ BOOL FASTCALL FDIDiskD68::Save()
 	}
 	delete[] fileptr;
 
-	// ƒŒƒ“ƒOƒX!=0‚É‚Â‚¢‚Ä‘S‚ÄƒZ[ƒu(‹­§•ÏXAƒtƒ@ƒCƒ‹‚ÍŠJ‚¢‚½‚Ü‚Ü)
+	// Save all with Length != 0 (force change, keep file open)
 	for (i=0; i<164; i++) {
 		track = (FDITrackD68*)Search(i);
 		ASSERT(track);
@@ -6480,7 +6480,7 @@ BOOL FASTCALL FDIDiskD68::Save()
 
 //---------------------------------------------------------------------------
 //
-//	V‹KƒfƒBƒXƒNì¬
+//	Create new disk
 //
 //---------------------------------------------------------------------------
 BOOL FASTCALL FDIDiskD68::Create(const Filepath& path, const option_t *opt)
@@ -6496,7 +6496,7 @@ BOOL FASTCALL FDIDiskD68::Create(const Filepath& path, const option_t *opt)
 	ASSERT(!GetHead(0));
 	ASSERT(!GetHead(1));
 
-	// ƒwƒbƒ_‚ğì‚é
+	// Create header
 	memset(&d68_hdr, 0, sizeof(d68_hdr));
 	ASSERT(strlen(opt->name) <= 16);
 	strcpy((char*)d68_hdr, opt->name);
@@ -6509,7 +6509,7 @@ BOOL FASTCALL FDIDiskD68::Create(const Filepath& path, const option_t *opt)
 		d68_hdr[0x1b] = 0x20;
 	}
 
-	// ƒwƒbƒ_‚ğ‘‚«‚Ş
+	// Write header
 	if (!fio.Open(path, Fileio::WriteOnly)) {
 		return FALSE;
 	}
@@ -6519,12 +6519,12 @@ BOOL FASTCALL FDIDiskD68::Create(const Filepath& path, const option_t *opt)
 	}
 	fio.Close();
 
-	// ƒpƒXAƒfƒBƒXƒN–¼AƒIƒtƒZƒbƒg
+	// Path, disk name, offset
 	disk.path = path;
 	strcpy(disk.name, opt->name);
 	disk.offset = 0;
 
-	// ƒgƒ‰ƒbƒN‚ğì¬(0`81ƒVƒŠƒ“ƒ_‚Ü‚ÅA82*2ƒgƒ‰ƒbƒN)
+	// Create tracks (0-81 cylinders, 82*2 tracks)
 	for (i=0; i<164; i++) {
 		track = new FDITrackD68(this, i, hd);
 		track->Create(opt->phyfmt);
@@ -6532,15 +6532,15 @@ BOOL FASTCALL FDIDiskD68::Create(const Filepath& path, const option_t *opt)
 		AddTrack(track);
 	}
 
-	// ƒtƒ‰ƒOİ’è
+	// Set flag
 	disk.writep = FALSE;
 	disk.readonly = FALSE;
 	d68_load = TRUE;
 
-	// ˜_—ƒtƒH[ƒ}ƒbƒg
+	// Logical format
 	FDIDisk::Create(path, opt);
 
-	// •Û‘¶
+	// Save
 	if (!Save()) {
 		return FALSE;
 	}
@@ -6550,7 +6550,7 @@ BOOL FASTCALL FDIDiskD68::Create(const Filepath& path, const option_t *opt)
 
 //---------------------------------------------------------------------------
 //
-//	D68ƒtƒ@ƒCƒ‹‚ÌŒŸ¸
+//	D68 file inspection
 //
 //---------------------------------------------------------------------------
 int FASTCALL FDIDiskD68::CheckDisks(const Filepath& path, DWORD *offbuf)
@@ -6568,11 +6568,11 @@ int FASTCALL FDIDiskD68::CheckDisks(const Filepath& path, DWORD *offbuf)
 
 	ASSERT(offbuf);
 
-	// ‰Šú‰»
+	// Initialize
 	disks = 0;
 	base = 0;
 
-	// ƒtƒ@ƒCƒ‹ƒTƒCƒYæ“¾
+	// Get file size
 	if (!fio.Open(path, Fileio::ReadOnly)) {
 		return 0;
 	}
@@ -6582,14 +6582,14 @@ int FASTCALL FDIDiskD68::CheckDisks(const Filepath& path, DWORD *offbuf)
 		return 0;
 	}
 
-	// ƒfƒBƒXƒNƒ‹[ƒv
+	// Disk loop
 	while (disks < 16) {
-		// ƒTƒCƒYƒI[ƒo‚È‚çI—¹
+		// End if size over
 		if (base >= fsize) {
 			break;
 		}
 
-		// ƒwƒbƒ_‚ğ“Ç‚Ş
+		// Read header
 		if (!fio.Open(path, Fileio::ReadOnly)) {
 			return 0;
 		}
@@ -6603,7 +6603,7 @@ int FASTCALL FDIDiskD68::CheckDisks(const Filepath& path, DWORD *offbuf)
 		}
 		fio.Close();
 
-		// –§“x‚ğƒ`ƒFƒbƒN
+		// Check density
 		switch (header[0x1b]) {
 			case 0x00:
 			case 0x10:
@@ -6613,7 +6613,7 @@ int FASTCALL FDIDiskD68::CheckDisks(const Filepath& path, DWORD *offbuf)
 				return 0;
 		}
 
-		// ‚±‚ÌƒfƒBƒXƒNƒTƒCƒY‚ğæ“¾(0x200ˆÈãA1.92MBˆÈ‰º‚ÆŒÀ’è)
+		// Get this disk size (limited to 0x200 or more, 1.92MB or less)
 		ptr = &header[0x1c];
 		dsize = (DWORD)ptr[3];
 		dsize <<= 8;
@@ -6633,17 +6633,17 @@ int FASTCALL FDIDiskD68::CheckDisks(const Filepath& path, DWORD *offbuf)
 			return 0;
 		}
 
-		// ƒIƒtƒZƒbƒg‚ğŒŸ¸Bdsize‚ğ’´‚¦‚Ä‚¢‚È‚­‚Ä’P’²‘‰Á‚Å‚ ‚é‚±‚Æ
+		// Check offset. Must not exceed dsize and be monotonically increasing
 		prev = 0;
 		for (i=0; i<164; i++) {
-			// 2DƒCƒ[ƒW‚Å‚ ‚ê‚Î84ƒgƒ‰ƒbƒNˆÈã‚ÍŒŸ¸‚µ‚È‚¢(•Ï‚È’l‚ª‘‚«‚Ü‚ê‚Ä‚¢‚éê‡‚ª‚ ‚é)
+			// For 2D image, do not check 84 or more tracks (strange values may be written)
 			if (header[0x1b] == 0x00) {
 				if (i >= 84) {
 					break;
 				}
 			}
 
-			// ‚±‚Ìƒgƒ‰ƒbƒN‚ÌƒIƒtƒZƒbƒg‚ğ“¾‚é
+			// Get this track offset
 			ptr = &header[0x20 + (i << 2)];
 			offset = (DWORD)ptr[3];
 			offset <<= 8;
@@ -6653,26 +6653,26 @@ int FASTCALL FDIDiskD68::CheckDisks(const Filepath& path, DWORD *offbuf)
 			offset <<= 8;
 			offset |= (DWORD)ptr[0];
 
-			// ƒIƒtƒZƒbƒg‚ª0x10‚ÅŠ„‚èØ‚ê‚È‚¯‚ê‚ÎƒGƒ‰[
+			// Error if offset not divisible by 0x10
 			if (offset & 0x0f) {
 				return 0;
 			}
 
-			// 0‚ÍA‚»‚Ìƒgƒ‰ƒbƒN‚ªƒAƒ“ƒtƒH[ƒ}ƒbƒg‚Å‚ ‚é‚±‚Æ‚ğ¦‚·
+			// 0 indicates that track is unformatted
 			if (offset != 0) {
-				// 0‚Å‚È‚¯‚ê‚Î
+				// If not 0
 				if (prev == 0) {
-					// Å‰‚Ìƒgƒ‰ƒbƒN‚Í2X0‚©‚çn‚Ü‚é‚±‚Æ
+					// First track must start with 2X0
 					if ((offset & 0xffffff0f) != 0x200) {
 						return 0;
 					}
 				}
 				else {
-					// ’P’²‘‰Á‚Å
+					// Monotonically increasing
 					if (offset <= prev) {
 						return 0;
 					}
-					// ƒfƒBƒXƒNƒTƒCƒY‚ğ’´‚¦‚Ä‚¢‚È‚¢‚±‚Æ
+					// Must not exceed disk size
 					if (offset > dsize) {
 						return 0;
 					}
@@ -6681,7 +6681,7 @@ int FASTCALL FDIDiskD68::CheckDisks(const Filepath& path, DWORD *offbuf)
 			}
 		}
 
-		// –‡”UpAƒoƒbƒtƒ@‚É“o˜^AŸ‚Ö
+		// Increment count, register in buffer, next
 		offbuf[disks] = base;
 		disks++;
 		base += dsize;
@@ -6692,7 +6692,7 @@ int FASTCALL FDIDiskD68::CheckDisks(const Filepath& path, DWORD *offbuf)
 
 //---------------------------------------------------------------------------
 //
-//	ƒIƒtƒZƒbƒgXV
+//	Update offset
 //
 //---------------------------------------------------------------------------
 void FASTCALL FDIDiskD68::AdjustOffset()
@@ -6708,44 +6708,44 @@ void FASTCALL FDIDiskD68::AdjustOffset()
 
 //---------------------------------------------------------------------------
 //
-//	ƒtƒ‰ƒbƒVƒ…
+//	Flush
 //
 //---------------------------------------------------------------------------
 BOOL FASTCALL FDIDiskD68::Flush()
 {
 	ASSERT(this);
 
-	// ƒ[ƒh‚³‚ê‚Ä‚¢‚ê‚Î‘‚«‚İ
+	// Write if loaded
 	if (d68_load) {
 		return Save();
 	}
 
-	// ƒ[ƒh‚³‚ê‚Ä‚¢‚È‚¢
+	// Not loaded
 	return TRUE;
 }
 
 //===========================================================================
 //
-//	FDIƒgƒ‰ƒbƒN(BAD)
+//	FDI Track(BAD)
 //
 //===========================================================================
 
 //---------------------------------------------------------------------------
 //
-//	ƒRƒ“ƒXƒgƒ‰ƒNƒ^
+//	Constructor
 //
 //---------------------------------------------------------------------------
 FDITrackBAD::FDITrackBAD(FDIDisk *disk, int track) : FDITrack(disk, track)
 {
 	ASSERT(disk);
 
-	// ƒtƒ@ƒCƒ‹—LŒøƒZƒNƒ^”0
+	// File valid sector count 0
 	bad_secs = 0;
 }
 
 //---------------------------------------------------------------------------
 //
-//	ƒ[ƒh
+//	Load
 //
 //---------------------------------------------------------------------------
 BOOL FASTCALL FDITrackBAD::Load(const Filepath& path, DWORD offset)
@@ -6758,36 +6758,36 @@ BOOL FASTCALL FDITrackBAD::Load(const Filepath& path, DWORD offset)
 
 	ASSERT(this);
 
-	// ‰Šú‰»Ï‚İ‚È‚ç•s—v(ƒV[ƒN–ˆ‚ÉŒÄ‚Î‚ê‚é‚Ì‚ÅA‚P“x‚¾‚¯“Ç‚ñ‚ÅƒLƒƒƒbƒVƒ…‚·‚é)
+	// Not needed if already initialized (called each seek, read once and cache)
 	if (IsInit()) {
 		return TRUE;
 	}
 
-	// ƒZƒNƒ^‚ª‘¶İ‚µ‚È‚¢‚±‚Æ
+	// Sector does not exist
 	ASSERT(!GetFirst());
 	ASSERT(GetAllSectors() == 0);
 	ASSERT(GetMFMSectors() == 0);
 	ASSERT(GetFMSectors() == 0);
 
-	// ƒtƒ@ƒCƒ‹—LŒøƒZƒNƒ^”0
+	// File valid sector count 0
 	bad_secs = 0;
 
-	// CEHENŒˆ’è
+	// Determine C, H, N
 	chrn[0] = GetTrack() >> 1;
 	chrn[1] = GetTrack() & 1;
 	chrn[3] = 3;
 
-	// “Ç‚İ‚İƒI[ƒvƒ“
+	// Open for reading
 	if (!fio.Open(path, Fileio::ReadOnly)) {
 		return FALSE;
 	}
 
-	// ƒV[ƒN(¸”s‚Å‚à‚æ‚¢)
+	// Seek (failure is OK)
 	if (!fio.Seek(offset)) {
-		// ƒV[ƒN¸”s‚È‚Ì‚ÅAE5‚Å–„‚ß‚é
+		// Seek failed, fill with E5
 		memset(buf, 0xe5, sizeof(buf));
 
-		// ƒZƒNƒ^ƒ‹[ƒv
+		// Sector loop
 		for (i=0; i<8; i++) {
 			chrn[2] = i + 1;
 			sector = new FDISector(TRUE, chrn);
@@ -6795,46 +6795,46 @@ BOOL FASTCALL FDITrackBAD::Load(const Filepath& path, DWORD offset)
 			AddSector(sector);
 		}
 
-		// ƒNƒ[ƒYA‰Šú‰»OK
+		// CloseAInitializeOK
 		fio.Close();
 		trk.init = TRUE;
 		return TRUE;
 	}
 
-	// ƒ‹[ƒv
+	// Loop
 	for (i=0; i<8; i++) {
-		// ƒoƒbƒtƒ@‚ğ–ˆ‰ñE5‚Å–„‚ß‚é
+		// Fill buffer with E5 each time
 		memset(buf, 0xe5, sizeof(buf));
 
-		// ƒf[ƒ^“Ç‚İ‚İ(¸”s‚µ‚Ä‚à‚æ‚¢)
+		// Read data (failure is OK)
 		if (fio.Read(buf, sizeof(buf))) {
-			// ƒtƒ@ƒCƒ‹—LŒøƒZƒNƒ^‚ğ‘‚â‚·(0`8)
+			// Increment file valid sector (0-8)
 			bad_secs++;
 		}
 
-		// ƒZƒNƒ^ì¬
+		// Create sector
 		chrn[2] = i + 1;
 		sector = new FDISector(TRUE, chrn);
 		sector->Load(buf, sizeof(buf), 0x74, FDD_NOERROR);
 
-		// ƒZƒNƒ^’Ç‰Á
+		// Add sector
 		AddSector(sector);
 	}
 
-	// ƒNƒ[ƒY
+	// Close
 	fio.Close();
 
-	// ƒ|ƒWƒVƒ‡ƒ“ŒvZ
+	// Calculate position
 	CalcPos();
 
-	// ‰Šú‰»ok
+	// Initializeok
 	trk.init = TRUE;
 	return TRUE;
 }
 
 //---------------------------------------------------------------------------
 //
-//	ƒZ[ƒu
+//	Save
 //
 //---------------------------------------------------------------------------
 BOOL FASTCALL FDITrackBAD::Save(const Filepath& path, DWORD offset)
@@ -6846,12 +6846,12 @@ BOOL FASTCALL FDITrackBAD::Save(const Filepath& path, DWORD offset)
 
 	ASSERT(this);
 
-	// ‰Šú‰»‚³‚ê‚Ä‚¢‚È‚¯‚ê‚Î‘‚«‚Ş•K—v‚È‚µ
+	// No need to write if not initialized
 	if (!IsInit()) {
 		return TRUE;
 	}
 
-	// ƒZƒNƒ^‚ğ‚Ü‚í‚Á‚ÄA‘‚«‚Ü‚ê‚Ä‚¢‚éƒZƒNƒ^‚ª‚ ‚é‚©
+	// Check sectors for any that are written
 	sector = GetFirst();
 	changed = FALSE;
 	while (sector) {
@@ -6861,21 +6861,21 @@ BOOL FASTCALL FDITrackBAD::Save(const Filepath& path, DWORD offset)
 		sector = sector->GetNext();
 	}
 
-	// ‚Ç‚ê‚à‘‚«‚Ü‚ê‚Ä‚¢‚È‚¯‚ê‚Î‰½‚à‚µ‚È‚¢
+	// Do nothing if none are written
 	if (!changed) {
 		return TRUE;
 	}
 
-	// ƒtƒ@ƒCƒ‹ƒI[ƒvƒ“
+	// Open file
 	if (!fio.Open(path, Fileio::ReadWrite)) {
 		return FALSE;
 	}
 
-	// ƒ‹[ƒv
+	// Loop
 	sector = GetFirst();
 	index = 1;
 	while (sector) {
-		// •ÏX‚³‚ê‚Ä‚¢‚È‚¯‚ê‚ÎAŸ‚Ö
+		// If not changed, go to next
 		if (!sector->IsChanged()) {
 			offset += sector->GetLength();
 			sector = sector->GetNext();
@@ -6883,9 +6883,9 @@ BOOL FASTCALL FDITrackBAD::Save(const Filepath& path, DWORD offset)
 			continue;
 		}
 
-		// —LŒø”ÍˆÍ“à‚©
+		// Is within valid range
 		if (index > bad_secs) {
-			// ƒtƒ@ƒCƒ‹‚ğ’´‚¦‚Ä‚¢‚é‚Ì‚ÅAƒ_ƒ~[ˆ—
+			// Exceeds file, dummy processing
 			sector->ClrChanged();
 			offset += sector->GetLength();
 			sector = sector->GetNext();
@@ -6893,52 +6893,52 @@ BOOL FASTCALL FDITrackBAD::Save(const Filepath& path, DWORD offset)
 			continue;
 		}
 
-		// ƒV[ƒN
+		// Seek
 		if (!fio.Seek(offset)) {
 			fio.Close();
 			return FALSE;
 		}
 
-		// ‘‚«‚İ
+		// Write
 		if (!fio.Write(sector->GetSector(), sector->GetLength())) {
 			fio.Close();
 			return FALSE;
 		}
 
-		// ƒtƒ‰ƒO‚ğ—‚Æ‚·
+		// Clear flag
 		sector->ClrChanged();
 
-		// Ÿ‚Ö
+		// Next
 		offset += sector->GetLength();
 		sector = sector->GetNext();
 		index++;
 	}
 
-	// I—¹
+	// End
 	fio.Close();
 	return TRUE;
 }
 
 //===========================================================================
 //
-//	FDIƒfƒBƒXƒN(BAD)
+//	FDI Disk(BAD)
 //
 //===========================================================================
 
 //---------------------------------------------------------------------------
 //
-//	ƒRƒ“ƒXƒgƒ‰ƒNƒ^
+//	Constructor
 //
 //---------------------------------------------------------------------------
 FDIDiskBAD::FDIDiskBAD(int index, FDI *fdi) : FDIDisk(index, fdi)
 {
-	// IDİ’è
+	// IDSet
 	disk.id = MAKEID('B', 'A', 'D', ' ');
 }
 
 //---------------------------------------------------------------------------
 //
-//	ƒfƒXƒgƒ‰ƒNƒ^
+//	Destructor
 //
 //---------------------------------------------------------------------------
 FDIDiskBAD::~FDIDiskBAD()
@@ -6947,19 +6947,19 @@ FDIDiskBAD::~FDIDiskBAD()
 	DWORD offset;
 	FDITrack *track;
 
-	// ÅŒã‚Ìƒgƒ‰ƒbƒNƒf[ƒ^‚ğ‘‚«‚Ş
+	// Write last track data
 	for (i=0; i<2; i++) {
-		// ƒgƒ‰ƒbƒN‚ª‚ ‚é‚©
+		// Is there a track
 		track = GetHead(i);
 		if (!track) {
 			continue;
 		}
 
-		// ƒgƒ‰ƒbƒNƒiƒ“ƒo‚©‚çAƒIƒtƒZƒbƒg‚ğZo(x8KB)
+		// Calculate offset from track number (x8KB)
 		offset = track->GetTrack();
 		offset <<= 13;
 
-		// ‘‚«‚İ
+		// Write
 		track->Save(disk.path, offset);
 		disk.head[i] = NULL;
 	}
@@ -6967,7 +6967,7 @@ FDIDiskBAD::~FDIDiskBAD()
 
 //---------------------------------------------------------------------------
 //
-//	ƒI[ƒvƒ“
+//	Open
 //
 //---------------------------------------------------------------------------
 BOOL FASTCALL FDIDiskBAD::Open(const Filepath& path, DWORD offset)
@@ -6983,23 +6983,23 @@ BOOL FASTCALL FDIDiskBAD::Open(const Filepath& path, DWORD offset)
 	ASSERT(!GetHead(0));
 	ASSERT(!GetHead(1));
 
-	// ‘‚«‚İ‰Â”\‚Æ‚µ‚Ä‰Šú‰»
+	// Initialize as writable
 	disk.writep = FALSE;
 	disk.readonly = FALSE;
 
-	// ƒI[ƒvƒ“‚Å‚«‚é‚±‚Æ‚ğŠm‚©‚ß‚é
+	// Verify can open
 	if (!fio.Open(path, Fileio::ReadWrite)) {
-		// “Ç‚İ‚İƒI[ƒvƒ“‚ğ‚İ‚é
+		// Try to open for reading
 		if (!fio.Open(path, Fileio::ReadOnly)) {
 			return FALSE;
 		}
 
-		// “Ç‚İ‚İ‚Í‰Â”
+		// Reading is allowed
 		disk.writep = TRUE;
 		disk.readonly = TRUE;
 	}
 
-	// ƒtƒ@ƒCƒ‹ƒTƒCƒY‚ª1024‚ÅŠ„‚èØ‚ê‚é‚±‚ÆA1280KBˆÈ‰º‚Å‚ ‚é‚±‚Æ‚ğŠm‚©‚ß‚é
+	// Verify file size is divisible by 1024 and 1280KB or less
 	size = fio.GetFileSize();
 	if (size & 0x3ff) {
 		fio.Close();
@@ -7011,26 +7011,26 @@ BOOL FASTCALL FDIDiskBAD::Open(const Filepath& path, DWORD offset)
 	}
 	fio.Close();
 
-	// ƒpƒXAƒIƒtƒZƒbƒg‚ğ‹L‰¯
+	// Store path, offset
 	disk.path = path;
 	disk.offset = offset;
 
-	// ƒfƒBƒXƒN–¼‚Íƒtƒ@ƒCƒ‹–¼{Šg’£q‚Æ‚·‚é
+	// Disk name is filename + extension
 	strcpy(disk.name, path.GetShort());
 
-	// ƒgƒ‰ƒbƒN‚ğì¬(0`76ƒVƒŠƒ“ƒ_‚Ü‚ÅA77*2ƒgƒ‰ƒbƒN)
+	// Create tracks (0-76 cylinders, 77*2 tracks)
 	for (i=0; i<154; i++) {
 		track = new FDITrackBAD(this, i);
 		AddTrack(track);
 	}
 
-	// I—¹
+	// End
 	return TRUE;
 }
 
 //---------------------------------------------------------------------------
 //
-//	ƒV[ƒN
+//	Seek
 //
 //---------------------------------------------------------------------------
 void FASTCALL FDIDiskBAD::Seek(int c)
@@ -7042,48 +7042,48 @@ void FASTCALL FDIDiskBAD::Seek(int c)
 	ASSERT(this);
 	ASSERT((c >= 0) && (c < 82));
 
-	// ƒgƒ‰ƒbƒNƒf[ƒ^‚ğ‘‚«‚Ş
+	// Write track data
 	for (i=0; i<2; i++) {
-		// ƒgƒ‰ƒbƒN‚ª‚ ‚é‚©
+		// Is there a track
 		track = (FDITrackBAD*)GetHead(i);
 		if (!track) {
 			continue;
 		}
 
-		// ƒgƒ‰ƒbƒNƒiƒ“ƒo‚©‚çAƒIƒtƒZƒbƒg‚ğZo(x8KB)
+		// Calculate offset from track number (x8KB)
 		offset = track->GetTrack();
 		offset <<= 13;
 
-		// ‘‚«‚İ
+		// Write
 		track->Save(disk.path, offset);
 	}
 
-	// c‚Í76‚Ü‚Å‹–‰ÂB”ÍˆÍŠO‚Å‚ ‚ê‚Îhead[i]=NULL‚Æ‚·‚é
+	// Allow c up to 76. If out of range, set head[i]=NULL
 	if ((c < 0) || (c > 76)) {
 		disk.head[0] = NULL;
 		disk.head[1] = NULL;
 		return;
 	}
 
-	// ŠY“–‚·‚éƒgƒ‰ƒbƒN‚ğŒŸõ‚µAƒ[ƒh
+	// Search and load corresponding track
 	for (i=0; i<2; i++) {
-		// ƒgƒ‰ƒbƒN‚ğŒŸõ
+		// Search track
 		track = (FDITrackBAD*)Search(c * 2 + i);
 		ASSERT(track);
 		disk.head[i] = track;
 
-		// ƒgƒ‰ƒbƒNƒiƒ“ƒo‚©‚çAƒIƒtƒZƒbƒg‚ğZo(x8KB)
+		// Calculate offset from track number (x8KB)
 		offset = track->GetTrack();
 		offset <<= 13;
 
-		// ƒ[ƒh
+		// Load
 		track->Load(disk.path, offset);
 	}
 }
 
 //---------------------------------------------------------------------------
 //
-//	ƒtƒ‰ƒbƒVƒ…
+//	Flush
 //
 //---------------------------------------------------------------------------
 BOOL FASTCALL FDIDiskBAD::Flush()
@@ -7094,19 +7094,19 @@ BOOL FASTCALL FDIDiskBAD::Flush()
 	DWORD offset;
 	FDITrack *track;
 
-	// ÅŒã‚Ìƒgƒ‰ƒbƒNƒf[ƒ^‚ğ‘‚«‚Ş
+	// Write last track data
 	for (i=0; i<2; i++) {
-		// ƒgƒ‰ƒbƒN‚ª‚ ‚é‚©
+		// Is there a track
 		track = GetHead(i);
 		if (!track) {
 			continue;
 		}
 
-		// ƒgƒ‰ƒbƒNƒiƒ“ƒo‚©‚çAƒIƒtƒZƒbƒg‚ğZo(x8KB)
+		// Calculate offset from track number (x8KB)
 		offset = track->GetTrack();
 		offset <<= 13;
 
-		// ‘‚«‚İ
+		// Write
 		if(!track->Save(disk.path, offset)) {
 			return FALSE;
 		}
@@ -7117,13 +7117,13 @@ BOOL FASTCALL FDIDiskBAD::Flush()
 
 //===========================================================================
 //
-//	FDIƒgƒ‰ƒbƒN(2DD)
+//	FDI Track(2DD)
 //
 //===========================================================================
 
 //---------------------------------------------------------------------------
 //
-//	ƒRƒ“ƒXƒgƒ‰ƒNƒ^
+//	Constructor
 //
 //---------------------------------------------------------------------------
 FDITrack2DD::FDITrack2DD(FDIDisk *disk, int track) : FDITrack(disk, track, FALSE)
@@ -7133,7 +7133,7 @@ FDITrack2DD::FDITrack2DD(FDIDisk *disk, int track) : FDITrack(disk, track, FALSE
 
 //---------------------------------------------------------------------------
 //
-//	ƒ[ƒh
+//	Load
 //
 //---------------------------------------------------------------------------
 BOOL FASTCALL FDITrack2DD::Load(const Filepath& path, DWORD offset)
@@ -7148,83 +7148,83 @@ BOOL FASTCALL FDITrack2DD::Load(const Filepath& path, DWORD offset)
 	ASSERT((offset % 0x1200) == 0);
 	ASSERT(offset < 0xb4000);
 
-	// ‰Šú‰»Ï‚İ‚È‚ç•s—v(ƒV[ƒN–ˆ‚ÉŒÄ‚Î‚ê‚é‚Ì‚ÅA‚P“x‚¾‚¯“Ç‚ñ‚ÅƒLƒƒƒbƒVƒ…‚·‚é)
+	// Not needed if already initialized (called each seek, read once and cache)
 	if (IsInit()) {
 		return TRUE;
 	}
 
-	// ƒZƒNƒ^‚ª‘¶İ‚µ‚È‚¢‚±‚Æ
+	// Sector does not exist
 	ASSERT(!GetFirst());
 	ASSERT(GetAllSectors() == 0);
 	ASSERT(GetMFMSectors() == 0);
 	ASSERT(GetFMSectors() == 0);
 
-	// CEHENŒˆ’è
+	// Determine C, H, N
 	chrn[0] = GetTrack() >> 1;
 	chrn[1] = GetTrack() & 1;
 	chrn[3] = 2;
 
-	// “Ç‚İ‚İƒI[ƒvƒ“
+	// Open for reading
 	if (!fio.Open(path, Fileio::ReadOnly)) {
 		return FALSE;
 	}
 
-	// ƒV[ƒN
+	// Seek
 	if (!fio.Seek(offset)) {
 		fio.Close();
 		return FALSE;
 	}
 
-	// ƒ‹[ƒv
+	// Loop
 	for (i=0; i<9; i++) {
-		// ƒf[ƒ^“Ç‚İ‚İ
+		// Read data
 		if (!fio.Read(buf, sizeof(buf))) {
-			// “r’†‚Ü‚Å’Ç‰Á‚µ‚½•ª‚ğíœ‚·‚é
+			// Delete partially added sectors
 			ClrSector();
 			fio.Close();
 			return FALSE;
 		}
 
-		// ƒZƒNƒ^ì¬
+		// Create sector
 		chrn[2] = i + 1;
 		sector = new FDISector(TRUE, chrn);
 		sector->Load(buf, sizeof(buf), 0x54, FDD_NOERROR);
 
-		// ƒZƒNƒ^’Ç‰Á
+		// Add sector
 		AddSector(sector);
 	}
 
-	// ƒNƒ[ƒY
+	// Close
 	fio.Close();
 
-	// ƒ|ƒWƒVƒ‡ƒ“ŒvZ
+	// Calculate position
 	CalcPos();
 
-	// ‰Šú‰»ok
+	// Initializeok
 	trk.init = TRUE;
 	return TRUE;
 }
 
 //===========================================================================
 //
-//	FDIƒfƒBƒXƒN(2DD)
+//	FDI Disk(2DD)
 //
 //===========================================================================
 
 //---------------------------------------------------------------------------
 //
-//	ƒRƒ“ƒXƒgƒ‰ƒNƒ^
+//	Constructor
 //
 //---------------------------------------------------------------------------
 FDIDisk2DD::FDIDisk2DD(int index, FDI *fdi) : FDIDisk(index, fdi)
 {
-	// IDİ’è
+	// IDSet
 	disk.id = MAKEID('2', 'D', 'D', ' ');
 }
 
 //---------------------------------------------------------------------------
 //
-//	ƒfƒXƒgƒ‰ƒNƒ^
+//	Destructor
 //
 //---------------------------------------------------------------------------
 FDIDisk2DD::~FDIDisk2DD()
@@ -7233,19 +7233,19 @@ FDIDisk2DD::~FDIDisk2DD()
 	DWORD offset;
 	FDITrack *track;
 
-	// ÅŒã‚Ìƒgƒ‰ƒbƒNƒf[ƒ^‚ğ‘‚«‚Ş
+	// Write last track data
 	for (i=0; i<2; i++) {
-		// ƒgƒ‰ƒbƒN‚ª‚ ‚é‚©
+		// Is there a track
 		track = GetHead(i);
 		if (!track) {
 			continue;
 		}
 
-		// ƒgƒ‰ƒbƒNƒiƒ“ƒo‚©‚çAƒIƒtƒZƒbƒg‚ğZo(x0x1200)
+		// Calculate offset from track number (x0x1200)
 		offset = track->GetTrack();
 		offset *= 0x1200;
 
-		// ‘‚«‚İ
+		// Write
 		track->Save(disk.path, offset);
 		disk.head[i] = NULL;
 	}
@@ -7253,7 +7253,7 @@ FDIDisk2DD::~FDIDisk2DD()
 
 //---------------------------------------------------------------------------
 //
-//	ƒI[ƒvƒ“
+//	Open
 //
 //---------------------------------------------------------------------------
 BOOL FASTCALL FDIDisk2DD::Open(const Filepath& path, DWORD offset)
@@ -7269,23 +7269,23 @@ BOOL FASTCALL FDIDisk2DD::Open(const Filepath& path, DWORD offset)
 	ASSERT(!GetHead(0));
 	ASSERT(!GetHead(1));
 
-	// ‘‚«‚İ‰Â”\‚Æ‚µ‚Ä‰Šú‰»
+	// Initialize as writable
 	disk.writep = FALSE;
 	disk.readonly = FALSE;
 
-	// ƒI[ƒvƒ“‚Å‚«‚é‚±‚Æ‚ğŠm‚©‚ß‚é
+	// Verify can open
 	if (!fio.Open(path, Fileio::ReadWrite)) {
-		// “Ç‚İ‚İƒI[ƒvƒ“‚ğ‚İ‚é
+		// Try to open for reading
 		if (!fio.Open(path, Fileio::ReadOnly)) {
 			return FALSE;
 		}
 
-		// “Ç‚İ‚İ‚Í‰Â”
+		// Reading is allowed
 		disk.writep = TRUE;
 		disk.readonly = TRUE;
 	}
 
-	// ƒtƒ@ƒCƒ‹ƒTƒCƒY‚ª737280‚Å‚ ‚é‚±‚Æ‚ğŠm‚©‚ß‚é
+	// Verify file size is 737280
 	size = fio.GetFileSize();
 	if (size != 0xb4000) {
 		fio.Close();
@@ -7293,26 +7293,26 @@ BOOL FASTCALL FDIDisk2DD::Open(const Filepath& path, DWORD offset)
 	}
 	fio.Close();
 
-	// ƒpƒXAƒIƒtƒZƒbƒg‚ğ‹L‰¯
+	// Store path, offset
 	disk.path = path;
 	disk.offset = offset;
 
-	// ƒfƒBƒXƒN–¼‚Íƒtƒ@ƒCƒ‹–¼{Šg’£q‚Æ‚·‚é
+	// Disk name is filename + extension
 	strcpy(disk.name, path.GetShort());
 
-	// ƒgƒ‰ƒbƒN‚ğì¬(0`79ƒVƒŠƒ“ƒ_‚Ü‚ÅA80*2ƒgƒ‰ƒbƒN)
+	// Create tracks (0-79 cylinders, 80*2 tracks)
 	for (i=0; i<160; i++) {
 		track = new FDITrack2DD(this, i);
 		AddTrack(track);
 	}
 
-	// I—¹
+	// End
 	return TRUE;
 }
 
 //---------------------------------------------------------------------------
 //
-//	ƒV[ƒN
+//	Seek
 //
 //---------------------------------------------------------------------------
 void FASTCALL FDIDisk2DD::Seek(int c)
@@ -7324,48 +7324,48 @@ void FASTCALL FDIDisk2DD::Seek(int c)
 	ASSERT(this);
 	ASSERT((c >= 0) && (c < 82));
 
-	// ƒgƒ‰ƒbƒNƒf[ƒ^‚ğ‘‚«‚Ş
+	// Write track data
 	for (i=0; i<2; i++) {
-		// ƒgƒ‰ƒbƒN‚ª‚ ‚é‚©
+		// Is there a track
 		track = (FDITrack2DD*)GetHead(i);
 		if (!track) {
 			continue;
 		}
 
-		// ƒgƒ‰ƒbƒNƒiƒ“ƒo‚©‚çAƒIƒtƒZƒbƒg‚ğZo(x0x1200)
+		// Calculate offset from track number (x0x1200)
 		offset = track->GetTrack();
 		offset *= 0x1200;
 
-		// ‘‚«‚İ
+		// Write
 		track->Save(disk.path, offset);
 	}
 
-	// c‚Í79‚Ü‚Å‹–‰ÂB”ÍˆÍŠO‚Å‚ ‚ê‚Îhead[i]=NULL‚Æ‚·‚é
+	// Allow c up to 79. If out of range, set head[i]=NULL
 	if ((c < 0) || (c > 79)) {
 		disk.head[0] = NULL;
 		disk.head[1] = NULL;
 		return;
 	}
 
-	// ŠY“–‚·‚éƒgƒ‰ƒbƒN‚ğŒŸõ‚µAƒ[ƒh
+	// Search and load corresponding track
 	for (i=0; i<2; i++) {
-		// ƒgƒ‰ƒbƒN‚ğŒŸõ
+		// Search track
 		track = (FDITrack2DD*)Search(c * 2 + i);
 		ASSERT(track);
 		disk.head[i] = track;
 
-		// ƒgƒ‰ƒbƒNƒiƒ“ƒo‚©‚çAƒIƒtƒZƒbƒg‚ğZo(x0x1200)
+		// Calculate offset from track number (x0x1200)
 		offset = track->GetTrack();
 		offset *= 0x1200;
 
-		// ƒ[ƒh
+		// Load
 		track->Load(disk.path, offset);
 	}
 }
 
 //---------------------------------------------------------------------------
 //
-//	V‹KƒfƒBƒXƒNì¬
+//	Create new disk
 //
 //---------------------------------------------------------------------------
 BOOL FASTCALL FDIDisk2DD::Create(const Filepath& path, const option_t *opt)
@@ -7378,63 +7378,63 @@ BOOL FASTCALL FDIDisk2DD::Create(const Filepath& path, const option_t *opt)
 	ASSERT(this);
 	ASSERT(opt);
 
-	// •¨—ƒtƒH[ƒ}ƒbƒg‚Í2DD‚Ì‚İ‹–‰Â
+	// Physical format only allows 2DD
 	if (opt->phyfmt != FDI_2DD) {
 		return FALSE;
 	}
 
-	// ƒtƒ@ƒCƒ‹ì¬‚ğ‚İ‚é
+	// Try to create file
 	if (!fio.Open(path, Fileio::WriteOnly)) {
 		return FALSE;
 	}
 
-	// ‘‚«‚İ‰Â”\‚Æ‚µ‚Ä‰Šú‰»
+	// Initialize as writable
 	disk.writep = FALSE;
 	disk.readonly = FALSE;
 
-	// ƒpƒX–¼AƒIƒtƒZƒbƒg‚ğ‹L˜^
+	// Store path, offset
 	disk.path = path;
 	disk.offset = 0;
 
-	// ƒfƒBƒXƒN–¼‚Íƒtƒ@ƒCƒ‹–¼{Šg’£q‚Æ‚·‚é
+	// Disk name is filename + extension
 	strcpy(disk.name, path.GetShort());
 
-	// 0`159‚ÉŒÀ‚èAƒgƒ‰ƒbƒN‚ğì¬‚µ‚Ä•¨—ƒtƒH[ƒ}ƒbƒg
+	// Create track and physical format only for 0-159
 	for (i=0; i<160; i++) {
 		track = new FDITrack2DD(this, i);
 		track->Create(opt->phyfmt);
 		AddTrack(track);
 	}
 
-	// ˜_—ƒtƒH[ƒ}ƒbƒg
+	// Logical format
 	FDIDisk::Create(path, opt);
 
-	// ‘‚«‚İƒ‹[ƒv
+	// WriteLoop
 	offset = 0;
 	for (i=0; i<160; i++) {
-		// ƒgƒ‰ƒbƒNæ“¾
+		// Get track
 		track = (FDITrack2DD*)Search(i);
 		ASSERT(track);
 		ASSERT(track->IsChanged());
 
-		// ‘‚«‚İ
+		// Write
 		if (!track->Save(&fio, offset)) {
 			fio.Close();
 			return FALSE;
 		}
 
-		// Ÿ‚Ö
+		// Next
 		offset += (0x200 * 9);
 	}
 
-	// ¬Œ÷
+	// Success
 	fio.Close();
 	return TRUE;
 }
 
 //---------------------------------------------------------------------------
 //
-//	ƒtƒ‰ƒbƒVƒ…
+//	Flush
 //
 //---------------------------------------------------------------------------
 BOOL FASTCALL FDIDisk2DD::Flush()
@@ -7445,19 +7445,19 @@ BOOL FASTCALL FDIDisk2DD::Flush()
 
 	ASSERT(this);
 
-	// ÅŒã‚Ìƒgƒ‰ƒbƒNƒf[ƒ^‚ğ‘‚«‚Ş
+	// Write last track data
 	for (i=0; i<2; i++) {
-		// ƒgƒ‰ƒbƒN‚ª‚ ‚é‚©
+		// Is there a track
 		track = GetHead(i);
 		if (!track) {
 			continue;
 		}
 
-		// ƒgƒ‰ƒbƒNƒiƒ“ƒo‚©‚çAƒIƒtƒZƒbƒg‚ğZo(x0x1200)
+		// Calculate offset from track number (x0x1200)
 		offset = track->GetTrack();
 		offset *= 0x1200;
 
-		// ‘‚«‚İ
+		// Write
 		if (!track->Save(disk.path, offset)) {
 			return FALSE;
 		}
@@ -7468,13 +7468,13 @@ BOOL FASTCALL FDIDisk2DD::Flush()
 
 //===========================================================================
 //
-//	FDIƒgƒ‰ƒbƒN(2HQ)
+//	FDI Track(2HQ)
 //
 //===========================================================================
 
 //---------------------------------------------------------------------------
 //
-//	ƒRƒ“ƒXƒgƒ‰ƒNƒ^
+//	Constructor
 //
 //---------------------------------------------------------------------------
 FDITrack2HQ::FDITrack2HQ(FDIDisk *disk, int track) : FDITrack(disk, track)
@@ -7484,7 +7484,7 @@ FDITrack2HQ::FDITrack2HQ(FDIDisk *disk, int track) : FDITrack(disk, track)
 
 //---------------------------------------------------------------------------
 //
-//	ƒ[ƒh
+//	Load
 //
 //---------------------------------------------------------------------------
 BOOL FASTCALL FDITrack2HQ::Load(const Filepath& path, DWORD offset)
@@ -7499,83 +7499,83 @@ BOOL FASTCALL FDITrack2HQ::Load(const Filepath& path, DWORD offset)
 	ASSERT((offset % 0x2400) == 0);
 	ASSERT(offset < 0x168000);
 
-	// ‰Šú‰»Ï‚İ‚È‚ç•s—v(ƒV[ƒN–ˆ‚ÉŒÄ‚Î‚ê‚é‚Ì‚ÅA‚P“x‚¾‚¯“Ç‚ñ‚ÅƒLƒƒƒbƒVƒ…‚·‚é)
+	// Not needed if already initialized (called each seek, read once and cache)
 	if (IsInit()) {
 		return TRUE;
 	}
 
-	// ƒZƒNƒ^‚ª‘¶İ‚µ‚È‚¢‚±‚Æ
+	// Sector does not exist
 	ASSERT(!GetFirst());
 	ASSERT(GetAllSectors() == 0);
 	ASSERT(GetMFMSectors() == 0);
 	ASSERT(GetFMSectors() == 0);
 
-	// CEHENŒˆ’è
+	// Determine C, H, N
 	chrn[0] = GetTrack() >> 1;
 	chrn[1] = GetTrack() & 1;
 	chrn[3] = 2;
 
-	// “Ç‚İ‚İƒI[ƒvƒ“
+	// Open for reading
 	if (!fio.Open(path, Fileio::ReadOnly)) {
 		return FALSE;
 	}
 
-	// ƒV[ƒN
+	// Seek
 	if (!fio.Seek(offset)) {
 		fio.Close();
 		return FALSE;
 	}
 
-	// ƒ‹[ƒv
+	// Loop
 	for (i=0; i<18; i++) {
-		// ƒf[ƒ^“Ç‚İ‚İ
+		// Read data
 		if (!fio.Read(buf, sizeof(buf))) {
-			// “r’†‚Ü‚Å’Ç‰Á‚µ‚½•ª‚ğíœ‚·‚é
+			// Delete partially added sectors
 			ClrSector();
 			fio.Close();
 			return FALSE;
 		}
 
-		// ƒZƒNƒ^ì¬
+		// Create sector
 		chrn[2] = i + 1;
 		sector = new FDISector(TRUE, chrn);
 		sector->Load(buf, sizeof(buf), 0x54, FDD_NOERROR);
 
-		// ƒZƒNƒ^’Ç‰Á
+		// Add sector
 		AddSector(sector);
 	}
 
-	// ƒNƒ[ƒY
+	// Close
 	fio.Close();
 
-	// ƒ|ƒWƒVƒ‡ƒ“ŒvZ
+	// Calculate position
 	CalcPos();
 
-	// ‰Šú‰»ok
+	// Initializeok
 	trk.init = TRUE;
 	return TRUE;
 }
 
 //===========================================================================
 //
-//	FDIƒfƒBƒXƒN(2HQ)
+//	FDI Disk(2HQ)
 //
 //===========================================================================
 
 //---------------------------------------------------------------------------
 //
-//	ƒRƒ“ƒXƒgƒ‰ƒNƒ^
+//	Constructor
 //
 //---------------------------------------------------------------------------
 FDIDisk2HQ::FDIDisk2HQ(int index, FDI *fdi) : FDIDisk(index, fdi)
 {
-	// IDİ’è
+	// IDSet
 	disk.id = MAKEID('2', 'H', 'Q', ' ');
 }
 
 //---------------------------------------------------------------------------
 //
-//	ƒfƒXƒgƒ‰ƒNƒ^
+//	Destructor
 //
 //---------------------------------------------------------------------------
 FDIDisk2HQ::~FDIDisk2HQ()
@@ -7584,19 +7584,19 @@ FDIDisk2HQ::~FDIDisk2HQ()
 	DWORD offset;
 	FDITrack *track;
 
-	// ÅŒã‚Ìƒgƒ‰ƒbƒNƒf[ƒ^‚ğ‘‚«‚Ş
+	// Write last track data
 	for (i=0; i<2; i++) {
-		// ƒgƒ‰ƒbƒN‚ª‚ ‚é‚©
+		// Is there a track
 		track = GetHead(i);
 		if (!track) {
 			continue;
 		}
 
-		// ƒgƒ‰ƒbƒNƒiƒ“ƒo‚©‚çAƒIƒtƒZƒbƒg‚ğZo(x0x2400)
+		// Calculate offset from track number (x0x2400)
 		offset = track->GetTrack();
 		offset *= 0x2400;
 
-		// ‘‚«‚İ
+		// Write
 		track->Save(disk.path, offset);
 		disk.head[i] = NULL;
 	}
@@ -7604,7 +7604,7 @@ FDIDisk2HQ::~FDIDisk2HQ()
 
 //---------------------------------------------------------------------------
 //
-//	ƒI[ƒvƒ“
+//	Open
 //
 //---------------------------------------------------------------------------
 BOOL FASTCALL FDIDisk2HQ::Open(const Filepath& path, DWORD offset)
@@ -7620,23 +7620,23 @@ BOOL FASTCALL FDIDisk2HQ::Open(const Filepath& path, DWORD offset)
 	ASSERT(!GetHead(0));
 	ASSERT(!GetHead(1));
 
-	// ‘‚«‚İ‰Â”\‚Æ‚µ‚Ä‰Šú‰»
+	// Initialize as writable
 	disk.writep = FALSE;
 	disk.readonly = FALSE;
 
-	// ƒI[ƒvƒ“‚Å‚«‚é‚±‚Æ‚ğŠm‚©‚ß‚é
+	// Verify can open
 	if (!fio.Open(path, Fileio::ReadWrite)) {
-		// “Ç‚İ‚İƒI[ƒvƒ“‚ğ‚İ‚é
+		// Try to open for reading
 		if (!fio.Open(path, Fileio::ReadOnly)) {
 			return FALSE;
 		}
 
-		// “Ç‚İ‚İ‚Í‰Â”
+		// Reading is allowed
 		disk.writep = TRUE;
 		disk.readonly = TRUE;
 	}
 
-	// ƒtƒ@ƒCƒ‹ƒTƒCƒY‚ª1474560‚Å‚ ‚é‚±‚Æ‚ğŠm‚©‚ß‚é
+	// Verify file size is 1474560
 	size = fio.GetFileSize();
 	if (size != 0x168000) {
 		fio.Close();
@@ -7644,26 +7644,26 @@ BOOL FASTCALL FDIDisk2HQ::Open(const Filepath& path, DWORD offset)
 	}
 	fio.Close();
 
-	// ƒpƒXAƒIƒtƒZƒbƒg‚ğ‹L‰¯
+	// Store path, offset
 	disk.path = path;
 	disk.offset = offset;
 
-	// ƒfƒBƒXƒN–¼‚Íƒtƒ@ƒCƒ‹–¼{Šg’£q‚Æ‚·‚é
+	// Disk name is filename + extension
 	strcpy(disk.name, path.GetShort());
 
-	// ƒgƒ‰ƒbƒN‚ğì¬(0`79ƒVƒŠƒ“ƒ_‚Ü‚ÅA80*2ƒgƒ‰ƒbƒN)
+	// Create tracks (0-79 cylinders, 80*2 tracks)
 	for (i=0; i<160; i++) {
 		track = new FDITrack2HQ(this, i);
 		AddTrack(track);
 	}
 
-	// I—¹
+	// End
 	return TRUE;
 }
 
 //---------------------------------------------------------------------------
 //
-//	ƒV[ƒN
+//	Seek
 //
 //---------------------------------------------------------------------------
 void FASTCALL FDIDisk2HQ::Seek(int c)
@@ -7675,48 +7675,48 @@ void FASTCALL FDIDisk2HQ::Seek(int c)
 	ASSERT(this);
 	ASSERT((c >= 0) && (c < 82));
 
-	// ƒgƒ‰ƒbƒNƒf[ƒ^‚ğ‘‚«‚Ş
+	// Write track data
 	for (i=0; i<2; i++) {
-		// ƒgƒ‰ƒbƒN‚ª‚ ‚é‚©
+		// Is there a track
 		track = (FDITrack2HQ*)GetHead(i);
 		if (!track) {
 			continue;
 		}
 
-		// ƒgƒ‰ƒbƒNƒiƒ“ƒo‚©‚çAƒIƒtƒZƒbƒg‚ğZo(x0x2400)
+		// Calculate offset from track number (x0x2400)
 		offset = track->GetTrack();
 		offset *= 0x2400;
 
-		// ‘‚«‚İ
+		// Write
 		track->Save(disk.path, offset);
 	}
 
-	// c‚Í79‚Ü‚Å‹–‰ÂB”ÍˆÍŠO‚Å‚ ‚ê‚Îhead[i]=NULL‚Æ‚·‚é
+	// Allow c up to 79. If out of range, set head[i]=NULL
 	if ((c < 0) || (c > 79)) {
 		disk.head[0] = NULL;
 		disk.head[1] = NULL;
 		return;
 	}
 
-	// ŠY“–‚·‚éƒgƒ‰ƒbƒN‚ğŒŸõ‚µAƒ[ƒh
+	// Search and load corresponding track
 	for (i=0; i<2; i++) {
-		// ƒgƒ‰ƒbƒN‚ğŒŸõ
+		// Search track
 		track = (FDITrack2HQ*)Search(c * 2 + i);
 		ASSERT(track);
 		disk.head[i] = track;
 
-		// ƒgƒ‰ƒbƒNƒiƒ“ƒo‚©‚çAƒIƒtƒZƒbƒg‚ğZo(x0x2400)
+		// Calculate offset from track number (x0x2400)
 		offset = track->GetTrack();
 		offset *= 0x2400;
 
-		// ƒ[ƒh
+		// Load
 		track->Load(disk.path, offset);
 	}
 }
 
 //---------------------------------------------------------------------------
 //
-//	V‹KƒfƒBƒXƒNì¬
+//	Create new disk
 //
 //---------------------------------------------------------------------------
 BOOL FASTCALL FDIDisk2HQ::Create(const Filepath& path, const option_t *opt)
@@ -7729,63 +7729,63 @@ BOOL FASTCALL FDIDisk2HQ::Create(const Filepath& path, const option_t *opt)
 	ASSERT(this);
 	ASSERT(opt);
 
-	// •¨—ƒtƒH[ƒ}ƒbƒg‚Í2HQ‚Ì‚İ‹–‰Â
+	// Physical format only allows 2HQ
 	if (opt->phyfmt != FDI_2HQ) {
 		return FALSE;
 	}
 
-	// ƒtƒ@ƒCƒ‹ì¬‚ğ‚İ‚é
+	// Try to create file
 	if (!fio.Open(path, Fileio::WriteOnly)) {
 		return FALSE;
 	}
 
-	// ‘‚«‚İ‰Â”\‚Æ‚µ‚Ä‰Šú‰»
+	// Initialize as writable
 	disk.writep = FALSE;
 	disk.readonly = FALSE;
 
-	// ƒpƒX–¼AƒIƒtƒZƒbƒg‚ğ‹L˜^
+	// Store path, offset
 	disk.path = path;
 	disk.offset = 0;
 
-	// ƒfƒBƒXƒN–¼‚Íƒtƒ@ƒCƒ‹–¼{Šg’£q‚Æ‚·‚é
+	// Disk name is filename + extension
 	strcpy(disk.name, path.GetShort());
 
-	// 0`159‚ÉŒÀ‚èAƒgƒ‰ƒbƒN‚ğì¬‚µ‚Ä•¨—ƒtƒH[ƒ}ƒbƒg
+	// Create track and physical format only for 0-159
 	for (i=0; i<160; i++) {
 		track = new FDITrack2HQ(this, i);
 		track->Create(opt->phyfmt);
 		AddTrack(track);
 	}
 
-	// ˜_—ƒtƒH[ƒ}ƒbƒg
+	// Logical format
 	FDIDisk::Create(path, opt);
 
-	// ‘‚«‚İƒ‹[ƒv
+	// WriteLoop
 	offset = 0;
 	for (i=0; i<160; i++) {
-		// ƒgƒ‰ƒbƒNæ“¾
+		// Get track
 		track = (FDITrack2HQ*)Search(i);
 		ASSERT(track);
 		ASSERT(track->IsChanged());
 
-		// ‘‚«‚İ
+		// Write
 		if (!track->Save(&fio, offset)) {
 			fio.Close();
 			return FALSE;
 		}
 
-		// Ÿ‚Ö
+		// Next
 		offset += (0x200 * 18);
 	}
 
-	// ¬Œ÷
+	// Success
 	fio.Close();
 	return TRUE;
 }
 
 //---------------------------------------------------------------------------
 //
-//	ƒtƒ‰ƒbƒVƒ…
+//	Flush
 //
 //---------------------------------------------------------------------------
 BOOL FASTCALL FDIDisk2HQ::Flush()
@@ -7796,19 +7796,19 @@ BOOL FASTCALL FDIDisk2HQ::Flush()
 	DWORD offset;
 	FDITrack *track;
 
-	// ÅŒã‚Ìƒgƒ‰ƒbƒNƒf[ƒ^‚ğ‘‚«‚Ş
+	// Write last track data
 	for (i=0; i<2; i++) {
-		// ƒgƒ‰ƒbƒN‚ª‚ ‚é‚©
+		// Is there a track
 		track = GetHead(i);
 		if (!track) {
 			continue;
 		}
 
-		// ƒgƒ‰ƒbƒNƒiƒ“ƒo‚©‚çAƒIƒtƒZƒbƒg‚ğZo(x0x2400)
+		// Calculate offset from track number (x0x2400)
 		offset = track->GetTrack();
 		offset *= 0x2400;
 
-		// ‘‚«‚İ
+		// Write
 		if (!track->Save(disk.path, offset)) {
 			return FALSE;
 		}

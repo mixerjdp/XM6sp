@@ -2,7 +2,7 @@
 //
 //	X68000 EMULATOR "XM6"
 //
-//	Copyright (C) 2001-2003 ＰＩ．(ytanaka@ipc-tokai.or.jp)
+//Copyright (C) 2001-2003  PI.(ytanaka@ipc-tokai.or.jp)
 //	[ SCC(Z8530) ]
 //
 //---------------------------------------------------------------------------
@@ -21,289 +21,289 @@
 class SCC : public MemDevice
 {
 public:
-	// 割り込みタイプ
+	//Interrupt type
 	enum itype_t {
-		rxi,							// 受信割り込み
-		rsi,							// スペシャルRxコンディション割り込み
-		txi,							// 送信割り込み
-		exti							// 外部ステータス変化割り込み
+		rxi,							//Receive interrupt
+		rsi,							//Special Rx condition interrupt
+		txi,							//Send interrupt
+		exti							//External status change interrupt
 	};
 
-	// チャネル定義
+	//Channel definition
 	typedef struct {
-		// グローバル
-		DWORD index;					// チャネル番号(0 or 1)
+		//Global
+		DWORD index;					//Channel number (0 or 1)
 
 		// RR0
 		BOOL ba;						// Break/Abort
-		BOOL tu;						// Txアンダーラン
+		BOOL tu;						//Tx underrun
 		BOOL cts;						// CTS
 		BOOL sync;						// SYNC
 		BOOL dcd;						// DCD
-		BOOL zc;						// ゼロカウント
+		BOOL zc;						//Zero count
 
 		// WR0
-		DWORD reg;						// アクセスレジスタ選択
-		BOOL ph;						// ポイントハイ(上位レジスタ選択)
-		BOOL txpend;					// 送信割り込みペンディング
-		BOOL rxno;						// 受信データなし
+		DWORD reg;						//Access register select
+		BOOL ph;						//Point high (upper register select)
+		BOOL txpend;					//Send interrupt pending
+		BOOL rxno;						//No receive data
 
 		// RR1
-		BOOL framing;					// フレーミングエラー
-		BOOL overrun;					// オーバーランエラー
-		BOOL parerr;					// パリティエラー
-		BOOL txsent;					// 送信完了
+		BOOL framing;					//Framing error
+		BOOL overrun;					//Overrun error
+		BOOL parerr;					//Parity error
+		BOOL txsent;					//Transmit complete
 
 		// WR1
-		BOOL extie;						// 外部ステータス割り込み許可
-		BOOL txie;						// 送信割り込み許可
-		BOOL parsp;						// パリティエラーをS-Rx割り込みにする
-		DWORD rxim;						// 受信割り込みモード
+		BOOL extie;						//External status interrupt enable
+		BOOL txie;						//Send interrupt enable
+		BOOL parsp;						//Parity error to S-Rx interrupt
+		DWORD rxim;						//Receive interrupt mode
 
 		// RR3
-		BOOL rxip;						// 受信割り込みペンディング
-		BOOL rsip;						// スペシャルRx割り込みペンディング
-		BOOL txip;						// 送信割り込みペンディング
-		BOOL extip;						// 外部ステータス変化割り込みペンディング
+		BOOL rxip;						//Receive interrupt pending
+		BOOL rsip;						//Special Rx interrupt pending
+		BOOL txip;						//Send interrupt pending
+		BOOL extip;						//External status change interrupt pending
 
 		// WR3
-		DWORD rxbit;					// 受信キャラクタビット長(5-8)
-		BOOL aen;						// オートモードイネーブル
-		BOOL rxen;						// 受信イネーブル
+		DWORD rxbit;					//Receive character bit length (5-8)
+		BOOL aen;						//Auto mode enable
+		BOOL rxen;						//Receive enable
 
 		// WR4
-		DWORD clkm;						// クロックモード
-		DWORD stopbit;					// ストップビット
-		DWORD parity;					// パリティモード
+		DWORD clkm;						//Clock mode
+		DWORD stopbit;					//Stop bits
+		DWORD parity;					//Parity mode
 
 		// WR5
-		BOOL dtr;						// DTR信号線
-		DWORD txbit;					// 送信キャラクタビット長(5-8)
-		BOOL brk;						// ブレーク送出
-		BOOL txen;						// 送信イネーブル
-		BOOL rts;						// RTS信号線
+		BOOL dtr;						//DTR signal line
+		DWORD txbit;					//Send character bit length (5-8)
+		BOOL brk;						//Send break
+		BOOL txen;						//Send enable
+		BOOL rts;						//RTS signal line
 
 		// WR8
-		DWORD tdr;						// 送信データレジスタ
-		BOOL tdf;						// 送信データ有効
+		DWORD tdr;						//Send data register
+		BOOL tdf;						//Send data valid
 
 		// WR12, WR13
-		DWORD tc;						// ボーレート設定値
+		DWORD tc;						//Baud rate setting
 
 		// WR14
-		BOOL loopback;					// ループバックモード
-		BOOL aecho;						// オートエコーモード
-		BOOL dtrreq;					// DTR信号線有効
-		BOOL brgsrc;					// ボーレートジェネレータクロック源
-		BOOL brgen;						// ボーレートジェネレータイネーブル
+		BOOL loopback;					//Loopback mode
+		BOOL aecho;						//Auto echo mode
+		BOOL dtrreq;					//DTR signal line enable
+		BOOL brgsrc;					//Baud rate generator clock source
+		BOOL brgen;						//Baud rate generator enable
 
 		// WR15
-		BOOL baie;						// Break/Abort割り込みイネーブル
-		BOOL tuie;						// Txアンダーラン割り込みイネーブル
-		BOOL ctsie;						// CTS割り込みイネーブル
-		BOOL syncie;					// SYNC割り込みイネーブル
-		BOOL dcdie;						// DCD割り込みイネーブル
-		BOOL zcie;						// ゼロカウント割り込みイネーブル
+		BOOL baie;						//Break/Abort interrupt enable
+		BOOL tuie;						//Tx underrun interrupt enable
+		BOOL ctsie;						//CTS interrupt enable
+		BOOL syncie;					// SYNC interrupt enable
+		BOOL dcdie;						//DCD interrupt enable
+		BOOL zcie;						//Zero count interrupt enable
 
-		// 通信速度
-		DWORD baudrate;					// ボーレート
-		DWORD cps;						// キャラクタ/sec
-		DWORD speed;					// 速度(hus単位)
+		//Communication speed
+		DWORD baudrate;					//Baud rate
+		DWORD cps;						//Character/sec
+		DWORD speed;					//Speed (hus unit)
 
-		// 受信FIFO
-		DWORD rxfifo;					// 受信FIFO有効数
-		DWORD rxdata[3];				// 受信FIFOデータ
+		//Receive FIFO
+		DWORD rxfifo;					//Receive FIFO valid count
+		DWORD rxdata[3];				//Receive FIFO data
 
-		// 受信バッファ
-		BYTE rxbuf[0x1000];				// 受信データ
-		DWORD rxnum;					// 受信データ数
-		DWORD rxread;					// 受信読み込みポインタ
-		DWORD rxwrite;					// 受信書き込みポインタ
-		DWORD rxtotal;					// 受信トータル
+		//Receive buffer
+		BYTE rxbuf[0x1000];				//Receive data
+		DWORD rxnum;					//Receive data count
+		DWORD rxread;					//Receive read pointer
+		DWORD rxwrite;					//Receive write pointer
+		DWORD rxtotal;					// Receive total
 
-		// 送信バッファ
-		BYTE txbuf[0x1000];				// 送信データ
-		DWORD txnum;					// 送信データ数
-		DWORD txread;					// 送信読み込みポインタ
-		DWORD txwrite;					// 送信書き込みポインタ
-		DWORD txtotal;					// Txトータル
-		BOOL txwait;					// Txウェイトフラグ
+		//Send buffer
+		BYTE txbuf[0x1000];				//Send data
+		DWORD txnum;					//Send data count
+		DWORD txread;					//Send read pointer
+		DWORD txwrite;					//Send write pointer
+		DWORD txtotal;					// Tx total
+		BOOL txwait;					//Tx wait flag
 	} ch_t;
 
-	// 内部データ定義
+	//Internal data definition
 	typedef struct {
-		// チャネル
-		ch_t ch[2];						// チャネルデータ
+		//Channel
+		ch_t ch[2];						//Channel data
 
 		// RR2
-		DWORD request;					// 割り込みベクタ(要求中)
+		DWORD request;					//Interrupt vector (requested)
 
 		// WR2
-		DWORD vbase;					// 割り込みベクタ(ベース)
+		DWORD vbase;					//Interrupt vector (base)
 
 		// WR9
-		BOOL shsl;						// ベクタ変化モードb4-b6/b3-b1
-		BOOL mie;						// 割り込みイネーブル
-		BOOL dlc;						// 下位チェーン禁止
-		BOOL nv;						// 割り込みベクタ出力イネーブル
-		BOOL vis;						// 割り込みベクタ変化モード
+		BOOL shsl;						//Vector change mode b4-b6/b3-b1
+		BOOL mie;						//Interrupt enable
+		BOOL dlc;						//Disable lower chain
+		BOOL nv;						// Interrupt vector output enable
+		BOOL vis;						//Interrupt vector change mode
 
-		int ireq;						// 要求中の割り込みタイプ
-		int vector;						// 要求中のベクタ
+		int ireq;						//Requested interrupt type
+		int vector;						//Requested vector
 	} scc_t;
 
 public:
-	// 基本ファンクション
+	//Basic functions
 	SCC(VM *p);
-										// コンストラクタ
+										//Constructor
 	BOOL FASTCALL Init();
-										// 初期化
+										//Initialize
 	void FASTCALL Cleanup();
-										// クリーンアップ
+										//Cleanup
 	void FASTCALL Reset();
-										// リセット
+										//Reset
 	BOOL FASTCALL Save(Fileio *fio, int ver);
-										// セーブ
+										//Save
 	BOOL FASTCALL Load(Fileio *fio, int ver);
-										// ロード
+										//Load
 	void FASTCALL ApplyCfg(const Config *config);
-										// 設定適用
+										//Apply settings
 
-	// メモリデバイス
+	//Memory device
 	DWORD FASTCALL ReadByte(DWORD addr);
-										// バイト読み込み
+										//Byte read
 	DWORD FASTCALL ReadWord(DWORD addr);
-										// ワード読み込み
+										//Word read
 	void FASTCALL WriteByte(DWORD addr, DWORD data);
-										// バイト書き込み
+										//Byte write
 	void FASTCALL WriteWord(DWORD addr, DWORD data);
-										// ワード書き込み
+										//Word write
 	DWORD FASTCALL ReadOnly(DWORD addr) const;
-										// 読み込みのみ
+										//Read only
 
-	// 外部API
+	//External API
 	void FASTCALL GetSCC(scc_t *buffer) const;
-										// 内部データ取得
+										//Get internal data
 	const SCC::scc_t* FASTCALL GetWork() const;
-										// ワーク取得 
+										//Get work
 	DWORD FASTCALL GetVector(int type) const;
-										// ベクタ取得
+										//Get vector
 	BOOL FASTCALL Callback(Event *ev);
-										// イベントコールバック
+										//Event callback
 	void FASTCALL IntAck();
-										// 割り込み応答
+										//Interrupt acknowledge
 
-	// 送信API(SCCへ送信)
+	//Send API (send to SCC)
 	void FASTCALL Send(int channel, DWORD data);
-										// データ送信
+										//Send data
 	void FASTCALL ParityErr(int channel);
-										// パリティエラーの生成
+										//Generate parity error
 	void FASTCALL FramingErr(int channel);
-										// フレーミングエラーの生成
+										//Generate framing error
 	void FASTCALL SetBreak(int channel, BOOL flag);
-										// ブレーク状態の通知
+										//Notify break state
 	BOOL FASTCALL IsRxEnable(int channel) const;
-										// 受信チェック
+										//Receive check
 	BOOL FASTCALL IsBaudRate(int channel, DWORD baudrate) const;
-										// ボーレートチェック
+										//Baud rate check
 	DWORD FASTCALL GetRxBit(int channel) const;
-										// 受信データビット数取得
+										//Get receive data bit count
 	DWORD FASTCALL GetStopBit(int channel) const;
-										// ストップビット取得
+										//Get stop bits
 	DWORD FASTCALL GetParity(int channel) const;
-										// パリティ取得
+										//Get parity
 	BOOL FASTCALL IsRxBufEmpty(int channel) const;
-										// 受信バッファの空きチェック
+										//Check receive buffer free
 
-	// 受信API(SCCから受信)
+	//Receive API (receive from SCC)
 	DWORD FASTCALL Receive(int channel);
-										// データ受信
+										//Receive data
 	BOOL FASTCALL IsTxEmpty(int channel);
-										// 送信バッファエンプティチェック
+										//Check send buffer empty
 	BOOL FASTCALL IsTxFull(int channel);
-										// 送信バッファフルチェック
+										//Check send buffer full
 	void FASTCALL WaitTx(int channel, BOOL wait);
-										// 送信ブロック
+										//Send block
 
-	// ハードフロー
+	//Hard flow
 	void FASTCALL SetCTS(int channel, BOOL flag);
-										// CTSセット
+										//Set CTS
 	void FASTCALL SetDCD(int channel, BOOL flag);
-										// DCDセット
+										//Set DCD
 	BOOL FASTCALL GetRTS(int channel);
-										// RTS取得
+										//Get RTS
 	BOOL FASTCALL GetDTR(int channel);
-										// DTR取得
+										//Get DTR
 	BOOL FASTCALL GetBreak(int channel);
-										// ブレーク取得
+										//Get break
 
 private:
 	void FASTCALL ResetCh(ch_t *p);
-										// チャネルリセット
+										//Channel reset
 	DWORD FASTCALL ReadSCC(ch_t *p, DWORD reg);
-										// チャネル読み出し
+										//Channel read
 	DWORD FASTCALL ReadRR0(const ch_t *p) const;
-										// RR0読み出し
+										//Read RR0
 	DWORD FASTCALL ReadRR1(const ch_t *p) const;
-										// RR1読み出し
+										//Read RR1
 	DWORD FASTCALL ReadRR2(ch_t *p);
-										// RR2読み出し
+										//Read RR2
 	DWORD FASTCALL ReadRR3(const ch_t *p) const;
-										// RR3読み出し
+										//Read RR3
 	DWORD FASTCALL ReadRR8(ch_t *p);
-										// RR8読み出し
+										//Read RR8
 	DWORD FASTCALL ReadRR15(const ch_t *p) const;
-										// RR15読み出し
+										//Read RR15
 	DWORD FASTCALL ROSCC(const ch_t *p, DWORD reg) const;
-										// 読み出しのみ
+										//Read only
 	void FASTCALL WriteSCC(ch_t *p, DWORD reg, DWORD data);
-										// チャネル書き込み
+										//Channel write
 	void FASTCALL WriteWR0(ch_t *p, DWORD data);
-										// WR0書き込み
+										//Write WR0
 	void FASTCALL WriteWR1(ch_t *p, DWORD data);
-										// WR1書き込み
+										//Write WR1
 	void FASTCALL WriteWR3(ch_t *p, DWORD data);
-										// WR3書き込み
+										//Write WR3
 	void FASTCALL WriteWR4(ch_t *p, DWORD data);
-										// WR4書き込み
+										//Write WR4
 	void FASTCALL WriteWR5(ch_t *p, DWORD data);
-										// WR5書き込み
+										//Write WR5
 	void FASTCALL WriteWR8(ch_t *p, DWORD data);
-										// WR8書き込み
+										//Write WR8
 	void FASTCALL WriteWR9(DWORD data);
-										// WR9書き込み
+										//Write WR9
 	void FASTCALL WriteWR10(ch_t *p, DWORD data);
-										// WR10書き込み
+										//Write WR10
 	void FASTCALL WriteWR11(ch_t *p, DWORD data);
-										// WR11書き込み
+										//Write WR11
 	void FASTCALL WriteWR12(ch_t *p, DWORD data);
-										// WR12書き込み
+										//Write WR12
 	void FASTCALL WriteWR13(ch_t *p, DWORD data);
-										// WR13書き込み
+										//Write WR13
 	void FASTCALL WriteWR14(ch_t *p, DWORD data);
-										// WR14書き込み
+										//Write WR14
 	void FASTCALL WriteWR15(ch_t *p, DWORD data);
-										// WR15書き込み
+										//Write WR15
 	void FASTCALL ResetSCC(ch_t *p);
-										// リセット
+										//Reset
 	void FASTCALL ClockSCC(ch_t *p);
-										// ボーレート再計算
+										//Recalculate baud rate
 	void FASTCALL IntSCC(ch_t *p, itype_t type, BOOL flag);
-										// 割り込みリクエスト
+										//Interrupt request
 	void FASTCALL IntCheck();
-										// 割り込みチェック
+										//Check interrupt
 	void FASTCALL EventRx(ch_t *p);
-										// イベント(受信)
+										//Event (receive)
 	void FASTCALL EventTx(ch_t *p);
-										// イベント(送信)
+										//Event (send)
 	Mouse *mouse;
-										// マウス
+										//Mouse
 	scc_t scc;
-										// 内部データ
+										//Internal data
 	Event event[2];
-										// イベント
+										//Event
 	BOOL clkup;
-										// 7.5MHzモード
+										//7.5MHz mode
 };
 
 #endif	// scc_h

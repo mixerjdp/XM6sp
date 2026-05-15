@@ -931,7 +931,7 @@
 #define IDM_FULLSCREEN					40182
 #define IDM_TOGGLE_VSYNC         40183
 #define IDM_TOGGLE_RENDERER      40184
-#define IDM_RENDER_FAST          40553
+#define IDM_TOGGLE_RENDER_FAST_DUMMY  40185
 #define IDM_TOGGLE_SHADER        40550
 
 // �f�o�b�O���j���[
@@ -1607,6 +1607,7 @@
 #define IDM_SCALE_250            47003
 #define IDM_SCALE_300            47004
 #define IDM_YMFM                 47005
+#define IDM_STEP_FRAME           47006
 
 // Spanish aliases for resources
 #define IDM_ES_STDWIN	IDM_US_STDWIN

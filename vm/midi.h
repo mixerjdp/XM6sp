@@ -2,7 +2,7 @@
 //
 //	X68000 EMULATOR "XM6"
 //
-//	Copyright (C) 2001-2005 ＰＩ．(ytanaka@ipc-tokai.or.jp)
+//	Copyright (C) 2001-2005 PI(ytanaka@ipc-tokai.or.jp)
 //	[ MIDI(YM3802) ]
 //
 //---------------------------------------------------------------------------
@@ -21,304 +21,304 @@
 class MIDI : public MemDevice
 {
 public:
-	// 定数定義
+	// Constants
 	enum {
-		TransMax = 0x2000,				// 送信バッファ個数
-		RecvMax = 0x2000				// 受信バッファ個数
+		TransMax = 0x2000,				// Transmit buffer size
+		RecvMax = 0x2000				// Receive buffer size
 	};
 
-	// MIDIバイトデータ定義
+	// MIDI byte data structure
 	typedef struct {
-		DWORD data;						// データ実体(8bit)
-		DWORD vtime;					// 仮想時間
+		DWORD data;						// Data portion (8bit)
+		DWORD vtime;					// Virtual time
 	} mididata_t;
 
-	// 内部データ定義
+	// Internal data structure
 	typedef struct {
-		// リセット
-		BOOL reset;						// リセットフラグ
-		BOOL access;					// アクセスフラグ
+		// Reset
+		BOOL reset;						// Reset flag
+		BOOL access;					// Access flag
 
-		// ボードデータ、割り込み
-		DWORD bid;						// ボードID(0:ボード無し)
-		DWORD ilevel;					// 割り込みレベル
-		int vector;						// 割り込み要求ベクタ
+		// Board data, interrupts
+		DWORD bid;						// Board ID (0: no board)
+		DWORD ilevel;					// Interrupt level
+		int vector;						// Interrupt vector number
 
-		// MCSレジスタ(一般)
-		DWORD wdr;						// 書き込みデータレジスタ
-		DWORD rgr;						// レジスタグループレジスタ
+		// MCS registers (common)
+		DWORD wdr;						// Write data register
+		DWORD rgr;						// Register group register
 
-		// MCSレジスタ(割り込み)
-		DWORD ivr;						// 割り込みベクタレジスタ
-		DWORD isr;						// 割り込みサービスレジスタ
-		DWORD imr;						// 割り込みモードレジスタ
-		DWORD ier;						// 割り込み許可レジスタ
+		// MCS registers (interrupts)
+		DWORD ivr;						// Interrupt vector register
+		DWORD isr;						// Interrupt service register
+		DWORD imr;						// Interrupt mask register
+		DWORD ier;						// Interrupt enable register
 
-		// MCSレジスタ(リアルタイムメッセージ)
-		DWORD dmr;						// リアルタイムメッセージモードレジスタ
-		DWORD dcr;						// リアルタイムメッセージコントロールレジスタ
+		// MCS registers (message mode)
+		DWORD dmr;						// Message mode register
+		DWORD dcr;						// Message control register
 
-		// MCSレジスタ(受信)
-		DWORD rrr;						// 受信レートレジスタ
-		DWORD rmr;						// 受信モードレジスタ
-		DWORD amr;						// アドレスハンタモードレジスタ
-		DWORD adr;						// アドレスハンタデバイスレジスタ
-		DWORD asr;						// アドレスハンタステータスレジスタ
-		DWORD rsr;						// 受信バッファステータスレジスタ
-		DWORD rcr;						// 受信バッファコントロールレジスタ
-		DWORD rcn;						// 無受信カウンタ
+		// MCS registers (receive)
+		DWORD rrr;						// Receive rate register
+		DWORD rmr;						// Receive mode register
+		DWORD amr;						// Address match register
+		DWORD adr;						// Address device register
+		DWORD asr;						// Address status register
+		DWORD rsr;						// Receive buffer status register
+		DWORD rcr;						// Receive control register
+		DWORD rcn;						// Receive counter
 
-		// MCSレジスタ(送信)
-		DWORD trr;						// 送信レートレジスタ
-		DWORD tmr;						// 送信モードレジスタ
-		BOOL tbs;						// 送信BUSYレジスタ
-		DWORD tcr;						// 送信コントロールレジスタ
-		DWORD tcn;						// 無送信カウンタ
+		// MCS registers (transmit)
+		DWORD trr;						// Transmit rate register
+		DWORD tmr;						// Transmit mode register
+		BOOL tbs;						// Transmit BUSY register
+		DWORD tcr;						// Transmit control register
+		DWORD tcn;						// Transmit counter
 
-		// MCSレジスタ(FSK)
-		DWORD fsr;						// FSKステータスレジスタ
-		DWORD fcr;						// FSKコントロールレジスタ
+		// MCS registers (FSK)
+		DWORD fsr;						// FSK status register
+		DWORD fcr;						// FSK control register
 
-		// MCSレジスタ(カウンタ)
-		DWORD ccr;						// クリックコントロールレジスタ
-		DWORD cdr;						// クリックデータレジスタ
-		DWORD ctr;						// クリックタイマレジスタ
-		DWORD srr;						// レコーディングカウンタレジスタ
-		DWORD scr;						// クロック補間レジスタ
-		DWORD sct;						// クロック補間カウンタ
-		DWORD spr;						// プレイバックカウンタレジスタ
-		DWORD str;						// プレイバックタイマレジスタ
-		DWORD gtr;						// 汎用タイマレジスタ
-		DWORD mtr;						// MIDIクロックタイマレジスタ
+		// MCS registers (counters)
+		DWORD ccr;						// Clock control register
+		DWORD cdr;						// Clock data register
+		DWORD ctr;						// Clock timer register
+		DWORD srr;						// Serial clock counter register
+		DWORD scr;						// Clock scaler register
+		DWORD sct;						// Clock counter
+		DWORD spr;						// Sample counter register
+		DWORD str;						// Sample timer register
+		DWORD gtr;						// General timer register
+		DWORD mtr;						// MIDI clock timer register
 
-		// MCSレジスタ(GPIO)
-		DWORD edr;						// 外部ポートディレクションレジスタ
-		DWORD eor;						// 外部ポートOutputレジスタ
-		DWORD eir;						// 外部ポートInputレジスタ
+		// MCS registers (GPIO)
+		DWORD edr;						// Edge direction register
+		DWORD eor;						// Edge output register
+		DWORD eir;						// Edge input register
 
-		// 通常バッファ
-		DWORD normbuf[16];				// 通常バッファ
-		DWORD normread;					// 通常バッファRead
-		DWORD normwrite;				// 通常バッファWrite
-		DWORD normnum;					// 通常バッファ個数
-		DWORD normtotal;				// 通常バッファトータル
+		// Normal buffer
+		DWORD normbuf[16];				// Normal buffer
+		DWORD normread;					// Normal buffer read
+		DWORD normwrite;				// Normal buffer write
+		DWORD normnum;					// Normal buffer count
+		DWORD normtotal;				// Normal buffer total
 
-		// リアルタイム送信バッファ
-		DWORD rtbuf[4];					// リアルタイム送信バッファ
-		DWORD rtread;					// リアルタイム送信バッファRead
-		DWORD rtwrite;					// リアルタイム送信バッファWrite
-		DWORD rtnum;					// リアルタイム送信バッファ個数
-		DWORD rttotal;					// リアルタイム送信バッファトータル
+		// Real-time transmit buffer
+		DWORD rtbuf[4];					// Real-time transmit buffer
+		DWORD rtread;					// Real-time transmit buffer read
+		DWORD rtwrite;					// Real-time transmit buffer write
+		DWORD rtnum;					// Real-time transmit buffer count
+		DWORD rttotal;					// Real-time transmit buffer total
 
-		// 一般バッファ
-		DWORD stdbuf[0x80];				// 一般バッファ
-		DWORD stdread;					// 一般バッファRead
-		DWORD stdwrite;					// 一般バッファWrite
-		DWORD stdnum;					// 一般バッファ個数
-		DWORD stdtotal;					// 一般バッファトータル
+		// Standard buffer
+		DWORD stdbuf[0x80];				// Standard buffer
+		DWORD stdread;					// Standard buffer read
+		DWORD stdwrite;					// Standard buffer write
+		DWORD stdnum;					// Standard buffer count
+		DWORD stdtotal;					// Standard buffer total
 
-		// リアルタイム受信バッファ
-		DWORD rrbuf[4];					// リアルタイム受信バッファ
-		DWORD rrread;					// リアルタイム受信バッファRead
-		DWORD rrwrite;					// リアルタイム受信バッファWrite
-		DWORD rrnum;					// リアルタイム受信バッファ個数
-		DWORD rrtotal;					// リアルタイム受信バッファトータル
+		// Real-time receive buffer
+		DWORD rrbuf[4];					// Real-time receive buffer
+		DWORD rrread;					// Real-time receive buffer read
+		DWORD rrwrite;					// Real-time receive buffer write
+		DWORD rrnum;					// Real-time receive buffer count
+		DWORD rrtotal;					// Real-time receive buffer total
 
-		// 送信バッファ(デバイスとの受け渡し用)
-		mididata_t *transbuf;			// 送信バッファ
-		DWORD transread;				// 送信バッファRead
-		DWORD transwrite;				// 送信バッファWrite
-		DWORD transnum;					// 送信バッファ個数
+		// Transmit buffer (used to exchange with device)
+		mididata_t *transbuf;			// Transmit buffer
+		DWORD transread;				// Transmit buffer read
+		DWORD transwrite;				// Transmit buffer write
+		DWORD transnum;					// Transmit buffer count
 
-		// 受信バッファ(デバイスとの受け渡し用)
-		mididata_t *recvbuf;			// 受信バッファ
-		DWORD recvread;					// 受信バッファRead
-		DWORD recvwrite;				// 受信バッファWrite
-		DWORD recvnum;					// 受信バッファ個数
+		// Receive buffer (used to exchange with device)
+		mididata_t *recvbuf;			// Receive buffer
+		DWORD recvread;				// Receive buffer read
+		DWORD recvwrite;				// Receive buffer write
+		DWORD recvnum;					// Receive buffer count
 	} midi_t;
 
 public:
-	// 基本ファンクション
+	// Basic operations
 	MIDI(VM *p);
-										// コンストラクタ
+										// Constructor
 	BOOL FASTCALL Init();
-										// 初期化
+										// Initialize
 	void FASTCALL Cleanup();
-										// クリーンアップ
+										// Cleanup
 	void FASTCALL Reset();
-										// リセット
+										// Reset
 	BOOL FASTCALL Save(Fileio *fio, int ver);
-										// セーブ
+										// Save
 	BOOL FASTCALL Load(Fileio *fio, int ver);
-										// ロード
+										// Load
 	void FASTCALL ApplyCfg(const Config *config);
-										// 設定適用
+										// Apply config
 #if !defined(NDEBUG)
 	void FASTCALL AssertDiag() const;
-										// 診断
+										// Assert
 #endif	// NDEBUG
 
-	// メモリデバイス
+	// External I/O device
 	DWORD FASTCALL ReadByte(DWORD addr);
-										// バイト読み込み
+										// Byte read
 	DWORD FASTCALL ReadWord(DWORD addr);
-										// ワード読み込み
+										// Word read
 	void FASTCALL WriteByte(DWORD addr, DWORD data);
-										// バイト書き込み
+										// Byte write
 	void FASTCALL WriteWord(DWORD addr, DWORD data);
-										// ワード書き込み
+										// Word write
 	DWORD FASTCALL ReadOnly(DWORD addr) const;
-										// 読み込みのみ
+										// Read only
 
-	// 外部API
+	// External API
 	BOOL FASTCALL IsActive() const;
-										// MIDIアクティブチェック
+										// MIDI active check
 	BOOL FASTCALL Callback(Event *ev);
-										// イベントコールバック
+										// Event callback
 	void FASTCALL IntAck(int level);
-										// 割り込みACK
+										// Interrupt ACK
 	void FASTCALL GetMIDI(midi_t *buffer) const;
-										// 内部データ取得
+										// Get internal data
 	DWORD FASTCALL GetExCount(int index) const;
-										// エクスクルーシブカウント取得
+										// Get ex counter
 
-	// 送信(MIDI OUT)
+	// Transmit (MIDI OUT)
 	DWORD FASTCALL GetTransNum() const;
-										// 送信バッファ個数取得
+										// Get transmit buffer count
 	const mididata_t* FASTCALL GetTransData(DWORD proceed);
-										// 送信バッファデータ取得
+										// Get transmit buffer data
 	void FASTCALL DelTransData(DWORD number);
-										// 送信バッファ削除
+										// Delete transmit buffer
 	void FASTCALL ClrTransData();
-										// 送信バッファクリア
+										// Clear transmit buffer
 
-	// 受信(MIDI IN)
+	// Receive (MIDI IN)
 	void FASTCALL SetRecvData(const BYTE *ptr, DWORD length);
-										// 受信データ設定
+										// Set receive data
 	void FASTCALL SetRecvDelay(int delay);
-										// 受信ディレイ設定
+										// Set receive delay
 
-	// リセット
+	// Reset
 	BOOL FASTCALL IsReset() const		{ return midi.reset; }
-										// リセットフラグ取得
+										// Get reset flag
 	void FASTCALL ClrReset()			{ midi.reset = FALSE; }
-										// リセットフラグクリア
+										// Clear reset flag
 
 private:
 	void FASTCALL Receive();
-										// 受信コールバック
+										// Receive callback
 	void FASTCALL Transmit();
-										// 送信コールバック
+										// Transmit callback
 	void FASTCALL Clock();
-										// MIDIクロック検出
+										// MIDI clock output
 	void FASTCALL General();
-										// 汎用タイマコールバック
+										// General timer callback
 
 	void FASTCALL InsertTrans(DWORD data);
-										// 送信バッファへ挿入
+										// Insert to transmit buffer
 	void FASTCALL InsertRecv(DWORD data);
-										// 受信バッファへ挿入
+										// Insert to receive buffer
 	void FASTCALL InsertNorm(DWORD data);
-										// 通常バッファへ挿入
+										// Insert to normal buffer
 	void FASTCALL InsertRT(DWORD data);
-										// リアルタイム送信バッファへ挿入
+										// Insert to real-time transmit buffer
 	void FASTCALL InsertStd(DWORD data);
-										// 一般バッファへ挿入
+										// Insert to standard buffer
 	void FASTCALL InsertRR(DWORD data);
-										// リアルタイム受信バッファへ挿入
+										// Insert to real-time receive buffer
 
 	void FASTCALL ResetReg();
-										// レジスタリセット
+										// Reset registers
 	DWORD FASTCALL ReadReg(DWORD reg);
-										// レジスタ読み出し
+										// Register read
 	void FASTCALL WriteReg(DWORD reg, DWORD data);
-										// レジスタ書き込み
+										// Register write
 	DWORD FASTCALL ReadRegRO(DWORD reg) const;
-										// レジスタ読み出し(ReadOnly)
+										// Register read (ReadOnly)
 
 	void FASTCALL SetICR(DWORD data);
-										// ICR設定
+										// ICR set
 	void FASTCALL SetIOR(DWORD data);
-										// IOR設定
+										// IOR set
 	void FASTCALL SetIMR(DWORD data);
-										// IMR設定
+										// IMR set
 	void FASTCALL SetIER(DWORD data);
-										// IER設定
+										// IER set
 	void FASTCALL SetDMR(DWORD data);
-										// DMR設定
+										// DMR set
 	void FASTCALL SetDCR(DWORD data);
-										// DCR設定
+										// DCR set
 	DWORD FASTCALL GetDSR() const;
-										// DSR取得
+										// DSR get
 	void FASTCALL SetDNR(DWORD data);
-										// DNR設定
+										// DNR set
 	void FASTCALL SetRRR(DWORD data);
-										// RRR設定
+										// RRR set
 	void FASTCALL SetRMR(DWORD data);
-										// RMR設定
+										// RMR set
 	void FASTCALL SetAMR(DWORD data);
-										// AMR設定
+										// AMR set
 	void FASTCALL SetADR(DWORD data);
-										// ADR設定
+										// ADR set
 	DWORD FASTCALL GetRSR() const;
-										// RSR取得
+										// RSR get
 	void FASTCALL SetRCR(DWORD data);
-										// RCR設定
+										// RCR set
 	DWORD FASTCALL GetRDR();
-										// RDR取得(更新あり)
+										// RDR get (updated)
 	DWORD FASTCALL GetRDRRO() const;
-										// RDR取得(Read Only)
+										// RDR get (Read Only)
 	void FASTCALL SetTRR(DWORD data);
-										// TRR設定
+										// TRR set
 	void FASTCALL SetTMR(DWORD data);
-										// TMR設定
+										// TMR set
 	DWORD FASTCALL GetTSR() const;
-										// TSR取得
+										// TSR get
 	void FASTCALL SetTCR(DWORD data);
-										// TCR設定
+										// TCR set
 	void FASTCALL SetTDR(DWORD data);
-										// TDR設定
+										// TDR set
 	DWORD FASTCALL GetFSR() const;
-										// FSR取得
+										// FSR get
 	void FASTCALL SetFCR(DWORD data);
-										// FCR設定
+										// FCR set
 	void FASTCALL SetCCR(DWORD data);
-										// CCR設定
+										// CCR set
 	void FASTCALL SetCDR(DWORD data);
-										// CDR設定
+										// CDR set
 	DWORD FASTCALL GetSRR() const;
-										// SRR取得
+										// SRR get
 	void FASTCALL SetSCR(DWORD data);
-										// SCR設定
+										// SCR set
 	void FASTCALL SetSPR(DWORD data, BOOL high);
-										// SPR設定
+										// SPR set
 	void FASTCALL SetGTR(DWORD data, BOOL high);
-										// GTR設定
+										// GTR set
 	void FASTCALL SetMTR(DWORD data, BOOL high);
-										// MTR設定
+										// MTR set
 	void FASTCALL SetEDR(DWORD data);
-										// EDR設定
+										// EDR set
 	void FASTCALL SetEOR(DWORD data);
-										// EOR設定
+										// EOR set
 	DWORD FASTCALL GetEIR() const;
-										// EIR取得
+										// EIR get
 
 	void FASTCALL CheckRR();
-										// リアルタイムメッセージ受信バッファチェック
+										// Real-time message receive buffer check
 	void FASTCALL Interrupt(int type, BOOL flag);
-										// 割り込み発生
+										// Interrupt request
 	void FASTCALL IntCheck();
-										// 割り込みチェック
+										// Interrupt check
 	Event event[3];
-										// イベント
+										// Events
 	midi_t midi;
-										// 内部データ
+										// Internal data
 	Sync *sync;
-										// データSync
+										// Data sync
 	DWORD recvdelay;
-										// 受信遅れ時間(hus)
+										// Receive delay (hus)
 	DWORD ex_cnt[4];
-										// エクスクルーシブカウント
+										// Ex counters
 };
 
 #endif	// midi_h

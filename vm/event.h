@@ -69,6 +69,12 @@ public:
 	// Time management
 	void FASTCALL SetTime(DWORD hus);
 										// Set time period
+	void FASTCALL SetTimeDirect(DWORD hus);
+										// Set time period directly (TypeG compatible)
+	void FASTCALL SetTimeFast(DWORD hus) { SetTimeDirect(hus); }
+										// Set time period fast (TypeG compatible)
+	void FASTCALL SetRemain(DWORD hus)	{ ev.remain = hus; }
+										// Set remaining time
 	DWORD FASTCALL GetTime() const		{ return ev.time; }
 										// Get time period
 	DWORD FASTCALL GetRemain() const	{ return ev.remain; }

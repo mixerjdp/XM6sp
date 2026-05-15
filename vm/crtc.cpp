@@ -2,7 +2,8 @@
 //
 //	X68000 EMULATOR "XM6"
 //
-//	Copyright (C) 2001-2005 PI (ytanaka@ipc-tokai.or.jp)
+//	Copyright (C) 2001-2005 ‚o‚hD(ytanaka@ipc-tokai.or.jp)
+//	Copyright (C) 2010-2014 GIMONS
 //	[ CRTC(VICON) ]
 //
 //---------------------------------------------------------------------------
@@ -10,18 +11,25 @@
 #include "os.h"
 #include "xm6.h"
 #include "vm.h"
-#include "log.h"
 #include "tvram.h"
 #include "mfp.h"
 #include "sprite.h"
 #include "render.h"
 #include "schedule.h"
-#include "cpu.h"
 #include "gvram.h"
 #include "printer.h"
-#include "fileio.h"
-#include "crtc.h"
+#include "vc.h"
 #include "config.h"
+#include "fileio.h"
+#include "memory.h"
+#include "crtc.h"
+#include "px68k_crtc_port.h"
+#if XM6_RENDER_SYNC == 1
+class CScheduler {
+public:
+	void FASTCALL UpdateFrame() {}
+};
+#endif	// XM6_RENDER_SYNC == 1
 
 //===========================================================================
 //
@@ -30,97 +38,113 @@
 //===========================================================================
 //#define CRTC_LOG
 
-namespace {
-BOOL g_alt_raster_timing = FALSE;
-}
-
 //---------------------------------------------------------------------------
 //
-//	Constructor
+/// ƒRƒ“ƒXƒgƒ‰ƒNƒ^
 //
 //---------------------------------------------------------------------------
-CRTC::CRTC(VM *p) : MemDevice(p)
+CRTC::CRTC(VM* p) : MemDevice(p)
 {
-	// Initialize device ID
+	// ƒfƒoƒCƒXID‚ğ‰Šú‰»
 	dev.id = MAKEID('C', 'R', 'T', 'C');
 	dev.desc = "CRTC (VICON)";
 
-	// Start address, end address
+	// ŠJnƒAƒhƒŒƒXAI—¹ƒAƒhƒŒƒX
 	memdev.first = 0xe80000;
 	memdev.last = 0xe81fff;
 
-	// Other members
+	// ‚»‚Ì‘¼ƒ[ƒN
 	tvram = NULL;
 	gvram = NULL;
 	sprite = NULL;
 	mfp = NULL;
 	render = NULL;
 	printer = NULL;
+	vc = NULL;
+#if XM6_RENDER_SYNC == 1
+	m_pScheduler = NULL;
+#endif	// XM6_RENDER_SYNC == 1
+
+	memset(&crtc, 0, sizeof(crtc));
+	memset(&px68k_state_view, 0, sizeof(px68k_state_view));
 }
 
 //---------------------------------------------------------------------------
 //
-//	Initialization
+//	‰Šú‰»
 //
 //---------------------------------------------------------------------------
 BOOL FASTCALL CRTC::Init()
 {
 	ASSERT(this);
 
-	// Base class
+	// Šî–{ƒNƒ‰ƒX
 	if (!MemDevice::Init()) {
 		return FALSE;
 	}
 
-	// Get text VRAM
+	// ƒeƒLƒXƒgVRAM‚ğæ“¾
 	tvram = (TVRAM*)vm->SearchDevice(MAKEID('T', 'V', 'R', 'M'));
 	ASSERT(tvram);
 
-	// Get graphic VRAM
+	// ƒOƒ‰ƒtƒBƒbƒNVRAM‚ğæ“¾
 	gvram = (GVRAM*)vm->SearchDevice(MAKEID('G', 'V', 'R', 'M'));
 	ASSERT(gvram);
 
-	// Get sprite controller
+	// ƒXƒvƒ‰ƒCƒgƒRƒ“ƒgƒ[ƒ‰‚ğæ“¾
 	sprite = (Sprite*)vm->SearchDevice(MAKEID('S', 'P', 'R', ' '));
 	ASSERT(sprite);
 
-	// Get MFP
+	// MFP‚ğæ“¾
 	mfp = (MFP*)vm->SearchDevice(MAKEID('M', 'F', 'P', ' '));
 	ASSERT(mfp);
 
-	// Get renderer
+	// ƒŒƒ“ƒ_ƒ‰‚ğæ“¾
 	render = (Render*)vm->SearchDevice(MAKEID('R', 'E', 'N', 'D'));
 	ASSERT(render);
 
-	// Get printer
+	// ƒvƒŠƒ“ƒ^‚ğæ“¾
 	printer = (Printer*)vm->SearchDevice(MAKEID('P', 'R', 'N', ' '));
 	ASSERT(printer);
 
-	// Event setup
+	// VCæ“¾
+	vc = (VC*)vm->SearchDevice(MAKEID('V', 'C', ' ', ' '));
+	ASSERT(vc);
+
+	// ƒCƒxƒ“ƒg‰Šú‰»
 	event.SetDevice(this);
 	event.SetDesc("H-Sync");
-	event.SetTime(0);
-	scheduler->AddEvent(&event);
+	// event.SetTime(0);
+	scheduler->AddEventDirect(&event);
+
+	// ƒuƒƒbƒNƒXƒLƒƒƒ“‰Šú‰»
+	crtc.h_blockscan = FALSE;
+
+	// PC‚ÌVSYNC‚Æ“¯Šú
+	crtc.disp_vsync = FALSE;
+
+	// HSync—v‹
+	hsync = TRUE;
 
 	return TRUE;
 }
 
 //---------------------------------------------------------------------------
 //
-//	Cleanup
+//	ƒNƒŠ[ƒ“ƒAƒbƒv
 //
 //---------------------------------------------------------------------------
 void FASTCALL CRTC::Cleanup()
 {
 	ASSERT(this);
 
-	// To base class
+	// Šî–{ƒNƒ‰ƒX‚Ö
 	MemDevice::Cleanup();
 }
 
 //---------------------------------------------------------------------------
 //
-//	Reset
+//	ƒŠƒZƒbƒg
 //
 //---------------------------------------------------------------------------
 void FASTCALL CRTC::Reset()
@@ -128,9 +152,9 @@ void FASTCALL CRTC::Reset()
 	int i;
 
 	ASSERT(this);
-	LOG0(Log::Normal, "Reset");
+	LOG0(Log::Normal, "ƒŠƒZƒbƒg");
 
-	// Clear registers
+	// ƒŒƒWƒXƒ^‚ğƒNƒŠƒA
 	memset(crtc.reg, 0, sizeof(crtc.reg));
 	for (i=0; i<18; i++) {
 		crtc.reg[i] = ResetTable[i];
@@ -139,20 +163,20 @@ void FASTCALL CRTC::Reset()
 		crtc.reg[i + 0x28] = ResetTable[i + 18];
 	}
 
-	// Resolution
+	// ‰ğ‘œ“x
 	crtc.hrl = FALSE;
 	crtc.lowres = FALSE;
 	crtc.textres = TRUE;
-	crtc.changed = FALSE;
+	crtc.changed = TRUE;
 
-	// Raster
+	// “Áê‹@”
 	crtc.raster_count = 0;
 	crtc.raster_int = 0;
 	crtc.raster_copy = FALSE;
 	crtc.raster_exec = FALSE;
 	crtc.fast_clr = 0;
 
-	// Horizontal
+	// …•½
 	crtc.h_sync = 31745;
 	crtc.h_pulse = 3450;
 	crtc.h_back = 4140;
@@ -161,7 +185,7 @@ void FASTCALL CRTC::Reset()
 	crtc.h_mul = 1;
 	crtc.hd = 2;
 
-	// Vertical
+	// ‚’¼
 	crtc.v_sync = 568;
 	crtc.v_pulse = 6;
 	crtc.v_back = 35;
@@ -170,32 +194,28 @@ void FASTCALL CRTC::Reset()
 	crtc.v_mul = 1;
 	crtc.vd = 1;
 
-	// Events
+	// ƒCƒxƒ“ƒg
 	crtc.ns = 0;
 	crtc.hus = 0;
 	crtc.v_synccnt = 1;
 	crtc.v_blankcnt = 1;
-	crtc.h_disp = TRUE;
+	crtc.h_disp = -1;
 	crtc.v_disp = TRUE;
 	crtc.v_blank = TRUE;
 	crtc.v_count = 0;
 	crtc.v_scan = 0;
 
-	// Non-display variables
-	crtc.h_disptime = 0;
-	crtc.h_synctime = 0;
-	crtc.v_cycletime = 0;
-	crtc.v_blanktime = 0;
-	crtc.v_backtime = 0;
-	crtc.v_synctime = 0;
+	// …•½•\¦ƒXƒLƒƒƒ“ŠÖ˜A
+	crtc.h_blocknum = 0;
+	crtc.h_blockpos = 0;
 
-	// Memory mode
+	// ƒƒ‚ƒŠƒ‚[ƒh
 	crtc.tmem = FALSE;
 	crtc.gmem = TRUE;
 	crtc.siz = 0;
 	crtc.col = 3;
 
-	// Scroll
+	// ƒXƒNƒ[ƒ‹
 	crtc.text_scrlx = 0;
 	crtc.text_scrly = 0;
 	for (i=0; i<4; i++) {
@@ -203,47 +223,67 @@ void FASTCALL CRTC::Reset()
 		crtc.grp_scrly[i] = 0;
 	}
 
-	// H-Sync event setup (31.5us)
-	event.SetTime(63);
+	// ƒCƒ“ƒ^ƒŒ[ƒX‹ôŠï
+	crtc.v_scaneven = FALSE;
+
+	// H-SyncƒCƒxƒ“ƒg‚ğİ’è(31.5us)
+	event.SetTimeDirect(63);
+
+	// ƒŒƒ“ƒ_ƒ‰‚Ö’Ê’m
+	render->TextScrl(crtc.text_scrlx, crtc.text_scrly);
+	render->GrpScrl(0, crtc.grp_scrlx[0], crtc.grp_scrly[0]);
+	render->GrpScrl(1, crtc.grp_scrlx[1], crtc.grp_scrly[1]);
+	render->GrpScrl(2, crtc.grp_scrlx[2], crtc.grp_scrly[2]);
+	render->GrpScrl(3, crtc.grp_scrlx[3], crtc.grp_scrly[3]);
+	render->SetCRTC();
 }
 
 //---------------------------------------------------------------------------
 //
-//	CRTC reset data
+//	CRTCƒŠƒZƒbƒgƒf[ƒ^
 //
 //---------------------------------------------------------------------------
 const BYTE CRTC::ResetTable[] = {
-	0x00, 0x89, 0x00, 0x0e, 0x00, 0x1c, 0x00, 0x7c,
-	0x02, 0x37, 0x00, 0x05, 0x00, 0x28, 0x02, 0x28,
-	0x00, 0x1b,
-	0x0b, 0x16, 0x00, 0x33, 0x7a, 0x7b, 0x00, 0x00
+	0x89, 0x00, 0x0e, 0x00, 0x1c, 0x00, 0x7c, 0x00,
+	0x37, 0x02, 0x05, 0x00, 0x28, 0x00, 0x28, 0x02,
+	0x1b, 0x00,
+	0x16, 0x0b, 0x33, 0x00, 0x7b, 0x7a, 0x00, 0x00
 };
 
 //---------------------------------------------------------------------------
 //
-//	Save
+/// ƒZ[ƒu
 //
 //---------------------------------------------------------------------------
-BOOL FASTCALL CRTC::Save(Fileio *fio, int ver)
+BOOL FASTCALL CRTC::Save(Fileio* fio, int ver)
 {
-	size_t sz;
+	DWORD sz;
 
 	ASSERT(this);
 	ASSERT(fio);
-	LOG0(Log::Normal, "Save");
+	LOG0(Log::Normal, "ƒZ[ƒu");
 
-	// Save size
+	// ƒZ[ƒuƒf[ƒ^¶¬
+	crtc_t data = crtc;
+	data.disp_vsync = FALSE;
+	ASSERT(data.h_refresh == 0);
+	data.h_blockscan = FALSE;
+	data.h_blocknum = 0;
+	data.h_blockpos = 0;
+	data.v_scaneven = FALSE;
+
+	// ƒTƒCƒY‚ğƒZ[ƒu
 	sz = sizeof(crtc_t);
 	if (!fio->Write(&sz, sizeof(sz))) {
 		return FALSE;
 	}
 
-	// Save entity
-	if (!fio->Write(&crtc, (int)sz)) {
+	// À‘Ì‚ğƒZ[ƒu
+	if (!fio->Write(&data, sz)) {
 		return FALSE;
 	}
 
-	// Save event
+	// ƒCƒxƒ“ƒg‚ğƒZ[ƒu
 	if (!event.Save(fio, ver)) {
 		return FALSE;
 	}
@@ -253,18 +293,21 @@ BOOL FASTCALL CRTC::Save(Fileio *fio, int ver)
 
 //---------------------------------------------------------------------------
 //
-//	Load
+/// ƒ[ƒh
 //
 //---------------------------------------------------------------------------
-BOOL FASTCALL CRTC::Load(Fileio *fio, int ver)
+BOOL FASTCALL CRTC::Load(Fileio* fio, int ver)
 {
-	size_t sz;
+	DWORD sz;
 
 	ASSERT(this);
 	ASSERT(fio);
-	LOG0(Log::Normal, "Load");
+	LOG0(Log::Normal, "ƒ[ƒh");
 
-	// Load size
+	// İ’è•Û‘¶
+	crtc_t backup = crtc;
+
+	// ƒTƒCƒY‚ğƒ[ƒh
 	if (!fio->Read(&sz, sizeof(sz))) {
 		return FALSE;
 	}
@@ -272,43 +315,60 @@ BOOL FASTCALL CRTC::Load(Fileio *fio, int ver)
 		return FALSE;
 	}
 
-	// Load entity
+	// À‘Ì‚ğƒ[ƒh
 	if (!fio->Read(&crtc, (int)sz)) {
 		return FALSE;
 	}
 
-	// Load event
+	// ƒCƒxƒ“ƒg‚ğƒ[ƒh
 	if (!event.Load(fio, ver)) {
 		return FALSE;
 	}
 
-	// Notify renderer
+	// İ’è•œŒ³
+	crtc.disp_vsync = backup.disp_vsync;
+	crtc.h_blockscan = backup.h_blockscan;
+
+	// ƒŒƒ“ƒ_ƒ‰‚Ö’Ê’m
 	render->TextScrl(crtc.text_scrlx, crtc.text_scrly);
 	render->GrpScrl(0, crtc.grp_scrlx[0], crtc.grp_scrly[0]);
 	render->GrpScrl(1, crtc.grp_scrlx[1], crtc.grp_scrly[1]);
 	render->GrpScrl(2, crtc.grp_scrlx[2], crtc.grp_scrly[2]);
 	render->GrpScrl(3, crtc.grp_scrlx[3], crtc.grp_scrly[3]);
+#if 0
 	render->SetCRTC();
+#else
+	// …•½Šg‘å—¦‚ğ•ÏX‚µ‚½‚Ì‚Åb’è‘Î‰
+	ReCalc();
+#endif
 
 	return TRUE;
 }
 
 //---------------------------------------------------------------------------
 //
-//	Apply configuration
+/// İ’è“K—p
 //
 //---------------------------------------------------------------------------
 void FASTCALL CRTC::ApplyCfg(const Config *config)
 {
 	ASSERT(this);
 	ASSERT(config);
-	g_alt_raster_timing = config->alt_raster;
-	LOG0(Log::Normal, "Apply configuration");
+	LOG0(Log::Normal, "İ’è“K—p");
+
+	// …•½•\¦ŠúŠÔƒXƒLƒƒƒ“ƒ‚[ƒh
+	crtc.h_blockscan = config->disp_blockscan;
+
+	// ƒzƒXƒg‘¤‚ÌVSYNC‚Æ“¯Šú
+	crtc.disp_vsync = FALSE;
+
+	// ÄŒvZ‚ğ‘£‚·
+	crtc.changed = TRUE;
 }
 
 //---------------------------------------------------------------------------
 //
-//	Byte read
+//	ƒoƒCƒg“Ç‚İ‚İ
 //
 //---------------------------------------------------------------------------
 DWORD FASTCALL CRTC::ReadByte(DWORD addr)
@@ -318,37 +378,37 @@ DWORD FASTCALL CRTC::ReadByte(DWORD addr)
 	ASSERT(this);
 	ASSERT((addr >= memdev.first) && (addr <= memdev.last));
 
-	// Loop at $800 boundary
+	// $800’PˆÊ‚Åƒ‹[ƒv
 	addr &= 0x7ff;
 
-	// Wait
+	// ƒEƒFƒCƒg
 	scheduler->Wait(1);
 
-	// $E80000-$E803FF : Register area
+	// $E80000-$E803FF : ƒŒƒWƒXƒ^ƒGƒŠƒA
 	if (addr < 0x400) {
 		addr &= 0x3f;
 		if (addr >= 0x30) {
 			return 0xff;
 		}
 
-		// Only R20, R21 can be read. Others return $00
+		// R20, R21‚Ì‚İ“Ç‚İ‘‚«‰Â”\B‚»‚êˆÈŠO‚Í$00
 		if ((addr < 40) || (addr > 43)) {
 			return 0;
 		}
 
-		// Read (invert odd/even)
+		// “Ç‚İ‚İ(ƒGƒ“ƒfƒBƒAƒ“‚ğ”½“]‚³‚¹‚é)
 		addr ^= 1;
 		return crtc.reg[addr];
 	}
 
-	// $E80480-$E804FF : Internal port
+	// $E80480-$E804FF : “®ìƒ|[ƒg
 	if ((addr >= 0x480) && (addr <= 0x4ff)) {
-		// Even bytes are 0
+		// ãˆÊƒoƒCƒg‚Í 0
 		if ((addr & 1) == 0) {
 			return 0;
 		}
 
-		// Odd byte is raster copy, graphic clear reset
+		// ‰ºˆÊƒoƒCƒg‚Íƒ‰ƒXƒ^ƒRƒs[AƒOƒ‰ƒtƒBƒbƒN‚‘¬ƒNƒŠƒA‚Ì‚İ
 		data = 0;
 		if (crtc.raster_copy) {
 			data |= 0x08;
@@ -359,13 +419,13 @@ DWORD FASTCALL CRTC::ReadByte(DWORD addr)
 		return data;
 	}
 
-	LOG1(Log::Warning, "Illegal address read $%06X", memdev.first + addr);
+	LOG1(Log::Warning, "–¢À‘•ƒAƒhƒŒƒX“Ç‚İ‚İ $%06X", memdev.first + addr);
 	return 0xff;
 }
 
 //---------------------------------------------------------------------------
 //
-//	Byte write
+//	ƒoƒCƒg‘‚«‚İ
 //
 //---------------------------------------------------------------------------
 void FASTCALL CRTC::WriteByte(DWORD addr, DWORD data)
@@ -375,27 +435,27 @@ void FASTCALL CRTC::WriteByte(DWORD addr, DWORD data)
 	ASSERT(this);
 	ASSERT((addr >= memdev.first) && (addr <= memdev.last));
 
-	// Loop at $800 boundary
+	// $800’PˆÊ‚Åƒ‹[ƒv
 	addr &= 0x7ff;
 
-	// Wait
+	// ƒEƒFƒCƒg
 	scheduler->Wait(1);
 
-	// $E80000-$E803FF : Register area
+	// $E80000-$E803FF : ƒŒƒWƒXƒ^ƒGƒŠƒA
 	if (addr < 0x400) {
 		addr &= 0x3f;
 		if (addr >= 0x30) {
 			return;
 		}
 
-		// Write (invert odd/even)
+		// ‘‚«‚İ(ƒGƒ“ƒfƒBƒAƒ“‚ğ”½“]‚³‚¹‚é)
 		addr ^= 1;
 		if (crtc.reg[addr] == data) {
 			return;
 		}
 		crtc.reg[addr] = (BYTE)data;
 
-		// GVRAM address display
+		// GVRAMƒAƒhƒŒƒX\¬
 		if (addr == 0x29) {
 			if (data & 0x10) {
 				crtc.tmem = TRUE;
@@ -412,14 +472,17 @@ void FASTCALL CRTC::WriteByte(DWORD addr, DWORD data)
 			crtc.siz = (data & 4) >> 2;
 			crtc.col = (data & 3);
 
-			// Notify graphic VRAM
+			// ƒOƒ‰ƒtƒBƒbƒNVRAM‚Ö’Ê’m
 			gvram->SetType(data & 0x0f);
+
+			// Ÿ‚ÌüŠú‚ÅÄŒvZ
+			crtc.changed = TRUE;
 			return;
 		}
 
-		// Resolution change
+		// ‰ğ‘œ“x•ÏX
 		if ((addr <= 15) || (addr == 40)) {
-			// Sprite connection/disconnection is done immediately (OS-9/68000)
+			// ƒXƒvƒ‰ƒCƒgƒƒ‚ƒŠ‚ÌÚ‘±EØ’f‚Íu‚És‚¤(OS-9/68000)
 			if (addr == 0x28) {
 				if ((crtc.reg[0x28] & 3) >= 2) {
 					sprite->Connect(FALSE);
@@ -429,43 +492,44 @@ void FASTCALL CRTC::WriteByte(DWORD addr, DWORD data)
 				}
 			}
 
-			// Recalc at next timing
+			// Ÿ‚ÌüŠú‚ÅÄŒvZ
 			crtc.changed = TRUE;
 			return;
 		}
 
-		// Raster interrupt
+		// ƒ‰ƒXƒ^Š„‚è‚İ
 		if ((addr == 18) || (addr == 19)) {
 			crtc.raster_int = (crtc.reg[19] << 8) + crtc.reg[18];
 			crtc.raster_int &= 0x3ff;
-			if (g_alt_raster_timing) {
-				CheckRaster();
-			}
+#if defined(CRTC_LOG)
+			LOG2(Log::Normal, "ƒ‰ƒXƒ^Š„‚è‚İ İ’è int=%d rast=%d", crtc.raster_int, crtc.raster_count);
+#endif
+			CheckRaster();
 			return;
 		}
 
-		// Text scroll
+		// ƒeƒLƒXƒgƒXƒNƒ[ƒ‹
 		if ((addr >= 20) && (addr <= 23)) {
 			crtc.text_scrlx = (crtc.reg[21] << 8) + crtc.reg[20];
 			crtc.text_scrlx &= 0x3ff;
 			crtc.text_scrly = (crtc.reg[23] << 8) + crtc.reg[22];
 			crtc.text_scrly &= 0x3ff;
-			render->TextScrl(crtc.text_scrlx, crtc.text_scrly);
+			hsync = TRUE;
 
 #if defined(CRTC_LOG)
-			LOG2(Log::Normal, "Text scroll x=%d y=%d", crtc.text_scrlx, crtc.text_scrly);
+			LOG2(Log::Normal, "ƒeƒLƒXƒgƒXƒNƒ[ƒ‹ x=%d y=%d", crtc.text_scrlx, crtc.text_scrly);
 #endif	// CRTC_LOG
 			return;
 		}
 
-		// Graphic scroll
+		// ƒOƒ‰ƒtƒBƒbƒNƒXƒNƒ[ƒ‹
 		if ((addr >= 24) && (addr <= 39)) {
 			reg = addr & ~3;
 			addr -= 24;
 			addr >>= 2;
 			ASSERT(addr <= 3);
-			crtc.grp_scrlx[addr] = (crtc.reg[reg+1] << 8) + crtc.reg[reg+0];
-			crtc.grp_scrly[addr] = (crtc.reg[reg+3] << 8) + crtc.reg[reg+2];
+			crtc.grp_scrlx[addr] = (crtc.reg[reg + 1] << 8) + crtc.reg[reg + 0];
+			crtc.grp_scrly[addr] = (crtc.reg[reg + 3] << 8) + crtc.reg[reg + 2];
 			if (addr == 0) {
 				crtc.grp_scrlx[addr] &= 0x3ff;
 				crtc.grp_scrly[addr] &= 0x3ff;
@@ -474,55 +538,69 @@ void FASTCALL CRTC::WriteByte(DWORD addr, DWORD data)
 				crtc.grp_scrlx[addr] &= 0x1ff;
 				crtc.grp_scrly[addr] &= 0x1ff;
 			}
-			render->GrpScrl(addr, crtc.grp_scrlx[addr], crtc.grp_scrly[addr]);
+			hsync = TRUE;
 			return;
 		}
 
-		// Text VRAM
+		// ƒeƒLƒXƒgVRAM
 		if ((addr >= 42) && (addr <= 47)) {
 			TextVRAM();
 		}
 		return;
 	}
 
-	// $E80480-$E804FF : Internal port
+	// $E80480-$E804FF : “®ìƒ|[ƒg
 	if ((addr >= 0x480) && (addr <= 0x4ff)) {
-		// Even bytes are ignored
+		// ãˆÊƒoƒCƒg‚Í‰½‚à‚È‚¢
 		if ((addr & 1) == 0) {
 			return;
 		}
 
-		// Odd byte is raster copy, fast clear reset
+		// ‰ºˆÊƒoƒCƒg‚Íƒ‰ƒXƒ^ƒRƒs[E‚‘¬ƒNƒŠƒA§Œä
 		if (data & 0x08) {
+#if defined(CRTC_LOG)
+			if (!crtc.raster_copy) {
+				LOG0(Log::Normal, "ƒ‰ƒXƒ^ƒRƒs[w¦");
+			}
+#endif	// CRTC_LOG
 			crtc.raster_copy = TRUE;
 		}
 		else {
+#if defined(CRTC_LOG)
+			if (crtc.raster_copy) {
+				LOG0(Log::Normal, "ƒ‰ƒXƒ^ƒRƒs[’â~");
+			}
+#endif	// CRTC_LOG
 			crtc.raster_copy = FALSE;
 		}
 		if (data & 0x02) {
-			// Raster copy and fast clear (X68030'90)
-			if ((crtc.fast_clr == 0) && !crtc.raster_copy) {
+			// ‚‘¬ƒNƒŠƒA’†‚Íó‚¯•t‚¯‚È‚¢(ƒGƒgƒ[ƒ‹ƒvƒŠƒ“ƒZƒX)
+			if (crtc.fast_clr != 2) {
 #if defined(CRTC_LOG)
-				LOG0(Log::Normal, "Graphic clear fast enable");
+				if (crtc.fast_clr == 0) {
+					LOG0(Log::Normal, "ƒOƒ‰ƒtƒBƒbƒN‚‘¬ƒNƒŠƒAw¦");
+				}
 #endif	// CRTC_LOG
 				crtc.fast_clr = 1;
 			}
+		} else {
 #if defined(CRTC_LOG)
-			else {
-				LOG1(Log::Normal, "Graphic clear fast state State=%d", crtc.fast_clr);
+			if (crtc.fast_clr != 0) {
+				LOG0(Log::Normal, "ƒOƒ‰ƒtƒBƒbƒN‚‘¬ƒNƒŠƒA’â~");
 			}
-#endif	//CRTC_LOG
+#endif	// CRTC_LOG
+			crtc.fast_clr = 0;
 		}
 		return;
 	}
 
-	LOG2(Log::Warning, "Illegal address write $%06X <- $%02X",
+	LOG2(Log::Warning, "–¢À‘•ƒAƒhƒŒƒX‘‚«‚İ $%06X <- $%02X",
 							memdev.first + addr, data);
 }
 
 //---------------------------------------------------------------------------
 //
-//	Read only
+//	“Ç‚İ‚İ‚Ì‚İ
 //
 //---------------------------------------------------------------------------
 DWORD FASTCALL CRTC::ReadOnly(DWORD addr) const
@@ -532,29 +610,29 @@ DWORD FASTCALL CRTC::ReadOnly(DWORD addr) const
 	ASSERT(this);
 	ASSERT((addr >= memdev.first) && (addr <= memdev.last));
 
-	// Loop at $800 boundary
+	// $800’PˆÊ‚Åƒ‹[ƒv
 	addr &= 0x7ff;
 
-	// $E80000-$E803FF : Register area
+	// $E80000-$E803FF : ƒŒƒWƒXƒ^ƒGƒŠƒA
 	if (addr < 0x400) {
 		addr &= 0x3f;
 		if (addr >= 0x30) {
 			return 0xff;
 		}
 
-		// Read (invert odd/even)
+		// “Ç‚İ‚İ(ƒGƒ“ƒfƒBƒAƒ“‚ğ”½“]‚³‚¹‚é)
 		addr ^= 1;
 		return crtc.reg[addr];
 	}
 
-	// $E80480-$E804FF : Internal port
+	// $E80480-$E804FF : “®ìƒ|[ƒg
 	if ((addr >= 0x480) && (addr <= 0x4ff)) {
-		// Even bytes are 0
+		// ãˆÊƒoƒCƒg‚Í0
 		if ((addr & 1) == 0) {
 			return 0;
 		}
 
-		// Odd byte is raster copy, graphic clear reset
+		// ‰ºˆÊƒoƒCƒg‚ÍƒOƒ‰ƒtƒBƒbƒN‚‘¬ƒNƒŠƒA‚Ì‚İ
 		data = 0;
 		if (crtc.raster_copy) {
 			data |= 0x08;
@@ -570,32 +648,39 @@ DWORD FASTCALL CRTC::ReadOnly(DWORD addr) const
 
 //---------------------------------------------------------------------------
 //
-//	Get internal data
+//	“à•”ƒf[ƒ^æ“¾
 //
 //---------------------------------------------------------------------------
 void FASTCALL CRTC::GetCRTC(crtc_t *buffer) const
 {
 	ASSERT(buffer);
 
-	// Copy internal data
+	// “à•”ƒf[ƒ^‚ğƒRƒs[
 	*buffer = crtc;
 }
 
 //---------------------------------------------------------------------------
 //
-//	Event callback
+//	ƒCƒxƒ“ƒgƒR[ƒ‹ƒoƒbƒN
 //
 //---------------------------------------------------------------------------
 BOOL FASTCALL CRTC::Callback(Event* /*ev*/)
 {
 	ASSERT(this);
 
-	// HSync and HDisp are exclusive
-	if (crtc.h_disp) {
+	// HSync,HDisp‚Ì2‚Â‚ğŒÄ‚Ñ•ª‚¯‚é
+	/// @todo ƒ‰ƒXƒ^A¨B¨C¨A‚ÆƒuƒƒbƒND¨E¨F¨D‚Ì2‚Â‚ÌŠÖ”ƒ|ƒCƒ“ƒ^ŒQ‚Å3‚Â‚Ìó‘Ô‘JˆÚ‚ğ‰ñ‚µğŒ”»’è(Å‘å3‰ñ)‚ğƒ[ƒ‚É‚·‚éB‰¼‘zŠÖ”ƒe[ƒuƒ‹‚Ì’¼Ú‘€ì‚ª—‘z“I
+	if (crtc.h_disp < 0) {
 		HSync();
 	}
 	else {
-		HDisp();
+		if (!crtc.h_blockscan) {
+			// ƒ‰ƒXƒ^[ƒXƒLƒƒƒ“
+			HDispRS();
+		} else {
+			// ƒuƒƒbƒNƒXƒLƒƒƒ“
+			HDispBS();
+		}
 	}
 
 	return TRUE;
@@ -603,168 +688,359 @@ BOOL FASTCALL CRTC::Callback(Event* /*ev*/)
 
 //---------------------------------------------------------------------------
 //
-//	H-SYNC start
+/// H-SYNCŠJn
 //
 //---------------------------------------------------------------------------
 void FASTCALL CRTC::HSync()
 {
+	size_t i;
 	int hus;
 
 	ASSERT(this);
 
-	// Notify printer (ignore busy)
+	// ƒvƒŠƒ“ƒ^‚É’Ê’m(’èŠú“I‚ÉBUSY‚ğ—‚Æ‚·‚½‚ß)
 	ASSERT(printer);
 	printer->HSync();
 
-	// V-SYNC count
+	// VC‚É’Ê’m(’x‰„”½‰f)
+	vc->HSync();
+
+	// ƒXƒvƒ‰ƒCƒgƒRƒ“ƒgƒ[ƒ‰‚É’Ê’m(‚a‚fİ’è‚Ì’x‰„”½‰f)
+	sprite->HSync();
+
+	// HSync‚Å‚ÌXV—v‹
+	if (hsync) {
+		// ƒtƒ‰ƒOƒIƒt
+		hsync = FALSE;
+
+		// ƒeƒLƒXƒgƒXƒNƒ[ƒ‹’l‚Ì’x‰„”½‰f
+		render->TextScrl(crtc.text_scrlx, crtc.text_scrly);
+
+		// ƒOƒ‰ƒtƒBƒbƒNƒXƒNƒ[ƒ‹’l‚Ì’x‰„”½‰f
+		for (i=0; i<4; i++) {
+			render->GrpScrl(i, crtc.grp_scrlx[i], crtc.grp_scrly[i]);
+		}
+	}
+
+	// ƒtƒ‰ƒOİ’è
+	crtc.h_disp = 0;
+
+	// GPIPİ’è
+	mfp->SetGPIP(7, 1);
+
+	// ƒXƒLƒƒƒ“ƒ‰ƒCƒ“XV
+	crtc.v_scan++;
+
+	// ƒ‰ƒXƒ^ƒJƒEƒ“ƒgˆ—
+	Raster();
+
+	// ƒ‰ƒXƒ^Š„‚è‚İ—v‹
+	CheckRaster();
+
+	// V-SYNCƒJƒEƒ“ƒg
 	crtc.v_synccnt--;
 	if (crtc.v_synccnt == 0) {
 		VSync();
 	}
 
-	// V-BLANK count
+	// V-BLANKƒJƒEƒ“ƒg
 	crtc.v_blankcnt--;
 	if (crtc.v_blankcnt == 0) {
 		VBlank();
 	}
 
-	// Set time until next timing (H-DISP start)
-	crtc.ns += crtc.h_pulse;
-	hus = Ns2Hus(crtc.ns);
-	hus -= crtc.hus;
-	event.SetTime(hus);
-	crtc.hus += hus;
-
-	// Adjust (every 40ms)
-	if (crtc.hus >= 80000) {
-		crtc.hus -= 80000;
-		ASSERT(crtc.ns >= 40000000);
-		crtc.ns -= 40000000;
-	}
-
-	// Set flag
-	crtc.h_disp = FALSE;
-
-	// GPIP set
-	mfp->SetGPIP(7, 1);
-
-	// Raster interrupt (Alt timing)
-	if (g_alt_raster_timing) {
-		CheckRaster();
-	}
-
-	// Rendering
-	crtc.v_scan++;
-	if (!crtc.v_blank) {
-		// Renderer sync
-		render->HSync(crtc.v_scan);
-	}
-
-	// Text screen raster copy
+	// ƒeƒLƒXƒg‰æ–Êƒ‰ƒXƒ^ƒRƒs[
 	if (crtc.raster_copy && crtc.raster_exec) {
 		tvram->RasterCopy();
 		crtc.raster_exec = FALSE;
 	}
 
-	// Graphic screen fast clear
+	// ƒOƒ‰ƒtƒBƒbƒN‰æ–Ê‚‘¬ƒNƒŠƒA
 	if (crtc.fast_clr == 2) {
+		gvram->FastSet((DWORD)crtc.reg[42]);
 		gvram->FastClr(&crtc);
 	}
 
-	if (g_alt_raster_timing) {
-		crtc.raster_count++;
+	// Ÿ‚Ìƒ^ƒCƒ~ƒ“ƒO(‘–¸ŠJn)‚Ü‚Å‚ÌŠÔ‚ğİ’è
+	crtc.ns += crtc.h_pulse;
+	hus = crtc.hus;
+	crtc.hus = Ns2Hus(crtc.ns);		/// @todo œZ‚ÍŒ™BDDA‚Å‚·‚è’×‚¹Bns‚ÍƒZ[ƒuƒ[ƒh‚Ì‚İŒvZ
+
+	// Ÿ‰ñ—\
+	ASSERT(crtc.hus >= (DWORD)hus);
+	hus = crtc.hus - hus;
+	if (hus <= 0) {
+		// Åˆ«ƒCƒxƒ“ƒg‚ª’â~‚µ‚È‚¢‚æ‚¤‚ÉƒK[ƒh‚·‚é (ƒŒƒAƒP[ƒX)
+		ASSERT(hus == 0);
+		crtc.hus++;
+		hus = 1;
+	}
+	event.SetTimeFast(hus);
+
+	// “¯Šúˆ—(40ms‚²‚Æ)
+	if (crtc.hus >= 80000) {
+		crtc.hus -= 80000;
+		ASSERT(crtc.ns >= 40000000);
+		crtc.ns -= 40000000;
 	}
 }
 
 //---------------------------------------------------------------------------
 //
-//	H-DISP start
+//	ƒ‰ƒXƒ^ƒJƒEƒ“ƒg
 //
 //---------------------------------------------------------------------------
-void FASTCALL CRTC::HDisp()
+void FASTCALL CRTC::Raster()
+{
+	// ƒ‰ƒXƒ^ƒJƒEƒ“ƒgXV
+	crtc.raster_count++;
+
+	// V-SYNC—§‰º‚è’¼‘O‚ÌH-SYNC—§‰º‚è‚ÅƒNƒŠƒA
+	if (crtc.v_synccnt == 1 && crtc.v_disp) {
+		crtc.raster_count = 0;
+	}
+}
+
+//---------------------------------------------------------------------------
+//
+//	ƒ‰ƒXƒ^Š„‚è‚İƒ`ƒFƒbƒN
+//
+//---------------------------------------------------------------------------
+void FASTCALL CRTC::CheckRaster()
+{
+	if (crtc.raster_count == crtc.raster_int) {
+		// —v‹
+		mfp->SetGPIP(6, 0);
+	} else {
+		// æ‚è‰º‚°
+		mfp->SetGPIP(6, 1);
+	}
+}
+
+//---------------------------------------------------------------------------
+//
+/// H-DISPŠJn(ƒ‰ƒXƒ^[ƒXƒLƒƒƒ“)
+//
+//---------------------------------------------------------------------------
+void FASTCALL CRTC::HDispRS()
 {
 	int ns;
 	int hus;
 
 	ASSERT(this);
 
-	// Raster interrupt (Original timing)
-	if (!g_alt_raster_timing) {
-		CheckRaster();
-		crtc.raster_count++;
-	}
-	else {
-		CheckRaster();
+	if (crtc.h_disp == 0) {
+		// HDISPŠJn
+
+		// GPIPİ’è
+		mfp->SetGPIP(7, 0);
+
+		// ƒ‰ƒXƒ^ƒRƒs[‹–‰Â
+		crtc.raster_exec = TRUE;
+
+		// Ÿ‚Ìƒ^ƒCƒ~ƒ“ƒO(ƒtƒƒ“ƒgƒ|[ƒ`)‚Ü‚Å‚ÌŠÔ‚ğİ’è
+		/// @todo ‚±‚±‚ÍXM6‚É‚¨‚¯‚é’´‚•p“xÀs‰ÓŠB–‘OŒvZ‚µ‚Ä‚¨‚­
+		ns = crtc.h_sync - crtc.h_pulse - crtc.h_front;
+
+		// ƒtƒƒ“ƒgƒ|[ƒ`ƒtƒF[ƒY‚ÖˆÚs
+		crtc.h_disp = 1;
+	} else {
+		// ƒtƒƒ“ƒgƒ|[ƒ`
+
+		// I—¹’¼‘O‚Å•`‰æ
+		if (!crtc.v_blank) {
+			// ƒŒƒ“ƒ_ƒŠƒ“ƒO
+			render->HSync(crtc.v_scan, 0);
+		}
+
+		// Ÿ‚Ìƒ^ƒCƒ~ƒ“ƒO(H-SYNCŠJn)‚Ü‚Å‚ÌŠÔ‚ğİ’è
+		ns = crtc.h_front;
+
+		// •\¦I—¹ƒtƒF[ƒY‚ÖˆÚs
+		crtc.h_disp = -1;
 	}
 
-	// Set time until next timing (H-SYNC start)
-	ns = crtc.h_sync - crtc.h_pulse;
-	ASSERT(ns > 0);
+	// “ÁêƒP[ƒX‚Å•‰‚É‚È‚é‚Ì‚ÅƒK[ƒh‚·‚é
+	/// @todo ‚±‚±‚ÍXM6‚É‚¨‚¯‚é’´‚•p“xÀs‰ÓŠB–‘O”»’è‚µ‚Ä‚¨‚­
+	if (ns <= 0) {
+		ns = 1;
+	}
+
 	crtc.ns += ns;
-	hus = Ns2Hus(crtc.ns);
-	hus -= crtc.hus;
-	event.SetTime(hus);
-	crtc.hus += hus;
+	hus = crtc.hus;
+	crtc.hus = Ns2Hus(crtc.ns);
 
-	// Set flag
-	crtc.h_disp = TRUE;
-
-	// GPIP set
-	mfp->SetGPIP(7,0);
-
-	// Raster copy start
-	crtc.raster_exec = TRUE;
+	// Ÿ‰ñ—\
+	ASSERT(crtc.hus >= (DWORD)hus);
+	hus = crtc.hus - hus;
+	if (hus <= 0) {
+		// Åˆ«ƒCƒxƒ“ƒg‚ª’â~‚µ‚È‚¢‚æ‚¤‚ÉƒK[ƒh‚·‚é (ƒŒƒAƒP[ƒX)
+		ASSERT(hus == 0);
+		crtc.hus++;
+		hus = 1;
+	}
+	event.SetTimeFast(hus);
 }
 
 //---------------------------------------------------------------------------
 //
-//	V-SYNC start (also starts V-DISP)
+//	H-DISPŠJn(ƒuƒƒbƒNƒXƒLƒƒƒ“)
+//
+//---------------------------------------------------------------------------
+void FASTCALL CRTC::HDispBS()
+{
+	int dc;
+	int ns;
+	int hus;
+
+	ASSERT(this);
+
+	// ƒhƒbƒgƒNƒƒbƒN‚ğæ“¾
+	dc = Get8DotClock();
+
+	if (crtc.h_disp == 0) {
+		// ƒuƒƒbƒNˆÊ’u‰Šú‰»
+		crtc.h_blockpos = 0;
+
+		// ƒuƒƒbƒN”Zo
+		crtc.h_blocknum = (crtc.reg[0x06] - crtc.reg[0x04]) >> 1;
+
+		// ƒtƒF[ƒYİ’è
+		if (crtc.h_blocknum > 0) {
+			// •\¦ƒtƒF[ƒY
+			crtc.h_disp = 1;
+		} else {
+			// ƒtƒƒ“ƒgƒ|[ƒ`ƒtƒF[ƒY
+			crtc.h_disp = 2;
+		}
+
+		// GPIPİ’è
+		mfp->SetGPIP(7, 0);
+
+		// ƒ‰ƒXƒ^ƒRƒs[‹–‰Â
+		crtc.raster_exec = TRUE;
+
+		// ƒoƒbƒNƒ|[ƒ`‚ÌŠúŠÔİ’è
+		ns = crtc.h_back;
+	} else if (crtc.h_disp == 1) {
+		// Ÿ‚ÌƒuƒƒbƒN‚Ö
+		crtc.h_blockpos++;
+
+		// ƒtƒƒ“ƒgƒ|[ƒ`ƒtƒF[ƒY‚ÖˆÚs
+		if (crtc.h_blockpos >= crtc.h_blocknum) {
+			crtc.h_disp = 2;
+		}
+
+		// •`‰æ
+		if (!crtc.v_blank) {
+			// ƒŒƒ“ƒ_ƒŠƒ“ƒO
+			render->HSync(crtc.v_scan, crtc.h_blockpos - 1);
+		}
+
+		// Ÿ‚Ì16ƒhƒbƒg‚Ü‚Å‚ÌŠÔ‚ğİ’è
+		ns = 2 * dc / 100;
+	} else {
+		// •\¦I—¹ƒtƒF[ƒY‚Ö
+		crtc.h_disp = -1;
+
+		// Ÿ‚ÌHSYNC‚Ü‚Å‚ÌŠÔ‚ğİ’è(Œë·‚Í‚±‚±‚Å‹zû)
+		ns = crtc.h_sync - crtc.h_pulse - crtc.h_back - crtc.h_front;
+		ns -= (2 * dc / 100) * crtc.h_blocknum;
+		ns += crtc.h_front;
+	}
+
+	// “ÁêƒP[ƒX‚Å•‰‚É‚È‚é‚Ì‚ÅƒK[ƒh‚·‚é
+	if (ns <= 0) {
+		ns = 1;
+	}
+
+	crtc.ns += ns;
+	hus = crtc.hus;
+	crtc.hus = Ns2Hus(crtc.ns);
+
+	// Ÿ‰ñ—\
+	ASSERT(crtc.hus >= (DWORD)hus);
+	hus = crtc.hus - hus;
+	if (hus <= 0) {
+		// Åˆ«ƒCƒxƒ“ƒg‚ª’â~‚µ‚È‚¢‚æ‚¤‚ÉƒK[ƒh‚·‚é (ƒŒƒAƒP[ƒX)
+		ASSERT(hus == 0);
+		crtc.hus++;
+		hus = 1;
+	}
+	event.SetTimeFast(hus);
+}
+
+//---------------------------------------------------------------------------
+//
+/// V-SYNCŠJn
+///
+/// V-DISPŠJn‚ğŠÜ‚ŞB
 //
 //---------------------------------------------------------------------------
 void FASTCALL CRTC::VSync()
 {
 	ASSERT(this);
 
-	// V-SYNC not ended yet
+	// V-SYNCI—¹‚È‚ç
 	if (!crtc.v_disp) {
-		// Set flag
+		// ƒtƒ‰ƒOİ’è
 		crtc.v_disp = TRUE;
 
-		// Set counter
+		// ŠÔİ’è
 		crtc.v_synccnt = (crtc.v_sync - crtc.v_pulse);
+
+		// ƒCƒ“ƒ^ƒŒ[ƒXƒ‚[ƒh‚È‚ç‚Îƒ_ƒ~[‚Ì‚Pƒ‰ƒCƒ“‚ğ’Ç‰Á
+		if ((crtc.lowres && crtc.vd > 0) || (!crtc.lowres && crtc.vd > 1)) {
+			if (!crtc.v_scaneven) {
+				crtc.v_synccnt++;
+			}
+		}
+
 		return;
 	}
 
-	// If resolution changed, recalc now
+	// ƒŒƒ“ƒ_ƒ‰‡¬I—¹
+	render->EndFrame();
+#if XM6_RENDER_SYNC == 1
+	if (m_pScheduler) {
+		m_pScheduler->UpdateFrame();
+	}
+#endif	// XM6_RENDER_SYNC == 1
+	crtc.v_scan = crtc.v_dots + 1;
+
+	// ‰ğ‘œ“x•ÏX‚ª‚ ‚ê‚ÎA‚±‚±‚Å•ÏX
 	if (crtc.changed) {
 		ReCalc();
+
+		// ƒtƒ‰ƒO‚¨‚ë‚·
+		crtc.changed = FALSE;
 	}
 
-	// Set time until V-SYNC end
+	// V-SYNCI—¹‚Ü‚Å‚ÌŠÔ‚ğİ’è
 	crtc.v_synccnt = crtc.v_pulse;
 
-	// V-BLANK state and counter setup
-	if (crtc.v_front < 0) {
-		// Not yet displayed (minus)
+	// V-BLANK‚Ìó‘Ô‚ÆAŠÔ‚ğİ’è
+	if (crtc.v_front <= 0) {
+		// ‚Ü‚¾•\¦’†(“Áê)
 		crtc.v_blank = FALSE;
 		crtc.v_blankcnt = (-crtc.v_front) + 1;
 	}
 	else {
-		// Already in blank (normal)
+		// ‚·‚Å‚Éƒuƒ‰ƒ“ƒN’†(’Êí)
 		crtc.v_blank = TRUE;
 		crtc.v_blankcnt = (crtc.v_pulse + crtc.v_back + 1);
 	}
 
-	// Set flag
+	// ƒtƒ‰ƒOİ’è
 	crtc.v_disp = FALSE;
 
-	// Reset raster counter
-	crtc.raster_count = 0;
+	// ƒCƒ“ƒ^ƒŒ[ƒXƒ‚[ƒh‹ô”ƒtƒ‰ƒO”½“]
+	crtc.v_scaneven = !crtc.v_scaneven;
 }
 
 //---------------------------------------------------------------------------
 //
-//	Recalculate
+/// ÄŒvZ
 //
 //---------------------------------------------------------------------------
 void FASTCALL CRTC::ReCalc()
@@ -774,32 +1050,31 @@ void FASTCALL CRTC::ReCalc()
 	WORD *p;
 
 	ASSERT(this);
-	ASSERT(crtc.changed);
 
-	// If CRTC register 0 is not zero, recalc (Mac compatible)
+	// CRTCƒŒƒWƒXƒ^0‚ªƒNƒŠƒA‚³‚ê‚Ä‚¢‚ê‚ÎA–³Œø(MacƒGƒ~ƒ…ƒŒ[ƒ^)
 	if (crtc.reg[0x0] != 0) {
 #if defined(CRTC_LOG)
-		LOG0(Log::Normal, "Recalculate");
+		LOG0(Log::Normal, "ÄŒvZ");
 #endif	// CRTC_LOG
 
-		// Get dot clock
+		// ƒhƒbƒgƒNƒƒbƒN‚ğæ“¾
 		dc = Get8DotClock();
 
-		// Horizontal (all in ns units)
+		// …•½(‚·‚×‚Äns’PˆÊ)
 		crtc.h_sync = (crtc.reg[0x0] + 1) * dc / 100;
 		crtc.h_pulse = (crtc.reg[0x02] + 1) * dc / 100;
 		crtc.h_back = (crtc.reg[0x04] + 5 - crtc.reg[0x02] - 1) * dc / 100;
 		crtc.h_front = (crtc.reg[0x0] + 1 - crtc.reg[0x06] - 5) * dc / 100;
 
-		// Vertical (all in H-Sync units)
+		// ‚’¼(‚·‚×‚ÄH-Sync’PˆÊ)
 		p = (WORD *)crtc.reg;
 		crtc.v_sync = ((p[4] & 0x3ff) + 1);
 		crtc.v_pulse = ((p[5] & 0x3ff) + 1);
 		crtc.v_back = ((p[6] & 0x3ff) + 1) - crtc.v_pulse;
 		crtc.v_front = crtc.v_sync - ((p[7] & 0x3ff) + 1);
 
-		// If V-FRONT is negative, 1 is subtracted (interlace, scan doubler)
-		if (crtc.v_front < 0) {
+		// V-FRONT‚ªƒ}ƒCƒiƒX‚·‚¬‚éê‡‚ÍA1…•½ŠúŠÔ•ª‚Ì‚İ(ƒwƒ‹ƒnƒEƒ“ƒhAƒRƒbƒgƒ“)
+		if (crtc.v_front <= 0) {
 			over = -crtc.v_front;
 			over -= crtc.v_back;
 			if (over >= crtc.v_pulse) {
@@ -807,19 +1082,22 @@ void FASTCALL CRTC::ReCalc()
 			}
 		}
 
-		// Dot count
+		// ƒhƒbƒg”‚ğZo
 		crtc.h_dots = (crtc.reg[0x0] + 1);
 		crtc.h_dots -= (crtc.reg[0x02] + 1);
 		crtc.h_dots -= (crtc.reg[0x04] + 5 - crtc.reg[0x02] - 1);
 		crtc.h_dots -= (crtc.reg[0x0] + 1 - crtc.reg[0x06] - 5);
 		crtc.h_dots *= 8;
-		crtc.v_dots = crtc.v_sync - crtc.v_pulse - crtc.v_back - crtc.v_front;
+		crtc.v_dots = crtc.v_sync - crtc.v_pulse - crtc.v_back;
+		if (crtc.v_front > 0) {
+			crtc.v_dots -= crtc.v_front;
+		}
 	}
 
-	// Horizontal settings (normal)
+	// ”{—¦İ’è(…•½)
 	crtc.hd = (crtc.reg[0x28] & 3);
 	if (crtc.hd == 3) {
-		LOG0(Log::Warning, "High dot 50MHz mode (CompactXVI)");
+		LOG0(Log::Warning, "‰¡ƒhƒbƒg”50MHzƒ‚[ƒh(CompactXVI)");
 	}
 	if (crtc.hd == 0) {
 		crtc.h_mul = 2;
@@ -828,29 +1106,17 @@ void FASTCALL CRTC::ReCalc()
 		crtc.h_mul = 1;
 	}
 
-	// If crtc.hd is 2 or more, sprites are disabled
-	if (crtc.hd >= 2) {
-		// 768x512 or VGA mode (no sprite)
-		sprite->Connect(FALSE);
-		crtc.textres = TRUE;
-	}
-	else {
-		// 256x256 or 512x512 mode (sprite enabled)
-		sprite->Connect(TRUE);
-		crtc.textres = FALSE;
-	}
-
-	// Vertical settings (normal)
+	// ”{—¦İ’è(‚’¼)
 	crtc.vd = (crtc.reg[0x28] >> 2) & 3;
 	if (crtc.reg[0x28] & 0x10) {
 		// 31kHz
 		crtc.lowres = FALSE;
 		if (crtc.vd == 3) {
-			// Interlace x1024dot mode
+			// ƒCƒ“ƒ^ƒŒ[ƒX1024dotƒ‚[ƒh
 			crtc.v_mul = 0;
 		}
 		else {
-			// Interlace, normal 512 mode (x1), normal 256dot mode (x2)
+			// ƒCƒ“ƒ^ƒŒ[ƒXA’Êí512ƒ‚[ƒh(x1)A”{256dotƒ‚[ƒh(x2)
 			crtc.v_mul = 2 - crtc.vd;
 		}
 	}
@@ -858,81 +1124,93 @@ void FASTCALL CRTC::ReCalc()
 		// 15kHz
 		crtc.lowres = TRUE;
 		if (crtc.vd == 0) {
-			// Normal 256dot mode (x2)
+			// ’Êí‚Ì256dotƒ‚[ƒh(x2)
 			crtc.v_mul = 2;
 		}
 		else {
-			// Interlace 512dot mode (x1)
+			// ƒCƒ“ƒ^ƒŒ[ƒX512dotƒ‚[ƒh(x1)
 			crtc.v_mul = 0;
 		}
 	}
 
-	// Notify renderer
+	// crtc.hd‚ª2ˆÈã‚Ìê‡AƒXƒvƒ‰ƒCƒg‚ÍØ‚è—£‚³‚ê‚é
+	if (crtc.hd >= 2) {
+		// 768x512 or VGAƒ‚[ƒh(ƒXƒvƒ‰ƒCƒg‚È‚µ)
+		sprite->Connect(FALSE);
+		crtc.textres = TRUE;
+	}
+	else {
+		// 256x256 or 512x512ƒ‚[ƒh(ƒXƒvƒ‰ƒCƒg‚ ‚è)
+		sprite->Connect(TRUE);
+		crtc.textres = FALSE;
+	}
+
+	// ƒCƒ“ƒ^ƒŒ[ƒX‹ôŠïƒtƒ‰ƒO‰Šú‰»
+	crtc.v_scaneven = FALSE;
+
+	// ƒŒƒ“ƒ_ƒ‰‚Ö’Ê’m
 	render->SetCRTC();
-
-	// Clear flag
-	crtc.changed = FALSE;
 }
-
 
 //---------------------------------------------------------------------------
 //
-//	V-BLANK start (also starts V-SCREEN)
+//	V-BLANKŠJn(V-SCREENŠJn‚ğŠÜ‚Ş)
 //
 //---------------------------------------------------------------------------
 void FASTCALL CRTC::VBlank()
 {
 	ASSERT(this);
 
-	// If not displayed, start blank
+	// •\¦’†‚Å‚ ‚ê‚ÎAƒuƒ‰ƒ“ƒNŠJn
 	if (!crtc.v_blank) {
-		// Set blank counter
+		// ƒuƒ‰ƒ“ƒN‹æŠÔ‚ğİ’è
 		crtc.v_blankcnt = crtc.v_pulse + crtc.v_back + crtc.v_front;
-		ASSERT((crtc.v_front < 0) || ((int)crtc.v_synccnt == crtc.v_front));
+//		ASSERT((crtc.v_front < 0) || ((int)crtc.v_synccnt == crtc.v_front));
 
-		// Flag
+		// ƒtƒ‰ƒO
 		crtc.v_blank = TRUE;
 
-		// GPIP
+		// GPIPƒCƒxƒ“ƒgƒJƒEƒ“ƒg
 		mfp->EventCount(0, 0);
+
+		// GPIP’Ê’m
 		mfp->SetGPIP(4, 0);
 
-		// Graphic clear
+		// ƒOƒ‰ƒtƒBƒbƒN‚‘¬ƒNƒŠƒA
 		if (crtc.fast_clr == 2) {
 #if defined(CRTC_LOG)
-			LOG0(Log::Normal, "Graphic clear end");
+			LOG0(Log::Normal, "ƒOƒ‰ƒtƒBƒbƒN‚‘¬ƒNƒŠƒAI—¹");
 #endif	// CRTC_LOG
 			crtc.fast_clr = 0;
 		}
 
-		// Renderer display end
-		render->EndFrame();
-		crtc.v_scan = crtc.v_dots + 1;
 		return;
 	}
 
-	// Set non-display counter
+	// •\¦‹æŠÔ‚ğİ’è
 	crtc.v_blankcnt = crtc.v_sync;
-	crtc.v_blankcnt -= (crtc.v_pulse + crtc.v_back + crtc.v_front);
+	crtc.v_blankcnt -= crtc.v_pulse + crtc.v_back + crtc.v_front;
 
-	// Flag
+	// ƒtƒ‰ƒO
 	crtc.v_blank = FALSE;
 
-	// GPIP
+	// GPIPƒCƒxƒ“ƒgƒJƒEƒ“ƒg
 	mfp->EventCount(0, 1);
+
+	// GPIP’Ê’m
 	mfp->SetGPIP(4, 1);
 
-	// Graphic clear start
-	if (crtc.fast_clr == 1) {
+	// ƒOƒ‰ƒtƒBƒbƒN‚‘¬ƒNƒŠƒA
+	// V-SYNCI—¹‚©‚çV-DISPŠJn‚Ü‚Å‚É‰ğ‘œ“x•ÏX‚ÆƒOƒ‰ƒtƒBƒbƒN‚‘¬ƒNƒŠƒAw¦‚·‚é‚ÆA
+	// ’¼Œã‚ÌV-DISP‚Å‚ÍƒNƒŠƒA“®ì‚ªŠJn‚¹‚¸‚ÉŸ‚ÌV-DISP‚Ü‚Å‘Ò‚½‚³‚ê‚é(ƒiƒCƒAƒX)
+	if (!crtc.changed && crtc.fast_clr == 1) {
 #if defined(CRTC_LOG)
-		LOG1(Log::Normal, "Graphic clear start data=%02X", crtc.reg[42]);
+		LOG1(Log::Normal, "ƒOƒ‰ƒtƒBƒbƒN‚‘¬ƒNƒŠƒAŠJn data=%02X", crtc.reg[42]);
 #endif	// CRTC_LOG
 		crtc.fast_clr = 2;
-		gvram->FastSet((DWORD)crtc.reg[42]);
-		gvram->FastClr(&crtc);
 	}
 
-	// Renderer display start, counter up
+	// ƒŒƒ“ƒ_ƒ‰‡¬ŠJnAƒJƒEƒ“ƒ^ƒAƒbƒv
 	crtc.v_scan = 0;
 	render->StartFrame();
 	crtc.v_count++;
@@ -940,7 +1218,7 @@ void FASTCALL CRTC::VBlank()
 
 //---------------------------------------------------------------------------
 //
-//	Get display frequency
+//	•\¦ü”g”æ“¾
 //
 //---------------------------------------------------------------------------
 void FASTCALL CRTC::GetHVHz(DWORD *h, DWORD *v) const
@@ -952,7 +1230,7 @@ void FASTCALL CRTC::GetHVHz(DWORD *h, DWORD *v) const
 	ASSERT(h);
 	ASSERT(v);
 
-	// Check
+	// ƒ`ƒFƒbƒN
 	if ((crtc.h_sync == 0) || (crtc.v_sync < 100)) {
 		// NO SIGNAL
 		*h = 0;
@@ -967,7 +1245,15 @@ void FASTCALL CRTC::GetHVHz(DWORD *h, DWORD *v) const
 
 	// ex. 55.46Hz = 5546
 	t = crtc.v_sync;
-    t *= crtc.h_sync;
+	t *= crtc.h_sync;
+
+	// ƒCƒ“ƒ^ƒŒ[ƒXƒ‚[ƒh‚Í‚’¼“¯ŠúŠúŠÔ‚ª
+	// …•½“¯ŠúŠúŠÔ‚Ì”¼•ªˆø‚«‰„‚Î‚³‚ê‚é
+	if ((crtc.lowres && crtc.vd > 0) ||
+			(!crtc.lowres && crtc.vd > 1)) {
+		t += crtc.h_sync >> 1;
+	}
+
 	t /= 100;
 	d = 1000 * 1000 * 1000;
 	d /= t;
@@ -976,7 +1262,7 @@ void FASTCALL CRTC::GetHVHz(DWORD *h, DWORD *v) const
 
 //---------------------------------------------------------------------------
 //
-//	Get 8 dot clock (~100)
+//	8ƒhƒbƒgƒNƒƒbƒN‚ğæ“¾(~100)
 //
 //---------------------------------------------------------------------------
 int FASTCALL CRTC::Get8DotClock() const
@@ -987,11 +1273,11 @@ int FASTCALL CRTC::Get8DotClock() const
 
 	ASSERT(this);
 
-	// Get HF, HD from CRTC R20
+	// HF, HD‚ğCRTC R20‚æ‚èæ“¾
 	hf = (crtc.reg[0x28] >> 4) & 1;
 	hd = (crtc.reg[0x28] & 3);
 
-	// Create index
+	// ƒCƒ“ƒfƒbƒNƒXì¬
 	index = hf * 4 + hd;
 	if (crtc.hrl) {
 		index += 8;
@@ -1002,8 +1288,8 @@ int FASTCALL CRTC::Get8DotClock() const
 
 //---------------------------------------------------------------------------
 //
-//	8 dot clock table
-//	(HRL,HF,HD combined values. 0.01ns units)
+//	8ƒhƒbƒgƒNƒƒbƒNƒe[ƒuƒ‹
+//	(HRL,HF,HD‚©‚ç“¾‚ç‚ê‚é’lB0.01ns’PˆÊ)
 //
 //---------------------------------------------------------------------------
 const int CRTC::DotClockTable[16] = {
@@ -1017,13 +1303,13 @@ const int CRTC::DotClockTable[16] = {
 
 //---------------------------------------------------------------------------
 //
-//	Set HRL
+//	HRLİ’è
 //
 //---------------------------------------------------------------------------
 void FASTCALL CRTC::SetHRL(BOOL flag)
 {
 	if (crtc.hrl != flag) {
-		// Recalc at next timing
+		// Ÿ‚ÌüŠú‚ÅÄŒvZ
 		crtc.hrl = flag;
 		crtc.changed = TRUE;
 	}
@@ -1031,7 +1317,7 @@ void FASTCALL CRTC::SetHRL(BOOL flag)
 
 //---------------------------------------------------------------------------
 //
-//	Get HRL
+//	HRLæ“¾
 //
 //---------------------------------------------------------------------------
 BOOL FASTCALL CRTC::GetHRL() const
@@ -1041,37 +1327,7 @@ BOOL FASTCALL CRTC::GetHRL() const
 
 //---------------------------------------------------------------------------
 //
-//	Raster interrupt check
-//	Not supported in interlace mode
-//
-//---------------------------------------------------------------------------
-void FASTCALL CRTC::CheckRaster()
-{
-	BOOL hit;
-
-	if (g_alt_raster_timing) {
-		hit = (crtc.raster_count == crtc.raster_int);
-	}
-	else {
-		hit = (crtc.raster_count == crtc.raster_int);
-	}
-
-	if (hit) {
-		// Match
-		mfp->SetGPIP(6, 0);
-#if defined(CRTC_LOG)
-		LOG2(Log::Normal, "Raster interrupt hit raster=%d scan=%d", crtc.raster_count, crtc.v_scan);
-#endif	// CRTC_LOG
-	}
-	else {
-		// No match
-		mfp->SetGPIP(6, 1);
-	}
-}
-
-//---------------------------------------------------------------------------
-//
-//	Text VRAM setup
+//	ƒeƒLƒXƒgVRAMŒø‰Ê
 //
 //---------------------------------------------------------------------------
 void FASTCALL CRTC::TextVRAM()
@@ -1079,12 +1335,12 @@ void FASTCALL CRTC::TextVRAM()
 	DWORD b;
 	DWORD w;
 
-	// Access, multi
+	// “¯ƒAƒNƒZƒX
 	if (crtc.reg[43] & 1) {
 		b = (DWORD)crtc.reg[42];
 		b >>= 4;
 
-		// b4 is multi flag
+		// b4‚Íƒ}ƒ‹ƒ`ƒtƒ‰ƒO
 		b |= 0x10;
 		tvram->SetMulti(b);
 	}
@@ -1092,7 +1348,7 @@ void FASTCALL CRTC::TextVRAM()
 		tvram->SetMulti(0);
 	}
 
-	// Access mask
+	// ƒAƒNƒZƒXƒ}ƒXƒN
 	if (crtc.reg[43] & 2) {
 		w = (DWORD)crtc.reg[47];
 		w <<= 8;
@@ -1103,7 +1359,106 @@ void FASTCALL CRTC::TextVRAM()
 		tvram->SetMask(0);
 	}
 
-	// Raster copy
+	// ƒ‰ƒXƒ^ƒRƒs[
 	tvram->SetCopyRaster((DWORD)crtc.reg[45], (DWORD)crtc.reg[44],
 						(DWORD)(crtc.reg[42] & 0x0f));
+}
+
+//---------------------------------------------------------------------------
+//
+//	PX68k CRTC state view
+//
+//---------------------------------------------------------------------------
+const Px68kCrtcStateView* FASTCALL CRTC::GetPx68kStateView() const
+{
+	SyncPx68kState();
+	return &px68k_state_view;
+}
+void FASTCALL CRTC::SyncPx68kState() const
+{
+	int i;
+	const DWORD hstart = (DWORD)(((crtc.reg[0x04] << 8) | crtc.reg[0x05]) & 1023);
+	const DWORD hend = (DWORD)(((crtc.reg[0x06] << 8) | crtc.reg[0x07]) & 1023);
+	const DWORD vstart = (DWORD)(((crtc.reg[0x0c] << 8) | crtc.reg[0x0d]) & 1023);
+	const DWORD vend = (DWORD)(((crtc.reg[0x0e] << 8) | crtc.reg[0x0f]) & 1023);
+	BYTE vstep;
+
+	memset(&px68k_state_view, 0, sizeof(px68k_state_view));
+	for (i = 0; i < 48; i++) {
+		px68k_state_view.state.regs[i] = crtc.reg[i];
+	}
+
+	if ((crtc.reg[0x29] & 0x14) == 0x10) {
+		vstep = 1;
+	}
+	else if ((crtc.reg[0x29] & 0x14) == 0x04) {
+		vstep = 4;
+	}
+	else {
+		vstep = 2;
+	}
+
+	px68k_state_view.state.mode = crtc.reg[0x29];
+	px68k_state_view.state.hrl = crtc.hrl;
+	px68k_state_view.state.lowres = crtc.lowres;
+	px68k_state_view.state.textres = crtc.textres;
+	px68k_state_view.state.changed = crtc.changed;
+	px68k_state_view.state.h_disp = crtc.h_disp;
+	px68k_state_view.state.v_disp = crtc.v_disp;
+	px68k_state_view.state.v_blank = crtc.v_blank;
+	px68k_state_view.state.v_count = crtc.v_count;
+	px68k_state_view.state.raster_count = crtc.raster_count;
+	px68k_state_view.state.textdotx = (crtc.h_dots > 0) ? (DWORD)crtc.h_dots : ((hend > hstart) ? ((hend - hstart) * 8) : 0);
+	px68k_state_view.state.textdoty = (crtc.v_dots > 0) ? (DWORD)crtc.v_dots : ((vend > vstart) ? (vend - vstart) : 0);
+	px68k_state_view.state.vstart = (WORD)vstart;
+	px68k_state_view.state.vend = (WORD)vend;
+	px68k_state_view.state.hstart = (WORD)hstart;
+	px68k_state_view.state.hend = (WORD)hend;
+	px68k_state_view.state.h_sync = (DWORD)crtc.h_sync;
+	px68k_state_view.state.h_pulse = (DWORD)crtc.h_pulse;
+	px68k_state_view.state.h_back = (DWORD)crtc.h_back;
+	px68k_state_view.state.h_front = (DWORD)crtc.h_front;
+	px68k_state_view.state.v_sync = (DWORD)crtc.v_sync;
+	px68k_state_view.state.v_pulse = (DWORD)crtc.v_pulse;
+	px68k_state_view.state.v_back = (DWORD)crtc.v_back;
+	px68k_state_view.state.v_front = (DWORD)crtc.v_front;
+	px68k_state_view.state.ns = crtc.ns;
+	px68k_state_view.state.hus = crtc.hus;
+	px68k_state_view.state.v_synccnt = crtc.v_synccnt;
+	px68k_state_view.state.v_blankcnt = crtc.v_blankcnt;
+	px68k_state_view.state.textscrollx = crtc.text_scrlx;
+	px68k_state_view.state.textscrolly = crtc.text_scrly;
+	for (i = 0; i < 4; i++) {
+		px68k_state_view.state.grphscrollx[i] = crtc.grp_scrlx[i];
+		px68k_state_view.state.grphscrolly[i] = crtc.grp_scrly[i];
+	}
+	px68k_state_view.state.fastclr = (BYTE)crtc.fast_clr;
+	px68k_state_view.state.dispscan = (BYTE)((crtc.v_scan >= 0) ? crtc.v_scan : 0);
+	px68k_state_view.state.intline = (WORD)crtc.raster_int;
+	px68k_state_view.state.vstep = vstep;
+	px68k_state_view.state.visible_vline = 0xffffffffu;
+	if ((crtc.v_scan >= (int)vstart) && (crtc.v_scan < (int)vend)) {
+		px68k_state_view.state.visible_vline = (DWORD)(((DWORD)(crtc.v_scan - (int)vstart) * (DWORD)vstep) / 2u);
+	}
+	px68k_state_view.state.hsync_clk = crtc.h_sync;
+	px68k_state_view.state.hd = crtc.hd;
+	px68k_state_view.state.vd = crtc.vd;
+	px68k_state_view.state.rcflag[0] = crtc.raster_copy ? 1 : 0;
+	px68k_state_view.state.rcflag[1] = crtc.raster_exec ? 1 : 0;
+	px68k_state_view.state.vcreg0[0] = crtc.reg[0x28];
+	px68k_state_view.state.vcreg0[1] = crtc.reg[0x29];
+	px68k_state_view.state.vcreg1[0] = crtc.reg[0x2a];
+	px68k_state_view.state.vcreg1[1] = crtc.reg[0x2b];
+	px68k_state_view.state.vcreg2[0] = crtc.reg[0x2c];
+	px68k_state_view.state.vcreg2[1] = crtc.reg[0x2d];
+
+	px68k_state_view.timing_view.valid = 1;
+	px68k_state_view.timing_view.crtc_vsync_high = (crtc.reg[0x29] & 0x10) ? 1 : 0;
+	px68k_state_view.timing_view.crtc_vline_total = (DWORD)crtc.v_sync;
+	px68k_state_view.timing_view.crtc_vstart = (WORD)vstart;
+	px68k_state_view.timing_view.crtc_vend = (WORD)vend;
+	px68k_state_view.timing_view.crtc_intline = (WORD)crtc.raster_int;
+	px68k_state_view.timing_view.crtc_vstep = vstep;
+	px68k_state_view.timing_view.crtc_mode = crtc.reg[0x29];
+	px68k_state_view.timing_view.crtc_fastclr = (BYTE)crtc.fast_clr;
 }

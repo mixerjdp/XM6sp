@@ -230,6 +230,16 @@ const char* FASTCALL Event::GetDesc() const
 //---------------------------------------------------------------------------
 void FASTCALL Event::SetTime(DWORD hus)
 {
+	SetTimeDirect(hus);
+}
+
+//---------------------------------------------------------------------------
+//
+//	Time setting (TypeG compatible direct path)
+//
+//---------------------------------------------------------------------------
+void FASTCALL Event::SetTimeDirect(DWORD hus)
+{
 	ASSERT(this);
 	ASSERT_DIAG();
 

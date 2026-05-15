@@ -40,6 +40,8 @@ public:
 										// アクセスマスク上位反転
 
 protected:
+	void FASTCALL NotifyPx68kTVRAMWrite(DWORD internal_addr, BYTE data);
+	void FASTCALL NotifyPx68kTVRAMWord(DWORD addr, WORD data);
 	Render *render;
 										// レンダラ
 	BYTE *tvram;

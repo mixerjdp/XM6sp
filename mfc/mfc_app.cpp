@@ -460,11 +460,17 @@ void CApp::ReplaceForwardSlashWithBackslash(LPTSTR str) {
 BOOL CApp::InitInstance()
 {
 	CFrmWnd *pFrmWnd;
+	BOOL bSmokeSaveState;
+	BOOL bSmokeVisible;
 
 	// This section checks the initial command line for a possible HDF image.
 	// Get the string from the command line ("Run" on PocketPC)
-	ReplaceForwardSlashWithBackslash(m_lpCmdLine);
-	RemoveDoubleQuotes(m_lpCmdLine);
+	bSmokeSaveState = (_tcsstr(m_lpCmdLine, _T("--smoke-savestate")) != NULL);
+	bSmokeVisible = (_tcsstr(m_lpCmdLine, _T("--smoke-visible")) != NULL);
+	if (!bSmokeSaveState) {
+		ReplaceForwardSlashWithBackslash(m_lpCmdLine);
+		RemoveDoubleQuotes(m_lpCmdLine);
+	}
 	//int msgboxIDx = MessageBox(NULL, testString, "BBC", MB_OKCANCEL | MB_DEFBUTTON2);
 
 	// Clear the default directory
@@ -476,7 +482,7 @@ BOOL CApp::InitInstance()
 	}
 
 	// Check for a second instance
-	if (!CheckMutex()) {
+	if (!bSmokeSaveState && !CheckMutex()) {
 		// If there is a command line, pass it through
 		if (m_lpCmdLine[0] != _T('\0')) {
 			SendCmd();
@@ -488,16 +494,26 @@ BOOL CApp::InitInstance()
 	pFrmWnd = new CFrmWnd();
 	m_pMainWnd = (CWnd*)pFrmWnd;
 
-	pFrmWnd->m_strXM6FilePath = m_lpCmdLine;
+	if (bSmokeSaveState) {
+		pFrmWnd->m_strXM6FilePath.Empty();
+	}
+	else {
+		pFrmWnd->m_strXM6FilePath = m_lpCmdLine;
+	}
 
 	// Initialization
 	if (!pFrmWnd->Init()) {
 		return FALSE;
 	}
 
-	// Show the main window
-	pFrmWnd->ShowWindow(m_nCmdShow);
-	pFrmWnd->UpdateWindow();
+	// Show the main window unless this is a headless smoke run.
+	if (!bSmokeSaveState || bSmokeVisible) {
+		pFrmWnd->ShowWindow(m_nCmdShow);
+		pFrmWnd->UpdateWindow();
+	}
+	else {
+		pFrmWnd->ShowWindow(SW_HIDE);
+	}
 
 	return TRUE;
 }

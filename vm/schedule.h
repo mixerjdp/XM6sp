@@ -138,6 +138,8 @@ public:
 	// 郢ｧ・､郢晏生ﾎｦ郢晢ｿｽ
 	void FASTCALL AddEvent(Event *event);
 										// 郢ｧ・､郢晏生ﾎｦ郢晞メ・ｿ・ｽ陷会｣ｰ
+	void FASTCALL AddEventDirect(Event *event) { AddEvent(event); }
+										// 郢ｧ・､郢晏生ﾎｦ郢晞メ・ｿ・ｽ陷会｣ｰ(TypeG compatible)
 	void FASTCALL DelEvent(Event *event);
 										// 郢ｧ・､郢晏生ﾎｦ郢昜ｺ･轤朱ｫｯ・､
 	BOOL FASTCALL HasEvent(Event *event) const;

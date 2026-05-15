@@ -56,6 +56,24 @@ TVRAMHandler::TVRAMHandler(Render *rend, BYTE *mem)
 //	コンストラクタ
 //
 //---------------------------------------------------------------------------
+void FASTCALL TVRAMHandler::NotifyPx68kTVRAMWrite(DWORD internal_addr, BYTE data)
+{
+	if (!render) {
+		return;
+	}
+	render->TVRAMWrite(0xe00000 + ((internal_addr & 0x7ffff) ^ 1), data);
+}
+
+void FASTCALL TVRAMHandler::NotifyPx68kTVRAMWord(DWORD addr, WORD data)
+{
+	if (!render) {
+		return;
+	}
+	addr &= 0x7fffe;
+	render->TVRAMWrite(0xe00000 + addr, (BYTE)((data >> 8) & 0xff));
+	render->TVRAMWrite(0xe00000 + addr + 1, (BYTE)(data & 0xff));
+}
+
 TVRAMNormal::TVRAMNormal(Render *rend, BYTE *mem) : TVRAMHandler(rend, mem)
 {
 }
@@ -74,6 +92,7 @@ void FASTCALL TVRAMNormal::WriteByte(DWORD addr, DWORD data)
 	if (tvram[addr] != data) {
 		tvram[addr] = (BYTE)data;
 		render->TextMem(addr);
+		NotifyPx68kTVRAMWrite(addr, (BYTE)data);
 	}
 }
 
@@ -91,6 +110,7 @@ void FASTCALL TVRAMNormal::WriteWord(DWORD addr, DWORD data)
 	if ((DWORD)*(WORD*)(&tvram[addr]) != data) {
 		*(WORD*)(&tvram[addr]) = (WORD)data;
 		render->TextMem(addr);
+		NotifyPx68kTVRAMWord(addr, (WORD)data);
 	}
 }
 

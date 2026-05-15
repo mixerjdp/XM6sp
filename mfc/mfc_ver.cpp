@@ -2,8 +2,8 @@
 //
 //	X68000 EMULATOR "XM6"
 //
-//	Copyright (C) 2001-2006 �o�h�D(ytanaka@ipc-tokai.or.jp)
-//	[ MFC �o�[�W�������_�C�A���O ]
+//	Copyright (C) 2001-2006 PI (ytanaka@ipc-tokai.or.jp)
+//	[ MFC Version Information Dialog ]
 //
 //---------------------------------------------------------------------------
 
@@ -28,7 +28,7 @@
 
 //---------------------------------------------------------------------------
 //
-	// Constructor
+//	Constructor
 //
 //---------------------------------------------------------------------------
 CAboutDlg::CAboutDlg(CWnd *pParent) : CDialog(IDD_ABOUTDLG, pParent)
@@ -52,7 +52,7 @@ CAboutDlg::CAboutDlg(CWnd *pParent) : CDialog(IDD_ABOUTDLG, pParent)
 
 //---------------------------------------------------------------------------
 //
-	// Message map
+//	Message map
 //
 //---------------------------------------------------------------------------
 BEGIN_MESSAGE_MAP(CAboutDlg, CDialog)
@@ -64,7 +64,7 @@ END_MESSAGE_MAP()
 
 //---------------------------------------------------------------------------
 //
-	// Dialog initialization
+//	Dialog initialization
 //
 //---------------------------------------------------------------------------
 BOOL CAboutDlg::OnInitDialog()
@@ -77,30 +77,30 @@ BOOL CAboutDlg::OnInitDialog()
 	DWORD dwMinor;
 	Config config;
 
-	// ��{�N���X
+	// Base class
 	if (!CDialog::OnInitDialog()) {
 		return FALSE;
 	}
 
-	// URL������E��`���擾���A����
+	// Get URL rect and create dynamic control
 	pStatic = (CStatic*)GetDlgItem(IDC_ABOUT_URL);
-	ASSERT(pStatic);
+ ASSERT(pStatic);
 	pStatic->GetWindowText(m_URLString);
 	pStatic->GetWindowRect(&m_URLRect);
 	ScreenToClient(&m_URLRect);
 	pStatic->DestroyWindow();
 	m_bURLHit = FALSE;
 
-	// �A�C�R����`���擾���A����
+	// Get icon rect and create dynamic control
 	pStatic = (CStatic*)GetDlgItem(IDC_ABOUT_ICON);
-	ASSERT(pStatic);
+ ASSERT(pStatic);
 	pStatic->GetWindowRect(&m_IconRect);
 	ScreenToClient(&m_IconRect);
 	pStatic->DestroyWindow();
 
 	// Version string update
 	pStatic = (CStatic*)GetDlgItem(IDC_ABOUT_VER);
-	ASSERT(pStatic);
+ ASSERT(pStatic);
 	pStatic->GetWindowText(strFormat);
 	::GetVM()->GetVersion(dwMajor, dwMinor);
 	strText.Format(strFormat, dwMajor, dwMinor);
@@ -108,28 +108,28 @@ BOOL CAboutDlg::OnInitDialog()
 
 	// Timer start (80ms)
 	m_nTimerID = SetTimer(IDD_ABOUTDLG, 100, NULL);
-	ASSERT(m_nTimerID);
+ ASSERT(m_nTimerID);
 
 	// Get RTC
-	ASSERT(!m_pRTC);
+ ASSERT(!m_pRTC);
 	m_pRTC = (RTC*)::GetVM()->SearchDevice(MAKEID('R', 'T', 'C', ' '));
-	ASSERT(m_pRTC);
+ ASSERT(m_pRTC);
 
 	// Get SASI
-	ASSERT(!m_pSASI);
+ ASSERT(!m_pSASI);
 	m_pSASI = (SASI*)::GetVM()->SearchDevice(MAKEID('S', 'A', 'S', 'I'));
-	ASSERT(m_pSASI);
+ ASSERT(m_pSASI);
 
 	// Get FDD
-	ASSERT(!m_pFDD);
+ ASSERT(!m_pFDD);
 	m_pFDD = (FDD*)::GetVM()->SearchDevice(MAKEID('F', 'D', 'D', ' '));
-	ASSERT(m_pFDD);
+ ASSERT(m_pFDD);
 
 	// Get Draw view
 	pFrmWnd = (CFrmWnd*)GetParent();
-	ASSERT(pFrmWnd);
+ ASSERT(pFrmWnd);
 	m_pDrawView = pFrmWnd->GetView();
-	ASSERT(m_pDrawView);
+ ASSERT(m_pDrawView);
 
 	// Get Config option
 	pFrmWnd->GetConfig()->GetConfig(&config);
@@ -146,30 +146,30 @@ BOOL CAboutDlg::OnInitDialog()
 //---------------------------------------------------------------------------
 void CAboutDlg::OnOK()
 {
-	// �^�C�}�폜
+	// Timer delete
 	if (m_nTimerID) {
 		KillTimer(m_nTimerID);
 		m_nTimerID = NULL;
 	}
 
-	// �_�C�A���O�I��
+	// Dialog end
 	CDialog::OnOK();
 }
 
 //---------------------------------------------------------------------------
 //
-	// Cancel
+//	Cancel
 //
 //---------------------------------------------------------------------------
 void CAboutDlg::OnCancel()
 {
-	// �^�C�}�폜
+	// Timer delete
 	if (m_nTimerID) {
 		KillTimer(m_nTimerID);
 		m_nTimerID = NULL;
 	}
 
-	// �_�C�A���O�I��
+	// Dialog end
 	CDialog::OnCancel();
 }
 
@@ -196,7 +196,7 @@ void CAboutDlg::OnPaint()
 
 	// Select bitmap
 	pBitmap = mDC.SelectObject(&Bitmap);
-	ASSERT(pBitmap);
+ ASSERT(pBitmap);
 
 	// Clear, copy DC preparations.
 	mDC.FillSolidRect(0, 0, m_IconRect.Width(), m_IconRect.Height(), ::GetSysColor(COLOR_3DFACE));
@@ -229,11 +229,11 @@ void FASTCALL CAboutDlg::DrawURL(CDC *pDC)
 	TEXTMETRIC tm;
 	LOGFONT lf;
 
-	ASSERT(pDC);
+ ASSERT(pDC);
 
 	// Get UI font metrics
 	hFont = (HFONT)::GetStockObject(DEFAULT_GUI_FONT);
-	ASSERT(hFont);
+ ASSERT(hFont);
 	hDefFont = (HFONT)::SelectObject(pDC->m_hDC, hFont);
 	::GetTextMetrics(pDC->m_hDC, &tm);
 	memset(&lf, 0, sizeof(lf));
@@ -255,17 +255,17 @@ void FASTCALL CAboutDlg::DrawURL(CDC *pDC)
 	lf.lfQuality = DEFAULT_QUALITY;
 	lf.lfPitchAndFamily = tm.tmPitchAndFamily;
 	hFont = ::CreateFontIndirect(&lf);
-	ASSERT(hFont);
+ ASSERT(hFont);
 
 	// Select, draw.
 	hDefFont = (HFONT)::SelectObject(pDC->m_hDC, hFont);
-	ASSERT(hDefFont);
+ ASSERT(hDefFont);
 	if (m_bURLHit) {
-		::SetTextColor(pDC->m_hDC, RGB(255, 0, 0));
-	}
-	else {
-		::SetTextColor(pDC->m_hDC, RGB(0, 0, 255));
-	}
+  ::SetTextColor(pDC->m_hDC, RGB(255, 0, 0));
+ }
+ else {
+  ::SetTextColor(pDC->m_hDC, RGB(0, 0, 255));
+ }
 	::SetBkColor(pDC->m_hDC, ::GetSysColor(COLOR_3DFACE));
 	::DrawText(pDC->m_hDC, (LPCTSTR)m_URLString, m_URLString.GetLength(),
 				&m_URLRect, DT_CENTER | DT_SINGLELINE);
@@ -293,13 +293,13 @@ void FASTCALL CAboutDlg::DrawCRT(CDC *pDC)
 	// Manual load of IDB_CRT resource
 	hResource = ::FindResource(AfxGetApp()->m_hInstance,
 								MAKEINTRESOURCE(IDB_CRT), RT_BITMAP);
-	ASSERT(hResource);
+ ASSERT(hResource);
 	hGlobal = ::LoadResource(AfxGetApp()->m_hInstance, hResource);
-	ASSERT(hGlobal);
+ ASSERT(hGlobal);
 
 	// Copy bitmap header section.
 	pbmp = (BYTE*)::LockResource(hGlobal);
-	ASSERT(pbmp);
+ ASSERT(pbmp);
 	memcpy(Info, pbmp, sizeof(Info));
 
 	// Change palette
@@ -337,13 +337,13 @@ void FASTCALL CAboutDlg::DrawX68k(CDC *pDC)
 	// Manual load of IDB_X68K resource
 	hResource = ::FindResource(AfxGetApp()->m_hInstance,
 								MAKEINTRESOURCE(IDB_X68K), RT_BITMAP);
-	ASSERT(hResource);
+ ASSERT(hResource);
 	hGlobal = ::LoadResource(AfxGetApp()->m_hInstance, hResource);
-	ASSERT(hGlobal);
+ ASSERT(hGlobal);
 
 	// Copy bitmap header section.
 	pbmp = (BYTE*)::LockResource(hGlobal);
-	ASSERT(pbmp);
+ ASSERT(pbmp);
 	memcpy(Info, pbmp, sizeof(Info));
 
 	// Change palette
@@ -409,15 +409,15 @@ BOOL CAboutDlg::OnSetCursor(CWnd *pWnd, UINT nHitTest, UINT message)
 		return CDialog::OnSetCursor(pWnd, nHitTest, message);
 	}
 
-	// �A�C�R��IDC_HAND�����[�h����BWINVER >= 0x500�ȏオ�K�v
+	// Load cursor IDC_HAND. Requires WINVER >= 0x500
 	hCursor = AfxGetApp()->LoadStandardCursor(MAKEINTRESOURCE(32649));
 	if (!hCursor) {
-		// ���s�����ꍇ�͖���ȃA�C�R���Ń��g���C
+		// If failed use standard I-beam cursor
 		hCursor = AfxGetApp()->LoadStandardCursor(IDC_IBEAM);
 	}
 	::SetCursor(hCursor);
 
-	// �}�E�X��������Ă����URL���s
+	// Execute URL on mouse click or double-click
 	if ((message == WM_LBUTTONDOWN) || (message == WM_LBUTTONDBLCLK)) {
 		::ShellExecute(m_hWnd, NULL, (LPCTSTR)m_URLString, NULL, NULL, SW_SHOWNORMAL);
 	}
@@ -452,7 +452,7 @@ void CAboutDlg::OnTimer(UINT /*nID */)
 
 	// Information screen
 	pFrmWnd = (CFrmWnd*)GetParent();
-	ASSERT(pFrmWnd);
+ ASSERT(pFrmWnd);
 	pInfo = pFrmWnd->GetInfo();
 	if (pInfo) {
 		if (pInfo->IsEnable()) {
@@ -479,13 +479,13 @@ void FASTCALL CAboutDlg::DrawLED(int x, int y, CDC *pDC)
 	COLORREF color;
 	BOOL bPower;
 
-	ASSERT(x >= 0);
-	ASSERT(y >= 0);
-	ASSERT(pDC);
+ ASSERT(x >= 0);
+ ASSERT(y >= 0);
+ ASSERT(pDC);
 
-	ASSERT(m_pRTC);
-	ASSERT(m_pSASI);
-	ASSERT(m_pFDD);
+ ASSERT(m_pRTC);
+ ASSERT(m_pSASI);
+ ASSERT(m_pFDD);
 
 	// Power (TV button, etc.)
 	bPower = ::GetVM()->IsPower();
@@ -506,32 +506,32 @@ void FASTCALL CAboutDlg::DrawLED(int x, int y, CDC *pDC)
 
 	// Power LED
 	if (m_bPowerLED) {
-		// �Ð�
+		// On
 		color = RGB(12, 23, 129);
 	}
 	else {
-		// ��
+		// Off
 		color = RGB(208, 31, 31);
 	}
 	if (bPower) {
 		if (::GetVM()->IsPowerSW()) {
 			if (m_bPowerLED) {
-				// ��
+				// On
 				color = RGB(50, 50, 255);
 			}
 			else {
-				// ��
+				// Off
 				color = RGB(31, 208, 31);
 			}
 		}
 		else {
 			if (m_pRTC->GetAlarmOut()) {
 				if (m_bPowerLED) {
-					// ��
+					// On
 					color = RGB(50, 50, 255);
 				}
 				else {
-					// ��
+					// Off
 					color = RGB(31, 208, 31);
 				}
 			}
@@ -540,7 +540,7 @@ void FASTCALL CAboutDlg::DrawLED(int x, int y, CDC *pDC)
 					color = RGB(12, 23, 129);
 				}
 				else {
-					// ��
+					// Off
 					color = RGB(0, 0, 0);
 				}
 			}
@@ -623,9 +623,9 @@ void FASTCALL CAboutDlg::DrawView(int x, int y, CDC *pDC)
 	CRect rect;
 	BITMAPINFOHEADER bmi;
 
-	ASSERT(x >= 0);
-	ASSERT(y >= 0);
-	ASSERT(pDC);
+ ASSERT(x >= 0);
+ ASSERT(y >= 0);
+ ASSERT(pDC);
 
 	// Rectangle adjustment
 	rect.left = x + 10;
@@ -640,7 +640,7 @@ void FASTCALL CAboutDlg::DrawView(int x, int y, CDC *pDC)
 	}
 
 	// Get display work
-	ASSERT(m_pDrawView);
+ ASSERT(m_pDrawView);
 	m_pDrawView->GetDrawInfo(&info);
 
 	// BITMAPINFO preparation.

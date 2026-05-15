@@ -1,6 +1,6 @@
-#include "rend_soft.h"
 #include "os.h"
 #include "xm6.h"
+#include "rend_asm.h"
 #include <string.h>
 
 #ifndef FASTCALL
@@ -120,147 +120,79 @@ void RendTextCopy(const BYTE *src, const BYTE *dst_c, DWORD plane, BOOL *textmem
 	}
 }
 
-int Rend1024A(const BYTE *gvram, DWORD *buf, const DWORD *pal)
+static void Rend1024Flag(const BYTE *gvram, DWORD *buf, BOOL *flag, const DWORD *pal, int shift)
+{
+	for (int i = 0; i < 32; i++) {
+		if (flag[i]) {
+			flag[i] = FALSE;
+			const DWORD *src = (const DWORD *)(gvram + i * 32);
+			DWORD *dst = buf + i * 16;
+			for (int j = 0; j < 8; j += 2) {
+				DWORD v = src[j + 0] >> shift;
+				DWORD p = pal[v & 15];
+				dst[j * 2 + 0] = p;
+				dst[j * 2 + 0 + 1024] = p;
+				p = pal[(v >> 16) & 15];
+				dst[j * 2 + 1] = p;
+				dst[j * 2 + 1 + 1024] = p;
+
+				v = src[j + 1] >> shift;
+				p = pal[v & 15];
+				dst[j * 2 + 2] = p;
+				dst[j * 2 + 2 + 1024] = p;
+				p = pal[(v >> 16) & 15];
+				dst[j * 2 + 3] = p;
+				dst[j * 2 + 3 + 1024] = p;
+			}
+		}
+	}
+}
+
+static int Rend1024All(const BYTE *gvram, DWORD *buf, const DWORD *pal, int shift)
 {
 	int changed = 0;
+	const DWORD *src = (const DWORD *)gvram;
 	for (int i = 0; i < 128; i++) {
-		for (int w = 0; w < 2; w++) {
-			DWORD eax = ((const DWORD*)gvram)[w];
-			
-			DWORD p0_0 = pal[eax & 15];
-			if (buf[w*2 + 0] != p0_0) { buf[w*2 + 0] = p0_0; buf[w*2 + 0 + 1024] = p0_0; changed = 1; }
-			
-			DWORD p1_0 = pal[(eax >> 4) & 15];
-			if (buf[w*2 + 0 + 512] != p1_0) { buf[w*2 + 0 + 512] = p1_0; buf[w*2 + 0 + 512 + 1024] = p1_0; changed = 1; }
-			
-			DWORD p0_1 = pal[(eax >> 16) & 15];
-			if (buf[w*2 + 1] != p0_1) { buf[w*2 + 1] = p0_1; buf[w*2 + 1 + 1024] = p0_1; changed = 1; }
-			
-			DWORD p1_1 = pal[(eax >> 20) & 15];
-			if (buf[w*2 + 1 + 512] != p1_1) { buf[w*2 + 1 + 512] = p1_1; buf[w*2 + 1 + 512 + 1024] = p1_1; changed = 1; }
+		DWORD *dst = buf + (i * 4);
+		DWORD v = src[i * 2 + 0] >> shift;
+		DWORD p = pal[v & 15];
+		if (dst[0] != p) {
+			changed = 1;
 		}
-		gvram += 8;
-		buf += 4;
+		dst[0] = p;
+		dst[0 + 1024] = p;
+		p = pal[(v >> 16) & 15];
+		if (dst[1] != p) {
+			changed = 1;
+		}
+		dst[1] = p;
+		dst[1 + 1024] = p;
+
+		v = src[i * 2 + 1] >> shift;
+		p = pal[v & 15];
+		if (dst[2] != p) {
+			changed = 1;
+		}
+		dst[2] = p;
+		dst[2 + 1024] = p;
+		p = pal[(v >> 16) & 15];
+		if (dst[3] != p) {
+			changed = 1;
+		}
+		dst[3] = p;
+		dst[3 + 1024] = p;
 	}
 	return changed;
 }
 
-int Rend1024B(const BYTE *gvram, DWORD *buf, const DWORD *pal)
-{
-	int changed = 0;
-	for (int i = 0; i < 128; i++) {
-		for (int w = 0; w < 2; w++) {
-			DWORD eax = ((const DWORD*)gvram)[w];
-			
-			DWORD p2_0 = pal[(eax >> 8) & 15];
-			if (buf[w*2 + 0] != p2_0) { buf[w*2 + 0] = p2_0; buf[w*2 + 0 + 1024] = p2_0; changed = 1; }
-			
-			DWORD p3_0 = pal[(eax >> 12) & 15];
-			if (buf[w*2 + 0 + 512] != p3_0) { buf[w*2 + 0 + 512] = p3_0; buf[w*2 + 0 + 512 + 1024] = p3_0; changed = 1; }
-			
-			DWORD p2_1 = pal[(eax >> 24) & 15];
-			if (buf[w*2 + 1] != p2_1) { buf[w*2 + 1] = p2_1; buf[w*2 + 1 + 1024] = p2_1; changed = 1; }
-			
-			DWORD p3_1 = pal[(eax >> 28) & 15];
-			if (buf[w*2 + 1 + 512] != p3_1) { buf[w*2 + 1 + 512] = p3_1; buf[w*2 + 1 + 512 + 1024] = p3_1; changed = 1; }
-		}
-		gvram += 8;
-		buf += 4;
-	}
-	return changed;
-}
-
-void Rend1024C(const BYTE *gvram, DWORD *buf, BOOL *flag, const DWORD *pal)
-{
-	for (int i = 0; i < 32; i++) {
-		if (flag[i]) {
-			flag[i] = FALSE;
-			const DWORD* src = (const DWORD*)(gvram + i * 32); // Wait, line 1387 is `add esi, 32`!!! NO! `Rend1024C` uses `add esi, 32` per loop iter? Let's check size accurately.
-			// Actually let me replace with pointer arithmetic matching the C++ block.
-			const DWORD* src_w = (const DWORD*)(gvram + i * 32);
-			DWORD* dst_w = buf + i * 16;
-			
-			for (int j = 0; j < 8; j++) {
-				DWORD eax = src_w[j];
-				DWORD p0_0 = pal[eax & 15];
-				dst_w[j*2 + 0] = p0_0;
-				dst_w[j*2 + 0 + 1024] = p0_0;
-				
-				DWORD p0_1 = pal[(eax >> 16) & 15];
-				dst_w[j*2 + 1] = p0_1;
-				dst_w[j*2 + 1 + 1024] = p0_1;
-			}
-		}
-	}
-}
-
-void Rend1024D(const BYTE *gvram, DWORD *buf, BOOL *flag, const DWORD *pal)
-{
-	DWORD* dst_base = buf + 512;
-	for (int i = 0; i < 32; i++) {
-		if (flag[i]) {
-			flag[i] = FALSE;
-			const DWORD* src_w = (const DWORD*)(gvram + i * 32);
-			DWORD* dst_w = dst_base + i * 16;
-			
-			for (int j = 0; j < 8; j++) {
-				DWORD eax = src_w[j];
-				DWORD p1_0 = pal[(eax >> 4) & 15];
-				dst_w[j*2 + 0] = p1_0;
-				dst_w[j*2 + 0 + 1024] = p1_0;
-				
-				DWORD p1_1 = pal[(eax >> 20) & 15];
-				dst_w[j*2 + 1] = p1_1;
-				dst_w[j*2 + 1 + 1024] = p1_1;
-			}
-		}
-	}
-}
-
-void Rend1024E(const BYTE *gvram, DWORD *buf, BOOL *flag, const DWORD *pal)
-{
-	for (int i = 0; i < 32; i++) {
-		if (flag[i]) {
-			flag[i] = FALSE;
-			const DWORD* src_w = (const DWORD*)(gvram + i * 32);
-			DWORD* dst_w = buf + i * 16;
-			
-			for (int j = 0; j < 8; j++) {
-				DWORD eax = src_w[j];
-				DWORD p2_0 = pal[(eax >> 8) & 15];
-				dst_w[j*2 + 0] = p2_0;
-				dst_w[j*2 + 0 + 1024] = p2_0;
-				
-				DWORD p2_1 = pal[(eax >> 24) & 15];
-				dst_w[j*2 + 1] = p2_1;
-				dst_w[j*2 + 1 + 1024] = p2_1;
-			}
-		}
-	}
-}
-
-void Rend1024F(const BYTE *gvram, DWORD *buf, BOOL *flag, const DWORD *pal)
-{
-	DWORD* dst_base = buf + 512;
-	for (int i = 0; i < 32; i++) {
-		if (flag[i]) {
-			flag[i] = FALSE;
-			const DWORD* src_w = (const DWORD*)(gvram + i * 32);
-			DWORD* dst_w = dst_base + i * 16;
-			
-			for (int j = 0; j < 8; j++) {
-				DWORD eax = src_w[j];
-				DWORD p3_0 = pal[(eax >> 12) & 15];
-				dst_w[j*2 + 0] = p3_0;
-				dst_w[j*2 + 0 + 1024] = p3_0;
-				
-				DWORD p3_1 = pal[(eax >> 28) & 15];
-				dst_w[j*2 + 1] = p3_1;
-				dst_w[j*2 + 1 + 1024] = p3_1;
-			}
-		}
-	}
-}
+int Rend1024A(const BYTE *gvram, DWORD *buf, const DWORD *pal) { return Rend1024All(gvram, buf, pal, 0); }
+void Rend1024B(const BYTE *gvram, DWORD *buf, BOOL *flag, const DWORD *pal) { Rend1024Flag(gvram, buf, flag, pal, 0); }
+int Rend1024C(const BYTE *gvram, DWORD *buf, const DWORD *pal) { return Rend1024All(gvram, buf, pal, 4); }
+void Rend1024D(const BYTE *gvram, DWORD *buf, BOOL *flag, const DWORD *pal) { Rend1024Flag(gvram, buf, flag, pal, 4); }
+int Rend1024E(const BYTE *gvram, DWORD *buf, const DWORD *pal) { return Rend1024All(gvram, buf, pal, 8); }
+void Rend1024F(const BYTE *gvram, DWORD *buf, BOOL *flag, const DWORD *pal) { Rend1024Flag(gvram, buf, flag, pal, 8); }
+int Rend1024G(const BYTE *gvram, DWORD *buf, const DWORD *pal) { return Rend1024All(gvram, buf, pal, 12); }
+void Rend1024H(const BYTE *gvram, DWORD *buf, BOOL *flag, const DWORD *pal) { Rend1024Flag(gvram, buf, flag, pal, 12); }
 
 // --- 512x512 16-Color Mode (Rend16A - Rend16H) ---
 
@@ -311,13 +243,13 @@ static void Rend16Flag(const BYTE *gvram, DWORD *buf, BOOL *flag, const DWORD *p
 }
 
 int Rend16A(const BYTE *gvram, DWORD *buf, const DWORD *pal) { return Rend16All(gvram, buf, pal, 0); }
-int Rend16B(const BYTE *gvram, DWORD *buf, BOOL *flag, const DWORD *pal) { Rend16Flag(gvram, buf, flag, pal, 0); return 1; }
+void Rend16B(const BYTE *gvram, DWORD *buf, BOOL *flag, const DWORD *pal) { Rend16Flag(gvram, buf, flag, pal, 0); }
 int Rend16C(const BYTE *gvram, DWORD *buf, const DWORD *pal) { return Rend16All(gvram, buf, pal, 4); }
-int Rend16D(const BYTE *gvram, DWORD *buf, BOOL *flag, const DWORD *pal) { Rend16Flag(gvram, buf, flag, pal, 4); return 1; }
+void Rend16D(const BYTE *gvram, DWORD *buf, BOOL *flag, const DWORD *pal) { Rend16Flag(gvram, buf, flag, pal, 4); }
 int Rend16E(const BYTE *gvram, DWORD *buf, const DWORD *pal) { return Rend16All(gvram, buf, pal, 8); }
-int Rend16F(const BYTE *gvram, DWORD *buf, BOOL *flag, const DWORD *pal) { Rend16Flag(gvram, buf, flag, pal, 8); return 1; }
+void Rend16F(const BYTE *gvram, DWORD *buf, BOOL *flag, const DWORD *pal) { Rend16Flag(gvram, buf, flag, pal, 8); }
 int Rend16G(const BYTE *gvram, DWORD *buf, const DWORD *pal) { return Rend16All(gvram, buf, pal, 12); }
-int Rend16H(const BYTE *gvram, DWORD *buf, BOOL *flag, const DWORD *pal) { Rend16Flag(gvram, buf, flag, pal, 12); return 1; }
+void Rend16H(const BYTE *gvram, DWORD *buf, BOOL *flag, const DWORD *pal) { Rend16Flag(gvram, buf, flag, pal, 12); }
 
 // --- 512x512 256-Color Mode (Rend256A - Rend256D) ---
 
@@ -367,10 +299,10 @@ static int Rend256All(const BYTE *gvram, DWORD *buf, const DWORD *pal, int shift
 	return changed;
 }
 
-void Rend256A(const BYTE *gvram, DWORD *buf, BOOL *flag, const DWORD *pal) { Rend256Flag(gvram, buf, flag, pal, 0); }
-void Rend256B(const BYTE *gvram, DWORD *buf, BOOL *flag, const DWORD *pal) { Rend256Flag(gvram, buf, flag, pal, 8); }
-int Rend256C(const BYTE *gvram, DWORD *buf, const DWORD *pal) { return Rend256All(gvram, buf, pal, 0); }
-int Rend256D(const BYTE *gvram, DWORD *buf, const DWORD *pal) { return Rend256All(gvram, buf, pal, 8); }
+int Rend256A(const BYTE *gvram, DWORD *buf, const DWORD *pal) { return Rend256All(gvram, buf, pal, 0); }
+void Rend256B(const BYTE *gvram, DWORD *buf, BOOL *flag, const DWORD *pal) { Rend256Flag(gvram, buf, flag, pal, 0); }
+int Rend256C(const BYTE *gvram, DWORD *buf, const DWORD *pal) { return Rend256All(gvram, buf, pal, 8); }
+void Rend256D(const BYTE *gvram, DWORD *buf, BOOL *flag, const DWORD *pal) { Rend256Flag(gvram, buf, flag, pal, 8); }
 
 // --- 512x512 65536-Color Mode (Rend64KA - Rend64KB) ---
 
@@ -430,7 +362,7 @@ void RendClrSprite(DWORD *buf, DWORD color, int len)
 	}
 }
 
-void RendSprite(const DWORD *line, DWORD *buf, DWORD x, DWORD flag)
+void RendSpriteCore(const DWORD *line, DWORD *buf, DWORD x, DWORD flag)
 {
 	if (!flag) {
 		if (x < 16) {
@@ -462,9 +394,15 @@ void RendSprite(const DWORD *line, DWORD *buf, DWORD x, DWORD flag)
 	}
 }
 
+void RendSprite(const DWORD *line, DWORD *buf, DWORD x, DWORD flag, int spno, BYTE *pri)
+{
+	(void)spno; (void)pri;
+	RendSpriteCore(line, buf, x, flag);
+}
+
 void RendSpriteC(const DWORD *line, DWORD *buf, DWORD x, DWORD flag)
 {
-	RendSprite(line, buf, x, flag);
+	RendSpriteCore(line, buf, x, flag);
 }
 
 void RendPCGNew(DWORD index, const BYTE *mem, DWORD *buf, DWORD *pal)
@@ -500,35 +438,49 @@ static inline BOOL IsBGPixelVisible(DWORD pixel, BOOL legacy_bg_transparency)
 	return (pixel & 0x80000000) == 0;
 }
 
-void RendBG8(DWORD **ptr, DWORD *buf, int x, int len, BOOL *ready, const BYTE *mem,
-	DWORD *pcgbuf, DWORD *pal, BOOL legacy_bg_transparency)
+static inline void RendBGWritePixel(DWORD *dst, DWORD src)
+{
+	if ((src & 0x80000000) == 0) {
+		*dst = src;
+	}
+}
+
+static inline void RendBGForceWritePixel(DWORD *dst, DWORD src)
+{
+	if ((src & 0x80000000) == 0 || (*dst & 0x80000000) != 0) {
+		*dst = src;
+	}
+}
+
+void RendBG8(bgdata_t *ptr, DWORD *buf, int x, int len, BOOL *ready, const BYTE *mem,
+	DWORD *pcgbuf, DWORD *pal)
 {
 	int tiles = (len >> 3) + ((len & 7) ? 1 : 0);
-	DWORD **current_ptr = ptr + (x * 2);
+	bgdata_t *current_ptr = ptr + x;
 	int current_x = x;
 	DWORD* dst = buf;
 
 	for (int i = 0; i < tiles; i++) {
-		DWORD bgdata = (DWORD)(size_t)current_ptr[1];
+		DWORD bgdata = current_ptr->bg;
 		DWORD pcgno = bgdata & 0xfff;
 		if (!ready[pcgno]) {
 			ready[pcgno] = TRUE;
 			RendPCGNew(pcgno, mem, pcgbuf, pal);
 		}
 		
-		DWORD* src_pixels = current_ptr[0];
+		DWORD* src_pixels = current_ptr->pcg;
 		if (!(bgdata & 0x4000)) {
 			for (int p = 0; p < 8; p++) {
-				if (IsBGPixelVisible(src_pixels[p], legacy_bg_transparency)) dst[p] = src_pixels[p];
+				RendBGWritePixel(&dst[p], src_pixels[p]);
 			}
 		} else {
 			for (int p = 0; p < 8; p++) {
-				if (IsBGPixelVisible(src_pixels[p], legacy_bg_transparency)) dst[7 - p] = src_pixels[p];
+				RendBGWritePixel(&dst[7 - p], src_pixels[p]);
 			}
 		}
 		
 		dst += 8;
-		current_ptr += 2;
+		current_ptr++;
 		current_x++;
 		if (current_x == 64) {
 			current_x = 0;
@@ -537,63 +489,94 @@ void RendBG8(DWORD **ptr, DWORD *buf, int x, int len, BOOL *ready, const BYTE *m
 	}
 }
 
-void RendBG8C(DWORD **ptr, DWORD *buf, int x, int len, BOOL *ready, const BYTE *mem,
-	DWORD *pcgbuf, DWORD *pal, BOOL legacy_bg_transparency)
+void RendBG8F(bgdata_t *ptr, DWORD *buf, int x, int len, BOOL *ready, const BYTE *mem,
+	DWORD *pcgbuf, DWORD *pal)
 {
-	RendBG8(ptr, buf, x, len, ready, mem, pcgbuf, pal, legacy_bg_transparency);
+	int tiles = (len >> 3) + ((len & 7) ? 1 : 0);
+	bgdata_t *current_ptr = ptr + x;
+	int current_x = x;
+	DWORD* dst = buf;
+
+	for (int i = 0; i < tiles; i++) {
+		DWORD bgdata = current_ptr->bg;
+		DWORD pcgno = bgdata & 0xfff;
+		if (!ready[pcgno]) {
+			ready[pcgno] = TRUE;
+			RendPCGNew(pcgno, mem, pcgbuf, pal);
+		}
+
+		DWORD* src_pixels = current_ptr->pcg;
+		if (!(bgdata & 0x4000)) {
+			for (int p = 0; p < 8; p++) {
+				RendBGForceWritePixel(&dst[p], src_pixels[p]);
+			}
+		} else {
+			for (int p = 0; p < 8; p++) {
+				RendBGForceWritePixel(&dst[7 - p], src_pixels[p]);
+			}
+		}
+
+		dst += 8;
+		current_ptr++;
+		current_x++;
+		if (current_x == 64) {
+			current_x = 0;
+			current_ptr = ptr;
+		}
+	}
 }
 
-void RendBG8P(DWORD **ptr, DWORD *buf, int offset, int length, BOOL *ready, const BYTE *mem,
-	DWORD *pcgbuf, DWORD *pal, BOOL legacy_bg_transparency)
+void RendBG8P(bgdata_t *ptr, DWORD *buf, int offset, int length, BOOL *ready, const BYTE *mem,
+	DWORD *pcgbuf, DWORD *pal)
 {
-	DWORD bgdata = (DWORD)(size_t)ptr[1];
+	DWORD bgdata = ptr->bg;
 	DWORD pcgno = bgdata & 0xfff;
 	if (!ready[pcgno]) {
 		ready[pcgno] = TRUE;
 		RendPCGNew(pcgno, mem, pcgbuf, pal);
 	}
 	
-	DWORD* src_pixels = ptr[0];
+	DWORD* src_pixels = ptr->pcg;
 	if (!(bgdata & 0x4000)) {
 		for (int p = 0; p < length; p++) {
-			if (IsBGPixelVisible(src_pixels[offset + p], legacy_bg_transparency)) buf[p] = src_pixels[offset + p];
+			RendBGWritePixel(&buf[p], src_pixels[offset + p]);
 		}
 	} else {
 		for (int p = 0; p < length; p++) {
-			if (IsBGPixelVisible(src_pixels[7 - (offset + p)], legacy_bg_transparency)) buf[p] = src_pixels[7 - (offset + p)];
+			RendBGWritePixel(&buf[p], src_pixels[7 - (offset + p)]);
 		}
 	}
 }
 
-void RendBG16(DWORD **ptr, DWORD *buf, int x, int len, BOOL *ready, const BYTE *mem,
-	DWORD *pcgbuf, DWORD *pal, BOOL legacy_bg_transparency)
+void RendBG16(bgdata_t *ptr, DWORD *buf, int x, int len, BOOL *ready, const BYTE *mem,
+	DWORD *pcgbuf, DWORD *pal)
 {
 	int tiles = (len >> 4) + ((len & 15) ? 1 : 0);
-	DWORD **current_ptr = ptr + (x * 2);
+	bgdata_t *current_ptr = ptr + x;
 	int current_x = x;
 	DWORD* dst = buf;
 
 	for (int i = 0; i < tiles; i++) {
-		DWORD bgdata = (DWORD)(size_t)current_ptr[1];
+		DWORD bgdata = current_ptr->bg;
 		DWORD pcgno = bgdata & 0xfff;
 		if (!ready[pcgno]) {
 			ready[pcgno] = TRUE;
 			RendPCGNew(pcgno, mem, pcgbuf, pal);
 		}
 		
-		DWORD* src = current_ptr[0];
+		DWORD* src = current_ptr->pcg;
 		if (!(bgdata & 0x4000)) {
 			for (int p = 0; p < 16; p++) {
-				if (IsBGPixelVisible(src[p], legacy_bg_transparency)) dst[p] = src[p];
+				RendBGWritePixel(&dst[p], src[p]);
 			}
 		} else {
 			for (int p = 0; p < 16; p++) {
-				if (IsBGPixelVisible(src[p], legacy_bg_transparency)) dst[15 - p] = src[p];
+				RendBGWritePixel(&dst[15 - p], src[p]);
 			}
 		}
 		
 		dst += 16;
-		current_ptr += 2;
+		current_ptr++;
 		current_x++;
 		if (current_x == 64) {
 			current_x = 0;
@@ -602,30 +585,61 @@ void RendBG16(DWORD **ptr, DWORD *buf, int x, int len, BOOL *ready, const BYTE *
 	}
 }
 
-void RendBG16C(DWORD **ptr, DWORD *buf, int x, int len, BOOL *ready, const BYTE *mem,
-	DWORD *pcgbuf, DWORD *pal, BOOL legacy_bg_transparency)
+void RendBG16F(bgdata_t *ptr, DWORD *buf, int x, int len, BOOL *ready, const BYTE *mem,
+	DWORD *pcgbuf, DWORD *pal)
 {
-	RendBG16(ptr, buf, x, len, ready, mem, pcgbuf, pal, legacy_bg_transparency);
+	int tiles = (len >> 4) + ((len & 15) ? 1 : 0);
+	bgdata_t *current_ptr = ptr + x;
+	int current_x = x;
+	DWORD* dst = buf;
+
+	for (int i = 0; i < tiles; i++) {
+		DWORD bgdata = current_ptr->bg;
+		DWORD pcgno = bgdata & 0xfff;
+		if (!ready[pcgno]) {
+			ready[pcgno] = TRUE;
+			RendPCGNew(pcgno, mem, pcgbuf, pal);
+		}
+
+		DWORD* src = current_ptr->pcg;
+		if (!(bgdata & 0x4000)) {
+			for (int p = 0; p < 16; p++) {
+				RendBGForceWritePixel(&dst[p], src[p]);
+			}
+		} else {
+			for (int p = 0; p < 16; p++) {
+				RendBGForceWritePixel(&dst[15 - p], src[p]);
+			}
+		}
+
+		dst += 16;
+		current_ptr++;
+		current_x++;
+		if (current_x == 64) {
+			current_x = 0;
+			current_ptr = ptr;
+		}
+	}
 }
 
-void RendBG16P(DWORD **ptr, DWORD *buf, int offset, int length, BOOL *ready, const BYTE *mem,
-	DWORD *pcgbuf, DWORD *pal, BOOL legacy_bg_transparency)
+void RendBG16P(bgdata_t *ptr, DWORD *buf, int offset, int length, BOOL *ready, const BYTE *mem,
+	DWORD *pcgbuf, DWORD *pal)
 {
-	DWORD bgdata = (DWORD)(size_t)ptr[1];
+	DWORD bgdata = ptr->bg;
 	DWORD pcgno = bgdata & 0xfff;
 	if (!ready[pcgno]) {
 		ready[pcgno] = TRUE;
 		RendPCGNew(pcgno, mem, pcgbuf, pal);
 	}
 	
-	DWORD* src = ptr[0];
+	DWORD* src = ptr->pcg;
 	if (!(bgdata & 0x4000)) {
 		for (int p = 0; p < length; p++) {
-			if (IsBGPixelVisible(src[offset + p], legacy_bg_transparency)) buf[p] = src[offset + p];
+			RendBGWritePixel(&buf[p], src[offset + p]);
 		}
 	} else {
 		for (int p = 0; p < length; p++) {
-			if (IsBGPixelVisible(src[15 - (offset + p)], legacy_bg_transparency)) buf[p] = src[15 - (offset + p)];
+			RendBGWritePixel(&buf[p], src[15 - (offset + p)]);
 		}
 	}
 }
@@ -656,7 +670,7 @@ void RendMix00(DWORD *buf, BOOL *flag, int len)
 	}
 }
 
-void RendMix01(DWORD *buf, const DWORD *src, BOOL *flag, int len)
+void RendMix01(DWORD *buf, DWORD *src, BOOL *flag, int len)
 {
 	int blocks = len >> 4;
 	for (int i = 0; i < blocks; i++) {
@@ -680,7 +694,7 @@ void RendMix01(DWORD *buf, const DWORD *src, BOOL *flag, int len)
 	}
 }
 
-void RendMix02(DWORD *buf, const DWORD *f, const DWORD *s, BOOL *flag, int len)
+void RendMix02(DWORD *buf, DWORD *f, DWORD *s, BOOL *flag, int len)
 {
 	int blocks = len >> 4;
 	for (int i = 0; i < blocks; i++) {
@@ -708,9 +722,9 @@ void RendMix02(DWORD *buf, const DWORD *f, const DWORD *s, BOOL *flag, int len)
 	}
 }
 
-void RendMix02C(DWORD *buf, const DWORD *f, const DWORD *s, BOOL *flag, int len) { RendMix02(buf, f, s, flag, len); }
+void RendMix02C(DWORD *buf, DWORD *f, DWORD *s, BOOL *flag, int len) { RendMix02(buf, f, s, flag, len); }
 
-void RendMix03(DWORD *buf, const DWORD *f, const DWORD *s, BOOL *flag, int len)
+void RendMix03Base(DWORD *buf, const DWORD *f, const DWORD *s, BOOL *flag, int len)
 {
 	int blocks = len >> 4;
 	for (int i = 0; i < blocks; i++) {
@@ -738,7 +752,7 @@ void RendMix03(DWORD *buf, const DWORD *f, const DWORD *s, BOOL *flag, int len)
 	}
 }
 
-void RendMix03C(DWORD *buf, const DWORD *f, const DWORD *s, BOOL *flag, int len) { RendMix03(buf, f, s, flag, len); }
+
 
 void RendMix04(DWORD *buf, const DWORD *f, const DWORD *s, DWORD *t, BOOL *flag, int len)
 {
@@ -809,7 +823,7 @@ void RendGrp03(DWORD *buf, const DWORD *f, const DWORD *s, const DWORD *t, int l
 
 void RendGrp03C(DWORD *buf, const DWORD *f, const DWORD *s, const DWORD *t, int len) { RendGrp03(buf, f, s, t, len); }
 
-void RendGrp04(DWORD *buf, DWORD *f, DWORD *s, DWORD *t, DWORD *e, int len)
+void RendGrp04(DWORD *buf, const DWORD *f, const DWORD *s, const DWORD *t, const DWORD *e, int len)
 {
 	for (int i = 0; i < len; i++) {
 		DWORD p = f[i];
@@ -826,6 +840,448 @@ void RendGrp04(DWORD *buf, DWORD *f, DWORD *s, DWORD *t, DWORD *e, int len)
 	}
 }
 
-void RendGrp04C(DWORD *buf, DWORD *f, DWORD *s, DWORD *t, DWORD *e, int len) { RendGrp04(buf, f, s, t, e, len); }
+void RendGrp04C(DWORD *buf, const DWORD *f, const DWORD *s, const DWORD *t, const DWORD *e, int len) { RendGrp04(buf, f, s, t, e, len); }
+
+static inline DWORD RendHalfBlendRaw(DWORD front, DWORD back)
+{
+	DWORD keep = front & back;
+	DWORD diff = (front ^ back) & 0x00fefefe;
+	return (diff >> 1) + keep;
+}
+
+static inline DWORD RendHalfBlendPixel(DWORD front, DWORD back)
+{
+	return RendHalfBlendRaw(front, back) | 0x40000000;
+}
+
+static inline BOOL RendTransparent(DWORD p)
+{
+	return (p & 0x80000000) != 0;
+}
+
+static inline BOOL RendHalf(DWORD p)
+{
+	return (p & 0x40000000) != 0;
+}
+
+static inline BOOL RendColor(DWORD p)
+{
+	return (p & 0x00ffffff) != 0;
+}
+
+static inline DWORD Rend64KPixelH(WORD raw, BYTE *plt, DWORD *pal)
+{
+	BYTE hi = (BYTE)(raw >> 8);
+	BYTE lo = (BYTE)(raw & 0xff);
+	WORD idx = (WORD)(((WORD)plt[hi + 256] << 8) | plt[lo & 0xfe]);
+	DWORD out = pal[idx];
+	if (lo & 1) {
+		out |= 0x40000000;
+	}
+	return out;
+}
+
+static inline DWORD Rend64KPixelHP(WORD raw, BYTE *plt, DWORD *pal)
+{
+	BYTE hi = (BYTE)(raw >> 8);
+	BYTE lo = (BYTE)(raw & 0xff);
+	WORD idx = (WORD)(((WORD)plt[hi + 256] << 8) | plt[lo]);
+	DWORD out = pal[idx];
+	if (plt[lo | 1] & 1) {
+		out |= 0x40000000;
+	}
+	return out;
+}
+
+void Rend64KAH(const BYTE *gvram, DWORD *buf, BOOL *flag, BYTE *plt, DWORD *pal)
+{
+	const WORD *src = (const WORD *)gvram;
+	for (int block = 0; block < 32; block++) {
+		if (!flag[block]) {
+			src += 16;
+			buf += 16;
+			continue;
+		}
+		flag[block] = FALSE;
+		for (int i = 0; i < 16; i++) {
+			DWORD out = Rend64KPixelH(src[i], plt, pal);
+			buf[i] = out;
+			buf[i + 512] = out;
+		}
+		src += 16;
+		buf += 16;
+	}
+}
+
+int Rend64KBH(const BYTE *gvram, DWORD *buf, BYTE *plt, DWORD *pal)
+{
+	int changed = 0;
+	const WORD *src = (const WORD *)gvram;
+	for (int i = 0; i < 512; i++) {
+		DWORD out = Rend64KPixelH(src[i], plt, pal);
+		if (buf[i] != out) {
+			changed = 1;
+		}
+		buf[i] = out;
+		buf[i + 512] = out;
+	}
+	return changed;
+}
+
+void Rend64KAHP(const BYTE *gvram, DWORD *buf, BOOL *flag, BYTE *plt, DWORD *pal)
+{
+	const WORD *src = (const WORD *)gvram;
+	for (int block = 0; block < 32; block++) {
+		if (!flag[block]) {
+			src += 16;
+			buf += 16;
+			continue;
+		}
+		flag[block] = FALSE;
+		for (int i = 0; i < 16; i++) {
+			DWORD out = Rend64KPixelHP(src[i], plt, pal);
+			buf[i] = out;
+			buf[i + 512] = out;
+		}
+		src += 16;
+		buf += 16;
+	}
+}
+
+int Rend64KBHP(const BYTE *gvram, DWORD *buf, BYTE *plt, DWORD *pal)
+{
+	int changed = 0;
+	const WORD *src = (const WORD *)gvram;
+	for (int i = 0; i < 512; i++) {
+		DWORD out = Rend64KPixelHP(src[i], plt, pal);
+		if (buf[i] != out) {
+			changed = 1;
+		}
+		buf[i] = out;
+		buf[i + 512] = out;
+	}
+	return changed;
+}
+
+void RendSpriteP(const DWORD *line, DWORD *buf, DWORD x, BOOL hflag, int spno, BYTE *pri, DWORD len)
+{
+	BYTE p = (BYTE)spno;
+	if (len > 16) {
+		len = 16;
+	}
+	if (x < 16) {
+		DWORD count = x;
+		if (count > len) {
+			count = len;
+		}
+		for (DWORD i = 0; i < count; i++) {
+			DWORD src_index = hflag ? (x - 1 - i) : (16 - x + i);
+			DWORD pix = line[src_index];
+			if (!RendTransparent(pix) && pri[i] >= p) {
+				buf[i] = pix;
+				pri[i] = p;
+			}
+		}
+		return;
+	}
+	DWORD start = x - 16;
+	buf += start;
+	pri += start;
+	for (DWORD i = 0; i < len; i++) {
+		DWORD pix = line[hflag ? (15 - i) : i];
+		if (!RendTransparent(pix) && pri[i] >= p) {
+			buf[i] = pix;
+			pri[i] = p;
+		}
+	}
+}
+
+void RendBG8FP(bgdata_t *ptr, DWORD *buf, int offset, int length, BOOL *ready, const BYTE *mem, DWORD *pcgbuf, DWORD *pal)
+{
+	DWORD bgdata = ptr->bg;
+	DWORD pcgno = bgdata & 0xfff;
+	if (!ready[pcgno]) {
+		ready[pcgno] = TRUE;
+		RendPCGNew(pcgno, mem, pcgbuf, pal);
+	}
+
+	DWORD* src = ptr->pcg;
+	if (!(bgdata & 0x4000)) {
+		for (int p = 0; p < length; p++) {
+			RendBGForceWritePixel(&buf[p], src[offset + p]);
+		}
+	} else {
+		for (int p = 0; p < length; p++) {
+			RendBGForceWritePixel(&buf[p], src[7 - (offset + p)]);
+		}
+	}
+}
+
+void RendBG16FP(bgdata_t *ptr, DWORD *buf, int offset, int length, BOOL *ready, const BYTE *mem, DWORD *pcgbuf, DWORD *pal)
+{
+	DWORD bgdata = ptr->bg;
+	DWORD pcgno = bgdata & 0xfff;
+	if (!ready[pcgno]) {
+		ready[pcgno] = TRUE;
+		RendPCGNew(pcgno, mem, pcgbuf, pal);
+	}
+
+	DWORD* src = ptr->pcg;
+	if (!(bgdata & 0x4000)) {
+		for (int p = 0; p < length; p++) {
+			RendBGForceWritePixel(&buf[p], src[offset + p]);
+		}
+	} else {
+		for (int p = 0; p < length; p++) {
+			RendBGForceWritePixel(&buf[p], src[15 - (offset + p)]);
+		}
+	}
+}
+
+void RendGrp02HBS(DWORD *buf, const DWORD *f, const DWORD *g, int len)
+{
+	for (int i = 0; i < len; i++) {
+		DWORD fp = f[i];
+		DWORD gp = g[i];
+		if (RendTransparent(fp)) {
+			buf[i] = gp;
+		}
+		else if (RendHalf(fp)) {
+			buf[i] = RendHalfBlendPixel(fp, gp);
+		}
+		else {
+			buf[i] = fp;
+		}
+	}
+}
+
+void RendGrp02HB(DWORD *buf, const DWORD *f, const DWORD *g, int len)
+{
+	for (int i = 0; i < len; i++) {
+		DWORD fp = f[i];
+		if (!RendTransparent(fp) && RendHalf(fp)) {
+			fp = RendHalfBlendPixel(fp, g[i]);
+		}
+		buf[i] = fp;
+	}
+}
+
+void RendMix01H(DWORD *buf, DWORD *f, DWORD c, BOOL *flag, int len)
+{
+	for (int i = 0; i < len; i++) {
+		DWORD out = RendHalf(f[i]) ? RendHalfBlendRaw(f[i], c) : f[i];
+		if (buf[i] != out) {
+			flag[i >> 4] = TRUE;
+		}
+		buf[i] = out;
+	}
+}
+
+static inline void RendStoreMix(DWORD *buf, BOOL *flag, int i, DWORD out)
+{
+	if (buf[i] != out) {
+		flag[i >> 4] = TRUE;
+	}
+	buf[i] = out;
+}
+
+void RendMix02A(DWORD *buf, DWORD *f, DWORD *g, BOOL *flag, int len)
+{
+	for (int i = 0; i < len; i++) {
+		DWORD out = f[i];
+		if (RendTransparent(out) && !RendHalf(g[i])) {
+			out = g[i];
+		}
+		RendStoreMix(buf, flag, i, out);
+	}
+}
+
+void RendMix02B(DWORD *buf, DWORD *f, DWORD *g, BOOL *flag, int len)
+{
+	for (int i = 0; i < len; i++) {
+		DWORD out = RendColor(f[i]) ? f[i] : g[i];
+		RendStoreMix(buf, flag, i, out);
+	}
+}
+
+void RendMix02BH(DWORD *buf, DWORD *f, DWORD *g, BOOL *flag, int len)
+{
+	for (int i = 0; i < len; i++) {
+		DWORD out = f[i];
+		if (RendHalf(out)) {
+			out = RendHalfBlendRaw(out, g[i]);
+		}
+		else if (!RendColor(out)) {
+			out = g[i];
+		}
+		RendStoreMix(buf, flag, i, out);
+	}
+}
+
+void RendMix02CH(DWORD *buf, DWORD *f, DWORD *g, DWORD c, BOOL *flag, int len)
+{
+	for (int i = 0; i < len; i++) {
+		DWORD out = f[i];
+		BOOL may_half = FALSE;
+		if (RendTransparent(out)) {
+			DWORD gp = g[i];
+			if (RendColor(gp)) {
+				out = gp;
+				may_half = TRUE;
+			}
+		}
+		else if (!RendColor(out)) {
+			out = g[i];
+			may_half = TRUE;
+		}
+		if (may_half && RendHalf(out)) {
+			out = RendHalfBlendRaw(out, c);
+		}
+		RendStoreMix(buf, flag, i, out);
+	}
+}
+
+void RendMix02CS(DWORD *buf, DWORD *f, DWORD *g, BOOL *flag, int len)
+{
+	for (int i = 0; i < len; i++) {
+		DWORD out = g[i];
+		if (RendTransparent(out) || !RendHalf(out)) {
+			DWORD alt;
+			out = f[i];
+			alt = RendTransparent(out) ? out : g[i];
+			if (!RendColor(out)) {
+				out = alt;
+			}
+		}
+		RendStoreMix(buf, flag, i, out);
+	}
+}
+
+void RendMix02D(DWORD *buf, DWORD *f, DWORD *g, BOOL *flag, int len) { RendMix02B(buf, f, g, flag, len); }
+void RendMix02DH(DWORD *buf, DWORD *f, DWORD *g, DWORD c, BOOL *flag, int len)
+{
+	for (int i = 0; i < len; i++) {
+		DWORD out = f[i];
+		if (!RendColor(out)) {
+			out = g[i];
+			if (RendHalf(out)) {
+				out = RendHalfBlendRaw(out, c);
+			}
+		}
+		RendStoreMix(buf, flag, i, out);
+	}
+}
+void RendMix02DS(DWORD *buf, DWORD *f, DWORD *g, BOOL *flag, int len) { RendMix02CS(buf, f, g, flag, len); }
+void RendMixP0H(DWORD *buf, DWORD *f, DWORD col, BOOL *flag, int len)
+{
+	for (int i = 0; i < len; i++) {
+		RendStoreMix(buf, flag, i, RendHalfBlendRaw(f[i], col));
+	}
+}
+
+static inline DWORD RendPick3(DWORD f, DWORD g, DWORD h)
+{
+	if (!RendTransparent(f)) {
+		return f;
+	}
+	if (!RendTransparent(g)) {
+		return g;
+	}
+	return h;
+}
+
+void RendMix03A(DWORD *buf, DWORD *f, DWORD *g, DWORD *h, BOOL *flag, int len) { for (int i = 0; i < len; i++) RendStoreMix(buf, flag, i, RendPick3(f[i], g[i], h[i])); }
+void RendMix03AH(DWORD *buf, DWORD *f, DWORD *g, DWORD *h, BOOL *flag, int len)
+{
+	for (int i = 0; i < len; i++) {
+		DWORD out = g[i];
+		if (RendTransparent(out) && !RendHalf(h[i])) {
+			out = h[i];
+		}
+		if (RendHalf(f[i])) {
+			out = RendHalfBlendRaw(out, f[i]);
+		}
+		else if (RendColor(f[i])) {
+			out = f[i];
+		}
+		RendStoreMix(buf, flag, i, out);
+	}
+}
+void RendMix03B(DWORD *buf, DWORD *f, DWORD *g, DWORD *h, BOOL *flag, int len) { RendMix03A(buf, f, g, h, flag, len); }
+void RendMix03BH(DWORD *buf, DWORD *f, DWORD *g, DWORD *h, BOOL *flag, int len)
+{
+	for (int i = 0; i < len; i++) {
+		DWORD out = f[i];
+		if (!RendTransparent(out)) {
+			if (!RendColor(out)) {
+				out = RendHalf(g[i]) ? RendHalfBlendRaw(g[i], h[i]) : g[i];
+			}
+		}
+		else {
+			out = g[i];
+			if (RendHalf(out)) {
+				out = RendHalfBlendRaw(out, h[i]);
+			}
+			else if (!RendColor(out)) {
+				out = RendHalf(h[i]) ? f[i] : h[i];
+			}
+		}
+		RendStoreMix(buf, flag, i, out);
+	}
+}
+void RendMix03BS(DWORD *buf, DWORD *f, DWORD *g, DWORD *h, BOOL *flag, int len) { RendMix03A(buf, f, g, h, flag, len); }
+void RendMix03C(DWORD *buf, DWORD *f, DWORD *g, DWORD *h, BOOL *flag, int len)
+{
+	for (int i = 0; i < len; i++) {
+		DWORD out = f[i];
+		if (RendTransparent(out)) {
+			out = g[i];
+			if (RendHalf(out)) {
+				out = f[i];
+			}
+		}
+		if (!RendColor(out)) {
+			out = h[i];
+		}
+		RendStoreMix(buf, flag, i, out);
+	}
+}
+
+void RendMix03CH(DWORD *buf, DWORD *f, DWORD *g, DWORD *h, DWORD c, BOOL *flag, int len)
+{
+	for (int i = 0; i < len; i++) {
+		DWORD out = f[i];
+		if (RendTransparent(out)) {
+			DWORD gp = g[i];
+			out = RendHalf(gp) ? f[i] : gp;
+		}
+		if (!RendColor(out)) {
+			out = h[i];
+			if (RendHalf(out)) {
+				out = RendHalfBlendRaw(out, c);
+			}
+		}
+		RendStoreMix(buf, flag, i, out);
+	}
+}
+void RendMix03CS(DWORD *buf, DWORD *f, DWORD *g, DWORD *h, BOOL *flag, int len)
+{
+	for (int i = 0; i < len; i++) {
+		DWORD out = h[i];
+		if (RendTransparent(out) || !RendHalf(out)) {
+			out = f[i];
+			if (RendTransparent(out)) {
+				out = g[i];
+				if (RendHalf(out)) {
+					out = f[i];
+				}
+			}
+			if (!RendColor(out)) {
+				out = h[i];
+			}
+		}
+		RendStoreMix(buf, flag, i, out);
+	}
+}
 
 } // extern "C"

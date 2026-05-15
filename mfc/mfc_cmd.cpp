@@ -21,6 +21,7 @@
 #include "sram.h"
 #include "memory.h"
 #include "render.h"
+#include "crtc.h"
 #include "fileio.h"
 #include "mfc_frm.h"
 #include "mfc_res.h"
@@ -39,6 +40,224 @@
 #include "mfc_rend.h"
 #include "mfc_stat.h"
 #include "mfc_tool.h"
+
+namespace {
+
+static const char *kDumpPath = "C:\\tmp\\Xm6Dump.log";
+
+static const char *DumpLevelName(Log::loglevel level)
+{
+	switch (level) {
+	case Log::Detail:  return "Detail";
+	case Log::Normal:  return "Normal";
+	case Log::Warning: return "Warning";
+	default:           return "Unknown";
+	}
+}
+
+static void DumpByteLine(FILE *fp, const char *title, const BYTE *data, size_t count)
+{
+	size_t i;
+
+	fprintf(fp, "%s\r\n", title);
+	for (i = 0; i < count; i += 16) {
+		size_t j;
+
+		fprintf(fp, "  %04u:", (unsigned)i);
+		for (j = 0; (j < 16) && (i + j < count); j++) {
+			fprintf(fp, " %02X", data[i + j]);
+		}
+		fprintf(fp, "\r\n");
+	}
+}
+
+static void DumpCPU(FILE *fp, CPU *cpu)
+{
+	CPU::cpu_t state;
+	size_t i;
+
+	memset(&state, 0, sizeof(state));
+	cpu->GetCPU(&state);
+
+	fprintf(fp, "[CPU]\r\n");
+	for (i = 0; i < 8; i++) {
+		fprintf(fp, "  D%u=%08lX A%u=%08lX\r\n",
+			(unsigned)i, (unsigned long)state.dreg[i],
+			(unsigned)i, (unsigned long)state.areg[i]);
+	}
+	fprintf(fp, "  SP=%08lX PC=%08lX SR=%04lX ODD=%08lX\r\n",
+		(unsigned long)state.sp,
+		(unsigned long)state.pc,
+		(unsigned long)state.sr,
+		(unsigned long)state.odd);
+	fprintf(fp, "  CYCLE=%08lX IOCYCLE=%08lX\r\n",
+		(unsigned long)cpu->GetCycle(),
+		(unsigned long)cpu->GetIOCycle());
+	for (i = 0; i < 8; i++) {
+		fprintf(fp, "  INTR%u=%08lX REQ=%08lX ACK=%08lX\r\n",
+			(unsigned)i,
+			(unsigned long)state.intr[i],
+			(unsigned long)state.intreq[i],
+			(unsigned long)state.intack[i]);
+	}
+}
+
+static void DumpScheduler(FILE *fp, Scheduler *scheduler)
+{
+	Scheduler::scheduler_t state;
+
+	memset(&state, 0, sizeof(state));
+	scheduler->GetScheduler(&state);
+
+	fprintf(fp, "[Scheduler]\r\n");
+	fprintf(fp, "  total=%08lX one=%08lX sound=%08lX\r\n",
+		(unsigned long)state.total,
+		(unsigned long)state.one,
+		(unsigned long)state.sound);
+	fprintf(fp, "  clock=%d speed=%08lX cycle=%d time=%08lX\r\n",
+		state.clock,
+		(unsigned long)state.speed,
+		state.cycle,
+		(unsigned long)state.time);
+	fprintf(fp, "  brk=%d check=%d exec=%d events=%d passed=%08lX\r\n",
+		state.brk,
+		state.check,
+		state.exec,
+		scheduler->GetEventNum(),
+		(unsigned long)scheduler->GetPassedTime());
+	fprintf(fp, "  first_event=%p\r\n", state.first);
+}
+
+static void DumpCRTC(FILE *fp, CRTC *crtc)
+{
+	CRTC::crtc_t state;
+
+	memset(&state, 0, sizeof(state));
+	crtc->GetCRTC(&state);
+
+	fprintf(fp, "[CRTC]\r\n");
+	fprintf(fp, "  hrl=%d lowres=%d textres=%d changed=%d\r\n",
+		state.hrl, state.lowres, state.textres, state.changed);
+	fprintf(fp, "  h_sync=%d h_pulse=%d h_back=%d h_front=%d h_dots=%d h_mul=%d hd=%d\r\n",
+		state.h_sync, state.h_pulse, state.h_back, state.h_front, state.h_dots, state.h_mul, state.hd);
+	fprintf(fp, "  v_sync=%d v_pulse=%d v_back=%d v_front=%d v_dots=%d v_mul=%d vd=%d\r\n",
+		state.v_sync, state.v_pulse, state.v_back, state.v_front, state.v_dots, state.v_mul, state.vd);
+	fprintf(fp, "  ns=%08lX hus=%08lX v_synccnt=%08lX v_blankcnt=%08lX\r\n",
+		(unsigned long)state.ns,
+		(unsigned long)state.hus,
+		(unsigned long)state.v_synccnt,
+		(unsigned long)state.v_blankcnt);
+	fprintf(fp, "  h_disp=%d v_disp=%d v_blank=%d v_count=%08lX v_scan=%d\r\n",
+		state.h_disp, state.v_disp, state.v_blank,
+		(unsigned long)state.v_count,
+		state.v_scan);
+	fprintf(fp, "  tmem=%d gmem=%d siz=%08lX col=%08lX\r\n",
+		state.tmem, state.gmem,
+		(unsigned long)state.siz,
+		(unsigned long)state.col);
+	fprintf(fp, "  text_scrlx=%08lX text_scrly=%08lX raster_count=%d raster_int=%d raster_copy=%d raster_exec=%d fast_clr=%08lX\r\n",
+		(unsigned long)state.text_scrlx,
+		(unsigned long)state.text_scrly,
+		state.raster_count,
+		state.raster_int,
+		state.raster_copy,
+		state.raster_exec,
+		(unsigned long)state.fast_clr);
+	fprintf(fp, "  grp_scrlx=%08lX,%08lX,%08lX,%08lX\r\n",
+		(unsigned long)state.grp_scrlx[0],
+		(unsigned long)state.grp_scrlx[1],
+		(unsigned long)state.grp_scrlx[2],
+		(unsigned long)state.grp_scrlx[3]);
+	fprintf(fp, "  grp_scrly=%08lX,%08lX,%08lX,%08lX\r\n",
+		(unsigned long)state.grp_scrly[0],
+		(unsigned long)state.grp_scrly[1],
+		(unsigned long)state.grp_scrly[2],
+		(unsigned long)state.grp_scrly[3]);
+	DumpByteLine(fp, "  regs:", state.reg, sizeof(state.reg));
+}
+
+static BOOL DumpLog(FILE *fp, Log *log)
+{
+	int i;
+	int num;
+
+	fprintf(fp, "[Log]\r\n");
+	num = log->GetNum();
+	fprintf(fp, "  count=%d max=%d\r\n", num, log->GetMax());
+	for (i = 0; i < num; i++) {
+		Log::logdata_t data;
+
+		memset(&data, 0, sizeof(data));
+		if (!log->GetData(i, &data)) {
+			break;
+		}
+
+		fprintf(fp, "  [%05d] number=%08lX total=%08lX time=%08lX pc=%08lX id=%08lX level=%s text=%s\r\n",
+			i,
+			(unsigned long)data.number,
+			(unsigned long)data.total,
+			(unsigned long)data.time,
+			(unsigned long)data.pc,
+			(unsigned long)data.id,
+			DumpLevelName(data.level),
+			data.string ? data.string : "");
+		delete[] data.string;
+	}
+
+	return TRUE;
+}
+
+static BOOL DumpVMState()
+{
+	VM *vm;
+	CPU *cpu;
+	CRTC *crtc;
+	Scheduler *scheduler;
+	FILE *fp;
+	DWORD major;
+	DWORD minor;
+	SYSTEMTIME st;
+	BOOL ok;
+
+	vm = ::GetVM();
+	cpu = (CPU *)vm->SearchDevice(MAKEID('C', 'P', 'U', ' '));
+	crtc = (CRTC *)vm->SearchDevice(MAKEID('C', 'R', 'T', 'C'));
+	scheduler = (Scheduler *)vm->SearchDevice(MAKEID('S', 'C', 'H', 'E'));
+	if (!cpu || !crtc || !scheduler) {
+		return FALSE;
+	}
+
+	CreateDirectoryA("C:\\tmp", NULL);
+	fp = fopen(kDumpPath, "wt");
+	if (!fp) {
+		return FALSE;
+	}
+
+	GetLocalTime(&st);
+	vm->GetVersion(major, minor);
+
+	fprintf(fp, "# XM6 Debug Dump\r\n");
+	fprintf(fp, "timestamp=%04u-%02u-%02u %02u:%02u:%02u.%03u\r\n",
+		(unsigned)st.wYear, (unsigned)st.wMonth, (unsigned)st.wDay,
+		(unsigned)st.wHour, (unsigned)st.wMinute, (unsigned)st.wSecond, (unsigned)st.wMilliseconds);
+	fprintf(fp, "version=%lu.%lu\r\n", (unsigned long)major, (unsigned long)minor);
+	fprintf(fp, "power_sw=%d power=%d\r\n", vm->IsPowerSW(), vm->IsPower());
+
+	DumpCPU(fp, cpu);
+	DumpScheduler(fp, scheduler);
+	DumpCRTC(fp, crtc);
+	DumpLog(fp, &vm->log);
+
+	ok = (fclose(fp) == 0);
+	return ok;
+}
+
+} // namespace
+
+static BOOL IsSmokeSaveStateCommand()
+{
+	return (_tcsstr(AfxGetApp()->m_lpCmdLine, _T("--smoke-savestate")) != NULL);
+}
 
 //---------------------------------------------------------------------------
 //
@@ -72,14 +291,10 @@ void CFrmWnd::OnOpen()
 void CFrmWnd::OnFastOpen()
 {
 	Filepath path;
-	TCHAR szPath[_MAX_PATH];
-	CString quickLoadPath;
-	quickLoadPath.Format(_T("%s\\%s.xm6"), (LPCTSTR)m_strSaveStatePath, (LPCTSTR)m_strXM6FileName);
 
-	_tcsncpy(szPath, (LPCTSTR)quickLoadPath, _MAX_PATH - 1);
-	szPath[_MAX_PATH - 1] = _T('\0');
-	path.SetPath(szPath);
-
+	if (!BuildQuickStatePath(path)) {
+		return;
+	}
 
 	// Pre-open processing
 	if (!OnOpenPrep(path)) {
@@ -88,6 +303,98 @@ void CFrmWnd::OnFastOpen()
 
 	// Sub-open
 	OnOpenSub(path);
+}
+
+//---------------------------------------------------------------------------
+//
+//	Update savestate file name based on loaded media
+//
+//---------------------------------------------------------------------------
+void FASTCALL CFrmWnd::UpdateStateFileName()
+{
+	Filepath path;
+	Config config;
+	GetConfig()->GetConfig(&config);
+
+	// 1. Check FDD0
+	if (m_pFDD) {
+		m_pFDD->GetPath(0, path);
+		if (!path.IsClear()) {
+			m_strXM6FileName = path.GetFileExt();
+			return;
+		}
+	}
+
+	// 2. Check SASI MO (Removable)
+	if (m_pSASI) {
+		m_pSASI->GetPath(path);
+		if (!path.IsClear()) {
+			m_strXM6FileName = path.GetFileExt();
+			return;
+		}
+	}
+
+	// 3. Check SASI Fixed HDD 0
+	if (_tcslen(config.sasi_file[0]) > 0) {
+		path.SetPath(config.sasi_file[0]);
+		m_strXM6FileName = path.GetFileExt();
+		return;
+	}
+
+	// 4. Check SCSI CD/MO (Removable)
+	if (m_pSCSI) {
+		m_pSCSI->GetPath(path, FALSE /* mo = FALSE for HD/CD */);
+		if (!path.IsClear()) {
+			m_strXM6FileName = path.GetFileExt();
+			return;
+		}
+	}
+
+	// 5. Check SCSI Fixed HDD 0
+	if (_tcslen(config.scsi_file[0]) > 0) {
+		path.SetPath(config.scsi_file[0]);
+		m_strXM6FileName = path.GetFileExt();
+		return;
+	}
+
+	// Default fallback to empty
+	m_strXM6FileName.Empty();
+}
+
+//---------------------------------------------------------------------------
+//
+//	Build quick savestate path
+//
+//---------------------------------------------------------------------------
+BOOL FASTCALL CFrmWnd::BuildQuickStatePath(Filepath& path)
+{
+	CString strDir;
+	CString strPath;
+	DWORD dwAttr;
+
+	UpdateStateFileName();
+	if (m_strXM6FileName.GetLength() == 0) {
+		return FALSE;
+	}
+
+	strDir = m_strSaveStatePath;
+	if (strDir.GetLength() == 0) {
+		strDir = _T("saves");
+	}
+
+	dwAttr = GetFileAttributes(strDir);
+	if (dwAttr == INVALID_FILE_ATTRIBUTES) {
+		if (!CreateDirectory(strDir, NULL)) {
+			return FALSE;
+		}
+	}
+	else if ((dwAttr & FILE_ATTRIBUTE_DIRECTORY) == 0) {
+		return FALSE;
+	}
+
+	strPath.Format(_T("%s\\%s.xm6"), (LPCTSTR)strDir, (LPCTSTR)m_strXM6FileName);
+	path.SetPath((LPCTSTR)strPath);
+	return TRUE;
 }
 
 //---------------------------------------------------------------------------
@@ -280,11 +587,13 @@ BOOL FASTCALL CFrmWnd::OnOpenPrep(const Filepath& path, BOOL bWarning)
 	// Version check
 	if (nNowVer < nRecVer) {
 		// Recorded version is newer (unknown format)
-		::GetMsg(IDS_XM6LOADVER, strMsg);
-		strFmt.Format(strMsg,
-						nNowVer >> 8, nNowVer & 0xff,
-						nRecVer >> 8, nRecVer & 0xff);
-		MessageBox(strFmt, NULL, MB_ICONSTOP | MB_OK);
+		if (bWarning) {
+			::GetMsg(IDS_XM6LOADVER, strMsg);
+			strFmt.Format(strMsg,
+							nNowVer >> 8, nNowVer & 0xff,
+							nRecVer >> 8, nRecVer & 0xff);
+			MessageBox(strFmt, NULL, MB_ICONSTOP | MB_OK);
+		}
 		return FALSE;
 	}
 
@@ -309,10 +618,11 @@ BOOL FASTCALL CFrmWnd::OnOpenSub(const Filepath& path)
 	// Stop scheduler and sound
 	bRun = GetScheduler()->IsEnable();
 	GetScheduler()->Enable(FALSE);
-	::LockVM();
-	::UnlockVM();
 	bSound = GetSound()->IsEnable();
 	GetSound()->Enable(FALSE);
+
+	// Lock VM for the entire operation
+	::LockVM();
 
 	// Load
 	AfxGetApp()->BeginWaitCursor();
@@ -325,16 +635,44 @@ BOOL FASTCALL CFrmWnd::OnOpenSub(const Filepath& path)
 
 		// Failure is dangerous due to half interrupt; always reset
 		::GetVM()->Reset();
+		::UnlockVM();
+
 		GetSound()->Enable(bSound);
 		GetScheduler()->Reset();
 		GetScheduler()->Enable(bRun);
 		ResetCaption();
 
 		// LoadError
-		::GetMsg(IDS_XM6LOADERR, strMsg);
-		CString msg;
-		msg.Format(_T("File read (VM): %u"), dwPos);
-		MessageBox(msg, NULL, MB_ICONSTOP | MB_OK);
+		CString errorDetail = _T("Fallo desconocido en dispositivo interno de la VM.");
+		CFileStatus fstatus;
+		if (!CFile::GetStatus(path.GetPath(), fstatus)) {
+			errorDetail = _T("El archivo no existe o no se encontro en la ruta especificada.");
+		} else {
+			CFile f;
+			if (f.Open(path.GetPath(), CFile::modeRead)) {
+				char buf[16];
+				UINT bytesRead = f.Read(buf, 16);
+				f.Close();
+				if (bytesRead < 16) {
+					errorDetail = _T("El archivo es demasiado pequeno o esta corrupto.");
+				} else {
+					buf[9] = '\0';
+					if (strncmp(buf, "XM6 DATA ", 9) != 0) {
+						errorDetail = _T("Cabecera invalida. No es un savestate de XM6 valido.");
+					} else {
+						errorDetail = _T("El archivo existe (.xm6 valido) pero el emulador fallo al restaurar el estado interno.\n(Puede ser un estado guardado incompleto o corrupto).");
+					}
+				}
+			} else {
+				errorDetail = _T("Acceso denegado. No se pudo leer el archivo.");
+			}
+		}
+
+		if (!IsSmokeSaveStateCommand()) {
+			CString msg;
+			msg.Format(_T("Fallo al cargar (VM: %u)\n\nArchivo:\n%s\n\nMotivo:\n%s"), dwPos, path.GetPath(), (LPCTSTR)errorDetail);
+			MessageBox(msg, _T("Error de Savestate"), MB_ICONSTOP | MB_OK);
+		}
 
 		return FALSE;
 	}
@@ -345,16 +683,23 @@ BOOL FASTCALL CFrmWnd::OnOpenSub(const Filepath& path)
 
 		// Failure is dangerous due to half interrupt; always reset
 		::GetVM()->Reset();
+		::UnlockVM();
+
 		GetSound()->Enable(bSound);
 		GetScheduler()->Reset();
 		GetScheduler()->Enable(bRun);
 		ResetCaption();
 
 		// LoadError
-		::GetMsg(IDS_XM6LOADERR, strMsg);
-		MessageBox("File read failed (MFC)", NULL, MB_ICONSTOP | MB_OK);
+		if (!IsSmokeSaveStateCommand()) {
+			CString msg;
+			msg.Format(_T("Error al restaurar componentes de la interfaz grafica (MFC).\n\nArchivo:\n%s"), path.GetPath());
+			MessageBox(msg, _T("Error de Savestate"), MB_ICONSTOP | MB_OK);
+		}
 		return FALSE;
 	}
+
+	::UnlockVM();
 
 	// Load finish
 	AfxGetApp()->EndWaitCursor();
@@ -512,10 +857,11 @@ void FASTCALL CFrmWnd::OnSaveSub(const Filepath& path)
 	// Stop scheduler and sound
 	bRun = GetScheduler()->IsEnable();
 	GetScheduler()->Enable(FALSE);
-	::LockVM();
-	::UnlockVM();
 	bSound = GetSound()->IsEnable();
 	GetSound()->Enable(FALSE);
+
+	// Lock VM for the entire operation
+	::LockVM();
 
 	AfxGetApp()->BeginWaitCursor();
 
@@ -526,36 +872,42 @@ void FASTCALL CFrmWnd::OnSaveSub(const Filepath& path)
 	// Make sure to include a full filename; adjust as needed
 	dwPos = ::GetVM()->Save(path);
 
-	if (dwPos== 0) {
+	if (dwPos == 0) {
 		AfxGetApp()->EndWaitCursor();
+		::UnlockVM();
 
-		// Save failed
 		GetSound()->Enable(bSound);
 		GetScheduler()->Reset();
 		GetScheduler()->Enable(bRun);
 		ResetCaption();
 
 		// Save error
-		::GetMsg(IDS_XM6SAVEERR, strMsg);
-		MessageBox(strMsg, NULL, MB_ICONSTOP | MB_OK);
+		if (!IsSmokeSaveStateCommand()) {
+			::GetMsg(IDS_XM6SAVEERR, strMsg);
+			MessageBox(strMsg, NULL, MB_ICONSTOP | MB_OK);
+		}
 		return;
 	}
 
 	// MFC
 	if (!SaveComponent(path, dwPos)) {
 		AfxGetApp()->EndWaitCursor();
+		::UnlockVM();
 
-		// Save failed
 		GetSound()->Enable(bSound);
 		GetScheduler()->Reset();
 		GetScheduler()->Enable(bRun);
 		ResetCaption();
 
 		// Save error
-		::GetMsg(IDS_XM6SAVEERR, strMsg);
-		MessageBox(strMsg, NULL, MB_ICONSTOP | MB_OK);
+		if (!IsSmokeSaveStateCommand()) {
+			::GetMsg(IDS_XM6SAVEERR, strMsg);
+			MessageBox(strMsg, NULL, MB_ICONSTOP | MB_OK);
+		}
 		return;
 	}
+
+	::UnlockVM();
 
 	// Clear execution counter
 	m_dwExec = 0;
@@ -647,7 +999,12 @@ void CFrmWnd::OnReset()
 
 	// Reset and redraw
 	::GetVM()->Reset();
-	//OutputDebugString("\n\nExecuted GetVM->Reset\n\n");
+	GetScheduler()->Reset();
+
+	// Update the savestate filename based on loaded images
+	// This ensures that after a reset with a new disk, F5/F7 use the correct name.
+	UpdateStateFileName();
+
 	GetView()->Refresh();
 	ResetCaption();
 
@@ -822,29 +1179,31 @@ const DWORD CFrmWnd::SigTable[] = {
 //	Interrupt
 //
 //---------------------------------------------------------------------------
-void CFrmWnd::OnInterrupt()
+void CFrmWnd::OnDump()
 {
 	CString strIntr;
 
 	// Only when power is ON
 	if (::GetVM()->IsPower()) {
-		// Interrupt NMI
 		::LockVM();
-		::GetVM()->Interrupt();
+		if (DumpVMState()) {
+			strIntr = _T("Dump saved to C:\\tmp\\Xm6Dump.log");
+		}
+		else {
+			strIntr = _T("Dump failed. Check C:\\tmp\\Xm6Dump.log path.");
+		}
 		::UnlockVM();
 
-		// Set info message
-		::GetMsg(IDS_INTERRUPT, strIntr);
 		SetInfo(strIntr);
 	}
 }
 
 //---------------------------------------------------------------------------
 //
-//	Interrupt UI
+//	Dump UI
 //
 //---------------------------------------------------------------------------
-void CFrmWnd::OnInterruptUI(CCmdUI *pCmdUI)
+void CFrmWnd::OnDumpUI(CCmdUI *pCmdUI)
 {
 	// Only when power is ON
 	pCmdUI->Enable(::GetVM()->IsPower());
@@ -1022,6 +1381,9 @@ void FASTCALL CFrmWnd::OnFDOpen(int nDrive)
 	ResetCaption();
 	::UnlockVM();
 
+	// Sincronizar nombre de savestate tras cambio de disco
+	UpdateStateFileName();
+
 	// Add to MRU
 	GetConfig()->SetMRUFile(nDrive, szPath);
 
@@ -1046,6 +1408,9 @@ void FASTCALL CFrmWnd::OnFDEject(int nDrive)
 	::LockVM();
 	m_pFDD->Eject(nDrive, FALSE);
 	::UnlockVM();
+
+	// Sincronizar nombre de savestate tras expulsion
+	UpdateStateFileName();
 }
 
 //---------------------------------------------------------------------------
@@ -1167,6 +1532,9 @@ void FASTCALL CFrmWnd::OnFDMRU(int nDrive, int nMRU)
 
 	// VM unlock
 	::UnlockVM();
+
+	// Sincronizar nombre tras cambio de disco
+	UpdateStateFileName();
 
 	// If successful, update directory and add to MRU
 	if (bResult) {
@@ -1586,6 +1954,9 @@ void CFrmWnd::OnMOOpen()
 	ResetCaption();
 	::UnlockVM();
 
+	// Sincronizar nombre tras cambio de disco
+	UpdateStateFileName();
+
 	// Add to MRU
 	GetConfig()->SetMRUFile(2, szPath);
 }
@@ -1732,6 +2103,9 @@ void CFrmWnd::OnMOEject()
 	::LockVM();
 	m_pSASI->Eject(FALSE);
 	::UnlockVM();
+
+	// Sincronizar nombre de savestate tras expulsion
+	UpdateStateFileName();
 }
 
 //---------------------------------------------------------------------------
@@ -1883,6 +2257,9 @@ void CFrmWnd::OnMOMRU(UINT uID)
 	ResetCaption();
 	::UnlockVM();
 
+	// Sincronizar nombre tras cambio de disco
+	UpdateStateFileName();
+
 	// If successful, update directory and add to MRU
 	if (bResult) {
 		// Update default directory
@@ -1960,6 +2337,9 @@ void CFrmWnd::OnCDOpen()
 	GetScheduler()->Reset();
 	ResetCaption();
 	::UnlockVM();
+
+	// Sincronizar nombre tras cambio de disco
+	UpdateStateFileName();
 
 	// Add to MRU
 	GetConfig()->SetMRUFile(3, szPath);
@@ -2096,6 +2476,9 @@ void CFrmWnd::OnCDEject()
 	::LockVM();
 	m_pSCSI->Eject(FALSE, FALSE);
 	::UnlockVM();
+
+	// Sincronizar nombre de savestate tras expulsion
+	UpdateStateFileName();
 }
 
 //---------------------------------------------------------------------------
@@ -2201,6 +2584,9 @@ void CFrmWnd::OnCDMRU(UINT uID)
 	GetScheduler()->Reset();
 	ResetCaption();
 	::UnlockVM();
+
+	// Sincronizar nombre tras cambio de disco
+	UpdateStateFileName();
 
 	// If successful, update directory and add to MRU
 	if (bResult) {
@@ -3610,11 +3996,15 @@ void CFrmWnd::OnExecUI(CCmdUI *pCmdUI)
 //---------------------------------------------------------------------------
 void CFrmWnd::OnBreak()
 {
+	// Let the scheduler observe the stop request immediately, even if it is
+	// currently draining accumulated frame ticks under the VM lock.
+	GetScheduler()->Enable(FALSE);
+
 	// Lock
 	::LockVM();
 
-	// Disable scheduler
-	GetScheduler()->Enable(FALSE);
+	// Sync debugger windows to the paused PC.
+	GetScheduler()->SyncDisasm();
 
 	// Unlock
 	::UnlockVM();
@@ -3629,6 +4019,33 @@ void CFrmWnd::OnBreakUI(CCmdUI *pCmdUI)
 {
 	// Enable if scheduler is running
 	if (GetScheduler()->IsEnable()) {
+		pCmdUI->Enable(TRUE);
+	}
+	else {
+		pCmdUI->Enable(FALSE);
+	}
+}
+
+//---------------------------------------------------------------------------
+//
+//	Step Frame
+//
+//---------------------------------------------------------------------------
+void CFrmWnd::OnStepFrame()
+{
+	// Llamar al scheduler para avanzar un frame
+	GetScheduler()->StepFrame();
+}
+
+//---------------------------------------------------------------------------
+//
+//	Step Frame UI
+//
+//---------------------------------------------------------------------------
+void CFrmWnd::OnStepFrameUI(CCmdUI *pCmdUI)
+{
+	// Habilitar solo si el scheduler NO está corriendo y hay energía
+	if ((!GetScheduler()->IsEnable()) && ::GetVM()->IsPower()) {
 		pCmdUI->Enable(TRUE);
 	}
 	else {

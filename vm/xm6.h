@@ -2,8 +2,8 @@
 //
 //	X68000 EMULATOR "XM6"
 //
-//	Copyright (C) 2001-2005 ＰＩ．(ytanaka@ipc-tokai.or.jp)
-//	[ 共通定義 ]
+//	Copyright (C) 2001-2005 PI (ytanaka@ipc-tokai.or.jp)
+//	[ Main header ]
 //
 //---------------------------------------------------------------------------
 
@@ -24,7 +24,7 @@
 
 //---------------------------------------------------------------------------
 //
-//	基本定数
+//	Basic constants
 //
 //---------------------------------------------------------------------------
 #if !defined(FALSE)
@@ -37,7 +37,7 @@
 
 //---------------------------------------------------------------------------
 //
-//	基本マクロ
+//	Basic macros
 //
 //---------------------------------------------------------------------------
 #if !defined(ASSERT)
@@ -58,7 +58,7 @@
 
 //---------------------------------------------------------------------------
 //
-//	基本型定義
+//	Basic types
 //
 //---------------------------------------------------------------------------
 #if !defined(XM6_BASIC_TYPES_DEFINED)
@@ -75,44 +75,44 @@ static_assert(sizeof(DWORD) == 4, "DWORD must be 32-bit");
 
 //---------------------------------------------------------------------------
 //
-//	IDマクロ
+//	ID macros
 //
 //---------------------------------------------------------------------------
 #define MAKEID(a, b, c, d)	((DWORD)((a<<24) | (b<<16) | (c<<8) | d))
 
 //---------------------------------------------------------------------------
 //
-//	クラス宣言
+//	Class declarations
 //
 //---------------------------------------------------------------------------
 class VM;
-										// 仮想マシン
+										// Virtual Machine
 class Config;
-										// コンフィギュレーション
+										// Configuration
 class Device;
-										// デバイス汎用
+										// Device common
 class MemDevice;
-										// メモリマップドデバイス汎用
+										// Memory mapped device common
 class Log;
-										// ログ
+										// Log
 class Event;
-										// イベント
+										// Event
 class Scheduler;
-										// スケジューラ
+										// Scheduler
 class CPU;
 										// CPU MC68000
 class Memory;
-										// アドレス空間 OHM2
+										// Address space OHM2
 class Fileio;
-										// ファイル入出力
+										// File I/O
 class SRAM;
-										// スタティックRAM
+										// SRAM
 class SysPort;
-										// システムポート MESSIAH
+										// System port MESSIAH
 class TVRAM;
-										// テキストVRAM
+										// Text VRAM
 class VC;
-										// ビデオコントローラ VIPS&CATHY
+										// Video controller VIPS&CATHY
 class CRTC;
 										// CRTC VICON
 class RTC;
@@ -128,45 +128,45 @@ class FDC;
 class FDD;
 										// FDD FD55GFR
 class IOSC;
-										// I/Oコントローラ IOSC-2
+										// I/O controller IOSC-2
 class SASI;
 										// SASI
 class Sync;
-										// 同期オブジェクト
+										// Sync object
 class OPMIF;
 										// OPM YM2151
 class Keyboard;
-										// キーボード
+										// Keyboard
 class ADPCM;
 										// ADPCM MSM6258V
 class GVRAM;
-										// グラフィックVRAM
+										// Graphics VRAM
 class Sprite;
-										// スプライトRAM
+										// Sprite RAM
 class SCC;
 										// SCC Z8530
 class Mouse;
-										// マウス
+										// Mouse
 class Printer;
-										// プリンタ
+										// Printer
 class AreaSet;
-										// エリアセット
+										// Area set
 class Render;
-										// レンダラ
+										// Renderer
 class Windrv;
 										// Windrv
 class FDI;
-										// フロッピーディスクイメージ
+										// FDCImages floppy disk image
 class Disk;
-										// SASI/SCSIディスク
+										// SASI/SCSI disk
 class MIDI;
 										// MIDI YM3802
 class Filepath;
-										// ファイルパス
+										// File path
 class JoyDevice;
-										// ジョイスティックデバイス
+										// Joystick device
 class FileSys;
-										// ファイルシステム
+										// File system
 class SCSI;
 										// SCSI MB89352
 class Mercury;

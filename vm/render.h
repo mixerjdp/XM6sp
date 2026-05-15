@@ -2,310 +2,436 @@
 //
 //	X68000 EMULATOR "XM6"
 //
-//	Copyright (C) 2001,2002 ï¿½Eï¿½oï¿½Eï¿½hï¿½Eï¿½D(ytanaka@ipc-tokai.or.jp)
-//	[ ï¿½Eï¿½ï¿½Eï¿½ï¿½Eï¿½ï¿½Eï¿½ï¿½Eï¿½_ï¿½Eï¿½ï¿½Eï¿½ ]
+//	Copyright (C) 2001,2002 ‚o‚hD(ytanaka@ipc-tokai.or.jp)
+//	Copyright (C) 2010-2014 GIMONS
+//	[ ƒŒƒ“ƒ_ƒ‰ ]
 //
 //---------------------------------------------------------------------------
 
-#if !defined(render_h)
+#ifndef render_h
 #define render_h
 
 #include "device.h"
+#include "crtc.h"
+#include "vc.h"
+#include "rend_asm.h"
+#include "px68k_crtc_port.h"
+
+class GVRAM;
+class Px68kRenderAdapter;
+class TVRAM;
 
 //===========================================================================
 //
-//	ï¿½Eï¿½ï¿½Eï¿½ï¿½Eï¿½ï¿½Eï¿½ï¿½Eï¿½_ï¿½Eï¿½ï¿½Eï¿½
+//	ƒŒƒ“ƒ_ƒ‰
 //
 //===========================================================================
 class Render : public Device
 {
 public:
-		enum compositor_mode_t {
-			compositor_original = 0,
-			compositor_fast = 1
-		};
+	// PX68k coexistence API
+	enum compositor_mode_t {
+		compositor_original = 0,
+		compositor_fast = 1,
+	};
 
-	// ï¿½Eï¿½ï¿½Eï¿½ï¿½Eï¿½ï¿½Eï¿½ï¿½Eï¿½fï¿½Eï¿½[ï¿½Eï¿½^ï¿½Eï¿½ï¿½Eï¿½`
 	typedef struct {
-		// ï¿½Eï¿½Sï¿½Eï¿½Ìï¿½ï¿½Eï¿½ï¿½Eï¿½
-		BOOL act;						// ï¿½Eï¿½ï¿½Eï¿½ï¿½Eï¿½ï¿½Eï¿½ï¿½Eï¿½ï¿½Eï¿½ï¿½Eï¿½Ä‚ï¿½ï¿½Eï¿½é‚©
-		BOOL enable;					// ï¿½Eï¿½ï¿½Eï¿½ï¿½Eï¿½ï¿½Eï¿½ï¿½Eï¿½ï¿½Eï¿½ï¿½Eï¿½ï¿½Eï¿½
-		int count;						// ï¿½Eï¿½Xï¿½Eï¿½Pï¿½Eï¿½Wï¿½Eï¿½ï¿½Eï¿½ï¿½Eï¿½[ï¿½Eï¿½ï¿½Eï¿½ï¿½Eï¿½Aï¿½Eï¿½gï¿½Eï¿½Jï¿½Eï¿½Eï¿½Eï¿½ï¿½Eï¿½ï¿½Eï¿½^
-		BOOL ready;						// ï¿½Eï¿½`ï¿½Eï¿½æ€ï¿½Eï¿½ï¿½Eï¿½ï¿½Eï¿½Å‚ï¿½ï¿½Eï¿½Ä‚ï¿½ï¿½Eï¿½é‚©
-		int first;						// ï¿½Eï¿½ï¿½Eï¿½ï¿½Eï¿½ï¿½Eï¿½ï¿½Eï¿½ï¿½Eï¿½ï¿½Eï¿½ï¿½Eï¿½ï¿½Eï¿½Xï¿½Eï¿½^
-		int last;						// ï¿½Eï¿½\ï¿½Eï¿½ï¿½Eï¿½ï¿½Eï¿½Iï¿½Eï¿½ï¿½Eï¿½ï¿½Eï¿½ï¿½Eï¿½ï¿½Eï¿½Xï¿½Eï¿½^
+		BOOL valid;
+		int dst_y;
+		int src_y;
+		DWORD px68k_vline;
+		int sprite_raster;
+		int bg_raster;
+		int layer_raster;
+		int bg_vline;
+		int vline_bg;
+		BOOL visible;
+		BOOL bg_on;
+		BOOL bg_opaq;
+		BOOL sprite_enabled;
+		BOOL bgspflag;
+		BOOL bgspdisp;
+		BOOL gon;
+		BOOL tron;
+		BOOL pron;
+		BOOL ton;
+		BYTE vr2h;
+		BYTE vr2l;
+		int vscan;
+		int vdots;
+		DWORD vcount;
+		BOOL vblank;
+		int rcount;
+		int vstep;
+		int mixlen;
+		BOOL lowres;
+		int vmul;
+	} fast_vertical_probe_sample_t;
+
+	typedef struct {
+		BOOL valid;
+		int width;
+		int h_mul;							// X multiplier
+		int height;
+		int v_mul;							// Y multiplier
+		int mixwidth;
+		int mixheight;
+		int mixpage;
+		int mixtype;
+		BOOL lowres;
+		BOOL bgspflag;
+		BOOL bgspdisp;
+		int sample_count;
+		fast_vertical_probe_sample_t samples[6];
+	} fast_vertical_probe_snapshot_t;
+
+	// “à•”ƒf[ƒ^’è‹`
+	typedef struct {
+		// ‘S‘Ì§Œä
+		BOOL act;						// ‡¬‚µ‚Ä‚¢‚é‚©
+		BOOL enable;					// ‡¬‹–‰Â
+		int count;						// ƒXƒPƒWƒ…[ƒ‰˜AŒgƒJƒEƒ“ƒ^
+		BOOL ready;						// •`‰æ€”õ‚Å‚«‚Ä‚¢‚é‚©
+		int first;						// –¢ˆ—ƒ‰ƒXƒ^
+		int last;						// •\Ž¦I—¹ƒ‰ƒXƒ^
 
 		// CRTC
-		BOOL crtc;						// CRTCï¿½Eï¿½ÏXï¿½Eï¿½tï¿½Eï¿½ï¿½Eï¿½ï¿½Eï¿½O
-		int width;						// Xï¿½Eï¿½ï¿½Eï¿½ï¿½Eï¿½ï¿½Eï¿½ï¿½Eï¿½hï¿½Eï¿½bï¿½Eï¿½gï¿½Eï¿½ï¿½Eï¿½(256ï¿½Eï¿½`)
-		int h_mul;						// Xï¿½Eï¿½ï¿½Eï¿½ï¿½Eï¿½ï¿½Eï¿½ï¿½Eï¿½{ï¿½Eï¿½ï¿½Eï¿½(1,2)
-		int height;						// Yï¿½Eï¿½ï¿½Eï¿½ï¿½Eï¿½ï¿½Eï¿½ï¿½Eï¿½hï¿½Eï¿½bï¿½Eï¿½gï¿½Eï¿½ï¿½Eï¿½(256ï¿½Eï¿½`)
-		int v_mul;						// Yï¿½Eï¿½ï¿½Eï¿½ï¿½Eï¿½ï¿½Eï¿½ï¿½Eï¿½{ï¿½Eï¿½ï¿½Eï¿½(0,1,2)
-		BOOL lowres;					// 15kHzï¿½Eï¿½tï¿½Eï¿½ï¿½Eï¿½ï¿½Eï¿½O
+		BOOL crtc;						// CRTC•ÏXƒtƒ‰ƒO
+		int width;						// X•ûŒüƒhƒbƒg”(256`)
+		int h_mul;							// X multiplier
+		int height;						// Y•ûŒüƒhƒbƒg”(256`)
+		int v_mul;							// Y multiplier
+		BOOL siz;						// ŽÀ‰æ–ÊƒTƒCƒY
+		BOOL lowres;					// 15kHzƒtƒ‰ƒO
+		int hres;						// …•½Žü”g”ƒ‚[ƒh(0:15kHz, 1:24kHz, 2:31kHz)
+		int hd;							// …•½ƒhƒbƒg”
+		int vd;							// ‚’¼ƒhƒbƒg”
+		BOOL hrl;						// HRL(ƒVƒXƒeƒ€ƒ|[ƒg)
+
+		// CRTƒGƒ~ƒ…ƒŒ[ƒVƒ‡ƒ“—p
+		int h_disp;						// …•½•\Ž¦•
+		int v_disp;						// ‚’¼•\Ž¦•
+		int h_total;					// …•½“¯Šú•
+		int v_total;					// ‚’¼“¯Šú•
+		int h_pulse;					// …•½ƒpƒ‹ƒX•
+		int v_pulse;					// ‚’¼ƒpƒ‹ƒX•
+		int h_start;					// …•½•`‰æˆÊ’u
+		int v_start;					// ‚’¼•`‰æˆÊ’u
+		BOOL scanline;					// ƒXƒLƒƒƒ“ƒ‰ƒCƒ“ƒ‚[ƒh
 
 		// VC
-		BOOL vc;						// VCï¿½Eï¿½ÏXï¿½Eï¿½tï¿½Eï¿½ï¿½Eï¿½ï¿½Eï¿½O
+		BOOL vc;						// VC•ÏXƒtƒ‰ƒO
 
-		// ï¿½Eï¿½ï¿½Eï¿½ï¿½Eï¿½ï¿½Eï¿½
-		BOOL mix[1024];					// ï¿½Eï¿½ï¿½Eï¿½ï¿½Eï¿½ï¿½Eï¿½ï¿½Eï¿½tï¿½Eï¿½ï¿½Eï¿½ï¿½Eï¿½O(ï¿½Eï¿½ï¿½Eï¿½ï¿½Eï¿½Cï¿½Eï¿½ï¿½Eï¿½)
-		DWORD *mixbuf;					// ï¿½Eï¿½ï¿½Eï¿½ï¿½Eï¿½ï¿½Eï¿½ï¿½Eï¿½oï¿½Eï¿½bï¿½Eï¿½tï¿½Eï¿½@
-		DWORD *mixptr[8];				// ï¿½Eï¿½ï¿½Eï¿½ï¿½Eï¿½ï¿½Eï¿½ï¿½Eï¿½|ï¿½Eï¿½Cï¿½Eï¿½ï¿½Eï¿½ï¿½Eï¿½^
-		DWORD mixshift[8];				// ï¿½Eï¿½ï¿½Eï¿½ï¿½Eï¿½ï¿½Eï¿½ï¿½Eï¿½|ï¿½Eï¿½Cï¿½Eï¿½ï¿½Eï¿½ï¿½Eï¿½^ï¿½Eï¿½ï¿½Eï¿½Yï¿½Eï¿½Vï¿½Eï¿½tï¿½Eï¿½g
-		DWORD *mixx[8];					// ï¿½Eï¿½ï¿½Eï¿½ï¿½Eï¿½ï¿½Eï¿½ï¿½Eï¿½|ï¿½Eï¿½Cï¿½Eï¿½ï¿½Eï¿½ï¿½Eï¿½^ï¿½Eï¿½ï¿½Eï¿½Xï¿½Eï¿½Xï¿½Eï¿½Nï¿½Eï¿½ï¿½Eï¿½ï¿½Eï¿½[ï¿½Eï¿½ï¿½Eï¿½ï¿½Eï¿½|ï¿½Eï¿½Cï¿½Eï¿½ï¿½Eï¿½ï¿½Eï¿½^
-		DWORD *mixy[8];					// ï¿½Eï¿½ï¿½Eï¿½ï¿½Eï¿½ï¿½Eï¿½ï¿½Eï¿½|ï¿½Eï¿½Cï¿½Eï¿½ï¿½Eï¿½ï¿½Eï¿½^ï¿½Eï¿½ï¿½Eï¿½Yï¿½Eï¿½Xï¿½Eï¿½Nï¿½Eï¿½ï¿½Eï¿½ï¿½Eï¿½[ï¿½Eï¿½ï¿½Eï¿½ï¿½Eï¿½|ï¿½Eï¿½Cï¿½Eï¿½ï¿½Eï¿½ï¿½Eï¿½^
-		DWORD mixand[8];				// ï¿½Eï¿½ï¿½Eï¿½ï¿½Eï¿½ï¿½Eï¿½ï¿½Eï¿½|ï¿½Eï¿½Cï¿½Eï¿½ï¿½Eï¿½ï¿½Eï¿½^ï¿½Eï¿½ÌƒXï¿½Eï¿½Nï¿½Eï¿½ï¿½Eï¿½ï¿½Eï¿½[ï¿½Eï¿½ï¿½Eï¿½ANDï¿½Eï¿½l
-		int mixmap[3];					// ï¿½Eï¿½ï¿½Eï¿½ï¿½Eï¿½ï¿½Eï¿½ï¿½Eï¿½}ï¿½Eï¿½bï¿½Eï¿½v
-		int mixtype;					// ï¿½Eï¿½ï¿½Eï¿½ï¿½Eï¿½ï¿½Eï¿½ï¿½Eï¿½^ï¿½Eï¿½Cï¿½Eï¿½v
-		int mixpage;					// ï¿½Eï¿½ï¿½Eï¿½ï¿½Eï¿½ï¿½Eï¿½ï¿½Eï¿½Oï¿½Eï¿½ï¿½Eï¿½ï¿½Eï¿½tï¿½Eï¿½Bï¿½Eï¿½bï¿½Eï¿½Nï¿½Eï¿½yï¿½Eï¿½[ï¿½Eï¿½Wï¿½Eï¿½ï¿½Eï¿½
-		int mixwidth;					// ï¿½Eï¿½ï¿½Eï¿½ï¿½Eï¿½ï¿½Eï¿½ï¿½Eï¿½oï¿½Eï¿½bï¿½Eï¿½tï¿½Eï¿½@ï¿½Eï¿½ï¿½Eï¿½
-		int mixheight;					// ï¿½Eï¿½ï¿½Eï¿½ï¿½Eï¿½ï¿½Eï¿½ï¿½Eï¿½oï¿½Eï¿½bï¿½Eï¿½tï¿½Eï¿½@ï¿½Eï¿½ï¿½Eï¿½ï¿½Eï¿½ï¿½Eï¿½
-		int mixlen;						// ï¿½Eï¿½ï¿½Eï¿½ï¿½Eï¿½ï¿½Eï¿½ï¿½Eï¿½ï¿½Eï¿½ï¿½Eï¿½ï¿½Eï¿½ï¿½Eï¿½ï¿½Eï¿½ï¿½Eï¿½ï¿½Eï¿½ï¿½Eï¿½ï¿½Eï¿½(xï¿½Eï¿½ï¿½Eï¿½ï¿½Eï¿½ï¿½Eï¿½)
+		// ‡¬
+		BYTE mix[1024];					// ‡¬ƒtƒ‰ƒO(ƒ‰ƒCƒ“)
+		DWORD *mixbuf;					// ‡¬ƒoƒbƒtƒ@
+		DWORD *mixptr[8];				// ‡¬ƒ|ƒCƒ“ƒ^
+		DWORD mixshift[8];				// ‡¬ƒ|ƒCƒ“ƒ^‚ÌYƒVƒtƒg
+		DWORD mixrshift[8];				// ‡¬ƒ|ƒCƒ“ƒ^‚ÌYƒVƒtƒg(‰E)
+		DWORD mixlshift[8];				// ‡¬ƒ|ƒCƒ“ƒ^‚ÌYƒVƒtƒg(¶)
+		DWORD *mixx[8];					// ‡¬ƒ|ƒCƒ“ƒ^‚ÌXƒXƒNƒ[ƒ‹ƒ|ƒCƒ“ƒ^
+		DWORD *mixy[8];					// ‡¬ƒ|ƒCƒ“ƒ^‚ÌYƒXƒNƒ[ƒ‹ƒ|ƒCƒ“ƒ^
+		DWORD mixandx[8];				// ‡¬ƒ|ƒCƒ“ƒ^‚ÌƒXƒNƒ[ƒ‹AND’l(X)
+		DWORD mixandy[8];				// ‡¬ƒ|ƒCƒ“ƒ^‚ÌƒXƒNƒ[ƒ‹AND’l(Y)
+		DWORD mixraster[8];				// ‡¬ƒ|ƒCƒ“ƒ^‚Ìƒ‰ƒXƒ^[ˆÊ’u’²®’l
+		int mixmap[3];					// ‡¬ƒ}ƒbƒv
+		int mixtype;					// ‡¬ƒ^ƒCƒv
+		int mixpage;					// ‡¬ƒOƒ‰ƒtƒBƒbƒNƒy[ƒW”
+		int mixwidth;					// ‡¬ƒoƒbƒtƒ@•
+		int mixheight;					// ‡¬ƒoƒbƒtƒ@‚‚³
+		int mixlen;						// ‡¬Žžˆ—’·‚³(x•ûŒü)
+		int mixmode;					// ‡¬ƒ‚[ƒh(0:ƒmƒCƒ“ƒ^ƒŒ[ƒX, 1:ƒCƒ“ƒ^ƒŒ[ƒXC2:2“x“Ç‚Ý)
+		BOOL mixeven;					// ƒCƒ“ƒ^ƒŒ[ƒXŽž‚Ì‡¬‹ôŠï
+		int sp;							// —Dæ‡ˆÊ(ƒXƒvƒ‰ƒCƒg)
+		int gr;							// —Dæ‡ˆÊ(ƒOƒ‰ƒtƒBƒbƒNƒX)
+		int tx;							// —Dæ‡ˆÊ(ƒeƒLƒXƒg)
+		BOOL mixdirty;					// ‡¬ƒ_[ƒeƒB[ƒtƒ‰ƒO
 
-		// ï¿½Eï¿½`ï¿½Eï¿½ï¿½Eï¿½
-		BOOL draw[1024];				// ï¿½Eï¿½`ï¿½Eï¿½ï¿½Eï¿½tï¿½Eï¿½ï¿½Eï¿½ï¿½Eï¿½O(ï¿½Eï¿½ï¿½Eï¿½ï¿½Eï¿½Cï¿½Eï¿½ï¿½Eï¿½)
-		BOOL *drawflag;					// ï¿½Eï¿½`ï¿½Eï¿½ï¿½Eï¿½tï¿½Eï¿½ï¿½Eï¿½ï¿½Eï¿½O(16dot)
+		// •`‰æ
+		BOOL draw[1024];				// •`‰æƒtƒ‰ƒO(ƒ‰ƒCƒ“)
+		BOOL *drawflag;					// •`‰æƒtƒ‰ƒO(16dot)
 
-		// ï¿½Eï¿½Rï¿½Eï¿½ï¿½Eï¿½ï¿½Eï¿½gï¿½Eï¿½ï¿½Eï¿½ï¿½Eï¿½Xï¿½Eï¿½g
-		BOOL contrast;					// ï¿½Eï¿½Rï¿½Eï¿½ï¿½Eï¿½ï¿½Eï¿½gï¿½Eï¿½ï¿½Eï¿½ï¿½Eï¿½Xï¿½Eï¿½gï¿½Eï¿½ÏXï¿½Eï¿½tï¿½Eï¿½ï¿½Eï¿½ï¿½Eï¿½O
-		int contlevel;					// ï¿½Eï¿½Rï¿½Eï¿½ï¿½Eï¿½ï¿½Eï¿½gï¿½Eï¿½ï¿½Eï¿½ï¿½Eï¿½Xï¿½Eï¿½g
+		// ƒRƒ“ƒgƒ‰ƒXƒg
+		BOOL contrast;					// ƒRƒ“ƒgƒ‰ƒXƒg•ÏXƒtƒ‰ƒO
+		int contlevel;					// ƒRƒ“ƒgƒ‰ƒXƒg(Ý’èƒŒƒxƒ‹)
+		int contvalue;					// ƒRƒ“ƒgƒ‰ƒXƒg(Œ»Ý‚Ì’l)
+		DWORD conttime;					// ‘O‰ñƒRƒ“ƒgƒ‰ƒXƒg‚ð•ÏX‚µ‚½Žž
 
-		// ï¿½Eï¿½pï¿½Eï¿½ï¿½Eï¿½ï¿½Eï¿½bï¿½Eï¿½g
-		BOOL palette;					// ï¿½Eï¿½pï¿½Eï¿½ï¿½Eï¿½ï¿½Eï¿½bï¿½Eï¿½gï¿½Eï¿½ÏXï¿½Eï¿½tï¿½Eï¿½ï¿½Eï¿½ï¿½Eï¿½O
-		BOOL palmod[0x200];				// ï¿½Eï¿½pï¿½Eï¿½ï¿½Eï¿½ï¿½Eï¿½bï¿½Eï¿½gï¿½Eï¿½ÏXï¿½Eï¿½tï¿½Eï¿½ï¿½Eï¿½ï¿½Eï¿½O
-		DWORD *palbuf;					// ï¿½Eï¿½pï¿½Eï¿½ï¿½Eï¿½ï¿½Eï¿½bï¿½Eï¿½gï¿½Eï¿½oï¿½Eï¿½bï¿½Eï¿½tï¿½Eï¿½@
-		DWORD *palptr;					// ï¿½Eï¿½pï¿½Eï¿½ï¿½Eï¿½ï¿½Eï¿½bï¿½Eï¿½gï¿½Eï¿½|ï¿½Eï¿½Cï¿½Eï¿½ï¿½Eï¿½ï¿½Eï¿½^
-		const WORD *palvc;				// ï¿½Eï¿½pï¿½Eï¿½ï¿½Eï¿½ï¿½Eï¿½bï¿½Eï¿½gVCï¿½Eï¿½|ï¿½Eï¿½Cï¿½Eï¿½ï¿½Eï¿½ï¿½Eï¿½^
-		DWORD paldata[0x200];			// ï¿½Eï¿½pï¿½Eï¿½ï¿½Eï¿½ï¿½Eï¿½bï¿½Eï¿½gï¿½Eï¿½fï¿½Eï¿½[ï¿½Eï¿½^
-		BYTE pal64k[0x200];				// ï¿½Eï¿½pï¿½Eï¿½ï¿½Eï¿½ï¿½Eï¿½bï¿½Eï¿½gï¿½Eï¿½fï¿½Eï¿½[ï¿½Eï¿½^ï¿½Eï¿½ÏŒ`
+		// ƒpƒŒƒbƒg
+		BOOL palette;					// ƒpƒŒƒbƒg•ÏXƒtƒ‰ƒO
+		BYTE palmod[0x200];				// ƒpƒŒƒbƒg•ÏXƒtƒ‰ƒO
+		DWORD *palbuf;					// ƒpƒŒƒbƒgƒoƒbƒtƒ@
+		DWORD *palptr;					// ƒpƒŒƒbƒgƒ|ƒCƒ“ƒ^
+		const WORD *palvc;				// ƒpƒŒƒbƒgVCƒ|ƒCƒ“ƒ^
+		DWORD paldata[0x200];			// ƒpƒŒƒbƒgƒf[ƒ^
+		BYTE pal64k[0x200];				// ƒpƒŒƒbƒgƒf[ƒ^•ÏŒ`
 
-		// ï¿½Eï¿½eï¿½Eï¿½Lï¿½Eï¿½Xï¿½Eï¿½gVRAM
-		BOOL texten;					// ï¿½Eï¿½eï¿½Eï¿½Lï¿½Eï¿½Xï¿½Eï¿½gï¿½Eï¿½\ï¿½Eï¿½ï¿½Eï¿½ï¿½Eï¿½tï¿½Eï¿½ï¿½Eï¿½ï¿½Eï¿½O
-		BOOL textpal[1024];				// ï¿½Eï¿½eï¿½Eï¿½Lï¿½Eï¿½Xï¿½Eï¿½gï¿½Eï¿½pï¿½Eï¿½ï¿½Eï¿½ï¿½Eï¿½bï¿½Eï¿½gï¿½Eï¿½tï¿½Eï¿½ï¿½Eï¿½ï¿½Eï¿½O
-		BOOL textmod[1024];				// ï¿½Eï¿½eï¿½Eï¿½Lï¿½Eï¿½Xï¿½Eï¿½gï¿½Eï¿½Xï¿½Eï¿½Vï¿½Eï¿½tï¿½Eï¿½ï¿½Eï¿½ï¿½Eï¿½O(ï¿½Eï¿½ï¿½Eï¿½ï¿½Eï¿½Cï¿½Eï¿½ï¿½Eï¿½)
-		BOOL *textflag;					// ï¿½Eï¿½eï¿½Eï¿½Lï¿½Eï¿½Xï¿½Eï¿½gï¿½Eï¿½Xï¿½Eï¿½Vï¿½Eï¿½tï¿½Eï¿½ï¿½Eï¿½ï¿½Eï¿½O(32dot)
-		BYTE *textbuf;					// ï¿½Eï¿½eï¿½Eï¿½Lï¿½Eï¿½Xï¿½Eï¿½gï¿½Eï¿½oï¿½Eï¿½bï¿½Eï¿½tï¿½Eï¿½@(ï¿½Eï¿½pï¿½Eï¿½ï¿½Eï¿½ï¿½Eï¿½bï¿½Eï¿½gï¿½Eï¿½O)
-		DWORD *textout;					// ï¿½Eï¿½eï¿½Eï¿½Lï¿½Eï¿½Xï¿½Eï¿½gï¿½Eï¿½oï¿½Eï¿½bï¿½Eï¿½tï¿½Eï¿½@(ï¿½Eï¿½pï¿½Eï¿½ï¿½Eï¿½ï¿½Eï¿½bï¿½Eï¿½gï¿½Eï¿½ï¿½Eï¿½)
-		const BYTE *texttv;				// ï¿½Eï¿½eï¿½Eï¿½Lï¿½Eï¿½Xï¿½Eï¿½gTVRAMï¿½Eï¿½|ï¿½Eï¿½Cï¿½Eï¿½ï¿½Eï¿½ï¿½Eï¿½^
-		DWORD textx;					// ï¿½Eï¿½eï¿½Eï¿½Lï¿½Eï¿½Xï¿½Eï¿½gï¿½Eï¿½Xï¿½Eï¿½Nï¿½Eï¿½ï¿½Eï¿½ï¿½Eï¿½[ï¿½Eï¿½ï¿½Eï¿½X
-		DWORD texty;					// ï¿½Eï¿½eï¿½Eï¿½Lï¿½Eï¿½Xï¿½Eï¿½gï¿½Eï¿½Xï¿½Eï¿½Nï¿½Eï¿½ï¿½Eï¿½ï¿½Eï¿½[ï¿½Eï¿½ï¿½Eï¿½Y
+		// ƒpƒŒƒbƒg(”¼“§–¾A“ÁŽêƒvƒ‰ƒCƒIƒŠƒeƒB)
+		DWORD paldataGB[0x100];			// ƒpƒŒƒbƒgƒf[ƒ^(GVRAMŽw’è:ƒx[ƒXƒy[ƒW)
+		DWORD paldataGS[0x100];			// ƒpƒŒƒbƒgƒf[ƒ^(GVRAMŽw’è:ƒZƒJƒ“ƒhƒy[ƒW)
+		DWORD paldataPB[0x100];			// ƒpƒŒƒbƒgƒf[ƒ^(ƒpƒŒƒbƒgŽw’è:ƒx[ƒXƒy[ƒW)
+		DWORD paldataPS[0x100];			// ƒpƒŒƒbƒgƒf[ƒ^(ƒpƒŒƒbƒgŽw’è:ƒZƒJƒ“ƒhƒy[ƒW)
 
-		// ï¿½Eï¿½Oï¿½Eï¿½ï¿½Eï¿½ï¿½Eï¿½tï¿½Eï¿½Bï¿½Eï¿½bï¿½Eï¿½NVRAM
-		int grptype;					// ï¿½Eï¿½Oï¿½Eï¿½ï¿½Eï¿½ï¿½Eï¿½tï¿½Eï¿½Bï¿½Eï¿½bï¿½Eï¿½Nï¿½Eï¿½^ï¿½Eï¿½Cï¿½Eï¿½v(0ï¿½Eï¿½`4)
-		BOOL grpen[4];					// ï¿½Eï¿½Oï¿½Eï¿½ï¿½Eï¿½ï¿½Eï¿½tï¿½Eï¿½Bï¿½Eï¿½bï¿½Eï¿½Nï¿½Eï¿½uï¿½Eï¿½ï¿½Eï¿½ï¿½Eï¿½bï¿½Eï¿½Nï¿½Eï¿½\ï¿½Eï¿½ï¿½Eï¿½ï¿½Eï¿½tï¿½Eï¿½ï¿½Eï¿½ï¿½Eï¿½O
-		BOOL grppal[2048];				// ï¿½Eï¿½Oï¿½Eï¿½ï¿½Eï¿½ï¿½Eï¿½tï¿½Eï¿½Bï¿½Eï¿½bï¿½Eï¿½Nï¿½Eï¿½pï¿½Eï¿½ï¿½Eï¿½ï¿½Eï¿½bï¿½Eï¿½gï¿½Eï¿½tï¿½Eï¿½ï¿½Eï¿½ï¿½Eï¿½O
-		BOOL grpmod[2048];				// ï¿½Eï¿½Oï¿½Eï¿½ï¿½Eï¿½ï¿½Eï¿½tï¿½Eï¿½Bï¿½Eï¿½bï¿½Eï¿½Nï¿½Eï¿½Xï¿½Eï¿½Vï¿½Eï¿½tï¿½Eï¿½ï¿½Eï¿½ï¿½Eï¿½O(ï¿½Eï¿½ï¿½Eï¿½ï¿½Eï¿½Cï¿½Eï¿½ï¿½Eï¿½)
-		BOOL *grpflag;					// ï¿½Eï¿½Oï¿½Eï¿½ï¿½Eï¿½ï¿½Eï¿½tï¿½Eï¿½Bï¿½Eï¿½bï¿½Eï¿½Nï¿½Eï¿½Xï¿½Eï¿½Vï¿½Eï¿½tï¿½Eï¿½ï¿½Eï¿½ï¿½Eï¿½O(16dot)
-		DWORD *grpbuf[4];				// ï¿½Eï¿½Oï¿½Eï¿½ï¿½Eï¿½ï¿½Eï¿½tï¿½Eï¿½Bï¿½Eï¿½bï¿½Eï¿½Nï¿½Eï¿½uï¿½Eï¿½ï¿½Eï¿½ï¿½Eï¿½bï¿½Eï¿½Nï¿½Eï¿½oï¿½Eï¿½bï¿½Eï¿½tï¿½Eï¿½@
-		const BYTE* grpgv;				// ï¿½Eï¿½Oï¿½Eï¿½ï¿½Eï¿½ï¿½Eï¿½tï¿½Eï¿½Bï¿½Eï¿½bï¿½Eï¿½NGVRAMï¿½Eï¿½|ï¿½Eï¿½Cï¿½Eï¿½ï¿½Eï¿½ï¿½Eï¿½^
-		DWORD grpx[4];					// ï¿½Eï¿½Oï¿½Eï¿½ï¿½Eï¿½ï¿½Eï¿½tï¿½Eï¿½Bï¿½Eï¿½bï¿½Eï¿½Nï¿½Eï¿½uï¿½Eï¿½ï¿½Eï¿½ï¿½Eï¿½bï¿½Eï¿½Nï¿½Eï¿½Xï¿½Eï¿½Nï¿½Eï¿½ï¿½Eï¿½ï¿½Eï¿½[ï¿½Eï¿½ï¿½Eï¿½X
-		DWORD grpy[4];					// ï¿½Eï¿½Oï¿½Eï¿½ï¿½Eï¿½ï¿½Eï¿½tï¿½Eï¿½Bï¿½Eï¿½bï¿½Eï¿½Nï¿½Eï¿½uï¿½Eï¿½ï¿½Eï¿½ï¿½Eï¿½bï¿½Eï¿½Nï¿½Eï¿½Xï¿½Eï¿½Nï¿½Eï¿½ï¿½Eï¿½ï¿½Eï¿½[ï¿½Eï¿½ï¿½Eï¿½Y
+		// ƒeƒLƒXƒgVRAM
+		BOOL texten;					// ƒeƒLƒXƒg•\Ž¦ƒtƒ‰ƒO
+		BYTE textpal[1024];				// ƒeƒLƒXƒgƒpƒŒƒbƒgƒtƒ‰ƒO
+		BOOL textmod[1024];				// ƒeƒLƒXƒgXVƒtƒ‰ƒO(ƒ‰ƒCƒ“)
+		BOOL *textflag;					// ƒeƒLƒXƒgXVƒtƒ‰ƒO(32dot)
+		BYTE *textbuf;					// ƒeƒLƒXƒgƒoƒbƒtƒ@(ƒpƒŒƒbƒg‘O)
+		DWORD *textout;					// ƒeƒLƒXƒgƒoƒbƒtƒ@(ƒpƒŒƒbƒgŒã)
+		const BYTE *texttv;				// ƒeƒLƒXƒgTVRAMƒ|ƒCƒ“ƒ^
+		DWORD textx;					// ƒeƒLƒXƒgƒXƒNƒ[ƒ‹X
+		DWORD texty;					// ƒeƒLƒXƒgƒXƒNƒ[ƒ‹Y
+		BOOL textdirty;					// ƒeƒLƒXƒgƒ_[ƒeƒB[ƒtƒ‰ƒO
+
+		// ƒOƒ‰ƒtƒBƒbƒNVRAM
+		int grptype;					// ƒOƒ‰ƒtƒBƒbƒNƒ^ƒCƒv(0`4)
+		BYTE grppal[2048];				// ƒOƒ‰ƒtƒBƒbƒNƒpƒŒƒbƒgƒtƒ‰ƒO
+		BOOL grpmod[2048];				// ƒOƒ‰ƒtƒBƒbƒNXVƒtƒ‰ƒO(ƒ‰ƒCƒ“)
+		BOOL *grpflag;					// ƒOƒ‰ƒtƒBƒbƒNXVƒtƒ‰ƒO(16dot)
+		DWORD *grpbuf[4];				// ƒOƒ‰ƒtƒBƒbƒNƒuƒƒbƒNƒoƒbƒtƒ@
+		const BYTE* grpgv;				// ƒOƒ‰ƒtƒBƒbƒNGVRAMƒ|ƒCƒ“ƒ^
+		BOOL grpscrl;					// ƒOƒ‰ƒtƒBƒbƒNƒXƒNƒ[ƒ‹XVƒtƒ‰ƒO
+		DWORD grpx[4];					// ƒOƒ‰ƒtƒBƒbƒNƒuƒƒbƒNƒXƒNƒ[ƒ‹X
+		DWORD grpy[4];					// ƒOƒ‰ƒtƒBƒbƒNƒuƒƒbƒNƒXƒNƒ[ƒ‹Y
+		int grpdx[4];					// ƒOƒ‰ƒtƒBƒbƒNƒuƒƒbƒNƒXƒNƒ[ƒ‹X·•ª
+		int grpdy[4];					// ƒOƒ‰ƒtƒBƒbƒNƒuƒƒbƒNƒXƒNƒ[ƒ‹Y·•ª
+		BOOL grppen[4];					// ƒOƒ‰ƒtƒBƒbƒNƒy[ƒW—LŒøƒtƒ‰ƒO
+		BOOL grpen[4];					// Graphic enable mirror
+		BOOL grpben[4];					// ƒOƒ‰ƒtƒBƒbƒNƒuƒƒbƒN—LŒøƒtƒ‰ƒO
+		BOOL grpnorm[4];				// ƒOƒ‰ƒtƒBƒbƒN„§Ý’èƒy[ƒWƒtƒ‰ƒO
+		BOOL grpdirty;					// ƒOƒ‰ƒtƒBƒbƒNƒ_[ƒeƒB[ƒtƒ‰ƒO
 
 		// PCG
-		BOOL pcgready[256 * 16];		// PCGï¿½Eï¿½ï¿½Eï¿½ï¿½Eï¿½ï¿½Eï¿½OKï¿½Eï¿½tï¿½Eï¿½ï¿½Eï¿½ï¿½Eï¿½O
-		DWORD pcguse[256 * 16];			// PCGï¿½Eï¿½gï¿½Eï¿½pï¿½Eï¿½ï¿½Eï¿½ï¿½Eï¿½Jï¿½Eï¿½Eï¿½Eï¿½ï¿½Eï¿½ï¿½Eï¿½g
-		DWORD pcgpal[16];				// PCGï¿½Eï¿½pï¿½Eï¿½ï¿½Eï¿½ï¿½Eï¿½bï¿½Eï¿½gï¿½Eï¿½gï¿½Eï¿½pï¿½Eï¿½Jï¿½Eï¿½Eï¿½Eï¿½ï¿½Eï¿½ï¿½Eï¿½g
-		DWORD *pcgbuf;					// PCGï¿½Eï¿½oï¿½Eï¿½bï¿½Eï¿½tï¿½Eï¿½@
-		const BYTE* sprmem;				// ï¿½Eï¿½Xï¿½Eï¿½vï¿½Eï¿½ï¿½Eï¿½ï¿½Eï¿½Cï¿½Eï¿½gï¿½Eï¿½ï¿½Eï¿½ï¿½Eï¿½ï¿½Eï¿½ï¿½Eï¿½ï¿½Eï¿½
+		BOOL pcgready[256 * 16];		// PCG€”õOKƒtƒ‰ƒO
+		DWORD pcguse[256 * 16];			// PCGŽg—p’†ƒJƒEƒ“ƒg
+		DWORD pcgpal[16];				// PCGƒpƒŒƒbƒgŽg—pƒJƒEƒ“ƒg
+		DWORD *pcgbuf;					// PCGƒoƒbƒtƒ@
+		const BYTE* sprmem;				// ƒXƒvƒ‰ƒCƒgƒƒ‚ƒŠ
 
-		// ï¿½Eï¿½Xï¿½Eï¿½vï¿½Eï¿½ï¿½Eï¿½ï¿½Eï¿½Cï¿½Eï¿½g
-		DWORD **spptr;					// ï¿½Eï¿½Xï¿½Eï¿½vï¿½Eï¿½ï¿½Eï¿½ï¿½Eï¿½Cï¿½Eï¿½gï¿½Eï¿½|ï¿½Eï¿½Cï¿½Eï¿½ï¿½Eï¿½ï¿½Eï¿½^ï¿½Eï¿½oï¿½Eï¿½bï¿½Eï¿½tï¿½Eï¿½@
-		DWORD spreg[0x200];				// ï¿½Eï¿½Xï¿½Eï¿½vï¿½Eï¿½ï¿½Eï¿½ï¿½Eï¿½Cï¿½Eï¿½gï¿½Eï¿½ï¿½Eï¿½ï¿½Eï¿½Wï¿½Eï¿½Xï¿½Eï¿½^ï¿½Eï¿½Û‘ï¿½
-		BOOL spuse[128];				// ï¿½Eï¿½Xï¿½Eï¿½vï¿½Eï¿½ï¿½Eï¿½ï¿½Eï¿½Cï¿½Eï¿½gï¿½Eï¿½gï¿½Eï¿½pï¿½Eï¿½ï¿½Eï¿½ï¿½Eï¿½tï¿½Eï¿½ï¿½Eï¿½ï¿½Eï¿½O
+		// ƒXƒvƒ‰ƒCƒg
+		DWORD **spptr;					// ƒXƒvƒ‰ƒCƒgƒ|ƒCƒ“ƒ^ƒoƒbƒtƒ@
+		DWORD spreg[0x200];				// ƒXƒvƒ‰ƒCƒgƒŒƒWƒXƒ^•Û‘¶
+		BOOL spuse[128];				// ƒXƒvƒ‰ƒCƒgŽg—p’†ƒtƒ‰ƒO
 
 		// BG
-		DWORD bgreg[2][64 * 64];		// BGï¿½Eï¿½ï¿½Eï¿½ï¿½Eï¿½Wï¿½Eï¿½Xï¿½Eï¿½^ï¿½Eï¿½{ï¿½Eï¿½ÏXï¿½Eï¿½tï¿½Eï¿½ï¿½Eï¿½ï¿½Eï¿½O($10000)
-		BOOL bgall[2][64];				// BGï¿½Eï¿½ÏXï¿½Eï¿½tï¿½Eï¿½ï¿½Eï¿½ï¿½Eï¿½O(ï¿½Eï¿½uï¿½Eï¿½ï¿½Eï¿½ï¿½Eï¿½bï¿½Eï¿½Nï¿½Eï¿½Pï¿½Eï¿½ï¿½Eï¿½)
-		BOOL bgdisp[2];					// BGï¿½Eï¿½\ï¿½Eï¿½ï¿½Eï¿½ï¿½Eï¿½tï¿½Eï¿½ï¿½Eï¿½ï¿½Eï¿½O
-		BOOL bgarea[2];					// BGï¿½Eï¿½\ï¿½Eï¿½ï¿½Eï¿½ï¿½Eï¿½Gï¿½Eï¿½ï¿½Eï¿½ï¿½Eï¿½A
-		BOOL bgsize;					// BGï¿½Eï¿½\ï¿½Eï¿½ï¿½Eï¿½ï¿½Eï¿½Tï¿½Eï¿½Cï¿½Eï¿½Y(16dot=TRUE)
-		DWORD **bgptr[2];				// BGï¿½Eï¿½|ï¿½Eï¿½Cï¿½Eï¿½ï¿½Eï¿½ï¿½Eï¿½^+ï¿½Eï¿½fï¿½Eï¿½[ï¿½Eï¿½^
-		BOOL bgmod[2][1024];			// BGï¿½Eï¿½Xï¿½Eï¿½Vï¿½Eï¿½tï¿½Eï¿½ï¿½Eï¿½ï¿½Eï¿½O
-		DWORD bgx[2];					// BGï¿½Eï¿½Xï¿½Eï¿½Nï¿½Eï¿½ï¿½Eï¿½ï¿½Eï¿½[ï¿½Eï¿½ï¿½Eï¿½(X)
-		DWORD bgy[2];					// BGï¿½Eï¿½Xï¿½Eï¿½Nï¿½Eï¿½ï¿½Eï¿½ï¿½Eï¿½[ï¿½Eï¿½ï¿½Eï¿½(Y)
+		DWORD bgreg[2][64 * 64];		// BGƒŒƒWƒXƒ^{•ÏXƒtƒ‰ƒO($10000)
+		BOOL bgall[2][64];				// BG•ÏXƒtƒ‰ƒO(ƒuƒƒbƒN’PˆÊ)
+		BOOL bgdisp[2];					// BG•\Ž¦ƒtƒ‰ƒO
+		BOOL bgarea[2];					// BG•\Ž¦ƒGƒŠƒA
+		BOOL bgsize;					// BG•\Ž¦ƒTƒCƒY(16dot=TRUE)
+		bgdata_t *bgptr[2];				// BGƒ|ƒCƒ“ƒ^+ƒf[ƒ^
+		BOOL bgmod[2][1024];			// BGXVƒtƒ‰ƒO
+		DWORD bgx[2];					// BGƒXƒNƒ[ƒ‹(X)
+		DWORD bgy[2];					// BGƒXƒNƒ[ƒ‹(Y)
 
-		// BG/ï¿½Eï¿½Xï¿½Eï¿½vï¿½Eï¿½ï¿½Eï¿½ï¿½Eï¿½Cï¿½Eï¿½gï¿½Eï¿½ï¿½Eï¿½ï¿½Eï¿½ï¿½Eï¿½
-		BOOL bgspflag;					// BG/ï¿½Eï¿½Xï¿½Eï¿½vï¿½Eï¿½ï¿½Eï¿½ï¿½Eï¿½Cï¿½Eï¿½gï¿½Eï¿½\ï¿½Eï¿½ï¿½Eï¿½ï¿½Eï¿½tï¿½Eï¿½ï¿½Eï¿½ï¿½Eï¿½O
-		BOOL bgspdisp;					// BG/ï¿½Eï¿½Xï¿½Eï¿½vï¿½Eï¿½ï¿½Eï¿½ï¿½Eï¿½Cï¿½Eï¿½gCPU/Videoï¿½Eï¿½tï¿½Eï¿½ï¿½Eï¿½ï¿½Eï¿½O
-		BOOL bgspmod[512];				// BG/ï¿½Eï¿½Xï¿½Eï¿½vï¿½Eï¿½ï¿½Eï¿½ï¿½Eï¿½Cï¿½Eï¿½gï¿½Eï¿½Xï¿½Eï¿½Vï¿½Eï¿½tï¿½Eï¿½ï¿½Eï¿½ï¿½Eï¿½O
-		DWORD *bgspbuf;					// BG/ï¿½Eï¿½Xï¿½Eï¿½vï¿½Eï¿½ï¿½Eï¿½ï¿½Eï¿½Cï¿½Eï¿½gï¿½Eï¿½oï¿½Eï¿½bï¿½Eï¿½tï¿½Eï¿½@
-		DWORD fast_bg_linebuf[1024];
-		WORD fast_bg_pribuf[1024];
-		BYTE fast_text_trflag[1024];
-		DWORD fast_grp_linebuf[1024];
-		DWORD fast_grp_linebuf_sp[1024];
-		DWORD fast_grp_linebuf_sp2[1024];
-		BOOL fast_grp_linebuf_sp_tr[1024];
-		DWORD fast_stamp_counter;
-		DWORD fast_mix_stamp[1024];
-		DWORD fast_mix_done[1024];
-		DWORD fast_bg_stamp[512];
-		DWORD fast_bg_done[512];
-		DWORD zero;						// ï¿½Eï¿½Xï¿½Eï¿½Nï¿½Eï¿½ï¿½Eï¿½ï¿½Eï¿½[ï¿½Eï¿½ï¿½Eï¿½ï¿½Eï¿½_ï¿½Eï¿½~ï¿½Eï¿½[(0)
+		// BG/ƒXƒvƒ‰ƒCƒg‡¬
+		BOOL bgsp;						// BG/ƒXƒvƒ‰ƒCƒg•ÏXƒtƒ‰ƒO
+		BOOL bgspflag;					// BG/ƒXƒvƒ‰ƒCƒg•\Ž¦ƒtƒ‰ƒO
+		BOOL bgspdisp;					// BG/ƒXƒvƒ‰ƒCƒgCPU/Videoƒtƒ‰ƒO
+		BYTE bgspmod[1024];				// BG/ƒXƒvƒ‰ƒCƒgXVƒtƒ‰ƒO
+		DWORD *bgspbuf;					// BG/ƒXƒvƒ‰ƒCƒgƒoƒbƒtƒ@
+		int bgsp_h;						// BG/ƒXƒvƒ‰ƒCƒg…•½ˆÊ’u’²®
+		int bgsp_v;						// BG/ƒXƒvƒ‰ƒCƒg‚’¼ˆÊ’u’²®
+		BOOL bgsp_lowres;				// BG/ƒXƒvƒ‰ƒCƒg15kHz
+		DWORD bgsp_vres;				// BG/ƒXƒvƒ‰ƒCƒg‚’¼‰ð‘œ“x
+		int bgsp_mixmode;				// BG/ƒXƒvƒ‰ƒCƒg‡¬ƒ‚[ƒh(0:ƒmƒCƒ“ƒ^ƒŒ[ƒX, 1:ƒCƒ“ƒ^ƒŒ[ƒXC2:2“x“Ç‚Ý)
+		int bgsp_rshift;				// BG/ƒXƒvƒ‰ƒCƒgƒ‰ƒXƒ^[ŽZoƒVƒtƒg—Ê(‰E)
+		int bgsp_lshift;				// BG/ƒXƒvƒ‰ƒCƒgƒ‰ƒXƒ^[ŽZoƒVƒtƒg—Ê(¶)
+		BOOL bgspdirty;					// BG/ƒXƒvƒ‰ƒCƒgƒ_[ƒeƒB[ƒtƒ‰ƒO
+		DWORD zero;						// ƒXƒNƒ[ƒ‹ƒ_ƒ~[(0)
 	} render_t;
 
-	// ï¿½Eï¿½ï¿½Eï¿½{ï¿½Eï¿½tï¿½Eï¿½@ï¿½Eï¿½ï¿½Eï¿½ï¿½Eï¿½Nï¿½Eï¿½Vï¿½Eï¿½ï¿½Eï¿½ï¿½Eï¿½ï¿½Eï¿½
-	Render(VM *p);
-										// ï¿½Eï¿½Rï¿½Eï¿½ï¿½Eï¿½ï¿½Eï¿½Xï¿½Eï¿½gï¿½Eï¿½ï¿½Eï¿½ï¿½Eï¿½Nï¿½Eï¿½^
+public:
+	// Šî–{ƒtƒ@ƒ“ƒNƒVƒ‡ƒ“
+	explicit Render(VM* p);
+										///< ƒRƒ“ƒXƒgƒ‰ƒNƒ^
 	BOOL FASTCALL Init();
-										// ï¿½Eï¿½ï¿½Eï¿½ï¿½Eï¿½ï¿½Eï¿½ï¿½Eï¿½ï¿½Eï¿½
+										// ‰Šú‰»
 	void FASTCALL Cleanup();
-										// ï¿½Eï¿½Nï¿½Eï¿½ï¿½Eï¿½ï¿½Eï¿½[ï¿½Eï¿½ï¿½Eï¿½ï¿½Eï¿½Aï¿½Eï¿½bï¿½Eï¿½v
+										// ƒNƒŠ[ƒ“ƒAƒbƒv
 	void FASTCALL Reset();
-										// ï¿½Eï¿½ï¿½Eï¿½ï¿½Eï¿½Zï¿½Eï¿½bï¿½Eï¿½g
+										// ƒŠƒZƒbƒg
 	BOOL FASTCALL Save(Fileio *fio, int ver);
-										// ï¿½Eï¿½Zï¿½Eï¿½[ï¿½Eï¿½u
+										// ƒZ[ƒu
 	BOOL FASTCALL Load(Fileio *fio, int ver);
-										// ï¿½Eï¿½ï¿½Eï¿½ï¿½Eï¿½[ï¿½Eï¿½h
+										// ƒ[ƒh
 	void FASTCALL ApplyCfg(const Config *config);
-										// ï¿½Eï¿½Ý’ï¿½Kï¿½Eï¿½p
+										// Ý’è“K—p
 
-	// ï¿½Eï¿½Oï¿½Eï¿½ï¿½Eï¿½API(ï¿½Eï¿½Rï¿½Eï¿½ï¿½Eï¿½ï¿½Eï¿½gï¿½Eï¿½ï¿½Eï¿½ï¿½Eï¿½[ï¿½Eï¿½ï¿½Eï¿½)
+	// ŠO•”API(ƒRƒ“ƒgƒ[ƒ‹)
 	void FASTCALL EnableAct(BOOL enable){ render.enable = enable; }
-										// ï¿½Eï¿½ï¿½Eï¿½ï¿½Eï¿½ï¿½Eï¿½ï¿½Eï¿½ï¿½Eï¿½ï¿½Eï¿½ï¿½Eï¿½
+										// ‡¬‹–‰Â
 	BOOL FASTCALL IsActive() const		{ return render.act; }
-										// ï¿½Eï¿½Aï¿½Eï¿½Nï¿½Eï¿½eï¿½Eï¿½Bï¿½Eï¿½uï¿½Eï¿½ï¿½Eï¿½
+										// ƒAƒNƒeƒBƒu‚©
 	BOOL FASTCALL IsReady() const		{ return (BOOL)(render.count > 0); }
+										// •`‰æƒŒƒfƒBó‹µŽæ“¾
 	void FASTCALL Complete()			{ render.count = 0; }
+										// •`‰æŠ®—¹
+	void FASTCALL StartFrame();
+										// ƒtƒŒ[ƒ€ŠJŽn(V-DISP)
+	void FASTCALL EndFrame();
+										// ƒtƒŒ[ƒ€I—¹(V-BLANK)
+	void FASTCALL HSync(int raster, int xoffset);
+	void FASTCALL HSync(int raster)		{ HSync(raster, 0); }
+										// …•½“¯Šú(raster‚Ü‚ÅI‚í‚è)
+	void FASTCALL SetMixBuf(DWORD *buf, int width, int height);
+										// ‡¬ƒoƒbƒtƒ@Žw’è
+	void FASTCALL UpdateMixBuf();
+										// ‡¬ƒoƒbƒtƒ@‚ð‹­§XV
+	render_t* FASTCALL GetWorkAddr() 	{ return &render; }
+	const render_t* FASTCALL GetWorkAddr() const { return &render; }
+	void FASTCALL SetRenderTarget(void*) {}
+										// MFC render target compatibility hook
+										// ƒ[ƒNƒAƒhƒŒƒXŽæ“¾
+#if XM6_RENDER_SYNC == 2
+	void FASTCALL SetScheduler(class CScheduler* pScheduler) { m_pScheduler = pScheduler; }
+										///< ƒXƒPƒWƒ…[ƒ‰Ú‘±
+#endif	// XM6_RENDER_SYNC == 2
+
+	// ŠO•”API(‰æ–Ê)
+	void FASTCALL SetCRTC();
+										// CRTCƒZƒbƒg
+	void FASTCALL SetVC();
+										// VCƒZƒbƒg
+	void FASTCALL SetContrast(int cont, BOOL immediate = FALSE);
+										// ƒRƒ“ƒgƒ‰ƒXƒgÝ’è
+	int FASTCALL GetContrast() const;
 	void FASTCALL SetTransparencyEnabled(BOOL enabled)	{ transparency_enabled = enabled ? TRUE : FALSE; }
 	BOOL FASTCALL IsTransparencyEnabled() const		{ return transparency_enabled; }
 	void FASTCALL SetOriginalBG0RenderEnabled(BOOL enabled)	{ original_bg0_render_enabled = enabled ? TRUE : FALSE; }
 	BOOL FASTCALL IsOriginalBG0RenderEnabled() const		{ return original_bg0_render_enabled; }
 	BOOL FASTCALL SetCompositorMode(int mode);
 	int FASTCALL GetCompositorMode() const		{ return compositor_mode; }
-	DWORD FASTCALL GetFastFallbackCount() const	{ return fast_fallback_count; }
-	void FASTCALL StartFrame();
-										// ï¿½Eï¿½tï¿½Eï¿½ï¿½Eï¿½ï¿½Eï¿½[ï¿½Eï¿½ï¿½Eï¿½ï¿½Eï¿½Jï¿½Eï¿½n(V-DISP)
-	void FASTCALL EndFrame();
-										// ï¿½Eï¿½tï¿½Eï¿½ï¿½Eï¿½ï¿½Eï¿½[ï¿½Eï¿½ï¿½Eï¿½ï¿½Eï¿½Iï¿½Eï¿½ï¿½Eï¿½(V-BLANK)
-	void FASTCALL HSync(int raster);
-										// ï¿½Eï¿½ï¿½Eï¿½ï¿½Eï¿½ï¿½Eï¿½ï¿½Eï¿½ï¿½Eï¿½ï¿½Eï¿½ï¿½Eï¿½(rasterï¿½Eï¿½Ü‚ÅIï¿½Eï¿½ï¿½Eï¿½ï¿½Eï¿½)
-	void FASTCALL SetMixBuf(DWORD *buf, int width, int height);
-										// ï¿½Eï¿½ï¿½Eï¿½ï¿½Eï¿½ï¿½Eï¿½ï¿½Eï¿½oï¿½Eï¿½bï¿½Eï¿½tï¿½Eï¿½@ï¿½Eï¿½wï¿½Eï¿½ï¿½Eï¿½
-	render_t* FASTCALL GetWorkAddr() 	{ return &render; }
-										// ï¿½Eï¿½ï¿½Eï¿½ï¿½Eï¿½[ï¿½Eï¿½Nï¿½Eï¿½Aï¿½Eï¿½hï¿½Eï¿½ï¿½Eï¿½ï¿½Eï¿½Xï¿½Eï¿½æ“¾
-
-	// ï¿½Eï¿½Oï¿½Eï¿½ï¿½Eï¿½API(ï¿½Eï¿½ï¿½Eï¿½ï¿½Eï¿½)
-	void FASTCALL SetCRTC();
-										// CRTCï¿½Eï¿½Zï¿½Eï¿½bï¿½Eï¿½g
-	void FASTCALL SetVC();
-										// VCï¿½Eï¿½Zï¿½Eï¿½bï¿½Eï¿½g
+	DWORD FASTCALL GetFastFallbackCount() const	{ return 0; }
+	void FASTCALL GetFastVerticalProbeSnapshot(fast_vertical_probe_snapshot_t *out) const;
+	BOOL FASTCALL SetRenderFastDummyEnabled(BOOL enable);
+	BOOL FASTCALL IsRenderFastDummyEnabled() const	{ return render_fast_dummy_enabled; }
+	BOOL FASTCALL EnsurePx68kFrame();
+	BOOL FASTCALL GetPx68kScreen(const WORD **out_pixels, int *out_width, int *out_height, int *out_stride) const;
+	const Px68kCrtcHost* FASTCALL GetPx68kCrtcHost() const;
+	void FASTCALL CachePx68kStateView(const Px68kCrtcStateView *view);
 	void FASTCALL ForceRecompose();
-	void FASTCALL SetContrast(int cont);
-										// ï¿½Eï¿½Rï¿½Eï¿½ï¿½Eï¿½ï¿½Eï¿½gï¿½Eï¿½ï¿½Eï¿½ï¿½Eï¿½Xï¿½Eï¿½gï¿½Eï¿½Ý’ï¿½
-	int FASTCALL GetContrast() const;
-										// ï¿½Eï¿½Rï¿½Eï¿½ï¿½Eï¿½ï¿½Eï¿½gï¿½Eï¿½ï¿½Eï¿½ï¿½Eï¿½Xï¿½Eï¿½gï¿½Eï¿½æ“¾
+										// ƒRƒ“ƒgƒ‰ƒXƒgŽæ“¾
 	void FASTCALL SetPalette(int index);
-										// ï¿½Eï¿½pï¿½Eï¿½ï¿½Eï¿½ï¿½Eï¿½bï¿½Eï¿½gï¿½Eï¿½Ý’ï¿½
+										// ƒpƒŒƒbƒgÝ’è
 	const DWORD* FASTCALL GetPalette() const;
-										// ï¿½Eï¿½pï¿½Eï¿½ï¿½Eï¿½ï¿½Eï¿½bï¿½Eï¿½gï¿½Eï¿½oï¿½Eï¿½bï¿½Eï¿½tï¿½Eï¿½@ï¿½Eï¿½æ“¾
+										// ƒpƒŒƒbƒgƒoƒbƒtƒ@Žæ“¾
 	void FASTCALL TextMem(DWORD addr);
-										// ï¿½Eï¿½eï¿½Eï¿½Lï¿½Eï¿½Xï¿½Eï¿½gVRAMï¿½Eï¿½ÏX
+										// ƒeƒLƒXƒgVRAM•ÏX
 	void FASTCALL TextScrl(DWORD x, DWORD y);
-										// ï¿½Eï¿½eï¿½Eï¿½Lï¿½Eï¿½Xï¿½Eï¿½gï¿½Eï¿½Xï¿½Eï¿½Nï¿½Eï¿½ï¿½Eï¿½ï¿½Eï¿½[ï¿½Eï¿½ï¿½Eï¿½ï¿½Eï¿½ÏX
+										// ƒeƒLƒXƒgƒXƒNƒ[ƒ‹•ÏX
 	void FASTCALL TextCopy(DWORD src, DWORD dst, DWORD plane);
-										// ï¿½Eï¿½ï¿½Eï¿½ï¿½Eï¿½Xï¿½Eï¿½^ï¿½Eï¿½Rï¿½Eï¿½sï¿½Eï¿½[
+										// ƒ‰ƒXƒ^ƒRƒs[
 	void FASTCALL GrpMem(DWORD addr, DWORD block);
-										// ï¿½Eï¿½Oï¿½Eï¿½ï¿½Eï¿½ï¿½Eï¿½tï¿½Eï¿½Bï¿½Eï¿½bï¿½Eï¿½NVRAMï¿½Eï¿½ÏX
+										// ƒOƒ‰ƒtƒBƒbƒNVRAM•ÏX
 	void FASTCALL GrpAll(DWORD line, DWORD block);
-										// ï¿½Eï¿½Oï¿½Eï¿½ï¿½Eï¿½ï¿½Eï¿½tï¿½Eï¿½Bï¿½Eï¿½bï¿½Eï¿½NVRAMï¿½Eï¿½ÏX
+										// ƒOƒ‰ƒtƒBƒbƒNVRAM•ÏX
 	void FASTCALL GrpScrl(int block, DWORD x, DWORD y);
-										// ï¿½Eï¿½Oï¿½Eï¿½ï¿½Eï¿½ï¿½Eï¿½tï¿½Eï¿½Bï¿½Eï¿½bï¿½Eï¿½Nï¿½Eï¿½Xï¿½Eï¿½Nï¿½Eï¿½ï¿½Eï¿½ï¿½Eï¿½[ï¿½Eï¿½ï¿½Eï¿½ï¿½Eï¿½ÏX
-	void FASTCALL SpriteReg(DWORD addr, DWORD data);
-										// ï¿½Eï¿½Xï¿½Eï¿½vï¿½Eï¿½ï¿½Eï¿½ï¿½Eï¿½Cï¿½Eï¿½gï¿½Eï¿½ï¿½Eï¿½ï¿½Eï¿½Wï¿½Eï¿½Xï¿½Eï¿½^ï¿½Eï¿½ÏX
+										// ƒOƒ‰ƒtƒBƒbƒNƒXƒNƒ[ƒ‹ƒZƒbƒg
+	void FASTCALL SpriteReg(DWORD addr, DWORD data[]);
+										// ƒXƒvƒ‰ƒCƒgƒŒƒWƒXƒ^•ÏX
 	void FASTCALL BGScrl(int page, DWORD x, DWORD y);
-										// BGï¿½Eï¿½Xï¿½Eï¿½Nï¿½Eï¿½ï¿½Eï¿½ï¿½Eï¿½[ï¿½Eï¿½ï¿½Eï¿½ï¿½Eï¿½ÏX
+										// BGƒXƒNƒ[ƒ‹•ÏX
 	void FASTCALL BGCtrl(int index, BOOL flag);
-										// BGï¿½Eï¿½Rï¿½Eï¿½ï¿½Eï¿½ï¿½Eï¿½gï¿½Eï¿½ï¿½Eï¿½ï¿½Eï¿½[ï¿½Eï¿½ï¿½Eï¿½ï¿½Eï¿½ÏX
+										// BGƒRƒ“ƒgƒ[ƒ‹•ÏX
 	void FASTCALL BGMem(DWORD addr, WORD data);
-										// BGï¿½Eï¿½ÏX
+										// BG•ÏX
 	void FASTCALL PCGMem(DWORD addr);
-										// PCGï¿½Eï¿½ÏX
-
+	void FASTCALL SpriteBGWrite(DWORD addr, BYTE data);
+	BYTE FASTCALL TVRAMRead(DWORD addr);
+	void FASTCALL TVRAMWrite(DWORD addr, BYTE data);
+	BYTE FASTCALL GVRAMRead(DWORD addr);
+	void FASTCALL GVRAMWrite(DWORD addr, BYTE data);
+	BYTE FASTCALL BGRead(DWORD addr);
+	void FASTCALL CRTCRegWrite(DWORD addr, BYTE data);
+	BYTE FASTCALL CRTCRegRead(DWORD addr);
+	BYTE FASTCALL VCtrlRead(DWORD addr);
+	void FASTCALL VCtrlWrite(DWORD addr, BYTE data);
+	void FASTCALL GVRAMFastClear();
+										// PCG•ÏX
 	const DWORD* FASTCALL GetTextBuf() const;
-										// ï¿½Eï¿½eï¿½Eï¿½Lï¿½Eï¿½Xï¿½Eï¿½gï¿½Eï¿½oï¿½Eï¿½bï¿½Eï¿½tï¿½Eï¿½@ï¿½Eï¿½æ“¾
+										// ƒeƒLƒXƒgƒoƒbƒtƒ@Žæ“¾
 	const DWORD* FASTCALL GetGrpBuf(int index) const;
-										// ï¿½Eï¿½Oï¿½Eï¿½ï¿½Eï¿½ï¿½Eï¿½tï¿½Eï¿½Bï¿½Eï¿½bï¿½Eï¿½Nï¿½Eï¿½oï¿½Eï¿½bï¿½Eï¿½tï¿½Eï¿½@ï¿½Eï¿½æ“¾
+										// ƒOƒ‰ƒtƒBƒbƒNƒoƒbƒtƒ@Žæ“¾
 	const DWORD* FASTCALL GetPCGBuf() const;
-										// PCGï¿½Eï¿½oï¿½Eï¿½bï¿½Eï¿½tï¿½Eï¿½@ï¿½Eï¿½æ“¾
+										// PCGƒoƒbƒtƒ@Žæ“¾
 	const DWORD* FASTCALL GetBGSpBuf() const;
-										// BG/ï¿½Eï¿½Xï¿½Eï¿½vï¿½Eï¿½ï¿½Eï¿½ï¿½Eï¿½Cï¿½Eï¿½gï¿½Eï¿½oï¿½Eï¿½bï¿½Eï¿½tï¿½Eï¿½@ï¿½Eï¿½æ“¾
+										// BG/ƒXƒvƒ‰ƒCƒgƒoƒbƒtƒ@Žæ“¾
 	const DWORD* FASTCALL GetMixBuf() const;
-										// ï¿½Eï¿½ï¿½Eï¿½ï¿½Eï¿½ï¿½Eï¿½ï¿½Eï¿½oï¿½Eï¿½bï¿½Eï¿½tï¿½Eï¿½@ï¿½Eï¿½æ“¾
+	const CRTC* FASTCALL GetCRTCDevice() const { return crtc; }
+	const VC* FASTCALL GetVCDevice() const { return vc; }
+	const TVRAM* FASTCALL GetTVRAMDevice() const;
+	const GVRAM* FASTCALL GetGVRAMDevice() const;
+	const Sprite* FASTCALL GetSpriteDevice() const { return sprite; }
+										// ‡¬ƒoƒbƒtƒ@Žæ“¾
 
 private:
-	class Backend;
-	void FASTCALL StartFrameOriginal();
-	void FASTCALL StartFrameFast();
-	void FASTCALL EndFrameOriginal();
-	void FASTCALL EndFrameFast();
-	void FASTCALL HSyncOriginal(int raster);
-	void FASTCALL HSyncFast(int raster);
-	void FASTCALL SetCRTCOriginal();
-	void FASTCALL SetCRTCFast();
-	void FASTCALL SetVCOriginal();
-	void FASTCALL SetVCFast();
-	void FASTCALL InvalidateFrame();
-	void FASTCALL InvalidateAll();
-	void FASTCALL Process();
-	void FASTCALL ProcessFast();
-										// ï¿½Eï¿½ï¿½Eï¿½ï¿½Eï¿½ï¿½Eï¿½ï¿½Eï¿½_ï¿½Eï¿½ï¿½Eï¿½ï¿½Eï¿½ï¿½Eï¿½ï¿½Eï¿½O
+	void FASTCALL Process(int raster, int xoffset);
+										// ƒŒƒ“ƒ_ƒŠƒ“ƒO
+	void FASTCALL Crtc();
+										// CRTCˆ—
+	static const DWORD HDispTable[16];
+										// ƒ‰ƒXƒ^[‚¸‚êŒŸØƒe[ƒuƒ‹
 	void FASTCALL Video();
-	void FASTCALL VideoFastPX68K();
-										// VCï¿½Eï¿½ï¿½Eï¿½ï¿½Eï¿½ï¿½Eï¿½
-	void FASTCALL SetupGrp(int first);
-										// ï¿½Eï¿½Oï¿½Eï¿½ï¿½Eï¿½ï¿½Eï¿½tï¿½Eï¿½Bï¿½Eï¿½bï¿½Eï¿½Nï¿½Eï¿½Zï¿½Eï¿½bï¿½Eï¿½gï¿½Eï¿½Aï¿½Eï¿½bï¿½Eï¿½v
+										// VCˆ—
 	void FASTCALL Contrast();
-										// ï¿½Eï¿½Rï¿½Eï¿½ï¿½Eï¿½ï¿½Eï¿½gï¿½Eï¿½ï¿½Eï¿½ï¿½Eï¿½Xï¿½Eï¿½gï¿½Eï¿½ï¿½Eï¿½ï¿½Eï¿½ï¿½Eï¿½
+										// ƒRƒ“ƒgƒ‰ƒXƒgˆ—
 	void FASTCALL Palette();
-	void FASTCALL PaletteFastPX68K();
-										// ï¿½Eï¿½pï¿½Eï¿½ï¿½Eï¿½ï¿½Eï¿½bï¿½Eï¿½gï¿½Eï¿½ï¿½Eï¿½ï¿½Eï¿½ï¿½Eï¿½
+										// ƒpƒŒƒbƒgˆ—
 	void FASTCALL MakePalette();
-										// ï¿½Eï¿½pï¿½Eï¿½ï¿½Eï¿½ï¿½Eï¿½bï¿½Eï¿½gï¿½Eï¿½ï¿½Eï¿½
+										// ƒpƒŒƒbƒgì¬
 	DWORD FASTCALL ConvPalette(int color, int ratio);
-										// ï¿½Eï¿½Fï¿½Eï¿½ÏŠï¿½
+										// F•ÏŠ·
+	BOOL FASTCALL TextConv(int offset);
+										// ƒeƒLƒXƒg•ÏŠ·
 	void FASTCALL Text(int raster);
-	void FASTCALL TextFastPX68K(int raster);
-										// ï¿½Eï¿½eï¿½Eï¿½Lï¿½Eï¿½Xï¿½Eï¿½g
-	void FASTCALL Grp(int block, int raster);
-										// ï¿½Eï¿½Oï¿½Eï¿½ï¿½Eï¿½ï¿½Eï¿½tï¿½Eï¿½Bï¿½Eï¿½bï¿½Eï¿½N
+										// ƒeƒLƒXƒg
+	void FASTCALL GrpScrlCheck();
+										// ƒOƒ‰ƒtƒBƒbƒNƒXƒNƒ[ƒ‹ƒ`ƒFƒbƒNˆ—
+	void FASTCALL GrpDispCheck();
+										// ƒOƒ‰ƒtƒBƒbƒN•\Ž¦\¬ƒ`ƒFƒbƒNˆ—
+	BYTE* FASTCALL MixGVRAM(BYTE *buf, int gd, int offset);
+										// GVRAMƒoƒbƒtƒ@‡¬
+	void FASTCALL Grp(int gd, int raster);
+										// ƒOƒ‰ƒtƒBƒbƒN
 	void FASTCALL SpriteReset();
-										// ï¿½Eï¿½Xï¿½Eï¿½vï¿½Eï¿½ï¿½Eï¿½ï¿½Eï¿½Cï¿½Eï¿½gï¿½Eï¿½ï¿½Eï¿½ï¿½Eï¿½Zï¿½Eï¿½bï¿½Eï¿½g
+										// ƒXƒvƒ‰ƒCƒgƒŠƒZƒbƒg
 	void FASTCALL BGSprite(int raster);
-										// BG/ï¿½Eï¿½Xï¿½Eï¿½vï¿½Eï¿½ï¿½Eï¿½ï¿½Eï¿½Cï¿½Eï¿½g
-	void FASTCALL BG(int page, int raster, DWORD *buf);
+										// BG/ƒXƒvƒ‰ƒCƒg
+	void FASTCALL BG(int page, int raster, DWORD *buf, BOOL force);
 										// BG
 	void FASTCALL BGBlock(int page, int y);
-										// BG(ï¿½Eï¿½ï¿½Eï¿½ï¿½Eï¿½uï¿½Eï¿½ï¿½Eï¿½ï¿½Eï¿½bï¿½Eï¿½N)
-	void FASTCALL Mix(int offset);
-										// ï¿½Eï¿½ï¿½Eï¿½ï¿½Eï¿½ï¿½Eï¿½
-	void FASTCALL MixFast(int y);
-	void FASTCALL MixFastLine(int dst_y, int src_y);
-	void FASTCALL FastBuildBGLinePX(int src_y, BOOL ton, int tx_pri, int sp_pri, DWORD *bg_line, BYTE *bg_flag, BOOL *active, BOOL *bg_opaq);
-	void FASTCALL FastDrawSpriteLinePX(int raster, int pri, DWORD *bg_line, BYTE *bg_flag, WORD *bg_pri, BOOL *active);
-	void FASTCALL FastDrawBGPageLinePX(int page, int raster, BOOL gd, DWORD *bg_line, BYTE *bg_flag, WORD *bg_pri, BOOL *active);
-	void FASTCALL FastMixGrp(int y, DWORD *grp, DWORD *grp_sp, DWORD *grp_sp2,
-		BOOL *grp_sp_tr, BOOL *gon, BOOL *tron, BOOL *pron);
-	void FASTCALL MixGrp(int y, DWORD *buf);
-										// ï¿½Eï¿½ï¿½Eï¿½ï¿½Eï¿½ï¿½Eï¿½(ï¿½Eï¿½Oï¿½Eï¿½ï¿½Eï¿½ï¿½Eï¿½tï¿½Eï¿½Bï¿½Eï¿½bï¿½Eï¿½N)
+										// BG(‰¡ƒuƒƒbƒN)
+	void FASTCALL BGSpriteCheck(int raster);
+										// BG/ƒXƒvƒ‰ƒCƒgƒ`ƒFƒbƒN
+	void FASTCALL Mix(int raster, int xoffset);
+										// ‡¬
+	DWORD* FASTCALL MixGrp(DWORD *buf, int raster, int xoffset, int mixlen);
+										// ‡¬(ƒOƒ‰ƒtƒBƒbƒN)
 	CRTC *crtc;
 										// CRTC
+	const CRTC::crtc_t *cp;
+										// CRTC ƒ[ƒNƒAƒhƒŒƒX
 	VC *vc;
 										// VC
+	const VC::vc_t *vp;
+										// VC ƒ[ƒNƒAƒhƒŒƒX
 	Sprite *sprite;
-										// ï¿½Eï¿½Xï¿½Eï¿½vï¿½Eï¿½ï¿½Eï¿½ï¿½Eï¿½Cï¿½Eï¿½g
-	Backend *backend;
-	Backend *backend_original;
-	Backend *backend_fast;
-	int compositor_mode;
-	DWORD *palbuf_original;
-	DWORD *palbuf_fast;
-	DWORD fast_fallback_count;
+	Px68kRenderAdapter *px68k_adapter;
+	Px68kCrtcHost px68k_crtc_host;
+	Px68kCrtcStateView px68k_crtc_state_cache;
+	BOOL render_fast_dummy_enabled;
 	BOOL transparency_enabled;
 	BOOL original_bg0_render_enabled;
+	int compositor_mode;
+										// ƒXƒvƒ‰ƒCƒg
+#if XM6_RENDER_SYNC == 2
+	class CScheduler* m_pScheduler;
+										///< ƒXƒPƒWƒ…[ƒ‰
+#endif	// XM6_RENDER_SYNC == 2
 	render_t render;
-										// ï¿½Eï¿½ï¿½Eï¿½ï¿½Eï¿½ï¿½Eï¿½ï¿½Eï¿½fï¿½Eï¿½[ï¿½Eï¿½^
-	BOOL cmov;
-										// CMOVï¿½Eï¿½Lï¿½Eï¿½ï¿½Eï¿½ï¿½Eï¿½bï¿½Eï¿½Vï¿½Eï¿½ï¿½Eï¿½
+										// “à•”ƒf[ƒ^
 };
 
 #endif	// render_h

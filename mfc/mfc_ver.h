@@ -2,8 +2,8 @@
 //
 //	X68000 EMULATOR "XM6"
 //
-//	Copyright (C) 2001-2006 �o�h�D(ytanaka@ipc-tokai.or.jp)
-//	[ MFC �o�[�W�������_�C�A���O ]
+//	Copyright (C) 2001-2006 PI (ytanaka@ipc-tokai.or.jp)
+//	[ MFC Version Information Dialog ]
 //
 //---------------------------------------------------------------------------
 
@@ -70,10 +70,10 @@ private:
 										// Icon rectangle
 #if _MFC_VER >= 0x700
 	UINT_PTR m_nTimerID;
-										// �^�C�}ID
+										// Timer ID
 #else
 	UINT m_nTimerID;
-										// �^�C�}ID
+										// Timer ID
 #endif
 	RTC *m_pRTC;
 										// RTC

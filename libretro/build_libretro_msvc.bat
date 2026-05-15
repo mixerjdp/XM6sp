@@ -49,12 +49,14 @@ if exist "%X68SOUND_SRC%\X68Sound.cpp" (
   set INCLUDES=%INCLUDES% /I%X68SOUND_SRC%
   set X68SOUND_SOURCES=%X68SOUND_SRC%\X68Sound.cpp
 )
-set COMMONFLAGS=/nologo /LD /O2 /MT /EHsc /std:c++14 /wd4018 /wd4244 /wd4267 /wd4996
-set COMMONFLAGS=%COMMONFLAGS% /Zi /FS
-set LINKFLAGS=/link /OUT:%OUT% /OPT:REF /OPT:ICF /DEBUG:FULL /PDB:%~dp0\%RELEASE_DIR%\xm6_libretro.pdb winmm.lib
 set OBJDIR=build_%ARCH%
+set COMMONFLAGS=/nologo /LD /O2 /MT /EHsc /std:c++14 /wd4018 /wd4244 /wd4267 /wd4996
+set COMMONFLAGS=%COMMONFLAGS% /Zi /FS /Fd"%OBJDIR%\xm6_libretro_%ARCH%.pdb"
 
 if not exist "%OBJDIR%" mkdir "%OBJDIR%"
+if not exist "%RELEASE_DIR%" mkdir "%RELEASE_DIR%"
+
+set LINKFLAGS=/link /OUT:%OUT% /OPT:REF /OPT:ICF /DEBUG:FULL /PDB:%~dp0\%RELEASE_DIR%\xm6_libretro.pdb winmm.lib
 
 set SOURCES=^
   xm6_libretro.cpp ^
@@ -89,8 +91,9 @@ set SOURCES=^
   ..\vm\ppi.cpp ^
   ..\vm\printer.cpp ^
   ..\vm\render.cpp ^
-  ..\vm\renderfast_compositor.cpp ^
   ..\vm\rend_soft.cpp ^
+  ..\vm\px68k_video_engine.cpp ^
+  ..\vm\px68k_render_adapter.cpp ^
   ..\vm\rtc.cpp ^
   ..\vm\sasi.cpp ^
   ..\vm\scc.cpp ^
@@ -130,6 +133,10 @@ copy /Y "%OUT%" "%RELEASE_DIR%\xm6_libretro.dll" >nul
 if errorlevel 1 (
   echo Failed to copy %OUT% to %RELEASE_DIR%\xm6_libretro.dll
   exit /b 1
+)
+
+if exist "%~dp0xm6_libretro.info" (
+  copy /Y "%~dp0xm6_libretro.info" "%RELEASE_DIR%\xm6_libretro.info" >nul
 )
 
 if exist "%OUT:.dll=.pdb%" (

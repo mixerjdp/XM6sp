@@ -2,8 +2,8 @@
 //
 //	X68000 EMULATOR "XM6"
 //
-//	Copyright (C) 2001-2006 �ｼｰ�ｼｩ�ｼ�(ytanaka@ipc-tokai.or.jp)
-//	[ 繧ｹ繧ｱ繧ｸ繝･繝ｼ繝ｩ ]
+//	Copyright (C) 2001-2006 PI (ytanaka@ipc-tokai.or.jp)
+//	[ Scheduler ]
 //
 //---------------------------------------------------------------------------
 
@@ -21,14 +21,14 @@
 
 //===========================================================================
 //
-//	繧ｹ繧ｱ繧ｸ繝･繝ｼ繝ｩ
+//	Scheduler
 //
 //===========================================================================
 //#define SCHEDULER_LOG
 
 //---------------------------------------------------------------------------
 //
-//	繧､繝吶Φ繝域､懃ｴ｢繝ｻ譖ｴ譁ｰ繧偵い繧ｻ繝ｳ繝悶Λ蛹�
+//	Event detection/update assembly
 //
 //---------------------------------------------------------------------------
 #if defined(_MSC_VER) && defined(_M_IX86)
@@ -37,18 +37,18 @@
 
 //---------------------------------------------------------------------------
 //
-//	繧ｳ繝ｳ繧ｹ繝医Λ繧ｯ繧ｿ
+//	Constructor
 //
 //---------------------------------------------------------------------------
 Scheduler::Scheduler(VM *p) : Device(p)
 {
 	int i;
 
-	// 繝�繝舌う繧ｹID繧貞�晄悄蛹�
+	// Device ID initialization
 	dev.id = MAKEID('S', 'C', 'H', 'E');
 	dev.desc = "Scheduler";
 
-	// 繝悶Ξ繝ｼ繧ｯ繝昴う繝ｳ繝亥句挨
+	// Breakpoint initialization
 	for (i=0; i<BreakMax; i++) {
 		breakp[i].use = FALSE;
 		breakp[i].addr = 0;
@@ -57,7 +57,7 @@ Scheduler::Scheduler(VM *p) : Device(p)
 		breakp[i].count = 0;
 	}
 
-	// 譎る俣
+	// Time
 	sch.total = 0;
 	sch.one = 0;
 	sch.sound = 0;
@@ -68,137 +68,137 @@ Scheduler::Scheduler(VM *p) : Device(p)
 	sch.cycle = 0;
 	sch.time = 0;
 
-	// 繝悶Ξ繝ｼ繧ｯ繝昴う繝ｳ繝�
+	// Breakpoint
 	sch.brk = FALSE;
 	sch.check = FALSE;
 
-	// 繧､繝吶Φ繝�
+	// Event
 	sch.first = NULL;
 	sch.exec = FALSE;
 
-	// 繝�繝舌う繧ｹ
+	// Device
 	cpu = NULL;
 	dmac = NULL;
 
-	// 縺昴�ｮ莉�
+	// Others
 	dma_active = FALSE;
 }
 
 //---------------------------------------------------------------------------
 //
-//	蛻晄悄蛹�
+//	Initialization
 //
 //---------------------------------------------------------------------------
 BOOL FASTCALL Scheduler::Init()
 {
 	ASSERT(this);
 
-	// 蝓ｺ譛ｬ繧ｯ繝ｩ繧ｹ
+	// Base class
 	if (!Device::Init()) {
 		return FALSE;
 	}
 
-	// CPU蜿門ｾ�
+	// CPU search
 	ASSERT(!cpu);
 	cpu = (CPU*)vm->SearchDevice(MAKEID('C', 'P', 'U', ' '));
 	ASSERT(cpu);
 
-	// DMAC蜿門ｾ�
+	// DMAC search
 	ASSERT(!dmac);
 	dmac = (DMAC*)vm->SearchDevice(MAKEID('D', 'M', 'A', 'C'));
-	ASSERT(dmac);
+ASSERT(dmac);
 
 	return TRUE;
 }
 
 //---------------------------------------------------------------------------
 //
-//	繧ｯ繝ｪ繝ｼ繝ｳ繧｢繝�繝�
+//	Cleanup
 //
 //---------------------------------------------------------------------------
 void FASTCALL Scheduler::Cleanup()
 {
 	ASSERT(this);
-	ASSERT_DIAG();
+ASSERT_DIAG();
 
-	// 蝓ｺ譛ｬ繧ｯ繝ｩ繧ｹ縺ｸ
+	// To base class
 	Device::Cleanup();
 }
 
 //---------------------------------------------------------------------------
 //
-//	繝ｪ繧ｻ繝�繝�
+//	Reset
 //
 //---------------------------------------------------------------------------
 void FASTCALL Scheduler::Reset()
 {
-	ASSERT(this);
-	ASSERT_DIAG();
+ASSERT(this);
+ASSERT_DIAG();
 
-	LOG0(Log::Normal, "繝ｪ繧ｻ繝�繝�");
+	LOG0(Log::Normal, "Reset");
 
-	// 譎る俣繝ｪ繧ｻ繝�繝�(sound髯､縺�)
+	// Time reset (excluding sound)
 	sch.total = 0;
 	sch.one = 0;
 
-	// CPU繧ｵ繧､繧ｯ繝ｫ繝ｪ繧ｻ繝�繝�
+	// CPU cycle reset
 	sch.cycle = 0;
 	sch.time = 0;
 
-	// 繧､繝吶Φ繝亥ｮ溯｡御ｸｭ縺ｧ縺ｪ縺�
+	// Not executing event
 	sch.exec = FALSE;
 
-	// DMA螳溯｡後↑縺�
+	// No DMA processing
 	dma_active = FALSE;
 
-	// CPU騾溷ｺｦ險ｭ螳壹�ｯ豈主屓陦後≧(INFO.RAM蟇ｾ遲悶Ν繝ｼ繝√Φ縺ｮ縺溘ａ)
-	ASSERT((sch.clock >= 0) && (sch.clock <= 5));
+	// CPU speed setting must be between 0-5 (for INFO.RAM timer compatibility)
+ASSERT((sch.clock >= 0) && (sch.clock <= 5));
 	SetCPUSpeed(ClockTable[sch.clock]);
 }
 
 //---------------------------------------------------------------------------
 //
-//	繧ｻ繝ｼ繝�
+//	Save
 //
 //---------------------------------------------------------------------------
 BOOL FASTCALL Scheduler::Save(Fileio *fio, int /*ver*/)
 {
 	size_t sz;
 
-	ASSERT(this);
-	ASSERT(fio);
-	ASSERT_DIAG();
+ASSERT(this);
+ASSERT(fio);
+ASSERT_DIAG();
 
-	LOG0(Log::Normal, "繧ｻ繝ｼ繝�");
+	LOG0(Log::Normal, "Save");
 
-	// 繝悶Ξ繝ｼ繧ｯ繝昴う繝ｳ繝医し繧､繧ｺ繧偵そ繝ｼ繝�
+	// Breakpoint array size
 	sz = sizeof(breakp);
 	if (!fio->Write(&sz, sizeof(sz))) {
 		return FALSE;
 	}
 
-	// 繝悶Ξ繝ｼ繧ｯ繝昴う繝ｳ繝亥ｮ滉ｽ薙ｒ繧ｻ繝ｼ繝�
+	// Breakpoint data save
 	if (!fio->Write(breakp, (int)sz)) {
 		return FALSE;
 	}
 
-	// 繧ｹ繧ｱ繧ｸ繝･繝ｼ繝ｩ繧ｵ繧､繧ｺ繧偵そ繝ｼ繝�
+	// Scheduler structure size
 	sz = sizeof(scheduler_t);
 	if (!fio->Write(&sz, sizeof(sz))) {
 		return FALSE;
 	}
 
-	// 繧ｹ繧ｱ繧ｸ繝･繝ｼ繝ｩ螳滉ｽ薙ｒ繧ｻ繝ｼ繝�
+	// Scheduler data save
 	if (!fio->Write(&sch, (int)sz)) {
 		return FALSE;
 	}
 
-	// 繧ｵ繧､繧ｯ繝ｫ繝�繝ｼ繝悶Ν繧偵そ繝ｼ繝�
+	// Cycle table save
 	if (!fio->Write(CycleTable, sizeof(CycleTable))) {
 		return FALSE;
 	}
 
-	// dma_active繧偵そ繝ｼ繝�(version 2.01)
+	// dma_active save (version 2.01)
 	if (!fio->Write(&dma_active, sizeof(dma_active))) {
 		return FALSE;
 	}
@@ -208,7 +208,7 @@ BOOL FASTCALL Scheduler::Save(Fileio *fio, int /*ver*/)
 
 //---------------------------------------------------------------------------
 //
-//	繝ｭ繝ｼ繝�
+//	Load
 //
 //---------------------------------------------------------------------------
 BOOL FASTCALL Scheduler::Load(Fileio *fio, int ver)
@@ -216,17 +216,17 @@ BOOL FASTCALL Scheduler::Load(Fileio *fio, int ver)
 	size_t sz;
 	Event *first;
 
-	ASSERT(this);
-	ASSERT(fio);
-	ASSERT(ver >= 0x200);
-	ASSERT_DIAG();
+ASSERT(this);
+ASSERT(fio);
+ASSERT(ver >= 0x200);
+ASSERT_DIAG();
 
-	LOG0(Log::Normal, "繝ｭ繝ｼ繝�");
+	LOG0(Log::Normal, "Load");
 
-	// 繧､繝吶Φ繝医�昴う繝ｳ繧ｿ繧剃ｿ晄戟
+	// Event pointer temporary
 	first = sch.first;
 
-	// 繝悶Ξ繝ｼ繧ｯ繝昴う繝ｳ繝医し繧､繧ｺ繧偵Ο繝ｼ繝峨∫�ｧ蜷�
+	// Breakpoint array size verify
 	if (!fio->Read(&sz, sizeof(sz))) {
 		return FALSE;
 	}
@@ -234,12 +234,12 @@ BOOL FASTCALL Scheduler::Load(Fileio *fio, int ver)
 		return FALSE;
 	}
 
-	// 繝悶Ξ繝ｼ繧ｯ繝昴う繝ｳ繝亥ｮ滉ｽ薙ｒ繝ｭ繝ｼ繝�
+	// Breakpoint data load
 	if (!fio->Read(breakp, (int)sz)) {
 		return FALSE;
 	}
 
-	// 繧ｹ繧ｱ繧ｸ繝･繝ｼ繝ｩ繧ｵ繧､繧ｺ繧偵Ο繝ｼ繝峨∫�ｧ蜷�
+	// Scheduler structure size verify
 	if (!fio->Read(&sz, sizeof(sz))) {
 		return FALSE;
 	}
@@ -247,21 +247,21 @@ BOOL FASTCALL Scheduler::Load(Fileio *fio, int ver)
 		return FALSE;
 	}
 
-	// 繧ｹ繧ｱ繧ｸ繝･繝ｼ繝ｩ螳滉ｽ薙ｒ繝ｭ繝ｼ繝�
+	// Scheduler data load
 	if (!fio->Read(&sch, (int)sz)) {
 		return FALSE;
 	}
 
-	// 繧ｵ繧､繧ｯ繝ｫ繝�繝ｼ繝悶Ν繧偵Ο繝ｼ繝�
+	// Cycle table load
 	if (!fio->Read(CycleTable, sizeof(CycleTable))) {
 		return FALSE;
 	}
 
-	// 繧､繝吶Φ繝医�昴う繝ｳ繧ｿ繧貞ｾｩ蟶ｰ
+	// Event pointer restore
 	sch.first = first;
 
-	// Scheduler::Save siempre escribe dma_active. Leerlo siempre mantiene
-	// la simetria del stream de savestate.
+	// Scheduler::Save always writes dma_active. Reading it always maintains
+	// the symmetry of the savestate stream.
 	if (!fio->Read(&dma_active, sizeof(dma_active))) {
 		return FALSE;
 	}
@@ -271,22 +271,22 @@ BOOL FASTCALL Scheduler::Load(Fileio *fio, int ver)
 
 //---------------------------------------------------------------------------
 //
-//	險ｭ螳夐←逕ｨ
+//	Apply configuration
 //
 //---------------------------------------------------------------------------
 void FASTCALL Scheduler::ApplyCfg(const Config *config)
 {
-	ASSERT(this);
-	ASSERT(config);
-	ASSERT_DIAG();
+ASSERT(this);
+ASSERT(config);
+ASSERT_DIAG();
 
-	LOG0(Log::Normal, "險ｭ螳夐←逕ｨ");
+	LOG0(Log::Normal, "Apply configuration");
 
-	// 繧ｷ繧ｹ繝�繝繧ｯ繝ｭ繝�繧ｯ險ｭ螳壹ｒ豈碑ｼ�
+	// Check system clock configuration
 	if (sch.clock != config->system_clock) {
-		// 險ｭ螳壹′逡ｰ縺ｪ縺｣縺ｦ縺�繧九�ｮ縺ｧ縲√し繧､繧ｯ繝ｫ繝�繝ｼ繝悶Ν蜀肴ｧ狗ｯ�
+		// Configuration changed, so recalculate cycle table
 		sch.clock = config->system_clock;
-		ASSERT((sch.clock >= 0) && (sch.clock <= 5));
+ASSERT((sch.clock >= 0) && (sch.clock <= 5));
 		SetCPUSpeed(ClockTable[sch.clock]);
 	}
 }
@@ -294,38 +294,38 @@ void FASTCALL Scheduler::ApplyCfg(const Config *config)
 #if defined(_DEBUG)
 //---------------------------------------------------------------------------
 //
-//	險ｺ譁ｭ
+//	Assertion
 //
 //---------------------------------------------------------------------------
 void FASTCALL Scheduler::AssertDiag() const
 {
-	ASSERT(this);
-	ASSERT(GetID() == MAKEID('S', 'C', 'H', 'E'));
-	ASSERT(cpu);
-	ASSERT(cpu->GetID() == MAKEID('C', 'P', 'U', ' '));
-	ASSERT(dmac);
-	ASSERT(dmac->GetID() == MAKEID('D', 'M', 'A', 'C'));
+ASSERT(this);
+ASSERT(GetID() == MAKEID('S', 'C', 'H', 'E'));
+ASSERT(cpu);
+ASSERT(cpu->GetID() == MAKEID('C', 'P', 'U', ' '));
+ASSERT(dmac);
+ASSERT(dmac->GetID() == MAKEID('D', 'M', 'A', 'C'));
 }
 #endif	// _DEBUG
 
 //---------------------------------------------------------------------------
 //
-//	蜀�驛ｨ繝�繝ｼ繧ｿ蜿門ｾ�
+//	Internal data reference
 //
 //---------------------------------------------------------------------------
 void FASTCALL Scheduler::GetScheduler(scheduler_t *buffer) const
 {
-	ASSERT(this);
-	ASSERT(buffer);
-	ASSERT_DIAG();
+ASSERT(this);
+ASSERT(buffer);
+ASSERT_DIAG();
 
-	// 蜀�驛ｨ繝�繝ｼ繧ｿ繧偵さ繝斐�ｼ
+	// Copy internal data
 	*buffer = sch;
 }
 
 //---------------------------------------------------------------------------
 //
-//	螳溯｡�
+//	Execute
 //
 //---------------------------------------------------------------------------
 DWORD FASTCALL Scheduler::Exec(DWORD hus)
@@ -334,57 +334,57 @@ DWORD FASTCALL Scheduler::Exec(DWORD hus)
 	DWORD result;
 	DWORD dcycle;
 
-	ASSERT(this);
-	ASSERT(hus > 0);
-	ASSERT_DIAG();
+ASSERT(this);
+ASSERT(hus > 0);
+ASSERT_DIAG();
 
-	// 繝悶Ξ繝ｼ繧ｯ繝昴う繝ｳ繝育┌縺励�ｮ蝣ｴ蜷�
+	// When breakpoints are not being checked
 	if (!sch.check) {
-		// 譛遏ｭ縺ｮ繧､繝吶Φ繝医ｒ謗｢縺�
+		// Find minimum event
 #if defined(SCHEDULER_ASM)
 		sch.one = GetMinEvent(hus);
 #else
 		sch.one = GetMinRemain(hus);
 #endif	// SCHEDULER_ASM
 
-		// sch.one + sch.time縺ｫ隕句粋縺�繧ｵ繧､繧ｯ繝ｫ縺縺第里縺ｫ螳溯｡後＠縺ｦ縺�繧九°
-		ASSERT((sch.one + sch.time) < 0x1000);
+		// sch.one + sch.time must be less than cycle count that can be executed
+ASSERT((sch.one + sch.time) < 0x1000);
 		cycle = CycleTable[sch.one + sch.time];
 		if (cycle > sch.cycle) {
 
-			// 莉雁屓螳溯｡後〒縺阪ｋ繧ｵ繧､繧ｯ繝ｫ謨ｰ繧呈爾縺｣縺ｦ縲∝ｮ溯｡�
+			// Can execute this cycle count
 			cycle -= sch.cycle;
 			if (!dma_active) {
-				// 騾壼ｸｸ
+				// Normal
 				result = cpu->Exec(cycle);
 			}
 			else {
-				// DMAC繧ｪ繝ｼ繝医Μ繧ｯ繧ｨ繧ｹ繝域怏蜉ｹ
+				// DMAC auto DMA active
 				dcycle = dmac->AutoDMA(cycle);
 				if (dcycle != 0) {
-					// 縺｡繧�縺｣縺ｨ隱､蟾ｮ縺悟�ｺ繧具ｼ�
+					// CPU execution with different timing
 					result = cpu->Exec(dcycle);
 				}
 				else {
-					// 縺吶∋縺ｦDMA縺ｧ豸郁ｲｻ
+					// All DMA processing done
 					result = cycle;
 				}
 			}
 
-			// 豁｣蟶ｸ邨ゆｺ�縺�
+			// Normal end
 			if (result < 0x80000000) {
-				// sch.time, sch.cycle繧呈峩譁ｰ
+				// Update sch.time, sch.cycle
 				sch.cycle += result;
 				sch.time += sch.one;
 
-				// 譎る俣繧帝ｲ繧√ｋ
+				// Execute events
 				ExecEvent(sch.one);
 
 				if (sch.time < 200) {
 					return sch.one;
 				}
 
-				// 譎る俣Sync
+				// Time sync
 				while (sch.time >= 200) {
 					if ((DWORD)sch.cycle < sch.speed) {
 						break;
@@ -393,27 +393,27 @@ DWORD FASTCALL Scheduler::Exec(DWORD hus)
 					sch.cycle -= sch.speed;
 				}
 
-				// 繝悶Ξ繝ｼ繧ｯ繝√ぉ繝�繧ｯ
+				// Breakpoint check
 				if (!sch.brk) {
 					return sch.one;
 				}
 
 #if defined(SCHEDULER_LOG)
-				LOG0(Log::Normal, "繝悶Ξ繝ｼ繧ｯ");
+				LOG0(Log::Normal, "Break");
 #endif	// SCHEDULER_LOG
 				sch.brk = FALSE;
 				return (DWORD)(sch.one | 0x80000000);
 			}
 			else {
-				// 螳溯｡後お繝ｩ繝ｼ
+				// Execution error
 				result &= 0x7fffffff;
 
 				if ((int)result > cycle) {
-					// sch.time縲《ch.cycle繧呈峩譁ｰ
+					// Update sch.time, sch.cycle
 					sch.time += sch.one;
 					sch.cycle += result;
 
-					// 繧､繝吶Φ繝亥ｮ溯｡�
+					// Execute events
 					ExecEvent(sch.one);
 
 					while (sch.time >= 200) {
@@ -423,18 +423,18 @@ DWORD FASTCALL Scheduler::Exec(DWORD hus)
 						sch.time -= 200;
 						sch.cycle -= sch.speed;
 					}
-					// 螳溯｡後お繝ｩ繝ｼ縲√う繝吶Φ繝亥ｮ御ｺ�
+					// Execution error, event finished
 					return 0x80000000;
 				}
-				// 蜈ｨ驛ｨ螳溯｡後☆繧句燕縺ｫcpu繧ｨ繝ｩ繝ｼ縺瑚ｵｷ縺阪◆
+				// Full execution before cpu error
 				sch.cycle += result;
-				// 螳溯｡後お繝ｩ繝ｼ縲√う繝吶Φ繝域悴螳御ｺ�
+				// Execution error, event not finished
 				return 0x80000000;
 			}
 		}
 		else {
 
-			// 莉雁屓縺ｯ螳溯｡後〒縺阪↑縺�縲よ凾髢薙ｒ騾ｲ繧√ｋ縺ｮ縺ｿ
+			// Cannot execute now, only advance time
 			sch.time += sch.one;
 			ExecEvent(sch.one);
 
@@ -442,7 +442,7 @@ DWORD FASTCALL Scheduler::Exec(DWORD hus)
 				return sch.one;
 			}
 
-			// sch.time繧呈峩譁ｰ
+			// Update sch.time
 			while (sch.time >= 200) {
 				if ((DWORD)sch.cycle < sch.speed) {
 					break;
@@ -451,26 +451,26 @@ DWORD FASTCALL Scheduler::Exec(DWORD hus)
 				sch.cycle -= sch.speed;
 			}
 
-			// 螳溯｡悟多莉､縺ｪ縺励√う繝吶Φ繝亥ｮ御ｺ�
+			// Normal end, event finished
 			return sch.one;
 		}
 
 	}
 
-	// 繝ｫ繝ｼ繝�
+	// Trace
 	for (;;) {
 		result = Trace(hus);
 
 		switch (result) {
-			// 螳溯｡悟多莉､縺ｪ縺励√う繝吶Φ繝亥ｮ御ｺ�
+			// Normal end, event finished
 			case 0:
 				return sch.one;
 
-			// 螳溯｡悟庄縲√う繝吶Φ繝亥ｮ御ｺ�
+			// Normal possible, event finished
 			case 1:
 				if (sch.brk) {
 #if defined(SCHEDULER_LOG)
-					LOG0(Log::Normal, "繝悶Ξ繝ｼ繧ｯ");
+					LOG0(Log::Normal, "Break");
 #endif	// SCHEDULER_LOG
 					sch.brk = FALSE;
 					return 0x80000000;
@@ -481,11 +481,11 @@ DWORD FASTCALL Scheduler::Exec(DWORD hus)
 				}
 				return sch.one;
 
-			// 螳溯｡後≠繧翫√う繝吶Φ繝域悴螳御ｺ�
+			// Execution error, event not finished
 			case 2:
 				if (sch.brk) {
 #if defined(SCHEDULER_LOG)
-					LOG0(Log::Normal, "繝悶Ξ繝ｼ繧ｯ");
+					LOG0(Log::Normal, "Break");
 #endif	// SCHEDULER_LOG
 					sch.brk = FALSE;
 					return 0x80000000;
@@ -496,17 +496,17 @@ DWORD FASTCALL Scheduler::Exec(DWORD hus)
 				}
 				break;
 
-			// 螳溯｡後お繝ｩ繝ｼ
+			// Execution error
 			case 3:
 				if (sch.brk) {
 #if defined(SCHEDULER_LOG)
-					LOG0(Log::Normal, "繝悶Ξ繝ｼ繧ｯ");
+					LOG0(Log::Normal, "Break");
 #endif	// SCHEDULER_LOG
 					sch.brk = FALSE;
 				}
 				return 0x80000000;
 
-			// 縺昴ｌ莉･螟�
+			// Others
 			default:
 				ASSERT(FALSE);
 				return sch.one;
@@ -516,7 +516,7 @@ DWORD FASTCALL Scheduler::Exec(DWORD hus)
 
 //---------------------------------------------------------------------------
 //
-//	繝医Ξ繝ｼ繧ｹ
+//	Trace
 //
 //---------------------------------------------------------------------------
 DWORD FASTCALL Scheduler::Trace(DWORD hus)
@@ -524,44 +524,44 @@ DWORD FASTCALL Scheduler::Trace(DWORD hus)
 	int cycle;
 	DWORD result;
 
-	ASSERT(this);
-	ASSERT(hus > 0);
-	ASSERT_DIAG();
+ASSERT(this);
+ASSERT(hus > 0);
+ASSERT_DIAG();
 
-	// 譛遏ｭ縺ｮ繧､繝吶Φ繝医ｒ謗｢縺�
+	// Find minimum event
 #if defined(SCHEDULER_ASM)
 	sch.one = GetMinEvent(hus);
 #else
 	sch.one = GetMinRemain(hus);
 #endif	// SCHEDULER_ASM
 
-	// sch.one + sch.time縺ｫ隕句粋縺�繧ｵ繧､繧ｯ繝ｫ縺縺第里縺ｫ螳溯｡後＠縺ｦ縺�繧九°
-	ASSERT((sch.one + sch.time) < 0x1000);
+	// sch.one + sch.time must be less than cycle count that can be executed
+ASSERT((sch.one + sch.time) < 0x1000);
 	cycle = CycleTable[sch.one + sch.time];
 	if (cycle <= sch.cycle) {
-		// 莉雁屓縺ｯ螳溯｡後〒縺阪↑縺�縲よ凾髢薙□縺鷹ｲ繧√ｋ
+		// Cannot execute now, only advance time
 		sch.time += sch.one;
 		ExecEvent(sch.one);
 
-		// sch.time繧呈峩譁ｰ
+		// Update sch.time
 		while (sch.time >= 200) {
 			sch.time -= 200;
 			sch.cycle -= sch.speed;
 		}
-		// 螳溯｡悟多莉､縺ｪ縺励√う繝吶Φ繝亥ｮ御ｺ�
+		// Normal end, event finished
 		return 0;
 	}
 
-	// 莉雁屓螳溯｡後〒縺阪ｋ繧ｵ繧､繧ｯ繝ｫ謨ｰ繧呈爾繧�
+	// Available cycle count to execute
 	cycle -= sch.cycle;
 
-	// 1繧ｵ繧､繧ｯ繝ｫ縺縺台ｸ弱∴縺ｦ螳溯｡後＠縺ｦ縺ｿ繧�
+	// Execute 1 cycle and see
 	if (!dma_active) {
-		// 騾壼ｸｸ
+		// Normal
 		result = cpu->Exec(1);
 	}
 	else {
-		// DMAC繧ｪ繝ｼ繝医Μ繧ｯ繧ｨ繧ｹ繝域怏蜉ｹ
+		// DMAC auto DMA active
 		result = dmac->AutoDMA(1);
 		if (result != 0) {
 			result = cpu->Exec(result);
@@ -571,38 +571,38 @@ DWORD FASTCALL Scheduler::Trace(DWORD hus)
 		}
 	}
 	if (result >= 0x80000000) {
-		// 螳溯｡後お繝ｩ繝ｼ
+		// Execution error
 		return 3;
 	}
 
-	// result >= cycle縺ｪ繧峨√う繝吶Φ繝亥ｮ溯｡後〒縺阪ｋ
+	// result >= cycle means event can be executed
 	if ((int)result >= cycle) {
-		// sch.time, sch.cycle繧呈峩譁ｰ
+		// Update sch.time, sch.cycle
 		sch.cycle += result;
 		sch.time += sch.one;
 
-		// 譎る俣繧帝ｲ繧√ｋ
+		// Execute events
 		ExecEvent(sch.one);
 
 		while (sch.time >= 200) {
 			sch.time -= 200;
 			sch.cycle -= sch.speed;
 		}
-		// 螳溯｡悟庄縲√う繝吶Φ繝亥ｮ御ｺ�
+		// Normal possible, event finished
 		return 1;
 	}
 
-	// 縺ｾ縺雜ｳ繧翫※縺�縺ｪ縺�縺ｮ縺ｧ縲√う繝吶Φ繝医∪縺ｧ縺ｯ髢薙′縺ゅｋ
-	// sch.cycle繧呈峩譁ｰ
+	// Not enough time, so events are still pending
+	// Update sch.cycle
 	sch.cycle += result;
 
-	// 螳溯｡後≠繧翫√う繝吶Φ繝域悴螳御ｺ�
+	// Execution error, event not finished
 	return 2;
 }
 
 //---------------------------------------------------------------------------
 //
-//	CPU騾溷ｺｦ繧定ｨｭ螳�
+//	CPU speed setting
 //
 //---------------------------------------------------------------------------
 void FASTCALL Scheduler::SetCPUSpeed(DWORD speed)
@@ -610,16 +610,16 @@ void FASTCALL Scheduler::SetCPUSpeed(DWORD speed)
 	int i;
 	DWORD cycle;
 
-	ASSERT(this);
-	ASSERT(speed > 0);
-	ASSERT_DIAG();
+ASSERT(this);
+ASSERT(speed > 0);
+ASSERT_DIAG();
 
-	LOG2(Log::Detail, "CPU騾溷ｺｦ險ｭ螳� %d.%02dMHz", speed / 100, (speed % 100));
+	LOG2(Log::Detail, "CPU speed setting %d.%02dMHz", speed / 100, (speed % 100));
 
-	// CPU騾溷ｺｦ繧定ｨ俶�ｶ
+	// Set CPU speed
 	sch.speed = speed;
 
-	// 0縲�2048us縺ｾ縺ｧ縲�0.5us蜊倅ｽ阪〒縺ｮ蟇ｾ蠢懊☆繧九し繧､繧ｯ繝ｫ謨ｰ繧定ｨ育ｮ�
+	// Calculate cycle count for 0-2048us at 0.5us intervals
 	for (i=0; i<0x1000; i++) {
 		cycle = (DWORD)i;
 		cycle *= speed;
@@ -630,39 +630,39 @@ void FASTCALL Scheduler::SetCPUSpeed(DWORD speed)
 
 //---------------------------------------------------------------------------
 //
-//	邨碁℃譎る俣繧貞叙蠕�
+//	Get elapsed time
 //
 //---------------------------------------------------------------------------
 DWORD FASTCALL Scheduler::GetPassedTime() const
 {
 	DWORD hus;
 
-	ASSERT(this);
-	ASSERT_DIAG();
+ASSERT(this);
+ASSERT_DIAG();
 
-	// 繧､繝吶Φ繝亥ｮ溯｡御ｸｭ縺ｪ繧�0
+	// Return 0 if executing event
 	if (sch.exec) {
 		return 0;
 	}
 
-	// 螳溯｡後し繧､繧ｯ繝ｫ謨ｰ縲…pu_cylcle縺九ｉ譎る俣繧堤ｮ怜�ｺ
+	// Calculate time from execution cycle and cpu_cycle
 	hus = cpu->GetCycle() + sch.cycle;
 	hus *= 200;
 	hus /= sch.speed;
 	hus -= sch.time;
 
-	// one繧医ｊ繧ょ､ｧ縺阪￠繧後�ｰ縲∝宛髯�
+	// If larger than one, use smaller (minimum)
 	if (sch.one < hus) {
 		hus = sch.one;
 	}
 
-	// hus蜊倅ｽ阪〒霑斐☆
+	// Return in hus units
 	return hus;
 }
 
 //---------------------------------------------------------------------------
 //
-//	繝悶Ξ繝ｼ繧ｯ繝昴う繝ｳ繝郁ｨｭ螳�
+//	Breakpoint setting
 //
 //---------------------------------------------------------------------------
 void FASTCALL Scheduler::SetBreak(DWORD addr, BOOL enable)
@@ -670,21 +670,21 @@ void FASTCALL Scheduler::SetBreak(DWORD addr, BOOL enable)
 	int i;
 	BOOL flag;
 
-	ASSERT(this);
-	ASSERT(addr <= 0xffffff);
-	ASSERT_DIAG();
+ASSERT(this);
+ASSERT(addr <= 0xffffff);
+ASSERT_DIAG();
 
 #if defined(SCHEDULER_LOG)
-	LOG2(Log::Normal, "繝悶Ξ繝ｼ繧ｯ繝昴う繝ｳ繝郁ｨｭ螳� $%06X enable=%d", addr, enable);
+	LOG2(Log::Normal, "Breakpoint setting $%06X enable=%d", addr, enable);
 #endif	// SCHEDULER_LOG
 
 	flag = FALSE;
 
-	// 荳閾ｴ繝√ぉ繝�繧ｯ
+	// Search existing
 	for (i=0; i<BreakMax; i++) {
 		if (breakp[i].use) {
 			if (breakp[i].addr == addr) {
-				// 繝輔Λ繧ｰ螟画峩縺ｮ縺ｿ
+				// Only change flag
 				breakp[i].enable = enable;
 				flag = TRUE;
 				break;
@@ -693,10 +693,10 @@ void FASTCALL Scheduler::SetBreak(DWORD addr, BOOL enable)
 	}
 
 	if (!flag) {
-		// 遨ｺ縺阪し繝ｼ繝�
+		// Empty slot
 		for (i=0; i<BreakMax; i++) {
 			if (!breakp[i].use) {
-				// 繧ｻ繝�繝�
+				// Set
 				breakp[i].use = TRUE;
 				breakp[i].addr = addr;
 				breakp[i].enable = enable;
@@ -707,12 +707,12 @@ void FASTCALL Scheduler::SetBreak(DWORD addr, BOOL enable)
 		}
 	}
 
-	// 譛牙柑繝輔Λ繧ｰ繧定ｨｭ螳�
+	// Set valid flag
 	flag = FALSE;
 	for (i=0; i<BreakMax; i++) {
 		if (breakp[i].use) {
 			if (breakp[i].enable) {
-				// 譛牙柑縺ｪ繝悶Ξ繝ｼ繧ｯ繝昴う繝ｳ繝医′蟄伜惠
+				// Valid breakpoint exists
 				flag = TRUE;
 				break;
 			}
@@ -723,7 +723,7 @@ void FASTCALL Scheduler::SetBreak(DWORD addr, BOOL enable)
 
 //---------------------------------------------------------------------------
 //
-//	繝悶Ξ繝ｼ繧ｯ繝昴う繝ｳ繝亥炎髯､
+//	Breakpoint deletion
 //
 //---------------------------------------------------------------------------
 void FASTCALL Scheduler::DelBreak(DWORD addr)
@@ -731,31 +731,31 @@ void FASTCALL Scheduler::DelBreak(DWORD addr)
 	int i;
 	BOOL flag;
 
-	ASSERT(this);
-	ASSERT(addr <= 0xffffff);
-	ASSERT_DIAG();
+ASSERT(this);
+ASSERT(addr <= 0xffffff);
+ASSERT_DIAG();
 
 #if defined(SCHEDULER_LOG)
-	LOG1(Log::Normal, "繝悶Ξ繝ｼ繧ｯ繝昴う繝ｳ繝亥炎髯､ $%06X", addr);
+	LOG1(Log::Normal, "Breakpoint deletion $%06X", addr);
 #endif	// SCHEDULER_LOG
 
-	// 荳閾ｴ繝√ぉ繝�繧ｯ
+	// Search
 	for (i=0; i<BreakMax; i++) {
 		if (breakp[i].use) {
 			if (breakp[i].addr == addr) {
-				// 蜑企勁
+				// Remove
 				breakp[i].use = FALSE;
 				break;
 			}
 		}
 	}
 
-	// 譛牙柑繝輔Λ繧ｰ繧定ｨｭ螳�
+	// Set valid flag
 	flag = FALSE;
 	for (i=0; i<BreakMax; i++) {
 		if (breakp[i].use) {
 			if (breakp[i].enable) {
-				// 譛牙柑縺ｪ繝悶Ξ繝ｼ繧ｯ繝昴う繝ｳ繝医′蟄伜惠
+				// Valid breakpoint exists
 				flag = TRUE;
 				break;
 			}
@@ -766,46 +766,46 @@ void FASTCALL Scheduler::DelBreak(DWORD addr)
 
 //---------------------------------------------------------------------------
 //
-//	繝悶Ξ繝ｼ繧ｯ繝昴う繝ｳ繝亥叙蠕�
+//	Breakpoint reference
 //
 //---------------------------------------------------------------------------
 void FASTCALL Scheduler::GetBreak(int index, breakpoint_t *buf) const
 {
-	ASSERT(this);
-	ASSERT((index >= 0) && (index < BreakMax));
-	ASSERT(buf);
-	ASSERT_DIAG();
+ASSERT(this);
+ASSERT((index >= 0) && (index < BreakMax));
+ASSERT(buf);
+ASSERT_DIAG();
 
-	// 繧ｳ繝斐�ｼ
+	// Copy
 	*buf = breakp[index];
 }
 
 //---------------------------------------------------------------------------
 //
-//	繝悶Ξ繝ｼ繧ｯ繝昴う繝ｳ繝域怏蜉ｹ繝ｻ辟｡蜉ｹ
+//	Breakpoint enable/disable
 //
 //---------------------------------------------------------------------------
 void FASTCALL Scheduler::EnableBreak(int index, BOOL enable)
 {
-	ASSERT(this);
-	ASSERT((index >= 0) && (index < BreakMax));
-	ASSERT(breakp[index].use);
-	ASSERT_DIAG();
+ASSERT(this);
+ASSERT((index >= 0) && (index < BreakMax));
+ASSERT(breakp[index].use);
+ASSERT_DIAG();
 
 	breakp[index].enable = enable;
 }
 
 //---------------------------------------------------------------------------
 //
-//	繝悶Ξ繝ｼ繧ｯ蝗樊焚繧ｯ繝ｪ繧｢
+//	Breakpoint counter clear
 //
 //---------------------------------------------------------------------------
 void FASTCALL Scheduler::ClearBreak(int index)
 {
-	ASSERT(this);
-	ASSERT((index >= 0) && (index < BreakMax));
-	ASSERT(breakp[index].use);
-	ASSERT_DIAG();
+ASSERT(this);
+ASSERT((index >= 0) && (index < BreakMax));
+ASSERT(breakp[index].use);
+ASSERT_DIAG();
 
 	breakp[index].count = 0;
 	breakp[index].time = 0;
@@ -813,43 +813,43 @@ void FASTCALL Scheduler::ClearBreak(int index)
 
 //---------------------------------------------------------------------------
 //
-//	繝悶Ξ繝ｼ繧ｯ繧｢繝峨Ξ繧ｹ螟画峩
+//	Breakpoint address change
 //
 //---------------------------------------------------------------------------
 void FASTCALL Scheduler::AddrBreak(int index, DWORD addr)
 {
-	ASSERT(this);
-	ASSERT((index >= 0) && (index < BreakMax));
-	ASSERT(addr <= 0xffffff);
-	ASSERT(breakp[index].use);
-	ASSERT_DIAG();
+ASSERT(this);
+ASSERT((index >= 0) && (index < BreakMax));
+ASSERT(addr <= 0xffffff);
+ASSERT(breakp[index].use);
+ASSERT_DIAG();
 
 	breakp[index].addr = addr;
 }
 
 //---------------------------------------------------------------------------
 //
-//	繝悶Ξ繝ｼ繧ｯ繧｢繝峨Ξ繧ｹ繝√ぉ繝�繧ｯ
+//	Breakpoint address check
 //
 //---------------------------------------------------------------------------
 int FASTCALL Scheduler::IsBreak(DWORD addr, BOOL any) const
 {
 	int i;
 
-	ASSERT(this);
-	ASSERT(addr <= 0xffffff);
-	ASSERT_DIAG();
+ASSERT(this);
+ASSERT(addr <= 0xffffff);
+ASSERT_DIAG();
 
-	// 譛蛻昴↓繝輔Λ繧ｰ繧定ｦ九ｋ
+	// Check flag at top
 	if (!sch.check) {
 		return -1;
 	}
 
-	// 荳閾ｴ繝√ぉ繝�繧ｯ
+	// Search
 	for (i=0; i<BreakMax; i++) {
 		if (breakp[i].use) {
 			if (breakp[i].addr == addr) {
-				// 譛牙柑繝ｻ辟｡蜉ｹ繧呈ｰ励↓縺励↑縺�縺九∵怏蜉ｹ
+				// Valid/Invalid or enabled
 				if (any || breakp[i].enable) {
 					return i;
 				}
@@ -857,25 +857,25 @@ int FASTCALL Scheduler::IsBreak(DWORD addr, BOOL any) const
 		}
 	}
 
-	// 繝悶Ξ繝ｼ繧ｯ繝昴う繝ｳ繝医�ｯ縺ゅｋ縺後∽ｸ閾ｴ辟｡縺�
+	// Breakpoint exists but not enabled
 	return -1;
 }
 
 //---------------------------------------------------------------------------
 //
-//	繝悶Ξ繝ｼ繧ｯ繧｢繝峨Ξ繧ｹ驕ｩ逕ｨ
+//	Breakpoint address callback
 //
 //---------------------------------------------------------------------------
 void FASTCALL Scheduler::OnBreak(DWORD addr)
 {
 	int i;
 
-	ASSERT(this);
-	ASSERT(addr <= 0xffffff);
-	ASSERT(sch.check);
-	ASSERT_DIAG();
+ASSERT(this);
+ASSERT(addr <= 0xffffff);
+ASSERT(sch.check);
+ASSERT_DIAG();
 
-	// 荳閾ｴ繝√ぉ繝�繧ｯ
+	// Search
 	for (i=0; i<BreakMax; i++) {
 		if (breakp[i].use) {
 			if (breakp[i].addr == addr) {
@@ -883,67 +883,67 @@ void FASTCALL Scheduler::OnBreak(DWORD addr)
 			}
 		}
 	}
-	ASSERT(i < BreakMax);
+ASSERT(i < BreakMax);
 
-	// 譎る俣繧ｻ繝�繝医√き繧ｦ繝ｳ繝医い繝�繝�
+	// Time counter, count up
 	breakp[i].time = GetTotalTime();
 	breakp[i].count++;
 }
 
 //---------------------------------------------------------------------------
 //
-//	繧､繝吶Φ繝郁ｿｽ蜉
+//	Event addition
 //
 //---------------------------------------------------------------------------
 void FASTCALL Scheduler::AddEvent(Event *event)
 {
 	Event *p;
 
-	ASSERT(this);
-	ASSERT(event);
-	ASSERT_DIAG();
+ASSERT(this);
+ASSERT(event);
+ASSERT_DIAG();
 
 #if defined(SCHEDULER_LOG)
-	LOG4(Log::Normal, "繧､繝吶Φ繝郁ｿｽ蜉 Device=%c%c%c%c",
+	LOG4(Log::Normal, "Event addition Device=%c%c%c%c",
 					(char)(event->GetDevice()->GetID() >> 24),
 					(char)(event->GetDevice()->GetID() >> 16),
 					(char)(event->GetDevice()->GetID() >> 8),
 					(char)(event->GetDevice()->GetID()));
-	LOG1(Log::Normal, "繧､繝吶Φ繝郁ｿｽ蜉 %s", event->GetDesc());
+	LOG1(Log::Normal, "Event addition %s", event->GetDesc());
 #endif	// SCHEDULER_LOG
 
-	// 譛蛻昴�ｮ繧､繝吶Φ繝医°
+	// First event
 	if (!sch.first) {
-		// 譛蛻昴�ｮ繧､繝吶Φ繝�
+		// First event
 		sch.first = event;
 		event->SetNextEvent(NULL);
 
 #if defined(SCHEDULER_ASM)
-		// 騾夂衍
+		// Notify
 		NotifyEvent(sch.first);
 #endif	// SCHEDULER_ASM
 		return;
 	}
 
-	// 譛蠕後�ｮ繧､繝吶Φ繝医ｒ謗｢縺�
+	// Search last event
 	p = sch.first;
 	while (p->GetNextEvent()) {
 		p = p->GetNextEvent();
 	}
 
-	// p縺梧怙蠕後�ｮ繧､繝吶Φ繝医↑縺ｮ縺ｧ縲√％繧後↓霑ｽ蜉
+	// p is last event, so add to this
 	p->SetNextEvent(event);
 	event->SetNextEvent(NULL);
 
 #if defined(SCHEDULER_ASM)
-	// 騾夂衍
+	// Notify
 	NotifyEvent(sch.first);
 #endif	// SCHEDULER_ASM
 }
 
 //---------------------------------------------------------------------------
 //
-//	繧､繝吶Φ繝亥炎髯､
+//	Event deletion
 //
 //---------------------------------------------------------------------------
 void FASTCALL Scheduler::DelEvent(Event *event)
@@ -951,91 +951,91 @@ void FASTCALL Scheduler::DelEvent(Event *event)
 	Event *p;
 	Event *prev;
 
-	ASSERT(this);
-	ASSERT(event);
-	ASSERT_DIAG();
+ASSERT(this);
+ASSERT(event);
+ASSERT_DIAG();
 
 #if defined(SCHEDULER_LOG)
-	LOG4(Log::Normal, "繧､繝吶Φ繝亥炎髯､ Device=%c%c%c%c",
+	LOG4(Log::Normal, "Event deletion Device=%c%c%c%c",
 					(char)(event->GetDevice()->GetID() >> 24),
 					(char)(event->GetDevice()->GetID() >> 16),
 					(char)(event->GetDevice()->GetID() >> 8),
 					(char)(event->GetDevice()->GetID()));
-	LOG1(Log::Normal, "繧､繝吶Φ繝亥炎髯､ %s", event->GetDesc());
+	LOG1(Log::Normal, "Event deletion %s", event->GetDesc());
 #endif	// SCHEDULER_LOG
 
-	// 譛蛻昴�ｮ繧､繝吶Φ繝医°
+	// First event
 	if (sch.first == event) {
-		// 譛蛻昴�ｮ繧､繝吶Φ繝医Ｏext繧呈怙蛻昴�ｮ繧､繝吶Φ繝医↓蜑ｲ繧雁ｽ薙※繧�
+		// First event next becomes first, disconnect from event
 		sch.first = event->GetNextEvent();
 		event->SetNextEvent(NULL);
 
 #if defined(SCHEDULER_ASM)
-		// 騾夂衍
+		// Notify
 		NotifyEvent(sch.first);
 #endif	// SCHEDULER_ASM
 		return;
 	}
 
-	// 縺薙�ｮ繧､繝吶Φ繝医′荳閾ｴ縺吶ｋ縺ｾ縺ｧ讀懃ｴ｢
+	// Search this event in list
 	p = sch.first;
 	prev = p;
 	while (p) {
-		// 荳閾ｴ繝√ぉ繝�繧ｯ
+		// Search
 		if (p == event) {
 			prev->SetNextEvent(event->GetNextEvent());
 			event->SetNextEvent(NULL);
 
 #if defined(SCHEDULER_ASM)
-			// 騾夂衍
+			// Notify
 			NotifyEvent(sch.first);
 #endif	// SCHEDULER_ASM
 			return;
 		}
 
-		// 谺｡縺ｸ
+		// Next
 		prev = p;
 		p = p->GetNextEvent();
 	}
 
-	// 縺吶∋縺ｦ縺ｮ繧､繝吶Φ繝医′荳閾ｴ縺励↑縺�(縺ゅｊ蠕励↑縺�)
-	ASSERT(FALSE);
+	// All events not found (should not happen)
+ASSERT(FALSE);
 }
 
 //---------------------------------------------------------------------------
 //
-//	繧､繝吶Φ繝域園譛峨メ繧ｧ繝�繧ｯ
+//	Event existence check
 //
 //---------------------------------------------------------------------------
 BOOL FASTCALL Scheduler::HasEvent(Event *event) const
 {
 	Event *p;
 
-	ASSERT(this);
-	ASSERT(event);
-	ASSERT_DIAG();
+ASSERT(this);
+ASSERT(event);
+ASSERT_DIAG();
 
-	// 蛻晄悄蛹�
+	// Initialize
 	p = sch.first;
 
-	// 蜈ｨ縺ｦ縺ｮ繧､繝吶Φ繝医ｒ縺ｾ繧上ｋ
+	// Check all events
 	while (p) {
-		// 荳閾ｴ繝√ぉ繝�繧ｯ
+		// Search
 		if (p == event) {
 			return TRUE;
 		}
 
-		// 谺｡縺ｸ
+		// Next
 		p = p->GetNextEvent();
 	}
 
-	// 縺薙�ｮ繧､繝吶Φ繝医�ｯ繝√ぉ繧､繝ｳ縺ｫ蜷ｫ縺ｾ繧後※縺�縺ｪ縺�
+	// This event is not in the list
 	return FALSE;
 }
 
 //---------------------------------------------------------------------------
 //
-//	繧､繝吶Φ繝医�ｮ蛟区焚繧貞叙蠕�
+//	Get event count
 //
 //---------------------------------------------------------------------------
 int FASTCALL Scheduler::GetEventNum() const
@@ -1043,29 +1043,29 @@ int FASTCALL Scheduler::GetEventNum() const
 	int num;
 	Event *p;
 
-	ASSERT(this);
-	ASSERT_DIAG();
+ASSERT(this);
+ASSERT_DIAG();
 
-	// 蛻晄悄蛹�
+	// Initialize
 	num = 0;
 	p = sch.first;
 
-	// 蜈ｨ縺ｦ縺ｮ繧､繝吶Φ繝医ｒ縺ｾ繧上ｋ
+	// Check all events
 	while (p) {
 		num++;
 
-		// 谺｡縺ｸ
+		// Next
 		p = p->GetNextEvent();
 	}
 
-	// 繧､繝吶Φ繝医�ｮ蛟区焚繧定ｿ斐☆
+	// Return event count
 	return num;
 }
 
 //---------------------------------------------------------------------------
 //
-//	譛遏ｭ縺ｮ繧､繝吶Φ繝医ｒ謗｢縺�
-//	窶ｻ蛻･騾斐い繧ｻ繝ｳ繝悶Λ迚医ｒ逕ｨ諢�
+//	Find minimum event
+//	NOTE: Use for non-assembly version
 //
 //---------------------------------------------------------------------------
 DWORD FASTCALL Scheduler::GetMinRemain(DWORD hus)
@@ -1074,35 +1074,35 @@ DWORD FASTCALL Scheduler::GetMinRemain(DWORD hus)
 	DWORD minimum;
 	DWORD remain;
 
-	ASSERT(this);
-	ASSERT(hus > 0);
-	ASSERT_DIAG();
+ASSERT(this);
+ASSERT(hus > 0);
+ASSERT_DIAG();
 
-	// 繧､繝吶Φ繝医�昴う繝ｳ繧ｿ蛻晄悄蛹�
+	// Event pointer initialization
 	p = sch.first;
 
-	// 蛻晄悄蛹�
+	// Initialize
 	minimum = hus;
 
-	// 繝ｫ繝ｼ繝�
+	// Loop
 	while (p) {
-		// 谿九ｊ譎る俣蜿門ｾ�
+		// Remaining time get
 		remain = p->GetRemain();
 
-		// 譛牙柑縺�
+		// Valid?
 		if (remain == 0) {
-			// 谺｡縺ｸ
+			// Next
 			p = p->GetNextEvent();
 			continue;
 		}
 
-		// 譛蟆上メ繧ｧ繝�繧ｯ
+		// Minimum check
 		if (remain >= minimum) {
 			p = p->GetNextEvent();
 			continue;
 		}
 
-		// 譛蟆�
+		// Minimum
 		minimum = remain;
 		p = p->GetNextEvent();
 	}
@@ -1112,8 +1112,8 @@ DWORD FASTCALL Scheduler::GetMinRemain(DWORD hus)
 
 //---------------------------------------------------------------------------
 //
-//	繧､繝吶Φ繝亥ｮ溯｡�
-//	窶ｻ蛻･騾斐い繧ｻ繝ｳ繝悶Λ迚医ｒ逕ｨ諢�
+//	Execute events
+//	NOTE: Use for non-assembly version
 //
 //---------------------------------------------------------------------------
 void FASTCALL Scheduler::ExecEvent(DWORD hus)
@@ -1122,14 +1122,14 @@ void FASTCALL Scheduler::ExecEvent(DWORD hus)
 	Event *p;
 #endif	// !SCHEDULER_ASM
 
-	ASSERT(this);
-	ASSERT(hus >= 0);
-	ASSERT_DIAG();
+ASSERT(this);
+ASSERT(hus >= 0);
+ASSERT_DIAG();
 
-	// 繧､繝吶Φ繝亥ｮ溯｡碁幕蟋�
+	// Event execution start
 	sch.exec = TRUE;
 
-	// 繝医�ｼ繧ｿ繝ｫ譎る俣蠅怜刈縲√し繧ｦ繝ｳ繝画凾髢灘｢怜刈
+	// Virtual time increment, sound time increment
 	sch.total += hus;
 	sch.sound += hus;
 
@@ -1138,23 +1138,23 @@ void FASTCALL Scheduler::ExecEvent(DWORD hus)
 	sch.exec = FALSE;
 #else
 
-	// 繧､繝吶Φ繝医�昴う繝ｳ繧ｿ蛻晄悄蛹�
+	// Event pointer initialization
 	p = sch.first;
 
-	// 繧､繝吶Φ繝医ｒ蝗槭▲縺ｦ縲∝ｮ溯｡�
+	// Execute events
 	while (p) {
 		p->Exec(hus);
 		p = p->GetNextEvent();
 	}
 
-	// 繧､繝吶Φ繝亥ｮ溯｡檎ｵゆｺ�
+	// Event execution end
 	sch.exec = FALSE;
 #endif
 }
 
 //---------------------------------------------------------------------------
 //
-//	繧ｯ繝ｭ繝�繧ｯ繝�繝ｼ繝悶Ν
+//	Clock table
 //
 //---------------------------------------------------------------------------
 const DWORD Scheduler::ClockTable[] = {
@@ -1168,7 +1168,7 @@ const DWORD Scheduler::ClockTable[] = {
 
 //---------------------------------------------------------------------------
 //
-//	繧ｵ繧､繧ｯ繝ｫ繝�繝ｼ繝悶Ν
+//	Cycle table
 //
 //---------------------------------------------------------------------------
 int Scheduler::CycleTable[0x1000];

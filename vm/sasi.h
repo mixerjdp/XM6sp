@@ -2,7 +2,7 @@
 //
 //	X68000 EMULATOR "XM6"
 //
-//	Copyright (C) 2001-2006 ＰＩ．(ytanaka@ipc-tokai.or.jp)
+//Copyright (C) 2001-2006  PI.(ytanaka@ipc-tokai.or.jp)
 //	[ SASI ]
 //
 //---------------------------------------------------------------------------
@@ -24,195 +24,195 @@ class SCSI;
 class SASI : public MemDevice
 {
 public:
-	// 最大数
+	//Maximum count
 	enum {
-		SASIMax = 16,					// 最大SASIディスク数(LUN含む)
-		SCSIMax = 6						// 最大SCSIハードディスク数
+		SASIMax = 16,					//Maximum SASI disk count (including LUN)
+		SCSIMax = 6						//Maximum SCSI hard disk count
 	};
 
-	// フェーズ定義
+	//Phase definition
 	enum phase_t {
-		busfree,						// バスフリーフェーズ
-		selection,						// セレクションフェーズ
-		command,						// コマンドフェーズ
-		execute,						// 実行フェーズ
-		read,							// 読み込みフェーズ
-		write,							// 書き込みフェーズ
-		status,							// ステータスフェーズ
-		message							// メッセージフェーズ
+		busfree,						//Bus free phase
+		selection,						//Selection phase
+		command,						//Command phase
+		execute,						//Execution phase
+		read,							//Read phase
+		write,							//Write phase
+		status,							//Status phase
+		message							//Message phase
 	};
 
-	// 内部データ定義
+	//Internal data definition
 	typedef struct {
-		// SASIコントローラ
-		phase_t phase;					// フェーズ
-		BOOL sel;						// Select信号
-		BOOL msg;						// Message信号
-		BOOL cd;						// Command/Data信号
-		BOOL io;						// Input/Output信号
-		BOOL bsy;						// Busy信号
-		BOOL req;						// Request信号
-		DWORD ctrl;						// セレクトされたコントローラ
-		DWORD cmd[10];					// コマンドデータ
-		DWORD status;					// ステータスデータ
-		DWORD message;					// メッセージデータ
-		BYTE buffer[0x800];				// 転送バッファ
-		DWORD blocks;					// 転送ブロック数
-		DWORD next;						// 次のレコード
-		DWORD offset;					// 転送オフセット
-		DWORD length;					// 転送残り長さ
+		//SASI controller
+		phase_t phase;					//Phase
+		BOOL sel;						//Select signal
+		BOOL msg;						//Message signal
+		BOOL cd;						//Command/Data signal
+		BOOL io;						//Input/Output signal
+		BOOL bsy;						//Busy signal
+		BOOL req;						//Request signal
+		DWORD ctrl;						//Selected controller
+		DWORD cmd[10];					//Command data
+		DWORD status;					//Status data
+		DWORD message;					//Message data
+		BYTE buffer[0x800];				//Transfer buffer
+		DWORD blocks;					//Transfer block count
+		DWORD next;						//Next record
+		DWORD offset;					//Transfer offset
+		DWORD length;					//Transfer remaining length
 
-		// ディスク
-		Disk *disk[SASIMax];			// ディスク
-		Disk *current;					// ディスク(カレント)
-		SCSIMO *mo;						// ディスク(MO)
+		//Disk
+		Disk *disk[SASIMax];			//Disk
+		Disk *current;					//Disk (current)
+		SCSIMO *mo;						//Disk (MO)
 
-		// コンフィグ
-		int sasi_drives;				// ドライブ数(SASI)
-		BOOL memsw;						// メモリスイッチ更新
-		BOOL parity;					// パリティ付加
-		int sxsi_drives;				// ドライブ数(SxSI)
-		BOOL mo_first;					// MO優先フラグ(SxSI)
-		int scsi_type;					// SCSIタイプ
+		//Config
+		int sasi_drives;				//Drive count (SASI)
+		BOOL memsw;						//Memory switch update
+		BOOL parity;					//Add parity
+		int sxsi_drives;				//Drive count (SxSI)
+		BOOL mo_first;					//MO priority flag (SxSI)
+		int scsi_type;					//SCSI type
 
-		// MOパラメータ
-		BOOL writep;					// MO書き込み禁止フラグ
+		//MO parameter
+		BOOL writep;					//MO write protect flag
 	} sasi_t;
 
 public:
-	// 基本ファンクション
+	//Basic functions
 	SASI(VM *p);
-										// コンストラクタ
+										//Constructor
 	BOOL FASTCALL Init();
-										// 初期化
+										//Initialization
 	void FASTCALL Cleanup();
-										// クリーンアップ
+										//Cleanup
 	void FASTCALL Reset();
-										// リセット
+										//Reset
 	BOOL FASTCALL Save(Fileio *fio, int ver);
-										// セーブ
+										//Save
 	BOOL FASTCALL Load(Fileio *fio, int ver);
-										// ロード
+										//Load
 	void FASTCALL ApplyCfg(const Config *config);
-										// 設定適用
+										//Apply settings
 
-	// メモリデバイス
+	//Memory device
 	DWORD FASTCALL ReadByte(DWORD addr);
-										// バイト読み込み
+										//Byte read
 	DWORD FASTCALL ReadWord(DWORD addr);
-										// ワード読み込み
+										//Word read
 	void FASTCALL WriteByte(DWORD addr, DWORD data);
-										// バイト書き込み
+										//Byte write
 	void FASTCALL WriteWord(DWORD addr, DWORD data);
-										// ワード書き込み
+										//Word write
 	DWORD FASTCALL ReadOnly(DWORD addr) const;
-										// 読み込みのみ
+										//Read only
 
-	// MOアクセス
+	//MO access
 	BOOL FASTCALL Open(const Filepath& path);
-										// MO オープン
+										//MO open
 	void FASTCALL Eject(BOOL force);
-										// MO イジェクト
+										//MO eject
 	void FASTCALL WriteP(BOOL writep);
-										// MO 書き込み禁止
+										//MO write protect
 	BOOL FASTCALL IsWriteP() const;
-										// MO 書き込み禁止チェック
+										//Check MO write protect
 	BOOL FASTCALL IsReadOnly() const;
-										// MO ReadOnlyチェック
+										//Check MO ReadOnly
 	BOOL FASTCALL IsLocked() const;
-										// MO Lockチェック
+										//Check MO Lock
 	BOOL FASTCALL IsReady() const;
-										// MO Readyチェック
+										//Check MO Ready
 	BOOL FASTCALL IsValid() const;
-										// MO 有効チェック
+										//Check MO valid
 	void FASTCALL GetPath(Filepath &path) const;
-										// MO パス取得
+										//Get MO path
 
-	// 外部API
+	//External API
 	void FASTCALL GetSASI(sasi_t *buffer) const;
-										// 内部データ取得
+										//Get internal data
 	BOOL FASTCALL Callback(Event *ev);
-										// イベントコールバック
+										//Event callback
 	void FASTCALL Construct();
-										// ディスク再構築
+										//Rebuild disk
 	BOOL FASTCALL IsBusy() const;
-										// HD BUSY取得
+										//Get HD BUSY
 	DWORD FASTCALL GetBusyDevice() const;
-										// BUSYデバイス取得
+										//Get BUSY device
 
 private:
 	DWORD FASTCALL ReadData();
-										// データ読み出し
+										//Data read
 	void FASTCALL WriteData(DWORD data);
-										// データ書き込み
+										//Data write
 
-	// フェーズ処理
+	//Phase processing
 	void FASTCALL BusFree();
-										// バスフリーフェーズ
+										//Bus free phase
 	void FASTCALL Selection(DWORD data);
-										// セレクションフェーズ
+										//Selection phase
 	void FASTCALL Command();
-										// コマンドフェーズ
+										//Command phase
 	void FASTCALL Execute();
-										// 実行フェーズ
+										//Execution phase
 	void FASTCALL Status();
-										// ステータスフェーズ
+										//Status phase
 	void FASTCALL Message();
-										// メッセージフェーズ
+										//Message phase
 	void FASTCALL Error();
-										// 共通エラー処理
+										//Common error processing
 
-	// コマンド
+	//Command
 	void FASTCALL TestUnitReady();
-										// TEST UNIT READYコマンド
+										//TEST UNIT READY command
 	void FASTCALL Rezero();
-										// REZERO UNITコマンド
+										//REZERO UNIT command
 	void FASTCALL RequestSense();
-										// REQUEST SENSEコマンド
+										//REQUEST SENSE command
 	void FASTCALL Format();
-										// FORMATコマンド
+										//FORMAT command
 	void FASTCALL Reassign();
-										// REASSIGN BLOCKSコマンド
+										//REASSIGN BLOCKS command
 	void FASTCALL Read6();
-										// READ(6)コマンド
+										//READ(6) command
 	void FASTCALL Write6();
-										// WRITE(6)コマンド
+										//WRITE(6) command
 	void FASTCALL Seek6();
-										// SEEK(6)コマンド
+										//SEEK(6) command
 	void FASTCALL Assign();
-										// ASSIGNコマンド
+										//ASSIGN command
 	void FASTCALL Inquiry();
-										// INQUIRYコマンド
+										//INQUIRY command
 	void FASTCALL ModeSense();
-										// MODE SENSEコマンド
+										//MODE SENSE command
 	void FASTCALL StartStop();
-										// START STOP UNITコマンド
+										//START STOP UNIT command
 	void FASTCALL Removal();
-										// PREVENT/ALLOW MEDIUM REMOVALコマンド
+										//PREVENT/ALLOW MEDIUM REMOVAL command
 	void FASTCALL ReadCapacity();
-										// READ CAPACITYコマンド
+										//READ CAPACITY command
 	void FASTCALL Read10();
-										// READ(10)コマンド
+										//READ(10) command
 	void FASTCALL Write10();
-										// WRITE(10)コマンド
+										//WRITE(10) command
 	void FASTCALL Seek10();
-										// SEEK(10)コマンド
+										//SEEK(10) command
 	void FASTCALL Verify();
-										// VERIFYコマンド
+										//VERIFY command
 	void FASTCALL Specify();
-										// SPECIFYコマンド
+										//SPECIFY command
 
-	// ワークエリア
+	//Work area
 	sasi_t sasi;
-										// 内部データ
+										//Internal data
 	Event event;
-										// イベント
+										//Event
 	Filepath sasihd[SASIMax];
-										// SASI-HDファイルパス
+										//SASI-HD file path
 	Filepath scsihd[SCSIMax];
-										// SCSI-HDファイルパス
+										//SCSI-HD file path
 	Filepath scsimo;
-										// SCSI-MOファイルパス
+										//SCSI-MO file path
 	DMAC *dmac;
 										// DMAC
 	IOSC *iosc;
@@ -222,7 +222,7 @@ private:
 	SCSI *scsi;
 										// SCSI
 	BOOL sxsicpu;
-										// SxSI CPU転送フラグ
+										//SxSI CPU transfer flag
 };
 
 #endif	// sasi_h

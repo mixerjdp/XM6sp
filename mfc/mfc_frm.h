@@ -1,4 +1,4 @@
-//---------------------------------------------------------------------------
+﻿//---------------------------------------------------------------------------
 //
 // X68000 Emulator "XM6"
 //
@@ -73,6 +73,12 @@ public:
 	// Drag and drop support
 	BOOL FASTCALL InitCmdSub(int nDrive, LPCTSTR lpszPath);
 									// Command-line processing subwindow
+	BOOL FASTCALL SmokeSaveState(LPCTSTR lpszCmd);
+									// Headless savestate smoke test
+	BOOL FASTCALL SmokeStartVisible(LPCTSTR lpszCmd);
+									// Visible savestate smoke test
+	void FASTCALL SmokeVisibleTimer();
+									// Visible smoke timer tick
 	BOOL m_bFullScreen;
 	BOOL m_bBorderless;
 	BOOL m_bVSyncEnabled;
@@ -82,11 +88,11 @@ public:
 
 	void EnterBorderlessFullscreen();
 	void ExitBorderlessFullscreen();
-	void OnRenderFast();
-	void OnRenderFastUI(CCmdUI *pCmdUI);
 	void OnYmfm();
 	void OnYmfmUI(CCmdUI *pCmdUI);
 	void OnToggleRenderer();
+	void OnToggleRenderFastDummy();
+	void OnToggleRenderFastDummyUI(CCmdUI *pCmdUI);
 	void OnToggleVSync();
 	void OnToggleOSD();
 	void OnToggleShader();
@@ -196,9 +202,9 @@ protected:
 
 	afx_msg void OnSgcrUI(CCmdUI* pCmdUI);
 
-	afx_msg void OnInterrupt();
-										// Interrupt UI
-	afx_msg void OnInterruptUI(CCmdUI *pCmdUI);
+	afx_msg void OnDump();
+										// Dump UI
+	afx_msg void OnDumpUI(CCmdUI *pCmdUI);
 										// Power toggle
 	afx_msg void OnPower();
 										// Power toggle UI
@@ -466,6 +472,10 @@ protected:
 										// Stop
 	afx_msg void OnBreakUI(CCmdUI *pCmdUI);
 										// Trace
+	afx_msg void OnStepFrame();
+										// Step Frame
+	afx_msg void OnStepFrameUI(CCmdUI *pCmdUI);
+										// Step Frame UI
 	afx_msg void OnTrace();
 										// Trace
 	afx_msg void OnTraceUI(CCmdUI *pCmdUI);
@@ -574,6 +584,10 @@ private:
 										// Load
 
 	// Command handler subwindow
+	void FASTCALL UpdateStateFileName();
+										// Update savestate file name based on loaded media
+	BOOL FASTCALL BuildQuickStatePath(Filepath& path);
+										// Build quick savestate path
 	BOOL FASTCALL OnOpenSub(const Filepath& path);
 										// Open subwindow
 	BOOL FASTCALL OnOpenPrep(const Filepath& path, BOOL bWarning = TRUE);
@@ -717,3 +731,4 @@ private:
 
 #endif	// mfc_frm_h
 #endif	// _WIN32
+

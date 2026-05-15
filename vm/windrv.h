@@ -2,8 +2,8 @@
 //
 //	X68000 EMULATOR "XM6"
 //
-//	Copyright (C) 2001-2004 ＰＩ．(ytanaka@ipc-tokai.or.jp)
-//	Modified (C) 2006 co (cogood＠gmail.com)
+//	Copyright (C) 2001-2004 PI(ytanaka@ipc-tokai.or.jp)
+//	Modified (C) 2006 co (cogood@gmail.com)
 //	[ Windrv ]
 //
 //---------------------------------------------------------------------------
@@ -16,13 +16,13 @@
 #include "host_fs.h"
 #include "host_services.h"
 
-//■最大スレッド数
+// Maximum threads
 #define WINDRV_THREAD_MAX	3
 
-//■WINDRV互換動作のサポート
+// WINDRV compatible support
 #define WINDRV_SUPPORT_COMPATIBLE
 
-//■ログ出力有効
+// Debug output enable
 #ifdef _DEBUG
 #define WINDRV_LOG
 #endif // _DEBUG
@@ -30,216 +30,216 @@
 
 class CWindrv : public WindrvContext {
 public:
-	// 基本ファンクション
+	// Member function
 	CWindrv(Windrv* pWindrv, Memory* pMemory, DWORD nHandle = 0);
-										// コンストラクタ
+	// Constructor
 	virtual ~CWindrv();
-										// デストラクタ
+		// Destructor
 
-	// スレッド処理
+// Thread functions
 	BOOL FASTCALL Start();
-										// スレッド起動
+// Thread start
 	BOOL FASTCALL Terminate();
-										// スレッド停止
+// Thread terminate
 
-	// Windrvが利用する外部API
+// Windrv legacy API
 	void FASTCALL Execute(DWORD nA5);
-										// コマンド実行
+// Command execution
 #ifdef WINDRV_SUPPORT_COMPATIBLE
 	DWORD FASTCALL ExecuteCompatible(DWORD nA5);
-										// コマンド実行 (WINDRV互換)
+	// Command execution (WINDRV compatible)
 #endif // WINDRV_SUPPORT_COMPATIBLE
 	DWORD FASTCALL GetHandle() const { ASSERT(this); return m_nHandle; }
-										// 自身のハンドル(配列番号)を獲得
+// Get own handle (buffer number)
 	BOOL FASTCALL isExecute() const { ASSERT(this); return m_bExecute; }
-										// コマンド実行中かどうか確認
+// Command execution - check if executing
 
-	// CWindrvManagerが利用する外部API
+// CWindrvManager legacy API
 	void FASTCALL SetAlloc(BOOL bAlloc) { ASSERT(this); m_bAlloc = bAlloc; }
 	BOOL FASTCALL isAlloc() const { ASSERT(this); return m_bAlloc; }
-										// ハンドル使用中かどうか確認
+// Check if handle is in use - check if in use
 
-	// FileSysが利用する外部API
+// FileSys legacy API
 	DWORD FASTCALL GetUnit() const { ASSERT(this); return unit; }
-										// ユニット番号取得
+// Get unit number
 	Memory* FASTCALL GetMemory() const { ASSERT(this); return memory; }
-										// ユニット番号取得
+// Get unit number
 	void FASTCALL LockXM();
-										// VMへのアクセス開始
+// Start VM access
 	void FASTCALL UnlockXM();
-										// VMへのアクセス終了
+// End VM access
 	void FASTCALL Ready();
-										// コマンド完了を待たずにVMスレッド実行再開
+// Wait for command to complete, run VM thread
 
-	// スレッド実体
+// Thread functions
 	static DWORD __stdcall Run(void* pThis);
-										// スレッド実行開始ポイント
+// Thread execution start point
 	void FASTCALL Runner();
-										// スレッド実体
+									// Thread functions
 
 private:
-	// コマンドハンドラ
+// Command handler
 	void FASTCALL ExecuteCommand();
-										// コマンドハンドラ
+									// Command handler
 
 	void FASTCALL InitDrive();
-										// $40 - 初期化
+										// $40 - Init drive
 	void FASTCALL CheckDir();
-										// $41 - ディレクトリチェック
+										// $41 - Check directory
 	void FASTCALL MakeDir();
-										// $42 - ディレクトリ作成
+										// $42 - Make directory
 	void FASTCALL RemoveDir();
-										// $43 - ディレクトリ削除
+										// $43 - Remove directory
 	void FASTCALL Rename();
-										// $44 - ファイル名変更
+										// $44 - Rename file
 	void FASTCALL Delete();
-										// $45 - ファイル削除
+										// $45 - Delete file
 	void FASTCALL Attribute();
-										// $46 - ファイル属性取得/設定
+										// $46 - Get/set file attributes
 	void FASTCALL Files();
-										// $47 - ファイル検索(First)
+										// $47 - Find file (First)
 	void FASTCALL NFiles();
-										// $48 - ファイル検索(NFiles)
+										// $48 - Find file (NFiles)
 	void FASTCALL Create();
-										// $49 - ファイル作成
+										// $49 - Create file
 	void FASTCALL Open();
-										// $4A - ファイルオープン
+										// $4A - Open file
 	void FASTCALL Close();
-										// $4B - ファイルクローズ
+										// $4B - Close file
 	void FASTCALL Read();
-										// $4C - ファイル読み込み
+										// $4C - Read file
 	void FASTCALL Write();
-										// $4D - ファイル書き込み
+										// $4D - Write file
 	void FASTCALL Seek();
-										// $4E - ファイルシーク
+										// $4E - Seek file
 	void FASTCALL TimeStamp();
-										// $4F - ファイル時刻取得/設定
+										// $4F - Get/set file timestamp
 	void FASTCALL GetCapacity();
-										// $50 - 容量取得
+										// $50 - Get capacity
 	void FASTCALL CtrlDrive();
-										// $51 - ドライブ状態検査/制御
+										// $51 - Drive control/info
 	void FASTCALL GetDPB();
-										// $52 - DPB取得
+										// $52 - Get DPB
 	void FASTCALL DiskRead();
-										// $53 - セクタ読み込み
+										// $53 - Read sector
 	void FASTCALL DiskWrite();
-										// $54 - セクタ書き込み
+										// $54 - Write sector
 	void FASTCALL IoControl();
 										// $55 - IOCTRL
 	void FASTCALL Flush();
-										// $56 - フラッシュ
+										// $56 - Flush
 	void FASTCALL CheckMedia();
-										// $57 - メディア交換チェック
+										// $57 - Check media
 	void FASTCALL Lock();
-										// $58 - 排他制御
+										// $58 - Lock
 
-	// 終了値
+// Result value
 	void FASTCALL SetResult(DWORD result);
-										// 終了値書き込み
+									// Result value
 
-	// メモリアクセス
+// Memory access
 	DWORD FASTCALL GetByte(DWORD addr) const;
-										// バイト読み込み
+										// Byte read
 	void FASTCALL SetByte(DWORD addr, DWORD data);
-										// バイト書き込み
+										// Byte write
 	DWORD FASTCALL GetWord(DWORD addr) const;
-										// ワード読み込み
+										// Word
 	void FASTCALL SetWord(DWORD addr, DWORD data);
-										// ワード書き込み
+										// Word
 	DWORD FASTCALL GetLong(DWORD addr) const;
-										// ロング読み込み
+										// Long read
 	void FASTCALL SetLong(DWORD addr, DWORD data);
-										// ロング書き込み
+										// Long write
 	DWORD FASTCALL GetAddr(DWORD addr) const;
-										// アドレス読み込み
+										// Address
 	void FASTCALL SetAddr(DWORD addr, DWORD data);
-										// アドレス書き込み
+										// Address
 
-	// 構造体変換
+// Structure conversion
 	void FASTCALL GetNameStsPath(DWORD addr, Human68k::namests_t* pNamests) const;
-										// NAMESTSパス名読み込み
+										// NAMESTS path
 	void FASTCALL GetNameSts(DWORD addr, Human68k::namests_t* pNamests) const;
-										// NAMESTS読み込み
+										// NAMESTS
 	void FASTCALL GetFiles(DWORD addr, Human68k::files_t* pFiles) const;
-										// FILES読み込み
+										// FILES
 	void FASTCALL SetFiles(DWORD addr, const Human68k::files_t* pFiles);
-										// FILES書き込み
+										// FILES
 	void FASTCALL GetFcb(DWORD addr, Human68k::fcb_t* pFcb) const;
-										// FCB読み込み
+										// FCB
 	void FASTCALL SetFcb(DWORD addr, const Human68k::fcb_t* pFcb);
-										// FCB書き込み
+										// FCB
 	void FASTCALL SetCapacity(DWORD addr, const Human68k::capacity_t* pCapacity);
-										// CAPACITY書き込み
+										// CAPACITY
 	void FASTCALL SetDpb(DWORD addr, const Human68k::dpb_t* pDpb);
-										// DPB書き込み
+										// DPB
 	void FASTCALL GetIoctrl(DWORD param, DWORD func, Human68k::ioctrl_t* pIoctrl);
-										// IOCTRL読み込み
+										// IOCTRL
 	void FASTCALL SetIoctrl(DWORD param, DWORD func, const Human68k::ioctrl_t* pIoctrl);
-										// IOCTRL書き込み
+										// IOCTRL
 	void FASTCALL GetParameter(DWORD addr, BYTE* pOption, DWORD nSize);
-										// パラメータ読み込み
+										// Read parameter
 
 #ifdef WINDRV_LOG
-	// ログ
+// Log
 	void Log(DWORD level, char* format, ...) const;
-										// ログ出力
+									// Log output
 #endif // WINDRV_LOG
 
-	// コマンドハンドラ用
+// Command handler
 	Windrv* windrv;
-										// 設定内容
+										// Settings
 	Memory* memory;
-										// メモリ
+									// Settings
 	DWORD a5;
-										// リクエストヘッダ
+										// Request header
 	DWORD unit;
-										// ユニット番号
+										// Unit number
 	DWORD command;
-										// コマンド番号
+										// Execute
 
-	// スレッド管理用
+// For thread management
 	DWORD m_nHandle;
-										// バッファ番号をハンドルとして使う(0～THREAD_MAX - 1)
+										// Buffer number (also serves as handle) g(0`THREAD_MAX - 1)
 	BOOL m_bAlloc;
-										// ハンドル使用中のときTRUE
+										// in usepTRUE
 	BOOL m_bExecute;
-										// コマンド実行中のときTRUE
+// Command executionTRUE
 	BOOL m_bReady;
-										// VMスレッド実行再開のときTRUE
+										// VMs startTRUE
 	BOOL m_bTerminate;
-										// スレッド利用終了のときTRUE
+										// terminationTRUE
 	void* m_hThread;
-										// スレッドハンドル
+										// Statushandler
 	void* m_hEventStart;
-										// コマンド実行開始通知
+// Command executionJn notification
 	void* m_hEventReady;
-										// VMスレッド実行再開通知
+										// VMs start notification
 };
 
 //===========================================================================
 //
-//	コマンドハンドラ管理
+// Command handler management
 //
 //===========================================================================
 class CWindrvManager {
 public:
 	void FASTCALL Init(Windrv* pWindrv, Memory* pMemory);
-										// 初期化
+									// Settings
 	void FASTCALL Clean();
-										// 終了
+										// Terminate
 	void FASTCALL Reset();
-										// リセット
+										// Zbg
 
 	CWindrv* FASTCALL Alloc();
-										// 空きスレッド確保
+										// free threadbhm
 	CWindrv* FASTCALL Search(DWORD nHandle);
-										// スレッド検索
+									// Thread functions
 	void FASTCALL Free(CWindrv* p);
-										// スレッド開放
+										// StatusbhJ
 
 private:
 	CWindrv* m_pThread[WINDRV_THREAD_MAX];
-										// コマンドハンドラ実体
+									// Command handler
 };
 
 //===========================================================================
@@ -250,7 +250,7 @@ private:
 class Windrv : public MemDevice
 {
 public:
-	// Windrv動作
+// Windrv specific
 	enum {
 		WINDRV_MODE_NONE = 0,
 		WINDRV_MODE_ENABLE = 1,
@@ -259,16 +259,16 @@ public:
 		WINDRV_MODE_DISABLE = 255,
 	};
 
-	// 内部データ定義
+// Configuration data structure`
 	typedef struct {
-		// コンフィグ
-		DWORD enable;					// Windrvサポート 0:無効 1:WindrvXM (2:Windrv互換)
+		// RtBO
+		DWORD enable;					// WindrvT|[g 0: 1:WindrvXMM (2:Windrv compatible)
 
-		// ドライブ・ファイル管理
-		DWORD drives;					// 確保されたドライブ数 (FileSysアクセス境界チェック用)
+		// hCuEt@C
+		DWORD drives;					// Number assigned hCu (FileSysANZXE`FbNp)
 
-		// プロセス
-		FileSys *fs;					// ファイルシステム
+		// ProcessZX
+		FileSys *fs;					// t@CVXe
 
 		// host callback
 		host_sync_callback_t lock_vm_cb;
@@ -277,69 +277,69 @@ public:
 	} windrv_t;
 
 public:
-	// 基本ファンクション
+	// Member function
 	Windrv(VM *p);
-										// コンストラクタ
+	// Constructor
 	BOOL FASTCALL Init();
-										// 初期化
+									// Settings
 	void FASTCALL Cleanup();
-										// クリーンアップ
+										// N[Abv
 	void FASTCALL Reset();
-										// リセット
+										// Zbg
 	BOOL FASTCALL Save(Fileio *fio, int ver);
-										// セーブ
+										// Reset[u
 	BOOL FASTCALL Load(Fileio *fio, int ver);
-										// ロード
+										// Word
 	void FASTCALL ApplyCfg(const Config *config);
-										// 設定適用
+										// ApplyKp
 
-	// メモリデバイス
+// SettingsfoCX
 	DWORD FASTCALL ReadByte(DWORD addr);
-										// バイト読み込み
+										// Byte read
 	void FASTCALL WriteByte(DWORD addr, DWORD data);
-										// バイト書き込み
+										// Byte write
 	DWORD FASTCALL ReadOnly(DWORD addr) const;
-										// 読み込みのみ
+										//
 
-	// 外部API
+// External API
 	void FASTCALL SetFileSys(FileSys *fs);
-										// ファイルシステム設定
+										// t@CVXe
 	void FASTCALL SetHostSyncCallbacks(host_sync_callback_t lock_vm_cb, host_sync_callback_t unlock_vm_cb, void *user);
 	void FASTCALL HostLockVM() const;
 	void FASTCALL HostUnlockVM() const;
 
-	// コマンドハンドラ用 外部API
+// Command handler OAPI
 	void FASTCALL SetUnitMax(DWORD nUnitMax) { ASSERT(this); windrv.drives = nUnitMax; }
-										// 現在のユニット番号上限設定
+										// Unit number
 	BOOL FASTCALL isInvalidUnit(DWORD unit) const;
-										// ユニット番号チェック
+										// Unit number`FbN
 	BOOL FASTCALL isValidUnit(DWORD unit) const { ASSERT(this); return unit < windrv.drives; }
-										// ユニット番号チェック (ASSERT専用)
+										// Unit number`FbN (ASSERT version)p)
 	FileSys* FASTCALL GetFilesystem() const { ASSERT(this); return windrv.fs; }
-										// ファイルシステムの獲得
+										// t@CVXe l
 
 #ifdef WINDRV_LOG
-	// ログ
+// Log
 	void FASTCALL Log(DWORD level, char* message) const;
-										// ログ出力
+									// Log output
 #endif // WINDRV_LOG
 
 private:
 #ifdef WINDRV_SUPPORT_COMPATIBLE
 	void FASTCALL Execute();
-										// コマンド実行
+// Command execution
 #endif // WINDRV_SUPPORT_COMPATIBLE
 	void FASTCALL ExecuteAsynchronous();
-										// コマンド実行開始 非同期
+// Command executionJn async
 	DWORD FASTCALL StatusAsynchronous();
-										// ステータス獲得 非同期
+										// Statuse[^Xl async
 	void FASTCALL ReleaseAsynchronous();
-										// ハンドル開放 非同期
+										// J async
 
 	windrv_t windrv;
-										// 内部データ
+										// f[^
 	CWindrvManager m_cThread;
-										// コマンドハンドラ管理
+									// Command handler
 };
 
 
