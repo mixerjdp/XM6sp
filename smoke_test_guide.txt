@@ -5,7 +5,8 @@ Overview
 --------
 
 The MFC frontend supports command-line smoke tests for automated emulator
-startup, frame execution, scheduled input, and savestate validation.
+startup, frame execution, scheduled input, render probing, and savestate
+validation.
 
 The smoke test can run in two modes:
 
@@ -37,8 +38,8 @@ Required Option
 
 --smoke-savestate <path>
 
-Loads the given disk/image, runs the smoke scenario, saves a quick savestate,
-then loads it back to validate that save/load works.
+Loads the given disk/image or savestate and runs the smoke scenario. It only
+saves a new quick savestate when --smoke-save-frame is supplied.
 
 Example:
 
@@ -71,15 +72,15 @@ Example:
 
 --smoke-save-frame <frames>
 
-Saves the quick savestate at the specified frame instead of automatically
-saving at the final run frame.
+Saves the quick savestate at the specified frame, then loads it back to
+validate that save/load works.
 
 Example:
 
 --smoke-save-frame 500
 
-If --smoke-save-frame is not provided, the smoke test saves at the final
-target frame.
+If --smoke-save-frame is not provided, no savestate is written and the
+quick-load validation is skipped.
 
 
 --smoke-visible-hold-ms <milliseconds>
@@ -197,9 +198,14 @@ Visible smoke, save exactly at frame 500:
 Start-Process -Wait -FilePath "C:\sw\XM62026\main\Release\XM6.exe" -ArgumentList @("--smoke-savestate","D:\Emulation\ROMs\X68000\Akazucha.dim","--smoke-visible","--smoke-run-frames","900","--smoke-save-frame","500","--smoke-visible-hold-ms","15000")
 
 
-Headless smoke, run to frame 1000 and validate savestate:
+Headless smoke, run to frame 1000 without writing a savestate:
 
 C:\sw\XM62026\main\Release\XM6.exe --smoke-savestate "D:\Emulation\ROMs\X68000\Akazucha.dim" --smoke-run-frames 1000
+
+
+Headless smoke, run to frame 1000 and validate a new savestate:
+
+C:\sw\XM62026\main\Release\XM6.exe --smoke-savestate "D:\Emulation\ROMs\X68000\Akazucha.dim" --smoke-run-frames 1000 --smoke-save-frame 1000
 
 
 Logs
@@ -250,4 +256,3 @@ keys such as OPT1, OPT2, F1, or F3.
 The visible smoke path intentionally starts after the MFC window, scheduler,
 sound, and draw view are initialized, so it should behave like a normal visible
 frontend run.
-

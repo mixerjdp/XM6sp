@@ -242,6 +242,9 @@
     <ClCompile Include="..\mfc\mfc_sch.cpp">
       <Filter>MFC</Filter>
     </ClCompile>
+    <ClCompile Include="..\mfc\mfc_smoke.cpp">
+      <Filter>MFC</Filter>
+    </ClCompile>
     <ClCompile Include="..\mfc\mfc_snd.cpp">
       <Filter>MFC</Filter>
     </ClCompile>
@@ -524,6 +527,9 @@
       <Filter>MFC</Filter>
     </ClInclude>
     <ClInclude Include="..\mfc\mfc_sch.h">
+      <Filter>MFC</Filter>
+    </ClInclude>
+    <ClInclude Include="..\mfc\mfc_smoke.h">
       <Filter>MFC</Filter>
     </ClInclude>
     <ClInclude Include="..\mfc\mfc_snd.h">

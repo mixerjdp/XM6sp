@@ -260,6 +260,7 @@
     <ClCompile Include="..\mfc\mfc_que.cpp" />
     <ClCompile Include="..\mfc\mfc_rend.cpp" />
     <ClCompile Include="..\mfc\mfc_sch.cpp" />
+    <ClCompile Include="..\mfc\mfc_smoke.cpp" />
     <ClCompile Include="..\mfc\mfc_snd.cpp" />
     <ClCompile Include="..\mfc\mfc_asm_portable.cpp" />
     <ClCompile Include="..\mfc\mfc_stat.cpp" />
@@ -359,6 +360,7 @@
     <ClInclude Include="..\mfc\mfc_rend.h" />
     <ClInclude Include="..\mfc\mfc_res.h" />
     <ClInclude Include="..\mfc\mfc_sch.h" />
+    <ClInclude Include="..\mfc\mfc_smoke.h" />
     <ClInclude Include="..\mfc\mfc_snd.h" />
     <ClInclude Include="..\mfc\mfc_stat.h" />
     <ClInclude Include="..\mfc\mfc_sub.h" />
