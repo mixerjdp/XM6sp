@@ -399,7 +399,7 @@ private:
 										// スプライトリセット
 	void FASTCALL BGSprite(int raster);
 										// BG/スプライト
-	void FASTCALL BG(int page, int raster, DWORD *buf);
+	void FASTCALL BG(int page, int raster, DWORD *buf, BOOL force);
 										// BG
 	void FASTCALL BGBlock(int page, int y);
 										// BG(横ブロック)

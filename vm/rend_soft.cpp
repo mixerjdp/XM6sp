@@ -722,7 +722,46 @@ void RendMix02(DWORD *buf, DWORD *f, DWORD *s, BOOL *flag, int len)
 	}
 }
 
-void RendMix02C(DWORD *buf, DWORD *f, DWORD *s, BOOL *flag, int len) { RendMix02(buf, f, s, flag, len); }
+static inline BOOL RendTransparent(DWORD p);
+static inline BOOL RendHalf(DWORD p);
+static inline BOOL RendColor(DWORD p);
+static inline void RendStoreMix(DWORD *buf, BOOL *flag, int i, DWORD out);
+
+static inline DWORD RendMixPixel02C(DWORD f, DWORD s)
+{
+	if (!RendTransparent(f)) {
+		return RendColor(f) ? f : s;
+	}
+	return RendColor(s) ? s : f;
+}
+
+static inline DWORD RendMixPixel02CS(DWORD f, DWORD s)
+{
+	if (!RendTransparent(s) && RendHalf(s)) {
+		return s;
+	}
+	return RendMixPixel02C(f, s);
+}
+
+static inline DWORD RendMixPixel02D(DWORD f, DWORD s)
+{
+	return RendColor(f) ? f : s;
+}
+
+static inline DWORD RendMixPixel02DS(DWORD f, DWORD s)
+{
+	if (!RendTransparent(s) && RendHalf(s)) {
+		return s;
+	}
+	return RendMixPixel02D(f, s);
+}
+
+void RendMix02C(DWORD *buf, DWORD *f, DWORD *s, BOOL *flag, int len)
+{
+	for (int i = 0; i < len; i++) {
+		RendStoreMix(buf, flag, i, RendMixPixel02C(f[i], s[i]));
+	}
+}
 
 void RendMix03Base(DWORD *buf, const DWORD *f, const DWORD *s, BOOL *flag, int len)
 {
@@ -1144,20 +1183,16 @@ void RendMix02CH(DWORD *buf, DWORD *f, DWORD *g, DWORD c, BOOL *flag, int len)
 void RendMix02CS(DWORD *buf, DWORD *f, DWORD *g, BOOL *flag, int len)
 {
 	for (int i = 0; i < len; i++) {
-		DWORD out = g[i];
-		if (RendTransparent(out) || !RendHalf(out)) {
-			DWORD alt;
-			out = f[i];
-			alt = RendTransparent(out) ? out : g[i];
-			if (!RendColor(out)) {
-				out = alt;
-			}
-		}
-		RendStoreMix(buf, flag, i, out);
+		RendStoreMix(buf, flag, i, RendMixPixel02CS(f[i], g[i]));
 	}
 }
 
-void RendMix02D(DWORD *buf, DWORD *f, DWORD *g, BOOL *flag, int len) { RendMix02B(buf, f, g, flag, len); }
+void RendMix02D(DWORD *buf, DWORD *f, DWORD *g, BOOL *flag, int len)
+{
+	for (int i = 0; i < len; i++) {
+		RendStoreMix(buf, flag, i, RendMixPixel02D(f[i], g[i]));
+	}
+}
 void RendMix02DH(DWORD *buf, DWORD *f, DWORD *g, DWORD c, BOOL *flag, int len)
 {
 	for (int i = 0; i < len; i++) {
@@ -1171,7 +1206,12 @@ void RendMix02DH(DWORD *buf, DWORD *f, DWORD *g, DWORD c, BOOL *flag, int len)
 		RendStoreMix(buf, flag, i, out);
 	}
 }
-void RendMix02DS(DWORD *buf, DWORD *f, DWORD *g, BOOL *flag, int len) { RendMix02CS(buf, f, g, flag, len); }
+void RendMix02DS(DWORD *buf, DWORD *f, DWORD *g, BOOL *flag, int len)
+{
+	for (int i = 0; i < len; i++) {
+		RendStoreMix(buf, flag, i, RendMixPixel02DS(f[i], g[i]));
+	}
+}
 void RendMixP0H(DWORD *buf, DWORD *f, DWORD col, BOOL *flag, int len)
 {
 	for (int i = 0; i < len; i++) {
@@ -1179,18 +1219,46 @@ void RendMixP0H(DWORD *buf, DWORD *f, DWORD col, BOOL *flag, int len)
 	}
 }
 
-static inline DWORD RendPick3(DWORD f, DWORD g, DWORD h)
+static inline DWORD RendMixPixel03A(DWORD f, DWORD g, DWORD h)
 {
-	if (!RendTransparent(f)) {
+	if (RendColor(f)) {
 		return f;
 	}
+
 	if (!RendTransparent(g)) {
 		return g;
 	}
-	return h;
+
+	return RendHalf(h) ? g : h;
 }
 
-void RendMix03A(DWORD *buf, DWORD *f, DWORD *g, DWORD *h, BOOL *flag, int len) { for (int i = 0; i < len; i++) RendStoreMix(buf, flag, i, RendPick3(f[i], g[i], h[i])); }
+static inline DWORD RendMixPixel03B(DWORD f, DWORD g, DWORD h)
+{
+	if (!RendTransparent(f)) {
+		return RendColor(f) ? f : g;
+	}
+
+	if (RendColor(g)) {
+		return g;
+	}
+
+	return RendHalf(h) ? f : h;
+}
+
+static inline DWORD RendMixPixel03BS(DWORD f, DWORD g, DWORD h)
+{
+	if (!RendTransparent(g) && RendHalf(g)) {
+		return g;
+	}
+	return RendMixPixel03B(f, g, h);
+}
+
+void RendMix03A(DWORD *buf, DWORD *f, DWORD *g, DWORD *h, BOOL *flag, int len)
+{
+	for (int i = 0; i < len; i++) {
+		RendStoreMix(buf, flag, i, RendMixPixel03A(f[i], g[i], h[i]));
+	}
+}
 void RendMix03AH(DWORD *buf, DWORD *f, DWORD *g, DWORD *h, BOOL *flag, int len)
 {
 	for (int i = 0; i < len; i++) {
@@ -1207,7 +1275,12 @@ void RendMix03AH(DWORD *buf, DWORD *f, DWORD *g, DWORD *h, BOOL *flag, int len)
 		RendStoreMix(buf, flag, i, out);
 	}
 }
-void RendMix03B(DWORD *buf, DWORD *f, DWORD *g, DWORD *h, BOOL *flag, int len) { RendMix03A(buf, f, g, h, flag, len); }
+void RendMix03B(DWORD *buf, DWORD *f, DWORD *g, DWORD *h, BOOL *flag, int len)
+{
+	for (int i = 0; i < len; i++) {
+		RendStoreMix(buf, flag, i, RendMixPixel03B(f[i], g[i], h[i]));
+	}
+}
 void RendMix03BH(DWORD *buf, DWORD *f, DWORD *g, DWORD *h, BOOL *flag, int len)
 {
 	for (int i = 0; i < len; i++) {
@@ -1229,7 +1302,12 @@ void RendMix03BH(DWORD *buf, DWORD *f, DWORD *g, DWORD *h, BOOL *flag, int len)
 		RendStoreMix(buf, flag, i, out);
 	}
 }
-void RendMix03BS(DWORD *buf, DWORD *f, DWORD *g, DWORD *h, BOOL *flag, int len) { RendMix03A(buf, f, g, h, flag, len); }
+void RendMix03BS(DWORD *buf, DWORD *f, DWORD *g, DWORD *h, BOOL *flag, int len)
+{
+	for (int i = 0; i < len; i++) {
+		RendStoreMix(buf, flag, i, RendMixPixel03BS(f[i], g[i], h[i]));
+	}
+}
 void RendMix03C(DWORD *buf, DWORD *f, DWORD *g, DWORD *h, BOOL *flag, int len)
 {
 	for (int i = 0; i < len; i++) {

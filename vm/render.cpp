@@ -3141,7 +3141,7 @@ void FASTCALL Render::BGSprite(int raster)
 	}
 
 	if (render.bgdisp[1] && !render.bgsize) {
-		BG(1, source_raster, buf);
+		BG(1, source_raster, buf, TRUE);
 	}
 
 	if (sprite_visible) {
@@ -3165,7 +3165,7 @@ void FASTCALL Render::BGSprite(int raster)
 	}
 
 	if (render.bgdisp[0]) {
-		BG(0, source_raster, buf);
+		BG(0, source_raster, buf, (BOOL)(!render.bgdisp[1] || render.bgsize));
 	}
 
 	if (sprite_visible) {
@@ -3194,13 +3194,14 @@ void FASTCALL Render::BGSprite(int raster)
 //	BG
 //
 //---------------------------------------------------------------------------
-void FASTCALL Render::BG(int page, int raster, DWORD *buf)
+void FASTCALL Render::BG(int page, int raster, DWORD *buf, BOOL force)
 {
 	int x;
 	int y;
 	bgdata_t *ptr;
 	int len;
 	int rest;
+	const BOOL draw_force = (BOOL)(force && original_bg0_render_enabled);
 	const int bg_hadjust = CalcBGHAdjustPixels(compositor_mode, crtc, sprite);
 
 	ASSERT((page == 0) || (page == 1));
@@ -3230,28 +3231,52 @@ void FASTCALL Render::BG(int page, int raster, DWORD *buf)
 
 		if ((x & 7) == 0) {
 			x >>= 3;
-			RendBG8(ptr, buf, x, render.mixlen, render.pcgready,
-				render.sprmem, render.pcgbuf, render.paldata);
+			if (draw_force) {
+				RendBG8F(ptr, buf, x, render.mixlen, render.pcgready,
+					render.sprmem, render.pcgbuf, render.paldata);
+			}
+			else {
+				RendBG8(ptr, buf, x, render.mixlen, render.pcgready,
+					render.sprmem, render.pcgbuf, render.paldata);
+			}
 			return;
 		}
 
 		rest = 8 - (x & 7);
 		ASSERT((rest > 0) && (rest < 8));
-		RendBG8P(&ptr[(x & 0xfff8) >> 3], buf, (x & 7), rest, render.pcgready,
-			render.sprmem, render.pcgbuf, render.paldata);
+		if (draw_force) {
+			RendBG8FP(&ptr[(x & 0xfff8) >> 3], buf, (x & 7), rest, render.pcgready,
+				render.sprmem, render.pcgbuf, render.paldata);
+		}
+		else {
+			RendBG8P(&ptr[(x & 0xfff8) >> 3], buf, (x & 7), rest, render.pcgready,
+				render.sprmem, render.pcgbuf, render.paldata);
+		}
 
 		len = render.mixlen - rest;
 		x += rest;
 		x &= (512 - 1);
 		ASSERT((x & 7) == 0);
-		RendBG8(ptr, &buf[rest], (x >> 3), (len & 0xfff8), render.pcgready,
-			render.sprmem, render.pcgbuf, render.paldata);
+		if (draw_force) {
+			RendBG8F(ptr, &buf[rest], (x >> 3), (len & 0xfff8), render.pcgready,
+				render.sprmem, render.pcgbuf, render.paldata);
+		}
+		else {
+			RendBG8(ptr, &buf[rest], (x >> 3), (len & 0xfff8), render.pcgready,
+				render.sprmem, render.pcgbuf, render.paldata);
+		}
 
 		if (len & 7) {
 			x += (len & 0xfff8);
 			x &= (512 - 1);
-			RendBG8P(&ptr[x >> 3], &buf[rest + (len & 0xfff8)], 0, (len & 7),
-				render.pcgready, render.sprmem, render.pcgbuf, render.paldata);
+			if (draw_force) {
+				RendBG8FP(&ptr[x >> 3], &buf[rest + (len & 0xfff8)], 0, (len & 7),
+					render.pcgready, render.sprmem, render.pcgbuf, render.paldata);
+			}
+			else {
+				RendBG8P(&ptr[x >> 3], &buf[rest + (len & 0xfff8)], 0, (len & 7),
+					render.pcgready, render.sprmem, render.pcgbuf, render.paldata);
+			}
 		}
 		return;
 	}
@@ -3261,31 +3286,56 @@ void FASTCALL Render::BG(int page, int raster, DWORD *buf)
 
 	if ((x & 15) == 0) {
 		x >>= 4;
-		RendBG16(ptr, buf, x, render.mixlen, render.pcgready,
-			render.sprmem, render.pcgbuf, render.paldata);
+		if (draw_force) {
+			RendBG16F(ptr, buf, x, render.mixlen, render.pcgready,
+				render.sprmem, render.pcgbuf, render.paldata);
+		}
+		else {
+			RendBG16(ptr, buf, x, render.mixlen, render.pcgready,
+				render.sprmem, render.pcgbuf, render.paldata);
+		}
 		return;
 	}
 
 	rest = 16 - (x & 15);
 	ASSERT((rest > 0) && (rest < 16));
-	RendBG16P(&ptr[(x & 0xfff0) >> 4], buf, (x & 15), rest, render.pcgready,
-		render.sprmem, render.pcgbuf, render.paldata);
+	if (draw_force) {
+		RendBG16FP(&ptr[(x & 0xfff0) >> 4], buf, (x & 15), rest, render.pcgready,
+			render.sprmem, render.pcgbuf, render.paldata);
+	}
+	else {
+		RendBG16P(&ptr[(x & 0xfff0) >> 4], buf, (x & 15), rest, render.pcgready,
+			render.sprmem, render.pcgbuf, render.paldata);
+	}
 
 	len = render.mixlen - rest;
 	x += rest;
 	x &= (1024 - 1);
 	ASSERT((x & 15) == 0);
-	RendBG16(ptr, &buf[rest], (x >> 4), (len & 0xfff0), render.pcgready,
-		render.sprmem, render.pcgbuf, render.paldata);
+	if (draw_force) {
+		RendBG16F(ptr, &buf[rest], (x >> 4), (len & 0xfff0), render.pcgready,
+			render.sprmem, render.pcgbuf, render.paldata);
+	}
+	else {
+		RendBG16(ptr, &buf[rest], (x >> 4), (len & 0xfff0), render.pcgready,
+			render.sprmem, render.pcgbuf, render.paldata);
+	}
 
 	if (len & 15) {
 		x += (len & 0xfff0);
 		x &= (1024 - 1);
 		x >>= 4;
-		RendBG16P(&ptr[x], &buf[rest + (len & 0xfff0)], 0, (len & 15),
-			render.pcgready, render.sprmem, render.pcgbuf, render.paldata);
+		if (draw_force) {
+			RendBG16FP(&ptr[x], &buf[rest + (len & 0xfff0)], 0, (len & 15),
+				render.pcgready, render.sprmem, render.pcgbuf, render.paldata);
+		}
+		else {
+			RendBG16P(&ptr[x], &buf[rest + (len & 0xfff0)], 0, (len & 15),
+				render.pcgready, render.sprmem, render.pcgbuf, render.paldata);
+		}
 	}
 }
+
 
 //---------------------------------------------------------------------------
 //
