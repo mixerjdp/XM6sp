@@ -329,7 +329,7 @@ public:
 										// グラフィックVRAM変更
 	void FASTCALL GrpScrl(int block, DWORD x, DWORD y);
 										// グラフィックスクロールセット
-	void FASTCALL SpriteReg(DWORD addr, DWORD data[]);
+	void FASTCALL SpriteReg(DWORD addr, DWORD data);
 										// スプライトレジスタ変更
 	void FASTCALL BGScrl(int page, DWORD x, DWORD y);
 										// BGスクロール変更
@@ -399,7 +399,7 @@ private:
 										// スプライトリセット
 	void FASTCALL BGSprite(int raster);
 										// BG/スプライト
-	void FASTCALL BG(int page, int raster, DWORD *buf, BOOL force);
+	void FASTCALL BG(int page, int raster, DWORD *buf);
 										// BG
 	void FASTCALL BGBlock(int page, int y);
 										// BG(横ブロック)
