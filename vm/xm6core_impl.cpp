@@ -1328,7 +1328,7 @@ static unsigned int xm6_render_visible_height(const Render::render_t *r)
 
 	unsigned int visible_h = (unsigned int)r->height;
 
-	if (r->mixmode != 1 && r->hres == 0) {
+	if ((r->mixmode != 1 && r->hres == 0) || r->v_mul == 0) {
 		visible_h <<= 1;
 	}
 
@@ -2890,8 +2890,11 @@ XM6CORE_API int XM6CORE_CALL xm6_get_video_layout(
 		return XM6CORE_ERR_NOT_READY;
 	}
 
-	unsigned int h_mul = 1u;
+	unsigned int h_mul = (r->h_mul > 0) ? (unsigned int)r->h_mul : 1u;
 	unsigned int v_mul = 1u;
+	if (r->v_mul == 0 || r->v_mul == 1 || r->v_mul == 2) {
+		v_mul = (unsigned int)r->v_mul;
+	}
 
 	*out_width = (unsigned int)r->width;
 	*out_height = xm6_render_visible_height(r);
