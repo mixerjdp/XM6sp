@@ -41,6 +41,8 @@ public:
 		int nRendHeight;				// Renderer height
 		int nRendHMul;					// Renderer horizontal scale
 		int nRendVMul;					// Renderer vertical scale
+		int nRendHRes;					// Renderer horizontal mode
+		int nRendMixMode;				// Renderer vertical mix mode
 		int nLeft;						// Left margin
 		int nTop;						// Top margin
 		int nWidth;						// BitBlt width

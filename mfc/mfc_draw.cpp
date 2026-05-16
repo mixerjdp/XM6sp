@@ -125,6 +125,8 @@ CDrawView::CDrawView()
 	m_Info.nRendHeight = 0;
 	m_Info.nRendHMul = 0;
 	m_Info.nRendVMul = 0;
+	m_Info.nRendHRes = 0;
+	m_Info.nRendMixMode = 0;
 	m_Info.nLeft = 0;
 	m_Info.nTop = 0;
 	m_Info.nWidth = 0;
@@ -864,6 +866,8 @@ void FASTCALL CDrawView::SetupBitmap()
 	// Recalculate
 	m_Info.nRendHMul = -1;
 	m_Info.nRendVMul = -1;
+	m_Info.nRendHRes = -1;
+	m_Info.nRendMixMode = -1;
 	ReCalc(rect);
 }
 
@@ -1864,6 +1868,14 @@ void FASTCALL CDrawView::ReCalc(CRect& rect)
 		m_Info.nRendVMul = m_Info.pWork->v_mul;
 		flag = TRUE;
 	}
+	if (m_Info.nRendHRes != m_Info.pWork->hres) {
+		m_Info.nRendHRes = m_Info.pWork->hres;
+		flag = TRUE;
+	}
+	if (m_Info.nRendMixMode != m_Info.pWork->mixmode) {
+		m_Info.nRendMixMode = m_Info.pWork->mixmode;
+		flag = TRUE;
+	}
 	if (!flag) {
 		return;
 	}
@@ -1874,11 +1886,11 @@ void FASTCALL CDrawView::ReCalc(CRect& rect)
 		m_Info.nWidth = m_Info.nBMPWidth;
 	}
 	m_Info.nHeight = m_Info.nRendHeight;
-	if (m_Info.nRendVMul == 0) {
-		// 15 kHz interlacing handling
+	if ((m_Info.pWork->mixmode != 1 && m_Info.pWork->hres == 0) ||
+		(m_Info.nRendVMul == 0)) {
 		m_Info.nHeight <<= 1;
 	}
-	if (m_Info.nBMPHeight < m_Info.nRendHeight) {
+	if (m_Info.nBMPHeight < m_Info.nHeight) {
 		m_Info.nHeight = m_Info.nBMPHeight;
 	}
 
