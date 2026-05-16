@@ -2,7 +2,7 @@
 //
 //	X68000 EMULATOR "XM6"
 //
-//	Copyright (C) 2001-2006 ‚o‚hD(ytanaka@ipc-tokai.or.jp)
+//	Copyright (C) 2001-2006 PI(ytanaka@ipc-tokai.or.jp)
 //	[ OPM(YM2151) ]
 //
 //---------------------------------------------------------------------------
@@ -30,20 +30,20 @@
 
 //---------------------------------------------------------------------------
 //
-//	ƒRƒ“ƒXƒgƒ‰ƒNƒ^
+//	Constructor
 //
 //---------------------------------------------------------------------------
 OPMIF::OPMIF(VM *p) : MemDevice(p)
 {
-	// ƒfƒoƒCƒXID‚ð‰Šú‰»
+	// Initialize device ID
 	dev.id = MAKEID('O', 'P', 'M', ' ');
 	dev.desc = "OPM (YM2151)";
 
-	// ŠJŽnƒAƒhƒŒƒXAI—¹ƒAƒhƒŒƒX
+	// Start address, End address
 	memdev.first = 0xe90000;
 	memdev.last = 0xe91fff;
 
-	// ƒ[ƒNƒNƒŠƒA
+	// Initialization
 	mfp = NULL;
 	fdd = NULL;
 	adpcm = NULL;
@@ -53,36 +53,36 @@ OPMIF::OPMIF(VM *p) : MemDevice(p)
 
 //---------------------------------------------------------------------------
 //
-//	‰Šú‰»
+//	Initialize
 //
 //---------------------------------------------------------------------------
 BOOL FASTCALL OPMIF::Init()
 {
 	int i;
 
-	ASSERT(this);
+ ASSERT(this);
 
-	// Šî–{ƒNƒ‰ƒX
+	// Base class
 	if (!MemDevice::Init()) {
 		return FALSE;
 	}
 
-	// MFPŽæ“¾
-	ASSERT(!mfp);
+	// Get MFP
+ ASSERT(!mfp);
 	mfp = (MFP*)vm->SearchDevice(MAKEID('M', 'F', 'P', ' '));
-	ASSERT(mfp);
+ ASSERT(mfp);
 
-	// ADPCMŽæ“¾
-	ASSERT(!adpcm);
+	// Get ADPCM
+ ASSERT(!adpcm);
 	adpcm = (ADPCM*)vm->SearchDevice(MAKEID('A', 'P', 'C', 'M'));
-	ASSERT(adpcm);
+ ASSERT(adpcm);
 
-	// FDDŽæ“¾
-	ASSERT(!fdd);
+	// Get FDD
+ ASSERT(!fdd);
 	fdd = (FDD*)vm->SearchDevice(MAKEID('F', 'D', 'D', ' '));
-	ASSERT(fdd);
+ ASSERT(fdd);
 
-	// ƒCƒxƒ“ƒgì¬
+	// Create event
 	event[0].SetDevice(this);
 	event[0].SetDesc("Timer-A");
 	event[1].SetDevice(this);
@@ -93,7 +93,7 @@ BOOL FASTCALL OPMIF::Init()
 		scheduler->AddEvent(&event[i]);
 	}
 
-	// ƒoƒbƒtƒ@Šm•Û
+	// Allocate buffer
 	try {
 		opmbuf = new DWORD [BufMax * 2];
 	}
@@ -104,13 +104,13 @@ BOOL FASTCALL OPMIF::Init()
 		return FALSE;
 	}
 
-	// ƒ[ƒNƒNƒŠƒA
+	// Initialization
 	memset(&opm, 0, sizeof(opm));
 	memset(&bufinfo, 0, sizeof(bufinfo));
 	bufinfo.max = BufMax;
 	bufinfo.sound = TRUE;
 
-	// ƒoƒbƒtƒ@‰Šú‰»
+	// Initialize buffer
 	InitBuf(44100);
 
 	return TRUE;
@@ -118,49 +118,49 @@ BOOL FASTCALL OPMIF::Init()
 
 //---------------------------------------------------------------------------
 //
-//	ƒNƒŠ[ƒ“ƒAƒbƒv
+//	Cleanup
 //
 //---------------------------------------------------------------------------
 void FASTCALL OPMIF::Cleanup()
 {
-	ASSERT(this);
+ ASSERT(this);
 
 	if (opmbuf) {
 		delete[] opmbuf;
 		opmbuf = NULL;
 	}
 
-	// Šî–{ƒNƒ‰ƒX‚Ö
+	// To base class
 	MemDevice::Cleanup();
 }
 
 //---------------------------------------------------------------------------
 //
-//	ƒŠƒZƒbƒg
+//	Reset
 //
 //---------------------------------------------------------------------------
 void FASTCALL OPMIF::Reset()
 {
 	int i;
 
-	ASSERT(this);
-	ASSERT_DIAG();
+ ASSERT(this);
+ ASSERT_DIAG();
 
-	LOG0(Log::Normal, "ƒŠƒZƒbƒg");
+	LOG0(Log::Normal, "Reset");
 
-	// ƒCƒxƒ“ƒg‚ðŽ~‚ß‚é
+	// Stop event
 	event[0].SetTime(0);
 	event[1].SetTime(0);
 
-	// ƒoƒbƒtƒ@ƒNƒŠƒA
+	// Clear buffer
 	memset(opmbuf, 0, sizeof(DWORD) * (BufMax * 2));
 
-	// ƒGƒ“ƒWƒ“‚ªŽw’è‚³‚ê‚Ä‚¢‚ê‚ÎƒŠƒZƒbƒg
+	// If engine is specified, reset
 	if (engine) {
 		engine->Reset();
 	}
 
-	// ƒŒƒWƒXƒ^ƒNƒŠƒA
+	// Clear register
 	for (i=0; i<0x100; i++) {
 		if (i == 8) {
 			continue;
@@ -181,7 +181,7 @@ void FASTCALL OPMIF::Reset()
 		opm.key[i] = i;
 	}
 
-	// ‚»‚Ì‘¼ƒ[ƒNƒGƒŠƒA‚ð‰Šú‰»
+	// Initialize other members
 	opm.addr = 0;
 	opm.busy = FALSE;
 	for (i=0; i<2; i++) {
@@ -192,48 +192,48 @@ void FASTCALL OPMIF::Reset()
 	}
 	opm.started = FALSE;
 
-	// Š„‚èž‚Ý—v‹‚È‚µ
+	// No interrupt request
 	mfp->SetGPIP(3, 1);
 }
 
 //---------------------------------------------------------------------------
 //
-//	ƒZ[ƒu
+//	Save
 //
 //---------------------------------------------------------------------------
 BOOL FASTCALL OPMIF::Save(Fileio *fio, int ver)
 {
 	size_t sz;
 
-	ASSERT(this);
-	ASSERT(fio);
-	ASSERT_DIAG();
+ ASSERT(this);
+ ASSERT(fio);
+ ASSERT_DIAG();
 
-	LOG0(Log::Normal, "ƒZ[ƒu");
+	LOG0(Log::Normal, "Save");
 
-	// ƒTƒCƒY‚ðƒZ[ƒu
+	// Save size
 	sz = sizeof(opm_t);
 	if (!fio->Write(&sz, sizeof(sz))) {
 		return FALSE;
 	}
 
-	// –{‘Ì‚ðƒZ[ƒu
+	// Save body
 	if (!fio->Write(&opm, (int)sz)) {
 		return FALSE;
 	}
 
-	// ƒoƒbƒtƒ@î•ñ‚ÌƒTƒCƒY‚ðƒZ[ƒu
+	// Save buffer info size
 	sz = sizeof(opmbuf_t);
 	if (!fio->Write(&sz, sizeof(sz))) {
 		return FALSE;
 	}
 
-	// ƒoƒbƒtƒ@î•ñ‚ðƒZ[ƒu
+	// Save buffer info
 	if (!fio->Write(&bufinfo, (int)sz)) {
 		return FALSE;
 	}
 
-	// ƒCƒxƒ“ƒg‚ðƒZ[ƒu
+	// Save event
 	if (!event[0].Save(fio, ver)) {
 		return FALSE;
 	}
@@ -246,7 +246,7 @@ BOOL FASTCALL OPMIF::Save(Fileio *fio, int ver)
 
 //---------------------------------------------------------------------------
 //
-//	ƒ[ƒh
+//	Load
 //
 //---------------------------------------------------------------------------
 BOOL FASTCALL OPMIF::Load(Fileio *fio, int ver)
@@ -254,13 +254,13 @@ BOOL FASTCALL OPMIF::Load(Fileio *fio, int ver)
 	size_t sz;
 	int i;
 
-	ASSERT(this);
-	ASSERT(fio);
-	ASSERT_DIAG();
+ ASSERT(this);
+ ASSERT(fio);
+ ASSERT_DIAG();
 
-	LOG0(Log::Normal, "ƒ[ƒh");
+	LOG0(Log::Normal, "Load");
 
-	// ƒTƒCƒY‚ðƒ[ƒhAÆ‡
+	// Load size and verify
 	if (!fio->Read(&sz, sizeof(sz))) {
 		return FALSE;
 	}
@@ -268,12 +268,12 @@ BOOL FASTCALL OPMIF::Load(Fileio *fio, int ver)
 		return FALSE;
 	}
 
-	// –{‘Ì‚ðƒ[ƒh
+	// Load body
 	if (!fio->Read(&opm, (int)sz)) {
 		return FALSE;
 	}
 
-	// ƒoƒbƒtƒ@î•ñ‚ÌƒTƒCƒY‚ðƒ[ƒhAÆ‡
+	// Load buffer info size and verify
 	if (!fio->Read(&sz, sizeof(sz))) {
 		return FALSE;
 	}
@@ -281,12 +281,12 @@ BOOL FASTCALL OPMIF::Load(Fileio *fio, int ver)
 		return FALSE;
 	}
 
-	// ƒoƒbƒtƒ@î•ñ‚ðƒ[ƒh
+	// Load buffer info
 	if (!fio->Read(&bufinfo, (int)sz)) {
 		return FALSE;
 	}
 
-	// ƒCƒxƒ“ƒg‚ðƒ[ƒh
+	// Load event
 	if (!event[0].Load(fio, ver)) {
 		return FALSE;
 	}
@@ -294,29 +294,29 @@ BOOL FASTCALL OPMIF::Load(Fileio *fio, int ver)
 		return FALSE;
 	}
 
-	// ƒoƒbƒtƒ@‚ðƒNƒŠƒA
+	// Initialize buffer
 	InitBuf(bufinfo.rate * 100);
 
-	// ƒGƒ“ƒWƒ“‚Ö‚ÌƒŒƒWƒXƒ^ÄÝ’è
+	// Re-set register to engine
 	if (engine) {
 		const bool raw_mode = engine->UseRawModeReg();
-		// ƒŒƒWƒXƒ^•œ‹Œ:ƒmƒCƒYALFOAPMDAAMDACSM
+		// Register set: MFB, LFO, PMD, AMD, CSM
 		engine->SetReg(0x0f, opm.reg[0x0f]);
 		engine->SetReg(0x14, raw_mode ? opm.reg[0x14] : (opm.reg[0x14] & 0x80));
 		engine->SetReg(0x18, opm.reg[0x18]);
 		engine->SetReg(0x19, opm.reg[0x19]);
 
-		// ƒŒƒWƒXƒ^•œ‹Œ:ƒŒƒWƒXƒ^
+		// Register set: Register
 		for (i=0x20; i<0x100; i++) {
 			engine->SetReg(i, opm.reg[i]);
 		}
 
-		// ƒŒƒWƒXƒ^•œ‹Œ:ƒL[
+		// Register set: Key
 		for (i=0; i<8; i++) {
 			engine->SetReg(8, opm.key[i]);
 		}
 
-		// ƒŒƒWƒXƒ^•œ‹Œ:LFO
+		// Register set: LFO
 		engine->SetReg(1, 2);
 		engine->SetReg(1, 0);
 	}
@@ -326,87 +326,87 @@ BOOL FASTCALL OPMIF::Load(Fileio *fio, int ver)
 
 //---------------------------------------------------------------------------
 //
-//	Ý’è“K—p
+//	Apply config
 //
 //---------------------------------------------------------------------------
 void FASTCALL OPMIF::ApplyCfg(const Config* /*config*/)
 {
-	ASSERT(this);
-	ASSERT_DIAG();
+ ASSERT(this);
+ ASSERT_DIAG();
 
-	LOG0(Log::Normal, "Ý’è“K—p");
+	LOG0(Log::Normal, "Apply config");
 }
 
 #if !defined(NDEBUG)
 //---------------------------------------------------------------------------
 //
-//	f’f
+//	Assert
 //
 //---------------------------------------------------------------------------
 void FASTCALL OPMIF::AssertDiag() const
 {
-	// Šî–{ƒNƒ‰ƒX
+	// Base class
 	MemDevice::AssertDiag();
 
-	ASSERT(this);
-	ASSERT(GetID() == MAKEID('O', 'P', 'M', ' '));
-	ASSERT(memdev.first == 0xe90000);
-	ASSERT(memdev.last == 0xe91fff);
-	ASSERT(mfp);
-	ASSERT(mfp->GetID() == MAKEID('M', 'F', 'P', ' '));
-	ASSERT(adpcm);
-	ASSERT(adpcm->GetID() == MAKEID('A', 'P', 'C', 'M'));
-	ASSERT(fdd);
-	ASSERT(fdd->GetID() == MAKEID('F', 'D', 'D', ' '));
-	ASSERT(opm.addr < 0x100);
-	ASSERT((opm.busy == TRUE) || (opm.busy == FALSE));
-	ASSERT((opm.enable[0] == TRUE) || (opm.enable[0] == FALSE));
-	ASSERT((opm.enable[1] == TRUE) || (opm.enable[1] == FALSE));
-	ASSERT((opm.action[0] == TRUE) || (opm.action[0] == FALSE));
-	ASSERT((opm.action[1] == TRUE) || (opm.action[1] == FALSE));
-	ASSERT((opm.interrupt[0] == TRUE) || (opm.interrupt[0] == FALSE));
-	ASSERT((opm.interrupt[1] == TRUE) || (opm.interrupt[1] == FALSE));
-	ASSERT((opm.started == TRUE) || (opm.started == FALSE));
-	ASSERT(bufinfo.max == BufMax);
-	ASSERT(bufinfo.num <= bufinfo.max);
-	ASSERT(bufinfo.read < bufinfo.max);
-	ASSERT(bufinfo.write < bufinfo.max);
-	ASSERT((bufinfo.sound == TRUE) || (bufinfo.sound == FALSE));
+ ASSERT(this);
+ ASSERT(GetID() == MAKEID('O', 'P', 'M', ' '));
+ ASSERT(memdev.first == 0xe90000);
+ ASSERT(memdev.last == 0xe91fff);
+ ASSERT(mfp);
+ ASSERT(mfp->GetID() == MAKEID('M', 'F', 'P', ' '));
+ ASSERT(adpcm);
+ ASSERT(adpcm->GetID() == MAKEID('A', 'P', 'C', 'M'));
+ ASSERT(fdd);
+ ASSERT(fdd->GetID() == MAKEID('F', 'D', 'D', ' '));
+ ASSERT(opm.addr < 0x100);
+ ASSERT((opm.busy == TRUE) || (opm.busy == FALSE));
+ ASSERT((opm.enable[0] == TRUE) || (opm.enable[0] == FALSE));
+ ASSERT((opm.enable[1] == TRUE) || (opm.enable[1] == FALSE));
+ ASSERT((opm.action[0] == TRUE) || (opm.action[0] == FALSE));
+ ASSERT((opm.action[1] == TRUE) || (opm.action[1] == FALSE));
+ ASSERT((opm.interrupt[0] == TRUE) || (opm.interrupt[0] == FALSE));
+ ASSERT((opm.interrupt[1] == TRUE) || (opm.interrupt[1] == FALSE));
+ ASSERT((opm.started == TRUE) || (opm.started == FALSE));
+ ASSERT(bufinfo.max == BufMax);
+ ASSERT(bufinfo.num <= bufinfo.max);
+ ASSERT(bufinfo.read < bufinfo.max);
+ ASSERT(bufinfo.write < bufinfo.max);
+ ASSERT((bufinfo.sound == TRUE) || (bufinfo.sound == FALSE));
 }
 #endif	// NDEBUG
 
 //---------------------------------------------------------------------------
 //
-//	ƒoƒCƒg“Ç‚Ýž‚Ý
+//	Byte read
 //
 //---------------------------------------------------------------------------
 DWORD FASTCALL OPMIF::ReadByte(DWORD addr)
 {
 	DWORD data;
 
-	ASSERT(this);
-	ASSERT((addr >= memdev.first) && (addr <= memdev.last));
-	ASSERT_DIAG();
+ ASSERT(this);
+ ASSERT((addr >= memdev.first) && (addr <= memdev.last));
+ ASSERT_DIAG();
 
-	// Šï”ƒAƒhƒŒƒX‚Ì‚ÝƒfƒR[ƒh‚³‚ê‚Ä‚¢‚é
+	// Only odd address is decoded
 	if ((addr & 1) != 0) {
-		// 4ƒoƒCƒg’PˆÊ‚Åƒ‹[ƒv
+		// 4 byte align
 		addr &= 3;
 
-		// ƒEƒFƒCƒg
+		// Wait
 		scheduler->Wait(1);
 
 		if (addr != 0x01) {
-			// ƒf[ƒ^ƒ|[ƒg‚ÍBUSY‚Æƒ^ƒCƒ}‚Ìó‘Ô
+			// Data port is BUSY and Timer status
 			data = 0;
 
-			// BUSY(1‰ñ‚¾‚¯)
+			// BUSY(once only)
 			if (opm.busy) {
 				data |= 0x80;
 				opm.busy = FALSE;
 			}
 
-			// ƒ^ƒCƒ}
+			// Timer
 			if (opm.interrupt[0]) {
 				data |= 0x01;
 			}
@@ -417,7 +417,7 @@ DWORD FASTCALL OPMIF::ReadByte(DWORD addr)
 			return data;
 		}
 
-		// ƒAƒhƒŒƒXƒ|[ƒg‚ÍFF
+		// Address port is FF
 		return 0xff;
 	}
 
@@ -426,53 +426,53 @@ DWORD FASTCALL OPMIF::ReadByte(DWORD addr)
 
 //---------------------------------------------------------------------------
 //
-//	ƒ[ƒh‘‚«ž‚Ý
+//	Word read
 //
 //---------------------------------------------------------------------------
 DWORD FASTCALL OPMIF::ReadWord(DWORD addr)
 {
-	ASSERT(this);
-	ASSERT((addr >= memdev.first) && (addr <= memdev.last));
-	ASSERT((addr & 1) == 0);
-	ASSERT_DIAG();
+ ASSERT(this);
+ ASSERT((addr >= memdev.first) && (addr <= memdev.last));
+ ASSERT((addr & 1) == 0);
+ ASSERT_DIAG();
 
 	return (WORD)(0xff00 | ReadByte(addr + 1));
 }
 
 //---------------------------------------------------------------------------
 //
-//	ƒoƒCƒg‘‚«ž‚Ý
+//	Byte write
 //
 //---------------------------------------------------------------------------
 void FASTCALL OPMIF::WriteByte(DWORD addr, DWORD data)
 {
-	ASSERT(this);
-	ASSERT((addr >= memdev.first) && (addr <= memdev.last));
-	ASSERT(data < 0x100);
-	ASSERT_DIAG();
+ ASSERT(this);
+ ASSERT((addr >= memdev.first) && (addr <= memdev.last));
+ ASSERT(data < 0x100);
+ ASSERT_DIAG();
 
-	// Šï”ƒAƒhƒŒƒX‚Ì‚ÝƒfƒR[ƒh‚³‚ê‚Ä‚¢‚é
+	// Only odd address is decoded
 	if ((addr & 1) != 0) {
-		// 4ƒoƒCƒg’PˆÊ‚Åƒ‹[ƒv
+		// 4 byte align
 		addr &= 3;
 
-		// ƒEƒFƒCƒg
+		// Wait
 		scheduler->Wait(1);
 
 		if (addr == 0x01) {
-			// ƒAƒhƒŒƒXŽw’è(BUSY‚ÉŠÖ‚í‚ç‚¸Žw’è‚Å‚«‚é‚±‚Æ‚É‚·‚é)
+			// Address set (can set only when BUSY is cleared)
 			opm.addr = data;
 
-			// BUSY‚ð~‚ë‚·BƒAƒhƒŒƒXŽw’èŒã‚Ì‘Ò‚¿‚Í”­¶‚µ‚È‚¢‚±‚Æ‚É‚·‚é
+			// Clear BUSY. Waiting after address set does not occur
 			opm.busy = FALSE;
 
 			return;
 		}
 		else {
-			// ƒf[ƒ^‘‚«ž‚Ý(BUSY‚ÉŠÖ‚í‚ç‚¸‘‚«ž‚ß‚é‚±‚Æ‚É‚·‚é)
+			// Data write (write is accepted when BUSY is cleared)
 			Output(opm.addr, data);
 
-			// BUSY‚ðã‚°‚é
+			// Set BUSY
 			opm.busy = TRUE;
 			return;
 		}
@@ -481,40 +481,40 @@ void FASTCALL OPMIF::WriteByte(DWORD addr, DWORD data)
 
 //---------------------------------------------------------------------------
 //
-//	ƒ[ƒh‘‚«ž‚Ý
+//	Word write
 //
 //---------------------------------------------------------------------------
 void FASTCALL OPMIF::WriteWord(DWORD addr, DWORD data)
 {
-	ASSERT(this);
-	ASSERT((addr >= memdev.first) && (addr <= memdev.last));
-	ASSERT((addr & 1) == 0);
-	ASSERT(data < 0x10000);
-	ASSERT_DIAG();
+ ASSERT(this);
+ ASSERT((addr >= memdev.first) && (addr <= memdev.last));
+ ASSERT((addr & 1) == 0);
+ ASSERT(data < 0x10000);
+ ASSERT_DIAG();
 
 	WriteByte(addr + 1, (BYTE)data);
 }
 
 //---------------------------------------------------------------------------
 //
-//	“Ç‚Ýž‚Ý‚Ì‚Ý
+//	Read only
 //
 //---------------------------------------------------------------------------
 DWORD FASTCALL OPMIF::ReadOnly(DWORD addr) const
 {
 	DWORD data;
 
-	ASSERT(this);
-	ASSERT((addr >= memdev.first) && (addr <= memdev.last));
-	ASSERT_DIAG();
+ ASSERT(this);
+ ASSERT((addr >= memdev.first) && (addr <= memdev.last));
+ ASSERT_DIAG();
 
-	// Šï”ƒAƒhƒŒƒX‚Ì‚ÝƒfƒR[ƒh‚³‚ê‚Ä‚¢‚é
+	// Only odd address is decoded
 	if ((addr & 1) != 0) {
-		// 4ƒoƒCƒg’PˆÊ‚Åƒ‹[ƒv
+		// 4 byte align
 		addr &= 3;
 
 		if (addr != 0x01) {
-			// ƒf[ƒ^ƒ|[ƒg‚ÍBUSY‚Æƒ^ƒCƒ}‚Ìó‘Ô
+			// Data port is BUSY and Timer status
 			data = 0;
 
 			// BUSY
@@ -522,7 +522,7 @@ DWORD FASTCALL OPMIF::ReadOnly(DWORD addr) const
 				data |= 0x80;
 			}
 
-			// ƒ^ƒCƒ}
+			// Timer
 			if (opm.interrupt[0]) {
 				data |= 0x01;
 			}
@@ -533,7 +533,7 @@ DWORD FASTCALL OPMIF::ReadOnly(DWORD addr) const
 			return data;
 		}
 
-		// ƒAƒhƒŒƒXƒ|[ƒg‚ÍFF
+		// Address port is FF
 		return 0xff;
 	}
 
@@ -542,34 +542,34 @@ DWORD FASTCALL OPMIF::ReadOnly(DWORD addr) const
 
 //---------------------------------------------------------------------------
 //
-//	“à•”ƒf[ƒ^Žæ“¾
+//	Get internal data
 //
 //---------------------------------------------------------------------------
 void FASTCALL OPMIF::GetOPM(opm_t *buffer)
 {
-	ASSERT(this);
-	ASSERT(buffer);
-	ASSERT_DIAG();
+ ASSERT(this);
+ ASSERT(buffer);
+ ASSERT_DIAG();
 
-	// “à•”ƒf[ƒ^‚ðƒRƒs[
+	// Copy internal data
 	*buffer = opm;
 }
 
 //---------------------------------------------------------------------------
 //
-//	ƒCƒxƒ“ƒgƒR[ƒ‹ƒoƒbƒN
+//	Event callback
 //
 //---------------------------------------------------------------------------
 BOOL FASTCALL OPMIF::Callback(Event *ev)
 {
 	int index;
 
-	ASSERT(this);
-	ASSERT(ev);
-	ASSERT_DIAG();
+ ASSERT(this);
+ ASSERT(ev);
+ ASSERT_DIAG();
 
 	index = ev->GetUser();
-	ASSERT((index >= 0) && (index <= 1));
+ ASSERT((index >= 0) && (index <= 1));
 
 	if (opm.enable[index] && opm.action[index]) {
 		opm.action[index] = FALSE;
@@ -596,14 +596,14 @@ void FASTCALL OPMIF::SetEngine(FM::OPM *p)
 {
 	int i;
 
-	ASSERT(this);
-	ASSERT_DIAG();
+ ASSERT(this);
+ ASSERT_DIAG();
 
-	// NULL‚ðŽw’è‚³‚ê‚éê‡‚à‚ ‚é
+	// It is possible that NULL is specified
 	engine = p;
 	const bool raw_mode = engine ? engine->UseRawModeReg() : false;
 
-	// ADPCM‚Ö’Ê’m
+	// Connect to ADPCM
 	if (engine) {
 		adpcm->Enable(TRUE);
 	}
@@ -611,36 +611,36 @@ void FASTCALL OPMIF::SetEngine(FM::OPM *p)
 		adpcm->Enable(FALSE);
 	}
 
-	// engineŽw’è‚ ‚è‚È‚çAOPMƒŒƒWƒXƒ^‚ðo—Í
+	// If engine is specified, output OPM register
 	if (!engine) {
 		return;
 	}
 	ProcessBuf();
 
-	// ƒŒƒWƒXƒ^•œ‹Œ:ƒmƒCƒYALFOAPMDAAMDACSM
+	// Register set: MFB, LFO, PMD, AMD, CSM
 	engine->SetReg(0x0f, opm.reg[0x0f]);
 	engine->SetReg(0x14, raw_mode ? opm.reg[0x14] : (opm.reg[0x14] & 0x80));
 	engine->SetReg(0x18, opm.reg[0x18]);
 	engine->SetReg(0x19, opm.reg[0x19]);
 
-	// ƒŒƒWƒXƒ^•œ‹Œ:ƒŒƒWƒXƒ^
+	// Register set: Register
 	for (i=0x20; i<0x100; i++) {
 		engine->SetReg(i, opm.reg[i]);
 	}
 
-	// ƒŒƒWƒXƒ^•œ‹Œ:ƒL[
+	// Register set: Key
 	for (i=0; i<8; i++) {
 		engine->SetReg(8, opm.key[i]);
 	}
 
-	// ƒŒƒWƒXƒ^•œ‹Œ:LFO
+	// Register set: LFO
 	engine->SetReg(1, 2);
 	engine->SetReg(1, 0);
 }
 
 //---------------------------------------------------------------------------
 //
-//	ƒŒƒWƒXƒ^o—Í
+//	Register output
 //
 //---------------------------------------------------------------------------
 void FASTCALL OPMIF::Output(DWORD addr, DWORD data)
@@ -648,40 +648,40 @@ void FASTCALL OPMIF::Output(DWORD addr, DWORD data)
 	const bool raw_mode = engine ? engine->UseRawModeReg() : false;
 	const DWORD x68sound_data = data;
 
-	ASSERT(this);
-	ASSERT(addr < 0x100);
-	ASSERT(data < 0x100);
-	ASSERT_DIAG();
+ ASSERT(this);
+ ASSERT(addr < 0x100);
+ ASSERT(data < 0x100);
+ ASSERT_DIAG();
 
-	// ??????z???
+	// Register address switch
 	switch (addr) {
-		// ???C?}A
+		// Timer-A
 		case 0x10:
 		case 0x11:
 			opm.reg[addr] = data;
 			CalcTimerA();
 			return;
 
-		// ???C?}B
+		// Timer-B
 		case 0x12:
 			opm.reg[addr] = data;
 			CalcTimerB();
 			return;
 
-		// ???C?}????
+		// Timer control
 		case 0x14:
 			CtrlTimer(data);
 			data &= raw_mode ? 0xff : 0x80;
 			break;
 
-		// ???p?[?g?t??
+		// Control flag
 		case 0x1b:
 			CtrlCT(data);
 			opm.reg[addr] = data;
 			data &= raw_mode ? 0xff : 0x3f;
 			break;
 
-		// ?L?[
+		// Key
 		case 0x08:
 			opm.key[data & 0x07] = data;
 			opm.reg[addr] = data;
@@ -693,13 +693,13 @@ void FASTCALL OPMIF::Output(DWORD addr, DWORD data)
 			break;
 	}
 
-	// ?G???W????w???????A?o?b?t?@??O??o??
+	// If engine is connected, output to buffer
 	if (engine) {
 		if ((addr < 0x10) || (addr > 0x14)) {
-			// ???C?}???A????????
+			// If not timer register, process buffer
 			ProcessBuf();
 
-			// ?L?[?I?t??O??X?^?[?g?t???OUp
+			// Key on triggers start flag
 			if ((addr != 0x08) || (data >= 0x08)) {
 				opm.started = TRUE;
 			}
@@ -716,7 +716,7 @@ void FASTCALL OPMIF::Output(DWORD addr, DWORD data)
 
 //---------------------------------------------------------------------------
 //
-//	???C?}A?Z?o
+//	Timer-A calculation
 //
 //---------------------------------------------------------------------------
 void FASTCALL OPMIF::CalcTimerA()
@@ -724,8 +724,8 @@ void FASTCALL OPMIF::CalcTimerA()
 	DWORD hus;
 	DWORD low;
 
-	ASSERT(this);
-	ASSERT_DIAG();
+ ASSERT(this);
+ ASSERT_DIAG();
 
 	hus = opm.reg[0x10];
 	hus <<= 2;
@@ -735,59 +735,59 @@ void FASTCALL OPMIF::CalcTimerA()
 	hus <<= 5;
 	opm.time[0] = hus;
 #if defined(OPM_LOG)
-	LOG1(Log::Normal, "???C?}A = %d", hus);
+	LOG1(Log::Normal, "Timer-A = %d", hus);
 #endif	// OPM_LOG
 
-	// ?~??????????????
+	// If stopped, start
 	if (event[0].GetTime() == 0) {
 		event[0].SetTime(hus);
 #if defined(OPM_LOG)
-		LOG1(Log::Normal, "???C?}A ?X?^?[?g Time %d", event[0].GetTime());
+		LOG1(Log::Normal, "Timer-A Start Time %d", event[0].GetTime());
 #endif	// OPM_LOG
 	}
 }
 
 //---------------------------------------------------------------------------
 //
-//	???C?}B?Z?o
+//	Timer-B calculation
 //
 //---------------------------------------------------------------------------
 void FASTCALL OPMIF::CalcTimerB()
 {
 	DWORD hus;
 
-	ASSERT(this);
-	ASSERT_DIAG();
+ ASSERT(this);
+ ASSERT_DIAG();
 
 	hus = opm.reg[0x12];
 	hus = (0x100 - hus);
 	hus <<= 9;
 	opm.time[1] = hus;
 #if defined(OPM_LOG)
-	LOG1(Log::Normal, "???C?}B = %d", hus);
+	LOG1(Log::Normal, "Timer-B = %d", hus);
 #endif	// OPM_LOG
 
-	// ?~??????????????
+	// If stopped, start
 	if (event[1].GetTime() == 0) {
 		event[1].SetTime(hus);
 #if defined(OPM_LOG)
-		LOG1(Log::Normal, "???C?}B ?X?^?[?g Time %d", event[1].GetTime());
+		LOG1(Log::Normal, "Timer-B Start Time %d", event[1].GetTime());
 #endif	// OPM_LOG
 	}
 }
 
 //---------------------------------------------------------------------------
 //
-//	???C?}????
+//	Timer control
 //
 //---------------------------------------------------------------------------
 void FASTCALL OPMIF::CtrlTimer(DWORD data)
 {
-	ASSERT(this);
-	ASSERT(data < 0x100);
-	ASSERT_DIAG();
+ ASSERT(this);
+ ASSERT(data < 0x100);
+ ASSERT_DIAG();
 
-	// ƒI[ƒo[ƒtƒ[ƒtƒ‰ƒO‚ÌƒNƒŠƒA
+	// Clear interrupt flag
 	if (data & 0x10) {
 		opm.interrupt[0] = FALSE;
 	}
@@ -795,12 +795,12 @@ void FASTCALL OPMIF::CtrlTimer(DWORD data)
 		opm.interrupt[1] = FALSE;
 	}
 
-	// —¼•û—Ž‚¿‚½‚çAŠ„‚èž‚Ý‚ð—Ž‚Æ‚·
+	// If both are cleared, cancel interrupt request
 	if (!opm.interrupt[0] && !opm.interrupt[1]) {
 		mfp->SetGPIP(3, 1);
 	}
 
-	// ƒ^ƒCƒ}AƒAƒNƒVƒ‡ƒ“§Œä
+	// Timer-A operation control
 	if (data & 0x04) {
 		opm.action[0] = TRUE;
 	}
@@ -808,21 +808,21 @@ void FASTCALL OPMIF::CtrlTimer(DWORD data)
 		opm.action[0] = FALSE;
 	}
 
-	// ƒ^ƒCƒ}AƒCƒl[ƒuƒ‹§Œä
+	// Timer-A enable control
 	if (data & 0x01) {
-		// 0¨1‚Åƒ^ƒCƒ}’l‚ðƒ[ƒhA‚»‚êˆÈŠO‚Å‚àƒ^ƒCƒ}ON
+		// 0->1 loads timer value, otherwise timer ON
 		if (!opm.enable[0]) {
 			CalcTimerA();
 		}
 		opm.enable[0] = TRUE;
 	}
 	else {
-		// (ƒ}ƒ“ƒnƒbƒ^ƒ“EƒŒƒNƒCƒGƒ€)
+		// (mask, ignore)
 		event[0].SetTime(0);
 		opm.enable[0] = FALSE;
 	}
 
-	// ƒ^ƒCƒ}BƒAƒNƒVƒ‡ƒ“§Œä
+	// Timer-B operation control
 	if (data & 0x08) {
 		opm.action[1] = TRUE;
 	}
@@ -830,53 +830,53 @@ void FASTCALL OPMIF::CtrlTimer(DWORD data)
 		opm.action[1] = FALSE;
 	}
 
-	// ƒ^ƒCƒ}BƒCƒl[ƒuƒ‹§Œä
+	// Timer-B enable control
 	if (data & 0x02) {
-		// 0¨1‚Åƒ^ƒCƒ}’l‚ðƒ[ƒhA‚»‚êˆÈŠO‚Å‚àƒ^ƒCƒ}ON
+		// 0->1 loads timer value, otherwise timer ON
 		if (!opm.enable[1]) {
 			CalcTimerB();
 		}
 		opm.enable[1] = TRUE;
 	}
 	else {
-		// (ƒ}ƒ“ƒnƒbƒ^ƒ“EƒŒƒNƒCƒGƒ€)
+		// (mask, ignore)
 		event[1].SetTime(0);
 		opm.enable[1] = FALSE;
 	}
 
-	// ƒf[ƒ^‚ð‹L‰¯
+	// Store data
 	opm.reg[0x14] = data;
 
 #if defined(OPM_LOG)
-	LOG1(Log::Normal, "ƒ^ƒCƒ}§Œä $%02X", data);
+	LOG1(Log::Normal, "Timer Control $%02X", data);
 #endif	// OPM_LOG
 }
 
 //---------------------------------------------------------------------------
 //
-//	CT§Œä
+//	CT control
 //
 //---------------------------------------------------------------------------
 void FASTCALL OPMIF::CtrlCT(DWORD data)
 {
 	DWORD ct;
 
-	ASSERT(this);
-	ASSERT_DIAG();
+ ASSERT(this);
+ ASSERT_DIAG();
 
-	// CTƒ|[ƒg‚Ì‚ÝŽæ‚èo‚·
+	// Only CT flag is extracted
 	data &= 0xc0;
 
-	// ˆÈ‘O‚Ìƒf[ƒ^‚ð“¾‚é
+	// Get previous data
 	ct = opm.reg[0x1b];
 	ct &= 0xc0;
 
-	// ˆê’v‚µ‚Ä‚¢‚ê‚Î‰½‚à‚µ‚È‚¢
+	// If equal, do nothing
 	if (data == ct) {
 		return;
 	}
 
-	// ƒ`ƒFƒbƒN(ADPCM)
+	// Check (ADPCM)
 	if ((data & 0x80) != (ct & 0x80)) {
 		if (data & 0x80) {
 			adpcm->SetClock(4);
@@ -886,7 +886,7 @@ void FASTCALL OPMIF::CtrlCT(DWORD data)
 		}
 	}
 
-	// ƒ`ƒFƒbƒN(FDD)
+	// Check (FDD)
 	if ((data & 0x40) != (ct & 0x40)) {
 		if (data & 0x40) {
 			fdd->ForceReady(TRUE);
@@ -899,51 +899,51 @@ void FASTCALL OPMIF::CtrlCT(DWORD data)
 
 //---------------------------------------------------------------------------
 //
-//	ƒoƒbƒtƒ@“à—e‚ð“¾‚é
+//	Get buffer content
 //
 //---------------------------------------------------------------------------
 void FASTCALL OPMIF::GetBufInfo(opmbuf_t *buf)
 {
-	ASSERT(this);
-	ASSERT(buf);
-	ASSERT_DIAG();
+ ASSERT(this);
+ ASSERT(buf);
+ ASSERT_DIAG();
 
 	*buf = bufinfo;
 }
 
 //---------------------------------------------------------------------------
 //
-//	ƒoƒbƒtƒ@‰Šú‰»
+//	Initialize buffer
 //
 //---------------------------------------------------------------------------
 void FASTCALL OPMIF::InitBuf(DWORD rate)
 {
-	ASSERT(this);
-	ASSERT(rate > 0);
-	ASSERT((rate % 100) == 0);
-	ASSERT_DIAG();
+ ASSERT(this);
+ ASSERT(rate > 0);
+ ASSERT((rate % 100) == 0);
+ ASSERT_DIAG();
 
-	// ADPCM‚Éæ‚É’Ê’m
+	// Connect to ADPCM
 	adpcm->InitBuf(rate);
 
-	// ƒJƒEƒ“ƒ^Aƒ|ƒCƒ“ƒ^
+	// Counter, pointer
 	bufinfo.num = 0;
 	bufinfo.read = 0;
 	bufinfo.write = 0;
 	bufinfo.under = 0;
 	bufinfo.over = 0;
 
-	// ƒTƒEƒ“ƒhŽžŠÔ‚ÆA˜AŒg‚·‚éƒTƒ“ƒvƒ‹”
+	// Sound time and synchronized item count
 	scheduler->SetSoundTime(0);
 	bufinfo.samples = 0;
 
-	// ‡¬ƒŒ[ƒg
+	// Generate rate
 	bufinfo.rate = rate / 100;
 }
 
 //---------------------------------------------------------------------------
 //
-//	ƒoƒbƒtƒ@ƒŠƒ“ƒO
+//	Buffer processing
 //
 //---------------------------------------------------------------------------
 DWORD FASTCALL OPMIF::ProcessBuf()
@@ -953,32 +953,32 @@ DWORD FASTCALL OPMIF::ProcessBuf()
 	DWORD first;
 	DWORD second;
 
-	ASSERT(this);
-	ASSERT_DIAG();
+ ASSERT(this);
+ ASSERT_DIAG();
 
-	// ƒGƒ“ƒWƒ“‚ª‚È‚¯‚ê‚ÎƒŠƒ^[ƒ“
+	// If no engine, return
 	if (!engine) {
 		return bufinfo.num;
 	}
 
-	// ƒTƒEƒ“ƒhŽžŠÔ‚©‚çA“KØ‚ÈƒTƒ“ƒvƒ‹”‚ð“¾‚é
+	// Get item count that is not processed from sound time
 	sample = scheduler->GetSoundTime();
 	stime = sample;
 
 	sample *= bufinfo.rate;
 	sample /= 20000;
 
-	// bufmax‚É§ŒÀ
+	// Limited by BufMax
 	if (sample > BufMax) {
-		// ƒI[ƒo[‚µ‚·‚¬‚Ä‚¢‚é‚Ì‚ÅAƒŠƒZƒbƒg
+		// Because it is overflowed, reset
 		scheduler->SetSoundTime(0);
 		bufinfo.samples = 0;
 		return bufinfo.num;
 	}
 
-	// Œ»ó‚Æˆê’v‚µ‚Ä‚¢‚ê‚ÎƒŠƒ^[ƒ“
+	// If equal to current, return
 	if (sample <= bufinfo.samples) {
-		// ƒVƒ“ƒNƒ‚³‚¹‚é
+		// Decrease gradually
 		while (stime >= 40000) {
 			stime -= 20000;
 			scheduler->SetSoundTime(stime);
@@ -987,17 +987,17 @@ DWORD FASTCALL OPMIF::ProcessBuf()
 		return bufinfo.num;
 	}
 
-	// Œ»ó‚Æˆá‚¤•”•ª‚¾‚¯¶¬‚·‚é
+	// Generate only difference from current
 	sample -= bufinfo.samples;
 
-	// 1‰ñ‚Ü‚½‚Í2‰ñ‚Ì‚Ç‚¿‚ç‚©ƒ`ƒFƒbƒN
+	// Check 1 or 2 times
 	first = sample;
 	if ((first + bufinfo.write) > BufMax) {
 		first = BufMax - bufinfo.write;
 	}
 	second = sample - first;
 
-	// 1‰ñ–Ú
+	// First time
 	memset(&opmbuf[bufinfo.write * 2], 0, first * 8);
 	if (bufinfo.sound) {
 		engine->Mix((int32*)&opmbuf[bufinfo.write * 2], first);
@@ -1010,7 +1010,7 @@ DWORD FASTCALL OPMIF::ProcessBuf()
 		bufinfo.read = bufinfo.write;
 	}
 
-	// 2‰ñ–Ú
+	// Second time
 	if (second > 0) {
 		memset(opmbuf, 0, second * 8);
 		if (bufinfo.sound) {
@@ -1025,7 +1025,7 @@ DWORD FASTCALL OPMIF::ProcessBuf()
 		}
 	}
 
-	// ‡¬Ï‚ÝƒTƒ“ƒvƒ‹”‚Ö‰ÁŽZ‚µA20000hus‚²‚Æ‚ÉƒVƒ“ƒNƒ‚³‚¹‚é
+	// Add to processed item count, decrease by 20000hus
 	bufinfo.samples += sample;
 	while (stime >= 40000) {
 		stime -= 20000;
@@ -1038,7 +1038,7 @@ DWORD FASTCALL OPMIF::ProcessBuf()
 
 //---------------------------------------------------------------------------
 //
-//	ƒoƒbƒtƒ@‚©‚çŽæ“¾
+//	Get from buffer
 //
 //---------------------------------------------------------------------------
 void FASTCALL OPMIF::GetBuf(DWORD *buf, int samples)
@@ -1048,19 +1048,19 @@ void FASTCALL OPMIF::GetBuf(DWORD *buf, int samples)
 	DWORD under;
 	DWORD over;
 
-	ASSERT(this);
-	ASSERT(buf);
-	ASSERT(samples > 0);
-	ASSERT(engine);
-	ASSERT_DIAG();
+ ASSERT(this);
+ ASSERT(buf);
+ ASSERT(samples > 0);
+ ASSERT(engine);
+ ASSERT_DIAG();
 
-	// ƒI[ƒo[ƒ‰ƒ“ƒ`ƒFƒbƒN‚ðæ‚É
+	// Check overflow first
 	over = 0;
 	if (bufinfo.num > (DWORD)samples) {
 		over = bufinfo.num - samples;
 	}
 
-	// ‰‰ñA2‰ñ–ÚAƒAƒ“ƒ_[ƒ‰ƒ“‚Ì—v‹”‚ðŒˆ‚ß‚é
+	// Calculate first, second, underflow request count
 	first = samples;
 	second = 0;
 	under = 0;
@@ -1074,14 +1074,14 @@ void FASTCALL OPMIF::GetBuf(DWORD *buf, int samples)
 		second = samples - first;
 	}
 
-	// ‰‰ñ“Ç‚ÝŽæ‚è
+	// First time read
 	memcpy(buf, &opmbuf[bufinfo.read * 2], (first * 8));
 	buf += (first * 2);
 	bufinfo.read += first;
 	bufinfo.read &= (BufMax - 1);
 	bufinfo.num -= first;
 
-	// 2‰ñ–Ú“Ç‚ÝŽæ‚è
+	// Second time read
 	if (second > 0) {
 		memcpy(buf, &opmbuf[bufinfo.read * 2], (second * 8));
 		bufinfo.read += second;
@@ -1089,21 +1089,21 @@ void FASTCALL OPMIF::GetBuf(DWORD *buf, int samples)
 		bufinfo.num -= second;
 	}
 
-	// ƒAƒ“ƒ_[ƒ‰ƒ“
+	// Underflow
 	if (under > 0) {
-		// ‚±‚Ì1/4‚¾‚¯AŽŸ‰ñ‚É‡¬‚³‚ê‚é‚æ‚¤Žd‘g‚Þ
+		// Only 1/4, next time will be compensated
 		bufinfo.samples = 0;
 		under *= 5000;
 		under /= bufinfo.rate;
 		scheduler->SetSoundTime(under);
 
-		// ‹L˜^
+		// Record
 		bufinfo.under++;
 	}
 
-	// ƒI[ƒo[ƒ‰ƒ“
+	// Overflow
 	if (over > 0) {
-		// ‚±‚Ì1/4‚¾‚¯AŽŸ‰ñ’x‚ç‚¹‚é‚æ‚¤Žd‘g‚Þ
+		// Only 1/4, next time will be compensated
 		over *= 5000;
 		over /= bufinfo.rate;
 		under = scheduler->GetSoundTime();
@@ -1115,7 +1115,7 @@ void FASTCALL OPMIF::GetBuf(DWORD *buf, int samples)
 			scheduler->SetSoundTime(under);
 		}
 
-		// ‹L˜^
+		// Record
 		bufinfo.over++;
 	}
 }
