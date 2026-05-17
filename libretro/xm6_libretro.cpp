@@ -4095,7 +4095,8 @@ void retro_run(void)
     return;
   }
 
-  if (g_use_exec_to_frame && g_xm6.exec_to_frame) {
+  const bool use_exec_to_frame_now = g_use_exec_to_frame && !g_mpu_nowait;
+  if (use_exec_to_frame_now && g_xm6.exec_to_frame) {
     g_xm6.exec_to_frame(g_xm6_handle);
   } else {
     g_xm6.exec(g_xm6_handle, 36000);
@@ -4105,7 +4106,7 @@ void retro_run(void)
 
   xm6_video_frame_t frame = {};
   int vrc = g_xm6.video_poll(g_xm6_handle, &frame);
-  if (vrc != XM6CORE_OK && g_use_exec_to_frame) {
+  if (vrc != XM6CORE_OK && use_exec_to_frame_now) {
     // Fallback for backends where exec_to_frame does not expose a ready frame reliably.
     g_xm6.exec(g_xm6_handle, 36000);
     vrc = g_xm6.video_poll(g_xm6_handle, &frame);
