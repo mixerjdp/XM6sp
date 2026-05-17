@@ -59,6 +59,69 @@ static int FASTCALL CalcBGHAdjustPixels(int compositor_mode, const CRTC *crtc, c
 	return (bg_hdisp - (crtc_hstart + 4)) * 8;
 }
 
+class Render::Backend
+{
+public:
+	explicit Backend(int m) : mode(m)
+	{
+	}
+
+	void Activate(Render *owner)
+	{
+		if ((mode == Render::compositor_fast) && owner) {
+			owner->InvalidateFrame();
+		}
+	}
+
+	void StartFrame(Render *owner)
+	{
+		if ((mode == Render::compositor_fast) && owner) {
+			owner->StartFrameFast();
+			return;
+		}
+		owner->StartFrameOriginal();
+	}
+
+	void EndFrame(Render *owner)
+	{
+		if ((mode == Render::compositor_fast) && owner) {
+			owner->EndFrameFast();
+			return;
+		}
+		owner->EndFrameOriginal();
+	}
+
+	void HSync(Render *owner, int raster, int xoffset)
+	{
+		if ((mode == Render::compositor_fast) && owner) {
+			owner->HSyncFast(raster);
+			return;
+		}
+		owner->HSyncOriginal(raster, xoffset);
+	}
+
+	void SetCRTC(Render *owner)
+	{
+		if ((mode == Render::compositor_fast) && owner) {
+			owner->SetCRTCFast();
+			return;
+		}
+		owner->SetCRTCOriginal();
+	}
+
+	void SetVC(Render *owner)
+	{
+		if ((mode == Render::compositor_fast) && owner) {
+			owner->SetVCFast();
+			return;
+		}
+		owner->SetVCOriginal();
+	}
+
+private:
+	int mode;
+};
+
 //---------------------------------------------------------------------------
 //
 /// コンストラクタ
@@ -77,6 +140,9 @@ Render::Render(VM* p) : Device(p)
 	memset(&px68k_crtc_host, 0, sizeof(px68k_crtc_host));
 	memset(&px68k_crtc_state_cache, 0, sizeof(px68k_crtc_state_cache));
 	render_fast_dummy_enabled = FALSE;
+	backend = NULL;
+	backend_original = NULL;
+	backend_fast = NULL;
 	render.fast_stamp_counter = 1;
 	memset(render.fast_mix_stamp, 0, sizeof(render.fast_mix_stamp));
 	memset(render.fast_mix_done, 0, sizeof(render.fast_mix_done));
@@ -294,6 +360,20 @@ BOOL FASTCALL Render::Init()
 	render.contlevel = 0;
 	render.contvalue = 0;
 
+	try {
+		backend_original = new Backend(compositor_original);
+		backend_fast = new Backend(compositor_fast);
+	}
+	catch (...) {
+		return FALSE;
+	}
+	if (!backend_original || !backend_fast) {
+		return FALSE;
+	}
+	backend = backend_original;
+	compositor_mode = compositor_original;
+	render_fast_dummy_enabled = FALSE;
+
 	return TRUE;
 }
 
@@ -419,7 +499,7 @@ void FASTCALL Render::Reset()
 	render.last = 0;
 	render.enable = TRUE;
 	render.act = TRUE;
-	render.count = 2;
+	render.count = (compositor_mode == compositor_fast) ? 0 : 2;
 	render.fast_stamp_counter = 1;
 	memset(render.fast_mix_stamp, 0, sizeof(render.fast_mix_stamp));
 	memset(render.fast_mix_done, 0, sizeof(render.fast_mix_done));
@@ -583,11 +663,15 @@ void FASTCALL Render::ApplyCfg(const Config *config)
 void FASTCALL Render::StartFrame()
 {
 	ASSERT(this);
-
-	if (render_fast_dummy_enabled) {
-		StartFrameFast();
-		return;
+	if (backend) {
+		backend->StartFrame(this);
 	}
+}
+
+void FASTCALL Render::StartFrameOriginal()
+{
+	ASSERT(this);
+
 
 	// このフレームはスキップするか
 	if ((render.count != 0) || !render.enable) {
@@ -629,13 +713,17 @@ void FASTCALL Render::StartFrame()
 //---------------------------------------------------------------------------
 void FASTCALL Render::EndFrame()
 {
+	ASSERT(this);
+	if (backend) {
+		backend->EndFrame(this);
+	}
+}
+
+void FASTCALL Render::EndFrameOriginal()
+{
 	int i;
 	ASSERT(this);
 
-	if (render_fast_dummy_enabled) {
-		EndFrameFast();
-		return;
-	}
 
 	// 無効なら何もしない
 	if (!render.act) {
@@ -696,12 +784,14 @@ void FASTCALL Render::SetMixBuf(DWORD *buf, int width, int height)
 void FASTCALL Render::SetCRTC()
 {
 	ASSERT(this);
-
-	if (render_fast_dummy_enabled) {
-		SetCRTCFast();
-		return;
+	if (backend) {
+		backend->SetCRTC(this);
 	}
+}
 
+void FASTCALL Render::SetCRTCOriginal()
+{
+	ASSERT(this);
 	render.crtc = TRUE;
 }
 
@@ -713,12 +803,14 @@ void FASTCALL Render::SetCRTC()
 void FASTCALL Render::SetVC()
 {
 	ASSERT(this);
-
-	if (render_fast_dummy_enabled) {
-		SetVCFast();
-		return;
+	if (backend) {
+		backend->SetVC(this);
 	}
+}
 
+void FASTCALL Render::SetVCOriginal()
+{
+	ASSERT(this);
 	render.vc = TRUE;
 }
 
@@ -3964,12 +4056,14 @@ void FASTCALL Render::UpdateMixBuf()
 void FASTCALL Render::HSync(int raster, int xoffset)
 {
 	ASSERT(this);
-
-	if (render_fast_dummy_enabled) {
-		HSyncFast(raster);
-		return;
+	if (backend) {
+		backend->HSync(this, raster, xoffset);
 	}
+}
 
+void FASTCALL Render::HSyncOriginal(int raster, int xoffset)
+{
+	ASSERT(this);
 	render.last = raster + 1;
 	if (render.act) {
 		Process(raster, xoffset);
@@ -3978,11 +4072,25 @@ void FASTCALL Render::HSync(int raster, int xoffset)
 
 BOOL FASTCALL Render::SetCompositorMode(int mode)
 {
-	if ((mode != compositor_original) && (mode != compositor_fast)) {
+	Backend *next = NULL;
+
+	switch (mode) {
+	case compositor_original:
+		next = backend_original;
+		break;
+	case compositor_fast:
+		next = backend_fast;
+		break;
+	default:
 		return FALSE;
 	}
+
 	compositor_mode = mode;
 	render_fast_dummy_enabled = (mode == compositor_fast) ? TRUE : FALSE;
+	if (next) {
+		backend = next;
+		backend->Activate(this);
+	}
 	ForceRecompose();
 	return TRUE;
 }

@@ -37,6 +37,11 @@ enum {
 };
 
 enum {
+  XM6CORE_RENDER_MODE_ORIGINAL = 0,
+  XM6CORE_RENDER_MODE_FAST = 1
+};
+
+enum {
   XM6CORE_AUDIO_ENGINE_XM6 = 0,
   XM6CORE_AUDIO_ENGINE_PX68K = 1,
   XM6CORE_AUDIO_ENGINE_YMFM = 2,
@@ -163,6 +168,7 @@ XM6CORE_API int XM6CORE_CALL xm6_set_mouse_swap(XM6Handle handle, int enabled);
 XM6CORE_API int XM6CORE_CALL xm6_set_alt_raster(XM6Handle handle, int enabled);
 XM6CORE_API int XM6CORE_CALL xm6_set_render_bg0(XM6Handle handle, int enabled);
 XM6CORE_API int XM6CORE_CALL xm6_set_transparency_enabled(XM6Handle handle, int enabled);
+XM6CORE_API int XM6CORE_CALL xm6_set_render_mode(XM6Handle handle, int mode);
 XM6CORE_API int XM6CORE_CALL xm6_set_render_fast_dummy(XM6Handle handle, int enabled);
 XM6CORE_API int XM6CORE_CALL xm6_set_midi_enabled(XM6Handle handle, int enabled);
 XM6CORE_API int XM6CORE_CALL xm6_midi_read_output(

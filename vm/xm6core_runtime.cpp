@@ -680,6 +680,32 @@ extern "C" XM6CORE_API int XM6CORE_CALL xm6_set_render_fast_dummy(XM6Handle hand
 	return XM6CORE_OK;
 }
 
+extern "C" XM6CORE_API int XM6CORE_CALL xm6_set_render_mode(XM6Handle handle, int mode)
+{
+	if (!handle) {
+		return XM6CORE_ERR_INVALID_HANDLE;
+	}
+	if (mode != XM6CORE_RENDER_MODE_ORIGINAL && mode != XM6CORE_RENDER_MODE_FAST) {
+		return XM6CORE_ERR_INVALID_ARGUMENT;
+	}
+
+	XM6ContextRuntimeShim *ctx = reinterpret_cast<XM6ContextRuntimeShim*>(handle);
+	if (!ctx->vm) {
+		return XM6CORE_ERR_INVALID_HANDLE;
+	}
+
+	ctx->runtime_config.render_fast_dummy = (mode == XM6CORE_RENDER_MODE_FAST) ? TRUE : FALSE;
+	if (!ctx->vm->SetRenderMode(mode)) {
+		return XM6CORE_ERR_INVALID_ARGUMENT;
+	}
+
+	if (ctx->render) {
+		ctx->render->ForceRecompose();
+		ctx->render->Complete();
+	}
+	return XM6CORE_OK;
+}
+
 extern "C" XM6CORE_API int XM6CORE_CALL xm6_set_midi_enabled(XM6Handle handle, int enabled)
 {
 	if (!handle) {

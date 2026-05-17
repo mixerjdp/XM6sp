@@ -370,6 +370,12 @@ public:
 										// 合成バッファ取得
 
 private:
+	class Backend;
+	void FASTCALL StartFrameOriginal();
+	void FASTCALL EndFrameOriginal();
+	void FASTCALL HSyncOriginal(int raster, int xoffset = 0);
+	void FASTCALL SetCRTCOriginal();
+	void FASTCALL SetVCOriginal();
 	void FASTCALL Process(int raster, int xoffset);
 										// レンダリング
 	void FASTCALL Crtc();
@@ -445,6 +451,9 @@ private:
 	BOOL transparency_enabled;
 	BOOL original_bg0_render_enabled;
 	int compositor_mode;
+	Backend *backend;
+	Backend *backend_original;
+	Backend *backend_fast;
 										// スプライト
 #if XM6_RENDER_SYNC == 2
 	class CScheduler* m_pScheduler;

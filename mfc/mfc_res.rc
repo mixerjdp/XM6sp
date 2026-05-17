@@ -560,7 +560,7 @@ BEGIN
         MENUITEM "F&ull Screen\tAlt+Enter",     IDM_FULLSCREEN
 
         MENUITEM "&CRT Shader\tF9",             IDM_TOGGLE_SHADER
-        MENUITEM "PX68k Video Engine",        IDM_TOGGLE_RENDER_FAST_DUMMY
+        MENUITEM "Render Fast",        IDM_TOGGLE_RENDER_FAST_DUMMY
     END
     POPUP "&Debug"
     BEGIN
@@ -749,7 +749,7 @@ BEGIN
             MENUITEM "F&ull Screen\tAlt+Enter",     IDM_FULLSCREEN
 
             MENUITEM "&CRT Shader\tF9",             IDM_TOGGLE_SHADER
-        MENUITEM "PX68k Video Engine",        IDM_TOGGLE_RENDER_FAST_DUMMY
+        MENUITEM "Render Fast",        IDM_TOGGLE_RENDER_FAST_DUMMY
         END
         POPUP "&Debug"
         BEGIN
@@ -2428,7 +2428,7 @@ BEGIN
         MENUITEM "F&ull Screen\tAlt+Enter",     IDM_FULLSCREEN
 
         MENUITEM "&CRT Shader\tF9",             IDM_TOGGLE_SHADER
-        MENUITEM "PX68k Video Engine",        IDM_TOGGLE_RENDER_FAST_DUMMY
+        MENUITEM "Render Fast",        IDM_TOGGLE_RENDER_FAST_DUMMY
     END
     POPUP "&Depurar"
     BEGIN
@@ -2617,7 +2617,7 @@ BEGIN
             MENUITEM "F&ull Screen\tAlt+Enter",     IDM_FULLSCREEN
 
             MENUITEM "&CRT Shader\tF9",             IDM_TOGGLE_SHADER
-        MENUITEM "PX68k Video Engine",        IDM_TOGGLE_RENDER_FAST_DUMMY
+        MENUITEM "Render Fast",        IDM_TOGGLE_RENDER_FAST_DUMMY
         END
         POPUP "&Depurar"
         BEGIN

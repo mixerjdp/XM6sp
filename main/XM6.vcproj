@@ -295,9 +295,6 @@
 				<File
 				</File>
 				<File
-					RelativePath="..\vm\graphic_engine.cpp">
-				</File>
-				<File
 					RelativePath="..\vm\x68krender.cpp">
 				</File>
 				<File

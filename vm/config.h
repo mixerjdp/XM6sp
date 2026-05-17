@@ -157,7 +157,7 @@ public:
 	BOOL caption_info;					// Caption information display
 	BOOL disp_scanline;					// Scanline display
 	BOOL disp_blockscan;				// Block scan timing
-	BOOL render_fast_dummy;			// PX68k Video Engine / legacy Render Fast Dummy (TRUE=ON)
+	BOOL render_fast_dummy;			// Render Fast compositor (TRUE=ON)
 
 	// Display
 	BOOL caption;						// Caption

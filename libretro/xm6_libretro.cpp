@@ -103,7 +103,7 @@ static bool g_fast_floppy = false;
 static bool g_alt_raster_enabled = true;
 static bool g_render_bg0_enabled = true;
 static bool g_transparency_enabled = true;
-static bool g_render_fast_dummy_enabled = false;
+static int g_render_mode = XM6CORE_RENDER_MODE_ORIGINAL;
 static enum retro_pixel_format g_frontend_pixel_format = RETRO_PIXEL_FORMAT_UNKNOWN;
 static int g_fm_volume = 50;
 static int g_adpcm_volume = 50;
@@ -223,6 +223,7 @@ struct xm6_video_mode_log_t {
 static xm6_video_mode_log_t g_video_mode_log = {};
 static unsigned g_video_probe_frames_remaining = 0;
 static unsigned g_video_probe_frame_index = 0;
+static std::vector<uint32_t> g_scaled_video_buffer;
 
 struct xm6_api_t {
 #ifndef XM6CORE_MONOLITHIC
@@ -292,10 +293,10 @@ struct xm6_api_t {
   int (XM6CORE_CALL *set_mouse_speed)(XM6Handle handle, int speed) = nullptr;
   int (XM6CORE_CALL *set_mouse_port)(XM6Handle handle, int port) = nullptr;
   int (XM6CORE_CALL *set_mouse_swap)(XM6Handle handle, int enabled) = nullptr;
+  int (XM6CORE_CALL *set_render_mode)(XM6Handle handle, int mode) = nullptr;
   int (XM6CORE_CALL *set_alt_raster)(XM6Handle handle, int enabled) = nullptr;
   int (XM6CORE_CALL *set_render_bg0)(XM6Handle handle, int enabled) = nullptr;
   int (XM6CORE_CALL *set_transparency_enabled)(XM6Handle handle, int enabled) = nullptr;
-  int (XM6CORE_CALL *set_render_fast_dummy)(XM6Handle handle, int enabled) = nullptr;
   int (XM6CORE_CALL *set_midi_enabled)(XM6Handle handle, int enabled) = nullptr;
   int (XM6CORE_CALL *midi_read_output)(XM6Handle handle,
                                        unsigned char *out_bytes,
@@ -415,7 +416,7 @@ static bool set_frontend_pixel_format(enum retro_pixel_format fmt)
   return true;
 }
 
-static void sync_frontend_pixel_format()
+static void sync_frontend_pixel_format_for_render_mode()
 {
   // Keep the frontend pixel format stable across compositor changes.
   // RetroArch can display corrupted colors/geometry when switching between
@@ -609,10 +610,10 @@ static bool load_xm6_api()
   g_xm6.set_mouse_speed = xm6_set_mouse_speed;
   g_xm6.set_mouse_port = xm6_set_mouse_port;
   g_xm6.set_mouse_swap = xm6_set_mouse_swap;
+  g_xm6.set_render_mode = xm6_set_render_mode;
   g_xm6.set_alt_raster = xm6_set_alt_raster;
   g_xm6.set_render_bg0 = xm6_set_render_bg0;
   g_xm6.set_transparency_enabled = xm6_set_transparency_enabled;
-  g_xm6.set_render_fast_dummy = xm6_set_render_fast_dummy;
   g_xm6.set_midi_enabled = xm6_set_midi_enabled;
   g_xm6.midi_read_output = xm6_midi_read_output;
   g_xm6.midi_write_input = xm6_midi_write_input;
@@ -746,10 +747,10 @@ static bool load_xm6_api()
   load_optional_symbol(&g_xm6.set_mouse_speed, "xm6_set_mouse_speed");
   load_optional_symbol(&g_xm6.set_mouse_port, "xm6_set_mouse_port");
   load_optional_symbol(&g_xm6.set_mouse_swap, "xm6_set_mouse_swap");
+  load_optional_symbol(&g_xm6.set_render_mode, "xm6_set_render_mode");
   load_optional_symbol(&g_xm6.set_alt_raster, "xm6_set_alt_raster");
   load_optional_symbol(&g_xm6.set_render_bg0, "xm6_set_render_bg0");
   load_optional_symbol(&g_xm6.set_transparency_enabled, "xm6_set_transparency_enabled");
-  load_optional_symbol(&g_xm6.set_render_fast_dummy, "xm6_set_render_fast_dummy");
   load_optional_symbol(&g_xm6.set_midi_enabled, "xm6_set_midi_enabled");
   load_optional_symbol(&g_xm6.midi_read_output, "xm6_midi_read_output");
   load_optional_symbol(&g_xm6.midi_write_input, "xm6_midi_write_input");
@@ -1737,6 +1738,9 @@ static void apply_runtime_core_options()
   if (g_xm6.set_fast_floppy) {
     g_xm6.set_fast_floppy(g_xm6_handle, g_fast_floppy ? 1 : 0);
   }
+  if (g_xm6.set_render_mode) {
+    g_xm6.set_render_mode(g_xm6_handle, g_render_mode);
+  }
   if (g_xm6.set_alt_raster) {
     g_xm6.set_alt_raster(g_xm6_handle, g_alt_raster_enabled ? 1 : 0);
   }
@@ -1745,11 +1749,6 @@ static void apply_runtime_core_options()
   }
   if (g_xm6.set_transparency_enabled) {
     g_xm6.set_transparency_enabled(g_xm6_handle, g_transparency_enabled ? 1 : 0);
-  }
-  if (g_xm6.set_render_fast_dummy) {
-    g_xm6.set_render_fast_dummy(g_xm6_handle, g_render_fast_dummy_enabled ? 1 : 0);
-    core_log(RETRO_LOG_INFO, "[xm6-libretro] PX68k Video Engine %s",
-             g_render_fast_dummy_enabled ? "enabled" : "disabled");
   }
   if (g_xm6.set_master_volume) {
     g_xm6.set_master_volume(g_xm6_handle, 100);
@@ -1950,13 +1949,12 @@ static void apply_core_option_values()
     g_fast_floppy = (std::strcmp(var.value, "enabled") == 0);
   }
 
-  var.key = "xm6_render_px68k";
+  var.key = "xm6_render_mode";
   if (g_environ_cb(RETRO_ENVIRONMENT_GET_VARIABLE, &var) && var.value) {
-    g_render_fast_dummy_enabled = (std::strcmp(var.value, "enabled") == 0);
-  } else {
-    var.key = "xm6_render_fast_dummy";
-    if (g_environ_cb(RETRO_ENVIRONMENT_GET_VARIABLE, &var) && var.value) {
-      g_render_fast_dummy_enabled = (std::strcmp(var.value, "enabled") == 0);
+    if (std::strcmp(var.value, "fast") == 0) {
+      g_render_mode = XM6CORE_RENDER_MODE_FAST;
+    } else {
+      g_render_mode = XM6CORE_RENDER_MODE_ORIGINAL;
     }
   }
 
@@ -2168,7 +2166,7 @@ static void apply_core_option_values()
     g_mpu_nowait = (std::strcmp(var.value, "enabled") == 0);
   }
 
-  core_log(RETRO_LOG_INFO, "[xm6-libretro] options: drive=FDD%d exec_mode=%s start_select=%s clock=%s joy1=%d joy2=%d ram=%dmb fast_floppy=%s video_engine=%s vol(master=100 fm=%d adpcm=%d hq_adpcm=%d bass_enhancer=%d reverb=%d eq(sub_bass=%d bass=%d mid=%d presence=%d treble=%d air=%d) surround=%s) audio=%s dmac_cnt=%s midi=%s/%s mouse=%s port=%d speed=%d swap=%s hdd=%s mpu_nowait=%s",
+  core_log(RETRO_LOG_INFO, "[xm6-libretro] options: drive=FDD%d exec_mode=%s start_select=%s clock=%s joy1=%d joy2=%d ram=%dmb fast_floppy=%s video_compositor=%s vol(master=100 fm=%d adpcm=%d hq_adpcm=%d bass_enhancer=%d reverb=%d eq(sub_bass=%d bass=%d mid=%d presence=%d treble=%d air=%d) surround=%s) audio=%s dmac_cnt=%s midi=%s/%s mouse=%s port=%d speed=%d swap=%s hdd=%s mpu_nowait=%s",
            g_disk_drive,
            g_use_exec_to_frame ? "exec_to_frame" : "legacy_exec",
            (g_pad_start_select_mode == START_SELECT_F_KEYS) ? "f_keys" :
@@ -2179,7 +2177,7 @@ static void apply_core_option_values()
           (g_system_clock == 5) ? "22mhz" : "10mhz",
           g_joy_type[0], g_joy_type[1], (g_ram_size + 1) * 2,
           g_fast_floppy ? "enabled" : "disabled",
-          g_render_fast_dummy_enabled ? "enabled" : "disabled",
+          (g_render_mode == XM6CORE_RENDER_MODE_FAST) ? "fast" : "original",
            g_fm_volume, g_adpcm_volume,
            g_hq_adpcm_level,
            g_bass_enhancer_level,
@@ -2314,18 +2312,18 @@ static void register_core_options()
         "auto"
       },
       {
-        "xm6_render_px68k",
-        "PX68k Video Engine",
+        "xm6_render_mode",
+        "Video compositor",
         nullptr,
-        "Legacy compatibility alias for the PX68k video engine backend.",
+        "Choose the video compositor path.",
         nullptr,
         "video",
         {
-          { "disabled", nullptr },
-          { "enabled", nullptr },
+          { "original", nullptr },
+          { "fast", nullptr },
           { nullptr, nullptr }
         },
-        "disabled"
+        "original"
       },
       {
         "xm6_audio_engine",
@@ -2795,10 +2793,8 @@ static void register_core_options()
   static const retro_variable vars[] = {
     { "xm6_audio_engine",
       "Audio engine (legacy); XM6|PX68k|YMFM|X68Sound" },
-    { "xm6_render_px68k",
-      "PX68k Video Engine; disabled|enabled" },
-    { "xm6_render_fast_dummy",
-      "PX68k Video Engine (legacy alias); disabled|enabled" },
+    { "xm6_render_mode",
+      "Video compositor; original|fast" },
     { nullptr, nullptr }
   };
   g_environ_cb(RETRO_ENVIRONMENT_SET_VARIABLES, const_cast<retro_variable *>(vars));
@@ -2980,14 +2976,29 @@ static void compute_video_scale_factors(const xm6_video_layout_t &layout,
                                         unsigned int *out_h_scale,
                                         unsigned int *out_v_scale)
 {
-  (void)layout;
-  (void)frame_width;
-  (void)frame_height;
-
-  // Px68k keeps the framebuffer at its native size and only exposes
-  // timing/aspect metadata to the frontend. XM6 should do the same here.
   unsigned int h_scale = 1;
   unsigned int v_scale = 1;
+
+  // Fast compositor path: keep core-provided geometry as-is,
+  // matching px68k's direct line output style.
+  if (g_render_mode == XM6CORE_RENDER_MODE_FAST) {
+    if (out_h_scale) {
+      *out_h_scale = 1;
+    }
+    if (out_v_scale) {
+      *out_v_scale = 1;
+    }
+    return;
+  }
+
+  if (layout.valid) {
+    if (layout.h_mul > 0) {
+      h_scale = layout.h_mul;
+    }
+    v_scale = vertical_scale_from_layout(layout, frame_height);
+  } else if (frame_width > 0 && frame_width <= 320) {
+    h_scale = 2;
+  }
 
   if (out_h_scale) {
     *out_h_scale = h_scale;
@@ -3137,12 +3148,51 @@ static bool build_scaled_video_frame(
     return false;
   }
 
-  // Keep the framebuffer native: px68k reports the same raw dimensions and
-  // lets the frontend scale presentation separately.
-  *out_pixels = frame.pixels_argb32;
-  *out_width = frame.width;
-  *out_height = frame.height;
-  *out_stride_pixels = frame.stride_pixels;
+  unsigned int h_factor = 1;
+  unsigned int v_factor = 1;
+  compute_video_scale_factors(layout, frame.width, frame.height, &h_factor, &v_factor);
+
+  const bool weave_lowres_interlace =
+    (g_render_mode != XM6CORE_RENDER_MODE_FAST) && layout.valid && layout.lowres == 1 && layout.v_mul == 0;
+  if (h_factor <= 1 && v_factor <= 1 && !weave_lowres_interlace) {
+    *out_pixels = frame.pixels_argb32;
+    *out_width = frame.width;
+    *out_height = frame.height;
+    *out_stride_pixels = frame.stride_pixels;
+    return true;
+  }
+
+  const unsigned scaled_width = frame.width * h_factor;
+  const unsigned scaled_height = frame.height * v_factor;
+  if (scaled_width == 0 || scaled_height == 0 || scaled_width > 1024 || scaled_height > 1024) {
+    return false;
+  }
+
+  const size_t pixels = static_cast<size_t>(scaled_width) * static_cast<size_t>(scaled_height);
+  g_scaled_video_buffer.resize(pixels);
+
+  for (unsigned y = 0; y < frame.height; ++y) {
+    const uint32_t *src = frame.pixels_argb32 + static_cast<size_t>(y) * frame.stride_pixels;
+    const uint32_t *src_next = (y + 1 < frame.height) ? src + frame.stride_pixels : src;
+    for (unsigned vy = 0; vy < v_factor; ++vy) {
+      uint32_t *dst = g_scaled_video_buffer.data() +
+        (static_cast<size_t>(y) * v_factor + vy) * scaled_width;
+      for (unsigned x = 0; x < frame.width; ++x) {
+        uint32_t c = src[x];
+        if (weave_lowres_interlace && v_factor > 1 && vy == 1) {
+          c = src_next[x];
+        }
+        for (unsigned hx = 0; hx < h_factor; ++hx) {
+          dst[x * h_factor + hx] = c;
+        }
+      }
+    }
+  }
+
+  *out_pixels = g_scaled_video_buffer.data();
+  *out_width = scaled_width;
+  *out_height = scaled_height;
+  *out_stride_pixels = scaled_width;
   return true;
 }
 
@@ -3794,7 +3844,7 @@ bool retro_load_game(const struct retro_game_info *info)
     g_video_not_ready_count = 0;
   }
 
-  sync_frontend_pixel_format();
+  sync_frontend_pixel_format_for_render_mode();
   if (g_frontend_pixel_format != RETRO_PIXEL_FORMAT_XRGB8888 &&
       g_frontend_pixel_format != RETRO_PIXEL_FORMAT_RGB565) {
     core_log(RETRO_LOG_ERROR, "[xm6-libretro] Failed to set a supported pixel format");
@@ -3900,7 +3950,7 @@ void retro_run(void)
       const int old_system_clock = g_system_clock;
 	      const int old_ram_size = g_ram_size;
       const bool old_fast_floppy = g_fast_floppy;
-      const bool old_render_fast_dummy_enabled = g_render_fast_dummy_enabled;
+      const int old_render_mode = g_render_mode;
       const int old_fm_volume = g_fm_volume;
       const int old_adpcm_volume = g_adpcm_volume;
 	      const int old_hq_adpcm_level = g_hq_adpcm_level;
@@ -3948,10 +3998,15 @@ void retro_run(void)
         core_log(RETRO_LOG_INFO, "[xm6-libretro] Fast floppy %s",
                  g_fast_floppy ? "enabled" : "disabled");
       }
-      if (old_render_fast_dummy_enabled != g_render_fast_dummy_enabled) {
+      if (old_render_mode != g_render_mode) {
         apply_runtime_core_options();
-        core_log(RETRO_LOG_INFO, "[xm6-libretro] PX68k Video Engine %s",
-                 g_render_fast_dummy_enabled ? "enabled" : "disabled");
+        core_log(RETRO_LOG_INFO, "[xm6-libretro] Video compositor changed to %s",
+                 (g_render_mode == XM6CORE_RENDER_MODE_FAST) ? "fast" : "original");
+      }
+      if (old_render_mode != g_render_mode) {
+        sync_frontend_pixel_format_for_render_mode();
+        g_video_probe_frames_remaining = k_video_probe_frames_after_mode_change;
+        g_video_probe_frame_index = 0;
       }
       if (old_audio_engine != g_audio_engine) {
         apply_runtime_core_options();
