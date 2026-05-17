@@ -123,12 +123,10 @@
     <ClCompile Include="..\vm\render.cpp">
       <Filter>VM</Filter>
     </ClCompile>
+    <ClCompile Include="..\vm\renderfast_compositor.cpp">
       <Filter>VM</Filter>
     </ClCompile>
-      <Filter>VM</Filter>
-    </ClCompile>
-      <Filter>VM</Filter>
-    </ClCompile>
+    <ClCompile Include="..\vm\rend_soft.cpp">
       <Filter>VM</Filter>
     </ClCompile>
     <ClCompile Include="..\vm\rtc.cpp">
@@ -412,16 +410,13 @@
     <ClInclude Include="..\vm\printer.h">
       <Filter>VM</Filter>
     </ClInclude>
-      <Filter>VM</Filter>
-    </ClInclude>
-      <Filter>VM</Filter>
-    </ClInclude>
     <ClInclude Include="..\vm\render.h">
       <Filter>VM</Filter>
     </ClInclude>
+    <ClInclude Include="..\vm\renderin.h">
       <Filter>VM</Filter>
     </ClInclude>
-    <ClInclude Include="..\vm\renderin.h">
+    <ClInclude Include="..\vm\rend_soft.h">
       <Filter>VM</Filter>
     </ClInclude>
     <ClInclude Include="..\vm\rtc.h">

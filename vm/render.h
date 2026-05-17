@@ -18,7 +18,6 @@
 #include "px68k_crtc_port.h"
 
 class GVRAM;
-class Px68kRenderAdapter;
 class TVRAM;
 
 //===========================================================================
@@ -127,6 +126,7 @@ public:
 		DWORD *mixbuf;					// 合成バッファ
 		DWORD *mixptr[8];				// 合成ポインタ
 		DWORD mixshift[8];				// 合成ポインタのYシフト
+		DWORD mixand[8];
 		DWORD mixrshift[8];				// 合成ポインタのYシフト(右)
 		DWORD mixlshift[8];				// 合成ポインタのYシフト(左)
 		DWORD *mixx[8];					// 合成ポインタのXスクロールポインタ
@@ -239,6 +239,11 @@ public:
 		int bgsp_rshift;				// BG/スプライトラスター算出シフト量(右)
 		int bgsp_lshift;				// BG/スプライトラスター算出シフト量(左)
 		BOOL bgspdirty;					// BG/スプライトダーティーフラグ
+		DWORD fast_stamp_counter;
+		DWORD fast_mix_stamp[1024];
+		DWORD fast_mix_done[1024];
+		DWORD fast_bg_stamp[512];
+		DWORD fast_bg_done[512];
 		DWORD zero;						// スクロールダミー(0)
 	} render_t;
 
@@ -307,8 +312,6 @@ public:
 	void FASTCALL GetFastVerticalProbeSnapshot(fast_vertical_probe_snapshot_t *out) const;
 	BOOL FASTCALL SetRenderFastDummyEnabled(BOOL enable);
 	BOOL FASTCALL IsRenderFastDummyEnabled() const	{ return render_fast_dummy_enabled; }
-	BOOL FASTCALL EnsurePx68kFrame();
-	BOOL FASTCALL GetPx68kScreen(const WORD **out_pixels, int *out_width, int *out_height, int *out_stride) const;
 	const Px68kCrtcHost* FASTCALL GetPx68kCrtcHost() const;
 	void FASTCALL CachePx68kStateView(const Px68kCrtcStateView *view);
 	void FASTCALL ForceRecompose();
@@ -409,6 +412,24 @@ private:
 										// 合成
 	DWORD* FASTCALL MixGrp(DWORD *buf, int raster, int xoffset, int mixlen);
 										// 合成(グラフィック)
+	void FASTCALL HSyncFast(int raster);
+	void FASTCALL StartFrameFast();
+	void FASTCALL EndFrameFast();
+	void FASTCALL SetCRTCFast();
+	void FASTCALL SetVCFast();
+	void FASTCALL VideoFastPX68K();
+	void FASTCALL PaletteFastPX68K();
+	void FASTCALL TextFastPX68K(int raster);
+	void FASTCALL ProcessFast();
+	void FASTCALL MixFast(int y);
+	void FASTCALL MixFastLine(int dst_y, int src_y);
+	void FASTCALL FastBuildBGLinePX(int sprite_raster, int bg_raster, BOOL ton, int tx_pri, int sp_pri, DWORD *bg_line, BYTE *bg_flag, WORD *bg_pri, BOOL *active, BOOL *bg_opaq);
+	void FASTCALL FastDrawSpriteLinePX(int raster, int pri, DWORD *bg_line, BYTE *bg_flag, WORD *bg_pri, BOOL *active);
+	void FASTCALL FastDrawBGPageLinePX(int page, int raster, BOOL gd, DWORD *bg_line, BYTE *bg_flag, WORD *bg_pri, BOOL *active);
+	void FASTCALL FastMixGrp(int y, DWORD *grp, DWORD *grp_sp, DWORD *grp_sp2,
+		BOOL *grp_sp_tr, BOOL *gon, BOOL *tron, BOOL *pron);
+	void FASTCALL InvalidateFrame();
+	void FASTCALL ApplyPendingCompositorMode();
 	CRTC *crtc;
 										// CRTC
 	const CRTC::crtc_t *cp;
@@ -418,7 +439,6 @@ private:
 	const VC::vc_t *vp;
 										// VC ワークアドレス
 	Sprite *sprite;
-	Px68kRenderAdapter *px68k_adapter;
 	Px68kCrtcHost px68k_crtc_host;
 	Px68kCrtcStateView px68k_crtc_state_cache;
 	BOOL render_fast_dummy_enabled;

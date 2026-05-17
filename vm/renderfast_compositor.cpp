@@ -4,6 +4,7 @@
 #include "crtc.h"
 #include "vc.h"
 #include "sprite.h"
+#include "rend_asm.h"
 #include "rend_soft.h"
 #include "render.h"
 
@@ -20,8 +21,6 @@ static unsigned int g_vertical_probe_last_width = 0u;
 static unsigned int g_vertical_probe_last_height = 0u;
 static Render::fast_vertical_probe_snapshot_t g_vertical_probe_snapshot;
 static BOOL g_vertical_probe_snapshot_armed = FALSE;
-static int g_sprite_fine_probe_count = 0;
-extern void xm6_debug_message(const char *format, ...);
 
 static int FASTCALL CalcBGHAdjustPixels(int compositor_mode, const CRTC *crtc, const Sprite *sprite)
 {
@@ -50,6 +49,59 @@ namespace {
 
 static const DWORD k_render_color0 = 0x80000000u;
 static const DWORD k_px68k_ibit_marker = 0x40000000u;
+
+static int FASTCALL FastGetVerticalAdjust(const Render::render_t *work, const CRTC::crtc_t *c)
+{
+	if (!work || !c) {
+		return 0;
+	}
+
+	if ((work->width != 512) || (work->height != 512) ||
+		(work->h_mul != 1) || (work->v_mul != 1) || work->lowres) {
+		return 0;
+	}
+
+	if (work->grptype != 2) {
+		return 0;
+	}
+
+	const int vstart = (int)((((DWORD)c->reg[0x0c] << 8) + c->reg[0x0d]) & 0x3ff);
+	const int scroll_y = (int)(work->grpy[0] & 0x3ff);
+	const int divisor = ((c->reg[0x29] & 0x1c) == 0x1c) ? 1 : 2;
+	const int adjust = (scroll_y - vstart) / divisor;
+
+	return -adjust;
+}
+
+static BOOL FASTCALL FastNeedsDeflektorVerticalSplit(const Render::render_t *work, const VC::vc_t *v, const CRTC::crtc_t *c)
+{
+	if (!work || !v || !c) {
+		return FALSE;
+	}
+
+	if ((work->width != 512) || (work->height != 512) ||
+		(work->h_mul != 1) || (work->v_mul != 1) || work->lowres) {
+		return FALSE;
+	}
+
+	if ((work->grptype != 2) || (work->mixpage != 1) || (work->mixtype != 7)) {
+		return FALSE;
+	}
+
+	if (!work->bgspflag) {
+		return FALSE;
+	}
+
+	if (c->reg[0x29] != 0x01) {
+		return FALSE;
+	}
+
+	if (!((v->vr2l == 0x73) || (v->vr2l == 0x7C))) {
+		return FALSE;
+	}
+
+	return TRUE;
+}
 
 struct Px68kVerticalTiming {
 	int bg_vline;
@@ -594,9 +646,6 @@ void FASTCALL Render::FastDrawSpriteLinePX(int layer_raster, int pri, DWORD *bg_
 	const int sprite_limit = render.mixlen;
 
 	reg = &render.spreg[127 << 2];
-	if (layer_raster == 0) {
-		g_sprite_fine_probe_count = 0;
-	}
 	for (n=127; n>=0; n--) {
 		if (render.spuse[n] && ((int)(reg[3] & 3) == pri)) {
 			DWORD pcgno;
@@ -609,11 +658,6 @@ void FASTCALL Render::FastDrawSpriteLinePX(int layer_raster, int pri, DWORD *bg_
 			if ((row < 0) || (row > 15)) {
 				reg -= 4;
 				continue;
-			}
-			if (g_sprite_fine_probe_count < 8) {
-				xm6_debug_message("[sprite-probe] core=xm6 pri=%d n=%d layer=%d spy=%u row=%d ctrl=%04X x=%d bg_hadj=%d",
-					pri, n, (layer_raster & 0x3ff), (unsigned)(reg[1] & 0x3ff), row, (unsigned)(reg[2] & 0xffff), (int)reg[0], bg_hadjust);
-				++g_sprite_fine_probe_count;
 			}
 
 			pcgno = reg[2] & 0xfff;
@@ -666,13 +710,13 @@ void FASTCALL Render::FastDrawBGPageLinePX(int page, int raster, BOOL gd, DWORD 
 {
 	int yblk;
 	int line;
-	DWORD **ptr;
+	bgdata_t *ptr;
 	int x;
 	int i;
 	int gx;
 	int tile;
 	int off;
-	DWORD **ent;
+	bgdata_t *ent;
 	DWORD *src;
 	DWORD bgdata;
 	DWORD pixel;
@@ -711,7 +755,7 @@ void FASTCALL Render::FastDrawBGPageLinePX(int page, int raster, BOOL gd, DWORD 
 		line &= 0x1ff;
 		x = (int)((render.bgx[page] - bg_hadjust) & 0x1ff);
 	}
-	ptr = render.bgptr[page] + (line << 7);
+	ptr = render.bgptr[page] + (line << 6);
 
 	for (i=0; i<render.mixlen; i++) {
 		if (render.bgsize) {
@@ -724,9 +768,9 @@ void FASTCALL Render::FastDrawBGPageLinePX(int page, int raster, BOOL gd, DWORD 
 			tile = gx >> 3;
 			off = gx & 7;
 		}
-		ent = &ptr[tile << 1];
-		src = ent[0];
-		bgdata = (DWORD)(size_t)ent[1];
+		ent = &ptr[tile];
+		src = ent->pcg;
+		bgdata = ent->bg;
 		if (!src) {
 			continue;
 		}
@@ -1572,7 +1616,6 @@ void FASTCALL Render::MixFastLine(int dst_y, int src_y)
 	int tx_pri;
 	int sp_pri;
 	int gr_pri;
-	DWORD px68k_vline;
 	BOOL gon;
 	BOOL tron;
 	BOOL pron;
@@ -1593,9 +1636,8 @@ void FASTCALL Render::MixFastLine(int dst_y, int src_y)
 	DWORD *const out_visible = &out[k_fast_line_margin];
 	BYTE *const bg_flag_visible = &bg_flag[k_fast_line_margin];
 	BYTE *const tr_flag_visible = &tr_flag[k_fast_line_margin];
-	Sprite::sprite_t spr;
-	Px68kVerticalTiming timing;
-	int grp_text_raster;
+	BOOL deflektor_split;
+	int v_adjust;
 	int sprite_raster;
 	int bg_raster;
 
@@ -1619,22 +1661,16 @@ void FASTCALL Render::MixFastLine(int dst_y, int src_y)
 	dst = &render.mixbuf[render.mixwidth * dst_y];
 	p = vc->GetWorkAddr();
 	c = crtc->GetWorkAddr();
-	sprite->GetSprite(&spr);
-	const BOOL sprite_enabled = (p && p->son);
-	px68k_vline = px68k_crtc_state_cache.state.visible_vline;
-	if (px68k_vline == 0xffffffffu) {
-		px68k_vline = FastGetVisibleVLine(c);
+	deflektor_split = FastNeedsDeflektorVerticalSplit(&render, p, c);
+	if (deflektor_split) {
+		v_adjust = FastGetVerticalAdjust(&render, c);
+		sprite_raster = ((src_y / 2) + v_adjust) & 0x3ff;
+		bg_raster = (src_y + v_adjust) & 0x3ff;
 	}
-	if (px68k_vline == 0xffffffffu) {
-		px68k_vline = (DWORD)src_y;
+	else {
+		sprite_raster = src_y;
+		bg_raster = src_y;
 	}
-	timing = FastGetVerticalTiming(p, c, &spr, sprite_enabled, px68k_vline, &px68k_crtc_state_cache.state);
-	// px68k derives the BG/sprite lookup from VLINEBG - BG_VLINE while
-	// GRP/TEXT continue to use the output scanline path that XM6 already has
-	// prepared for this compositor.
-	sprite_raster = timing.layer_raster & 0x3ff;
-	bg_raster = timing.layer_raster & (render.bgsize ? 0x3ff : 0x1ff);
-	grp_text_raster = src_y;
 	tx_pri = p ? (int)(p->tx & 3) : 0;
 	sp_pri = p ? (int)(p->sp & 3) : 0;
 	gr_pri = p ? (int)(p->gr & 3) : 0;
@@ -1652,14 +1688,14 @@ void FASTCALL Render::MixFastLine(int dst_y, int src_y)
 	std::memset(bg_flag, 0, sizeof(bg_flag));
 	std::memset(tr_flag, 0, sizeof(tr_flag));
 
-	FastMixGrp(grp_text_raster, grp_visible, grp_sp_visible, grp_sp2_visible, grp_sp_tr_visible, &gon, &tron, &pron);
+	FastMixGrp(bg_raster, grp_visible, grp_sp_visible, grp_sp2_visible, grp_sp_tr_visible, &gon, &tron, &pron);
 
 	for (i=0; i<render.mixlen; i++) {
 		// px68k keeps a 16px guard band before the visible window.
 		// We compose into the shifted slice and later copy only the visible region.
 		out_visible[i] = 0;
 		if (ton) {
-			text_line_visible[i] = render.textout[(((grp_text_raster + (int)render.texty) & 0x3ff) << 10) + (((int)render.textx + i) & 0x3ff)];
+			text_line_visible[i] = render.textout[(((bg_raster + (int)render.texty) & 0x3ff) << 10) + (((int)render.textx + i) & 0x3ff)];
 		}
 		else {
 			text_line_visible[i] = k_render_color0;
@@ -1673,22 +1709,6 @@ void FASTCALL Render::MixFastLine(int dst_y, int src_y)
 	FastBuildBGLinePX(sprite_raster, bg_raster, ton, tx_pri, sp_pri, bg_line_visible, bg_flag_visible, bg_pri_visible, &bg_active, &bg_opaq);
 	bgon = bg_active;
 	FastPrepareBGTextLine(bgtext_line_visible, tr_flag_visible, bg_flag_visible, text_line_visible, bg_line_visible, render.mixlen, ton, bgon, tx_pri, sp_pri, bg_opaq);
-
-	if (g_vertical_probe_snapshot_armed) {
-		const int last_line = (render.height > 0) ? (render.height - 1) : 0;
-		const int tail_base = (render.height >= 3) ? (render.height - 3) : 0;
-		int slot = -1;
-
-		if (dst_y < 3) {
-			slot = dst_y;
-		}
-		else if ((render.height >= 3) && (dst_y >= tail_base)) {
-			slot = 3 + (dst_y - tail_base);
-		}
-		if (slot >= 0) {
-			FastStoreVerticalProbeSample(slot, dst_y, src_y, px68k_vline, &render, p, c, timing, bg_active, bg_opaq, gon, tron, pron, ton);
-		}
-	}
 
 	// px68k-style 565+Ibit scanline composition (Render Fast 1:1 path)
 	Xm6Px68kComposeScanlineFast(out_visible, render.mixlen,

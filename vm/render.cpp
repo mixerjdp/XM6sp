@@ -19,7 +19,6 @@
 #include "config.h"
 #include "render.h"
 #include "rend_asm.h"
-#include "px68k_render_adapter.h"
 #if XM6_RENDER_SYNC == 2
 #include "mfc_com.h"
 #include "mfc_sch.h"
@@ -75,10 +74,14 @@ Render::Render(VM* p) : Device(p)
 	crtc = NULL;
 	vc = NULL;
 	sprite = NULL;
-	px68k_adapter = NULL;
 	memset(&px68k_crtc_host, 0, sizeof(px68k_crtc_host));
 	memset(&px68k_crtc_state_cache, 0, sizeof(px68k_crtc_state_cache));
 	render_fast_dummy_enabled = FALSE;
+	render.fast_stamp_counter = 1;
+	memset(render.fast_mix_stamp, 0, sizeof(render.fast_mix_stamp));
+	memset(render.fast_mix_done, 0, sizeof(render.fast_mix_done));
+	memset(render.fast_bg_stamp, 0, sizeof(render.fast_bg_stamp));
+	memset(render.fast_bg_done, 0, sizeof(render.fast_bg_done));
 	transparency_enabled = TRUE;
 	original_bg0_render_enabled = TRUE;
 	compositor_mode = compositor_original;
@@ -89,7 +92,9 @@ Render::Render(VM* p) : Device(p)
 	// ワークエリア初期化(CRTC)
 	render.crtc = FALSE;
 	render.width = 768;
+	render.h_mul = 1;
 	render.height = 512;
+	render.v_mul = 1;
 
 	render.hd = 2;
 	render.vd = 1;
@@ -141,6 +146,7 @@ Render::Render(VM* p) : Device(p)
 	render.mixlen = 0;
 	render.mixtype = 0;
 	memset(render.mixptr, 0, sizeof(render.mixptr));
+	memset(render.mixand, 0, sizeof(render.mixand));
 	memset(render.mixrshift, 0, sizeof(render.mixrshift));
 	memset(render.mixlshift, 0, sizeof(render.mixlshift));
 	memset(render.mixx, 0, sizeof(render.mixx));
@@ -184,10 +190,6 @@ BOOL FASTCALL Render::Init()
 	// VCワークアドレス取得
 	vp = vc->GetWorkAddr();
 
-	px68k_adapter = new Px68kRenderAdapter();
-	if (!px68k_adapter || !px68k_adapter->Init()) {
-		return FALSE;
-	}
 	px68k_crtc_host.ctx = this;
 
 #if LOCAL_EXCEPTION
@@ -418,6 +420,11 @@ void FASTCALL Render::Reset()
 	render.enable = TRUE;
 	render.act = TRUE;
 	render.count = 2;
+	render.fast_stamp_counter = 1;
+	memset(render.fast_mix_stamp, 0, sizeof(render.fast_mix_stamp));
+	memset(render.fast_mix_done, 0, sizeof(render.fast_mix_done));
+	memset(render.fast_bg_stamp, 0, sizeof(render.fast_bg_stamp));
+	memset(render.fast_bg_done, 0, sizeof(render.fast_bg_done));
 
 	// ワークエリア初期化(crtc, vc) --再計算を促すためTRUE
 	render.crtc = TRUE;
@@ -577,9 +584,8 @@ void FASTCALL Render::StartFrame()
 {
 	ASSERT(this);
 
-	if (render_fast_dummy_enabled && px68k_adapter) {
-		render.act = TRUE;
-		px68k_adapter->StartFrame(this);
+	if (render_fast_dummy_enabled) {
+		StartFrameFast();
 		return;
 	}
 
@@ -626,10 +632,8 @@ void FASTCALL Render::EndFrame()
 	int i;
 	ASSERT(this);
 
-	if (render_fast_dummy_enabled && px68k_adapter) {
-		px68k_adapter->EndFrame(this);
-		render.count++;
-		render.act = FALSE;
+	if (render_fast_dummy_enabled) {
+		EndFrameFast();
 		return;
 	}
 
@@ -693,7 +697,11 @@ void FASTCALL Render::SetCRTC()
 {
 	ASSERT(this);
 
-	// フラグONのみ
+	if (render_fast_dummy_enabled) {
+		SetCRTCFast();
+		return;
+	}
+
 	render.crtc = TRUE;
 }
 
@@ -706,7 +714,11 @@ void FASTCALL Render::SetVC()
 {
 	ASSERT(this);
 
-	// フラグONのみ
+	if (render_fast_dummy_enabled) {
+		SetVCFast();
+		return;
+	}
+
 	render.vc = TRUE;
 }
 
@@ -3953,8 +3965,8 @@ void FASTCALL Render::HSync(int raster, int xoffset)
 {
 	ASSERT(this);
 
-	if (render_fast_dummy_enabled && px68k_adapter) {
-		px68k_adapter->HSync(this, raster);
+	if (render_fast_dummy_enabled) {
+		HSyncFast(raster);
 		return;
 	}
 
@@ -3975,38 +3987,10 @@ BOOL FASTCALL Render::SetCompositorMode(int mode)
 	return TRUE;
 }
 
-void FASTCALL Render::GetFastVerticalProbeSnapshot(fast_vertical_probe_snapshot_t *out) const
-{
-	if (out) {
-		memset(out, 0, sizeof(*out));
-	}
-}
-
 BOOL FASTCALL Render::SetRenderFastDummyEnabled(BOOL enable)
 {
 	SetCompositorMode(enable ? compositor_fast : compositor_original);
 	return render_fast_dummy_enabled;
-}
-
-BOOL FASTCALL Render::EnsurePx68kFrame()
-{
-	if (!render_fast_dummy_enabled || !px68k_adapter) {
-		return FALSE;
-	}
-	px68k_adapter->DrawFrame(this);
-	return TRUE;
-}
-
-BOOL FASTCALL Render::GetPx68kScreen(const WORD **out_pixels, int *out_width, int *out_height, int *out_stride) const
-{
-	if (!px68k_adapter) {
-		return FALSE;
-	}
-	if (out_pixels) *out_pixels = px68k_adapter->GetScreenBuffer();
-	if (out_width) *out_width = (int)px68k_adapter->GetScreenWidth();
-	if (out_height) *out_height = (int)px68k_adapter->GetScreenHeight();
-	if (out_stride) *out_stride = (int)px68k_adapter->GetScreenStride();
-	return TRUE;
 }
 
 const Px68kCrtcHost* FASTCALL Render::GetPx68kCrtcHost() const
@@ -4021,15 +4005,46 @@ void FASTCALL Render::CachePx68kStateView(const Px68kCrtcStateView *view)
 	}
 }
 
-void FASTCALL Render::ForceRecompose()
+void FASTCALL Render::InvalidateFrame()
 {
-	render.crtc = TRUE;
+	int i;
+	DWORD stamp;
+
 	render.vc = TRUE;
 	render.palette = TRUE;
 	render.textdirty = TRUE;
 	render.grpdirty = TRUE;
 	render.bgspdirty = TRUE;
 	render.mixdirty = TRUE;
+	memset(render.palmod, 1, sizeof(render.palmod));
+	memset(render.mix, 1, sizeof(render.mix));
+	memset(render.textmod, 1, sizeof(render.textmod));
+	memset(render.textpal, 1, sizeof(render.textpal));
+	memset(render.grpmod, 1, sizeof(render.grpmod));
+	memset(render.grppal, 1, sizeof(render.grppal));
+	memset(render.bgspmod, 1, sizeof(render.bgspmod));
+	stamp = ++render.fast_stamp_counter;
+	for (i=0; i<1024; i++) {
+		render.fast_mix_stamp[i] = stamp;
+		render.fast_mix_done[i] = 0;
+	}
+	for (i=0; i<512; i++) {
+		render.fast_bg_stamp[i] = stamp;
+		render.fast_bg_done[i] = 0;
+	}
+	if (render.drawflag) {
+		memset(render.drawflag, 1, sizeof(BOOL) * (64 * 1024));
+	}
+}
+
+void FASTCALL Render::ApplyPendingCompositorMode()
+{
+}
+
+void FASTCALL Render::ForceRecompose()
+{
+	render.crtc = TRUE;
+	InvalidateFrame();
 }
 
 const TVRAM* FASTCALL Render::GetTVRAMDevice() const
@@ -4044,57 +4059,66 @@ const GVRAM* FASTCALL Render::GetGVRAMDevice() const
 
 void FASTCALL Render::SpriteBGWrite(DWORD addr, BYTE data)
 {
-	if (px68k_adapter) px68k_adapter->BGWrite(addr, data);
+	(void)addr;
+	(void)data;
 }
 
 BYTE FASTCALL Render::TVRAMRead(DWORD addr)
 {
-	return px68k_adapter ? px68k_adapter->TVRAMRead(addr) : 0xff;
+	(void)addr;
+	return 0xff;
 }
 
 void FASTCALL Render::TVRAMWrite(DWORD addr, BYTE data)
 {
-	if (px68k_adapter) px68k_adapter->TVRAMWrite(addr, data);
+	(void)addr;
+	(void)data;
 }
 
 BYTE FASTCALL Render::GVRAMRead(DWORD addr)
 {
-	return px68k_adapter ? px68k_adapter->GVRAMRead(addr) : 0xff;
+	(void)addr;
+	return 0xff;
 }
 
 void FASTCALL Render::GVRAMWrite(DWORD addr, BYTE data)
 {
-	if (px68k_adapter) px68k_adapter->GVRAMWrite(addr, data);
+	(void)addr;
+	(void)data;
 }
 
 BYTE FASTCALL Render::BGRead(DWORD addr)
 {
-	return px68k_adapter ? px68k_adapter->BGRead(addr) : 0xff;
+	(void)addr;
+	return 0xff;
 }
 
 void FASTCALL Render::CRTCRegWrite(DWORD addr, BYTE data)
 {
-	if (px68k_adapter) px68k_adapter->CRTCRegWrite(addr, data);
+	(void)addr;
+	(void)data;
 }
 
 BYTE FASTCALL Render::CRTCRegRead(DWORD addr)
 {
-	return px68k_adapter ? px68k_adapter->CRTCRegRead(addr) : 0xff;
+	(void)addr;
+	return 0xff;
 }
 
 BYTE FASTCALL Render::VCtrlRead(DWORD addr)
 {
-	return px68k_adapter ? px68k_adapter->VCtrlRead(addr) : 0xff;
+	(void)addr;
+	return 0xff;
 }
 
 void FASTCALL Render::VCtrlWrite(DWORD addr, BYTE data)
 {
-	if (px68k_adapter) px68k_adapter->VCtrlWrite(addr, data);
+	(void)addr;
+	(void)data;
 }
 
 void FASTCALL Render::GVRAMFastClear()
 {
-	if (px68k_adapter) px68k_adapter->GVRAMFastClear();
 }
 void FASTCALL Render::Process(int raster, int xoffset)
 {

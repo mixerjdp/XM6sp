@@ -91,9 +91,8 @@ set SOURCES=^
   ..\vm\ppi.cpp ^
   ..\vm\printer.cpp ^
   ..\vm\render.cpp ^
+  ..\vm\renderfast_compositor.cpp ^
   ..\vm\rend_soft.cpp ^
-  ..\vm\px68k_video_engine.cpp ^
-  ..\vm\px68k_render_adapter.cpp ^
   ..\vm\rtc.cpp ^
   ..\vm\sasi.cpp ^
   ..\vm\scc.cpp ^
