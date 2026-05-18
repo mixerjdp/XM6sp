@@ -332,6 +332,7 @@ public:
 										// グラフィックVRAM変更
 	void FASTCALL GrpScrl(int block, DWORD x, DWORD y);
 										// グラフィックスクロールセット
+	void FASTCALL SpriteReg(DWORD addr, DWORD data[]);
 	void FASTCALL SpriteReg(DWORD addr, DWORD data);
 										// スプライトレジスタ変更
 	void FASTCALL BGScrl(int page, DWORD x, DWORD y);

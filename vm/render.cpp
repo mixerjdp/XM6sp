@@ -40,25 +40,6 @@
 #define REND_COLORS		0x40000000		// “Áêƒtƒ‰ƒO(”¼“§–¾^“Áêƒvƒ‰ƒCƒIƒŠƒeƒB)
 #define REND_COLORT		0x40000000		// “Áêƒtƒ‰ƒO(ƒeƒLƒXƒgƒpƒŒƒbƒg‚O)
 
-static int FASTCALL CalcBGHAdjustPixels(int compositor_mode, const CRTC *crtc, const Sprite *sprite)
-{
-	(void)compositor_mode;
-	if (!crtc || !sprite) {
-		return 0;
-	}
-
-	const CRTC::crtc_t *crtc_state = crtc->GetWorkAddr();
-	if (!crtc_state) {
-		return 0;
-	}
-
-	Sprite::sprite_t spr;
-	sprite->GetSprite(&spr);
-	const int bg_hdisp = (int)(spr.h_disp & 0xff);
-	const int crtc_hstart = (int)(crtc_state->reg[0x04] & 0xff);
-	return (bg_hdisp - (crtc_hstart + 4)) * 8;
-}
-
 class Render::Backend
 {
 public:
@@ -313,7 +294,7 @@ BOOL FASTCALL Render::Init()
 	}
 
 	// ƒXƒvƒ‰ƒCƒgƒ|ƒCƒ“ƒ^Šm•Û(512KB)
-	render.spptr = new DWORD*[128 * 512];
+	render.spptr = new DWORD*[128 * 1024];
 	if (!render.spptr) {
 		return FALSE;
 	}
@@ -543,7 +524,7 @@ void FASTCALL Render::Reset()
 	memset(render.pcgpal, 0, sizeof(render.pcgpal));
 
 	// ƒ[ƒNƒGƒŠƒA‰Šú‰»(ƒXƒvƒ‰ƒCƒg)
-	memset(render.spptr, 0, sizeof(DWORD*) * 128 * 512);
+	memset(render.spptr, 0, sizeof(DWORD*) * 128 * 1024);
 	memset(render.spreg, 0, sizeof(render.spreg));
 	memset(render.spuse, 0, sizeof(render.spuse));
 
@@ -1054,7 +1035,6 @@ void FASTCALL Render::Video()
 	render.mixpage = 0;
 	for (i=0; i<4; i++) {
 		render.grppen[i] = FALSE;
-		render.grpen[i] = FALSE;
 		render.grpben[i] = FALSE;
 		map[i] = -1;
 		an[i] = 512 - 1;
@@ -1275,13 +1255,13 @@ void FASTCALL Render::Video()
 	if (render.mixpage == 0 && cp->hd < 2 && vp->son && !render.texten) {
 		// ƒOƒ‰ƒtƒBƒbƒN‚È‚µAƒXƒvƒ‰ƒCƒg‚Ì‚İ(type=2)
 		render.mixptr[0] = render.bgspbuf;
-		render.mixshift[0] = 9;
+		render.mixshift[0] = 10;
 		render.mixrshift[0] = render.bgsp_rshift;
 		render.mixlshift[0] = render.bgsp_lshift;
 		render.mixx[0] = &render.zero;
 		render.mixy[0] = &render.zero;
-		render.mixandx[0] = 512 - 1;
-		render.mixandy[0] = 512 - 1;
+		render.mixandx[0] = 1024 - 1;
+		render.mixandy[0] = 1024 - 1;
 		render.mixraster[0] = render.bgsp_v;
 		render.mixtype = 2;
 		return;
@@ -1367,13 +1347,13 @@ void FASTCALL Render::Video()
 	if (render.mixpage > 0 && cp->hd < 2 && vp->son && !render.texten) {
 		// ƒOƒ‰ƒtƒBƒbƒN‚È‚µAƒXƒvƒ‰ƒCƒg‚Ì‚İ(type=2)
 		render.mixptr[0] = render.bgspbuf;
-		render.mixshift[0] = 9;
+		render.mixshift[0] = 10;
 		render.mixrshift[0] = render.bgsp_rshift;
 		render.mixlshift[0] = render.bgsp_lshift;
 		render.mixx[0] = &render.zero;
 		render.mixy[0] = &render.zero;
-		render.mixandx[0] = 512 - 1;
-		render.mixandy[0] = 512 - 1;
+		render.mixandx[0] = 1024 - 1;
+		render.mixandy[0] = 1024 - 1;
 		render.mixraster[0] = render.bgsp_v;
 		render.mixtype = 5 + render.gr;
 
@@ -1397,13 +1377,13 @@ void FASTCALL Render::Video()
 		render.mixraster[0] = 0;
 
 		render.mixptr[1] = render.bgspbuf;
-		render.mixshift[1] = 9;
+		render.mixshift[1] = 10;
 		render.mixrshift[1] = render.bgsp_rshift;
 		render.mixlshift[1] = render.bgsp_lshift;
 		render.mixx[1] = &render.zero;
 		render.mixy[1] = &render.zero;
-		render.mixandx[1] = 512 - 1;
-		render.mixandy[1] = 512 - 1;
+		render.mixandx[1] = 1024 - 1;
+		render.mixandy[1] = 1024 - 1;
 		render.mixraster[1] = render.bgsp_v;
 	} else {
 		render.mixptr[1] = render.textout;
@@ -1417,13 +1397,13 @@ void FASTCALL Render::Video()
 		render.mixraster[1] = 0;
 
 		render.mixptr[0] = render.bgspbuf;
-		render.mixshift[0] = 9;
+		render.mixshift[0] = 10;
 		render.mixrshift[0] = render.bgsp_rshift;
 		render.mixlshift[0] = render.bgsp_lshift;
 		render.mixx[0] = &render.zero;
 		render.mixy[0] = &render.zero;
-		render.mixandx[0] = 512 - 1;
-		render.mixandy[0] = 512 - 1;
+		render.mixandx[0] = 1024 - 1;
+		render.mixandy[0] = 1024 - 1;
 		render.mixraster[0] = render.bgsp_v;
 	}
 
@@ -2697,13 +2677,16 @@ void FASTCALL Render::SpriteReset()
 {
 	int i;
 	DWORD addr;
+	DWORD data[4];
 
+	// ƒXƒvƒ‰ƒCƒgƒŒƒWƒXƒ^İ’è
 	for (i=0; i<128; i++) {
 		addr = i << 3;
-		SpriteReg(addr, *(WORD*)(&render.sprmem[addr    ]));
-		SpriteReg(addr + 2, *(WORD*)(&render.sprmem[addr + 2]));
-		SpriteReg(addr + 4, *(WORD*)(&render.sprmem[addr + 4]));
-		SpriteReg(addr + 6, *(WORD*)(&render.sprmem[addr + 6]));
+		data[0] = *(WORD*)(&render.sprmem[addr    ]);
+		data[1] = *(WORD*)(&render.sprmem[addr + 2]);
+		data[2] = *(WORD*)(&render.sprmem[addr + 4]);
+		data[3] = *(WORD*)(&render.sprmem[addr + 6]);
+		SpriteReg(addr, data);
 	}
 }
 
@@ -2712,6 +2695,163 @@ void FASTCALL Render::SpriteReset()
 //	’X’v’0’C’g’R’W’X’^"ÏX
 //
 //---------------------------------------------------------------------------
+void FASTCALL Render::SpriteReg(DWORD addr, DWORD data[])
+{
+	BOOL use;
+	DWORD reg[4];
+	DWORD *next;
+	DWORD **ptr;
+	int index;
+	int i;
+	int j;
+	int offset;
+	DWORD pcgno;
+	int x;
+	int y;
+
+	ASSERT(this);
+	ASSERT(addr < 0x400);
+	ASSERT((addr & 1) == 0);
+
+	// ƒCƒ“ƒfƒNƒVƒ“ƒO‚Æƒf[ƒ^§ŒÀ
+	index = (int)(addr >> 3);
+
+	// X(0`1023)
+	data[0] &= 0x3ff;
+
+	// Y(0`1023)
+	data[1] &= 0x3ff;
+	y=data[1];
+//	y+=render.bgsp_v;
+	data[1] = y;
+
+	// V,H,PAL,PCG
+	data[2] &= 0xcfff;
+
+	// PRW(0,1,2,3)
+	data[3] &= 0x0003;
+
+	// ptrİ’è
+	ptr = &render.spptr[index << 10];
+
+	// ƒŒƒWƒXƒ^‚ÌƒoƒbƒNƒAƒbƒv
+	next = &render.spreg[index << 2];
+	reg[0] = next[0];
+	reg[1] = next[1];
+	reg[2] = next[2];
+	reg[3] = next[3];
+
+	// ƒŒƒWƒXƒ^‚Ö‘‚«‚İ
+	next[0] = data[0];
+	next[1] = data[1];
+	next[2] = data[2];
+	next[3] = data[3];
+
+	// ¡Œã—LŒø‚É‚È‚é‚©ƒ`ƒFƒbƒN
+	use = TRUE;
+	x = next[0];
+	y = next[1];
+
+	// •W€”ÍˆÍƒ`ƒFƒbƒN
+	if (x == 0) {
+		use = FALSE;
+	}
+
+	if (x >= (512 + 16)) {
+		use = FALSE;
+	}
+
+	x -= render.bgsp_h;
+	if (render.bgsp_h >= 0) {
+		// ¶‚É‚¸‚ê‚é
+		if (x <= 0) {
+			use = FALSE;
+		}
+		if (x >= (render.mixlen + 16)) {
+			use = FALSE;
+		}
+	} else {
+		// ‰E‚É‚¸‚ê‚é
+		x &= 511;
+		if (x >= (render.mixlen + 16)) {
+			use = FALSE;
+		}
+	}
+
+	y &= 0x3ff;
+
+	if (next[3] == 0) {
+		use = FALSE;
+	}
+
+	// ‚¢‚Ü‚Ü‚Å–³Œø‚ÅA‚±‚ê‚©‚ç‚à–³Œø‚È‚ç‰½‚à‚µ‚È‚¢
+	if (!render.spuse[index]) {
+		if (!use) {
+			return;
+		}
+	}
+
+	// ‚¢‚Ü‚Ü‚Å—LŒø‚È‚Ì‚ÅAˆê“x‚Æ‚ß‚é
+	if (render.spuse[index]) {
+		// –³Œøˆ—(PCG)
+		pcgno = reg[2] & 0xfff;
+		ASSERT(render.pcguse[pcgno] > 0);
+		render.pcguse[pcgno]--;
+		pcgno >>= 8;
+		ASSERT(render.pcgpal[pcgno] > 0);
+		render.pcgpal[pcgno]--;
+
+		// –³Œøˆ—(ƒ|ƒCƒ“ƒ^)
+		for (i=0; i<16; i++) {
+			j = (int)(reg[1] - 16 + i);
+			j &= 0x3ff;
+			ptr[j] = NULL;
+			render.bgspmod[j] = TRUE;
+		}
+
+		// ¡Œã–³Œø‚È‚çA‚±‚±‚ÅI—¹
+		if (!use) {
+			render.spuse[index] = FALSE;
+			return;
+		}
+	}
+
+	// “o˜^ˆ—(g—pƒtƒ‰ƒO)
+	render.spuse[index] = TRUE;
+
+	// “o˜^ˆ—(PCG)
+	pcgno = next[2] & 0xfff;
+	render.pcguse[pcgno]++;
+	offset = pcgno << 8;
+	pcgno >>= 8;
+	render.pcgpal[pcgno]++;
+
+	// PCGƒAƒhƒŒƒX‚ğŒvZAƒ|ƒCƒ“ƒ^ƒZƒbƒg
+	if (next[2] & 0x8000) {
+		// V”½“]
+		offset += 0xf0;
+		for (i=0; i<16; i++) {
+			j = (int)(next[1] - 16 + i);
+			j &= 0x3ff;
+			ptr[j] = &render.pcgbuf[offset];
+			render.bgspmod[j] = TRUE;
+			offset -= 16;
+		}
+	}
+	else {
+		// ƒm[ƒ}ƒ‹
+		for (i=0; i<16; i++) {
+			j = (int)(next[1] - 16 + i);
+			j &= 0x3ff;
+			ptr[j] = &render.pcgbuf[offset];
+			render.bgspmod[j] = TRUE;
+			offset += 16;
+		}
+	}
+}
+
+
+
 void FASTCALL Render::SpriteReg(DWORD addr, DWORD data)
 {
 	BOOL use;
@@ -3178,35 +3318,41 @@ const DWORD* FASTCALL Render::GetBGSpBuf() const
 //---------------------------------------------------------------------------
 void FASTCALL Render::BGSprite(int raster)
 {
+	int offset;
 	int i;
 	DWORD *reg;
 	DWORD **ptr;
 	DWORD *buf;
 	DWORD pcgno;
 	BYTE pri[512 + 16];
-	int source_raster;
-	const int bg_hadjust = CalcBGHAdjustPixels(compositor_mode, crtc, sprite);
-	const BOOL sprite_visible = sprite->IsDisplay();
+	int x;
 
-	if (raster >= 1024) return;
-	if (render.mixlen > 512) return;
+	// ‰¡•‚à1024‚Ü‚ÅB‚±‚ê‚à‘å‘O’ñ
+	if (render.mixlen > 1024) return;
 
-	source_raster = (int)(((raster + render.bgsp_v) >> render.bgsp_rshift) << render.bgsp_lshift);
-	source_raster &= 511;
+	// ƒIƒtƒZƒbƒg‚ğZo
+	offset = ((raster + render.bgsp_v) >> render.bgsp_rshift) << render.bgsp_lshift;
+	offset &= 1023;
 
-	if (!render.bgspmod[source_raster]) {
+	// ƒtƒ‰ƒOƒ`ƒFƒbƒNAƒIƒtA‡¬w¦
+	if (!render.bgspmod[offset]) {
 		return;
 	}
-	render.bgspmod[source_raster] = FALSE;
+	render.bgspmod[offset] = FALSE;
 	render.mix[raster] = TRUE;
 
+	// ƒCƒ“ƒ^ƒŒ[ƒX‚Ì‚Æ‚«‚Í‹ôŠïƒ‰ƒXƒ^[ƒyƒA
 	if (render.mixmode == 1) {
 		render.mix[raster ^ 1] = TRUE;
 	}
+
+	// ‚Q“x“Ç‚İ‚Ìê‡‚Åƒmƒ“ƒCƒ“ƒ^ƒŒ[ƒX‚È‚ç‘OŒãƒ‰ƒXƒ^[‘ÎÛ
 	if (render.bgsp_mixmode == 2 && render.mixmode != 1) {
 		render.mix[(raster - 1) & 1023] = TRUE;
 		render.mix[(raster + 1) & 1023] = TRUE;
 	}
+
+	// ‚Q“x“Ç‚İ‚Ìê‡‚ÅƒCƒ“ƒ^ƒŒ[ƒX‚È‚ç‘OŒã3ƒ‰ƒXƒ^[‘ÎÛ
 	if (render.bgsp_mixmode == 2 && render.mixmode == 1) {
 		render.mix[(raster - 3) & 1023] = TRUE;
 		render.mix[(raster - 2) & 1023] = TRUE;
@@ -3216,80 +3362,191 @@ void FASTCALL Render::BGSprite(int raster)
 		render.mix[(raster + 3) & 1023] = TRUE;
 	}
 
-	buf = &render.bgspbuf[source_raster << 9];
-	RendClrSprite(buf, render.paldata[0x100], render.mixlen);
-	if (!sprite_visible) {
-		RendClrSprite(buf, render.paldata[0x100] & 0x00ffffff, render.mixlen);
+	// ƒoƒbƒtƒ@ƒNƒŠƒA
+	// ‚±‚±‚ÅƒeƒLƒXƒgƒpƒŒƒbƒg0‚Å–„‚ß‚é(o‚½ƒcƒCLoading)
+	buf = &render.bgspbuf[offset << 10];
+	RendClrSprite(buf, render.paldata[0x100],
+		render.mixlen + 16 > 1024 ? 1024 : render.mixlen + 16);
+
+	if (!render.bgspflag || !render.bgspdisp) {
+		// ”ñ•\¦‚È‚çI—¹
+		return;
 	}
 
+	// ƒXƒvƒ‰ƒCƒgŠÔ—Dæ“xƒoƒbƒtƒ@‚ğƒNƒŠƒA
 	memset(pri, 0xff, sizeof(pri));
 
-	if (sprite_visible) {
-		reg = &render.spreg[127 << 2];
-		ptr = &render.spptr[127 << 9];
-		ptr += source_raster;
-		for (i=127; i>=0; i--) {
-			if (render.spuse[i] && (reg[3] == 1) && *ptr) {
-				pcgno = reg[2] & 0xfff;
-				if (!render.pcgready[pcgno]) {
-					ASSERT(render.pcguse[pcgno] > 0);
-					render.pcgready[pcgno] = TRUE;
-					RendPCGNew(pcgno, render.sprmem, render.pcgbuf, render.paldata);
+	// ˆê”ÔŒã‚ë‚É‚­‚é(PRW=1)ƒXƒvƒ‰ƒCƒg
+	reg = &render.spreg[127 << 2];
+	ptr = &render.spptr[127 << 10];
+	ptr += offset;
+	for (i=127; i>=0; i--) {
+		if (render.spuse[i]) {
+			// g—p’†
+			if (reg[3] == 1) {
+				// PRW=1
+				if (*ptr) {
+					// •\¦
+					pcgno = reg[2] & 0xfff;
+					if (!render.pcgready[pcgno]) {
+						ASSERT(render.pcguse[pcgno] > 0);
+						render.pcgready[pcgno] = TRUE;
+						RendPCGNew(pcgno, render.sprmem, render.pcgbuf, render.paldata);
+					}
+
+					// ‡¬Šî€ˆÊ’u’²®
+					x = reg[0] - render.bgsp_h;
+					if (render.bgsp_h >= 0) {
+						// ¶‚É‚¸‚ê‚é
+						if (reg[0] <= 512) {
+							RendSprite(*ptr, buf, x, reg[2] & 0x4000, i, pri);
+						} else {
+							RendSpriteP(*ptr, buf, x, reg[2] & 0x4000, i, pri, 528 - reg[0]);
+						}
+					} else {
+						// ‰E‚É‚¸‚ê‚é
+						if (x <= 512) {
+							RendSprite(*ptr, buf - render.bgsp_h,
+								reg[0], reg[2] & 0x4000, i, pri - render.bgsp_h);
+						} else if (x < 528) {
+							RendSpriteP(*ptr, buf, x, reg[2] & 0x4000, i, pri, 528 - x);
+						}
+
+						if (x > 512) {
+							x &= 511;
+							if (reg[0] <= 512) {
+								RendSprite(*ptr, buf, x, reg[2] & 0x4000, i, pri);
+							} else {
+								RendSpriteP(*ptr, buf, x, reg[2] & 0x4000, i, pri, 528 - reg[0]);
+							}
+						}
+					}
 				}
-				const DWORD sprite_x = (DWORD)(((int)reg[0] + bg_hadjust) & 0x03ff);
-				RendSprite(*ptr, buf, sprite_x, reg[2] & 0x4000, i, pri);
 			}
-			reg -= 4;
-			ptr -= 512;
 		}
+		// Ÿ‚ÌƒXƒvƒ‰ƒCƒg(SP0‚ª‚à‚Á‚Æ‚àè‘O)
+		reg -= 4;
+		ptr -= 1024;
 	}
 
+	// BG1‚ğ•\¦
 	if (render.bgdisp[1] && !render.bgsize) {
-		BG(1, source_raster, buf, TRUE);
+		BG(1, offset, buf, TRUE);
 	}
 
-	if (sprite_visible) {
-		reg = &render.spreg[127 << 2];
-		ptr = &render.spptr[127 << 9];
-		ptr += source_raster;
-		for (i=127; i>=0; i--) {
-			if (render.spuse[i] && (reg[3] == 2) && *ptr) {
-				pcgno = reg[2] & 0xfff;
-				if (!render.pcgready[pcgno]) {
-					ASSERT(render.pcguse[pcgno] > 0);
-					render.pcgready[pcgno] = TRUE;
-					RendPCGNew(pcgno, render.sprmem, render.pcgbuf, render.paldata);
+	// ’†ŠÔ‚É‚­‚é(PRW=2)ƒXƒvƒ‰ƒCƒg
+	reg = &render.spreg[127 << 2];
+	ptr = &render.spptr[127 << 10];
+	ptr += offset;
+	for (i=127; i>=0; i--) {
+		if (render.spuse[i]) {
+			// g—p’†
+			if (reg[3] == 2) {
+				// PRW=2
+				if (*ptr) {
+					// •\¦
+					pcgno = reg[2] & 0xfff;
+					if (!render.pcgready[pcgno]) {
+						ASSERT(render.pcguse[pcgno] > 0);
+						render.pcgready[pcgno] = TRUE;
+						RendPCGNew(pcgno, render.sprmem, render.pcgbuf, render.paldata);
+					}
+
+					// ‡¬Šî€ˆÊ’u’²®
+					x = reg[0] - render.bgsp_h;
+					if (render.bgsp_h >= 0) {
+						// ¶‚É‚¸‚ê‚é
+						if (reg[0] <= 512) {
+							RendSprite(*ptr, buf, x, reg[2] & 0x4000, i, pri);
+						} else {
+							RendSpriteP(*ptr, buf, x, reg[2] & 0x4000, i, pri, 528 - reg[0]);
+						}
+					} else {
+						// ‰E‚É‚¸‚ê‚é
+						if (x <= 512) {
+							RendSprite(*ptr, buf - render.bgsp_h,
+								reg[0], reg[2] & 0x4000, i, pri - render.bgsp_h);
+						} else if (x < 528) {
+							RendSpriteP(*ptr, buf, x, reg[2] & 0x4000, i, pri, 528 - x);
+						}
+
+						if (x > 512) {
+							x &= 511;
+							if (reg[0] <= 512) {
+								RendSprite(*ptr, buf, x, reg[2] & 0x4000, i, pri);
+							} else {
+								RendSpriteP(*ptr, buf, x, reg[2] & 0x4000, i, pri, 528 - reg[0]);
+							}
+						}
+					}
 				}
-				const DWORD sprite_x = (DWORD)(((int)reg[0] + bg_hadjust) & 0x03ff);
-				RendSprite(*ptr, buf, sprite_x, reg[2] & 0x4000, i, pri);
 			}
-			reg -= 4;
-			ptr -= 512;
 		}
+		// Ÿ‚ÌƒXƒvƒ‰ƒCƒg(SP0‚ª‚à‚Á‚Æ‚àè‘O)
+		reg -= 4;
+		ptr -= 1024;
 	}
 
+	// BG0‚ğ•\¦
 	if (render.bgdisp[0]) {
-		BG(0, source_raster, buf, (BOOL)(!render.bgdisp[1] || render.bgsize));
+		if (render.bgdisp[1] && !render.bgsize) {
+			BG(0, offset, buf, FALSE);
+		} else {
+			BG(0, offset, buf, TRUE);
+		}
 	}
 
-	if (sprite_visible) {
-		reg = &render.spreg[127 << 2];
-		ptr = &render.spptr[127 << 9];
-		ptr += source_raster;
-		for (i=127; i>=0; i--) {
-			if (render.spuse[i] && (reg[3] == 3) && *ptr) {
-				pcgno = reg[2] & 0xfff;
-				if (!render.pcgready[pcgno]) {
-					ASSERT(render.pcguse[pcgno] > 0);
-					render.pcgready[pcgno] = TRUE;
-					RendPCGNew(pcgno, render.sprmem, render.pcgbuf, render.paldata);
+	// è‘O‚É‚­‚é(PRW=3)ƒXƒvƒ‰ƒCƒg
+	reg = &render.spreg[127 << 2];
+	ptr = &render.spptr[127 << 10];
+	ptr += offset;
+	for (i=127; i>=0; i--) {
+		if (render.spuse[i]) {
+			// g—p’†
+			if (reg[3] == 3) {
+				// PRW=3
+				if (*ptr) {
+					// •\¦
+					pcgno = reg[2] & 0xfff;
+					if (!render.pcgready[pcgno]) {
+						ASSERT(render.pcguse[pcgno] > 0);
+						render.pcgready[pcgno] = TRUE;
+						RendPCGNew(pcgno, render.sprmem, render.pcgbuf, render.paldata);
+					}
+
+					// ‡¬Šî€ˆÊ’u’²®
+					x = reg[0] - render.bgsp_h;
+					if (render.bgsp_h >= 0) {
+						// ¶‚É‚¸‚ê‚é
+						if (reg[0] <= 512) {
+							RendSprite(*ptr, buf, x, reg[2] & 0x4000, i, pri);
+						} else {
+							RendSpriteP(*ptr, buf, x, reg[2] & 0x4000, i, pri, 528 - reg[0]);
+						}
+					} else {
+						// ‰E‚É‚¸‚ê‚é
+						if (x <= 512) {
+							RendSprite(*ptr, buf - render.bgsp_h,
+								reg[0], reg[2] & 0x4000, i, pri - render.bgsp_h);
+						} else if (x < 528) {
+							RendSpriteP(*ptr, buf, x, reg[2] & 0x4000, i, pri, 528 - x);
+						}
+
+						if (x > 512) {
+							x &= 511;
+							if (reg[0] <= 512) {
+								RendSprite(*ptr, buf, x, reg[2] & 0x4000, i, pri);
+							} else {
+								RendSpriteP(*ptr, buf, x, reg[2] & 0x4000, i, pri, 528 - reg[0]);
+							}
+						}
+					}
 				}
-				const DWORD sprite_x = (DWORD)(((int)reg[0] + bg_hadjust) & 0x03ff);
-				RendSprite(*ptr, buf, sprite_x, reg[2] & 0x4000, i, pri);
 			}
-			reg -= 4;
-			ptr -= 512;
 		}
+		// Ÿ‚ÌƒXƒvƒ‰ƒCƒg(SP0‚ª‚à‚Á‚Æ‚àè‘O)
+		reg -= 4;
+		ptr -= 1024;
 	}
 }
 
@@ -3298,86 +3555,96 @@ void FASTCALL Render::BGSprite(int raster)
 //	BG
 //
 //---------------------------------------------------------------------------
-void FASTCALL Render::BG(int page, int raster, DWORD *buf, BOOL force)
+void FASTCALL Render::BG(int page, int offset, DWORD *buf, BOOL force)
 {
 	int x;
 	int y;
 	bgdata_t *ptr;
 	int len;
 	int rest;
-	const BOOL draw_force = (BOOL)(force && original_bg0_render_enabled);
-	const int bg_hadjust = CalcBGHAdjustPixels(compositor_mode, crtc, sprite);
 
 	ASSERT((page == 0) || (page == 1));
-	ASSERT((raster >= 0) && (raster < 512));
+	ASSERT((offset >= 0) && (offset < 1024));
 	ASSERT(buf);
 
-	y = render.bgy[page] + raster;
+	// ˆÊ’u’²®•ª‚Í•\¦‚µ‚È‚¢
+	y = offset;
+
+	// yƒuƒƒbƒN‚ğŠ„‚èo‚·
+	y = render.bgy[page] + offset;
 	if (render.bgsize) {
+		// 16x16ƒ‚[ƒh
 		y &= (1024 - 1);
 		y >>= 4;
 	}
 	else {
+		// 8x8ƒ‚[ƒh
 		y &= (512 - 1);
 		y >>= 3;
 	}
 	ASSERT((y >= 0) && (y < 64));
 
+	// bgall‚ªTRUE‚È‚çA‚»‚ÌyƒuƒƒbƒN‚Å•ÏXƒf[ƒ^‚ ‚è
 	if (render.bgall[page][y]) {
 		render.bgall[page][y] = FALSE;
 		BGBlock(page, y);
 	}
 
+	// •\¦
 	ptr = render.bgptr[page];
 	if (!render.bgsize) {
-		x = (render.bgx[page] - bg_hadjust) & (512 - 1);
-		ptr += (((render.bgy[page] + raster) & (512 - 1)) << 6);
+		// 8x8‚Ì•\¦
+		x = (render.bgx[page] + render.bgsp_h) & (512 - 1);
+		ptr += (((render.bgy[page] + offset) & (512 - 1)) << 6);
 
+		// Š„‚èØ‚ê‚é‚©ƒ`ƒFƒbƒN
 		if ((x & 7) == 0) {
+			// 8x8AŠ„‚èØ‚ê‚é
 			x >>= 3;
-			if (draw_force) {
+			if (force) {
 				RendBG8F(ptr, buf, x, render.mixlen, render.pcgready,
 					render.sprmem, render.pcgbuf, render.paldata);
-			}
-			else {
+			} else {
 				RendBG8(ptr, buf, x, render.mixlen, render.pcgready,
 					render.sprmem, render.pcgbuf, render.paldata);
 			}
 			return;
 		}
 
+		// Å‰‚Ì”¼’[ƒuƒƒbƒN‚ğÀs
 		rest = 8 - (x & 7);
 		ASSERT((rest > 0) && (rest < 8));
-		if (draw_force) {
+		if (force) {
 			RendBG8FP(&ptr[(x & 0xfff8) >> 3], buf, (x & 7), rest, render.pcgready,
-				render.sprmem, render.pcgbuf, render.paldata);
-		}
-		else {
+					render.sprmem, render.pcgbuf, render.paldata);
+		} else {
 			RendBG8P(&ptr[(x & 0xfff8) >> 3], buf, (x & 7), rest, render.pcgready,
-				render.sprmem, render.pcgbuf, render.paldata);
+					render.sprmem, render.pcgbuf, render.paldata);
 		}
 
+		// —]‚è‚ğ’²‚×‚Ä8dot’PˆÊ•ª‚ğˆ—
 		len = render.mixlen - rest;
 		x += rest;
 		x &= (512 - 1);
 		ASSERT((x & 7) == 0);
-		if (draw_force) {
+
+		if (force) {
 			RendBG8F(ptr, &buf[rest], (x >> 3), (len & 0xfff8), render.pcgready,
 				render.sprmem, render.pcgbuf, render.paldata);
-		}
-		else {
+		} else {
 			RendBG8(ptr, &buf[rest], (x >> 3), (len & 0xfff8), render.pcgready,
 				render.sprmem, render.pcgbuf, render.paldata);
 		}
 
+		// ÅŒã
 		if (len & 7) {
 			x += (len & 0xfff8);
 			x &= (512 - 1);
-			if (draw_force) {
+
+			if (force) {
 				RendBG8FP(&ptr[x >> 3], &buf[rest + (len & 0xfff8)], 0, (len & 7),
 					render.pcgready, render.sprmem, render.pcgbuf, render.paldata);
-			}
-			else {
+			} else {
 				RendBG8P(&ptr[x >> 3], &buf[rest + (len & 0xfff8)], 0, (len & 7),
 					render.pcgready, render.sprmem, render.pcgbuf, render.paldata);
 			}
@@ -3385,61 +3652,64 @@ void FASTCALL Render::BG(int page, int raster, DWORD *buf, BOOL force)
 		return;
 	}
 
-	x = (render.bgx[page] - bg_hadjust) & (1024 - 1);
-	ptr += (((render.bgy[page] + raster) & (1024 - 1)) << 6);
+	// 16x16‚Ì•\¦
+	x = (render.bgx[page] + render.bgsp_h) & (1024 - 1);
+	ptr += (((render.bgy[page] + offset) & (1024 - 1)) << 6);
 
+	// Š„‚èØ‚ê‚é‚©ƒ`ƒFƒbƒN
 	if ((x & 15) == 0) {
+		// 16x16AŠ„‚èØ‚ê‚é
 		x >>= 4;
-		if (draw_force) {
+
+		if (force) {
 			RendBG16F(ptr, buf, x, render.mixlen, render.pcgready,
 				render.sprmem, render.pcgbuf, render.paldata);
-		}
-		else {
+		} else {
 			RendBG16(ptr, buf, x, render.mixlen, render.pcgready,
 				render.sprmem, render.pcgbuf, render.paldata);
 		}
 		return;
 	}
 
+	// Å‰‚Ì”¼’[ƒuƒƒbƒN‚ğÀs
 	rest = 16 - (x & 15);
 	ASSERT((rest > 0) && (rest < 16));
-	if (draw_force) {
+	if (force) {
 		RendBG16FP(&ptr[(x & 0xfff0) >> 4], buf, (x & 15), rest, render.pcgready,
-			render.sprmem, render.pcgbuf, render.paldata);
-	}
-	else {
+				render.sprmem, render.pcgbuf, render.paldata);
+	} else {
 		RendBG16P(&ptr[(x & 0xfff0) >> 4], buf, (x & 15), rest, render.pcgready,
-			render.sprmem, render.pcgbuf, render.paldata);
+				render.sprmem, render.pcgbuf, render.paldata);
 	}
 
+	// —]‚è‚ğ’²‚×‚Ä16dot’PˆÊ•ª‚ğˆ—
 	len = render.mixlen - rest;
 	x += rest;
 	x &= (1024 - 1);
 	ASSERT((x & 15) == 0);
-	if (draw_force) {
+	if (force) {
 		RendBG16F(ptr, &buf[rest], (x >> 4), (len & 0xfff0), render.pcgready,
 			render.sprmem, render.pcgbuf, render.paldata);
-	}
-	else {
+	} else {
 		RendBG16(ptr, &buf[rest], (x >> 4), (len & 0xfff0), render.pcgready,
 			render.sprmem, render.pcgbuf, render.paldata);
 	}
 
+	// ÅŒã
 	if (len & 15) {
 		x += (len & 0xfff0);
 		x &= (1024 - 1);
 		x >>= 4;
-		if (draw_force) {
+
+		if (force) {
 			RendBG16FP(&ptr[x], &buf[rest + (len & 0xfff0)], 0, (len & 15),
 				render.pcgready, render.sprmem, render.pcgbuf, render.paldata);
-		}
-		else {
+		} else {
 			RendBG16P(&ptr[x], &buf[rest + (len & 0xfff0)], 0, (len & 15),
 				render.pcgready, render.sprmem, render.pcgbuf, render.paldata);
 		}
 	}
 }
-
 
 //---------------------------------------------------------------------------
 //

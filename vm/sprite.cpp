@@ -41,7 +41,6 @@
    　 上位バイトなら下位にも同じ値が書き込まれ、
 	  下位バイトなら上位にも同じ値が書き込まれる。
 
-
 レジスタの有効ビット
 ---------------------------------------------------------------------------
   スプライトスクロールレジスタのPRW(優先度)はbit2も保持
@@ -380,69 +379,192 @@ DWORD FASTCALL Sprite::ReadWord(DWORD addr)
 //---------------------------------------------------------------------------
 void FASTCALL Sprite::WriteByte(DWORD addr, DWORD data)
 {
-	DWORD ctrl;
+	if (render && (render->GetCompositorMode() == Render::compositor_fast)) {
+			DWORD ctrl;
+
+			ASSERT(this);
+			ASSERT((addr >= memdev.first) && (addr <= memdev.last));
+			ASSERT(data < 0x100);
+
+			addr &= 0xffff;
+
+			if (sprite[addr ^ 1] == data) {
+				return;
+			}
+
+			if ((addr >= 0x800) && (addr < 0x812)) {
+				sprite[addr ^ 1] = (BYTE)data;
+				addr &= 0xfffe;
+				ctrl = *(WORD *)(&sprite[addr]);
+				Control(addr, ctrl);
+				NotifyPx68kBGWrite(addr, (WORD)ctrl);
+				return;
+			}
+
+			if ((addr >= 0x812) && (addr < 0x8000)) {
+				return;
+			}
+
+			if (!IsConnect()) {
+				cpu->BusErr(memdev.first + addr, FALSE);
+				return;
+			}
+
+			if (addr & 1) {
+				if (spr.disp) {
+					scheduler->Wait(4);
+				}
+				else {
+					scheduler->Wait(2);
+				}
+			}
+
+			if ((addr >= 0x400) && (addr < 0x800)) {
+				return;
+			}
+
+			sprite[addr ^ 1] = (BYTE)data;
+			addr &= 0xfffe;
+
+			if (addr < 0x400) {
+				ctrl = *(WORD *)(&sprite[addr]);
+				render->SpriteReg(addr, ctrl);
+				NotifyPx68kBGWrite(addr, (WORD)ctrl);
+				return;
+			}
+			if (addr >= 0x8000) {
+				render->PCGMem(addr);
+			}
+			if (addr >= 0xc000) {
+				ctrl = *(WORD *)(&sprite[addr]);
+				render->BGMem(addr, (WORD)ctrl);
+			}
+			if (addr >= 0x8000) {
+				ctrl = *(WORD *)(&sprite[addr]);
+				NotifyPx68kBGWrite(addr, (WORD)ctrl);
+			}
+		return;
+	}
+	DWORD base;
+	DWORD reg[4];
 
 	ASSERT(this);
 	ASSERT((addr >= memdev.first) && (addr <= memdev.last));
 	ASSERT(data < 0x100);
 
+	// オフセット算出
 	addr &= 0xffff;
 
-	if (sprite[addr ^ 1] == data) {
-		return;
+	// ウェイト(エトワールプリンセス)
+	if (spr.disp) {
+		scheduler->Wait(7);
+	}
+	else {
+		scheduler->Wait(3);
 	}
 
+	// 800～811はコントロールレジスタ
 	if ((addr >= 0x800) && (addr < 0x812)) {
+		// 一致チェック
+		if (sprite[addr ^ 1] == data) {
+			return;
+		}
+
+		// データ書き込み
 		sprite[addr ^ 1] = (BYTE)data;
+
+		// ワードサイズデータ生成
 		addr &= 0xfffe;
-		ctrl = *(WORD *)(&sprite[addr]);
-		Control(addr, ctrl);
-		NotifyPx68kBGWrite(addr, (WORD)ctrl);
+		data = *(WORD *)(&sprite[addr]);
+
+		// レジスタマスク
+		switch (addr & 0xff) {
+			// BGスクロールレジスタ
+			case 0x00:
+			case 0x02:
+			case 0x04:
+			case 0x06:
+				data &= 0x03ff;
+				break;
+
+			// BGコントロール(bit10有効)
+			case 0x08:
+				data &= 0x063f;
+				break;
+
+			// 水平トータル
+			case 0x0a:
+				data &= 0x00ff;
+				break;
+
+			// 水平表示位置
+			case 0x0c:
+				data &= 0x003f;
+				break;
+
+			// 垂直表示位置
+			case 0x0e:
+				data &= 0x00ff;
+				break;
+
+			// 解像度設定
+			case 0x10:
+				data &= 0x001f;
+				break;
+		}
+
+		// マスクデータ書き込み
+		*(WORD *)(&sprite[addr]) = (WORD)data;
+
+		// コントロール
+		Control(addr, data);
+		NotifyPx68kBGWrite(addr, (WORD)data);
 		return;
 	}
 
+	// 0812-7FFFはリザーブ(バスエラーの影響を受けない)
 	if ((addr >= 0x812) && (addr < 0x8000)) {
 		return;
 	}
 
+	// 接続チェック
 	if (!IsConnect()) {
 		cpu->BusErr(memdev.first + addr, FALSE);
 		return;
 	}
 
-	if (addr & 1) {
-		if (spr.disp) {
-			scheduler->Wait(4);
-		}
-		else {
-			scheduler->Wait(2);
-		}
-	}
-
+	// 0400-07FFはリザーブ(バスエラーの影響を受ける)
 	if ((addr >= 0x400) && (addr < 0x800)) {
 		return;
 	}
 
+	// 0000-03FFと8000-FFFFはバイトアクセスできない
+	// 上位、下位バイトが同じ値でワードアクセスになる。
 	sprite[addr ^ 1] = (BYTE)data;
 	addr &= 0xfffe;
 
 	if (addr < 0x400) {
-		ctrl = *(WORD *)(&sprite[addr]);
-		render->SpriteReg(addr, ctrl);
-		NotifyPx68kBGWrite(addr, (WORD)ctrl);
+		base = addr & 0xfff8;
+		reg[0] = *(WORD*)(&sprite[base    ]);
+		reg[1] = *(WORD*)(&sprite[base + 2]);
+		reg[2] = *(WORD*)(&sprite[base + 4]);
+		reg[3] = *(WORD*)(&sprite[base + 6]);
+		render->SpriteReg(base, reg);
+		NotifyPx68kBGWrite(addr, (WORD)*(WORD*)(&sprite[addr]));
 		return;
 	}
-	if (addr >= 0x8000) {
-		render->PCGMem(addr);
-	}
+
+	render->PCGMem(addr);
+
 	if (addr >= 0xc000) {
-		ctrl = *(WORD *)(&sprite[addr]);
-		render->BGMem(addr, (WORD)ctrl);
+		data = *(WORD*)(&sprite[addr]);
+		render->BGMem(addr, (WORD)data);
 	}
 	if (addr >= 0x8000) {
-		ctrl = *(WORD *)(&sprite[addr]);
-		NotifyPx68kBGWrite(addr, (WORD)ctrl);
+		data = *(WORD*)(&sprite[addr]);
+		NotifyPx68kBGWrite(addr, (WORD)data);
 	}
+
 }
 
 //---------------------------------------------------------------------------
@@ -452,59 +574,204 @@ void FASTCALL Sprite::WriteByte(DWORD addr, DWORD data)
 //---------------------------------------------------------------------------
 void FASTCALL Sprite::WriteWord(DWORD addr, DWORD data)
 {
+	if (render && (render->GetCompositorMode() == Render::compositor_fast)) {
+			ASSERT(this);
+			ASSERT((addr >= memdev.first) && (addr <= memdev.last));
+			ASSERT((addr & 1) == 0);
+			ASSERT(data < 0x10000);
+
+			addr &= 0xfffe;
+
+			if (*(WORD *)(&sprite[addr]) == data) {
+				return;
+			}
+
+			if ((addr >= 0x800) && (addr < 0x812)) {
+				*(WORD *)(&sprite[addr]) = (WORD)data;
+				Control(addr, data);
+				NotifyPx68kBGWrite(addr, (WORD)data);
+				return;
+			}
+			if ((addr >= 0x812) && (addr < 0x8000)) {
+				return;
+			}
+
+			if (!IsConnect()) {
+				cpu->BusErr(memdev.first + addr, FALSE);
+				return;
+			}
+
+			if (spr.disp) {
+				scheduler->Wait(4);
+			}
+			else {
+				scheduler->Wait(2);
+			}
+
+			if ((addr >= 0x400) && (addr < 0x800)) {
+				return;
+			}
+
+			*(WORD *)(&sprite[addr]) = (WORD)data;
+
+			if (addr < 0x400) {
+				render->SpriteReg(addr, data);
+				NotifyPx68kBGWrite(addr, (WORD)data);
+				return;
+			}
+			if (addr >= 0x8000) {
+				render->PCGMem(addr);
+			}
+			if (addr >= 0xc000) {
+				render->BGMem(addr, (WORD)data);
+			}
+			if (addr >= 0x8000) {
+				NotifyPx68kBGWrite(addr, (WORD)data);
+			}
+		return;
+	}
+	int index;
+
 	ASSERT(this);
 	ASSERT((addr >= memdev.first) && (addr <= memdev.last));
 	ASSERT((addr & 1) == 0);
 	ASSERT(data < 0x10000);
 
+	// オフセット算出
 	addr &= 0xfffe;
 
-	if (*(WORD *)(&sprite[addr]) == data) {
-		return;
+	// ウェイト(エトワールプリンセス)
+	if (spr.disp) {
+		scheduler->Wait(7);
+	}
+	else {
+		scheduler->Wait(3);
 	}
 
+	// 800～811はコントロールレジスタ
 	if ((addr >= 0x800) && (addr < 0x812)) {
+		// 一致チェック
+		if (*(WORD *)(&sprite[addr]) == data) {
+			return;
+		}
+
+		// レジスタマスク
+		switch (addr & 0xff) {
+			// BGスクロールレジスタ
+			case 0x00:
+			case 0x02:
+			case 0x04:
+			case 0x06:
+				data &= 0x03ff;
+				break;
+
+			// BGコントロール(bit10有効)
+			case 0x08:
+				data &= 0x063f;
+				break;
+
+			// 水平トータル
+			case 0x0a:
+				data &= 0x00ff;
+				break;
+
+			// 水平表示位置
+			case 0x0c:
+				data &= 0x003f;
+				break;
+
+			// 垂直表示位置
+			case 0x0e:
+				data &= 0x00ff;
+				break;
+
+			// 解像度設定
+			case 0x10:
+				data &= 0x001f;
+				break;
+		}
+
+		// マスクデータ書き込み
 		*(WORD *)(&sprite[addr]) = (WORD)data;
+
+		// コントロール
 		Control(addr, data);
 		NotifyPx68kBGWrite(addr, (WORD)data);
 		return;
 	}
+
+	// 0812-7FFFはリザーブ(バスエラーの影響を受けない)
 	if ((addr >= 0x812) && (addr < 0x8000)) {
 		return;
 	}
 
+	// 接続チェック
 	if (!IsConnect()) {
 		cpu->BusErr(memdev.first + addr, FALSE);
 		return;
 	}
 
-	if (spr.disp) {
-		scheduler->Wait(4);
-	}
-	else {
-		scheduler->Wait(2);
-	}
-
+	// 0400-07FFはリザーブ(バスエラーの影響を受ける)
 	if ((addr >= 0x400) && (addr < 0x800)) {
 		return;
 	}
 
-	*(WORD *)(&sprite[addr]) = (WORD)data;
+	// 一致チェック
+	if (*(WORD *)(&sprite[addr]) == data) {
+		return;
+	}
 
+	// スプライトスクロールレジスタ
 	if (addr < 0x400) {
-		render->SpriteReg(addr, data);
+		// レジスタマスク
+		switch (addr & 0x07) {
+			// XPOS,YPOS
+			case 0x00:
+			case 0x02:
+				data &= 0x03ff;
+				break;
+
+			// VR|HR|COLOR|SPAT#
+			case 0x04:
+				data &= 0xcfff;
+				break;
+
+			// PRW(bit2有効)
+			case 0x06:
+				data &= 0x0007;
+				break;
+		}
+
+		// マスクデータ書き込み
+		*(WORD *)(&sprite[addr]) = (WORD)data;
+
+		// スプライトスクロールレジスタは書き換え後
+		// 3ラスター後にしか反映しない
+		index = (int)(addr >> 3);
+		if (sphsync[index]==0) {
+			sphsync[index]=3;
+
+			// BG HSYNC要求
+			bghsync |= 0x10;
+		}
 		NotifyPx68kBGWrite(addr, (WORD)data);
 		return;
 	}
+
+	// 書き込み
+	*(WORD *)(&sprite[addr]) = (WORD)data;
+
 	if (addr >= 0x8000) {
 		render->PCGMem(addr);
 	}
+
 	if (addr >= 0xc000) {
 		render->BGMem(addr, (WORD)data);
 	}
 	if (addr >= 0x8000) {
 		NotifyPx68kBGWrite(addr, (WORD)data);
 	}
+
 }
 
 //---------------------------------------------------------------------------
@@ -531,6 +798,153 @@ DWORD FASTCALL Sprite::ReadOnly(DWORD addr) const
 //---------------------------------------------------------------------------
 void FASTCALL Sprite::Control(DWORD addr, DWORD data)
 {
+	if (render && (render->GetCompositorMode() == Render::compositor_fast)) {
+			ASSERT((addr >= 0x800) && (addr < 0x812));
+			ASSERT((addr & 1) == 0);
+			ASSERT(data < 0x10000);
+
+			// アドレスを整理
+			addr -= 0x800;
+			addr >>= 1;
+
+			switch (addr) {
+				// BG0スクロールX
+				case 0:
+					spr.bg_scrlx[0] = data & 0x3ff;
+					render->BGScrl(0, spr.bg_scrlx[0], spr.bg_scrly[0]);
+					break;
+
+				// BG0スクロールY
+				case 1:
+					spr.bg_scrly[0] = data & 0x3ff;
+					render->BGScrl(0, spr.bg_scrlx[0], spr.bg_scrly[0]);
+					break;
+
+				// BG1スクロールX
+				case 2:
+					spr.bg_scrlx[1] = data & 0x3ff;
+					render->BGScrl(1, spr.bg_scrlx[1], spr.bg_scrly[1]);
+					break;
+
+				// BG1スクロールY
+				case 3:
+					spr.bg_scrly[1] = data & 0x3ff;
+					render->BGScrl(1, spr.bg_scrlx[1], spr.bg_scrly[1]);
+					break;
+
+				// BGコントロール
+				case 4:
+		#if defined(SPRITE_LOG)
+					LOG1(Log::Normal, "BGコントロール $%04X", data);
+		#endif	// SPRITE_LOG
+					// bit17 : DISP
+					if (data & 0x0200) {
+						if (!spr.disp) {
+							spr.disp = TRUE;
+							render->BGCtrl(5, TRUE);
+						}
+					}
+					else {
+						if (spr.disp) {
+							spr.disp = FALSE;
+							render->BGCtrl(5, FALSE);
+						}
+					}
+
+					// BG1
+					spr.bg_area[1] = (data >> 4) & 0x03;
+					if (spr.bg_area[1] & 2) {
+						LOG1(Log::Warning, "BG1データエリア未定義 $%02X", spr.bg_area[1]);
+					}
+					if (spr.bg_area[1] & 1) {
+						render->BGCtrl(3, TRUE);
+					}
+					else {
+						render->BGCtrl(3, FALSE);
+					}
+					if (data & 0x08) {
+						spr.bg_on[1] = TRUE;
+					}
+					else {
+						spr.bg_on[1] = FALSE;
+					}
+					render->BGCtrl(1, spr.bg_on[1]);
+
+					// BG0
+					spr.bg_area[0] = (data >> 1) & 0x03;
+					if (spr.bg_area[0] & 2) {
+						LOG1(Log::Warning, "BG0データエリア未定義 $%02X", spr.bg_area[0]);
+					}
+					if (spr.bg_area[0] & 1) {
+						render->BGCtrl(2, TRUE);
+					}
+					else {
+						render->BGCtrl(2, FALSE);
+					}
+					if (data & 0x01) {
+						spr.bg_on[0] = TRUE;
+					}
+					else {
+						spr.bg_on[0] = FALSE;
+					}
+					render->BGCtrl(0, spr.bg_on[0]);
+					break;
+
+				// 水平トータル
+				case 5:
+					spr.h_total = data & 0xff;
+					break;
+
+				// 水平表示
+				case 6:
+					spr.h_disp = data & 0x3f;
+					break;
+
+				// 垂直表示
+				case 7:
+					spr.v_disp = data & 0xff;
+					break;
+
+				// 画面モード
+				case 8:
+					spr.h_res = data & 0x03;
+					spr.v_res = (data >> 2) & 0x03;
+
+					// 15kHz
+					if (data & 0x10) {
+						spr.lowres = FALSE;
+					}
+					else {
+						spr.lowres = TRUE;
+					}
+
+					// BGサイズ
+					if (spr.h_res == 0) {
+						// 8x8
+						spr.bg_size = FALSE;
+					}
+					else {
+						// 16x16
+						spr.bg_size = TRUE;
+					}
+					render->BGCtrl(4, spr.bg_size);
+					if (spr.h_res & 2) {
+						LOG1(Log::Warning, "BG/スプライト H-Res未定義 %d", spr.h_res);
+					}
+					break;
+
+				// その他
+				default:
+					ASSERT(FALSE);
+					break;
+			}
+
+			// 表示位置調整のためレンダラへ通知
+			if (addr > 4) {
+				render->SetCRTC();
+			}
+		return;
+	}
 	ASSERT((addr >= 0x800) && (addr < 0x812));
 	ASSERT((addr & 1) == 0);
 	ASSERT(data < 0x10000);
@@ -543,25 +957,25 @@ void FASTCALL Sprite::Control(DWORD addr, DWORD data)
 		// BG0スクロールX
 		case 0:
 			spr.bg_scrlx[0] = data & 0x3ff;
-			render->BGScrl(0, spr.bg_scrlx[0], spr.bg_scrly[0]);
+			bghsync |= 0x01;
 			break;
 
 		// BG0スクロールY
 		case 1:
 			spr.bg_scrly[0] = data & 0x3ff;
-			render->BGScrl(0, spr.bg_scrlx[0], spr.bg_scrly[0]);
+			bghsync |= 0x02;
 			break;
 
 		// BG1スクロールX
 		case 2:
 			spr.bg_scrlx[1] = data & 0x3ff;
-			render->BGScrl(1, spr.bg_scrlx[1], spr.bg_scrly[1]);
+			bghsync |= 0x04;
 			break;
 
 		// BG1スクロールY
 		case 3:
 			spr.bg_scrly[1] = data & 0x3ff;
-			render->BGScrl(1, spr.bg_scrlx[1], spr.bg_scrly[1]);
+			bghsync |= 0x08;
 			break;
 
 		// BGコントロール
@@ -675,6 +1089,7 @@ void FASTCALL Sprite::Control(DWORD addr, DWORD data)
 	if (addr > 4) {
 		render->SetCRTC();
 	}
+
 }
 
 //---------------------------------------------------------------------------
@@ -698,6 +1113,7 @@ void FASTCALL Sprite::NotifyRender()
 	int i;
 	DWORD addr;
 	DWORD data;
+	DWORD reg[4];
 
 	// レジスタ
 	render->BGCtrl(4, spr.bg_size);
@@ -726,8 +1142,13 @@ void FASTCALL Sprite::NotifyRender()
 	// メモリ:偶数アドレスのみ
 	for (addr=0; addr<0x10000; addr+=2) {
 		if (addr < 0x400) {
-			data = *(WORD*)(&sprite[addr]);
-			render->SpriteReg(addr, data);
+			if ((addr & 7)==0) {
+				reg[0] = *(WORD*)(&sprite[addr  ]);
+				reg[1] = *(WORD*)(&sprite[addr+2]);
+				reg[2] = *(WORD*)(&sprite[addr+4]);
+				reg[3] = *(WORD*)(&sprite[addr+6]);
+				render->SpriteReg(addr, reg);
+			}
 			continue;
 		}
 		if (addr < 0x8000) {
@@ -788,5 +1209,79 @@ const BYTE* FASTCALL Sprite::GetPCG() const
 //---------------------------------------------------------------------------
 void FASTCALL Sprite::HSync()
 {
+	if (render && (render->GetCompositorMode() == Render::compositor_fast)) {
+		ASSERT(this);
+		return;
+	}
+	BOOL flag;
+	int i;
+	DWORD addr;
+	DWORD reg[4];
+
 	ASSERT(this);
+
+	// HSyncでBGの更新が必要か
+	if (bghsync == 0) {
+		return;
+	}
+
+	if (bghsync & 0x01) {
+		// BG0スクロールX
+		render->BGScrl(0, spr.bg_scrlx[0], spr.bg_scrly[0]);
+		bghsync &= ~0x01;
+	}
+
+	if (bghsync & 0x02) {
+		// BG0スクロールY
+		render->BGScrl(0, spr.bg_scrlx[0], spr.bg_scrly[0]);
+		bghsync &= ~0x02;
+	}
+
+	if (bghsync & 0x04) {
+		// BG1スクロールX
+		render->BGScrl(1, spr.bg_scrlx[1], spr.bg_scrly[1]);
+		bghsync &= ~0x04;
+	}
+
+	if (bghsync & 0x08) {
+		// BG1スクロールY
+		render->BGScrl(1, spr.bg_scrlx[1], spr.bg_scrly[1]);
+		bghsync &= ~0x08;
+	}
+
+		// スプライト更新対象検索
+	if (bghsync & 0x10) {
+		// 次回チェックは無し
+		flag = FALSE;
+
+		for (i=0; i<128; i++) {
+			// 更新対象か
+			if (sphsync[i] == 0) {
+				continue;
+			}
+
+			// カウントダウン
+			sphsync[i]--;
+
+			// 2ラスター目
+			if (sphsync[i] == 0) {
+				addr = i << 3;
+				reg[0] = *(WORD*)(&sprite[addr  ]);
+				reg[1] = *(WORD*)(&sprite[addr+2]);
+				reg[2] = *(WORD*)(&sprite[addr+4]);
+				reg[3] = *(WORD*)(&sprite[addr+6]);
+				render->SpriteReg(addr, reg);
+				continue;
+			}
+
+			// 次回チェックはやっぱり必要
+			flag = TRUE;
+		}
+
+		// 次回必要なければフラグオフ
+		if (!flag) {
+			bghsync &= ~0x10;
+		}
+	}
+
 }
