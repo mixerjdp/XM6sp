@@ -318,11 +318,6 @@ void FASTCALL VC::WriteByte(DWORD addr, DWORD data)
 		// ウェイト
 		scheduler->Wait(2);
 
-		// テキストパレットはバイトアクセスできない(神戸恋愛物語) けろぴーから
-		if (addr >= 0x200) {
-			return;
-		}
-
 		// パレットエリア
 		addr ^= 1;
 
