@@ -38,6 +38,10 @@ public:
 //===========================================================================
 //#define CRTC_LOG
 
+namespace {
+BOOL g_alt_raster_timing = TRUE;
+}
+
 //---------------------------------------------------------------------------
 //
 /// コンストラクタ
@@ -354,6 +358,7 @@ void FASTCALL CRTC::ApplyCfg(const Config *config)
 {
 	ASSERT(this);
 	ASSERT(config);
+	g_alt_raster_timing = config->alt_raster ? TRUE : FALSE;
 	LOG0(Log::Normal, "設定適用");
 
 	// 水平表示期間スキャンモード
@@ -504,7 +509,9 @@ void FASTCALL CRTC::WriteByte(DWORD addr, DWORD data)
 #if defined(CRTC_LOG)
 			LOG2(Log::Normal, "ラスタ割り込み 設定 int=%d rast=%d", crtc.raster_int, crtc.raster_count);
 #endif
-			CheckRaster();
+			if (g_alt_raster_timing) {
+				CheckRaster();
+			}
 			return;
 		}
 
@@ -731,11 +738,10 @@ void FASTCALL CRTC::HSync()
 	// スキャンライン更新
 	crtc.v_scan++;
 
-	// ラスタカウント処理
-	Raster();
-
-	// ラスタ割り込み要求
-	CheckRaster();
+	if (g_alt_raster_timing) {
+		Raster();
+		CheckRaster();
+	}
 
 	// V-SYNCカウント
 	crtc.v_synccnt--;
@@ -835,6 +841,11 @@ void FASTCALL CRTC::HDispRS()
 		// GPIP設定
 		mfp->SetGPIP(7, 0);
 
+		if (!g_alt_raster_timing) {
+			CheckRaster();
+			crtc.raster_count++;
+		}
+
 		// ラスタコピー許可
 		crtc.raster_exec = TRUE;
 
@@ -916,6 +927,11 @@ void FASTCALL CRTC::HDispBS()
 
 		// GPIP設定
 		mfp->SetGPIP(7, 0);
+
+		if (!g_alt_raster_timing) {
+			CheckRaster();
+			crtc.raster_count++;
+		}
 
 		// ラスタコピー許可
 		crtc.raster_exec = TRUE;
@@ -1033,6 +1049,9 @@ void FASTCALL CRTC::VSync()
 
 	// フラグ設定
 	crtc.v_disp = FALSE;
+	if (!g_alt_raster_timing) {
+		crtc.raster_count = 0;
+	}
 
 	// インタレースモード偶数フラグ反転
 	crtc.v_scaneven = !crtc.v_scaneven;

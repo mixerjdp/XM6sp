@@ -1797,7 +1797,7 @@ static void apply_default_runtime_config(XM6Context *ctx)
 	config->mouse_port = 0;
 	config->mouse_swap = FALSE;
 	config->mouse_mid = TRUE;
-	config->alt_raster = FALSE;
+	config->alt_raster = TRUE;
 
 	config->joy_type[0] = 1;
 	config->joy_type[1] = 0;
