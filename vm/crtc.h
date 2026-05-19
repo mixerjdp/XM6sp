@@ -2,7 +2,7 @@
 //
 //	X68000 EMULATOR "XM6"
 //
-//	Copyright (C) 2001-2003 ＰＩ．(ytanaka@ipc-tokai.or.jp)
+//	Copyright (C) 2001-2003 P.I. (ytanaka@ipc-tokai.or.jp)
 //	Copyright (C) 2010-2014 GIMONS
 //	[ CRTC(VICON) ]
 //
@@ -15,7 +15,7 @@
 #include "event.h"
 #include "px68k_crtc_port.h"
 
-/// 画面の描画遅延をなくす
+/// Eliminate display rendering latency
 /*
 VMの垂直帰線期間開始に合わせて描画を行うことにより、画面表示の遅延を
 減らす。また、15kHzモード時にCPUパワーが十分にあるにもかかわらずフレー
@@ -31,167 +31,167 @@ VMの垂直帰線期間開始に合わせて描画を行うことにより、画面表示の遅延を
 class CRTC : public MemDevice
 {
 public:
-	// 内部データ定義
+	// Internal data definition
 	typedef struct {
-		BYTE reg[24 * 2];				// CRTCレジスタ
-		BOOL hrl;						// HRL(システムポート)
-		BOOL lowres;					// 15kHzモード
-		BOOL textres;					// 768×512モード
-		BOOL changed;					// 解像度変更フラグ
+		BYTE reg[24 * 2];				// CRTC registers
+		BOOL hrl;						// HRL (system port)
+		BOOL lowres;					// 15 kHz mode
+		BOOL textres;					// 768x512 mode
+		BOOL changed;					// Resolution change flag
 
-		int h_sync;						// 水平同期期間
-		int h_pulse;					// 水平同期パルス幅
-		int h_back;						// 水平バックポーチ
-		int h_front;					// 水平フロントポーチ
-		int h_dots;						// 水平ドット数
-		int h_mul;						// 水平倍率
-		int hd;							// 256,512,768,未定義
+		int h_sync;						// Horizontal sync period
+		int h_pulse;					// Horizontal sync pulse width
+		int h_back;						// Horizontal back porch
+		int h_front;					// Horizontal front porch
+		int h_dots;						// Horizontal dot count
+		int h_mul;						// Horizontal scale factor
+		int hd;							// 256, 512, 768, undefined
 
-		int v_sync;						// 垂直同期期間(H単位)
-		int v_pulse;					// 垂直同期パルス幅(H単位)
-		int v_back;						// 垂直バックポーチ(H単位)
-		int v_front;					// 垂直フロントポーチ(H単位)
-		int v_dots;						// 垂直ドット数
-		int v_mul;						// 垂直倍率(0:interlace)
-		int vd;							// 256,512,未定義,未定義
+		int v_sync;						// Vertical sync period (H units)
+		int v_pulse;					// Vertical sync pulse width (H units)
+		int v_back;						// Vertical back porch (H units)
+		int v_front;					// Vertical front porch (H units)
+		int v_dots;						// Vertical dot count
+		int v_mul;						// Vertical scale factor (0: interlace)
+		int vd;							// 256, 512, undefined, undefined
 
-		DWORD ns;						// nsカウンタ
-		DWORD hus;						// husカウンタ
-		DWORD v_synccnt;				// V-SYNCカウンタ
-		DWORD v_blankcnt;				// V-BLANKカウンタ
-		int h_disp;						// 水平表示フラグ
-		BOOL v_disp;					// V-DISPフラグ
-		BOOL v_blank;					// V-BLANKフラグ
-		DWORD v_count;					// V-DISPカウンタ
-		int v_scan;						// スキャンライン
+		DWORD ns;						// ns counter
+		DWORD hus;						// hus counter
+		DWORD v_synccnt;				// V-SYNC counter
+		DWORD v_blankcnt;				// V-BLANK counter
+		int h_disp;						// Horizontal display flag
+		BOOL v_disp;					// V-DISP flag
+		BOOL v_blank;					// V-BLANK flag
+		DWORD v_count;					// V-DISP counter
+		int v_scan;						// Scanline
 
-		// 以下TypeG拡張分
-		BOOL disp_vsync;				// ホスト側のVSYNCと同期
-		int h_refresh;					// 調整後の水平同期期間
-		BOOL h_blockscan;				// 水平表示期間スキャンモード
-		int h_blocknum;					// 水平表示期間スキャンブロック数
-		int h_blockpos;					// 水平表示期間スキャンブロック位置
-		BOOL v_scaneven;				// インタレースの偶数フラグ
+		// TypeG extensions
+		BOOL disp_vsync;				// Sync with the host-side VSYNC
+		int h_refresh;					// Adjusted horizontal sync period
+		BOOL h_blockscan;				// Horizontal display-period scan mode
+		int h_blocknum;					// Number of display-period scan blocks
+		int h_blockpos;					// Display-period scan block position
+		BOOL v_scaneven;				// Interlace even-field flag
 
-		BOOL tmem;						// テキストVRAM非表示
-		BOOL gmem;						// グラフィックVRAM非表示
-		DWORD siz;						// グラフィックVRAM1024×1024モード
-		DWORD col;						// グラフィックVRAM色モード
+		BOOL tmem;						// Text VRAM hidden
+		BOOL gmem;						// Graphics VRAM hidden
+		DWORD siz;						// Graphics VRAM 1024x1024 mode
+		DWORD col;						// Graphics VRAM color mode
 
-		DWORD text_scrlx;				// テキストスクロールX
-		DWORD text_scrly;				// テキストスクロールY
-		DWORD grp_scrlx[4];				// グラフィックスクロールX
-		DWORD grp_scrly[4];				// グラフィックスクロールY
+		DWORD text_scrlx;				// Text scroll X
+		DWORD text_scrly;				// Text scroll Y
+		DWORD grp_scrlx[4];				// Graphics scroll X
+		DWORD grp_scrly[4];				// Graphics scroll Y
 
-		int raster_count;				// ラスタカウンタ
-		int raster_int;					// ラスタ割り込み位置
-		BOOL raster_copy;				// ラスタコピーフラグ
-		BOOL raster_exec;				// ラスタコピー実行フラグ
-		DWORD fast_clr;					// グラフィック高速クリア
+		int raster_count;				// Raster counter
+		int raster_int;					// Raster interrupt position
+		BOOL raster_copy;				// Raster copy flag
+		BOOL raster_exec;				// Raster copy execution flag
+		DWORD fast_clr;					// Graphics fast clear
 	} crtc_t;
 
 public:
-	// 基本ファンクション
+	// Core functions
 	explicit CRTC(VM* p);
-										///< コンストラクタ
+										///< Constructor
 	BOOL FASTCALL Init();
-										// 初期化
+										// Initialize
 	void FASTCALL Cleanup();
-										// クリーンアップ
+										// Cleanup
 	void FASTCALL Reset();
-										// リセット
+										// Reset
 	BOOL FASTCALL Save(Fileio *fio, int ver);
-										// セーブ
+										// Save
 	BOOL FASTCALL Load(Fileio *fio, int ver);
-										// ロード
+										// Load
 	void FASTCALL ApplyCfg(const Config *config);
-										// 設定適用
+										// Apply settings
 
-	// メモリデバイス
+	// Memory device
 	DWORD FASTCALL ReadByte(DWORD addr);
-										// バイト読み込み
+										// Byte read
 	void FASTCALL WriteByte(DWORD addr, DWORD data);
-										// バイト書き込み
+										// Byte write
 	DWORD FASTCALL ReadOnly(DWORD addr) const;
-										// 読み込みのみ
+										// Read-only
 
-	// 外部API
+	// External API
 	void FASTCALL GetCRTC(crtc_t *buffer) const;
-										// 内部データ取得
+										// Get internal data
 	BOOL FASTCALL Callback(Event *ev);
-										// イベントコールバック
+										// Event callback
 	void FASTCALL SetHRL(BOOL h);
-										// HRL設定
+										// Set HRL
 	BOOL FASTCALL GetHRL() const;
-										// HRL取得
+										// Get HRL
 	void FASTCALL GetHVHz(DWORD *h, DWORD *v) const;
-										// 表示周波数取得
+										// Get display frequencies
 	DWORD FASTCALL GetDispCount() const	{ return crtc.v_count; }
-										// 表示カウンタ取得
+										// Get display counter
 	const crtc_t* FASTCALL GetWorkAddr() const { return &crtc; }
 	const Px68kCrtcStateView* FASTCALL GetPx68kStateView() const;
-										// ワークアドレス取得
+										// Get work address
 	int FASTCALL Get8DotClock() const;
-										// 8ドットクロックを得る
+										// Get the 8-dot clock
 #if XM6_RENDER_SYNC == 1
 	void FASTCALL SetScheduler(class CScheduler* pScheduler) { m_pScheduler = pScheduler; }
-										///< スケジューラ接続
+										///< Attach scheduler
 #endif	// XM6_RENDER_SYNC == 1
 
 private:
 	void FASTCALL ReCalc();
-										// 再計算
+										// Recalculate
 	void FASTCALL HSync();
-										// H-SYNC開始
+										// H-SYNC start
 	void FASTCALL HDispRS();
-										// H-DISP開始(ラスタースキャン)
+										// H-DISP start (raster scan)
 	void FASTCALL HDispBS();
-										// H-DISP開始(ブロックスキャン)
+										// H-DISP start (block scan)
 	void FASTCALL VSync();
-										// V-SYNC開始
+										// V-SYNC start
 	void FASTCALL VBlank();
-										// V-BLANK開始
+										// V-BLANK start
 	int FASTCALL Ns2Hus(int ns)			{ return ns / 500; }
-										// ns→0.5us換算
+										// Convert ns to 0.5 us
 	int FASTCALL Hus2Ns(int hus)		{ return hus * 500; }
-										// 0.5us→ns換算
+										// Convert 0.5 us to ns
 	void FASTCALL Raster();
-										// ラスタカウント処理
+										// Raster counter processing
 	void FASTCALL CheckRaster();
-										// ラスタ割り込みチェック
+										// Raster interrupt check
 	void FASTCALL TextVRAM();
 	void FASTCALL SyncPx68kState() const;
-										// テキストVRAM効果
+										// Text VRAM effects
 	static const int DotClockTable[16];
-										// 8ドットクロックテーブル
+										// 8-dot clock table
 	static const BYTE ResetTable[26];
-										// RESETレジスタテーブル
+										// Reset register table
 	crtc_t crtc;
-										// CRTC内部データ
+										// Internal CRTC data
 	Event event;
-										// イベント
+										// Event
 	TVRAM *tvram;
-										// テキストVRAM
+										// Text VRAM
 	GVRAM *gvram;
-										// グラフィックVRAM
+										// Graphics VRAM
 	Sprite *sprite;
-										// スプライトコントローラ
+										// Sprite controller
 	MFP *mfp;
 										// MFP
 	Render *render;
-										// レンダラ
+										// Renderer
 	Printer *printer;
-										// プリンタ
+										// Printer
 	VC *vc;
 										// VC
 #if XM6_RENDER_SYNC == 1
 	class CScheduler* m_pScheduler;
-										///< スケジューラ
+										///< Scheduler
 #endif	// XM6_RENDER_SYNC == 1
 	BOOL hsync;
 										// HSYNC
 	mutable Px68kCrtcStateView px68k_state_view;
-										// PX68k CRTC state view要求
+										// PX68k CRTC state view request
 };
 
 #endif	// crtc_h

@@ -2,7 +2,7 @@
 //
 //	X68000 EMULATOR "XM6"
 //
-//	Copyright (C) 2001-2005 ‚o‚hD(ytanaka@ipc-tokai.or.jp)
+//	Copyright (C) 2001-2005 P.I. (ytanaka@ipc-tokai.or.jp)
 //	Copyright (C) 2010-2014 GIMONS
 //	[ CRTC(VICON) ]
 //
@@ -44,20 +44,20 @@ BOOL g_alt_raster_timing = TRUE;
 
 //---------------------------------------------------------------------------
 //
-/// ƒRƒ“ƒXƒgƒ‰ƒNƒ^
+/// Constructor
 //
 //---------------------------------------------------------------------------
 CRTC::CRTC(VM* p) : MemDevice(p)
 {
-	// ƒfƒoƒCƒXID‚ğ‰Šú‰»
+	// Initialize the device ID
 	dev.id = MAKEID('C', 'R', 'T', 'C');
 	dev.desc = "CRTC (VICON)";
 
-	// ŠJnƒAƒhƒŒƒXAI—¹ƒAƒhƒŒƒX
+	// Start and end addresses
 	memdev.first = 0xe80000;
 	memdev.last = 0xe81fff;
 
-	// ‚»‚Ì‘¼ƒ[ƒN
+	// Other working state
 	tvram = NULL;
 	gvram = NULL;
 	sprite = NULL;
@@ -75,59 +75,59 @@ CRTC::CRTC(VM* p) : MemDevice(p)
 
 //---------------------------------------------------------------------------
 //
-//	‰Šú‰»
+//	Initialize
 //
 //---------------------------------------------------------------------------
 BOOL FASTCALL CRTC::Init()
 {
 	ASSERT(this);
 
-	// Šî–{ƒNƒ‰ƒX
+	// Base class
 	if (!MemDevice::Init()) {
 		return FALSE;
 	}
 
-	// ƒeƒLƒXƒgVRAM‚ğæ“¾
+	// Acquire text VRAM
 	tvram = (TVRAM*)vm->SearchDevice(MAKEID('T', 'V', 'R', 'M'));
 	ASSERT(tvram);
 
-	// ƒOƒ‰ƒtƒBƒbƒNVRAM‚ğæ“¾
+	// Acquire graphics VRAM
 	gvram = (GVRAM*)vm->SearchDevice(MAKEID('G', 'V', 'R', 'M'));
 	ASSERT(gvram);
 
-	// ƒXƒvƒ‰ƒCƒgƒRƒ“ƒgƒ[ƒ‰‚ğæ“¾
+	// Acquire the sprite controller
 	sprite = (Sprite*)vm->SearchDevice(MAKEID('S', 'P', 'R', ' '));
 	ASSERT(sprite);
 
-	// MFP‚ğæ“¾
+	// Acquire MFP
 	mfp = (MFP*)vm->SearchDevice(MAKEID('M', 'F', 'P', ' '));
 	ASSERT(mfp);
 
-	// ƒŒƒ“ƒ_ƒ‰‚ğæ“¾
+	// Acquire the renderer
 	render = (Render*)vm->SearchDevice(MAKEID('R', 'E', 'N', 'D'));
 	ASSERT(render);
 
-	// ƒvƒŠƒ“ƒ^‚ğæ“¾
+	// Acquire the printer
 	printer = (Printer*)vm->SearchDevice(MAKEID('P', 'R', 'N', ' '));
 	ASSERT(printer);
 
-	// VCæ“¾
+	// Acquire VC
 	vc = (VC*)vm->SearchDevice(MAKEID('V', 'C', ' ', ' '));
 	ASSERT(vc);
 
-	// ƒCƒxƒ“ƒg‰Šú‰»
+	// Initialize the event
 	event.SetDevice(this);
 	event.SetDesc("H-Sync");
 	// event.SetTime(0);
 	scheduler->AddEventDirect(&event);
 
-	// ƒuƒƒbƒNƒXƒLƒƒƒ“‰Šú‰»
+	// Initialize block scan mode
 	crtc.h_blockscan = FALSE;
 
-	// PC‚ÌVSYNC‚Æ“¯Šú
+	// Sync with the host VSYNC
 	crtc.disp_vsync = FALSE;
 
-	// HSync—v‹
+	// HSync request
 	hsync = TRUE;
 
 	return TRUE;
@@ -135,20 +135,20 @@ BOOL FASTCALL CRTC::Init()
 
 //---------------------------------------------------------------------------
 //
-//	ƒNƒŠ[ƒ“ƒAƒbƒv
+//	Cleanup
 //
 //---------------------------------------------------------------------------
 void FASTCALL CRTC::Cleanup()
 {
 	ASSERT(this);
 
-	// Šî–{ƒNƒ‰ƒX‚Ö
+	// Base class cleanup
 	MemDevice::Cleanup();
 }
 
 //---------------------------------------------------------------------------
 //
-//	ƒŠƒZƒbƒg
+//	Reset
 //
 //---------------------------------------------------------------------------
 void FASTCALL CRTC::Reset()
@@ -158,7 +158,7 @@ void FASTCALL CRTC::Reset()
 	ASSERT(this);
 	LOG0(Log::Normal, "ƒŠƒZƒbƒg");
 
-	// ƒŒƒWƒXƒ^‚ğƒNƒŠƒA
+	// Clear the registers
 	memset(crtc.reg, 0, sizeof(crtc.reg));
 	for (i=0; i<18; i++) {
 		crtc.reg[i] = ResetTable[i];
@@ -167,20 +167,20 @@ void FASTCALL CRTC::Reset()
 		crtc.reg[i + 0x28] = ResetTable[i + 18];
 	}
 
-	// ‰ğ‘œ“x
+	// Resolution
 	crtc.hrl = FALSE;
 	crtc.lowres = FALSE;
 	crtc.textres = TRUE;
 	crtc.changed = TRUE;
 
-	// “Áê‹@”
+	// Special state
 	crtc.raster_count = 0;
 	crtc.raster_int = 0;
 	crtc.raster_copy = FALSE;
 	crtc.raster_exec = FALSE;
 	crtc.fast_clr = 0;
 
-	// …•½
+	// Horizontal
 	crtc.h_sync = 31745;
 	crtc.h_pulse = 3450;
 	crtc.h_back = 4140;
@@ -189,7 +189,7 @@ void FASTCALL CRTC::Reset()
 	crtc.h_mul = 1;
 	crtc.hd = 2;
 
-	// ‚’¼
+	// Vertical
 	crtc.v_sync = 568;
 	crtc.v_pulse = 6;
 	crtc.v_back = 35;
@@ -198,7 +198,7 @@ void FASTCALL CRTC::Reset()
 	crtc.v_mul = 1;
 	crtc.vd = 1;
 
-	// ƒCƒxƒ“ƒg
+	// Event state
 	crtc.ns = 0;
 	crtc.hus = 0;
 	crtc.v_synccnt = 1;
@@ -209,17 +209,17 @@ void FASTCALL CRTC::Reset()
 	crtc.v_count = 0;
 	crtc.v_scan = 0;
 
-	// …•½•\¦ƒXƒLƒƒƒ“ŠÖ˜A
+	// Horizontal display scan state
 	crtc.h_blocknum = 0;
 	crtc.h_blockpos = 0;
 
-	// ƒƒ‚ƒŠƒ‚[ƒh
+	// Memory mode
 	crtc.tmem = FALSE;
 	crtc.gmem = TRUE;
 	crtc.siz = 0;
 	crtc.col = 3;
 
-	// ƒXƒNƒ[ƒ‹
+	// Scroll
 	crtc.text_scrlx = 0;
 	crtc.text_scrly = 0;
 	for (i=0; i<4; i++) {
@@ -227,13 +227,13 @@ void FASTCALL CRTC::Reset()
 		crtc.grp_scrly[i] = 0;
 	}
 
-	// ƒCƒ“ƒ^ƒŒ[ƒX‹ôŠï
+	// Interlace even/odd state
 	crtc.v_scaneven = FALSE;
 
-	// H-SyncƒCƒxƒ“ƒg‚ğİ’è(31.5us)
+	// Set the H-Sync event (31.5 us)
 	event.SetTimeDirect(63);
 
-	// ƒŒƒ“ƒ_ƒ‰‚Ö’Ê’m
+	// Notify the renderer
 	render->TextScrl(crtc.text_scrlx, crtc.text_scrly);
 	render->GrpScrl(0, crtc.grp_scrlx[0], crtc.grp_scrly[0]);
 	render->GrpScrl(1, crtc.grp_scrlx[1], crtc.grp_scrly[1]);
@@ -244,7 +244,7 @@ void FASTCALL CRTC::Reset()
 
 //---------------------------------------------------------------------------
 //
-//	CRTCƒŠƒZƒbƒgƒf[ƒ^
+//	CRTC reset data
 //
 //---------------------------------------------------------------------------
 const BYTE CRTC::ResetTable[] = {
@@ -256,7 +256,7 @@ const BYTE CRTC::ResetTable[] = {
 
 //---------------------------------------------------------------------------
 //
-/// ƒZ[ƒu
+/// Save
 //
 //---------------------------------------------------------------------------
 BOOL FASTCALL CRTC::Save(Fileio* fio, int ver)
@@ -267,7 +267,7 @@ BOOL FASTCALL CRTC::Save(Fileio* fio, int ver)
 	ASSERT(fio);
 	LOG0(Log::Normal, "ƒZ[ƒu");
 
-	// ƒZ[ƒuƒf[ƒ^¶¬
+	// Build save data
 	crtc_t data = crtc;
 	data.disp_vsync = FALSE;
 	ASSERT(data.h_refresh == 0);
@@ -276,18 +276,18 @@ BOOL FASTCALL CRTC::Save(Fileio* fio, int ver)
 	data.h_blockpos = 0;
 	data.v_scaneven = FALSE;
 
-	// ƒTƒCƒY‚ğƒZ[ƒu
+	// Save the size
 	sz = sizeof(crtc_t);
 	if (!fio->Write(&sz, sizeof(sz))) {
 		return FALSE;
 	}
 
-	// À‘Ì‚ğƒZ[ƒu
+	// Save the payload
 	if (!fio->Write(&data, sz)) {
 		return FALSE;
 	}
 
-	// ƒCƒxƒ“ƒg‚ğƒZ[ƒu
+	// Save the event
 	if (!event.Save(fio, ver)) {
 		return FALSE;
 	}
@@ -297,7 +297,7 @@ BOOL FASTCALL CRTC::Save(Fileio* fio, int ver)
 
 //---------------------------------------------------------------------------
 //
-/// ƒ[ƒh
+/// Load
 //
 //---------------------------------------------------------------------------
 BOOL FASTCALL CRTC::Load(Fileio* fio, int ver)
@@ -308,10 +308,10 @@ BOOL FASTCALL CRTC::Load(Fileio* fio, int ver)
 	ASSERT(fio);
 	LOG0(Log::Normal, "ƒ[ƒh");
 
-	// İ’è•Û‘¶
+	// Preserve settings
 	crtc_t backup = crtc;
 
-	// ƒTƒCƒY‚ğƒ[ƒh
+	// Load the size
 	if (!fio->Read(&sz, sizeof(sz))) {
 		return FALSE;
 	}
@@ -319,21 +319,21 @@ BOOL FASTCALL CRTC::Load(Fileio* fio, int ver)
 		return FALSE;
 	}
 
-	// À‘Ì‚ğƒ[ƒh
+	// Load the payload
 	if (!fio->Read(&crtc, (int)sz)) {
 		return FALSE;
 	}
 
-	// ƒCƒxƒ“ƒg‚ğƒ[ƒh
+	// Load the event
 	if (!event.Load(fio, ver)) {
 		return FALSE;
 	}
 
-	// İ’è•œŒ³
+	// Restore settings
 	crtc.disp_vsync = backup.disp_vsync;
 	crtc.h_blockscan = backup.h_blockscan;
 
-	// ƒŒƒ“ƒ_ƒ‰‚Ö’Ê’m
+	// Notify the renderer
 	render->TextScrl(crtc.text_scrlx, crtc.text_scrly);
 	render->GrpScrl(0, crtc.grp_scrlx[0], crtc.grp_scrly[0]);
 	render->GrpScrl(1, crtc.grp_scrlx[1], crtc.grp_scrly[1]);
@@ -342,7 +342,7 @@ BOOL FASTCALL CRTC::Load(Fileio* fio, int ver)
 #if 0
 	render->SetCRTC();
 #else
-	// …•½Šg‘å—¦‚ğ•ÏX‚µ‚½‚Ì‚Åb’è‘Î‰
+	// Temporary workaround because the horizontal scale factor changed
 	ReCalc();
 #endif
 
@@ -351,7 +351,7 @@ BOOL FASTCALL CRTC::Load(Fileio* fio, int ver)
 
 //---------------------------------------------------------------------------
 //
-/// İ’è“K—p
+/// Apply settings
 //
 //---------------------------------------------------------------------------
 void FASTCALL CRTC::ApplyCfg(const Config *config)
@@ -361,19 +361,19 @@ void FASTCALL CRTC::ApplyCfg(const Config *config)
 	g_alt_raster_timing = config->alt_raster ? TRUE : FALSE;
 	LOG0(Log::Normal, "İ’è“K—p");
 
-	// …•½•\¦ŠúŠÔƒXƒLƒƒƒ“ƒ‚[ƒh
+	// Horizontal display period scan mode
 	crtc.h_blockscan = config->disp_blockscan;
 
-	// ƒzƒXƒg‘¤‚ÌVSYNC‚Æ“¯Šú
+	// Sync with the host-side VSYNC
 	crtc.disp_vsync = FALSE;
 
-	// ÄŒvZ‚ğ‘£‚·
+	// Force recalculation
 	crtc.changed = TRUE;
 }
 
 //---------------------------------------------------------------------------
 //
-//	ƒoƒCƒg“Ç‚İ‚İ
+//	Byte read
 //
 //---------------------------------------------------------------------------
 DWORD FASTCALL CRTC::ReadByte(DWORD addr)
@@ -383,37 +383,37 @@ DWORD FASTCALL CRTC::ReadByte(DWORD addr)
 	ASSERT(this);
 	ASSERT((addr >= memdev.first) && (addr <= memdev.last));
 
-	// $800’PˆÊ‚Åƒ‹[ƒv
+	// Mirror every 0x800 bytes
 	addr &= 0x7ff;
 
-	// ƒEƒFƒCƒg
+	// Wait
 	scheduler->Wait(1);
 
-	// $E80000-$E803FF : ƒŒƒWƒXƒ^ƒGƒŠƒA
+	// 0xE80000-0xE803FF: register area
 	if (addr < 0x400) {
 		addr &= 0x3f;
 		if (addr >= 0x30) {
 			return 0xff;
 		}
 
-		// R20, R21‚Ì‚İ“Ç‚İ‘‚«‰Â”\B‚»‚êˆÈŠO‚Í$00
+		// Only R20 and R21 are readable/writable. Everything else returns 0x00
 		if ((addr < 40) || (addr > 43)) {
 			return 0;
 		}
 
-		// “Ç‚İ‚İ(ƒGƒ“ƒfƒBƒAƒ“‚ğ”½“]‚³‚¹‚é)
+		// Read (swap endian order)
 		addr ^= 1;
 		return crtc.reg[addr];
 	}
 
-	// $E80480-$E804FF : “®ìƒ|[ƒg
+	// 0xE80480-0xE804FF: operation ports
 	if ((addr >= 0x480) && (addr <= 0x4ff)) {
-		// ãˆÊƒoƒCƒg‚Í 0
+		// Upper byte is 0
 		if ((addr & 1) == 0) {
 			return 0;
 		}
 
-		// ‰ºˆÊƒoƒCƒg‚Íƒ‰ƒXƒ^ƒRƒs[AƒOƒ‰ƒtƒBƒbƒN‚‘¬ƒNƒŠƒA‚Ì‚İ
+		// Lower byte exposes raster copy and graphics fast clear only
 		data = 0;
 		if (crtc.raster_copy) {
 			data |= 0x08;
@@ -430,7 +430,7 @@ DWORD FASTCALL CRTC::ReadByte(DWORD addr)
 
 //---------------------------------------------------------------------------
 //
-//	ƒoƒCƒg‘‚«‚İ
+//	Byte write
 //
 //---------------------------------------------------------------------------
 void FASTCALL CRTC::WriteByte(DWORD addr, DWORD data)
@@ -440,27 +440,27 @@ void FASTCALL CRTC::WriteByte(DWORD addr, DWORD data)
 	ASSERT(this);
 	ASSERT((addr >= memdev.first) && (addr <= memdev.last));
 
-	// $800’PˆÊ‚Åƒ‹[ƒv
+	// Mirror every 0x800 bytes
 	addr &= 0x7ff;
 
-	// ƒEƒFƒCƒg
+	// Wait
 	scheduler->Wait(1);
 
-	// $E80000-$E803FF : ƒŒƒWƒXƒ^ƒGƒŠƒA
+	// 0xE80000-0xE803FF: register area
 	if (addr < 0x400) {
 		addr &= 0x3f;
 		if (addr >= 0x30) {
 			return;
 		}
 
-		// ‘‚«‚İ(ƒGƒ“ƒfƒBƒAƒ“‚ğ”½“]‚³‚¹‚é)
+		// Write (swap endian order)
 		addr ^= 1;
 		if (crtc.reg[addr] == data) {
 			return;
 		}
 		crtc.reg[addr] = (BYTE)data;
 
-		// GVRAMƒAƒhƒŒƒX\¬
+		// GVRAM address configuration
 		if (addr == 0x29) {
 			if (data & 0x10) {
 				crtc.tmem = TRUE;
@@ -477,17 +477,17 @@ void FASTCALL CRTC::WriteByte(DWORD addr, DWORD data)
 			crtc.siz = (data & 4) >> 2;
 			crtc.col = (data & 3);
 
-			// ƒOƒ‰ƒtƒBƒbƒNVRAM‚Ö’Ê’m
+			// Notify graphics VRAM
 			gvram->SetType(data & 0x0f);
 
-			// Ÿ‚ÌüŠú‚ÅÄŒvZ
+			// Recalculate on the next cycle
 			crtc.changed = TRUE;
 			return;
 		}
 
-		// ‰ğ‘œ“x•ÏX
+		// Resolution change
 		if ((addr <= 15) || (addr == 40)) {
-			// ƒXƒvƒ‰ƒCƒgƒƒ‚ƒŠ‚ÌÚ‘±EØ’f‚Íu‚És‚¤(OS-9/68000)
+			// Connect/disconnect sprite memory immediately (OS-9/68000)
 			if (addr == 0x28) {
 				if ((crtc.reg[0x28] & 3) >= 2) {
 					sprite->Connect(FALSE);
@@ -497,12 +497,12 @@ void FASTCALL CRTC::WriteByte(DWORD addr, DWORD data)
 				}
 			}
 
-			// Ÿ‚ÌüŠú‚ÅÄŒvZ
+			// Recalculate on the next cycle
 			crtc.changed = TRUE;
 			return;
 		}
 
-		// ƒ‰ƒXƒ^Š„‚è‚İ
+		// Raster interrupt
 		if ((addr == 18) || (addr == 19)) {
 			crtc.raster_int = (crtc.reg[19] << 8) + crtc.reg[18];
 			crtc.raster_int &= 0x3ff;
@@ -515,7 +515,7 @@ void FASTCALL CRTC::WriteByte(DWORD addr, DWORD data)
 			return;
 		}
 
-		// ƒeƒLƒXƒgƒXƒNƒ[ƒ‹
+		// Text scroll
 		if ((addr >= 20) && (addr <= 23)) {
 			crtc.text_scrlx = (crtc.reg[21] << 8) + crtc.reg[20];
 			crtc.text_scrlx &= 0x3ff;
@@ -529,7 +529,7 @@ void FASTCALL CRTC::WriteByte(DWORD addr, DWORD data)
 			return;
 		}
 
-		// ƒOƒ‰ƒtƒBƒbƒNƒXƒNƒ[ƒ‹
+		// Graphics scroll
 		if ((addr >= 24) && (addr <= 39)) {
 			reg = addr & ~3;
 			addr -= 24;
@@ -549,21 +549,21 @@ void FASTCALL CRTC::WriteByte(DWORD addr, DWORD data)
 			return;
 		}
 
-		// ƒeƒLƒXƒgVRAM
+		// Text VRAM
 		if ((addr >= 42) && (addr <= 47)) {
 			TextVRAM();
 		}
 		return;
 	}
 
-	// $E80480-$E804FF : “®ìƒ|[ƒg
+	// 0xE80480-0xE804FF: operation ports
 	if ((addr >= 0x480) && (addr <= 0x4ff)) {
-		// ãˆÊƒoƒCƒg‚Í‰½‚à‚È‚¢
+		// Upper byte has no function
 		if ((addr & 1) == 0) {
 			return;
 		}
 
-		// ‰ºˆÊƒoƒCƒg‚Íƒ‰ƒXƒ^ƒRƒs[E‚‘¬ƒNƒŠƒA§Œä
+		// Lower byte controls raster copy and fast clear
 		if (data & 0x08) {
 #if defined(CRTC_LOG)
 			if (!crtc.raster_copy) {
@@ -581,7 +581,7 @@ void FASTCALL CRTC::WriteByte(DWORD addr, DWORD data)
 			crtc.raster_copy = FALSE;
 		}
 		if (data & 0x02) {
-			// ‚‘¬ƒNƒŠƒA’†‚Íó‚¯•t‚¯‚È‚¢(ƒGƒgƒ[ƒ‹ƒvƒŠƒ“ƒZƒX)
+			// Ignore requests while a fast clear is already active (Etoile Princess)
 			if (crtc.fast_clr != 2) {
 #if defined(CRTC_LOG)
 				if (crtc.fast_clr == 0) {
@@ -607,7 +607,7 @@ void FASTCALL CRTC::WriteByte(DWORD addr, DWORD data)
 
 //---------------------------------------------------------------------------
 //
-//	“Ç‚İ‚İ‚Ì‚İ
+//	Read-only
 //
 //---------------------------------------------------------------------------
 DWORD FASTCALL CRTC::ReadOnly(DWORD addr) const
@@ -617,29 +617,29 @@ DWORD FASTCALL CRTC::ReadOnly(DWORD addr) const
 	ASSERT(this);
 	ASSERT((addr >= memdev.first) && (addr <= memdev.last));
 
-	// $800’PˆÊ‚Åƒ‹[ƒv
+	// Mirror every 0x800 bytes
 	addr &= 0x7ff;
 
-	// $E80000-$E803FF : ƒŒƒWƒXƒ^ƒGƒŠƒA
+	// 0xE80000-0xE803FF: register area
 	if (addr < 0x400) {
 		addr &= 0x3f;
 		if (addr >= 0x30) {
 			return 0xff;
 		}
 
-		// “Ç‚İ‚İ(ƒGƒ“ƒfƒBƒAƒ“‚ğ”½“]‚³‚¹‚é)
+		// Read (swap endian order)
 		addr ^= 1;
 		return crtc.reg[addr];
 	}
 
-	// $E80480-$E804FF : “®ìƒ|[ƒg
+	// 0xE80480-0xE804FF: operation ports
 	if ((addr >= 0x480) && (addr <= 0x4ff)) {
-		// ãˆÊƒoƒCƒg‚Í0
+		// Upper byte is 0
 		if ((addr & 1) == 0) {
 			return 0;
 		}
 
-		// ‰ºˆÊƒoƒCƒg‚ÍƒOƒ‰ƒtƒBƒbƒN‚‘¬ƒNƒŠƒA‚Ì‚İ
+		// Lower byte exposes raster copy and graphics fast clear
 		data = 0;
 		if (crtc.raster_copy) {
 			data |= 0x08;
@@ -655,37 +655,37 @@ DWORD FASTCALL CRTC::ReadOnly(DWORD addr) const
 
 //---------------------------------------------------------------------------
 //
-//	“à•”ƒf[ƒ^æ“¾
+//	Get internal data
 //
 //---------------------------------------------------------------------------
 void FASTCALL CRTC::GetCRTC(crtc_t *buffer) const
 {
 	ASSERT(buffer);
 
-	// “à•”ƒf[ƒ^‚ğƒRƒs[
+	// Copy the internal data
 	*buffer = crtc;
 }
 
 //---------------------------------------------------------------------------
 //
-//	ƒCƒxƒ“ƒgƒR[ƒ‹ƒoƒbƒN
+//	Event callback
 //
 //---------------------------------------------------------------------------
 BOOL FASTCALL CRTC::Callback(Event* /*ev*/)
 {
 	ASSERT(this);
 
-	// HSync,HDisp‚Ì2‚Â‚ğŒÄ‚Ñ•ª‚¯‚é
-	/// @todo ƒ‰ƒXƒ^A¨B¨C¨A‚ÆƒuƒƒbƒND¨E¨F¨D‚Ì2‚Â‚ÌŠÖ”ƒ|ƒCƒ“ƒ^ŒQ‚Å3‚Â‚Ìó‘Ô‘JˆÚ‚ğ‰ñ‚µğŒ”»’è(Å‘å3‰ñ)‚ğƒ[ƒ‚É‚·‚éB‰¼‘zŠÖ”ƒe[ƒuƒ‹‚Ì’¼Ú‘€ì‚ª—‘z“I
+	// Dispatch between HSync and HDisp
+	/// @todo Replace the conditional state machine with raster/block function-pointer groups so the three transitions need no runtime checks; direct vtable-style dispatch would be ideal
 	if (crtc.h_disp < 0) {
 		HSync();
 	}
 	else {
 		if (!crtc.h_blockscan) {
-			// ƒ‰ƒXƒ^[ƒXƒLƒƒƒ“
+			// Raster scan
 			HDispRS();
 		} else {
-			// ƒuƒƒbƒNƒXƒLƒƒƒ“
+			// Block scan
 			HDispBS();
 		}
 	}
@@ -695,7 +695,7 @@ BOOL FASTCALL CRTC::Callback(Event* /*ev*/)
 
 //---------------------------------------------------------------------------
 //
-/// H-SYNCŠJn
+/// H-SYNC start
 //
 //---------------------------------------------------------------------------
 void FASTCALL CRTC::HSync()
@@ -705,37 +705,37 @@ void FASTCALL CRTC::HSync()
 
 	ASSERT(this);
 
-	// ƒvƒŠƒ“ƒ^‚É’Ê’m(’èŠú“I‚ÉBUSY‚ğ—‚Æ‚·‚½‚ß)
+	// Notify the printer (to drop BUSY periodically)
 	ASSERT(printer);
 	printer->HSync();
 
-	// VC‚É’Ê’m(’x‰„”½‰f)
+	// Notify VC (apply delayed state changes)
 	vc->HSync();
 
-	// ƒXƒvƒ‰ƒCƒgƒRƒ“ƒgƒ[ƒ‰‚É’Ê’m(‚a‚fİ’è‚Ì’x‰„”½‰f)
+	// Notify the sprite controller (apply delayed BG setting changes)
 	sprite->HSync();
 
-	// HSync‚Å‚ÌXV—v‹
+	// Pending HSync updates
 	if (hsync) {
-		// ƒtƒ‰ƒOƒIƒt
+		// Clear the flag
 		hsync = FALSE;
 
-		// ƒeƒLƒXƒgƒXƒNƒ[ƒ‹’l‚Ì’x‰„”½‰f
+		// Apply delayed text scroll values
 		render->TextScrl(crtc.text_scrlx, crtc.text_scrly);
 
-		// ƒOƒ‰ƒtƒBƒbƒNƒXƒNƒ[ƒ‹’l‚Ì’x‰„”½‰f
+		// Apply delayed graphics scroll values
 		for (i=0; i<4; i++) {
 			render->GrpScrl(i, crtc.grp_scrlx[i], crtc.grp_scrly[i]);
 		}
 	}
 
-	// ƒtƒ‰ƒOİ’è
+	// Update flags
 	crtc.h_disp = 0;
 
-	// GPIPİ’è
+	// Update GPIP
 	mfp->SetGPIP(7, 1);
 
-	// ƒXƒLƒƒƒ“ƒ‰ƒCƒ“XV
+	// Advance the scanline
 	crtc.v_scan++;
 
 	if (g_alt_raster_timing) {
@@ -743,47 +743,47 @@ void FASTCALL CRTC::HSync()
 		CheckRaster();
 	}
 
-	// V-SYNCƒJƒEƒ“ƒg
+	// V-SYNC counter
 	crtc.v_synccnt--;
 	if (crtc.v_synccnt == 0) {
 		VSync();
 	}
 
-	// V-BLANKƒJƒEƒ“ƒg
+	// V-BLANK counter
 	crtc.v_blankcnt--;
 	if (crtc.v_blankcnt == 0) {
 		VBlank();
 	}
 
-	// ƒeƒLƒXƒg‰æ–Êƒ‰ƒXƒ^ƒRƒs[
+	// Text raster copy
 	if (crtc.raster_copy && crtc.raster_exec) {
 		tvram->RasterCopy();
 		crtc.raster_exec = FALSE;
 	}
 
-	// ƒOƒ‰ƒtƒBƒbƒN‰æ–Ê‚‘¬ƒNƒŠƒA
+	// Graphics fast clear
 	if (crtc.fast_clr == 2) {
 		gvram->FastSet((DWORD)crtc.reg[42]);
 		gvram->FastClr(&crtc);
 	}
 
-	// Ÿ‚Ìƒ^ƒCƒ~ƒ“ƒO(‘–¸ŠJn)‚Ü‚Å‚ÌŠÔ‚ğİ’è
+	// Set the time until the next timing point (scan start)
 	crtc.ns += crtc.h_pulse;
 	hus = crtc.hus;
-	crtc.hus = Ns2Hus(crtc.ns);		/// @todo œZ‚ÍŒ™BDDA‚Å‚·‚è’×‚¹Bns‚ÍƒZ[ƒuƒ[ƒh‚Ì‚İŒvZ
+	crtc.hus = Ns2Hus(crtc.ns);		/// @todo Avoid the division here. Use a DDA accumulator instead; ns only needs recomputing during save/load
 
-	// Ÿ‰ñ—\
+	// Schedule the next callback
 	ASSERT(crtc.hus >= (DWORD)hus);
 	hus = crtc.hus - hus;
 	if (hus <= 0) {
-		// Åˆ«ƒCƒxƒ“ƒg‚ª’â~‚µ‚È‚¢‚æ‚¤‚ÉƒK[ƒh‚·‚é (ƒŒƒAƒP[ƒX)
+		// Guard against the event stopping in rare cases
 		ASSERT(hus == 0);
 		crtc.hus++;
 		hus = 1;
 	}
 	event.SetTimeFast(hus);
 
-	// “¯Šúˆ—(40ms‚²‚Æ)
+	// Synchronization processing (every 40 ms)
 	if (crtc.hus >= 80000) {
 		crtc.hus -= 80000;
 		ASSERT(crtc.ns >= 40000000);
@@ -793,15 +793,15 @@ void FASTCALL CRTC::HSync()
 
 //---------------------------------------------------------------------------
 //
-//	ƒ‰ƒXƒ^ƒJƒEƒ“ƒg
+//	Raster counter
 //
 //---------------------------------------------------------------------------
 void FASTCALL CRTC::Raster()
 {
-	// ƒ‰ƒXƒ^ƒJƒEƒ“ƒgXV
+	// Update the raster counter
 	crtc.raster_count++;
 
-	// V-SYNC—§‰º‚è’¼‘O‚ÌH-SYNC—§‰º‚è‚ÅƒNƒŠƒA
+	// Clear it on the H-SYNC falling edge just before the V-SYNC falling edge
 	if (crtc.v_synccnt == 1 && crtc.v_disp) {
 		crtc.raster_count = 0;
 	}
@@ -809,23 +809,23 @@ void FASTCALL CRTC::Raster()
 
 //---------------------------------------------------------------------------
 //
-//	ƒ‰ƒXƒ^Š„‚è‚İƒ`ƒFƒbƒN
+//	Raster interrupt check
 //
 //---------------------------------------------------------------------------
 void FASTCALL CRTC::CheckRaster()
 {
 	if (crtc.raster_count == crtc.raster_int) {
-		// —v‹
+		// Assert the request
 		mfp->SetGPIP(6, 0);
 	} else {
-		// æ‚è‰º‚°
+		// Deassert the request
 		mfp->SetGPIP(6, 1);
 	}
 }
 
 //---------------------------------------------------------------------------
 //
-/// H-DISPŠJn(ƒ‰ƒXƒ^[ƒXƒLƒƒƒ“)
+/// H-DISP start (raster scan)
 //
 //---------------------------------------------------------------------------
 void FASTCALL CRTC::HDispRS()
@@ -836,9 +836,9 @@ void FASTCALL CRTC::HDispRS()
 	ASSERT(this);
 
 	if (crtc.h_disp == 0) {
-		// HDISPŠJn
+		// HDISP start
 
-		// GPIPİ’è
+		// Update GPIP
 		mfp->SetGPIP(7, 0);
 
 		if (!g_alt_raster_timing) {
@@ -846,33 +846,33 @@ void FASTCALL CRTC::HDispRS()
 			crtc.raster_count++;
 		}
 
-		// ƒ‰ƒXƒ^ƒRƒs[‹–‰Â
+		// Allow raster copy
 		crtc.raster_exec = TRUE;
 
-		// Ÿ‚Ìƒ^ƒCƒ~ƒ“ƒO(ƒtƒƒ“ƒgƒ|[ƒ`)‚Ü‚Å‚ÌŠÔ‚ğİ’è
-		/// @todo ‚±‚±‚ÍXM6‚É‚¨‚¯‚é’´‚•p“xÀs‰ÓŠB–‘OŒvZ‚µ‚Ä‚¨‚­
+		// Set the time until the next timing point (front porch)
+		/// @todo This is an extremely hot XM6 path. Precompute it
 		ns = crtc.h_sync - crtc.h_pulse - crtc.h_front;
 
-		// ƒtƒƒ“ƒgƒ|[ƒ`ƒtƒF[ƒY‚ÖˆÚs
+		// Move to the front porch phase
 		crtc.h_disp = 1;
 	} else {
-		// ƒtƒƒ“ƒgƒ|[ƒ`
+		// Front porch
 
-		// I—¹’¼‘O‚Å•`‰æ
+		// Render just before the end
 		if (!crtc.v_blank) {
-			// ƒŒƒ“ƒ_ƒŠƒ“ƒO
+			// Render
 			render->HSync(crtc.v_scan, 0);
 		}
 
-		// Ÿ‚Ìƒ^ƒCƒ~ƒ“ƒO(H-SYNCŠJn)‚Ü‚Å‚ÌŠÔ‚ğİ’è
+		// Set the time until the next timing point (H-SYNC start)
 		ns = crtc.h_front;
 
-		// •\¦I—¹ƒtƒF[ƒY‚ÖˆÚs
+		// Move to the display-end phase
 		crtc.h_disp = -1;
 	}
 
-	// “ÁêƒP[ƒX‚Å•‰‚É‚È‚é‚Ì‚ÅƒK[ƒh‚·‚é
-	/// @todo ‚±‚±‚ÍXM6‚É‚¨‚¯‚é’´‚•p“xÀs‰ÓŠB–‘O”»’è‚µ‚Ä‚¨‚­
+	// Guard against negative values in special cases
+	/// @todo This is an extremely hot XM6 path. Detect this case in advance
 	if (ns <= 0) {
 		ns = 1;
 	}
@@ -881,11 +881,11 @@ void FASTCALL CRTC::HDispRS()
 	hus = crtc.hus;
 	crtc.hus = Ns2Hus(crtc.ns);
 
-	// Ÿ‰ñ—\
+	// Schedule the next callback
 	ASSERT(crtc.hus >= (DWORD)hus);
 	hus = crtc.hus - hus;
 	if (hus <= 0) {
-		// Åˆ«ƒCƒxƒ“ƒg‚ª’â~‚µ‚È‚¢‚æ‚¤‚ÉƒK[ƒh‚·‚é (ƒŒƒAƒP[ƒX)
+		// Guard against the event stopping in rare cases
 		ASSERT(hus == 0);
 		crtc.hus++;
 		hus = 1;
@@ -895,7 +895,7 @@ void FASTCALL CRTC::HDispRS()
 
 //---------------------------------------------------------------------------
 //
-//	H-DISPŠJn(ƒuƒƒbƒNƒXƒLƒƒƒ“)
+//	H-DISP start (block scan)
 //
 //---------------------------------------------------------------------------
 void FASTCALL CRTC::HDispBS()
@@ -906,26 +906,26 @@ void FASTCALL CRTC::HDispBS()
 
 	ASSERT(this);
 
-	// ƒhƒbƒgƒNƒƒbƒN‚ğæ“¾
+	// Get the dot clock
 	dc = Get8DotClock();
 
 	if (crtc.h_disp == 0) {
-		// ƒuƒƒbƒNˆÊ’u‰Šú‰»
+		// Initialize the block position
 		crtc.h_blockpos = 0;
 
-		// ƒuƒƒbƒN”Zo
+		// Calculate the block count
 		crtc.h_blocknum = (crtc.reg[0x06] - crtc.reg[0x04]) >> 1;
 
-		// ƒtƒF[ƒYİ’è
+		// Set the phase
 		if (crtc.h_blocknum > 0) {
-			// •\¦ƒtƒF[ƒY
+			// Display phase
 			crtc.h_disp = 1;
 		} else {
-			// ƒtƒƒ“ƒgƒ|[ƒ`ƒtƒF[ƒY
+			// Front porch phase
 			crtc.h_disp = 2;
 		}
 
-		// GPIPİ’è
+		// Update GPIP
 		mfp->SetGPIP(7, 0);
 
 		if (!g_alt_raster_timing) {
@@ -933,39 +933,39 @@ void FASTCALL CRTC::HDispBS()
 			crtc.raster_count++;
 		}
 
-		// ƒ‰ƒXƒ^ƒRƒs[‹–‰Â
+		// Allow raster copy
 		crtc.raster_exec = TRUE;
 
-		// ƒoƒbƒNƒ|[ƒ`‚ÌŠúŠÔİ’è
+		// Set the back porch duration
 		ns = crtc.h_back;
 	} else if (crtc.h_disp == 1) {
-		// Ÿ‚ÌƒuƒƒbƒN‚Ö
+		// Advance to the next block
 		crtc.h_blockpos++;
 
-		// ƒtƒƒ“ƒgƒ|[ƒ`ƒtƒF[ƒY‚ÖˆÚs
+		// Move to the front porch phase
 		if (crtc.h_blockpos >= crtc.h_blocknum) {
 			crtc.h_disp = 2;
 		}
 
-		// •`‰æ
+		// Render
 		if (!crtc.v_blank) {
-			// ƒŒƒ“ƒ_ƒŠƒ“ƒO
+			// Render
 			render->HSync(crtc.v_scan, crtc.h_blockpos - 1);
 		}
 
-		// Ÿ‚Ì16ƒhƒbƒg‚Ü‚Å‚ÌŠÔ‚ğİ’è
+		// Set the time until the next 16 dots
 		ns = 2 * dc / 100;
 	} else {
-		// •\¦I—¹ƒtƒF[ƒY‚Ö
+		// Move to the display-end phase
 		crtc.h_disp = -1;
 
-		// Ÿ‚ÌHSYNC‚Ü‚Å‚ÌŠÔ‚ğİ’è(Œë·‚Í‚±‚±‚Å‹zû)
+		// Set the time until the next HSYNC (absorb the error here)
 		ns = crtc.h_sync - crtc.h_pulse - crtc.h_back - crtc.h_front;
 		ns -= (2 * dc / 100) * crtc.h_blocknum;
 		ns += crtc.h_front;
 	}
 
-	// “ÁêƒP[ƒX‚Å•‰‚É‚È‚é‚Ì‚ÅƒK[ƒh‚·‚é
+	// Guard against negative values in special cases
 	if (ns <= 0) {
 		ns = 1;
 	}
@@ -974,11 +974,11 @@ void FASTCALL CRTC::HDispBS()
 	hus = crtc.hus;
 	crtc.hus = Ns2Hus(crtc.ns);
 
-	// Ÿ‰ñ—\
+	// Schedule the next callback
 	ASSERT(crtc.hus >= (DWORD)hus);
 	hus = crtc.hus - hus;
 	if (hus <= 0) {
-		// Åˆ«ƒCƒxƒ“ƒg‚ª’â~‚µ‚È‚¢‚æ‚¤‚ÉƒK[ƒh‚·‚é (ƒŒƒAƒP[ƒX)
+		// Guard against the event stopping in rare cases
 		ASSERT(hus == 0);
 		crtc.hus++;
 		hus = 1;
@@ -988,24 +988,24 @@ void FASTCALL CRTC::HDispBS()
 
 //---------------------------------------------------------------------------
 //
-/// V-SYNCŠJn
+/// V-SYNC start
 ///
-/// V-DISPŠJn‚ğŠÜ‚ŞB
+/// Includes the start of V-DISP.
 //
 //---------------------------------------------------------------------------
 void FASTCALL CRTC::VSync()
 {
 	ASSERT(this);
 
-	// V-SYNCI—¹‚È‚ç
+	// If V-SYNC is ending
 	if (!crtc.v_disp) {
-		// ƒtƒ‰ƒOİ’è
+		// Update flags
 		crtc.v_disp = TRUE;
 
-		// ŠÔİ’è
+		// Set the timing
 		crtc.v_synccnt = (crtc.v_sync - crtc.v_pulse);
 
-		// ƒCƒ“ƒ^ƒŒ[ƒXƒ‚[ƒh‚È‚ç‚Îƒ_ƒ~[‚Ì‚Pƒ‰ƒCƒ“‚ğ’Ç‰Á
+		// Add a dummy line in interlace mode
 		if ((crtc.lowres && crtc.vd > 0) || (!crtc.lowres && crtc.vd > 1)) {
 			if (!crtc.v_scaneven) {
 				crtc.v_synccnt++;
@@ -1015,7 +1015,7 @@ void FASTCALL CRTC::VSync()
 		return;
 	}
 
-	// ƒŒƒ“ƒ_ƒ‰‡¬I—¹
+	// Finish renderer composition
 	render->EndFrame();
 #if XM6_RENDER_SYNC == 1
 	if (m_pScheduler) {
@@ -1024,42 +1024,42 @@ void FASTCALL CRTC::VSync()
 #endif	// XM6_RENDER_SYNC == 1
 	crtc.v_scan = crtc.v_dots + 1;
 
-	// ‰ğ‘œ“x•ÏX‚ª‚ ‚ê‚ÎA‚±‚±‚Å•ÏX
+	// Apply any pending resolution change here
 	if (crtc.changed) {
 		ReCalc();
 
-		// ƒtƒ‰ƒO‚¨‚ë‚·
+		// Clear the flag
 		crtc.changed = FALSE;
 	}
 
-	// V-SYNCI—¹‚Ü‚Å‚ÌŠÔ‚ğİ’è
+	// Set the time until V-SYNC ends
 	crtc.v_synccnt = crtc.v_pulse;
 
-	// V-BLANK‚Ìó‘Ô‚ÆAŠÔ‚ğİ’è
+	// Set the V-BLANK state and duration
 	if (crtc.v_front <= 0) {
-		// ‚Ü‚¾•\¦’†(“Áê)
+		// Still in the display period (special case)
 		crtc.v_blank = FALSE;
 		crtc.v_blankcnt = (-crtc.v_front) + 1;
 	}
 	else {
-		// ‚·‚Å‚Éƒuƒ‰ƒ“ƒN’†(’Êí)
+		// Already in blanking (normal case)
 		crtc.v_blank = TRUE;
 		crtc.v_blankcnt = (crtc.v_pulse + crtc.v_back + 1);
 	}
 
-	// ƒtƒ‰ƒOİ’è
+	// Update flags
 	crtc.v_disp = FALSE;
 	if (!g_alt_raster_timing) {
 		crtc.raster_count = 0;
 	}
 
-	// ƒCƒ“ƒ^ƒŒ[ƒXƒ‚[ƒh‹ô”ƒtƒ‰ƒO”½“]
+	// Toggle the interlace even/odd flag
 	crtc.v_scaneven = !crtc.v_scaneven;
 }
 
 //---------------------------------------------------------------------------
 //
-/// ÄŒvZ
+/// Recalculate
 //
 //---------------------------------------------------------------------------
 void FASTCALL CRTC::ReCalc()
@@ -1070,29 +1070,29 @@ void FASTCALL CRTC::ReCalc()
 
 	ASSERT(this);
 
-	// CRTCƒŒƒWƒXƒ^0‚ªƒNƒŠƒA‚³‚ê‚Ä‚¢‚ê‚ÎA–³Œø(MacƒGƒ~ƒ…ƒŒ[ƒ^)
+	// If CRTC register 0 is cleared, disable output (Mac emulator)
 	if (crtc.reg[0x0] != 0) {
 #if defined(CRTC_LOG)
 		LOG0(Log::Normal, "ÄŒvZ");
 #endif	// CRTC_LOG
 
-		// ƒhƒbƒgƒNƒƒbƒN‚ğæ“¾
+		// Get the dot clock
 		dc = Get8DotClock();
 
-		// …•½(‚·‚×‚Äns’PˆÊ)
+		// Horizontal timing (all values in ns)
 		crtc.h_sync = (crtc.reg[0x0] + 1) * dc / 100;
 		crtc.h_pulse = (crtc.reg[0x02] + 1) * dc / 100;
 		crtc.h_back = (crtc.reg[0x04] + 5 - crtc.reg[0x02] - 1) * dc / 100;
 		crtc.h_front = (crtc.reg[0x0] + 1 - crtc.reg[0x06] - 5) * dc / 100;
 
-		// ‚’¼(‚·‚×‚ÄH-Sync’PˆÊ)
+		// Vertical timing (all values in H-Sync units)
 		p = (WORD *)crtc.reg;
 		crtc.v_sync = ((p[4] & 0x3ff) + 1);
 		crtc.v_pulse = ((p[5] & 0x3ff) + 1);
 		crtc.v_back = ((p[6] & 0x3ff) + 1) - crtc.v_pulse;
 		crtc.v_front = crtc.v_sync - ((p[7] & 0x3ff) + 1);
 
-		// V-FRONT‚ªƒ}ƒCƒiƒX‚·‚¬‚éê‡‚ÍA1…•½ŠúŠÔ•ª‚Ì‚İ(ƒwƒ‹ƒnƒEƒ“ƒhAƒRƒbƒgƒ“)
+		// If V-FRONT goes too negative, clamp it to one horizontal period only (Hellhound, Cotton)
 		if (crtc.v_front <= 0) {
 			over = -crtc.v_front;
 			over -= crtc.v_back;
@@ -1101,7 +1101,7 @@ void FASTCALL CRTC::ReCalc()
 			}
 		}
 
-		// ƒhƒbƒg”‚ğZo
+		// Calculate the dot counts
 		crtc.h_dots = (crtc.reg[0x0] + 1);
 		crtc.h_dots -= (crtc.reg[0x02] + 1);
 		crtc.h_dots -= (crtc.reg[0x04] + 5 - crtc.reg[0x02] - 1);
@@ -1113,7 +1113,7 @@ void FASTCALL CRTC::ReCalc()
 		}
 	}
 
-	// ”{—¦İ’è(…•½)
+	// Set the horizontal scale factor
 	crtc.hd = (crtc.reg[0x28] & 3);
 	if (crtc.hd == 3) {
 		LOG0(Log::Warning, "‰¡ƒhƒbƒg”50MHzƒ‚[ƒh(CompactXVI)");
@@ -1125,77 +1125,77 @@ void FASTCALL CRTC::ReCalc()
 		crtc.h_mul = 1;
 	}
 
-	// ”{—¦İ’è(‚’¼)
+	// Set the vertical scale factor
 	crtc.vd = (crtc.reg[0x28] >> 2) & 3;
 	if (crtc.reg[0x28] & 0x10) {
-		// 31kHz
+		// 31 kHz
 		crtc.lowres = FALSE;
 		if (crtc.vd == 3) {
-			// ƒCƒ“ƒ^ƒŒ[ƒX1024dotƒ‚[ƒh
+			// Interlaced 1024-dot mode
 			crtc.v_mul = 0;
 		}
 		else {
-			// ƒCƒ“ƒ^ƒŒ[ƒXA’Êí512ƒ‚[ƒh(x1)A”{256dotƒ‚[ƒh(x2)
+			// Interlace, normal 512-dot mode (x1), doubled 256-dot mode (x2)
 			crtc.v_mul = 2 - crtc.vd;
 		}
 	}
 	else {
-		// 15kHz
+		// 15 kHz
 		crtc.lowres = TRUE;
 		if (crtc.vd == 0) {
-			// ’Êí‚Ì256dotƒ‚[ƒh(x2)
+			// Normal 256-dot mode (x2)
 			crtc.v_mul = 2;
 		}
 		else {
-			// ƒCƒ“ƒ^ƒŒ[ƒX512dotƒ‚[ƒh(x1)
+			// Interlaced 512-dot mode (x1)
 			crtc.v_mul = 0;
 		}
 	}
 
-	// crtc.hd‚ª2ˆÈã‚Ìê‡AƒXƒvƒ‰ƒCƒg‚ÍØ‚è—£‚³‚ê‚é
+	// When crtc.hd is 2 or greater, sprites are disconnected
 	if (crtc.hd >= 2) {
-		// 768x512 or VGAƒ‚[ƒh(ƒXƒvƒ‰ƒCƒg‚È‚µ)
+		// 768x512 or VGA mode (no sprites)
 		sprite->Connect(FALSE);
 		crtc.textres = TRUE;
 	}
 	else {
-		// 256x256 or 512x512ƒ‚[ƒh(ƒXƒvƒ‰ƒCƒg‚ ‚è)
+		// 256x256 or 512x512 mode (sprites enabled)
 		sprite->Connect(TRUE);
 		crtc.textres = FALSE;
 	}
 
-	// ƒCƒ“ƒ^ƒŒ[ƒX‹ôŠïƒtƒ‰ƒO‰Šú‰»
+	// Initialize the interlace even/odd flag
 	crtc.v_scaneven = FALSE;
 
-	// ƒŒƒ“ƒ_ƒ‰‚Ö’Ê’m
+	// Notify the renderer
 	render->SetCRTC();
 }
 
 //---------------------------------------------------------------------------
 //
-//	V-BLANKŠJn(V-SCREENŠJn‚ğŠÜ‚Ş)
+//	V-BLANK start (includes V-SCREEN start)
 //
 //---------------------------------------------------------------------------
 void FASTCALL CRTC::VBlank()
 {
 	ASSERT(this);
 
-	// •\¦’†‚Å‚ ‚ê‚ÎAƒuƒ‰ƒ“ƒNŠJn
+	// If currently displaying, start blanking
 	if (!crtc.v_blank) {
-		// ƒuƒ‰ƒ“ƒN‹æŠÔ‚ğİ’è
+		// Set the blanking interval
 		crtc.v_blankcnt = crtc.v_pulse + crtc.v_back + crtc.v_front;
 //		ASSERT((crtc.v_front < 0) || ((int)crtc.v_synccnt == crtc.v_front));
 
-		// ƒtƒ‰ƒO
+		// Flags
 		crtc.v_blank = TRUE;
 
-		// GPIPƒCƒxƒ“ƒgƒJƒEƒ“ƒg
+		// GPIP event count
 		mfp->EventCount(0, 0);
 
-		// GPIP’Ê’m
+		// Notify GPIP
 		mfp->SetGPIP(4, 0);
 
-		// ƒOƒ‰ƒtƒBƒbƒN‚‘¬ƒNƒŠƒA
+		// Graphics fast clear
 		if (crtc.fast_clr == 2) {
 #if defined(CRTC_LOG)
 			LOG0(Log::Normal, "ƒOƒ‰ƒtƒBƒbƒN‚‘¬ƒNƒŠƒAI—¹");
@@ -1206,22 +1206,22 @@ void FASTCALL CRTC::VBlank()
 		return;
 	}
 
-	// •\¦‹æŠÔ‚ğİ’è
+	// Set the display interval
 	crtc.v_blankcnt = crtc.v_sync;
 	crtc.v_blankcnt -= crtc.v_pulse + crtc.v_back + crtc.v_front;
 
-	// ƒtƒ‰ƒO
+	// Flags
 	crtc.v_blank = FALSE;
 
-	// GPIPƒCƒxƒ“ƒgƒJƒEƒ“ƒg
+	// GPIP event count
 	mfp->EventCount(0, 1);
 
-	// GPIP’Ê’m
+	// Notify GPIP
 	mfp->SetGPIP(4, 1);
 
-	// ƒOƒ‰ƒtƒBƒbƒN‚‘¬ƒNƒŠƒA
-	// V-SYNCI—¹‚©‚çV-DISPŠJn‚Ü‚Å‚É‰ğ‘œ“x•ÏX‚ÆƒOƒ‰ƒtƒBƒbƒN‚‘¬ƒNƒŠƒAw¦‚·‚é‚ÆA
-	// ’¼Œã‚ÌV-DISP‚Å‚ÍƒNƒŠƒA“®ì‚ªŠJn‚¹‚¸‚ÉŸ‚ÌV-DISP‚Ü‚Å‘Ò‚½‚³‚ê‚é(ƒiƒCƒAƒX)
+	// Graphics fast clear
+	// If a resolution change and graphics fast clear are requested between V-SYNC end and V-DISP start,
+	// the clear is deferred until the next V-DISP instead of starting immediately (Naious)
 	if (!crtc.changed && crtc.fast_clr == 1) {
 #if defined(CRTC_LOG)
 		LOG1(Log::Normal, "ƒOƒ‰ƒtƒBƒbƒN‚‘¬ƒNƒŠƒAŠJn data=%02X", crtc.reg[42]);
@@ -1229,7 +1229,7 @@ void FASTCALL CRTC::VBlank()
 		crtc.fast_clr = 2;
 	}
 
-	// ƒŒƒ“ƒ_ƒ‰‡¬ŠJnAƒJƒEƒ“ƒ^ƒAƒbƒv
+	// Start renderer composition and increment the frame counter
 	crtc.v_scan = 0;
 	render->StartFrame();
 	crtc.v_count++;
@@ -1237,7 +1237,7 @@ void FASTCALL CRTC::VBlank()
 
 //---------------------------------------------------------------------------
 //
-//	•\¦ü”g”æ“¾
+//	Get the display frequencies
 //
 //---------------------------------------------------------------------------
 void FASTCALL CRTC::GetHVHz(DWORD *h, DWORD *v) const
@@ -1245,29 +1245,29 @@ void FASTCALL CRTC::GetHVHz(DWORD *h, DWORD *v) const
 	DWORD d;
 	DWORD t;
 
-	// assert
+	// Assert
 	ASSERT(h);
 	ASSERT(v);
 
-	// ƒ`ƒFƒbƒN
+	// Check
 	if ((crtc.h_sync == 0) || (crtc.v_sync < 100)) {
-		// NO SIGNAL
+		// No signal
 		*h = 0;
 		*v = 0;
 		return;
 	}
 
-	// ex. 31.5kHz = 3150
+	// e.g. 31.5 kHz = 3150
 	d = 100 * 1000 * 1000;
 	d /= crtc.h_sync;
 	*h = d;
 
-	// ex. 55.46Hz = 5546
+	// e.g. 55.46 Hz = 5546
 	t = crtc.v_sync;
 	t *= crtc.h_sync;
 
-	// ƒCƒ“ƒ^ƒŒ[ƒXƒ‚[ƒh‚Í‚’¼“¯ŠúŠúŠÔ‚ª
-	// …•½“¯ŠúŠúŠÔ‚Ì”¼•ªˆø‚«‰„‚Î‚³‚ê‚é
+	// In interlace mode, the vertical sync period is
+	// extended by half of a horizontal sync period
 	if ((crtc.lowres && crtc.vd > 0) ||
 			(!crtc.lowres && crtc.vd > 1)) {
 		t += crtc.h_sync >> 1;
@@ -1281,7 +1281,7 @@ void FASTCALL CRTC::GetHVHz(DWORD *h, DWORD *v) const
 
 //---------------------------------------------------------------------------
 //
-//	8ƒhƒbƒgƒNƒƒbƒN‚ğæ“¾(~100)
+//	Get the 8-dot clock (x100)
 //
 //---------------------------------------------------------------------------
 int FASTCALL CRTC::Get8DotClock() const
@@ -1292,11 +1292,11 @@ int FASTCALL CRTC::Get8DotClock() const
 
 	ASSERT(this);
 
-	// HF, HD‚ğCRTC R20‚æ‚èæ“¾
+	// Get HF and HD from CRTC R20
 	hf = (crtc.reg[0x28] >> 4) & 1;
 	hd = (crtc.reg[0x28] & 3);
 
-	// ƒCƒ“ƒfƒbƒNƒXì¬
+	// Build the lookup index
 	index = hf * 4 + hd;
 	if (crtc.hrl) {
 		index += 8;
@@ -1307,8 +1307,8 @@ int FASTCALL CRTC::Get8DotClock() const
 
 //---------------------------------------------------------------------------
 //
-//	8ƒhƒbƒgƒNƒƒbƒNƒe[ƒuƒ‹
-//	(HRL,HF,HD‚©‚ç“¾‚ç‚ê‚é’lB0.01ns’PˆÊ)
+//	8-dot clock table
+//	(value derived from HRL, HF, and HD; units are 0.01 ns)
 //
 //---------------------------------------------------------------------------
 const int CRTC::DotClockTable[16] = {
@@ -1322,13 +1322,13 @@ const int CRTC::DotClockTable[16] = {
 
 //---------------------------------------------------------------------------
 //
-//	HRLİ’è
+//	Set HRL
 //
 //---------------------------------------------------------------------------
 void FASTCALL CRTC::SetHRL(BOOL flag)
 {
 	if (crtc.hrl != flag) {
-		// Ÿ‚ÌüŠú‚ÅÄŒvZ
+		// Recalculate on the next cycle
 		crtc.hrl = flag;
 		crtc.changed = TRUE;
 	}
@@ -1336,7 +1336,7 @@ void FASTCALL CRTC::SetHRL(BOOL flag)
 
 //---------------------------------------------------------------------------
 //
-//	HRLæ“¾
+//	Get HRL
 //
 //---------------------------------------------------------------------------
 BOOL FASTCALL CRTC::GetHRL() const
@@ -1346,7 +1346,7 @@ BOOL FASTCALL CRTC::GetHRL() const
 
 //---------------------------------------------------------------------------
 //
-//	ƒeƒLƒXƒgVRAMŒø‰Ê
+//	Text VRAM effects
 //
 //---------------------------------------------------------------------------
 void FASTCALL CRTC::TextVRAM()
@@ -1354,12 +1354,12 @@ void FASTCALL CRTC::TextVRAM()
 	DWORD b;
 	DWORD w;
 
-	// “¯ƒAƒNƒZƒX
+	// Simultaneous access
 	if (crtc.reg[43] & 1) {
 		b = (DWORD)crtc.reg[42];
 		b >>= 4;
 
-		// b4‚Íƒ}ƒ‹ƒ`ƒtƒ‰ƒO
+		// b4 is the multi flag
 		b |= 0x10;
 		tvram->SetMulti(b);
 	}
@@ -1367,7 +1367,7 @@ void FASTCALL CRTC::TextVRAM()
 		tvram->SetMulti(0);
 	}
 
-	// ƒAƒNƒZƒXƒ}ƒXƒN
+	// Access mask
 	if (crtc.reg[43] & 2) {
 		w = (DWORD)crtc.reg[47];
 		w <<= 8;
@@ -1378,7 +1378,7 @@ void FASTCALL CRTC::TextVRAM()
 		tvram->SetMask(0);
 	}
 
-	// ƒ‰ƒXƒ^ƒRƒs[
+	// Raster copy
 	tvram->SetCopyRaster((DWORD)crtc.reg[45], (DWORD)crtc.reg[44],
 						(DWORD)(crtc.reg[42] & 0x0f));
 }
