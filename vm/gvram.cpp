@@ -2,8 +2,8 @@
 //
 //	X68000 EMULATOR "XM6"
 //
-//	Copyright (C) 2001-2005 ＰＩ．(ytanaka@ipc-tokai.or.jp)
-//	[ グラフィックVRAM ]
+//	Copyright (C) 2001-2005 P.I. (ytanaka@ipc-tokai.or.jp)
+//	[ Graphic VRAM ]
 //
 //---------------------------------------------------------------------------
 
@@ -19,14 +19,14 @@
 
 //===========================================================================
 //
-//	グラフィックVRAMハンドラ
+//	Graphic VRAM handler
 //
 //===========================================================================
 //#define GVRAM_LOG
 
 //---------------------------------------------------------------------------
 //
-//	コンストラクタ
+//	Constructor
 //
 //---------------------------------------------------------------------------
 GVRAMHandler::GVRAMHandler(Render *rend, BYTE *mem, CPU *p)
@@ -42,13 +42,13 @@ GVRAMHandler::GVRAMHandler(Render *rend, BYTE *mem, CPU *p)
 
 //===========================================================================
 //
-//	グラフィックVRAMハンドラ(1024×1024)
+//	Graphic VRAM handler (1024x1024)
 //
 //===========================================================================
 
 //---------------------------------------------------------------------------
 //
-//	コンストラクタ
+//	Constructor
 //
 //---------------------------------------------------------------------------
 GVRAM1024::GVRAM1024(Render *rend, BYTE *mem, CPU *cpu) : GVRAMHandler(rend, mem, cpu)
@@ -57,7 +57,7 @@ GVRAM1024::GVRAM1024(Render *rend, BYTE *mem, CPU *cpu) : GVRAMHandler(rend, mem
 
 //---------------------------------------------------------------------------
 //
-//	バイト読み込み
+//	Byte read
 //
 //---------------------------------------------------------------------------
 DWORD FASTCALL GVRAM1024::ReadByte(DWORD addr)
@@ -67,25 +67,25 @@ DWORD FASTCALL GVRAM1024::ReadByte(DWORD addr)
 	ASSERT(this);
 	ASSERT(addr <= 0x1fffff);
 
-	// 偶数バイトは読み出しても0
+	// Reading an even byte always returns 0
 	if ((addr & 1) == 0) {
 		return 0x00;
 	}
 
-	// 共通項
+	// Common terms
 	offset = addr & 0x3ff;
 
-	// 上下左右で分ける
+	// Split into upper/lower and left/right halves
 	if (addr & 0x100000) {
 		if (addr & 0x400) {
-			// ページ3空間
+			// Page 3 area
 			addr >>= 1;
 			addr &= 0x7fc00;
 			addr |= offset;
 			return (gvram[addr] >> 4);
 		}
 		else {
-			// ページ2空間
+			// Page 2 area
 			addr >>= 1;
 			addr &= 0x7fc00;
 			addr |= offset;
@@ -94,14 +94,14 @@ DWORD FASTCALL GVRAM1024::ReadByte(DWORD addr)
 	}
 	else {
 		if (addr & 0x400) {
-			// ページ1空間
+			// Page 1 area
 			addr >>= 1;
 			addr &= 0x7fc00;
 			addr |= offset;
 			return (gvram[addr ^ 1] >> 4);
 		}
 		else {
-			// ページ0空間
+			// Page 0 area
 			addr >>= 1;
 			addr &= 0x7fc00;
 			addr |= offset;
@@ -112,7 +112,7 @@ DWORD FASTCALL GVRAM1024::ReadByte(DWORD addr)
 
 //---------------------------------------------------------------------------
 //
-//	ワード読み込み
+//	Word read
 //
 //---------------------------------------------------------------------------
 DWORD FASTCALL GVRAM1024::ReadWord(DWORD addr)
@@ -123,20 +123,20 @@ DWORD FASTCALL GVRAM1024::ReadWord(DWORD addr)
 	ASSERT(addr <= 0x1fffff);
 	ASSERT((addr & 1) == 0);
 
-	// 共通項
+	// Common terms
 	offset = addr & 0x3ff;
 
-	// 上下左右で分ける
+	// Split into upper/lower and left/right halves
 	if (addr & 0x100000) {
 		if (addr & 0x400) {
-			// ページ3空間
+			// Page 3 area
 			addr >>= 1;
 			addr &= 0x7fc00;
 			addr |= offset;
 			return (gvram[addr ^ 1] >> 4);
 		}
 		else {
-			// ページ2空間
+			// Page 2 area
 			addr >>= 1;
 			addr &= 0x7fc00;
 			addr |= offset;
@@ -145,14 +145,14 @@ DWORD FASTCALL GVRAM1024::ReadWord(DWORD addr)
 	}
 	else {
 		if (addr & 0x400) {
-			// ページ1空間
+			// Page 1 area
 			addr >>= 1;
 			addr &= 0x7fc00;
 			addr |= offset;
 			return (gvram[addr] >> 4);
 		}
 		else {
-			// ページ0空間
+			// Page 0 area
 			addr >>= 1;
 			addr &= 0x7fc00;
 			addr |= offset;
@@ -163,7 +163,7 @@ DWORD FASTCALL GVRAM1024::ReadWord(DWORD addr)
 
 //---------------------------------------------------------------------------
 //
-//	バイト書き込み
+//	Byte write
 //
 //---------------------------------------------------------------------------
 void FASTCALL GVRAM1024::WriteByte(DWORD addr, DWORD data)
@@ -175,43 +175,43 @@ void FASTCALL GVRAM1024::WriteByte(DWORD addr, DWORD data)
 	ASSERT(addr <= 0x1fffff);
 	ASSERT(data < 0x100);
 
-	// 偶数バイトは書き込めない
+	// Even bytes cannot be written
 	if ((addr & 1) == 0) {
 		return;
 	}
 
-	// 共通項
+	// Common terms
 	offset = addr & 0x3ff;
 
-	// 上下左右で分ける
+	// Split into upper/lower and left/right halves
 	if (addr & 0x100000) {
 		if (addr & 0x400) {
-			// ページ3空間
+			// Page 3 area
 			addr >>= 1;
 			addr &= 0x7fc00;
 			addr |= offset;
 
-			// 上位ニブルへ
+			// To the upper nibble
 			mem = (gvram[addr] & 0x0f);
 			mem |= (data << 4);
 
-			// 書き込み
+			// Write
 			if (gvram[addr] != mem) {
 				gvram[addr] = (BYTE)mem;
 				render->GrpMem(addr, 3);
 			}
 		}
 		else {
-			// ページ2空間
+			// Page 2 area
 			addr >>= 1;
 			addr &= 0x7fc00;
 			addr |= offset;
 
-			// 下位ニブルへ
+			// To the lower nibble
 			mem = (gvram[addr] & 0xf0);
 			mem |= (data & 0x0f);
 
-			// 書き込み
+			// Write
 			if (gvram[addr] != mem) {
 				gvram[addr] = (BYTE)mem;
 				render->GrpMem(addr, 2);
@@ -220,32 +220,32 @@ void FASTCALL GVRAM1024::WriteByte(DWORD addr, DWORD data)
 	}
 	else {
 		if (addr & 0x400) {
-			// ページ1空間
+			// Page 1 area
 			addr >>= 1;
 			addr &= 0x7fc00;
 			addr |= offset;
 
-			// 上位ニブルへ
+			// To the upper nibble
 			mem = (gvram[addr ^ 1] & 0x0f);
 			mem |= (data << 4);
 
-			// 書き込み
+			// Write
 			if (gvram[addr ^ 1] != mem) {
 				gvram[addr ^ 1] = (BYTE)mem;
 				render->GrpMem(addr ^ 1, 1);
 			}
 		}
 		else {
-			// ページ0空間
+			// Page 0 area
 			addr >>= 1;
 			addr &= 0x7fc00;
 			addr |= offset;
 
-			// 下位ニブルヘ
+			// To the lower nibble
 			mem = (gvram[addr ^ 1] & 0xf0);
 			mem |= (data & 0x0f);
 
-			// 書き込み
+			// Write
 			if (gvram[addr ^ 1] != mem) {
 				gvram[addr ^ 1] = (BYTE)mem;
 				render->GrpMem(addr ^ 1, 0);
@@ -256,7 +256,7 @@ void FASTCALL GVRAM1024::WriteByte(DWORD addr, DWORD data)
 
 //---------------------------------------------------------------------------
 //
-//	ワード書き込み
+//	Word write
 //
 //---------------------------------------------------------------------------
 void FASTCALL GVRAM1024::WriteWord(DWORD addr, DWORD data)
@@ -268,39 +268,39 @@ void FASTCALL GVRAM1024::WriteWord(DWORD addr, DWORD data)
 	ASSERT(addr <= 0x1fffff);
 	ASSERT(data < 0x10000);
 
-	// 共通項
+	// Common terms
 	offset = addr & 0x3ff;
 
-	// 上下左右で分ける
+	// Split into upper/lower and left/right halves
 	if (addr & 0x100000) {
 		if (addr & 0x400) {
-			// ページ3空間
+			// Page 3 area
 			addr >>= 1;
 			addr &= 0x7fc00;
 			addr |= offset;
 
-			// 上位ニブルへ
+			// To the upper nibble
 			mem = (gvram[addr ^ 1] & 0x0f);
 			data &= 0x0f;
 			mem |= (data << 4);
 
-			// 書き込み
+			// Write
 			if (gvram[addr ^ 1] != mem) {
 				gvram[addr ^ 1] = (BYTE)mem;
 				render->GrpMem(addr ^ 1, 3);
 			}
 		}
 		else {
-			// ページ2空間
+			// Page 2 area
 			addr >>= 1;
 			addr &= 0x7fc00;
 			addr |= offset;
 
-			// 下位ニブルへ
+			// To the lower nibble
 			mem = (gvram[addr ^ 1] & 0xf0);
 			mem |= (data & 0x0f);
 
-			// 書き込み
+			// Write
 			if (gvram[addr ^ 1] != mem) {
 				gvram[addr ^ 1] = (BYTE)mem;
 				render->GrpMem(addr ^ 1, 2);
@@ -309,33 +309,33 @@ void FASTCALL GVRAM1024::WriteWord(DWORD addr, DWORD data)
 	}
 	else {
 		if (addr & 0x400) {
-			// ページ1空間
+			// Page 1 area
 			addr >>= 1;
 			addr &= 0x7fc00;
 			addr |= offset;
 
-			// 上位ニブルへ
+			// To the upper nibble
 			mem = (gvram[addr] & 0x0f);
 			data &= 0x0f;
 			mem |= (data << 4);
 
-			// 書き込み
+			// Write
 			if (gvram[addr] != mem) {
 				gvram[addr] = (BYTE)mem;
 				render->GrpMem(addr, 1);
 			}
 		}
 		else {
-			// ページ0空間
+			// Page 0 area
 			addr >>= 1;
 			addr &= 0x7fc00;
 			addr |= offset;
 
-			// 下位ニブルへ
+			// To the lower nibble
 			mem = (gvram[addr] & 0xf0);
 			mem |= (data & 0x0f);
 
-			// 書き込み
+			// Write
 			if (gvram[addr] != mem) {
 				gvram[addr] = (BYTE)mem;
 				render->GrpMem(addr, 0);
@@ -346,7 +346,7 @@ void FASTCALL GVRAM1024::WriteWord(DWORD addr, DWORD data)
 
 //---------------------------------------------------------------------------
 //
-//	読み込みのみ
+//	Read-only
 //
 //---------------------------------------------------------------------------
 DWORD FASTCALL GVRAM1024::ReadOnly(DWORD addr) const
@@ -356,25 +356,25 @@ DWORD FASTCALL GVRAM1024::ReadOnly(DWORD addr) const
 	ASSERT(this);
 	ASSERT(addr <= 0x1fffff);
 
-	// 偶数バイトは読み出しても0
+	// Reading an even byte always returns 0
 	if ((addr & 1) == 0) {
 		return 0x00;
 	}
 
-	// 共通項
+	// Common terms
 	offset = addr & 0x3ff;
 
-	// 上下左右で分ける
+	// Split into upper/lower and left/right halves
 	if (addr & 0x100000) {
 		if (addr & 0x400) {
-			// ページ3空間
+			// Page 3 area
 			addr >>= 1;
 			addr &= 0x7fc00;
 			addr |= offset;
 			return (gvram[addr] >> 4);
 		}
 		else {
-			// ページ2空間
+			// Page 2 area
 			addr >>= 1;
 			addr &= 0x7fc00;
 			addr |= offset;
@@ -383,14 +383,14 @@ DWORD FASTCALL GVRAM1024::ReadOnly(DWORD addr) const
 	}
 	else {
 		if (addr & 0x400) {
-			// ページ1空間
+			// Page 1 area
 			addr >>= 1;
 			addr &= 0x7fc00;
 			addr |= offset;
 			return (gvram[addr ^ 1] >> 4);
 		}
 		else {
-			// ページ0空間
+			// Page 0 area
 			addr >>= 1;
 			addr &= 0x7fc00;
 			addr |= offset;
@@ -401,13 +401,13 @@ DWORD FASTCALL GVRAM1024::ReadOnly(DWORD addr) const
 
 //===========================================================================
 //
-//	グラフィックVRAMハンドラ(16色)
+//	Graphic VRAM handler (16 colors)
 //
 //===========================================================================
 
 //---------------------------------------------------------------------------
 //
-//	コンストラクタ
+//	Constructor
 //
 //---------------------------------------------------------------------------
 GVRAM16::GVRAM16(Render *rend, BYTE *mem, CPU *cpu) : GVRAMHandler(rend, mem, cpu)
@@ -416,7 +416,7 @@ GVRAM16::GVRAM16(Render *rend, BYTE *mem, CPU *cpu) : GVRAMHandler(rend, mem, cp
 
 //---------------------------------------------------------------------------
 //
-//	バイト読み込み
+//	Byte read
 //
 //---------------------------------------------------------------------------
 DWORD FASTCALL GVRAM16::ReadByte(DWORD addr)
@@ -424,37 +424,37 @@ DWORD FASTCALL GVRAM16::ReadByte(DWORD addr)
 	ASSERT(this);
 	ASSERT(addr <= 0x1fffff);
 
-	// 奇数アドレスのみ
+	// Odd addresses only
 	if (addr & 1) {
 		if (addr < 0x80000) {
-			// ページ0:ワードの下位バイトb0-b3
+			// Page 0: lower word byte bits b0-b3
 			return (gvram[addr ^ 1] & 0x0f);
 		}
 
 		if (addr < 0x100000) {
-			// ページ1:ワードの下位バイトb4-b7
+			// Page 1: lower word byte bits b4-b7
 			addr &= 0x7ffff;
 			return (gvram[addr ^ 1] >> 4);
 		}
 
 		if (addr < 0x180000) {
-			// ページ2:ワードの上位バイトb0-b3
+			// Page 2: upper word byte bits b0-b3
 			addr &= 0x7ffff;
 			return (gvram[addr] & 0x0f);
 		}
 
-		// ページ3:ワードの上位バイトb4-b7
+		// Page 3: upper word byte bits b4-b7
 		addr &= 0x7ffff;
 		return (gvram[addr] >> 4);
 	}
 
-	// 偶数アドレスは常に0
+	// Even addresses are always 0
 	return 0;
 }
 
 //---------------------------------------------------------------------------
 //
-//	ワード読み込み
+//	Word read
 //
 //---------------------------------------------------------------------------
 DWORD FASTCALL GVRAM16::ReadWord(DWORD addr)
@@ -464,30 +464,30 @@ DWORD FASTCALL GVRAM16::ReadWord(DWORD addr)
 	ASSERT((addr & 1) == 0);
 
 	if (addr < 0x80000) {
-		// ページ0:ワードの下位バイトb0-b3
+		// Page 0: lower word byte bits b0-b3
 		return (gvram[addr] & 0x0f);
 	}
 
 	if (addr < 0x100000) {
-		// ページ1:ワードの下位バイトb4-b7
+		// Page 1: lower word byte bits b4-b7
 		addr &= 0x7ffff;
 		return (gvram[addr] >> 4);
 	}
 
 	if (addr < 0x180000) {
-		// ページ2:ワードの上位バイトb0-b3
+		// Page 2: upper word byte bits b0-b3
 		addr &= 0x7ffff;
 		return (gvram[addr ^ 1] & 0x0f);
 	}
 
-	// ページ3:ワードの上位バイトb4-b7
+	// Page 3: upper word byte bits b4-b7
 	addr &= 0x7ffff;
 	return (gvram[addr ^ 1] >> 4);
 }
 
 //---------------------------------------------------------------------------
 //
-//	バイト書き込み
+//	Byte write
 //
 //---------------------------------------------------------------------------
 void FASTCALL GVRAM16::WriteByte(DWORD addr, DWORD data)
@@ -498,14 +498,14 @@ void FASTCALL GVRAM16::WriteByte(DWORD addr, DWORD data)
 	ASSERT(addr <= 0x1fffff);
 	ASSERT(data < 0x100);
 
-	// 奇数アドレスのみ
+	// Odd addresses only
 	if (addr & 1) {
 		if (addr < 0x80000) {
-			// ページ0:ワードの下位バイトb0-b3
+			// Page 0: lower word byte bits b0-b3
 			mem = (gvram[addr ^ 1] & 0xf0);
 			mem |= (data & 0x0f);
 
-			// 書き込み
+			// Write
 			if (gvram[addr ^ 1] != mem) {
 				gvram[addr ^ 1] = (BYTE)mem;
 				render->GrpMem(addr ^ 1, 0);
@@ -514,12 +514,12 @@ void FASTCALL GVRAM16::WriteByte(DWORD addr, DWORD data)
 		}
 
 		if (addr < 0x100000) {
-			// ページ1:ワードの下位バイトb4-b7
+			// Page 1: lower word byte bits b4-b7
 			addr &= 0x7ffff;
 			mem = (gvram[addr ^ 1] & 0x0f);
 			mem |= (data << 4);
 
-			// 書き込み
+			// Write
 			if (gvram[addr ^ 1] != mem) {
 				gvram[addr ^ 1] = (BYTE)mem;
 				render->GrpMem(addr ^ 1, 1);
@@ -528,12 +528,12 @@ void FASTCALL GVRAM16::WriteByte(DWORD addr, DWORD data)
 		}
 
 		if (addr < 0x180000) {
-			// ページ2:ワードの上位バイトb0-b3
+			// Page 2: upper word byte bits b0-b3
 			addr &= 0x7ffff;
 			mem = (gvram[addr] & 0xf0);
 			mem |= (data & 0x0f);
 
-			// 書き込み
+			// Write
 			if (gvram[addr] != mem) {
 				gvram[addr] = (BYTE)mem;
 				render->GrpMem(addr, 2);
@@ -541,12 +541,12 @@ void FASTCALL GVRAM16::WriteByte(DWORD addr, DWORD data)
 			return;
 		}
 
-		// ページ3:ワードの上位バイトb4-b7
+		// Page 3: upper word byte bits b4-b7
 		addr &= 0x7ffff;
 		mem = (gvram[addr] & 0x0f);
 		mem |= (data << 4);
 
-		// 書き込み
+		// Write
 		if (gvram[addr] != mem) {
 			gvram[addr] = (BYTE)mem;
 			render->GrpMem(addr, 3);
@@ -554,12 +554,12 @@ void FASTCALL GVRAM16::WriteByte(DWORD addr, DWORD data)
 		return;
 	}
 
-	// 偶数アドレスは書き込めない
+	// Even addresses cannot be written
 }
 
 //---------------------------------------------------------------------------
 //
-//	ワード書き込み
+//	Word write
 //
 //---------------------------------------------------------------------------
 void FASTCALL GVRAM16::WriteWord(DWORD addr, DWORD data)
@@ -572,11 +572,11 @@ void FASTCALL GVRAM16::WriteWord(DWORD addr, DWORD data)
 	ASSERT(data < 0x10000);
 
 	if (addr < 0x80000) {
-		// ページ0:ワードの下位バイトb0-b3
+		// Page 0: lower word byte bits b0-b3
 		mem = (gvram[addr] & 0xf0);
 		mem |= (data & 0x0f);
 
-		// 書き込み
+		// Write
 		if (gvram[addr] != mem) {
 			gvram[addr] = (BYTE)mem;
 			render->GrpMem(addr, 0);
@@ -584,13 +584,13 @@ void FASTCALL GVRAM16::WriteWord(DWORD addr, DWORD data)
 		return;
 	}
 	if (addr < 0x100000) {
-		// ページ1:ワードの下位バイトb4-b7
+		// Page 1: lower word byte bits b4-b7
 		addr &= 0x7ffff;
 		mem = (gvram[addr] & 0x0f);
 		data &= 0x0f;
 		mem |= (data << 4);
 
-		// 書き込み
+		// Write
 		if (gvram[addr] != mem) {
 			gvram[addr] = (BYTE)mem;
 			render->GrpMem(addr, 1);
@@ -598,12 +598,12 @@ void FASTCALL GVRAM16::WriteWord(DWORD addr, DWORD data)
 		return;
 	}
 	if (addr < 0x180000) {
-		// ページ2:ワードの上位バイトb0-b3
+		// Page 2: upper word byte bits b0-b3
 		addr &= 0x7ffff;
 		mem = (gvram[addr ^ 1] & 0xf0);
 		mem |= (data & 0x0f);
 
-		// 書き込み
+		// Write
 		if (gvram[addr ^ 1] != mem) {
 			gvram[addr ^ 1] = (BYTE)mem;
 			render->GrpMem(addr ^ 1, 2);
@@ -611,13 +611,13 @@ void FASTCALL GVRAM16::WriteWord(DWORD addr, DWORD data)
 		return;
 	}
 
-	// ページ3:ワードの上位バイトb4-b7
+	// Page 3: upper word byte bits b4-b7
 	addr &= 0x7ffff;
 	mem = (gvram[addr ^ 1] & 0x0f);
 	data &= 0x0f;
 	mem |= (data << 4);
 
-	// 書き込み
+	// Write
 	if (gvram[addr ^ 1] != mem) {
 		gvram[addr ^ 1] = (BYTE)mem;
 		render->GrpMem(addr ^ 1, 3);
@@ -626,7 +626,7 @@ void FASTCALL GVRAM16::WriteWord(DWORD addr, DWORD data)
 
 //---------------------------------------------------------------------------
 //
-//	読み込みのみ
+//	Read-only
 //
 //---------------------------------------------------------------------------
 DWORD FASTCALL GVRAM16::ReadOnly(DWORD addr) const
@@ -634,43 +634,43 @@ DWORD FASTCALL GVRAM16::ReadOnly(DWORD addr) const
 	ASSERT(this);
 	ASSERT(addr <= 0x1fffff);
 
-	// 奇数アドレスのみ
+	// Odd addresses only
 	if (addr & 1) {
 		if (addr < 0x80000) {
-			// ページ0:ワードの下位バイトb0-b3
+			// Page 0: lower word byte bits b0-b3
 			return (gvram[addr ^ 1] & 0x0f);
 		}
 
 		if (addr < 0x100000) {
-			// ページ1:ワードの下位バイトb4-b7
+			// Page 1: lower word byte bits b4-b7
 			addr &= 0x7ffff;
 			return (gvram[addr ^ 1] >> 4);
 		}
 
 		if (addr < 0x180000) {
-			// ページ2:ワードの上位バイトb0-b3
+			// Page 2: upper word byte bits b0-b3
 			addr &= 0x7ffff;
 			return (gvram[addr] & 0x0f);
 		}
 
-		// ページ3:ワードの上位バイトb4-b7
+		// Page 3: upper word byte bits b4-b7
 		addr &= 0x7ffff;
 		return (gvram[addr] >> 4);
 	}
 
-	// 偶数アドレスは常に0
+	// Even addresses are always 0
 	return 0;
 }
 
 //===========================================================================
 //
-//	グラフィックVRAMハンドラ(256色)
+//	Graphic VRAM handler (256 colors)
 //
 //===========================================================================
 
 //---------------------------------------------------------------------------
 //
-//	コンストラクタ
+//	Constructor
 //
 //---------------------------------------------------------------------------
 GVRAM256::GVRAM256(Render *rend, BYTE *mem, CPU *p) : GVRAMHandler(rend, mem, p)
@@ -679,7 +679,7 @@ GVRAM256::GVRAM256(Render *rend, BYTE *mem, CPU *p) : GVRAMHandler(rend, mem, p)
 
 //---------------------------------------------------------------------------
 //
-//	バイト読み込み
+//	Byte read
 //
 //---------------------------------------------------------------------------
 DWORD FASTCALL GVRAM256::ReadByte(DWORD addr)
@@ -687,33 +687,33 @@ DWORD FASTCALL GVRAM256::ReadByte(DWORD addr)
 	ASSERT(this);
 	ASSERT(addr <= 0x1fffff);
 
-	// ページ0
+	// Page 0
 	if (addr < 0x80000) {
 		if (addr & 1) {
-			// ワードの下位バイト
+			// Lower word byte
 			return gvram[addr ^ 1];
 		}
 		return 0;
 	}
 
-	// ページ1
+	// Page 1
 	if (addr < 0x100000) {
 		addr &= 0x7ffff;
 		if (addr & 1) {
-			// ワードの上位バイト
+			// Upper word byte
 			return gvram[addr];
 		}
 		return 0;
 	}
 
-	// バスエラー
+	// Bus error
 	cpu->BusErr(addr + 0xc00000, TRUE);
 	return 0xff;
 }
 
 //---------------------------------------------------------------------------
 //
-//	ワード読み込み
+//	Word read
 //
 //---------------------------------------------------------------------------
 DWORD FASTCALL GVRAM256::ReadWord(DWORD addr)
@@ -722,27 +722,27 @@ DWORD FASTCALL GVRAM256::ReadWord(DWORD addr)
 	ASSERT(addr <= 0x1fffff);
 	ASSERT((addr & 1) == 0);
 
-	// ページ0
+	// Page 0
 	if (addr < 0x80000) {
-		// ワードの下位バイト
+		// Lower word byte
 		return gvram[addr];
 	}
 
-	// ページ1
+	// Page 1
 	if (addr < 0x100000) {
 		addr &= 0x7ffff;
-		// ワードの上位バイト
+		// Upper word byte
 		return gvram[addr ^ 1];
 	}
 
-	// バスエラー
+	// Bus error
 	cpu->BusErr(addr + 0xc00000, TRUE);
 	return 0xff;
 }
 
 //---------------------------------------------------------------------------
 //
-//	バイト書き込み
+//	Byte write
 //
 //---------------------------------------------------------------------------
 void FASTCALL GVRAM256::WriteByte(DWORD addr, DWORD data)
@@ -751,10 +751,10 @@ void FASTCALL GVRAM256::WriteByte(DWORD addr, DWORD data)
 	ASSERT(addr <= 0x1fffff);
 	ASSERT(data < 0x100);
 
-	// ページ0
+	// Page 0
 	if (addr < 0x80000) {
 		if (addr & 1) {
-			// ワードの下位バイト
+			// Lower word byte
 			if (gvram[addr ^ 1] != data) {
 				gvram[addr ^ 1] = (BYTE)data;
 				render->GrpMem(addr ^ 1, 0);
@@ -763,11 +763,11 @@ void FASTCALL GVRAM256::WriteByte(DWORD addr, DWORD data)
 		return;
 	}
 
-	// ページ1(ブロック2)
+	// Page 1 (block 2)
 	if (addr < 0x100000) {
 		addr &= 0x7ffff;
 		if (addr & 1) {
-			// ワードの上位バイト
+			// Upper word byte
 			if (gvram[addr] != data) {
 				gvram[addr] = (BYTE)data;
 				render->GrpMem(addr, 2);
@@ -776,13 +776,13 @@ void FASTCALL GVRAM256::WriteByte(DWORD addr, DWORD data)
 		return;
 	}
 
-	// バスエラー
+	// Bus error
 	cpu->BusErr(addr + 0xc00000, FALSE);
 }
 
 //---------------------------------------------------------------------------
 //
-//	ワード書き込み
+//	Word write
 //
 //---------------------------------------------------------------------------
 void FASTCALL GVRAM256::WriteWord(DWORD addr, DWORD data)
@@ -792,9 +792,9 @@ void FASTCALL GVRAM256::WriteWord(DWORD addr, DWORD data)
 	ASSERT((addr & 1) == 0);
 	ASSERT(data < 0x10000);
 
-	// ページ0
+	// Page 0
 	if (addr < 0x80000) {
-		// ワードの下位バイト
+		// Lower word byte
 		if (gvram[addr] != data) {
 			gvram[addr] = (BYTE)data;
 			render->GrpMem(addr, 0);
@@ -802,10 +802,10 @@ void FASTCALL GVRAM256::WriteWord(DWORD addr, DWORD data)
 		return;
 	}
 
-	// ページ1(ブロック2)
+	// Page 1 (block 2)
 	if (addr < 0x100000) {
 		addr &= 0x7ffff;
-		// ワードの上位バイト
+		// Upper word byte
 		if (gvram[addr ^ 1] != data) {
 			gvram[addr ^ 1] = (BYTE)data;
 			render->GrpMem(addr ^ 1, 2);
@@ -813,13 +813,13 @@ void FASTCALL GVRAM256::WriteWord(DWORD addr, DWORD data)
 		return;
 	}
 
-	// バスエラー
+	// Bus error
 	cpu->BusErr(addr + 0xc00000, FALSE);
 }
 
 //---------------------------------------------------------------------------
 //
-//	読み込みのみ
+//	Read-only
 //
 //---------------------------------------------------------------------------
 DWORD FASTCALL GVRAM256::ReadOnly(DWORD addr) const
@@ -827,38 +827,38 @@ DWORD FASTCALL GVRAM256::ReadOnly(DWORD addr) const
 	ASSERT(this);
 	ASSERT(addr <= 0x1fffff);
 
-	// ページ0
+	// Page 0
 	if (addr < 0x80000) {
 		if (addr & 1) {
-			// ワードの下位バイト
+			// Lower word byte
 			return gvram[addr ^ 1];
 		}
 		return 0;
 	}
 
-	// ページ1
+	// Page 1
 	if (addr < 0x100000) {
 		addr &= 0x7ffff;
 		if (addr & 1) {
-			// ワードの上位バイト
+			// Upper word byte
 			return gvram[addr];
 		}
 		return 0;
 	}
 
-	// バスエラー
+	// Bus error
 	return 0xff;
 }
 
 //===========================================================================
 //
-//	グラフィックVRAMハンドラ(無効)
+//	Graphic VRAM handler (invalid)
 //
 //===========================================================================
 
 //---------------------------------------------------------------------------
 //
-//	コンストラクタ
+//	Constructor
 //
 //---------------------------------------------------------------------------
 GVRAMNDef::GVRAMNDef(Render *rend, BYTE *mem, CPU *p) : GVRAMHandler(rend, mem, p)
@@ -867,7 +867,7 @@ GVRAMNDef::GVRAMNDef(Render *rend, BYTE *mem, CPU *p) : GVRAMHandler(rend, mem, 
 
 //---------------------------------------------------------------------------
 //
-//	バイト読み込み
+//	Byte read
 //
 //---------------------------------------------------------------------------
 DWORD FASTCALL GVRAMNDef::ReadByte(DWORD addr)
@@ -875,12 +875,12 @@ DWORD FASTCALL GVRAMNDef::ReadByte(DWORD addr)
 	ASSERT(this);
 	ASSERT(addr <= 0x1fffff);
 
-	// 無効ページ
+	// Invalid page
 	if (addr & 0x80000) {
 		return 0;
 	}
 
-	// 下位ページ
+	// Lower page
 	addr &= 0x7ffff;
 	if (addr & 1) {
 		return gvram[addr ^ 1];
@@ -890,7 +890,7 @@ DWORD FASTCALL GVRAMNDef::ReadByte(DWORD addr)
 
 //---------------------------------------------------------------------------
 //
-//	ワード読み込み
+//	Word read
 //
 //---------------------------------------------------------------------------
 DWORD FASTCALL GVRAMNDef::ReadWord(DWORD addr)
@@ -899,19 +899,19 @@ DWORD FASTCALL GVRAMNDef::ReadWord(DWORD addr)
 	ASSERT(addr <= 0x1fffff);
 	ASSERT((addr & 1) == 0);
 
-	// 無効ページ
+	// Invalid page
 	if (addr & 0x80000) {
 		return 0;
 	}
 
-	// 下位ページ
+	// Lower page
 	addr &= 0x7ffff;
 	return gvram[addr ^ 1];
 }
 
 //---------------------------------------------------------------------------
 //
-//	バイト書き込み
+//	Byte write
 //
 //---------------------------------------------------------------------------
 void FASTCALL GVRAMNDef::WriteByte(DWORD addr, DWORD data)
@@ -920,12 +920,12 @@ void FASTCALL GVRAMNDef::WriteByte(DWORD addr, DWORD data)
 	ASSERT(addr <= 0x1fffff);
 	ASSERT(data < 0x100);
 
-	// 無効ページ
+	// Invalid page
 	if (addr & 0x80000) {
 		return;
 	}
 
-	// 下位ページ
+	// Lower page
 	addr &= 0x7ffff;
 	if (addr & 1) {
 		if (gvram[addr ^ 1] != data) {
@@ -937,7 +937,7 @@ void FASTCALL GVRAMNDef::WriteByte(DWORD addr, DWORD data)
 
 //---------------------------------------------------------------------------
 //
-//	ワード書き込み
+//	Word write
 //
 //---------------------------------------------------------------------------
 void FASTCALL GVRAMNDef::WriteWord(DWORD addr, DWORD data)
@@ -947,12 +947,12 @@ void FASTCALL GVRAMNDef::WriteWord(DWORD addr, DWORD data)
 	ASSERT((addr & 1) == 0);
 	ASSERT(data < 0x10000);
 
-	// 無効ページ
+	// Invalid page
 	if (addr & 0x80000) {
 		return;
 	}
 
-	// 下位ページ
+	// Lower page
 	addr &= 0x7ffff;
 	if (gvram[addr ^ 1] != data) {
 		gvram[addr ^ 1] = (BYTE)data;
@@ -962,7 +962,7 @@ void FASTCALL GVRAMNDef::WriteWord(DWORD addr, DWORD data)
 
 //---------------------------------------------------------------------------
 //
-//	読み込みのみ
+//	Read-only
 //
 //---------------------------------------------------------------------------
 DWORD FASTCALL GVRAMNDef::ReadOnly(DWORD addr) const
@@ -970,12 +970,12 @@ DWORD FASTCALL GVRAMNDef::ReadOnly(DWORD addr) const
 	ASSERT(this);
 	ASSERT(addr <= 0x1fffff);
 
-	// 無効ページ
+	// Invalid page
 	if (addr & 0x80000) {
 		return 0;
 	}
 
-	// 下位ページ
+	// Lower page
 	addr &= 0x7ffff;
 	if (addr & 1) {
 		return gvram[addr ^ 1];
@@ -985,13 +985,13 @@ DWORD FASTCALL GVRAMNDef::ReadOnly(DWORD addr) const
 
 //===========================================================================
 //
-//	グラフィックVRAMハンドラ(65536色)
+//	Graphic VRAM handler (65536 colors)
 //
 //===========================================================================
 
 //---------------------------------------------------------------------------
 //
-//	コンストラクタ
+//	Constructor
 //
 //---------------------------------------------------------------------------
 GVRAM64K::GVRAM64K(Render *rend, BYTE *mem, CPU *p) : GVRAMHandler(rend, mem, p)
@@ -1000,7 +1000,7 @@ GVRAM64K::GVRAM64K(Render *rend, BYTE *mem, CPU *p) : GVRAMHandler(rend, mem, p)
 
 //---------------------------------------------------------------------------
 //
-//	バイト読み込み
+//	Byte read
 //
 //---------------------------------------------------------------------------
 DWORD FASTCALL GVRAM64K::ReadByte(DWORD addr)
@@ -1012,14 +1012,14 @@ DWORD FASTCALL GVRAM64K::ReadByte(DWORD addr)
 		return gvram[addr ^ 1];
 	}
 
-	// バスエラー
+	// Bus error
 	cpu->BusErr(addr + 0xc00000, TRUE);
 	return 0xff;
 }
 
 //---------------------------------------------------------------------------
 //
-//	ワード読み込み
+//	Word read
 //
 //---------------------------------------------------------------------------
 DWORD FASTCALL GVRAM64K::ReadWord(DWORD addr)
@@ -1032,14 +1032,14 @@ DWORD FASTCALL GVRAM64K::ReadWord(DWORD addr)
 		return *(WORD*)(&gvram[addr]);
 	}
 
-	// バスエラー
+	// Bus error
 	cpu->BusErr(addr + 0xc00000, TRUE);
 	return 0xffff;
 }
 
 //---------------------------------------------------------------------------
 //
-//	バイト書き込み
+//	Byte write
 //
 //---------------------------------------------------------------------------
 void FASTCALL GVRAM64K::WriteByte(DWORD addr, DWORD data)
@@ -1056,13 +1056,13 @@ void FASTCALL GVRAM64K::WriteByte(DWORD addr, DWORD data)
 		return;
 	}
 
-	// バスエラー
+	// Bus error
 	cpu->BusErr(addr + 0xc00000, FALSE);
 }
 
 //---------------------------------------------------------------------------
 //
-//	ワード書き込み
+//	Word write
 //
 //---------------------------------------------------------------------------
 void FASTCALL GVRAM64K::WriteWord(DWORD addr, DWORD data)
@@ -1080,13 +1080,13 @@ void FASTCALL GVRAM64K::WriteWord(DWORD addr, DWORD data)
 		return;
 	}
 
-	// バスエラー
+	// Bus error
 	cpu->BusErr(addr + 0xc00000, FALSE);
 }
 
 //---------------------------------------------------------------------------
 //
-//	読み込みのみ
+//	Read-only
 //
 //---------------------------------------------------------------------------
 DWORD FASTCALL GVRAM64K::ReadOnly(DWORD addr) const
@@ -1098,36 +1098,36 @@ DWORD FASTCALL GVRAM64K::ReadOnly(DWORD addr) const
 		return gvram[addr ^ 1];
 	}
 
-	// バスエラー
+	// Bus error
 	return 0xff;
 }
 
 //===========================================================================
 //
-//	グラフィックVRAM
+//	Graphic VRAM
 //
 //===========================================================================
 
 //---------------------------------------------------------------------------
 //
-//	コンストラクタ
+//	Constructor
 //
 //---------------------------------------------------------------------------
 GVRAM::GVRAM(VM *p) : MemDevice(p)
 {
-	// デバイスIDを初期化
+	// Initialize the device ID
 	dev.id = MAKEID('G', 'V', 'R', 'M');
 	dev.desc = "Graphic VRAM";
 
-	// 開始アドレス、終了アドレス
+	// Start and end addresses
 	memdev.first = 0xc00000;
 	memdev.last = 0xdfffff;
 
-	// ワークエリア
+	// Work area
 	gvram = NULL;
 	render = NULL;
 
-	// ハンドラ
+	// Handler
 	handler = NULL;
 	hand1024 = NULL;
 	hand16 = NULL;
@@ -1138,19 +1138,19 @@ GVRAM::GVRAM(VM *p) : MemDevice(p)
 
 //---------------------------------------------------------------------------
 //
-//	初期化
+//	Initialize
 //
 //---------------------------------------------------------------------------
 BOOL FASTCALL GVRAM::Init()
 {
 	ASSERT(this);
 
-	// 基本クラス
+	// Base class
 	if (!MemDevice::Init()) {
 		return FALSE;
 	}
 
-	// メモリ確保、クリア
+	// Allocate and clear memory
 	try {
 		gvram = new BYTE[ 0x80000 ];
 	}
@@ -1162,28 +1162,28 @@ BOOL FASTCALL GVRAM::Init()
 	}
 	memset(gvram, 0, 0x80000);
 
-	// レンダラ取得
+	// Get the renderer
 	render = (Render*)vm->SearchDevice(MAKEID('R', 'E', 'N', 'D'));
 	ASSERT(render);
 
-	// ハンドラ作成
+	// Create the handlers
 	hand1024 = new GVRAM1024(render, gvram, cpu);
 	hand16 = new GVRAM16(render, gvram, cpu);
 	hand256 = new GVRAM256(render, gvram, cpu);
 	handNDef = new GVRAMNDef(render, gvram, cpu);
 	hand64K = new GVRAM64K(render, gvram, cpu);
 
-	// データ初期化
+	// Initialize the data
 	gvdata.mem = TRUE;
 	gvdata.siz = 0;
 	gvdata.col = 3;
 	gvcount = 0;
 
-	// ハンドラ初期化(64K)
+	// Initialize the handlers (64K)
 	gvdata.type = 4;
 	handler = hand64K;
 
-	// 高速クリアマスク
+	// Fast-clear mask
 	gvdata.mask[0] = 0xfff0;
 	gvdata.mask[1] = 0xff0f;
 	gvdata.mask[2] = 0xf0ff;
@@ -1194,14 +1194,14 @@ BOOL FASTCALL GVRAM::Init()
 
 //---------------------------------------------------------------------------
 //
-//	クリーンアップ
+//	Cleanup
 //
 //---------------------------------------------------------------------------
 void FASTCALL GVRAM::Cleanup()
 {
 	ASSERT(this);
 
-	// ハンドラ解放
+	// Release the handlers
 	if (hand64K) {
 		delete hand64K;
 		hand64K = NULL;
@@ -1224,19 +1224,19 @@ void FASTCALL GVRAM::Cleanup()
 	}
 	handler = NULL;
 
-	// メモリ解放
+	// Release memory
 	if (gvram) {
 		delete[] gvram;
 		gvram = NULL;
 	}
 
-	// 基本クラスへ
+	// Return to the base class
 	MemDevice::Cleanup();
 }
 
 //---------------------------------------------------------------------------
 //
-//	リセット
+//	Reset
 //
 //---------------------------------------------------------------------------
 void FASTCALL GVRAM::Reset()
@@ -1246,26 +1246,26 @@ void FASTCALL GVRAM::Reset()
 
 	LOG0(Log::Normal, "リセット");
 
-	// 高速クリアなし
+	// No fast clear
 	gvdata.plane[0] = FALSE;
 	gvdata.plane[1] = FALSE;
 	gvdata.plane[2] = FALSE;
 	gvdata.plane[3] = FALSE;
 
-	// ハンドラ初期化(64K)
+	// Initialize the handlers (64K)
 	gvdata.mem = TRUE;
 	gvdata.siz = 0;
 	gvdata.col = 3;
 	gvdata.type = 4;
 	handler = hand64K;
 
-	// アクセスカウント0
+	// Clear the access count
 	gvcount = 0;
 }
 
 //---------------------------------------------------------------------------
 //
-//	セーブ
+//	Save
 //
 //---------------------------------------------------------------------------
 BOOL FASTCALL GVRAM::Save(Fileio *fio, int /*ver*/)
@@ -1278,23 +1278,23 @@ BOOL FASTCALL GVRAM::Save(Fileio *fio, int /*ver*/)
 
 	LOG0(Log::Normal, "セーブ");
 
-	// メモリをセーブ
+	// Save memory
 	if (!fio->Write(gvram, 0x80000)) {
 		return FALSE;
 	}
 
-	// サイズをセーブ
+	// Save the size
 	sz = sizeof(gvram_t);
 	if (!fio->Write(&sz, sizeof(sz))) {
 		return FALSE;
 	}
 
-	// 実体をセーブ
+	// Save the payload
 	if (!fio->Write(&gvdata, (int)sz)) {
 		return FALSE;
 	}
 
-	// gvcount(version2.04で追加)
+	// gvcount (added in version 2.04)
 	if (!fio->Write(&gvcount, sizeof(gvcount))) {
 		return FALSE;
 	}
@@ -1304,7 +1304,7 @@ BOOL FASTCALL GVRAM::Save(Fileio *fio, int /*ver*/)
 
 //---------------------------------------------------------------------------
 //
-//	ロード
+//	Load
 //
 //---------------------------------------------------------------------------
 BOOL FASTCALL GVRAM::Load(Fileio *fio, int ver)
@@ -1319,12 +1319,12 @@ BOOL FASTCALL GVRAM::Load(Fileio *fio, int ver)
 
 	LOG0(Log::Normal, "ロード");
 
-	// メモリをロード
+	// Load memory
 	if (!fio->Read(gvram, 0x80000)) {
 		return FALSE;
 	}
 
-	// サイズをロード、照合
+	// Load and verify the size
 	if (!fio->Read(&sz, sizeof(sz))) {
 		return FALSE;
 	}
@@ -1332,12 +1332,12 @@ BOOL FASTCALL GVRAM::Load(Fileio *fio, int ver)
 		return FALSE;
 	}
 
-	// 実体をロード
+	// Load the payload
 	if (!fio->Read(&gvdata, (int)sz)) {
 		return FALSE;
 	}
 
-	// gvcount(version2.04で追加)
+	// gvcount (added in version 2.04)
 	gvcount = 0;
 	if (ver >= 0x0204) {
 		if (!fio->Read(&gvcount, sizeof(gvcount))) {
@@ -1345,7 +1345,7 @@ BOOL FASTCALL GVRAM::Load(Fileio *fio, int ver)
 		}
 	}
 
-	// レンダラへ通知
+	// Notify the renderer
 	for (line=0; line<0x200; line++) {
 		render->GrpAll(line, 0);
 		render->GrpAll(line, 1);
@@ -1353,33 +1353,33 @@ BOOL FASTCALL GVRAM::Load(Fileio *fio, int ver)
 		render->GrpAll(line, 3);
 	}
 
-	// ハンドラを選択
+	// Select the handler
 	switch (gvdata.type) {
 		case 0:
 			ASSERT(hand1024);
 			handler = hand1024;
 			break;
-		// 16色タイプ
+		// 16-color type
 		case 1:
 			ASSERT(hand16);
 			handler = hand16;
 			break;
-		// 256色タイプ
+		// 256-color type
 		case 2:
 			ASSERT(hand256);
 			handler = hand256;
 			break;
-		// 未定義タイプ
+		// Undefined type
 		case 3:
 			ASSERT(handNDef);
 			handler = handNDef;
 			break;
-		// 64K色タイプ
+		// 64K-color type
 		case 4:
 			ASSERT(hand64K);
 			handler = hand64K;
 			break;
-		// その他
+		// Other
 		default:
 			ASSERT(FALSE);
 	}
@@ -1389,7 +1389,7 @@ BOOL FASTCALL GVRAM::Load(Fileio *fio, int ver)
 
 //---------------------------------------------------------------------------
 //
-//	設定適用
+//	Apply settings
 //
 //---------------------------------------------------------------------------
 void FASTCALL GVRAM::ApplyCfg(const Config* /*config*/)
@@ -1403,12 +1403,12 @@ void FASTCALL GVRAM::ApplyCfg(const Config* /*config*/)
 #if !defined(NDEBUG)
 //---------------------------------------------------------------------------
 //
-//	診断
+//	Diagnostics
 //
 //---------------------------------------------------------------------------
 void FASTCALL GVRAM::AssertDiag() const
 {
-	// 基本クラス
+	// Base class
 	MemDevice::AssertDiag();
 
 	ASSERT(this);
@@ -1432,7 +1432,7 @@ void FASTCALL GVRAM::AssertDiag() const
 
 //---------------------------------------------------------------------------
 //
-//	バイト読み込み
+//	Byte read
 //
 //---------------------------------------------------------------------------
 DWORD FASTCALL GVRAM::ReadByte(DWORD addr)
@@ -1441,17 +1441,17 @@ DWORD FASTCALL GVRAM::ReadByte(DWORD addr)
 	ASSERT((addr >= memdev.first) && (addr <= memdev.last));
 	ASSERT_DIAG();
 
-	// ウェイト(0.5ウェイト)
+	// Wait (0.5 wait)
 	scheduler->Wait(gvcount);
 	gvcount ^= 1;
 
-	// ハンドラに任せる
+	// Leave it to the handler
 	return handler->ReadByte(addr & 0x1fffff);
 }
 
 //---------------------------------------------------------------------------
 //
-//	ワード読み込み
+//	Word read
 //
 //---------------------------------------------------------------------------
 DWORD FASTCALL GVRAM::ReadWord(DWORD addr)
@@ -1461,17 +1461,17 @@ DWORD FASTCALL GVRAM::ReadWord(DWORD addr)
 	ASSERT((addr & 1) == 0);
 	ASSERT_DIAG();
 
-	// ウェイト(0.5ウェイト)
+	// Wait (0.5 wait)
 	scheduler->Wait(gvcount);
 	gvcount ^= 1;
 
-	// ハンドラに任せる
+	// Leave it to the handler
 	return handler->ReadWord(addr & 0x1fffff);
 }
 
 //---------------------------------------------------------------------------
 //
-//	バイト書き込み
+//	Byte write
 //
 //---------------------------------------------------------------------------
 void FASTCALL GVRAM::WriteByte(DWORD addr, DWORD data)
@@ -1481,11 +1481,11 @@ void FASTCALL GVRAM::WriteByte(DWORD addr, DWORD data)
 	ASSERT(data < 0x100);
 	ASSERT_DIAG();
 
-	// ウェイト(0.5ウェイト)
+	// Wait (0.5 wait)
 	scheduler->Wait(gvcount);
 	gvcount ^= 1;
 
-	// ハンドラに任せる
+	// Leave it to the handler
 	handler->WriteByte(addr & 0x1fffff, data);
 	if (render) {
 		render->GVRAMWrite(addr & 0x1fffff, (BYTE)data);
@@ -1494,7 +1494,7 @@ void FASTCALL GVRAM::WriteByte(DWORD addr, DWORD data)
 
 //---------------------------------------------------------------------------
 //
-//	ワード書き込み
+//	Word write
 //
 //---------------------------------------------------------------------------
 void FASTCALL GVRAM::WriteWord(DWORD addr, DWORD data)
@@ -1505,11 +1505,11 @@ void FASTCALL GVRAM::WriteWord(DWORD addr, DWORD data)
 	ASSERT(data < 0x10000);
 	ASSERT_DIAG();
 
-	// ウェイト(0.5ウェイト)
+	// Wait (0.5 wait)
 	scheduler->Wait(gvcount);
 	gvcount ^= 1;
 
-	// ハンドラに任せる
+	// Leave it to the handler
 	handler->WriteWord(addr & 0x1fffff, data);
 	if (render) {
 		render->GVRAMWrite(addr & 0x1fffff, (BYTE)((data >> 8) & 0xff));
@@ -1519,7 +1519,7 @@ void FASTCALL GVRAM::WriteWord(DWORD addr, DWORD data)
 
 //---------------------------------------------------------------------------
 //
-//	読み込みのみ
+//	Read-only
 //
 //---------------------------------------------------------------------------
 DWORD FASTCALL GVRAM::ReadOnly(DWORD addr) const
@@ -1528,13 +1528,13 @@ DWORD FASTCALL GVRAM::ReadOnly(DWORD addr) const
 	ASSERT((addr >= memdev.first) && (addr <= memdev.last));
 	ASSERT_DIAG();
 
-	// ハンドラに任せる
+	// Leave it to the handler
 	return handler->ReadOnly(addr & 0x1fffff);
 }
 
 //---------------------------------------------------------------------------
 //
-//	GVRAM取得
+//	Get GVRAM
 //
 //---------------------------------------------------------------------------
 const BYTE* FASTCALL GVRAM::GetGVRAM() const
@@ -1547,7 +1547,7 @@ const BYTE* FASTCALL GVRAM::GetGVRAM() const
 
 //---------------------------------------------------------------------------
 //
-//	タイプ設定
+//	Set the type
 //
 //---------------------------------------------------------------------------
 void FASTCALL GVRAM::SetType(DWORD type)
@@ -1560,11 +1560,11 @@ void FASTCALL GVRAM::SetType(DWORD type)
 	ASSERT(this);
 	ASSERT_DIAG();
 
-	// 現在の値を保存
+	// Save the current value
 	mem = gvdata.mem;
 	siz = gvdata.siz;
 
-	// 設定
+	// Set the value
 	if (type & 8) {
 		gvdata.mem = TRUE;
 	}
@@ -1579,10 +1579,10 @@ void FASTCALL GVRAM::SetType(DWORD type)
 	}
 	gvdata.col = type & 3;
 
-	// 現在のgvdata.typeを記憶
+	// Store the current gvdata.type
 	prev = gvdata.type;
 
-	// 新しいtypeを見る
+	// Check the new type
 	if (gvdata.mem) {
 		next = 4;
 	}
@@ -1595,43 +1595,43 @@ void FASTCALL GVRAM::SetType(DWORD type)
 		}
 	}
 
-	// 違っていたら作りなおす
+	// Recreate it if it differs
 	if (prev != next) {
 		switch (next) {
-			// 1024色タイプ
+			// 1024-color type
 			case 0:
 				ASSERT(hand1024);
 				handler = hand1024;
 				break;
-			// 16色タイプ
+			// 16-color type
 			case 1:
 				ASSERT(hand16);
 				handler = hand16;
 				break;
-			// 256色タイプ
+			// 256-color type
 			case 2:
 				ASSERT(hand256);
 				handler = hand256;
 				break;
-			// 未定義タイプ
+			// Undefined type
 			case 3:
 				LOG0(Log::Warning, "グラフィックVRAM 未定義タイプ");
 				ASSERT(handNDef);
 				handler = handNDef;
 				break;
-			// 64K色タイプ
+			// 64K-color type
 			case 4:
 				ASSERT(hand64K);
 				handler = hand64K;
 				break;
-			// その他
+			// Other
 			default:
 				ASSERT(FALSE);
 		}
 		gvdata.type = next;
 	}
 
-	// メモリタイプ又は実画面サイズが異なっていれば、レンダラへ通知
+	// Notify the renderer if the memory type or actual screen size differs
 	if ((gvdata.mem != mem) || (gvdata.siz != siz)) {
 		render->SetVC();
 	}
@@ -1639,7 +1639,7 @@ void FASTCALL GVRAM::SetType(DWORD type)
 
 //---------------------------------------------------------------------------
 //
-//	高速クリア設定
+//	Set fast clear
 //
 //---------------------------------------------------------------------------
 void FASTCALL GVRAM::FastSet(DWORD mask)
@@ -1682,7 +1682,7 @@ void FASTCALL GVRAM::FastSet(DWORD mask)
 
 //---------------------------------------------------------------------------
 //
-//	高速クリア
+//	Fast clear
 //
 //---------------------------------------------------------------------------
 void FASTCALL GVRAM::FastClr(const CRTC::crtc_t *p)
@@ -1693,23 +1693,23 @@ void FASTCALL GVRAM::FastClr(const CRTC::crtc_t *p)
 	if (gvdata.siz) {
 		// 1024x1024
 		if (p->hd >= 1) {
-			// 1024×1024、512 or 768
+			// 1024x1024, 512 or 768
 			FastClr768(p);
 		}
 		else {
-			// 1024×1024、256
+			// 1024x1024, 256
 			FastClr256(p);
 		}
 	}
 	else {
-		// 512×512
+		// 512x512
 		FastClr512(p);
 	}
 }
 
 //---------------------------------------------------------------------------
 //
-//	高速クリア 1024×1024 512/768
+//	Fast clear 1024x1024 512/768
 //
 //---------------------------------------------------------------------------
 void FASTCALL GVRAM::FastClr768(const CRTC::crtc_t *p)
@@ -1728,7 +1728,7 @@ void FASTCALL GVRAM::FastClr768(const CRTC::crtc_t *p)
 	LOG0(Log::Normal, "高速クリア 1024x1024 (512/768幅)");
 #endif	// GVRAM_LOG
 
-	// オフセットy、ライン数nを得る
+	// Get the Y offset and line count n
 	y = p->v_scan;
 	n = 1;
 	if ((p->v_mul == 2) && !(p->lowres)) {
@@ -1742,48 +1742,48 @@ void FASTCALL GVRAM::FastClr768(const CRTC::crtc_t *p)
 		n = 2;
 	}
 
-	// ラインループ
+	// Line loop
 	for (j=0; j<n; j++) {
-		// スクロールレジスタからオフセットを得る
+		// Get the offset from the scroll registers
 		offset = (y + p->grp_scrly[0]) & 0x3ff;
 
-		// 上半分、下半分で分ける
+		// Split into upper and lower halves
 		if (offset < 512) {
-			// ポインタ作成
+			// Build the pointer
 			q = (WORD*)&gvram[offset << 10];
 
-			// 下位バイトクリア
+			// Clear the lower byte
 			for (k=0; k<512; k++) {
 				*q++ &= 0xff00;
 			}
 
-			// フラグUp
+			// Raise the flag
 			render->GrpAll(offset, 0);
 			render->GrpAll(offset, 1);
 		}
 		else {
-			// ポインタ作成
+			// Build the pointer
 			offset &= 0x1ff;
 			q = (WORD*)&gvram[offset << 10];
 
-			// 上位バイトクリア
+			// Clear the upper byte
 			for (k=0; k<512; k++) {
 				*q++ &= 0x00ff;
 			}
 
-			// フラグUp
+			// Raise the flag
 			render->GrpAll(offset, 2);
 			render->GrpAll(offset, 3);
 		}
 
-		// 次のラインへ
+		// Advance to the next line
 		y++;
 	}
 }
 
 //---------------------------------------------------------------------------
 //
-//	高速クリア 1024×1024 256
+//	Fast clear 1024x1024 256
 //
 //---------------------------------------------------------------------------
 void FASTCALL GVRAM::FastClr256(const CRTC::crtc_t *p)
@@ -1792,13 +1792,13 @@ void FASTCALL GVRAM::FastClr256(const CRTC::crtc_t *p)
 	LOG0(Log::Normal, "高速クリア 1024x1024 (256幅)");
 #endif	// GVRAM_LOG
 
-	// 暫定措置
+	// Temporary measure
 	FastClr768(p);
 }
 
 //---------------------------------------------------------------------------
 //
-//	高速クリア 512x512
+//	Fast clear 512x512
 //
 //---------------------------------------------------------------------------
 void FASTCALL GVRAM::FastClr512(const CRTC::crtc_t *p)
@@ -1819,7 +1819,7 @@ void FASTCALL GVRAM::FastClr512(const CRTC::crtc_t *p)
 	LOG1(Log::Normal, "高速クリア 512x512 Scan=%d", p->v_scan);
 #endif	// GVRAM_LOG
 
-	// オフセットy、ライン数nを得る
+	// Get the Y offset and line count n
 	y = p->v_scan;
 	n = 1;
 	if ((p->v_mul == 2) && !(p->lowres)) {
@@ -1833,13 +1833,13 @@ void FASTCALL GVRAM::FastClr512(const CRTC::crtc_t *p)
 		n = 2;
 	}
 
-	// プレーンループ
+	// Plane loop
 	for (i=0; i<4; i++) {
 		if (!gvdata.plane[i]) {
 			continue;
 		}
 
-		// 幅を算出
+		// Calculate the width
 		w[0] = p->h_dots;
 		w[1] = 0;
 		if (((p->grp_scrlx[i] & 0x1ff) + w[0]) > 512) {
@@ -1847,32 +1847,32 @@ void FASTCALL GVRAM::FastClr512(const CRTC::crtc_t *p)
 			w[0] = 512 - (p->grp_scrlx[i] & 0x1ff);
 		}
 
-		// ラインループ
+		// Line loop
 		for (j=0; j<n; j++) {
-			// スクロールレジスタからオフセットを得る
+			// Get the offset from the scroll registers
 			offset = ((y + p->grp_scrly[i]) & 0x1ff) << 10;
 			q = (WORD*)&gvram[offset + ((p->grp_scrlx[i] & 0x1ff) << 1)];
 
-			// クリア(1)
+			// Clear (1)
 			for (k=0; k<w[0]; k++) {
 				*q++ &= gvdata.mask[i];
 			}
 			if (w[1] > 0) {
-				// クリア(2)
+				// Clear (2)
 				q = (WORD*)&gvram[offset];
 				for (k=0; k<w[1]; k++) {
 					*q++ &= gvdata.mask[i];
 				}
 			}
 
-			// フラグUp
+			// Raise the flag
 			render->GrpAll(offset >> 10, i);
 
-			// 次のラインへ
+			// Advance to the next line
 			y++;
 		}
 
-		// ライン戻す
+		// Move back one line
 		y -= n;
 	}
 }

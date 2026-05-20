@@ -2,53 +2,53 @@
 //
 //	X68000 EMULATOR "XM6"
 //
-//	Copyright (C) 2001-2006 ‚o‚hD(ytanaka@ipc-tokai.or.jp)
+//	Copyright (C) 2001-2006 PI(ytanaka@ipc-tokai.or.jp)
 //	Copyright (C) 2010-2014 GIMONS
-//	[ ƒXƒvƒ‰ƒCƒg(CYNTHIA) ]
+//	[ Sprite (CYNTHIA) ]
 //
 //---------------------------------------------------------------------------
 
 /*
 
-ƒ|[ƒg‚Ìó‘Ô’²¸Œ‹‰Ê
----------------------------------------------------------------------------
+Port status area
+--------------------------------------------------------------------------
 
-  ‰æ–Êƒ‚[ƒh‚ª512~512 á‚µ‚­‚Í 256~256 ‚ÌˆÈŠO‚ÌƒoƒXƒGƒ‰[ó‹µ
+  In screen modes other than 512x512 or 256x256: bus error
 
-@@$eb0000 - $eb03ff ƒoƒXƒGƒ‰[
-@@$eb0400 - $eb07ff ƒoƒXƒGƒ‰[
-@@$eb0800 - $eb0811 ƒAƒNƒZƒX‰Â”\
-@@$eb0812 - $eb7fff í‚É$ff
-@@$eb8000 - $ebffff ƒoƒXƒGƒ‰[
+    $eb0000 - $eb03ff Bus error
+    $eb0400 - $eb07ff Bus error
+    $eb0800 - $eb0811 Accessible
+    $eb0812 - $eb7fff Returns $ff
+    $eb8000 - $ebffff Bus error
 
-  ‰æ–Êƒ‚[ƒh‚ª512~512 á‚µ‚­‚Í 256~256 ‚Ì
+  In 512x512 or 256x256 screen mode
 
-@@$eb0000 - $eb03ff ƒAƒNƒZƒX‰Â”\
-@@$eb0400 - $eb07ff í‚É$ff
-@@$eb0800 - $eb0811 ƒAƒNƒZƒX‰Â”\
-@@$eb0812 - $eb7fff í‚É$ff
-@@$eb8000 - $ebffff ƒAƒNƒZƒX‰Â”\
+    $eb0000 - $eb03ff Accessible
+    $eb0400 - $eb07ff Returns $ff
+    $eb0800 - $eb0811 Accessible
+    $eb0812 - $eb7fff Returns $ff
+    $eb8000 - $ebffff Accessible
 
-  ƒ[ƒhƒAƒNƒZƒXAƒoƒCƒgƒAƒNƒZƒXó‹µ
+  Word access / Byte access
 
-@@$eb0000 - $eb03ff RFƒ[ƒh/ƒoƒCƒg@W:ƒ[ƒh
-@@$eb0400 - $eb07ff í‚É$ff
-@@$eb0800 - $eb0811 RFƒ[ƒh/ƒoƒCƒg@W:ƒ[ƒh/ƒoƒCƒg
-@@$eb0812 - $eb7fff í‚É$ff
-@@$eb8000 - $ebffff RFƒ[ƒh/ƒoƒCƒg@W:ƒ[ƒh
+    $eb0000 - $eb03ff R: word/byte  W: word
+    $eb0400 - $eb07ff Returns $ff
+    $eb0800 - $eb0811 R: word/byte  W: word/byte
+    $eb0812 - $eb7fff Returns $ff
+    $eb8000 - $ebffff R: word/byte  W: word
 
-  @–ƒoƒCƒg•s‰Â‚Ìê‡‚É‘‚«‚Ş‚ÆEEE
-   @ ãˆÊƒoƒCƒg‚È‚ç‰ºˆÊ‚É‚à“¯‚¶’l‚ª‘‚«‚Ü‚êA
-	  ‰ºˆÊƒoƒCƒg‚È‚çãˆÊ‚É‚à“¯‚¶’l‚ª‘‚«‚Ü‚ê‚éB
+    When writing in byte-disabled mode...
+      If the upper byte, the upper value is written to the lower;
+      if the lower byte, the lower value is written to the upper.
 
-ƒŒƒWƒXƒ^‚Ì—LŒøƒrƒbƒg
----------------------------------------------------------------------------
-  ƒXƒvƒ‰ƒCƒgƒXƒNƒ[ƒ‹ƒŒƒWƒXƒ^‚ÌPRW(—Dæ“x)‚Íbit2‚à•Û
-  BG ƒRƒ“ƒgƒ[ƒ‹($eb0808)‚Ìbit10‚à•Û
+Valid bits of registers
+--------------------------------------------------------------------------
+  Sprite scroll registers: PRW (priority) held in bit 2
+  BG control ($eb0808): bit 10 held
 
-ƒŠƒZƒbƒg‚ÌƒXƒvƒ‰ƒCƒgƒXƒNƒ[ƒ‹ƒŒƒWƒXƒ^‚¨‚æ‚ÑPCG/BGƒoƒbƒtƒ@‚Ì“à—e
----------------------------------------------------------------------------
-@ƒNƒŠƒA‚³‚ê‚È‚¢
+Sprite scroll registers and PCG/BG buffer contents at reset
+--------------------------------------------------------------------------
+  Not cleared
 
 */
 
@@ -62,27 +62,27 @@
 
 //===========================================================================
 //
-//	ƒXƒvƒ‰ƒCƒg
+//	Sprite
 //
 //===========================================================================
 //#define SPRITE_LOG
 
 //---------------------------------------------------------------------------
 //
-//	ƒRƒ“ƒXƒgƒ‰ƒNƒ^
+//	Constructor
 //
 //---------------------------------------------------------------------------
 Sprite::Sprite(VM *p) : MemDevice(p)
 {
-	// ƒfƒoƒCƒXID‚ğ‰Šú‰»
+	// Device ID initialization
 	dev.id = MAKEID('S', 'P', 'R', ' ');
 	dev.desc = "Sprite (CYNTHIA)";
 
-	// ŠJnƒAƒhƒŒƒXAI—¹ƒAƒhƒŒƒX
+	// Start address, end address
 	memdev.first = 0xeb0000;
 	memdev.last = 0xebffff;
 
-	// ‚»‚Ì‘¼
+	// Other
 	sprite = NULL;
 	render = NULL;
 	spr.mem = NULL;
@@ -91,7 +91,7 @@ Sprite::Sprite(VM *p) : MemDevice(p)
 
 //---------------------------------------------------------------------------
 //
-//	‰Šú‰»
+//	Initialization
 //
 //---------------------------------------------------------------------------
 BOOL FASTCALL Sprite::Init()
@@ -100,12 +100,12 @@ BOOL FASTCALL Sprite::Init()
 
 	ASSERT(this);
 
-	// Šî–{ƒNƒ‰ƒX
+	// Base class
 	if (!MemDevice::Init()) {
 		return FALSE;
 	}
 
-	// ƒƒ‚ƒŠŠm•ÛAƒNƒŠƒA
+	// Memory allocation, clear
 	try {
 		sprite = new BYTE[ 0x10000 ];
 	}
@@ -116,26 +116,26 @@ BOOL FASTCALL Sprite::Init()
 		return FALSE;
 	}
 
-	// EB0400-EB07FF, EB0812-EB7FFF‚ÍReserved(FF)
+	// EB0400-EB07FF, EB0812-EB7FFF are Reserved (FF)
 	memset(sprite, 0, 0x10000);
 	memset(&sprite[0x400], 0xff, 0x400);
 	memset(&sprite[0x812], 0xff, 0x77ee);
 
-	// ƒ[ƒN‰Šú‰»
+	// Work initialization
 	memset(&spr, 0, sizeof(spr));
 	spr.mem = &sprite[0x0000];
 	spr.pcg = &sprite[0x8000];
 
-	// ƒŒƒ“ƒ_ƒ‰æ“¾
+	// Get renderer
 	render = (Render*)vm->SearchDevice(MAKEID('R', 'E', 'N', 'D'));
 	ASSERT(render);
 
-	// ƒXƒvƒ‰ƒCƒg HSYNC—v‹
+	// Sprite HSYNC schedule
 	for (i=0; i<128; i++) {
 		sphsync[i] = 3;
 	}
 
-	// BG HSYNC—v‹
+	// BG HSYNC schedule
 	bghsync = 0x1f;
 
 	return TRUE;
@@ -143,12 +143,12 @@ BOOL FASTCALL Sprite::Init()
 
 //---------------------------------------------------------------------------
 //
-//	ƒNƒŠ[ƒ“ƒAƒbƒv
+//	Cleanup
 //
 //---------------------------------------------------------------------------
 void FASTCALL Sprite::Cleanup()
 {
-	// ƒƒ‚ƒŠ‰ğ•ú
+	// Memory release
 	if (sprite) {
 		delete[] sprite;
 		sprite = NULL;
@@ -156,13 +156,13 @@ void FASTCALL Sprite::Cleanup()
 		spr.pcg = NULL;
 	}
 
-	// Šî–{ƒNƒ‰ƒX‚Ö
+	// Base class
 	MemDevice::Cleanup();
 }
 
 //---------------------------------------------------------------------------
 //
-//	ƒŠƒZƒbƒg
+//	Reset
 //
 //---------------------------------------------------------------------------
 void FASTCALL Sprite::Reset()
@@ -170,16 +170,16 @@ void FASTCALL Sprite::Reset()
 	int i;
 
 	ASSERT(this);
-	LOG0(Log::Normal, "ƒŠƒZƒbƒg");
+	LOG0(Log::Normal, "Reset");
 
-	// ƒŒƒWƒXƒ^ƒ[ƒN(EB0800-EB0811)‚ğƒNƒŠƒA
+	// Clear register area (EB0800-EB0811)
 	memset(&sprite[0x800], 0, 0x12);
 
-	// ƒŒƒWƒXƒ^İ’è
+	// Register settings
 	spr.connect = FALSE;
 	spr.disp = FALSE;
 
-	// BGƒy[ƒW‰Šú‰»
+	// BG page initialization
 	for (i=0; i<2; i++) {
 		spr.bg_on[i] = FALSE;
 		spr.bg_area[i] = 0;
@@ -187,10 +187,10 @@ void FASTCALL Sprite::Reset()
 		spr.bg_scrly[i] = 0;
 	}
 
-	// BGƒTƒCƒY‰Šú‰»
+	// BG size initialization
 	spr.bg_size = FALSE;
 
-	// ƒ^ƒCƒ~ƒ“ƒO‰Šú‰»
+	// Timing initialization
 	spr.h_total = 0;
 	spr.h_disp = 0;
 	spr.v_disp = 0;
@@ -198,18 +198,18 @@ void FASTCALL Sprite::Reset()
 	spr.v_res = 0;
 	spr.h_res = 0;
 
-	// ƒXƒvƒ‰ƒCƒg HSYNC—v‹
+	// Sprite HSYNC schedule
 	for (i=0; i<128; i++) {
 		sphsync[i] = 3;
 	}
 
-	// BG HSYNC—v‹
+	// BG HSYNC schedule
 	bghsync = 0x1f;
 }
 
 //---------------------------------------------------------------------------
 //
-//	ƒZ[ƒu
+//	Save
 //
 //---------------------------------------------------------------------------
 BOOL FASTCALL Sprite::Save(Fileio *fio, int /*ver*/)
@@ -220,20 +220,20 @@ BOOL FASTCALL Sprite::Save(Fileio *fio, int /*ver*/)
 	ASSERT(fio);
 	ASSERT(spr.mem);
 
-	LOG0(Log::Normal, "ƒZ[ƒu");
+	LOG0(Log::Normal, "Save");
 
-	// ƒTƒCƒY‚ğƒZ[ƒu
+	// Save size
 	sz = sizeof(sprite_t);
 	if (!fio->Write(&sz, sizeof(sz))) {
 		return FALSE;
 	}
 
-	// À‘Ì‚ğƒZ[ƒu
+	// Save body
 	if (!fio->Write(&spr, (int)sz)) {
 		return FALSE;
 	}
 
-	// ƒƒ‚ƒŠ‚ğƒZ[ƒu
+	// Save memory
 	if (!fio->Write(sprite, 0x10000)) {
 		return FALSE;
 	}
@@ -243,7 +243,7 @@ BOOL FASTCALL Sprite::Save(Fileio *fio, int /*ver*/)
 
 //---------------------------------------------------------------------------
 //
-//	ƒ[ƒh
+//	Load
 //
 //---------------------------------------------------------------------------
 BOOL FASTCALL Sprite::Load(Fileio *fio, int /*ver*/)
@@ -254,9 +254,9 @@ BOOL FASTCALL Sprite::Load(Fileio *fio, int /*ver*/)
 	ASSERT(fio);
 	ASSERT(spr.mem);
 
-	LOG0(Log::Normal, "ƒ[ƒh");
+	LOG0(Log::Normal, "Load");
 
-	// ƒTƒCƒY‚ğƒ[ƒhAÆ‡
+	// Load size and verify
 	if (!fio->Read(&sz, sizeof(sz))) {
 		return FALSE;
 	}
@@ -264,21 +264,21 @@ BOOL FASTCALL Sprite::Load(Fileio *fio, int /*ver*/)
 		return FALSE;
 	}
 
-	// À‘Ì‚ğƒ[ƒh
+	// Load body
 	if (!fio->Read(&spr, (int)sz)) {
 		return FALSE;
 	}
 
-	// ƒƒ‚ƒŠ‚ğƒ[ƒh
+	// Load memory
 	if (!fio->Read(sprite, 0x10000)) {
 		return FALSE;
 	}
 
-	// ƒ|ƒCƒ“ƒ^‚ğã‘‚«
+	// Overwrite pointers
 	spr.mem = &sprite[0x0000];
 	spr.pcg = &sprite[0x8000];
 
-	// ƒŒƒ“ƒ_ƒ‰‚Ö’Ê’m
+	// Notify renderer
 	NotifyRender();
 
 	return TRUE;
@@ -286,20 +286,20 @@ BOOL FASTCALL Sprite::Load(Fileio *fio, int /*ver*/)
 
 //---------------------------------------------------------------------------
 //
-//	İ’è“K—p
+//	Apply config
 //
 //---------------------------------------------------------------------------
 void FASTCALL Sprite::ApplyCfg(const Config *config)
 {
 	ASSERT(config);
-	LOG0(Log::Normal, "İ’è“K—p");
+	LOG0(Log::Normal, "Apply config");
 
 	UNREFERENCED_PARAMETER(config);
 }
 
 //---------------------------------------------------------------------------
 //
-//	ƒoƒCƒg“Ç‚İ‚İ
+//	Byte read
 //
 //---------------------------------------------------------------------------
 DWORD FASTCALL Sprite::ReadByte(DWORD addr)
@@ -307,10 +307,10 @@ DWORD FASTCALL Sprite::ReadByte(DWORD addr)
 	ASSERT(this);
 	ASSERT((addr >= memdev.first) && (addr <= memdev.last));
 
-	// ƒIƒtƒZƒbƒgZo
+	// Offset calculation
 	addr &= 0xffff;
 
-	// ƒEƒFƒCƒg(ƒGƒgƒ[ƒ‹ƒvƒŠƒ“ƒZƒX)
+	// Wait (Ethernet emulation)
 	if (addr & 1) {
 		if (spr.disp) {
 			scheduler->Wait(7);
@@ -320,24 +320,24 @@ DWORD FASTCALL Sprite::ReadByte(DWORD addr)
 		}
 	}
 
-	// 0800`7FFF‚ÍƒoƒXƒGƒ‰[‚Ì‰e‹¿‚ğó‚¯‚È‚¢
+	// 0800-7FFF is not affected by bus error
 	if ((addr >= 0x800) && (addr < 0x8000)) {
 		return sprite[addr ^ 1];
 	}
 
-	// Ú‘±ƒ`ƒFƒbƒN
+	// Connection check
 	if (!IsConnect()) {
 		cpu->BusErr(memdev.first + addr, TRUE);
 		return 0xff;
 	}
 
-	// ƒGƒ“ƒfƒBƒAƒ“‚ğ”½“]‚³‚¹‚Ä“Ç‚İ‚İ
+	// Read with endian reversal
 	return sprite[addr ^ 1];
 }
 
 //---------------------------------------------------------------------------
 //
-//	ƒ[ƒh“Ç‚İ‚İ
+//	Word read
 //
 //---------------------------------------------------------------------------
 DWORD FASTCALL Sprite::ReadWord(DWORD addr)
@@ -346,10 +346,10 @@ DWORD FASTCALL Sprite::ReadWord(DWORD addr)
 	ASSERT((addr >= memdev.first) && (addr <= memdev.last));
 	ASSERT((addr & 1) == 0);
 
-	// ƒIƒtƒZƒbƒgZo
+	// Offset calculation
 	addr &= 0xffff;
 
-	// ƒEƒFƒCƒg(ƒGƒgƒ[ƒ‹ƒvƒŠƒ“ƒZƒX)
+	// Wait (Ethernet emulation)
 	if (spr.disp) {
 		scheduler->Wait(7);
 	}
@@ -357,24 +357,24 @@ DWORD FASTCALL Sprite::ReadWord(DWORD addr)
 		scheduler->Wait(4);
 	}
 
-	// 0800`7FFF‚ÍƒoƒXƒGƒ‰[‚Ì‰e‹¿‚ğó‚¯‚È‚¢
+	// 0800-7FFF is not affected by bus error
 	if ((addr >= 0x800) && (addr < 0x8000)) {
 		return *(WORD *)(&sprite[addr]);
 	}
 
-	// Ú‘±ƒ`ƒFƒbƒN
+	// Connection check
 	if (!IsConnect()) {
 		cpu->BusErr(memdev.first + addr, TRUE);
 		return 0xffff;
 	}
 
-	// “Ç‚İ‚İ
+	// Read
 	return *(WORD *)(&sprite[addr]);
 }
 
 //---------------------------------------------------------------------------
 //
-//	ƒoƒCƒg‘‚«‚İ
+//	Byte write
 //
 //---------------------------------------------------------------------------
 void FASTCALL Sprite::WriteByte(DWORD addr, DWORD data)
@@ -452,10 +452,10 @@ void FASTCALL Sprite::WriteByte(DWORD addr, DWORD data)
 	ASSERT((addr >= memdev.first) && (addr <= memdev.last));
 	ASSERT(data < 0x100);
 
-	// ƒIƒtƒZƒbƒgZo
+	// Offset calculation
 	addr &= 0xffff;
 
-	// ƒEƒFƒCƒg(ƒGƒgƒ[ƒ‹ƒvƒŠƒ“ƒZƒX)
+	// Wait (Ethernet emulation)
 	if (spr.disp) {
 		scheduler->Wait(7);
 	}
@@ -463,23 +463,23 @@ void FASTCALL Sprite::WriteByte(DWORD addr, DWORD data)
 		scheduler->Wait(3);
 	}
 
-	// 800`811‚ÍƒRƒ“ƒgƒ[ƒ‹ƒŒƒWƒXƒ^
+	// 800-811 are control registers
 	if ((addr >= 0x800) && (addr < 0x812)) {
-		// ˆê’vƒ`ƒFƒbƒN
+		// Match check
 		if (sprite[addr ^ 1] == data) {
 			return;
 		}
 
-		// ƒf[ƒ^‘‚«‚İ
+		// Data update
 		sprite[addr ^ 1] = (BYTE)data;
 
-		// ƒ[ƒhƒTƒCƒYƒf[ƒ^¶¬
+		// Align to word boundary
 		addr &= 0xfffe;
 		data = *(WORD *)(&sprite[addr]);
 
-		// ƒŒƒWƒXƒ^ƒ}ƒXƒN
+		// Register mask
 		switch (addr & 0xff) {
-			// BGƒXƒNƒ[ƒ‹ƒŒƒWƒXƒ^
+			// BG scroll register
 			case 0x00:
 			case 0x02:
 			case 0x04:
@@ -487,59 +487,59 @@ void FASTCALL Sprite::WriteByte(DWORD addr, DWORD data)
 				data &= 0x03ff;
 				break;
 
-			// BGƒRƒ“ƒgƒ[ƒ‹(bit10—LŒø)
+			// BG control (bit10 valid)
 			case 0x08:
 				data &= 0x063f;
 				break;
 
-			// …•½ƒg[ƒ^ƒ‹
+			// Horizontal total
 			case 0x0a:
 				data &= 0x00ff;
 				break;
 
-			// …•½•\¦ˆÊ’u
+			// Horizontal display
 			case 0x0c:
 				data &= 0x003f;
 				break;
 
-			// ‚’¼•\¦ˆÊ’u
+			// Vertical display
 			case 0x0e:
 				data &= 0x00ff;
 				break;
 
-			// ‰ğ‘œ“xİ’è
+			// Resolution setting
 			case 0x10:
 				data &= 0x001f;
 				break;
 		}
 
-		// ƒ}ƒXƒNƒf[ƒ^‘‚«‚İ
+		// Mask data update
 		*(WORD *)(&sprite[addr]) = (WORD)data;
 
-		// ƒRƒ“ƒgƒ[ƒ‹
+		// ï¿½Rï¿½ï¿½ï¿½gï¿½ï¿½ï¿½[ï¿½ï¿½
 		Control(addr, data);
 		NotifyPx68kBGWrite(addr, (WORD)data);
 		return;
 	}
 
-	// 0812-7FFF‚ÍƒŠƒU[ƒu(ƒoƒXƒGƒ‰[‚Ì‰e‹¿‚ğó‚¯‚È‚¢)
+	// 0812-7FFF is reserved (not affected by bus error)
 	if ((addr >= 0x812) && (addr < 0x8000)) {
 		return;
 	}
 
-	// Ú‘±ƒ`ƒFƒbƒN
+	// Connection check
 	if (!IsConnect()) {
 		cpu->BusErr(memdev.first + addr, FALSE);
 		return;
 	}
 
-	// 0400-07FF‚ÍƒŠƒU[ƒu(ƒoƒXƒGƒ‰[‚Ì‰e‹¿‚ğó‚¯‚é)
+	// 0400-07FF is reserved (affected by bus error)
 	if ((addr >= 0x400) && (addr < 0x800)) {
 		return;
 	}
 
-	// 0000-03FF‚Æ8000-FFFF‚ÍƒoƒCƒgƒAƒNƒZƒX‚Å‚«‚È‚¢
-	// ãˆÊA‰ºˆÊƒoƒCƒg‚ª“¯‚¶’l‚Åƒ[ƒhƒAƒNƒZƒX‚É‚È‚éB
+	// 0000-03FF and 8000-FFFF cannot be byte-accessed
+	// Becomes word access with the same value in upper/lower byte
 	sprite[addr ^ 1] = (BYTE)data;
 	addr &= 0xfffe;
 
@@ -637,10 +637,10 @@ void FASTCALL Sprite::WriteWord(DWORD addr, DWORD data)
 	ASSERT((addr & 1) == 0);
 	ASSERT(data < 0x10000);
 
-	// ƒIƒtƒZƒbƒgZo
+	// Offset calculation
 	addr &= 0xfffe;
 
-	// ƒEƒFƒCƒg(ƒGƒgƒ[ƒ‹ƒvƒŠƒ“ƒZƒX)
+	// Wait (Ethernet emulation)
 	if (spr.disp) {
 		scheduler->Wait(7);
 	}
@@ -648,16 +648,16 @@ void FASTCALL Sprite::WriteWord(DWORD addr, DWORD data)
 		scheduler->Wait(3);
 	}
 
-	// 800`811‚ÍƒRƒ“ƒgƒ[ƒ‹ƒŒƒWƒXƒ^
+	// 800-811 are control registers
 	if ((addr >= 0x800) && (addr < 0x812)) {
-		// ˆê’vƒ`ƒFƒbƒN
+		// Match check
 		if (*(WORD *)(&sprite[addr]) == data) {
 			return;
 		}
 
-		// ƒŒƒWƒXƒ^ƒ}ƒXƒN
+		// Register mask
 		switch (addr & 0xff) {
-			// BGƒXƒNƒ[ƒ‹ƒŒƒWƒXƒ^
+			// BG scroll register
 			case 0x00:
 			case 0x02:
 			case 0x04:
@@ -665,67 +665,67 @@ void FASTCALL Sprite::WriteWord(DWORD addr, DWORD data)
 				data &= 0x03ff;
 				break;
 
-			// BGƒRƒ“ƒgƒ[ƒ‹(bit10—LŒø)
+			// BG control (bit10 valid)
 			case 0x08:
 				data &= 0x063f;
 				break;
 
-			// …•½ƒg[ƒ^ƒ‹
+			// Horizontal total
 			case 0x0a:
 				data &= 0x00ff;
 				break;
 
-			// …•½•\¦ˆÊ’u
+			// Horizontal display
 			case 0x0c:
 				data &= 0x003f;
 				break;
 
-			// ‚’¼•\¦ˆÊ’u
+			// Vertical display
 			case 0x0e:
 				data &= 0x00ff;
 				break;
 
-			// ‰ğ‘œ“xİ’è
+			// Resolution setting
 			case 0x10:
 				data &= 0x001f;
 				break;
 		}
 
-		// ƒ}ƒXƒNƒf[ƒ^‘‚«‚İ
+		// Mask data update
 		*(WORD *)(&sprite[addr]) = (WORD)data;
 
-		// ƒRƒ“ƒgƒ[ƒ‹
+		// Control
 		Control(addr, data);
 		NotifyPx68kBGWrite(addr, (WORD)data);
 		return;
 	}
 
-	// 0812-7FFF‚ÍƒŠƒU[ƒu(ƒoƒXƒGƒ‰[‚Ì‰e‹¿‚ğó‚¯‚È‚¢)
+	// 0812-7FFF is reserved (not affected by bus error)
 	if ((addr >= 0x812) && (addr < 0x8000)) {
 		return;
 	}
 
-	// Ú‘±ƒ`ƒFƒbƒN
+	// Connection check
 	if (!IsConnect()) {
 		cpu->BusErr(memdev.first + addr, FALSE);
 		return;
 	}
 
-	// 0400-07FF‚ÍƒŠƒU[ƒu(ƒoƒXƒGƒ‰[‚Ì‰e‹¿‚ğó‚¯‚é)
+	// 0400-07FF is reserved (affected by bus error)
 	if ((addr >= 0x400) && (addr < 0x800)) {
 		return;
 	}
 
-	// ˆê’vƒ`ƒFƒbƒN
+	// Match check
 	if (*(WORD *)(&sprite[addr]) == data) {
 		return;
 	}
 
-	// ƒXƒvƒ‰ƒCƒgƒXƒNƒ[ƒ‹ƒŒƒWƒXƒ^
+	// Sprite scroll register
 	if (addr < 0x400) {
-		// ƒŒƒWƒXƒ^ƒ}ƒXƒN
+		// Register mask
 		switch (addr & 0x07) {
-			// XPOS,YPOS
+			// XPOS, YPOS
 			case 0x00:
 			case 0x02:
 				data &= 0x03ff;
@@ -736,29 +736,29 @@ void FASTCALL Sprite::WriteWord(DWORD addr, DWORD data)
 				data &= 0xcfff;
 				break;
 
-			// PRW(bit2—LŒø)
+			// PRW (bit2 valid)
 			case 0x06:
 				data &= 0x0007;
 				break;
 		}
 
-		// ƒ}ƒXƒNƒf[ƒ^‘‚«‚İ
+		// Mask data update
 		*(WORD *)(&sprite[addr]) = (WORD)data;
 
-		// ƒXƒvƒ‰ƒCƒgƒXƒNƒ[ƒ‹ƒŒƒWƒXƒ^‚Í‘‚«Š·‚¦Œã
-		// 3ƒ‰ƒXƒ^[Œã‚É‚µ‚©”½‰f‚µ‚È‚¢
+		// Sprite scroll registers are written directly
+		// Effect is reflected after 3 scanlines
 		index = (int)(addr >> 3);
 		if (sphsync[index]==0) {
 			sphsync[index]=3;
 
-			// BG HSYNC—v‹
+			// BG HSYNC schedule
 			bghsync |= 0x10;
 		}
 		NotifyPx68kBGWrite(addr, (WORD)data);
 		return;
 	}
 
-	// ‘‚«‚İ
+	// Other (write directly to memory)
 	*(WORD *)(&sprite[addr]) = (WORD)data;
 
 	if (addr >= 0x8000) {
@@ -784,16 +784,16 @@ DWORD FASTCALL Sprite::ReadOnly(DWORD addr) const
 	ASSERT(this);
 	ASSERT((addr >= memdev.first) && (addr <= memdev.last));
 
-	// ƒIƒtƒZƒbƒgZo
+	// Offset calculation
 	addr &= 0xffff;
 
-	// ƒGƒ“ƒfƒBƒAƒ“‚ğ”½“]‚³‚¹‚Ä“Ç‚İ‚İ
+	// Read with endian reversal
 	return sprite[addr ^ 1];
 }
 
 //---------------------------------------------------------------------------
 //
-//	ƒRƒ“ƒgƒ[ƒ‹
+//	Control
 //
 //---------------------------------------------------------------------------
 void FASTCALL Sprite::Control(DWORD addr, DWORD data)
@@ -803,39 +803,39 @@ void FASTCALL Sprite::Control(DWORD addr, DWORD data)
 			ASSERT((addr & 1) == 0);
 			ASSERT(data < 0x10000);
 
-			// ƒAƒhƒŒƒX‚ğ®—
+			// Normalize address
 			addr -= 0x800;
 			addr >>= 1;
 
 			switch (addr) {
-				// BG0ƒXƒNƒ[ƒ‹X
+				// BG0 scroll X
 				case 0:
 					spr.bg_scrlx[0] = data & 0x3ff;
 					render->BGScrl(0, spr.bg_scrlx[0], spr.bg_scrly[0]);
 					break;
 
-				// BG0ƒXƒNƒ[ƒ‹Y
+				// BG0 scroll Y
 				case 1:
 					spr.bg_scrly[0] = data & 0x3ff;
 					render->BGScrl(0, spr.bg_scrlx[0], spr.bg_scrly[0]);
 					break;
 
-				// BG1ƒXƒNƒ[ƒ‹X
+				// BG1 scroll X
 				case 2:
 					spr.bg_scrlx[1] = data & 0x3ff;
 					render->BGScrl(1, spr.bg_scrlx[1], spr.bg_scrly[1]);
 					break;
 
-				// BG1ƒXƒNƒ[ƒ‹Y
+				// BG1 scroll Y
 				case 3:
 					spr.bg_scrly[1] = data & 0x3ff;
 					render->BGScrl(1, spr.bg_scrlx[1], spr.bg_scrly[1]);
 					break;
 
-				// BGƒRƒ“ƒgƒ[ƒ‹
+				// BG control
 				case 4:
 		#if defined(SPRITE_LOG)
-					LOG1(Log::Normal, "BGƒRƒ“ƒgƒ[ƒ‹ $%04X", data);
+					LOG1(Log::Normal, "BG control $%04X", data);
 		#endif	// SPRITE_LOG
 					// bit17 : DISP
 					if (data & 0x0200) {
@@ -854,7 +854,7 @@ void FASTCALL Sprite::Control(DWORD addr, DWORD data)
 					// BG1
 					spr.bg_area[1] = (data >> 4) & 0x03;
 					if (spr.bg_area[1] & 2) {
-						LOG1(Log::Warning, "BG1ƒf[ƒ^ƒGƒŠƒA–¢’è‹` $%02X", spr.bg_area[1]);
+						LOG1(Log::Warning, "BG1 data area invalid $%02X", spr.bg_area[1]);
 					}
 					if (spr.bg_area[1] & 1) {
 						render->BGCtrl(3, TRUE);
@@ -873,7 +873,7 @@ void FASTCALL Sprite::Control(DWORD addr, DWORD data)
 					// BG0
 					spr.bg_area[0] = (data >> 1) & 0x03;
 					if (spr.bg_area[0] & 2) {
-						LOG1(Log::Warning, "BG0ƒf[ƒ^ƒGƒŠƒA–¢’è‹` $%02X", spr.bg_area[0]);
+						LOG1(Log::Warning, "BG0 data area invalid $%02X", spr.bg_area[0]);
 					}
 					if (spr.bg_area[0] & 1) {
 						render->BGCtrl(2, TRUE);
@@ -890,22 +890,22 @@ void FASTCALL Sprite::Control(DWORD addr, DWORD data)
 					render->BGCtrl(0, spr.bg_on[0]);
 					break;
 
-				// …•½ƒg[ƒ^ƒ‹
+				// Horizontal total
 				case 5:
 					spr.h_total = data & 0xff;
 					break;
 
-				// …•½•\¦
+				// Horizontal display
 				case 6:
 					spr.h_disp = data & 0x3f;
 					break;
 
-				// ‚’¼•\¦
+				// Vertical display
 				case 7:
 					spr.v_disp = data & 0xff;
 					break;
 
-				// ‰æ–Êƒ‚[ƒh
+				// Screen mode
 				case 8:
 					spr.h_res = data & 0x03;
 					spr.v_res = (data >> 2) & 0x03;
@@ -918,7 +918,7 @@ void FASTCALL Sprite::Control(DWORD addr, DWORD data)
 						spr.lowres = TRUE;
 					}
 
-					// BGƒTƒCƒY
+					// BG size
 					if (spr.h_res == 0) {
 						// 8x8
 						spr.bg_size = FALSE;
@@ -929,17 +929,17 @@ void FASTCALL Sprite::Control(DWORD addr, DWORD data)
 					}
 					render->BGCtrl(4, spr.bg_size);
 					if (spr.h_res & 2) {
-						LOG1(Log::Warning, "BG/ƒXƒvƒ‰ƒCƒg H-Res–¢’è‹` %d", spr.h_res);
+						LOG1(Log::Warning, "BG/Sprite H-Res invalid %d", spr.h_res);
 					}
 					break;
 
-				// ‚»‚Ì‘¼
+	// Other
 				default:
 					ASSERT(FALSE);
 					break;
 			}
 
-			// •\¦ˆÊ’u’²®‚Ì‚½‚ßƒŒƒ“ƒ_ƒ‰‚Ö’Ê’m
+			// Notify renderer for display position update
 			if (addr > 4) {
 				render->SetCRTC();
 			}
@@ -949,39 +949,39 @@ void FASTCALL Sprite::Control(DWORD addr, DWORD data)
 	ASSERT((addr & 1) == 0);
 	ASSERT(data < 0x10000);
 
-	// ƒAƒhƒŒƒX‚ğ®—
+	// Normalize address
 	addr -= 0x800;
 	addr >>= 1;
 
 	switch (addr) {
-		// BG0ƒXƒNƒ[ƒ‹X
+		// BG0 scroll X
 		case 0:
 			spr.bg_scrlx[0] = data & 0x3ff;
 			bghsync |= 0x01;
 			break;
 
-		// BG0ƒXƒNƒ[ƒ‹Y
+		// BG0 scroll Y
 		case 1:
 			spr.bg_scrly[0] = data & 0x3ff;
 			bghsync |= 0x02;
 			break;
 
-		// BG1ƒXƒNƒ[ƒ‹X
+		// BG1 scroll X
 		case 2:
 			spr.bg_scrlx[1] = data & 0x3ff;
 			bghsync |= 0x04;
 			break;
 
-		// BG1ƒXƒNƒ[ƒ‹Y
+		// BG1 scroll Y
 		case 3:
 			spr.bg_scrly[1] = data & 0x3ff;
 			bghsync |= 0x08;
 			break;
 
-		// BGƒRƒ“ƒgƒ[ƒ‹
+		// BG control
 		case 4:
 #if defined(SPRITE_LOG)
-			LOG1(Log::Normal, "BGƒRƒ“ƒgƒ[ƒ‹ $%04X", data);
+			LOG1(Log::Normal, "BG control $%04X", data);
 #endif	// SPRITE_LOG
 			// bit17 : DISP
 			if (data & 0x0200) {
@@ -1000,7 +1000,7 @@ void FASTCALL Sprite::Control(DWORD addr, DWORD data)
 			// BG1
 			spr.bg_area[1] = (data >> 4) & 0x03;
 			if (spr.bg_area[1] & 2) {
-				LOG1(Log::Warning, "BG1ƒf[ƒ^ƒGƒŠƒA–¢’è‹` $%02X", spr.bg_area[1]);
+				LOG1(Log::Warning, "BG1 data area invalid $%02X", spr.bg_area[1]);
 			}
 			if (spr.bg_area[1] & 1) {
 				render->BGCtrl(3, TRUE);
@@ -1019,7 +1019,7 @@ void FASTCALL Sprite::Control(DWORD addr, DWORD data)
 			// BG0
 			spr.bg_area[0] = (data >> 1) & 0x03;
 			if (spr.bg_area[0] & 2) {
-				LOG1(Log::Warning, "BG0ƒf[ƒ^ƒGƒŠƒA–¢’è‹` $%02X", spr.bg_area[0]);
+				LOG1(Log::Warning, "BG0 data area invalid $%02X", spr.bg_area[0]);
 			}
 			if (spr.bg_area[0] & 1) {
 				render->BGCtrl(2, TRUE);
@@ -1036,22 +1036,22 @@ void FASTCALL Sprite::Control(DWORD addr, DWORD data)
 			render->BGCtrl(0, spr.bg_on[0]);
 			break;
 
-		// …•½ƒg[ƒ^ƒ‹
+		// Horizontal total
 		case 5:
 			spr.h_total = data & 0xff;
 			break;
 
-		// …•½•\¦
+		// Horizontal display
 		case 6:
 			spr.h_disp = data & 0x3f;
 			break;
 
-		// ‚’¼•\¦
+		// Vertical display
 		case 7:
 			spr.v_disp = data & 0xff;
 			break;
 
-		// ‰æ–Êƒ‚[ƒh
+		// Screen mode
 		case 8:
 			spr.h_res = data & 0x03;
 			spr.v_res = (data >> 2) & 0x03;
@@ -1064,8 +1064,8 @@ void FASTCALL Sprite::Control(DWORD addr, DWORD data)
 				spr.lowres = TRUE;
 			}
 
-			// BGƒTƒCƒY
-			if (spr.h_res == 0) {
+		// BG size
+		if (spr.h_res == 0) {
 				// 8x8
 				spr.bg_size = FALSE;
 			}
@@ -1075,17 +1075,17 @@ void FASTCALL Sprite::Control(DWORD addr, DWORD data)
 			}
 			render->BGCtrl(4, spr.bg_size);
 			if (spr.h_res & 2) {
-				LOG1(Log::Warning, "BG/ƒXƒvƒ‰ƒCƒg H-Res–¢’è‹` %d", spr.h_res);
+				LOG1(Log::Warning, "BG/Sprite H-Res invalid %d", spr.h_res);
 			}
 			break;
 
-		// ‚»‚Ì‘¼
-		default:
+	// Other
+	default:
 			ASSERT(FALSE);
 			break;
 	}
 
-	// •\¦ˆÊ’u’²®‚Ì‚½‚ßƒŒƒ“ƒ_ƒ‰‚Ö’Ê’m
+	// Notify renderer for display position update
 	if (addr > 4) {
 		render->SetCRTC();
 	}
@@ -1094,7 +1094,7 @@ void FASTCALL Sprite::Control(DWORD addr, DWORD data)
 
 //---------------------------------------------------------------------------
 //
-//	ƒŒƒ“ƒ_ƒ‰‚Ö’Ê’m
+//	Notify renderer
 //
 //---------------------------------------------------------------------------
 void FASTCALL Sprite::NotifyPx68kBGWrite(DWORD addr, WORD data)
@@ -1115,10 +1115,10 @@ void FASTCALL Sprite::NotifyRender()
 	DWORD data;
 	DWORD reg[4];
 
-	// ƒŒƒWƒXƒ^
+	// Register
 	render->BGCtrl(4, spr.bg_size);
 	for (i=0; i<2; i++) {
-		// BGƒf[ƒ^ƒGƒŠƒA
+		// BG data area
 		if (spr.bg_area[i] & 1) {
 			render->BGCtrl(i + 2, TRUE);
 		}
@@ -1126,20 +1126,20 @@ void FASTCALL Sprite::NotifyRender()
 			render->BGCtrl(i + 2, FALSE);
 		}
 
-		// BG•\¦ON/OFF
+		// BG display ON/OFF
 		render->BGCtrl(i, spr.bg_on[i]);
 
-		// BGƒTƒCƒY
+		// BG size
 		render->BGCtrl(4, spr.bg_size);
 
 		// DISP/CPU
 		render->BGCtrl(5, spr.disp);
 
-		// BGƒXƒNƒ[ƒ‹
+		// BG scroll
 		render->BGScrl(i, spr.bg_scrlx[i], spr.bg_scrly[i]);
 	}
 
-	// ƒƒ‚ƒŠ:‹ô”ƒAƒhƒŒƒX‚Ì‚İ
+	// Bulk: addresses only
 	for (addr=0; addr<0x10000; addr+=2) {
 		if (addr < 0x400) {
 			if ((addr & 7)==0) {
@@ -1164,7 +1164,7 @@ void FASTCALL Sprite::NotifyRender()
 
 //---------------------------------------------------------------------------
 //
-//	“à•”ƒf[ƒ^æ“¾
+//	Get sprite data
 //
 //---------------------------------------------------------------------------
 void FASTCALL Sprite::GetSprite(sprite_t *buffer) const
@@ -1172,13 +1172,13 @@ void FASTCALL Sprite::GetSprite(sprite_t *buffer) const
 	ASSERT(this);
 	ASSERT(buffer);
 
-	// “à•”ƒ[ƒN‚ğƒRƒs[
+	// Copy work memory
 	*buffer = spr;
 }
 
 //---------------------------------------------------------------------------
 //
-//	ƒƒ‚ƒŠƒGƒŠƒAæ“¾
+//	Get work area
 //
 //---------------------------------------------------------------------------
 const BYTE* FASTCALL Sprite::GetMem() const
@@ -1191,7 +1191,7 @@ const BYTE* FASTCALL Sprite::GetMem() const
 
 //---------------------------------------------------------------------------
 //
-//	PCGƒGƒŠƒAæ“¾
+//	Get PCG area
 //
 //---------------------------------------------------------------------------
 const BYTE* FASTCALL Sprite::GetPCG() const
@@ -1204,7 +1204,7 @@ const BYTE* FASTCALL Sprite::GetPCG() const
 
 //---------------------------------------------------------------------------
 //
-//	H-Sync’Ê’m
+//	H-Sync notification
 //
 //---------------------------------------------------------------------------
 void FASTCALL Sprite::HSync()
@@ -1220,50 +1220,50 @@ void FASTCALL Sprite::HSync()
 
 	ASSERT(this);
 
-	// HSync‚ÅBG‚ÌXV‚ª•K—v‚©
+	// Check if BG update is needed on HSync
 	if (bghsync == 0) {
 		return;
 	}
 
 	if (bghsync & 0x01) {
-		// BG0ƒXƒNƒ[ƒ‹X
+		// BG0 scroll X
 		render->BGScrl(0, spr.bg_scrlx[0], spr.bg_scrly[0]);
 		bghsync &= ~0x01;
 	}
 
 	if (bghsync & 0x02) {
-		// BG0ƒXƒNƒ[ƒ‹Y
+		// BG0 scroll Y
 		render->BGScrl(0, spr.bg_scrlx[0], spr.bg_scrly[0]);
 		bghsync &= ~0x02;
 	}
 
 	if (bghsync & 0x04) {
-		// BG1ƒXƒNƒ[ƒ‹X
+		// BG1 scroll X
 		render->BGScrl(1, spr.bg_scrlx[1], spr.bg_scrly[1]);
 		bghsync &= ~0x04;
 	}
 
 	if (bghsync & 0x08) {
-		// BG1ƒXƒNƒ[ƒ‹Y
+		// BG1 scroll Y
 		render->BGScrl(1, spr.bg_scrlx[1], spr.bg_scrly[1]);
 		bghsync &= ~0x08;
 	}
 
-		// ƒXƒvƒ‰ƒCƒgXV‘ÎÛŒŸõ
+		// Sprite update target selection
 	if (bghsync & 0x10) {
-		// Ÿ‰ñƒ`ƒFƒbƒN‚Í–³‚µ
+		// No match check initially
 		flag = FALSE;
 
 		for (i=0; i<128; i++) {
-			// XV‘ÎÛ‚©
+			// Update target
 			if (sphsync[i] == 0) {
 				continue;
 			}
 
-			// ƒJƒEƒ“ƒgƒ_ƒEƒ“
+			// Count down
 			sphsync[i]--;
 
-			// 2ƒ‰ƒXƒ^[–Ú
+			// 2 scanline stagger
 			if (sphsync[i] == 0) {
 				addr = i << 3;
 				reg[0] = *(WORD*)(&sprite[addr  ]);
@@ -1274,11 +1274,11 @@ void FASTCALL Sprite::HSync()
 				continue;
 			}
 
-			// Ÿ‰ñƒ`ƒFƒbƒN‚Í‚â‚Á‚Ï‚è•K—v
+			// Match check still needed
 			flag = TRUE;
 		}
 
-		// Ÿ‰ñ•K—v‚È‚¯‚ê‚Îƒtƒ‰ƒOƒIƒt
+		// Clear flag if no longer needed
 		if (!flag) {
 			bghsync &= ~0x10;
 		}

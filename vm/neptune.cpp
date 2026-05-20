@@ -2,7 +2,7 @@
 //
 //	X68000 EMULATOR "XM6"
 //
-//	Copyright (C) 2001-2006 ＰＩ．(ytanaka@ipc-tokai.or.jp)
+//	Copyright (C) 2001-2006 PI(ytanaka@ipc-tokai.or.jp)
 //	[ Neptune-X ]
 //
 //---------------------------------------------------------------------------
@@ -23,30 +23,30 @@
 
 //---------------------------------------------------------------------------
 //
-//	コンストラクタ
+//	Constructor
 //
 //---------------------------------------------------------------------------
 Neptune::Neptune(VM *p) : MemDevice(p)
 {
-	// デバイスIDを初期化
+	// Device ID initialization
 	dev.id = MAKEID('N', 'E', 'P', 'X');
 	dev.desc = "Neptune-X (DP8390)";
 
-	// 開始アドレス、終了アドレス
+	// Start address, end address
 	memdev.first = 0xece000;
 	memdev.last = 0xecffff;
 }
 
 //---------------------------------------------------------------------------
 //
-//	初期化
+//	Initialization
 //
 //---------------------------------------------------------------------------
 BOOL FASTCALL Neptune::Init()
 {
 	ASSERT(this);
 
-	// 基本クラス
+	// Base class
 	if (!MemDevice::Init()) {
 		return FALSE;
 	}
@@ -56,20 +56,20 @@ BOOL FASTCALL Neptune::Init()
 
 //---------------------------------------------------------------------------
 //
-//	クリーンアップ
+//	Cleanup
 //
 //---------------------------------------------------------------------------
 void FASTCALL Neptune::Cleanup()
 {
 	ASSERT(this);
 
-	// 基本クラスへ
+	// Base class
 	MemDevice::Cleanup();
 }
 
 //---------------------------------------------------------------------------
 //
-//	リセット
+//	Reset
 //
 //---------------------------------------------------------------------------
 void FASTCALL Neptune::Reset()
@@ -77,12 +77,12 @@ void FASTCALL Neptune::Reset()
 	ASSERT(this);
 	ASSERT_DIAG();
 
-	LOG0(Log::Normal, "リセット");
+	LOG0(Log::Normal, "Reset");
 }
 
 //---------------------------------------------------------------------------
 //
-//	セーブ
+//	Save
 //
 //---------------------------------------------------------------------------
 BOOL FASTCALL Neptune::Save(Fileio* /*fio*/, int /*ver*/)
@@ -90,14 +90,14 @@ BOOL FASTCALL Neptune::Save(Fileio* /*fio*/, int /*ver*/)
 	ASSERT(this);
 	ASSERT_DIAG();
 
-	LOG0(Log::Normal, "セーブ");
+	LOG0(Log::Normal, "Save");
 
 	return TRUE;
 }
 
 //---------------------------------------------------------------------------
 //
-//	ロード
+//	Load
 //
 //---------------------------------------------------------------------------
 BOOL FASTCALL Neptune::Load(Fileio* /*fio*/, int /*ver*/)
@@ -105,14 +105,14 @@ BOOL FASTCALL Neptune::Load(Fileio* /*fio*/, int /*ver*/)
 	ASSERT(this);
 	ASSERT_DIAG();
 
-	LOG0(Log::Normal, "ロード");
+	LOG0(Log::Normal, "Load");
 
 	return TRUE;
 }
 
 //---------------------------------------------------------------------------
 //
-//	設定適用
+//	Apply config
 //
 //---------------------------------------------------------------------------
 void FASTCALL Neptune::ApplyCfg(const Config* /*config*/)
@@ -120,18 +120,18 @@ void FASTCALL Neptune::ApplyCfg(const Config* /*config*/)
 	ASSERT(this);
 	ASSERT_DIAG();
 
-	LOG0(Log::Normal, "設定適用");
+	LOG0(Log::Normal, "Apply config");
 }
 
 #if !defined(NDEBUG)
 //---------------------------------------------------------------------------
 //
-//	診断
+//	Diagnostic assertion
 //
 //---------------------------------------------------------------------------
 void FASTCALL Neptune::AssertDiag() const
 {
-	// 基本クラス
+	// Base class
 	MemDevice::AssertDiag();
 
 	ASSERT(this);
@@ -143,7 +143,7 @@ void FASTCALL Neptune::AssertDiag() const
 
 //---------------------------------------------------------------------------
 //
-//	バイト読み込み
+//	Byte read
 //
 //---------------------------------------------------------------------------
 DWORD FASTCALL Neptune::ReadByte(DWORD addr)
@@ -152,15 +152,15 @@ DWORD FASTCALL Neptune::ReadByte(DWORD addr)
 	ASSERT((addr >= memdev.first) && (addr <= memdev.last));
 	ASSERT_DIAG();
 
-	// バスエラー
-	cpu->BusErr(addr, TRUE);
+	// Bus error
+		cpu->BusErr(addr, TRUE);
 
 	return 0xff;
 }
 
 //---------------------------------------------------------------------------
 //
-//	ワード読み込み
+//	Word read
 //
 //---------------------------------------------------------------------------
 DWORD FASTCALL Neptune::ReadWord(DWORD addr)
@@ -175,7 +175,7 @@ DWORD FASTCALL Neptune::ReadWord(DWORD addr)
 
 //---------------------------------------------------------------------------
 //
-//	バイト書き込み
+//	Byte write
 //
 //---------------------------------------------------------------------------
 void FASTCALL Neptune::WriteByte(DWORD addr, DWORD data)
@@ -187,13 +187,13 @@ void FASTCALL Neptune::WriteByte(DWORD addr, DWORD data)
 
 	printf("%d", data);
 
-	// バスエラー
+	// Bus error
 	cpu->BusErr(addr, FALSE);
 }
 
 //---------------------------------------------------------------------------
 //
-//	ワード書き込み
+//	Word write
 //
 //---------------------------------------------------------------------------
 void FASTCALL Neptune::WriteWord(DWORD addr, DWORD data)
@@ -209,7 +209,7 @@ void FASTCALL Neptune::WriteWord(DWORD addr, DWORD data)
 
 //---------------------------------------------------------------------------
 //
-//	読み込みのみ
+//	Read only
 //
 //---------------------------------------------------------------------------
 DWORD FASTCALL Neptune::ReadOnly(DWORD addr) const

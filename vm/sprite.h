@@ -2,9 +2,9 @@
 //
 //	X68000 EMULATOR "XM6"
 //
-//	Copyright (C) 2001-2004 ＰＩ．(ytanaka@ipc-tokai.or.jp)
+//	Copyright (C) 2001-2004 PI (ytanaka@ipc-tokai.or.jp)
 //	Copyright (C) 2010-2014 GIMONS
-//	[ スプライト(CYNTHIA) ]
+//	[ Sprite (CYNTHIA) ]
 //
 //---------------------------------------------------------------------------
 
@@ -15,93 +15,93 @@
 
 //===========================================================================
 //
-//	スプライト
+//	Sprite
 //
 //===========================================================================
 class Sprite : public MemDevice
 {
 public:
-	// 内部データ定義
+	// Work data definition
 	typedef struct {
-		BOOL connect;					// アクセス可能フラグ
-		BOOL disp;						// 表示(ウェイト)フラグ
-		BYTE *mem;						// スプライトメモリ
-		BYTE *pcg;						// スプライトPCGエリア
+		BOOL connect;					// Access enable flag
+		BOOL disp;						// Display (wait) flag
+		BYTE *mem;						// Sprite memory
+		BYTE *pcg;						// Sprite PCG area
 
-		BOOL bg_on[2];					// BG表示ON
-		DWORD bg_area[2];				// BGデータエリア
-		DWORD bg_scrlx[2];				// BGスクロールX
-		DWORD bg_scrly[2];				// BGスクロールY
-		BOOL bg_size;					// BGサイズ
+		BOOL bg_on[2];					// BG display ON
+		DWORD bg_area[2];				// BG data area
+		DWORD bg_scrlx[2];				// BG scroll X
+		DWORD bg_scrly[2];				// BG scroll Y
+		BOOL bg_size;					// BG size
 
-		DWORD h_total;					// 水平トータル期間
-		DWORD h_disp;					// 水平表示期間
-		DWORD v_disp;					// 垂直表示期間
-		BOOL lowres;					// 15kHzモード
-		DWORD h_res;					// 水平解像度
-		DWORD v_res;					// 垂直解像度
+		DWORD h_total;					// Horizontal total count
+		DWORD h_disp;					// Horizontal display count
+		DWORD v_disp;					// Vertical display count
+		BOOL lowres;					// 15kHz mode
+		DWORD h_res;					// Horizontal resolution
+		DWORD v_res;					// Vertical resolution
 	} sprite_t;
 
 public:
-	// 基本ファンクション
+	// Basic functions
 	Sprite(VM *p);
-										// コンストラクタ
+										// Constructor
 	BOOL FASTCALL Init();
-										// 初期化
+										// Initialization
 	void FASTCALL Cleanup();
-										// クリーンアップ
+										// Cleanup
 	void FASTCALL Reset();
-										// リセット
+										// Reset
 	BOOL FASTCALL Save(Fileio *fio, int ver);
-										// セーブ
+										// Save
 	BOOL FASTCALL Load(Fileio *fio, int ver);
-										// ロード
+										// Load
 	void FASTCALL ApplyCfg(const Config *config);
-										// 設定適用
+										// Apply config
 
-	// メモリデバイス
+	// Memory device
 	DWORD FASTCALL ReadByte(DWORD addr);
-										// バイト読み込み
+										// Byte read
 	DWORD FASTCALL ReadWord(DWORD addr);
-										// ワード読み込み
+										// Word read
 	void FASTCALL WriteByte(DWORD addr, DWORD data);
-										// バイト書き込み
+										// Byte write
 	void FASTCALL WriteWord(DWORD addr, DWORD data);
-										// ワード書き込み
+										// Word write
 	DWORD FASTCALL ReadOnly(DWORD addr) const;
-										// 読み込みのみ
+										// Read only
 
-	// 外部API
+	// External API
 	void FASTCALL Connect(BOOL con)		{ spr.connect = con; }
-										// 接続
+										// Connect
 	BOOL FASTCALL IsConnect() const		{ return spr.connect; }
-										// 接続状況取得
+										// Get connection status
 	BOOL FASTCALL IsDisplay() const		{ return spr.disp; }
-										// 表示状況取得
+										// Get display status
 	void FASTCALL GetSprite(sprite_t *buffer) const;
-										// 内部データ取得
+										// Get sprite data
 	const BYTE* FASTCALL GetMem() const;
-										// メモリエリア取得
+										// Get work area
 	const BYTE* FASTCALL GetPCG() const;
-										// PCGエリア取得
+										// Get PCG area
 	void FASTCALL HSync();
-										// H-Sync通知
+										// H-Sync notification
 private:
 	void FASTCALL Control(DWORD addr, DWORD ctrl);
-										// コントロール
+										// Control
 	void FASTCALL NotifyRender();
 	void FASTCALL NotifyPx68kBGWrite(DWORD addr, WORD data);
-										// レンダラ通知
+										// Notify renderer
 	sprite_t spr;
-										// 内部データ
+										// Work data
 	Render *render;
-										// レンダラ
+										// Renderer
 	BYTE *sprite;
-										// スプライトRAM(64KB)
+										// Sprite RAM (64KB)
 	DWORD sphsync[128];
-										// スプライトHSYNC要求
+										// Sprite HSYNC schedule
 	DWORD bghsync;
-										// BG HSYNC要求
+										// BG HSYNC schedule
 };
 
 #endif	// sprite_h

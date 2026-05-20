@@ -2,9 +2,9 @@
 //
 //	X68000 EMULATOR "XM6"
 //
-//	Copyright (C) 2001-2005 ‚o‚hD(ytanaka@ipc-tokai.or.jp)
+//	Copyright (C) 2001-2005 P.I. (ytanaka@ipc-tokai.or.jp)
 //	Copyright (C) 2010-2014 GIMONS
-//	[ ƒŒƒ“ƒ_ƒ‰ ]
+//	[ Renderer ]
 //
 //---------------------------------------------------------------------------
 
@@ -24,21 +24,21 @@
 #include "mfc_sch.h"
 #endif	// XM6_RENDER_SYNC == 2
 
-//===========================================================================
+//=========================================================================
 //
-//	ƒŒƒ“ƒ_ƒ‰
+//	Renderer
 //
-//===========================================================================
+//=========================================================================
 //#define REND_LOG
 
 //---------------------------------------------------------------------------
 //
-//	’è”’è‹`
+//	Constant definitions
 //
 //---------------------------------------------------------------------------
-#define REND_COLOR0		0x80000000		// ƒJƒ‰[0ƒtƒ‰ƒO(rend_asm.asm‚Åg—p)
-#define REND_COLORS		0x40000000		// “Áêƒtƒ‰ƒO(”¼“§–¾^“Áêƒvƒ‰ƒCƒIƒŠƒeƒB)
-#define REND_COLORT		0x40000000		// “Áêƒtƒ‰ƒO(ƒeƒLƒXƒgƒpƒŒƒbƒg‚O)
+#define REND_COLOR0		0x80000000		// Color 0 flag (used by rend_asm.asm)
+#define REND_COLORS		0x40000000		// Special flag (semi-transparent/special priority)
+#define REND_COLORT		0x40000000		// Special flag (text palette 0)
 
 class Render::Backend
 {
@@ -105,16 +105,16 @@ private:
 
 //---------------------------------------------------------------------------
 //
-/// ƒRƒ“ƒXƒgƒ‰ƒNƒ^
+/// Constructor
 //
 //---------------------------------------------------------------------------
 Render::Render(VM* p) : Device(p)
 {
-	// ƒfƒoƒCƒXID‚ğ‰Šú‰»
+	// Initialize the device ID
 	dev.id = MAKEID('R', 'E', 'N', 'D');
 	dev.desc = "Renderer";
 
-	// ƒfƒoƒCƒXƒ|ƒCƒ“ƒ^
+	// devicepointer
 	crtc = NULL;
 	vc = NULL;
 	sprite = NULL;
@@ -136,7 +136,7 @@ Render::Render(VM* p) : Device(p)
 	m_pScheduler = NULL;
 #endif	// XM6_RENDER_SYNC == 2
 
-	// ƒ[ƒNƒGƒŠƒA‰Šú‰»(CRTC)
+	// Initialize the state area (CRTC)
 	render.crtc = FALSE;
 	render.width = 768;
 	render.h_mul = 1;
@@ -159,18 +159,18 @@ Render::Render(VM* p) : Device(p)
 	render.v_start = 40;
 	render.scanline = FALSE;
 
-	// ƒ[ƒNƒGƒŠƒA‰Šú‰»(ƒpƒŒƒbƒg)
+	// Initialize the state area (palette)
 	render.palbuf = NULL;
 	render.palptr = NULL;
 	render.palvc = NULL;
 
-	// ƒ[ƒNƒGƒŠƒA‰Šú‰»(ƒeƒLƒXƒg)
+	// Initialize the state area (text)
 	render.textflag = NULL;
 	render.texttv = NULL;
 	render.textbuf = NULL;
 	render.textout = NULL;
 
-	// ƒ[ƒNƒGƒŠƒA‰Šú‰»(ƒOƒ‰ƒtƒBƒbƒN)
+	// Initialize the state area (graphics)
 	render.grpflag = NULL;
 	render.grpgv = NULL;
 	render.grpbuf[0] = NULL;
@@ -178,7 +178,7 @@ Render::Render(VM* p) : Device(p)
 	render.grpbuf[2] = NULL;
 	render.grpbuf[3] = NULL;
 
-	// ƒ[ƒNƒGƒŠƒA‰Šú‰»(PCG,ƒXƒvƒ‰ƒCƒg,BG)
+	// Initialize the state area (PCG, sprite, BG)
 	render.pcgbuf = NULL;
 	render.spptr = NULL;
 	render.bgspbuf = NULL;
@@ -186,7 +186,7 @@ Render::Render(VM* p) : Device(p)
 	render.bgptr[0] = NULL;
 	render.bgptr[1] = NULL;
 
-	// ƒ[ƒNƒGƒŠƒA‰Šú‰»(‡¬)
+	// Initialize the state area (composition)
 	render.mixbuf = NULL;
 	render.mixwidth = 0;
 	render.mixheight = 0;
@@ -202,14 +202,14 @@ Render::Render(VM* p) : Device(p)
 	memset(render.mixandy, 0, sizeof(render.mixandy));
 	memset(render.mixmap, 0, sizeof(render.mixmap));
 
-	// ƒ[ƒNƒGƒŠƒA‰Šú‰»(•`‰æ)
+	// Initialize the state area (draw)
 	memset(render.draw, 0, sizeof(render.draw));
 	render.drawflag = NULL;
 }
 
 //---------------------------------------------------------------------------
 //
-//	‰Šú‰»
+//	Initialize
 //
 //---------------------------------------------------------------------------
 BOOL FASTCALL Render::Init()
@@ -218,23 +218,23 @@ BOOL FASTCALL Render::Init()
 
 	ASSERT(this);
 
-	// Šî–{ƒNƒ‰ƒX
+	// Base class
 	if (!Device::Init()) {
 		return FALSE;
 	}
 
-	// CRTCæ“¾
+	// CRTCget
 	crtc = (CRTC*)vm->SearchDevice(MAKEID('C', 'R', 'T', 'C'));
 	ASSERT(crtc);
 
-	// CRTCƒ[ƒNƒAƒhƒŒƒXæ“¾
+	// Get the CRTC state address
 	cp = crtc->GetWorkAddr();
 
-	// VCæ“¾
+	// VCget
 	vc = (VC*)vm->SearchDevice(MAKEID('V', 'C', ' ', ' '));
 	ASSERT(vc);
 
-	// VCƒ[ƒNƒAƒhƒŒƒXæ“¾
+	// Get the VC state address
 	vp = vc->GetWorkAddr();
 
 	px68k_crtc_host.ctx = this;
@@ -243,13 +243,13 @@ BOOL FASTCALL Render::Init()
 	try {
 #endif	// LOCAL_EXCEPTION
 
-	// ƒpƒŒƒbƒgƒoƒbƒtƒ@Šm•Û(4MB)
+	// Allocate the palette buffer (4 MB)
 	render.palbuf = new DWORD[0x10000 * 16];
 	if (!render.palbuf) {
 		return FALSE;
 	}
 
-	// ƒeƒLƒXƒgVRAMƒoƒbƒtƒ@Šm•Û(4.7MB)
+	// Allocate the text VRAM buffer (4.7 MB)
 	render.textflag = new BOOL[1024 * 32];
 	render.textbuf = new BYTE[1024 * 512];
 	render.textout = new DWORD[1024 * (1024 + 1)];
@@ -269,7 +269,7 @@ BOOL FASTCALL Render::Init()
 		render.textmod[i] = TRUE;
 	}
 
-	// ƒOƒ‰ƒtƒBƒbƒNVRAMƒoƒbƒtƒ@Šm•Û(8.2MB)
+	// Allocate the graphics VRAM buffer (8.2 MB)
 	render.grpflag = new BOOL[512 * 32 * 4];
 	render.grpbuf[0] = new DWORD[512 * 1024 * 4];
 	if (!render.grpflag) {
@@ -287,19 +287,19 @@ BOOL FASTCALL Render::Init()
 		render.grppal[i] = TRUE;
 	}
 
-	// PCGƒoƒbƒtƒ@Šm•Û(4MB)
+	// Allocate the PCG buffer (4 MB)
 	render.pcgbuf = new DWORD[16 * 256 * 16 * 16];
 	if (!render.pcgbuf) {
 		return FALSE;
 	}
 
-	// ƒXƒvƒ‰ƒCƒgƒ|ƒCƒ“ƒ^Šm•Û(512KB)
+	// spritepointerallocate(512KB)
 	render.spptr = new DWORD*[128 * 1024];
 	if (!render.spptr) {
 		return FALSE;
 	}
 
-	// BGƒ|ƒCƒ“ƒ^Šm•Û(768KB)
+	// BGpointerallocate(768KB)
 	render.bgptr[0] = new bgdata_t[64 * 1024];
 	memset(render.bgptr[0], 0, sizeof(bgdata_t) * (64 * 1024));
 	render.bgptr[1] = new bgdata_t[64 * 1024];	// from 512 to 1024 since version2.04
@@ -313,13 +313,13 @@ BOOL FASTCALL Render::Init()
 	memset(render.bgall, 0, sizeof(render.bgall));
 	memset(render.bgmod, 0, sizeof(render.bgmod));
 
-	// BG/ƒXƒvƒ‰ƒCƒgƒoƒbƒtƒ@Šm•Û(4MB)
+	// Allocate the BG/sprite buffer (4 MB)
 	render.bgspbuf = new DWORD[1024 * 1024];
 	if (!render.bgspbuf) {
 		return FALSE;
 	}
 
-	// •`‰æƒtƒ‰ƒOƒoƒbƒtƒ@Šm•Û(256KB)
+	// Allocate the draw-flag buffer (256 KB)
 	render.drawflag = new BOOL[64 * 1024];
 	if (!render.drawflag) {
 		return FALSE;
@@ -334,10 +334,10 @@ BOOL FASTCALL Render::Init()
 	}
 #endif	// LOCAL_EXCEPTION
 
-	// ƒpƒŒƒbƒgì¬
+	// Build the palette
 	MakePalette();
 
-	// ‚»‚Ì‘¼ƒ[ƒNƒGƒŠƒA
+	// Other state areas
 	render.contlevel = 0;
 	render.contvalue = 0;
 
@@ -360,7 +360,7 @@ BOOL FASTCALL Render::Init()
 
 //---------------------------------------------------------------------------
 //
-//	ƒNƒŠ[ƒ“ƒAƒbƒv
+//	Cleanup
 //
 //---------------------------------------------------------------------------
 void FASTCALL Render::Cleanup()
@@ -369,19 +369,19 @@ void FASTCALL Render::Cleanup()
 
 	ASSERT(this);
 
-	// •`‰æƒtƒ‰ƒO
+	// drawflag
 	if (render.drawflag) {
 		delete[] render.drawflag;
 		render.drawflag = NULL;
 	}
 
-	// BG/ƒXƒvƒ‰ƒCƒgƒoƒbƒtƒ@
+	// BG/sprite buffer
 	if (render.bgspbuf) {
 		delete[] render.bgspbuf;
 		render.bgspbuf = NULL;
 	}
 
-	// BGƒ|ƒCƒ“ƒ^
+	// BGpointer
 	if (render.bgptr[0]) {
 		delete[] render.bgptr[0];
 		render.bgptr[0] = NULL;
@@ -391,19 +391,19 @@ void FASTCALL Render::Cleanup()
 		render.bgptr[1] = NULL;
 	}
 
-	// ƒXƒvƒ‰ƒCƒgƒ|ƒCƒ“ƒ^
+	// spritepointer
 	if (render.spptr) {
 		delete[] render.spptr;
 		render.spptr = NULL;
 	}
 
-	// PCGƒoƒbƒtƒ@
+	// PCG buffer
 	if (render.pcgbuf) {
 		delete[] render.pcgbuf;
 		render.pcgbuf = NULL;
 	}
 
-	// ƒOƒ‰ƒtƒBƒbƒNVRAMƒoƒbƒtƒ@
+	// Graphics VRAM buffer
 	if (render.grpflag) {
 		delete[] render.grpflag;
 		render.grpflag = NULL;
@@ -415,7 +415,7 @@ void FASTCALL Render::Cleanup()
 		}
 	}
 
-	// ƒeƒLƒXƒgVRAMƒoƒbƒtƒ@
+	// Text VRAM buffer
 	if (render.textflag) {
 		delete[] render.textflag;
 		render.textflag = NULL;
@@ -429,19 +429,19 @@ void FASTCALL Render::Cleanup()
 		render.textout = NULL;
 	}
 
-	// ƒpƒŒƒbƒgƒoƒbƒtƒ@
+	// Palette buffer
 	if (render.palbuf) {
 		delete[] render.palbuf;
 		render.palbuf = NULL;
 	}
 
-	// Šî–{ƒNƒ‰ƒX‚Ö
+	// Return to the base class
 	Device::Cleanup();
 }
 
 //---------------------------------------------------------------------------
 //
-//	ƒŠƒZƒbƒg
+//	Reset
 //
 //---------------------------------------------------------------------------
 void FASTCALL Render::Reset()
@@ -456,26 +456,26 @@ void FASTCALL Render::Reset()
 	ASSERT(this);
 	LOG0(Log::Normal, "ƒŠƒZƒbƒg");
 
-	// ƒrƒfƒIƒRƒ“ƒgƒ[ƒ‰‚æ‚èƒ|ƒCƒ“ƒ^æ“¾
+	// Get the pointer from the video controller
 	ASSERT(vc);
 	render.palvc = (const WORD*)vc->GetPalette();
 
-	// ƒeƒLƒXƒgVRAM‚æ‚èƒ|ƒCƒ“ƒ^æ“¾
+	// Get the pointer from text VRAM
 	tvram = (TVRAM*)vm->SearchDevice(MAKEID('T', 'V', 'R', 'M'));
 	ASSERT(tvram);
 	render.texttv = tvram->GetTVRAM();
 
-	// ƒOƒ‰ƒtƒBƒbƒNVRAM‚æ‚èƒ|ƒCƒ“ƒ^æ“¾
+	// Get the pointer from graphics VRAM
 	gvram = (GVRAM*)vm->SearchDevice(MAKEID('G', 'V', 'R', 'M'));
 	ASSERT(gvram);
 	render.grpgv = gvram->GetGVRAM();
 
-	// ƒXƒvƒ‰ƒCƒgƒRƒ“ƒgƒ[ƒ‰‚æ‚èƒ|ƒCƒ“ƒ^æ“¾
+	// Get the pointer from the sprite controller
 	sprite = (Sprite*)vm->SearchDevice(MAKEID('S', 'P', 'R', ' '));
 	ASSERT(sprite);
 	render.sprmem = sprite->GetPCG() - 0x8000;
 
-	// ƒ[ƒNƒGƒŠƒA‰Šú‰»
+	// Initialize the state area
 	render.first = 0;
 	render.last = 0;
 	render.enable = TRUE;
@@ -487,23 +487,23 @@ void FASTCALL Render::Reset()
 	memset(render.fast_bg_stamp, 0, sizeof(render.fast_bg_stamp));
 	memset(render.fast_bg_done, 0, sizeof(render.fast_bg_done));
 
-	// ƒ[ƒNƒGƒŠƒA‰Šú‰»(crtc, vc) --ÄŒvZ‚ğ‘£‚·‚½‚ßTRUE
+	// Initialize the state area (CRTC, VC) -- TRUE to force recalculation
 	render.crtc = TRUE;
 	render.vc = TRUE;
 
-	// ƒ[ƒNƒGƒŠƒA‰Šú‰»(ƒRƒ“ƒgƒ‰ƒXƒg)--ÄŒvZ‚ğ‘£‚·‚½‚ßTRUE
+	// Initialize the state area (contrast) -- TRUE to force recalculation
 	render.contrast = TRUE;
 
-	// ƒ[ƒNƒGƒŠƒA‰Šú‰»(ƒpƒŒƒbƒg)--ÄŒvZ‚ğ‘£‚·‚½‚ßTRUE
+	// Initialize the state area (palette) -- TRUE to force recalculation
 	render.palette = TRUE;
 	render.palptr = render.palbuf;
 
-	// ƒ[ƒNƒGƒŠƒA‰Šú‰»(ƒeƒLƒXƒg)
+	// Initialize the state area (text)
 	render.texten = FALSE;
 	render.textx = 0;
 	render.texty = 0;
 
-	// ƒ[ƒNƒGƒŠƒA‰Šú‰»(ƒOƒ‰ƒtƒBƒbƒN)
+	// Initialize the state area (graphics)
 	for (i=0; i<4; i++) {
 		render.grppen[i] = FALSE;
 		render.grpen[i] = FALSE;
@@ -517,18 +517,18 @@ void FASTCALL Render::Reset()
 	render.grptype = 4;
 	render.grpscrl = FALSE;
 
-	// ƒ[ƒNƒGƒŠƒA‰Šú‰»(PCG)
-	// ƒŠƒZƒbƒg’¼Œã‚ÍBG,Sprite‚Æ‚à‚·‚×‚Ä•\¦‚µ‚È‚¢¨PCG‚Í–¢g—p
+	// Initialize the state area (PCG)
+	// Immediately after reset, neither BG nor sprites are displayed, so PCG is unused
 	memset(render.pcgready, 0, sizeof(render.pcgready));
 	memset(render.pcguse, 0, sizeof(render.pcguse));
 	memset(render.pcgpal, 0, sizeof(render.pcgpal));
 
-	// ƒ[ƒNƒGƒŠƒA‰Šú‰»(ƒXƒvƒ‰ƒCƒg)
+	// Initialize the state area (sprites)
 	memset(render.spptr, 0, sizeof(DWORD*) * 128 * 1024);
 	memset(render.spreg, 0, sizeof(render.spreg));
 	memset(render.spuse, 0, sizeof(render.spuse));
 
-	// ƒ[ƒNƒGƒŠƒA‰Šú‰»(BG)
+	// Initialize the state area (BG)
 	memset(render.bgreg, 0, sizeof(render.bgreg));
 	render.bgdisp[0] = FALSE;
 	render.bgdisp[1] = FALSE;
@@ -540,13 +540,13 @@ void FASTCALL Render::Reset()
 	render.bgy[0] = 0;
 	render.bgy[1] = 0;
 
-	// ƒ[ƒNƒGƒŠƒA‰Šú‰»(BG/ƒXƒvƒ‰ƒCƒg)
+	// Initialize the state area (BG/sprite)
 	render.bgsp = TRUE;
 	render.bgspflag = FALSE;
 	render.bgspdisp = FALSE;
 	memset(render.bgspmod, 0, sizeof(render.bgspmod));
 
-	// BG‚Ì‰Šú‰»ó‘Ô‚ğ‚Â‚­‚é(‚·‚×‚Ä0000)
+	// Build the initial BG state (all 0000)
 	for (i=0; i<(64*64); i++) {
 		render.bgreg[0][i] = 0x10000;
 		render.bgreg[1][i] = 0x10000;
@@ -590,13 +590,13 @@ void FASTCALL Render::Reset()
 		}
 	}
 
-	// ƒ[ƒNƒGƒŠƒA‰Šú‰»(‡¬)
+	// Initialize the state area (composition)
 	render.mixtype = 0;
 }
 
 //---------------------------------------------------------------------------
 //
-//	ƒZ[ƒu
+//	Save
 //
 //---------------------------------------------------------------------------
 BOOL FASTCALL Render::Save(Fileio* /*fio*/, int /*ver*/)
@@ -609,7 +609,7 @@ BOOL FASTCALL Render::Save(Fileio* /*fio*/, int /*ver*/)
 
 //---------------------------------------------------------------------------
 //
-//	ƒ[ƒh
+//	Load
 //
 //---------------------------------------------------------------------------
 BOOL FASTCALL Render::Load(Fileio* /*fio*/, int /*ver*/)
@@ -622,7 +622,7 @@ BOOL FASTCALL Render::Load(Fileio* /*fio*/, int /*ver*/)
 
 //---------------------------------------------------------------------------
 //
-//	İ’è“K—p
+//	Apply settings
 //
 //---------------------------------------------------------------------------
 void FASTCALL Render::ApplyCfg(const Config *config)
@@ -631,14 +631,14 @@ void FASTCALL Render::ApplyCfg(const Config *config)
 	ASSERT(config);
 	LOG0(Log::Normal, "İ’è“K—p");
 
-	// 15kHzƒXƒLƒƒƒ“ƒ‰ƒCƒ“•\¦
+	// 15 kHz scanline display
 	render.scanline = config->disp_scanline;
 	render.mixdirty = TRUE;
 }
 
 //---------------------------------------------------------------------------
 //
-//	ƒtƒŒ[ƒ€ŠJn
+//	Frame start
 //
 //---------------------------------------------------------------------------
 void FASTCALL Render::StartFrame()
@@ -654,16 +654,16 @@ void FASTCALL Render::StartFrameOriginal()
 	ASSERT(this);
 
 
-	// ‚±‚ÌƒtƒŒ[ƒ€‚ÍƒXƒLƒbƒv‚·‚é‚©
+	// Whether to skip this frame
 	if ((render.count != 0) || !render.enable) {
 		render.act = FALSE;
 		return;
 	}
 
-	// ‚±‚ÌƒtƒŒ[ƒ€‚ÍƒŒƒ“ƒ_ƒŠƒ“ƒO‚·‚é
+	// Render this frame
 	render.act = TRUE;
 
-	// ƒ‰ƒXƒ^‚ğƒNƒŠƒA
+	// Clear the raster
 	render.first = 0;
 	render.last = 0;
 
@@ -675,7 +675,7 @@ void FASTCALL Render::StartFrameOriginal()
 		Crtc();
 	}
 
-	// ƒRƒ“ƒgƒ‰ƒXƒg
+	// Contrast
 	if (render.contrast) {
 #if defined(REND_LOG)
 		LOG0(Log::Normal, "ƒRƒ“ƒgƒ‰ƒXƒgˆ—");
@@ -683,13 +683,13 @@ void FASTCALL Render::StartFrameOriginal()
 		Contrast();
 	}
 
-	// ƒCƒ“ƒ^ƒŒ[ƒX‚Ì‡¬‹ôŠï‚ğXV
+	// Update the composition even/odd state for interlace mode
 	render.mixeven = cp->v_scaneven;
 }
 
 //---------------------------------------------------------------------------
 //
-//	ƒtƒŒ[ƒ€I—¹
+//	Frame end
 //
 //---------------------------------------------------------------------------
 void FASTCALL Render::EndFrame()
@@ -706,26 +706,26 @@ void FASTCALL Render::EndFrameOriginal()
 	ASSERT(this);
 
 
-	// –³Œø‚È‚ç‰½‚à‚µ‚È‚¢
+	// Do nothing if invalid
 	if (!render.act) {
 		return;
 	}
 
-	// ‚±‚±‚Ü‚Å‚Ìƒ‰ƒXƒ^‚ğˆ—
+	// Process rasters up to this point
 	if (render.last > 0) {
 		for (i=render.last; i<render.height; i++) {
 			Process(i, 0);
 		}
 	}
 
-	// ƒJƒEƒ“ƒgUp
+	// Increment the count
 	render.count++;
 
-	// –³Œø‰»
+	// Invalidate
 	render.act = FALSE;
 
 #if XM6_RENDER_SYNC == 2
-	// •`‰æ
+	// Draw
 	ASSERT(m_pScheduler);
 	m_pScheduler->UpdateFrame();
 #endif	// XM6_RENDER_SYNC == 2
@@ -733,7 +733,7 @@ void FASTCALL Render::EndFrameOriginal()
 
 //---------------------------------------------------------------------------
 //
-//	‡¬ƒoƒbƒtƒ@ƒZƒbƒg
+//	Set the composition buffer
 //
 //---------------------------------------------------------------------------
 void FASTCALL Render::SetMixBuf(DWORD *buf, int width, int height)
@@ -742,24 +742,24 @@ void FASTCALL Render::SetMixBuf(DWORD *buf, int width, int height)
 	ASSERT(width >= 0);
 	ASSERT(height >= 0);
 
-	// İ’è
+	// set
 	render.mixbuf = buf;
 	render.mixwidth = width;
 	render.mixheight = height;
 
-	// ‡¬ƒoƒbƒtƒ@‚Ìˆ—’·‚ğ’²®
+	// Adjust the composition buffer processing length
 	render.mixlen = render.width;
 	if (render.mixwidth < render.width) {
 		render.mixlen = render.mixwidth;
 	}
 
-	// ‚·‚×‚Ä‚Ì‡¬‚ğw¦
+	// Mark all composition layers for update
 	render.mixdirty = TRUE;
 }
 
 //---------------------------------------------------------------------------
 //
-//	CRTCƒZƒbƒg
+//	Set CRTC
 //
 //---------------------------------------------------------------------------
 void FASTCALL Render::SetCRTC()
@@ -778,7 +778,7 @@ void FASTCALL Render::SetCRTCOriginal()
 
 //---------------------------------------------------------------------------
 //
-//	VCƒZƒbƒg
+//	Set VC
 //
 //---------------------------------------------------------------------------
 void FASTCALL Render::SetVC()
@@ -797,7 +797,7 @@ void FASTCALL Render::SetVCOriginal()
 
 //---------------------------------------------------------------------------
 //
-//	CRTCˆ—
+//	CRTC processing
 //
 //---------------------------------------------------------------------------
 void FASTCALL Render::Crtc()
@@ -811,15 +811,15 @@ void FASTCALL Render::Crtc()
 	int bgsp_v;
 	int index;
 
-	// ƒf[ƒ^æ“¾
+	// Get data
 	sprite->GetSprite(&sprdata);
 
-	// h_dotsAv_dots‚ª0‚È‚ç•Û—¯
+	// Defer processing if h_dots or v_dots is 0
 	if ((cp->h_dots == 0) || (cp->v_dots == 0)) {
 		return;
 	}
 
-	// CRTCî•ñ‚ğƒRƒs[
+	// Copy the CRTC info
 	p = (WORD *)cp->reg;
 	render.siz = cp->siz;
 	render.hd = cp->hd;
@@ -831,7 +831,7 @@ void FASTCALL Render::Crtc()
 	render.height = cp->v_dots;
 	render.v_mul = cp->v_mul;
 
-	// …•½ü”g”ƒ‚[ƒhŒˆ’è
+	// Determine the horizontal frequency mode
 	crtc->GetHVHz(&h_hz, &v_hz);
 	render.hres = -1;
 	if (h_hz > 1400 && h_hz < 1800) {
@@ -846,7 +846,7 @@ void FASTCALL Render::Crtc()
 		render.hres = 2;
 	}
 
-	// CRTƒGƒ~ƒ…ƒŒ[ƒVƒ‡ƒ“—p‚Ìî•ñİ’è
+	// Set up CRT-emulation info
 	render.h_disp = cp->h_dots;
 	render.h_total = p[0] & 0xff;
 	render.h_total += 1;
@@ -862,8 +862,8 @@ void FASTCALL Render::Crtc()
 	render.v_pulse = p[5] & 0x3ff;
 	render.v_start = p[6] & 0x3ff;
 
-	// ƒCƒ“ƒ^ƒŒ[ƒX‚Ü‚½‚Í…•½ü”g”ƒ‚[ƒh‚ª
-	// 15kHz‚Ìê‡‚Íc‚Q”{‚Å‡¬‚·‚é‚Ì‚Å•â³‚·‚é
+	// If interlace mode or the horizontal-frequency mode
+	// Adjust because 15 kHz mode is composed at double vertical size
 	if (cp->v_mul == 0 || render.hres == 0) {
 		render.v_disp <<= 1;
 		render.v_total <<= 1;
@@ -871,19 +871,19 @@ void FASTCALL Render::Crtc()
 		render.v_start <<= 1;
 	}
 
-	// ‡¬ƒoƒbƒtƒ@‚Ìˆ—’·‚ğ’²®
+	// Adjust the composition buffer processing length
 	mixlen = render.mixlen;
 	render.mixlen = render.width;
 	if (render.mixwidth < render.width) {
 		render.mixlen = render.mixwidth;
 	}
 
-	// mixlen‚ª–³Œø‚È‚ç‡¬‚³‚¹‚È‚¢
+	// Do not compose if mixlen is invalid
 	if (render.mixlen==0) {
 		render.act = FALSE;
 	}
 
-	// BG/ƒXƒvƒ‰ƒCƒg‚ÌˆÊ’u’²®
+	// BG/sprite position adjustment
 	bgsp_h = render.bgsp_h;
 	render.bgsp_h = p[2] & 0xff;
 	render.bgsp_h += 4;
@@ -895,54 +895,54 @@ void FASTCALL Render::Crtc()
 	render.bgsp_lowres = sprdata.lowres;
 	render.bgsp_vres = sprdata.v_res;
 
-	// ‡¬ƒ‚[ƒh
+	// Composition mode
 	if (render.lowres) {
 		// 15kHz
 		if (render.vd == 1) {
-			// ƒCƒ“ƒ^ƒŒ[ƒX
+			// Interlace
 			render.mixmode = 1;
 		} else {
-			// ’Êí
+			// normal
 			render.mixmode = 0;
 		}
 	} else {
 		// 31kHz
 		if (render.vd == 0) {
-			// ‚Q“x“Ç‚İ
+			// Double read
 			render.mixmode = 2;
 		} else if (render.vd == 1) {
-			// ’Êí
+			// normal
 			render.mixmode = 0;
 		} else {
-			// ƒCƒ“ƒ^ƒŒ[ƒX
+			// Interlace
 			render.mixmode = 1;
 		}
 	}
 
-	// ‡¬ƒ‚[ƒh(BG,ƒXƒvƒ‰ƒCƒg)
+	// Composition mode (BG, sprite)
 	if (render.bgsp_lowres) {
 		// 15kHz
 		if (render.bgsp_vres == 0) {
-			// ’Êí
+			// normal
 			render.bgsp_mixmode = 0;
 		} else {
-			// ƒCƒ“ƒ^ƒŒ[ƒX
+			// Interlace
 			render.bgsp_mixmode = 1;
 		}
 	} else {
 		// 31kHz
 		if (render.bgsp_vres == 0) {
-			// ‚Q“x“Ç‚İƒ‚[ƒh
+			// Double-read mode
 			render.bgsp_mixmode = 2;
 		} else {
-			// ’Êí
+			// normal
 			render.bgsp_mixmode = 0;
 		}
 	}
 
-	// ƒ‰ƒXƒ^[‚¸‚êŒŸØˆ—
+	// Raster misalignment validation processing
 	if (sprdata.h_res != 0) {
-		// ƒCƒ“ƒfƒbƒNì¬
+		// Build the index
 		index = render.hd;
 		if (!render.lowres) {
 			index += 4;
@@ -951,31 +951,31 @@ void FASTCALL Render::Crtc()
 			index += 8;
 		}
 
-		// ŒŸØƒe[ƒuƒ‹”äŠr
+		// Compare against the validation table
 		if (sprdata.h_disp > HDispTable[index]) {
 			render.bgsp_v++;
 		}
 	}
 
-	// ƒXƒvƒ‰ƒCƒgƒŠƒZƒbƒg(mixlen,bgsp_h,bgsp_v‚ÉˆË‘¶‚·‚é‚½‚ß)
+	// Reset sprites (depends on mixlen, bgsp_h, and bgsp_v)
 	if (mixlen != render.mixlen ||
 		bgsp_h != render.bgsp_h || bgsp_v != render.bgsp_v) {
 		SpriteReset();
 	}
 
-	// ƒIƒt
+	// Off
 	render.crtc = FALSE;
 
-	// VC‚É’Ê’m
+	// Notify VC
 	SetVC();
 }
 
 //---------------------------------------------------------------------------
 //
-//	ƒ‰ƒXƒ^[‚¸‚êŒŸØƒe[ƒuƒ‹
-//	lowres,hd,HRL‚©‚ç“¾‚ç‚ê‚é’lB
+//	Raster misalignment validation table
+//	Values derived from lowres, hd, and HRL.
 //
-//	BGSP‚ÌH-DISP‚ª‚±‚Ì’lˆÈã‚É‚È‚é‚ÆBGSP–Ê‚ª‚Pƒ‰ƒXƒ^[ã‚É‚¸‚ê‚éŒ»Û‚ª‚Å‚é
+//	If BGSP H-DISP reaches or exceeds this value, the BGSP plane shifts upward by one raster
 //
 //---------------------------------------------------------------------------
 const DWORD Render::HDispTable[16] = {
@@ -989,7 +989,7 @@ const DWORD Render::HDispTable[16] = {
 
 //---------------------------------------------------------------------------
 //
-//	VCˆ—
+//	VC processing
 //
 //---------------------------------------------------------------------------
 void FASTCALL Render::Video()
@@ -1004,16 +1004,16 @@ void FASTCALL Render::Video()
 	DWORD mixlshift;
 	DWORD mixrshift;
 
-	// VCƒtƒ‰ƒO‚ğ~‚ë‚·
+	// Clear the VC flag
 	render.vc = FALSE;
 
-	// ƒtƒ‰ƒOON
+	// flagON
 	render.mixdirty = TRUE;
 	render.textdirty = TRUE;
 	render.grpdirty = TRUE;
 	render.bgspdirty = TRUE;
 
-	// ƒeƒLƒXƒgƒCƒl[ƒuƒ‹
+	// Text enable
 	if (vp->ton && !cp->tmem) {
 		render.texten = TRUE;
 	}
@@ -1021,7 +1021,7 @@ void FASTCALL Render::Video()
 		render.texten = FALSE;
 	}
 
-	// ƒOƒ‰ƒtƒBƒbƒNƒ^ƒCƒv
+	// Graphics type
 	type = 0;
 	if (!vp->siz) {
 		type = (int)(vp->col + 1);
@@ -1031,7 +1031,7 @@ void FASTCALL Render::Video()
 	}
 
 
-	// ƒOƒ‰ƒtƒBƒbƒN‡¬ƒ^ƒCƒv
+	// Graphics composition type
 	render.mixpage = 0;
 	for (i=0; i<4; i++) {
 		render.grppen[i] = FALSE;
@@ -1100,30 +1100,30 @@ void FASTCALL Render::Video()
 	}
 
 
-	// ‘S‘Ì‡¬ˆÊ’u’²®—pƒVƒtƒg—Ê‰Šú‰»
+	// Initialize the shift amount used for overall composition position adjustment
 	mixlshift = 0;
 	mixrshift = 0;
 
-	// ‚Q“x“Ç‚İ‚ÍˆÊ’u‚ğ”¼•ª‚É‚È‚é‚æ‚¤‚É‚·‚é
+	// For double-scanning, use half position
 	if (render.mixmode == 2) {
 		mixrshift = 1;
 	}
 
-	// BG/ƒXƒvƒ‰ƒCƒg‡¬—pƒVƒtƒg—Ê‰Šú‰»
+	// Initialize the shift amount used for BG/sprite composition
 	render.bgsp_rshift = 0;
 	render.bgsp_lshift = 0;
 
-	// BGSP‚ª’Êí‚ÅƒCƒ“ƒ^ƒŒ[ƒX‚Ì‚¾‚¯”¼•ª‚ÌˆÊ’u
+	// Use half position only when BG/SP is normal and interlaced
 	if (render.bgsp_mixmode == 0 && render.mixmode == 1) {
 		render.bgsp_rshift = 1;
 	}
 
-	// BGSP‚ªƒCƒ“ƒ^ƒŒ[ƒX‚Ìê‡‚ÍƒCƒ“ƒ^ƒŒ[ƒX‚Å–³‚¢‚¾‚¯”{‚ÌˆÊ’u
+	// If BG/SP is interlaced, double the position only in non-interlace mode
 	if (render.bgsp_mixmode == 1 && render.mixmode != 1) {
 		render.bgsp_lshift = 1;
 	}
 
-	// BGSP‚ª‚Q“x“Ç‚İ‚Ìê‡‚ÍƒCƒ“ƒ^ƒŒ[ƒXó‘Ô‚Å”¼•ª‚©4•ª‚Ì1‚©Œˆ‚Ü‚é
+	// With double-scanning BG/SP, choose half or quarter position based on interlace state
 	if (render.bgsp_mixmode == 2) {
 		if (render.mixmode != 1) {
 			render.bgsp_rshift = 1;
@@ -1132,7 +1132,7 @@ void FASTCALL Render::Video()
 		}
 	}
 
-	// ƒOƒ‰ƒtƒBƒbƒNƒoƒbƒtƒ@‚ğƒZƒbƒg
+	// Set the graphics buffer
 	j = 0;
 	for (i=0; i<4; i++) {
 		if (map[i] >= 0) {
@@ -1154,7 +1154,7 @@ void FASTCALL Render::Video()
 		}
 	}
 
-	// ƒOƒ‰ƒtƒBƒbƒN‚Ìİ’è
+	// Set the graphics state
 	for (i=0; i<render.mixpage; i++) {
 		render.mixptr[i + 4] = ptr[i];
 		render.mixshift[i + 4] = shift[i];
@@ -1167,54 +1167,54 @@ void FASTCALL Render::Video()
 		render.mixraster[i + 4] = 0;
 	}
 
-	// ƒOƒ‰ƒtƒBƒbƒNƒXƒNƒ[ƒ‹‚Æ•\¦\¬ƒ`ƒFƒbƒN
+	// Check graphics scroll and display layout
 	if (render.grpdirty) {
 		GrpScrlCheck();
 		GrpDispCheck();
 	}
 
-	// —Dæ‡ˆÊ‚ğæ“¾
+	// Get the priority
 	render.tx = vp->tx;
 	render.sp = vp->sp;
 	render.gr = vp->gr;
 
-	// ƒ^ƒCƒv‰Šú‰»
+	// Initialize the type
 	render.mixtype = 0;
 
 
-	// “Áêˆ—
+	// special handling
 	//
-	// VC‚ÌR1‚ÌƒOƒ‰ƒtƒBƒbƒN‰æ–Ê—Dæ“x‚ª–¢’è‹`‚Ì%11‚É
-	// İ’è‚³‚ê‚é‚ÆƒeƒLƒXƒg‚àBGSP‚àÁ‚¦‚Ä‚µ‚Ü‚¤‚æ‚¤‚¾B
+	// If VC R1 sets the graphics-screen priority to the undefined value %11
+	// both text and BGSP appear to disappear
 	//
 	if (render.gr == 3) {
 		if (render.mixpage == 0) {
-			// ƒOƒ‰ƒtƒBƒbƒN‚È‚µ(type=0)
+			// graphicsnone(type=0)
 			render.mixtype = 0;
 			return;
 		}
-		// ƒOƒ‰ƒtƒBƒbƒN1–ÊˆÈã‚Ì‚İ(type=3)
+		// Only when at least one graphics plane is enabled (type=3)
 		render.mixtype = 3;
 		return;
 	}
 
 
-	// BG/ƒXƒvƒ‰ƒCƒg•\¦Ø‘Ö‚©
+	// Whether BG/sprite display is being toggled
 	if ((cp->hd >= 2) || (!vp->son)) {
 		if (render.bgspflag) {
-			// BG/ƒXƒvƒ‰ƒCƒg•\¦ON->OFF
+			// BG/spritedisplayON->OFF
 			render.bgspflag = FALSE;
 		}
 	} else {
 		if (!render.bgspflag) {
-			// BG/ƒXƒvƒ‰ƒCƒg•\¦OFF->ON
+			// BG/spritedisplayOFF->ON
 			render.bgspflag = TRUE;
 		}
 	}
 
-	// ƒpƒŒƒbƒg‚O”¼“§–¾‚Í“Á•Êˆ—
+	// Palette 0 semi-transparency requires special handling
 	if (vp->ah) {
-		// ƒpƒŒƒbƒg‚O”¼“§–¾(type=11)
+		// Palette 0 semi-transparency (type=11)
 		if (render.mixpage > 0) {
 			render.mixtype = 11;
 		} else {
@@ -1223,21 +1223,21 @@ void FASTCALL Render::Video()
 		return;
 	}
 
-	// ƒOƒ‰ƒtƒBƒbƒN‚Ì‚İ
+	// Graphics only
 	if (!render.texten && ((cp->hd >= 2) || (!vp->son))) {
 		if (render.mixpage == 0) {
-			// ƒOƒ‰ƒtƒBƒbƒN‚È‚µ(type=0)
+			// graphicsnone(type=0)
 			render.mixtype = 0;
 			return;
 		}
-		// ƒOƒ‰ƒtƒBƒbƒN1–ÊˆÈã‚Ì‚İ(type=3)
+		// Only when at least one graphics plane is enabled (type=3)
 		render.mixtype = 3;
 		return;
 	}
 
-	// ƒeƒLƒXƒg‚Ì‚İ
+	// Text only
 	if (render.mixpage == 0 && render.texten && ((cp->hd >= 2) || (!vp->son))) {
-		// ƒOƒ‰ƒtƒBƒbƒN‚È‚µBƒeƒLƒXƒg‚Ì‚İ(type=1)
+		// No graphics; text only (type=1)
 		render.mixptr[0] = render.textout;
 		render.mixshift[0] = 10;
 		render.mixrshift[0] = mixrshift;
@@ -1251,9 +1251,9 @@ void FASTCALL Render::Video()
 		return;
 	}
 
-	// ƒXƒvƒ‰ƒCƒg‚Ì‚İ
+	// Sprites only
 	if (render.mixpage == 0 && cp->hd < 2 && vp->son && !render.texten) {
-		// ƒOƒ‰ƒtƒBƒbƒN‚È‚µAƒXƒvƒ‰ƒCƒg‚Ì‚İ(type=2)
+		// No graphics; sprites only (type=2)
 		render.mixptr[0] = render.bgspbuf;
 		render.mixshift[0] = 10;
 		render.mixrshift[0] = render.bgsp_rshift;
@@ -1267,7 +1267,7 @@ void FASTCALL Render::Video()
 		return;
 	}
 
-	// —Dæ‡ˆÊŒˆ’è
+	// Determine the priority order
 	if (render.tx == 3)
 		render.tx--;
 	if (render.sp == 3)
@@ -1276,7 +1276,7 @@ void FASTCALL Render::Video()
 		render.gr--;
 
 	if (render.tx == render.sp) {
-		// “K“–‚ÉŒˆ‚ß‚Ä‚¢‚é
+		// Chosen heuristically
 		if (render.tx < render.gr) {
 			render.tx = 0;
 			render.sp = 1;
@@ -1289,7 +1289,7 @@ void FASTCALL Render::Video()
 		}
 	}
 	if (render.tx == render.gr) {
-		// “K“–‚ÉŒˆ‚ß‚Ä‚¢‚é
+		// Chosen heuristically
 		if (render.tx < render.sp) {
 			render.tx = 0;
 			render.gr = 1;
@@ -1302,7 +1302,7 @@ void FASTCALL Render::Video()
 		}
 	}
 	if (render.sp == render.gr) {
-		// “K“–‚ÉŒˆ‚ß‚Ä‚¢‚é
+		// Chosen heuristically
 		if (render.sp < render.tx) {
 			render.sp = 0;
 			render.gr = 1;
@@ -1323,7 +1323,7 @@ void FASTCALL Render::Video()
 	render.mixmap[render.gr] = 2;
 
 
-	// ƒOƒ‰ƒtƒBƒbƒN‚ÆƒeƒLƒXƒg‚Ì‚İ(type=5,6,7)
+	// Graphics and text only (types 5, 6, 7)
 	if (render.mixpage > 0 && render.texten && ((cp->hd >= 2) || (!vp->son))) {
 		render.mixptr[0] = render.textout;
 		render.mixshift[0] = 10;
@@ -1336,16 +1336,16 @@ void FASTCALL Render::Video()
 		render.mixraster[0] = 0;
 		render.mixtype = 5 + render.gr;
 
-		// ƒeƒLƒXƒgŒã–ÊAƒOƒ‰ƒtƒBƒbƒN’†ŠÔ‚È‚çƒOƒ‰ƒtƒBƒbƒN‘O–Ê‚Åˆµ‚¤(type=5)
+		// If text is in the back layer and graphics are in the middle layer, treat graphics as the front layer (type=5)
 		if (render.tx==2 && render.gr==1) {
 			render.mixtype = 5;
 		}
 		return;
 	}
 
-	// ƒOƒ‰ƒtƒBƒbƒN‚ÆƒXƒvƒ‰ƒCƒg‚Ì‚İ(type=5,6,7)
+	// Graphics and sprites only (types 5, 6, 7)
 	if (render.mixpage > 0 && cp->hd < 2 && vp->son && !render.texten) {
-		// ƒOƒ‰ƒtƒBƒbƒN‚È‚µAƒXƒvƒ‰ƒCƒg‚Ì‚İ(type=2)
+		// No graphics; sprites only (type=2)
 		render.mixptr[0] = render.bgspbuf;
 		render.mixshift[0] = 10;
 		render.mixrshift[0] = render.bgsp_rshift;
@@ -1357,14 +1357,14 @@ void FASTCALL Render::Video()
 		render.mixraster[0] = render.bgsp_v;
 		render.mixtype = 5 + render.gr;
 
-		// ƒXƒvƒ‰ƒCƒgŒã–ÊAƒOƒ‰ƒtƒBƒbƒN’†ŠÔ‚È‚çƒOƒ‰ƒtƒBƒbƒN‘O–Ê‚Åˆµ‚¤(type=5)
+		// If sprites are in the back layer and graphics are in the middle layer, treat graphics as the front layer (type=5)
 		if (render.sp==2 && render.gr==1) {
 			render.mixtype = 5;
 		}
 		return;
 	}
 
-	// ƒeƒLƒXƒg‚ÆƒXƒvƒ‰ƒCƒg‚Ìİ’è
+	// Set text and sprite composition
 	if (render.tx < render.sp) {
 		render.mixptr[0] = render.textout;
 		render.mixshift[0] = 10;
@@ -1407,32 +1407,32 @@ void FASTCALL Render::Video()
 		render.mixraster[0] = render.bgsp_v;
 	}
 
-	// ƒXƒvƒ‰ƒCƒg‚ÆƒeƒLƒXƒg(type=4)
+	// Sprites and text (type=4)
 	if (render.mixpage == 0) {
 		render.mixtype = 4;
 		return;
 	}
 
-	// ƒOƒ‰ƒtƒBƒbƒN‚ÆƒeƒLƒXƒg‚ÆƒXƒvƒ‰ƒCƒg(type=8,9,10)
+	// Graphics, text, and sprites (types 8, 9, 10)
 	render.mixtype = 8 + render.gr;
 }
 
 //---------------------------------------------------------------------------
 //
-//	ƒRƒ“ƒgƒ‰ƒXƒgİ’è
+//	Set contrast
 //
 //---------------------------------------------------------------------------
 void FASTCALL Render::SetContrast(int cont, BOOL immediate)
 {
-	// ƒVƒXƒeƒ€ƒ|[ƒg‚Ì“_‚Åˆê’vƒ`ƒFƒbƒN‚ğs‚¤‚Ì‚ÅAˆÙ‚È‚Á‚Ä‚¢‚éê‡‚Ì‚İ
+	// Since the system port already checks for a match, only handle differing values here
 	ASSERT(this);
 	ASSERT((cont >= 0) && (cont <= 15));
 
-	// •ÏX‚Æƒtƒ‰ƒOON
+	// Apply the change and raise the flag
 	render.contlevel = cont << 2;
 	render.contrast = TRUE;
 
-	// ‘¦”½‰f‚È‚ç’iŠK“I‚É•Ï‰»‚³‚¹‚È‚¢
+	// If the change is applied immediately, do not transition gradually
 	if (immediate) {
 		render.contvalue = cont << 2;
 	}
@@ -1440,7 +1440,7 @@ void FASTCALL Render::SetContrast(int cont, BOOL immediate)
 
 //---------------------------------------------------------------------------
 //
-//	ƒRƒ“ƒgƒ‰ƒXƒgæ“¾
+//	Get contrast
 //
 //---------------------------------------------------------------------------
 int FASTCALL Render::GetContrast() const
@@ -1453,16 +1453,16 @@ int FASTCALL Render::GetContrast() const
 
 //---------------------------------------------------------------------------
 //
-//	ƒRƒ“ƒgƒ‰ƒXƒgˆ—
+//	Contrast processing
 //
 //---------------------------------------------------------------------------
 void FASTCALL Render::Contrast()
 {
-	// ƒRƒ“ƒgƒ‰ƒXƒg‚ª“¯‚¶’l‚É‚È‚Á‚½‚Ì‚Åƒtƒ‰ƒO‚n‚e‚e
+	// The contrast reached the target value, so clear the flag
 	if (render.contlevel == render.contvalue) {
 		render.contrast = FALSE;
 	} else {
-		// Œ»İ‚Ì’l‚ğ–Ú•W’l‚ÉŒü‚©‚Á‚Ä’iŠK“I‚É‘Œ¸‚³‚¹‚é
+		// Gradually move the current value toward the target value
 		if (render.contlevel > render.contvalue) {
 			render.contvalue = (render.contlevel < (render.contvalue + 2)) ? render.contlevel : (render.contvalue + 2);
 		} else {
@@ -1470,18 +1470,18 @@ void FASTCALL Render::Contrast()
 		}
 	}
 
-	// ƒ|ƒCƒ“ƒgˆÊ’u‚ğ•ÏXAƒtƒ‰ƒODown
+	// Change the point position and lower the flag
 	render.palptr = render.palbuf;
 	render.palptr += (render.contvalue >> 2) << 16;
 
-	// ƒpƒŒƒbƒgƒtƒ‰ƒO‚ğ‘S‚ÄUp
+	// Raise all palette flags
 	memset(render.palmod, TRUE, 0x200);
 	render.palette = TRUE;
 }
 
 //---------------------------------------------------------------------------
 //
-//	ƒpƒŒƒbƒgì¬
+//	Build the palette
 //
 //---------------------------------------------------------------------------
 void FASTCALL Render::MakePalette()
@@ -1493,15 +1493,15 @@ void FASTCALL Render::MakePalette()
 
 	ASSERT(render.palbuf);
 
-	// ‰Šú‰»
+	// Initialize
 	p = render.palbuf;
 
-	// ƒRƒ“ƒgƒ‰ƒXƒgƒ‹[ƒv
+	// Contrast loop
 	for (i=0; i<16; i++) {
-		// ”ä—¦‚ğZo
+		// Calculate the ratio
 		ratio = 256 - ((15 - i) * 17);
 
-		// ì¬ƒ‹[ƒv
+		// Build loop
 		for (j=0; j<0x10000; j++) {
 			*p++ = ConvPalette(j, ratio);
 		}
@@ -1510,7 +1510,7 @@ void FASTCALL Render::MakePalette()
 
 //---------------------------------------------------------------------------
 //
-//	ƒpƒŒƒbƒg•ÏŠ·
+//	Palette conversion
 //
 //---------------------------------------------------------------------------
 DWORD FASTCALL Render::ConvPalette(int color, int ratio)
@@ -1524,27 +1524,27 @@ DWORD FASTCALL Render::ConvPalette(int color, int ratio)
 	ASSERT((color >= 0) && (color < 0x10000));
 	ASSERT((ratio >= 0) && (ratio <= 0x100));
 
-	// ‘S‚ÄƒRƒs[
+	// Copy everything
 	r = (DWORD)color;
 	g = (DWORD)color;
 	b = (DWORD)color;
 
-	// MSB‚©‚çG:5AR:5AB:5AI:1‚Ì‡‚É‚È‚Á‚Ä‚¢‚é
-	// ‚±‚ê‚ğ R:8 G:8 B:8‚ÌDWORD‚É•ÏŠ·Bb31-b24‚Íg‚í‚È‚¢
+	// Bits are ordered from MSB as G:5, R:5, B:5, I:1
+	// Convert this to an R:8 G:8 B:8 DWORD; b31-b24 are unused
 	r <<= 13;
 	r &= 0xf80000;
 	g &= 0x00f800;
 	b <<= 2;
 	b &= 0x0000f8;
 
-	// ‹P“xƒrƒbƒg‚Íˆê—¥Up(Œ³ƒf[ƒ^‚ª0‚Ìê‡‚àA!=0‚É‚·‚éŒø‰Ê‚ ‚è)
+	// Always raise the intensity bit (even when the source data is 0, this still forces !=0)
 	if (color & 1) {
 		r |= 0x070000;
 		g |= 0x000700;
 		b |= 0x000007;
 	}
 
-	// ƒRƒ“ƒgƒ‰ƒXƒg‚ğ‰e‹¿‚³‚¹‚é
+	// Apply contrast
 	b *= ratio;
 	b >>= 8;
 	g *= ratio;
@@ -1554,12 +1554,12 @@ DWORD FASTCALL Render::ConvPalette(int color, int ratio)
 	r >>= 8;
 	r &= 0xff0000;
 
-	// ‡¬
+	// composition
 	c = (DWORD)(r | g | b);
 
-	// ‹P“xƒrƒbƒg‚ª‚n‚m‚ÌÅIƒ`ƒFƒbƒN
-	// Œ³ƒf[ƒ^‚ª0‚©ƒRƒ“ƒgƒ‰ƒXƒgŒvZ‚Å0‚É‚È‚Á‚½‚Å‚à
-	// !=0‚ÌŒø‰Ê‚ÍˆÛ‚µ‚È‚¢‚Æd‚Ë‡‚í‚¹‚Å”»’f‚Å‚«‚È‚¢
+	// Final check for the intensity bit being ON
+	// Even when the source data is 0 or contrast computation yields 0
+	// the !=0 behavior must be preserved so layered composition can still distinguish it
 	if (color & 1) {
 		if (color == 1 || c == 0) {
 			c = 0x010101;
@@ -1571,7 +1571,7 @@ DWORD FASTCALL Render::ConvPalette(int color, int ratio)
 
 //---------------------------------------------------------------------------
 //
-//	ƒpƒŒƒbƒgæ“¾
+//	paletteget
 //
 //---------------------------------------------------------------------------
 const DWORD* FASTCALL Render::GetPalette() const
@@ -1584,7 +1584,7 @@ const DWORD* FASTCALL Render::GetPalette() const
 
 //---------------------------------------------------------------------------
 //
-//	ƒpƒŒƒbƒgˆ—
+//	Palette processing
 //
 //---------------------------------------------------------------------------
 void FASTCALL Render::Palette()
@@ -1596,27 +1596,27 @@ void FASTCALL Render::Palette()
 	int i;
 	int j;
 
-	// ƒtƒ‰ƒOOFF
+	// flagOFF
 	tx = FALSE;
 	gr = FALSE;
 	sp = FALSE;
 
-	// ƒOƒ‰ƒtƒBƒbƒN
+	// Graphics
 	for (i=0; i<0x100; i++) {
 		if (render.palmod[i]) {
 			data = (DWORD)render.palvc[i];
 			render.paldata[i] = render.palptr[data];
 
-			// ƒOƒ‰ƒtƒBƒbƒN‚É‰e‹¿Aƒtƒ‰ƒOOFF
+			// Affects graphics; clear the flag
 			gr = TRUE;
 			render.palmod[i] = FALSE;
 
-			// “§–¾F‚Ìˆ—
+			// Transparent-color processing
 			if (i == 0) {
 				render.paldata[i] |= REND_COLOR0;
 			}
 
-			// 65536F‚Ì‚½‚ß‚ÌƒpƒŒƒbƒgƒf[ƒ^İ’è
+			// Set palette data for 65536-color mode
 			j = i >> 1;
 			if (i & 1) {
 				j += 128;
@@ -1624,9 +1624,9 @@ void FASTCALL Render::Palette()
 			render.pal64k[j * 2    ] = (BYTE)(data >> 8);
 			render.pal64k[j * 2 + 1] = (BYTE)data;
 
-			// ”¼“§–¾E“Áêƒvƒ‰ƒCƒIƒŠƒeƒB—pƒpƒŒƒbƒgƒf[ƒ^İ’è
+			// Set palette data for semi-transparent/special-priority mode
 
-			// GVRAMw’è
+			// GVRAM-selected
 			if ((i & 1) == 0) {
 				render.paldataGB[i    ] = render.paldata[i];
 				render.paldataGB[i + 1] = render.paldata[i] | REND_COLORS;
@@ -1634,7 +1634,7 @@ void FASTCALL Render::Palette()
 				render.paldataGS[i + 1] = render.paldata[i];
 			}
 
-			// ƒpƒŒƒbƒgw’è
+			// Palette-selected
 			if ((i & 1) == 0) {
 				render.paldataPB[i] = render.paldata[i];
 
@@ -1659,28 +1659,28 @@ void FASTCALL Render::Palette()
 		}
 	}
 
-	// ƒeƒLƒXƒgŒ“ƒXƒvƒ‰ƒCƒg
+	// Text and sprite
 	for (i=0x100; i<0x110; i++) {
 		if (render.palmod[i]) {
 			data = (DWORD)render.palvc[i];
 			render.paldata[i] = render.palptr[data];
 
-			// ƒeƒLƒXƒg‚É‰e‹¿Aƒtƒ‰ƒOOFF
+			// Affects text; clear the flag
 			tx = TRUE;
 			render.palmod[i] = FALSE;
 
-			// “§–¾F‚Ìˆ—
+			// Transparent-color processing
 			if (i == 0x100) {
 				render.paldata[i] |= REND_COLOR0;
 				render.paldata[i] |= REND_COLORT;
-				// 0x100‚ÍBGEƒXƒvƒ‰ƒCƒg‚É‚à•K‚¸‰e‹¿
+				// 0x100 always affects BG and sprites as well
 				sp = TRUE;
 
-				// 0x100‚ÍƒOƒ‰ƒtƒBƒbƒN‚Ì”¼“§–¾‚É‰e‹¿‚·‚é‚©‚à‚µ‚ê‚È‚¢
+				// 0x100 may also affect graphics semi-transparency
 				gr = TRUE;
 			}
 
-			// PCGŒŸ¸
+			// PCG check
 			memset(&render.pcgready[0], 0, sizeof(BOOL) * 256);
 			if (render.pcgpal[0] > 0) {
 				sp = TRUE;
@@ -1688,20 +1688,20 @@ void FASTCALL Render::Palette()
 		}
 	}
 
-	// ƒXƒvƒ‰ƒCƒg
+	// sprite
 	for (i=0x110; i<0x200; i++) {
 		if (render.palmod[i]) {
-			// ƒXƒvƒ‰ƒCƒg‚É‰e‹¿Aƒtƒ‰ƒOOFF
+			// Affects sprites; clear the flag
 			data = (DWORD)render.palvc[i];
 			render.paldata[i] = render.palptr[data];
 			render.palmod[i] = FALSE;
 
-			// “§–¾F‚Ìˆ—
+			// Transparent-color processing
 			if ((i & 0x00f) == 0) {
 				render.paldata[i] |= REND_COLOR0;
 			}
 
-			// PCGŒŸ¸
+			// PCG check
 			memset(&render.pcgready[(i & 0xf0) << 4], 0, sizeof(BOOL) * 256);
 			if (render.pcgpal[(i & 0xf0) >> 4] > 0) {
 				sp = TRUE;
@@ -1709,29 +1709,29 @@ void FASTCALL Render::Palette()
 		}
 	}
 
-	// ƒOƒ‰ƒtƒBƒbƒNƒtƒ‰ƒO
+	// graphicsflag
 	if (gr) {
-		// ƒtƒ‰ƒOON
+		// flagON
 		render.grpdirty = TRUE;
 	}
 
-	// ƒeƒLƒXƒgƒtƒ‰ƒO
+	// textflag
 	if (tx) {
 		render.textdirty = TRUE;
 	}
 
-	// ƒXƒvƒ‰ƒCƒgƒtƒ‰ƒO
+	// spriteflag
 	if (sp) {
 		render.bgspdirty = TRUE;
 	}
 
-	// ƒpƒŒƒbƒgƒtƒ‰ƒOOFF
+	// paletteflagOFF
 	render.palette = FALSE;
 }
 
 //---------------------------------------------------------------------------
 //
-//	ƒeƒLƒXƒgƒXƒNƒ[ƒ‹
+//	textscroll
 //
 //---------------------------------------------------------------------------
 void FASTCALL Render::TextScrl(DWORD x, DWORD y)
@@ -1740,16 +1740,16 @@ void FASTCALL Render::TextScrl(DWORD x, DWORD y)
 	ASSERT(x < 1024);
 	ASSERT(y < 1024);
 
-	// ”äŠrƒ`ƒFƒbƒN
+	// Comparison check
 	if ((render.textx == x) && (render.texty == y)) {
 		return;
 	}
 
-	// ƒ[ƒNXV
+	// stateupdate
 	render.textx = x;
 	render.texty = y;
 
-	// ƒtƒ‰ƒOON
+	// flagON
 	if (render.texten) {
 #if defined(REND_LOG)
 		LOG2(Log::Normal, "ƒeƒLƒXƒgƒXƒNƒ[ƒ‹ x=%d y=%d", x, y);
@@ -1761,7 +1761,7 @@ void FASTCALL Render::TextScrl(DWORD x, DWORD y)
 
 //---------------------------------------------------------------------------
 //
-//	ƒeƒLƒXƒgƒRƒs[
+//	Copy text
 //
 //---------------------------------------------------------------------------
 void FASTCALL Render::TextCopy(DWORD src, DWORD dst, DWORD plane)
@@ -1771,7 +1771,7 @@ void FASTCALL Render::TextCopy(DWORD src, DWORD dst, DWORD plane)
 	ASSERT((dst >= 0) && (dst < 256));
 	ASSERT(plane < 16);
 
-	// ƒAƒZƒ“ƒuƒ‰ƒTƒu
+	// Assembly helper
 	RendTextCopy(&render.texttv[src << 9],
 				 &render.texttv[dst << 9],
 				 plane,
@@ -1781,7 +1781,7 @@ void FASTCALL Render::TextCopy(DWORD src, DWORD dst, DWORD plane)
 
 //---------------------------------------------------------------------------
 //
-//	ƒeƒLƒXƒgƒoƒbƒtƒ@æ“¾
+//	Get the text buffer
 //
 //---------------------------------------------------------------------------
 const DWORD* FASTCALL Render::GetTextBuf() const
@@ -1794,7 +1794,7 @@ const DWORD* FASTCALL Render::GetTextBuf() const
 
 //---------------------------------------------------------------------------
 //
-//	ƒeƒLƒXƒg•ÏŠ·
+//	Text conversion
 //
 //---------------------------------------------------------------------------
 BOOL FASTCALL Render::TextConv(int offset)
@@ -1809,42 +1809,42 @@ BOOL FASTCALL Render::TextConv(int offset)
 	ASSERT(render.textbuf);
 	ASSERT(render.palbuf);
 
-	// ‡¬ƒtƒ‰ƒOƒIƒt
+	// Clear the composition flag
 	mixflag = FALSE;
 
-	// À‰æ–ÊYZo
+	// Calculate the actual screen Y coordinate
 	y = (offset + render.texty) & 0x3ff;
 
-	// •ÏXƒtƒ‰ƒO(’€ŸŒ^)
+	// Change flag (incremental mode)
 	if (render.textmod[y]) {
-		// ƒtƒ‰ƒOˆ—
+		// flagprocessing
 		render.textmod[y] = FALSE;
 		mixflag = TRUE;
 
-		// …•½‚’¼•ÏŠ·
+		// Horizontal/vertical conversion
 		RendTextMem(render.texttv + (y << 7),
 					render.textflag + (y << 5),
 					render.textbuf + (y << 9));
 
-		// ‚’¼ƒpƒŒƒbƒg•ÏŠ·
+		// Vertical palette conversion
 		RendTextPal(render.textbuf + (y << 9),
 					render.textout + (y << 10),
 					render.textflag + (y << 5),
 					render.paldata + 0x100);
 	}
 
-	// ƒpƒŒƒbƒg(ˆêŠ‡Œ^)
+	// Palette (bulk mode)
 	if (render.textpal[y]) {
-		// ƒtƒ‰ƒOˆ—
+		// flagprocessing
 		render.textpal[y] = FALSE;
 
-		// ‚’¼ƒpƒŒƒbƒg•ÏŠ·
+		// Vertical palette conversion
 		RendTextAll(render.textbuf + (y << 9),
 					render.textout + (y << 10),
 					render.paldata + 0x100);
 		mixflag = TRUE;
 
-		// y == 1023‚È‚çƒRƒs[‚·‚é
+		// Copy when y == 1023
 		if (y == 1023) {
 			memcpy(render.textout + (1024 << 10), render.textout + (1023 << 10), sizeof(DWORD) * 1024);
 		}
@@ -1855,7 +1855,7 @@ BOOL FASTCALL Render::TextConv(int offset)
 
 //---------------------------------------------------------------------------
 //
-//	ƒeƒLƒXƒgˆ—
+//	textprocessing
 //
 //---------------------------------------------------------------------------
 void FASTCALL Render::Text(int raster)
@@ -1863,39 +1863,39 @@ void FASTCALL Render::Text(int raster)
 	int offset;
 	BOOL mixflag;
 
-	// ƒfƒBƒZ[ƒuƒ‹‚È‚ç‰½‚à‚µ‚È‚¢
+	// Do nothing if disabled
 	if (!render.texten) {
 		return;
 	}
 
-	// ƒIƒtƒZƒbƒgZo
+	// Calculate the offset
 	offset = raster;
 
-	// ‚Q“x“Ç‚İ‚Í”¼•ª‚ÌˆÊ’u
+	// Double-scanning uses half position
 	if (render.mixmode == 2) {
 		offset >>= 1;
 	}
 
-	// Œ»İ‚ÌƒIƒtƒZƒbƒg‚Ì•ÏŠ·
+	// Convert the current offset
 	mixflag = TextConv(offset);
 
-	// XV‚ª‚ ‚ê‚ÎŒ»İ‚Ìƒ‰ƒXƒ^[‚ğƒtƒ‰ƒOƒAƒbƒv
+	// If updated, raise the flag for the current raster
 	if (mixflag) {
 		render.mix[raster] = TRUE;
 	}
 
-	// ƒXƒNƒ[ƒ‹‚ª‚ ‚ê‚ÎŸ‚ÌƒIƒtƒZƒbƒg‚à
-	// Œ©‚¦‚Ä‚µ‚Ü‚¤‚Ì‚Å‚±‚±‚Å‡¬
+	// If scrolling is active, the next offset also
+	// can become visible, so compose it here
 	if (render.textx > 0 && offset < 1023) {
 		mixflag = TextConv(offset + 1);
 
-		// XV‚ª‚ ‚ê‚ÎŒ»İ‚Ìƒ‰ƒXƒ^[‚ğƒtƒ‰ƒOƒAƒbƒv
+		// If updated, raise the flag for the current raster
 		if (mixflag) {
 			render.mix[raster] = TRUE;
 			render.mix[raster + 1] = TRUE;
 		}
 
-		// XV‚ª‚ ‚ê‚ÎŸ‚Ìƒ‰ƒXƒ^[‚àƒtƒ‰ƒOƒAƒbƒv
+		// If updated, also raise the flag for the next raster
 		if (mixflag) {
 			if (render.mixmode == 2) {
 				render.mix[raster + 2] = TRUE;
@@ -1905,7 +1905,7 @@ void FASTCALL Render::Text(int raster)
 		}
 	}
 
-	// ‘O‚Ü‚½‚ÍŸ‚Ìƒ‰ƒXƒ^[‚à‘ÎÛ
+	// Target the previous or next raster as well
 	if (render.mixmode == 2 && render.mix[raster]) {
 		render.mix[raster ^ 1] = TRUE;
 	}
@@ -1913,7 +1913,7 @@ void FASTCALL Render::Text(int raster)
 
 //---------------------------------------------------------------------------
 //
-//	ƒOƒ‰ƒtƒBƒbƒNƒoƒbƒtƒ@æ“¾
+//	Get the graphics buffer
 //
 //---------------------------------------------------------------------------
 const DWORD* FASTCALL Render::GetGrpBuf(int index) const
@@ -1927,7 +1927,7 @@ const DWORD* FASTCALL Render::GetGrpBuf(int index) const
 
 //---------------------------------------------------------------------------
 //
-//	ƒOƒ‰ƒtƒBƒbƒNƒXƒNƒ[ƒ‹ƒZƒbƒg
+//	Set graphics scroll
 //
 //---------------------------------------------------------------------------
 void FASTCALL Render::GrpScrl(int block, DWORD x, DWORD y)
@@ -1939,7 +1939,7 @@ void FASTCALL Render::GrpScrl(int block, DWORD x, DWORD y)
 	ASSERT(x < 1024);
 	ASSERT(y < 1024);
 
-	// ”äŠrƒ`ƒFƒbƒNB”ñ•\¦‚È‚çXV‚È‚µ
+	// Perform a comparison check; if not displayed, do not update
 	flag = FALSE;
 	if ((render.grpx[block] != x) || (render.grpy[block] != y)) {
 		render.grpx[block] = x;
@@ -1947,7 +1947,7 @@ void FASTCALL Render::GrpScrl(int block, DWORD x, DWORD y)
 		flag = render.grpben[block];
 	}
 
-	// ƒtƒ‰ƒOˆ—
+	// flagprocessing
 	if (!flag) {
 		return;
 	}
@@ -1956,16 +1956,16 @@ void FASTCALL Render::GrpScrl(int block, DWORD x, DWORD y)
 	LOG3(Log::Normal, "ƒOƒ‰ƒtƒBƒbƒNƒXƒNƒ[ƒ‹ block=%d x=%d y=%d", block, x, y);
 #endif	// REND_LOG
 
-	// ƒOƒ‰ƒtƒBƒbƒNƒXƒNƒ[ƒ‹XVƒtƒ‰ƒOƒAƒbƒv
+	// Raise the graphics scroll update flag
 	render.grpscrl = TRUE;
 
-	// ‡¬ƒtƒ‰ƒOON
+	// compositionflagON
 	render.mixdirty = TRUE;
 }
 
 //---------------------------------------------------------------------------
 //
-//	ƒOƒ‰ƒtƒBƒbƒNƒXƒNƒ[ƒ‹ƒ`ƒFƒbƒNˆ—
+//	Graphics scroll check processing
 //
 //---------------------------------------------------------------------------
 void FASTCALL Render::GrpScrlCheck()
@@ -1975,15 +1975,15 @@ void FASTCALL Render::GrpScrlCheck()
 	int dy[4];
 	int i;
 
-	// ƒtƒ‰ƒOƒIƒt
+	// Clear the flag
 	render.grpscrl = FALSE;
 
-	// ƒXƒNƒ[ƒ‹XVŒŸØ
+	// scrollupdatevalidation
 	flag = FALSE;
 
-	// ‘Š‘ÎˆÊ’uƒ`ƒFƒbƒN‚Íƒ^ƒCƒv‚Q`‚S
+	// Relative-position checks apply to types 2 through 4
 	switch(render.grptype) {
-		// ƒ^ƒCƒv0:1024~1024 16Color
+		// Type 0: 1024x1024 16 colors
 		case 0:
 			dx[0] = 0;
 			dy[0] = 0;
@@ -1995,7 +1995,7 @@ void FASTCALL Render::GrpScrlCheck()
 			dy[3] = 0;
 			break;
 
-		// ƒ^ƒCƒv1:512~512 16Color
+		// Type 1: 512x512 16 colors
 		case 1:
 			dx[0] = 0;
 			dy[0] = 0;
@@ -2007,7 +2007,7 @@ void FASTCALL Render::GrpScrlCheck()
 			dy[3] = 0;
 			break;
 
-		// ƒ^ƒCƒv2:512~512 256Color
+		// Type 2: 512x512 256 colors
 		case 2:
 			dx[0] = 0;
 			dy[0] = 0;
@@ -2019,9 +2019,9 @@ void FASTCALL Render::GrpScrlCheck()
 			dy[3] = (render.grpy[vp->gp[3]] - render.grpy[vp->gp[2]]) & 0x1ff;
 			break;
 
-		// ƒ^ƒCƒv3:512x512 –¢’è‹`
+		// Type 3:512x512 undefined
 		case 3:
-		// ƒ^ƒCƒv4:512x512 65536Color
+		// Type 4:512x512 65536Color
 		case 4:
 			dx[0] = 0;
 			dy[0] = 0;
@@ -2034,7 +2034,7 @@ void FASTCALL Render::GrpScrlCheck()
 			break;
 	}
 
-	// XVƒ`ƒFƒbƒN
+	// Check for updates
 	for (i=0; i<4; i++) {
 		if (render.grpdx[i] != dx[i]) {
 			flag = TRUE;
@@ -2047,29 +2047,29 @@ void FASTCALL Render::GrpScrlCheck()
 		}
 	}
 
-	// ƒuƒƒbƒNŠÔ‚Ì‘Š‘ÎƒXƒNƒ[ƒ‹’l‚ª
-	// XV‚³‚ê‚½‚çƒoƒbƒtƒ@Äì¬
+	// If the relative scroll value between blocks
+	// changes, rebuild the buffer
 	if (!flag) {
 		return;
 	}
 
-	// ƒoƒbƒtƒ@Äì¬•K—v
+	// Buffer rebuild required
 	render.grpdirty = TRUE;
 
-	// •\¦\¬ƒ`ƒFƒbƒN
+	// Check the display layout
 	GrpDispCheck();
 }
 
 //---------------------------------------------------------------------------
 //
-//	ƒOƒ‰ƒtƒBƒbƒN•\¦\¬ƒ`ƒFƒbƒNˆ—
+//	Graphics display-layout check processing
 //
 //---------------------------------------------------------------------------
 void FASTCALL Render::GrpDispCheck()
 {
-	// •\¦ó‘Ô‚Æ•\¦ƒuƒƒbƒN‚©‚ç\¬‚ğ’²‚×‚é
+	// Inspect the layout from the display state and display blocks
 	switch(render.grptype) {
-		// ƒ^ƒCƒv0:1024~1024 16Color
+		// Type 0: 1024x1024 16 colors
 		case 0:
 			render.grpnorm[0] = TRUE;
 			render.grpnorm[1] = TRUE;
@@ -2077,7 +2077,7 @@ void FASTCALL Render::GrpDispCheck()
 			render.grpnorm[3] = TRUE;
 			break;
 
-		// ƒ^ƒCƒv1:512~512 16Color
+		// Type 1: 512x512 16 colors
 		case 1:
 			render.grpnorm[0] = TRUE;
 			render.grpnorm[1] = TRUE;
@@ -2085,7 +2085,7 @@ void FASTCALL Render::GrpDispCheck()
 			render.grpnorm[3] = TRUE;
 			break;
 
-		// ƒ^ƒCƒv2:512~512 256Color
+		// Type 2: 512x512 256 colors
 		case 2:
 			render.grpnorm[0] = FALSE;
 			render.grpnorm[1] = FALSE;
@@ -2122,9 +2122,9 @@ void FASTCALL Render::GrpDispCheck()
 			}
 			break;
 
-		// ƒ^ƒCƒv3:512x512 –¢’è‹`
+		// Type 3:512x512 undefined
 		case 3:
-		// ƒ^ƒCƒv4:512x512 65536Color
+		// Type 4:512x512 65536Color
 		case 4:
 			render.grpnorm[0] = FALSE;
 			render.grpnorm[1] = FALSE;
@@ -2145,7 +2145,7 @@ void FASTCALL Render::GrpDispCheck()
 
 //---------------------------------------------------------------------------
 //
-//	GVRAMƒoƒbƒtƒ@\¬•ÏŠ·
+//	Convert the GVRAM buffer layout
 //
 //---------------------------------------------------------------------------
 BYTE* FASTCALL Render::MixGVRAM(BYTE *buf, int gd, int offset)
@@ -2161,19 +2161,19 @@ BYTE* FASTCALL Render::MixGVRAM(BYTE *buf, int gd, int offset)
 	WORD mask;
 	WORD data;
 
-	// ƒ^ƒCƒv–ˆ‚ÉGVRAM‚Ìƒoƒbƒtƒ@‚ğ‡¬‚·‚é
+	// Compose the GVRAM buffer for each type
 	switch(render.grptype) {
-		// ƒ^ƒCƒv0:1024~1024 16Color
+		// Type 0: 1024x1024 16 colors
 		case 0:
 			break;
 
-		// ƒ^ƒCƒv1:512~512 16Color
+		// Type 1: 512x512 16 colors
 		case 1:
 			break;
 
-		// ƒ^ƒCƒv2:512~512 256Color
+		// Type 2: 512x512 256 colors
 		case 2:
-			// ƒuƒƒbƒN,X/YƒIƒtƒZƒbƒg,ƒAƒhƒŒƒXZo
+			// Calculate the block, X/Y offsets, and address
 			for (i=0; i<2; i++) {
 				base = vp->gp[gd];
 				block[i] = vp->gp[i+gd];
@@ -2183,7 +2183,7 @@ BYTE* FASTCALL Render::MixGVRAM(BYTE *buf, int gd, int offset)
 				shift[i] = block[i] * 4;
 			}
 
-			// GVRAM‡¬
+			// GVRAMcomposition
 			q = (WORD*)buf;
 			i = 512;
 			mask  = vp->gs[gd + 1] ? 0xf0 : 0;
@@ -2198,11 +2198,11 @@ BYTE* FASTCALL Render::MixGVRAM(BYTE *buf, int gd, int offset)
 			}
 			break;
 
-		// ƒ^ƒCƒv3:512x512 –¢’è‹`
+		// Type 3:512x512 undefined
 		case 3:
-		// ƒ^ƒCƒv4:512x512 65536Color
+		// Type 4:512x512 65536Color
 		case 4:
-			// ƒuƒƒbƒN,X/YƒIƒtƒZƒbƒg,ƒAƒhƒŒƒXZo
+			// Calculate the block, X/Y offsets, and address
 			for (i=0; i<4; i++) {
 				base = vp->gp[0];
 				block[i] = vp->gp[i];
@@ -2212,7 +2212,7 @@ BYTE* FASTCALL Render::MixGVRAM(BYTE *buf, int gd, int offset)
 				shift[i] = block[i] * 4;
 			}
 
-			// GVRAM‡¬
+			// GVRAMcomposition
 			q = (WORD*)buf;
 			i = 512;
 			mask  = vp->gs[3] ? 0xf000 : 0;
@@ -2239,7 +2239,7 @@ BYTE* FASTCALL Render::MixGVRAM(BYTE *buf, int gd, int offset)
 
 //---------------------------------------------------------------------------
 //
-//	ƒOƒ‰ƒtƒBƒbƒNˆ—
+//	graphicsprocessing
 //
 //---------------------------------------------------------------------------
 void FASTCALL Render::Grp(int gd, int raster)
@@ -2256,37 +2256,37 @@ void FASTCALL Render::Grp(int gd, int raster)
 	ASSERT(render.grpbuf[gd]);
 	ASSERT(render.grpgv);
 
-	// ƒOƒ‰ƒtƒBƒbƒN‚Í•\¦‚³‚ê‚Ä‚¢‚é‚©
+	// Whether graphics are displayed
 	if (render.mixpage == 0) {
 		return;
 	}
 
-	// ƒ^ƒCƒv•Ê‚Ì‡¬”»’è
+	// Determine composition by type
 	if (render.grptype == 2) {
-		// ƒ^ƒCƒv2:512~512 256Color
+		// Type 2: 512x512 256 colors
 		if (gd != 0 && gd != 2) {
 			return;
 		}
 	} else if (render.grptype > 2) {
-		// ƒ^ƒCƒv3:512x512 –¢’è‹`
-		// ƒ^ƒCƒv4:512x512 65536Color
+		// Type 3:512x512 undefined
+		// Type 4:512x512 65536Color
 		if (gd != 0) {
 			return;
 		}
 	}
 
-	// ƒIƒtƒZƒbƒgZo
+	// Calculate the offset
 	offset = raster;
 
-	// ‚Q“x“Ç‚İ‚Í”¼•ª‚ÌˆÊ’u
+	// Double-scanning uses half position
 	if (render.mixmode == 2) {
 		offset >>= 1;
 	}
 
-	// ƒpƒŒƒbƒgƒfƒtƒHƒ‹ƒgİ’è
+	// Set the default palette
 	paldata = render.paldata;
 
-	// ƒpƒŒƒbƒgİ’è(“Áê‹@”\)
+	// Set the palette (special function)
 	if (vp->exon) {
 		if (vp->bp) {
 			if (gd == 0) {
@@ -2303,18 +2303,18 @@ void FASTCALL Render::Grp(int gd, int raster)
 		}
 	}
 
-	// ƒ^ƒCƒv•Ê
+	// By type
 	switch (render.grptype) {
-		// ƒ^ƒCƒv0:1024~1024 16Color
+		// Type 0: 1024x1024 16 colors
 		case 0:
-			// ƒuƒƒbƒNZo
+			// Calculate the block
 			block = vp->gp[gd];
 
-			// ƒIƒtƒZƒbƒgZo
+			// Calculate the offset
 			offset = (offset + render.grpy[0]) & 0x3ff;
 			y = offset & 0x1ff;
 
-			// •\¦‘ÎÛƒ`ƒFƒbƒN
+			// Check whether it is a display target
 			if ((offset < 512) && (gd >= 2)) {
 				return;
 			}
@@ -2322,35 +2322,35 @@ void FASTCALL Render::Grp(int gd, int raster)
 				return;
 			}
 
-			// ƒpƒŒƒbƒg‚Ìê‡‚Í‘S—Ìˆæˆ—
+			// For palette mode, process the entire region
 			if (render.grppal[y + (gd << 9)]) {
 				render.grppal[y + (gd << 9)] = FALSE;
 				render.grpmod[y + (gd << 9)] = FALSE;
 				memset(&render.grpflag[(y << 5) + (gd << 14)], FALSE, 32 * 4);
 
 				switch (block) {
-					// ƒuƒƒbƒN0
+					// Block 0
 					case 0:
 						if (Rend1024A(render.grpgv + (y << 10),
 							render.grpbuf[0] + (offset << 11) + ((gd & 1) << 9), paldata) != 0) {
 							render.mix[raster] = TRUE;
 						}
 						break;
-					// ƒuƒƒbƒN1
+					// Block 1
 					case 1:
 						if (Rend1024C(render.grpgv + (y << 10),
 							render.grpbuf[0] + (offset << 11) + ((gd & 1) << 9), paldata) != 0) {
 							render.mix[raster] = TRUE;
 						}
 						break;
-					// ƒuƒƒbƒN2
+					// Block 2
 					case 2:
 						if (Rend1024E(render.grpgv + (y << 10),
 							render.grpbuf[0] + (offset << 11) + ((gd & 1) << 9), paldata) != 0) {
 							render.mix[raster] = TRUE;
 						}
 						break;
-					// ƒuƒƒbƒN3
+					// Block 3
 					case 3:
 						if (Rend1024G(render.grpgv + (y << 10),
 							render.grpbuf[0] + (offset << 11) + ((gd & 1) << 9), paldata) != 0) {
@@ -2361,7 +2361,7 @@ void FASTCALL Render::Grp(int gd, int raster)
 				break;
 			}
 
-			// ‚»‚êˆÈŠO‚Ígrpmod‚ğŒ©‚Äˆ—
+			// Otherwise, process according to grpmod
 			if (!render.grpmod[y + (gd << 9)]) {
 				return;
 			}
@@ -2369,28 +2369,28 @@ void FASTCALL Render::Grp(int gd, int raster)
 			render.mix[raster] = TRUE;
 
 			switch (block) {
-				// ƒuƒƒbƒN0
+				// Block 0
 				case 0:
 					Rend1024B(render.grpgv + (y << 10),
 						render.grpbuf[0] + (offset << 11) + ((gd & 1) << 9),
 						render.grpflag + (y << 5) + (gd << 14),
 						paldata);
 					break;
-				// ƒuƒƒbƒN1
+				// Block 1
 				case 1:
 					Rend1024D(render.grpgv + (y << 10),
 						render.grpbuf[0] + (offset << 11) + ((gd & 1) << 9),
 						render.grpflag + (y << 5) + (gd << 14),
 						paldata);
 					break;
-				// ƒuƒƒbƒN2
+				// Block 2
 				case 2:
 					Rend1024F(render.grpgv + (y << 10),
 						render.grpbuf[0] + (offset << 11) + ((gd & 1) << 9),
 						render.grpflag + (y << 5) + (gd << 14),
 						paldata);
 					break;
-				// ƒuƒƒbƒN3
+				// Block 3
 				case 3:
 					Rend1024H(render.grpgv + (y << 10),
 						render.grpbuf[0] + (offset << 11) + ((gd & 1) << 9),
@@ -2401,16 +2401,16 @@ void FASTCALL Render::Grp(int gd, int raster)
 
 			break;
 
-		// ƒ^ƒCƒv1:512~512 16Color
+		// Type 1: 512x512 16 colors
 		case 1:
-			// ƒuƒƒbƒNZo
+			// Calculate the block
 			block = vp->gp[gd];
 
 			switch (block) {
-				// ƒuƒƒbƒN0
+				// Block 0
 				case 0:
 					y = (offset + render.grpy[0]) & 0x1ff;
-					// ƒpƒŒƒbƒg
+					// Palette
 					if (render.grppal[y + (gd<<9)]) {
 						render.grppal[y + (gd<<9)] = FALSE;
 						render.grpmod[y + (gd<<9)] = FALSE;
@@ -2421,7 +2421,7 @@ void FASTCALL Render::Grp(int gd, int raster)
 							render.mix[raster] = TRUE;
 						}
 					}
-					// ’Êí
+					// normal
 					if (render.grpmod[y + (gd<<9)]) {
 						render.grpmod[y + (gd<<9)] = FALSE;
 						render.mix[raster] = TRUE;
@@ -2431,10 +2431,10 @@ void FASTCALL Render::Grp(int gd, int raster)
 								paldata);
 					}
 					break;
-				// ƒuƒƒbƒN1
+				// Block 1
 				case 1:
 					y = (offset + render.grpy[1]) & 0x1ff;
-					// ƒpƒŒƒbƒg
+					// Palette
 					if (render.grppal[y + (gd<<9)]) {
 						render.grppal[y + (gd<<9)] = FALSE;
 						render.grpmod[y + (gd<<9)] = FALSE;
@@ -2446,7 +2446,7 @@ void FASTCALL Render::Grp(int gd, int raster)
 						}
 						break;
 					}
-					// ’Êí
+					// normal
 					if (render.grpmod[y + (gd<<9)]) {
 						render.grpmod[y + (gd<<9)] = FALSE;
 						render.mix[raster] = TRUE;
@@ -2456,10 +2456,10 @@ void FASTCALL Render::Grp(int gd, int raster)
 								paldata);
 					}
 					break;
-				// ƒuƒƒbƒN2
+				// Block 2
 				case 2:
 					y = (offset + render.grpy[2]) & 0x1ff;
-					// ƒpƒŒƒbƒg
+					// Palette
 					if (render.grppal[y + (gd<<9)]) {
 						render.grppal[y + (gd<<9)] = FALSE;
 						render.grpmod[y + (gd<<9)] = FALSE;
@@ -2471,7 +2471,7 @@ void FASTCALL Render::Grp(int gd, int raster)
 						}
 						break;
 					}
-					// ’Êí
+					// normal
 					if (render.grpmod[y + (gd<<9)]) {
 						render.grpmod[y + (gd<<9)] = FALSE;
 						render.mix[raster] = TRUE;
@@ -2481,10 +2481,10 @@ void FASTCALL Render::Grp(int gd, int raster)
 								paldata);
 					}
 					break;
-				// ƒuƒƒbƒN3
+				// Block 3
 				case 3:
 					y = (offset + render.grpy[3]) & 0x1ff;
-					// ƒpƒŒƒbƒg
+					// Palette
 					if (render.grppal[y + (gd<<9)]) {
 						render.grppal[y + (gd<<9)] = FALSE;
 						render.grpmod[y + (gd<<9)] = FALSE;
@@ -2496,7 +2496,7 @@ void FASTCALL Render::Grp(int gd, int raster)
 						}
 						break;
 					}
-					// ’Êí
+					// normal
 					if (render.grpmod[y + (gd<<9)]) {
 						render.grpmod[y + (gd<<9)] = FALSE;
 						render.mix[raster] = TRUE;
@@ -2510,15 +2510,15 @@ void FASTCALL Render::Grp(int gd, int raster)
 
 			break;
 
-		// ƒ^ƒCƒv2:512~512 256Color
+		// Type 2: 512x512 256 colors
 		case 2:
-			// ƒuƒƒbƒNZo
+			// Calculate the block
 			block = vp->gp[gd];
 
-			// ƒIƒtƒZƒbƒgZo
+			// Calculate the offset
 			y = (offset + render.grpy[block]) & 0x1ff;
 
-			// ƒpƒŒƒbƒg‚Ìê‡‚Í‘S—Ìˆæˆ—
+			// For palette mode, process the entire region
 			if (render.grppal[y + (gd<<9)]) {
 				render.grppal[y + (gd<<9)] = FALSE;
 				render.grpmod[y + (gd<<9)] = FALSE;
@@ -2546,7 +2546,7 @@ void FASTCALL Render::Grp(int gd, int raster)
 				break;
 			}
 
-			// ‚»‚êˆÈŠO‚Ígrpmod‚ğŒ©‚Äˆ—
+			// Otherwise, process according to grpmod
 			if (!render.grpmod[y + (gd<<9)]) {
 				return;
 			}
@@ -2571,17 +2571,17 @@ void FASTCALL Render::Grp(int gd, int raster)
 			}
 			break;
 
-		// ƒ^ƒCƒv3:512x512 –¢’è‹`
+		// Type 3:512x512 undefined
 		case 3:
-		// ƒ^ƒCƒv4:512x512 65536Color
+		// Type 4:512x512 65536Color
 		case 4:
-			// ƒuƒƒbƒNZo
+			// Calculate the block
 			block = vp->gp[gd];
 
-			// ƒIƒtƒZƒbƒgZo
+			// Calculate the offset
 			y = (offset + render.grpy[block]) & 0x1ff;
 
-			// ƒpƒŒƒbƒg‚Ìê‡‚Í‘S—Ìˆæˆ—
+			// For palette mode, process the entire region
 			if (render.grppal[y + (gd<<9)]) {
 				render.grppal[y + (gd<<9)] = FALSE;
 				render.grpmod[y + (gd<<9)] = FALSE;
@@ -2593,7 +2593,7 @@ void FASTCALL Render::Grp(int gd, int raster)
 					grpgv = MixGVRAM(buf, gd, offset);
 				}
 
-				// ”¼“§–¾/“Áêƒvƒ‰ƒCƒIƒŠƒeƒB—pƒpƒŒƒbƒg“ü‚ê‘Ö‚¦“Áê‡¬
+				// Special composition with semi-transparent/special-priority palette swapping
 				if (vp->exon) {
 					if (vp->bp) {
 						if (Rend64KBH(grpgv, render.grpbuf[0] + (y << 10),
@@ -2619,7 +2619,7 @@ void FASTCALL Render::Grp(int gd, int raster)
 				break;
 			}
 
-			// ‚»‚êˆÈŠO‚Ígrpmod‚ğŒ©‚Äˆ—
+			// Otherwise, process according to grpmod
 			if (!render.grpmod[y + (gd<<9)]) {
 				return;
 			}
@@ -2632,7 +2632,7 @@ void FASTCALL Render::Grp(int gd, int raster)
 				grpgv = MixGVRAM(buf, gd, offset);
 			}
 
-			// ”¼“§–¾ƒpƒŒƒbƒg“ü‚ê‘Ö‚¦“Áê‡¬
+			// Special composition with semi-transparent palette swapping
 			if (vp->exon) {
 				if (vp->bp) {
 					Rend64KAH(grpgv, render.grpbuf[0] + (y << 10),
@@ -2656,21 +2656,21 @@ void FASTCALL Render::Grp(int gd, int raster)
 			break;
 	}
 
-	// ‘O‚Ü‚½‚ÍŸ‚Ìƒ‰ƒXƒ^[‚à‘ÎÛ
+	// Target the previous or next raster as well
 	if (render.mixmode == 2 && render.mix[raster]) {
 		render.mix[raster ^ 1] = TRUE;
 	}
 }
 
-//===========================================================================
+//=========================================================================
 //
-//	ƒŒƒ“ƒ_ƒ‰(BGEƒXƒvƒ‰ƒCƒg•”)
+//	Renderer (BG/sprite section)
 //
-//===========================================================================
+//=========================================================================
 
 //---------------------------------------------------------------------------
 //
-//	ƒXƒvƒ‰ƒCƒgƒŒƒWƒXƒ^ƒŠƒZƒbƒg
+//	Reset sprite registers
 //
 //---------------------------------------------------------------------------
 void FASTCALL Render::SpriteReset()
@@ -2679,7 +2679,7 @@ void FASTCALL Render::SpriteReset()
 	DWORD addr;
 	DWORD data[4];
 
-	// ƒXƒvƒ‰ƒCƒgƒŒƒWƒXƒ^İ’è
+	// Set sprite registers
 	for (i=0; i<128; i++) {
 		addr = i << 3;
 		data[0] = *(WORD*)(&render.sprmem[addr    ]);
@@ -2692,7 +2692,7 @@ void FASTCALL Render::SpriteReset()
 
 //---------------------------------------------------------------------------
 //
-//	’X’v’0’C’g’R’W’X’^"ÏX
+//	Sprite register change
 //
 //---------------------------------------------------------------------------
 void FASTCALL Render::SpriteReg(DWORD addr, DWORD data[])
@@ -2713,13 +2713,13 @@ void FASTCALL Render::SpriteReg(DWORD addr, DWORD data[])
 	ASSERT(addr < 0x400);
 	ASSERT((addr & 1) == 0);
 
-	// ƒCƒ“ƒfƒNƒVƒ“ƒO‚Æƒf[ƒ^§ŒÀ
+	// Indexing and data limits
 	index = (int)(addr >> 3);
 
-	// X(0`1023)
+	// X(0~1023)
 	data[0] &= 0x3ff;
 
-	// Y(0`1023)
+	// Y(0~1023)
 	data[1] &= 0x3ff;
 	y=data[1];
 //	y+=render.bgsp_v;
@@ -2731,28 +2731,28 @@ void FASTCALL Render::SpriteReg(DWORD addr, DWORD data[])
 	// PRW(0,1,2,3)
 	data[3] &= 0x0003;
 
-	// ptrİ’è
+	// ptrset
 	ptr = &render.spptr[index << 10];
 
-	// ƒŒƒWƒXƒ^‚ÌƒoƒbƒNƒAƒbƒv
+	// Register backup
 	next = &render.spreg[index << 2];
 	reg[0] = next[0];
 	reg[1] = next[1];
 	reg[2] = next[2];
 	reg[3] = next[3];
 
-	// ƒŒƒWƒXƒ^‚Ö‘‚«‚İ
+	// Write to the registers
 	next[0] = data[0];
 	next[1] = data[1];
 	next[2] = data[2];
 	next[3] = data[3];
 
-	// ¡Œã—LŒø‚É‚È‚é‚©ƒ`ƒFƒbƒN
+	// Check whether it will become valid
 	use = TRUE;
 	x = next[0];
 	y = next[1];
 
-	// •W€”ÍˆÍƒ`ƒFƒbƒN
+	// Standard range check
 	if (x == 0) {
 		use = FALSE;
 	}
@@ -2763,7 +2763,7 @@ void FASTCALL Render::SpriteReg(DWORD addr, DWORD data[])
 
 	x -= render.bgsp_h;
 	if (render.bgsp_h >= 0) {
-		// ¶‚É‚¸‚ê‚é
+		// Shift to the left
 		if (x <= 0) {
 			use = FALSE;
 		}
@@ -2771,7 +2771,7 @@ void FASTCALL Render::SpriteReg(DWORD addr, DWORD data[])
 			use = FALSE;
 		}
 	} else {
-		// ‰E‚É‚¸‚ê‚é
+		// Shift to the right
 		x &= 511;
 		if (x >= (render.mixlen + 16)) {
 			use = FALSE;
@@ -2784,16 +2784,16 @@ void FASTCALL Render::SpriteReg(DWORD addr, DWORD data[])
 		use = FALSE;
 	}
 
-	// ‚¢‚Ü‚Ü‚Å–³Œø‚ÅA‚±‚ê‚©‚ç‚à–³Œø‚È‚ç‰½‚à‚µ‚È‚¢
+	// If it was invalid and remains invalid, do nothing
 	if (!render.spuse[index]) {
 		if (!use) {
 			return;
 		}
 	}
 
-	// ‚¢‚Ü‚Ü‚Å—LŒø‚È‚Ì‚ÅAˆê“x‚Æ‚ß‚é
+	// It was valid before, so stop once
 	if (render.spuse[index]) {
-		// –³Œøˆ—(PCG)
+		// invalidprocessing(PCG)
 		pcgno = reg[2] & 0xfff;
 		ASSERT(render.pcguse[pcgno] > 0);
 		render.pcguse[pcgno]--;
@@ -2801,7 +2801,7 @@ void FASTCALL Render::SpriteReg(DWORD addr, DWORD data[])
 		ASSERT(render.pcgpal[pcgno] > 0);
 		render.pcgpal[pcgno]--;
 
-		// –³Œøˆ—(ƒ|ƒCƒ“ƒ^)
+		// invalidprocessing(pointer)
 		for (i=0; i<16; i++) {
 			j = (int)(reg[1] - 16 + i);
 			j &= 0x3ff;
@@ -2809,26 +2809,26 @@ void FASTCALL Render::SpriteReg(DWORD addr, DWORD data[])
 			render.bgspmod[j] = TRUE;
 		}
 
-		// ¡Œã–³Œø‚È‚çA‚±‚±‚ÅI—¹
+		// If it becomes invalid, end here
 		if (!use) {
 			render.spuse[index] = FALSE;
 			return;
 		}
 	}
 
-	// “o˜^ˆ—(g—pƒtƒ‰ƒO)
+	// Registration processing (usage flags)
 	render.spuse[index] = TRUE;
 
-	// “o˜^ˆ—(PCG)
+	// Registration processing (PCG)
 	pcgno = next[2] & 0xfff;
 	render.pcguse[pcgno]++;
 	offset = pcgno << 8;
 	pcgno >>= 8;
 	render.pcgpal[pcgno]++;
 
-	// PCGƒAƒhƒŒƒX‚ğŒvZAƒ|ƒCƒ“ƒ^ƒZƒbƒg
+	// Calculate the PCG address and set the pointer
 	if (next[2] & 0x8000) {
-		// V”½“]
+		// Vertical flip
 		offset += 0xf0;
 		for (i=0; i<16; i++) {
 			j = (int)(next[1] - 16 + i);
@@ -2839,7 +2839,7 @@ void FASTCALL Render::SpriteReg(DWORD addr, DWORD data[])
 		}
 	}
 	else {
-		// ƒm[ƒ}ƒ‹
+		// Normal
 		for (i=0; i<16; i++) {
 			j = (int)(next[1] - 16 + i);
 			j &= 0x3ff;
@@ -2973,21 +2973,21 @@ void FASTCALL Render::BGScrl(int page, DWORD x, DWORD y)
 	ASSERT(x < 1024);
 	ASSERT(y < 1024);
 
-	// ”äŠrAˆê’v‚µ‚Ä‚ê‚Î‰½‚à‚µ‚È‚¢
+	// Compare and do nothing if it matches
 	if ((render.bgx[page] == x) && (render.bgy[page] == y)) {
 		return;
 	}
 
-	// XV
+	// update
 	render.bgx[page] = x;
 	render.bgy[page] = y;
 
-	// 768~512‚È‚ç–³ˆÓ–¡
+	// Meaningless at 768x512
 	if (!render.bgspflag) {
 		return;
 	}
 
-	// •\¦’†‚È‚çABGSPMOD‚ğã‚°‚é
+	// If displaymiddle is set, raise BGSPMOD
 	flag = FALSE;
 	if (page==0) {
 		flag = TRUE;
@@ -3002,7 +3002,7 @@ void FASTCALL Render::BGScrl(int page, DWORD x, DWORD y)
 
 //---------------------------------------------------------------------------
 //
-//	BGƒRƒ“ƒgƒ[ƒ‹•ÏX
+//	BG control change
 //
 //---------------------------------------------------------------------------
 void FASTCALL Render::BGCtrl(int index, BOOL flag)
@@ -3017,13 +3017,13 @@ void FASTCALL Render::BGCtrl(int index, BOOL flag)
 	DWORD mid;
 	DWORD high;
 
-	// ƒtƒ‰ƒOOFF
+	// flagOFF
 	areaflag[0] = FALSE;
 	areaflag[1] = FALSE;
 
-	// ƒ^ƒCƒv•Ê
+	// By type
 	switch (index) {
-		// BG0 •\¦ƒtƒ‰ƒO
+		// BG0 displayflag
 		case 0:
 			if (render.bgdisp[0] == flag) {
 				return;
@@ -3031,7 +3031,7 @@ void FASTCALL Render::BGCtrl(int index, BOOL flag)
 			render.bgdisp[0] = flag;
 			break;
 
-		// BG1 •\¦ƒtƒ‰ƒO
+		// BG1 displayflag
 		case 1:
 			if (render.bgdisp[1] == flag) {
 				return;
@@ -3039,7 +3039,7 @@ void FASTCALL Render::BGCtrl(int index, BOOL flag)
 			render.bgdisp[1] = flag;
 			break;
 
-		// BG0 ƒGƒŠƒA•ÏX
+		// BG0 area change
 		case 2:
 			if (render.bgarea[0] == flag) {
 				return;
@@ -3048,7 +3048,7 @@ void FASTCALL Render::BGCtrl(int index, BOOL flag)
 			areaflag[0] = TRUE;
 			break;
 
-		// BG1 ƒGƒŠƒA•ÏX
+		// BG1 area change
 		case 3:
 			if (render.bgarea[1] == flag) {
 				return;
@@ -3057,7 +3057,7 @@ void FASTCALL Render::BGCtrl(int index, BOOL flag)
 			areaflag[1] = TRUE;
 			break;
 
-		// BGƒTƒCƒY•ÏX
+		// BGsizechange
 		case 4:
 			if (render.bgsize == flag) {
 				return;
@@ -3072,20 +3072,20 @@ void FASTCALL Render::BGCtrl(int index, BOOL flag)
 			if (render.bgspdisp == flag) {
 				return;
 			}
-			// •\¦ó‘Ôƒ`ƒFƒbƒN‚ÍProcess‚ÅÀs
+			// Display-state checks are handled in Process
 			render.bgsp = TRUE;
 			return;
 
-		// ‚»‚Ì‘¼(‚ ‚è‚¦‚È‚¢)
+		// Other (should never happen)
 		default:
 			ASSERT(FALSE);
 			return;
 	}
 
-	// ƒtƒ‰ƒOˆ—
+	// flagprocessing
 	for (i=0; i<2; i++) {
 		if (areaflag[i]) {
-			// Œ»ó‚Åg‚Á‚Ä‚¢‚érender.pcguse‚ğƒJƒbƒg
+			// Clear the currently used render.pcguse entries
 			reg = render.bgreg[i];
 			for (j=0; j<(64 * 64); j++) {
 				pcgno = reg[j];
@@ -3099,22 +3099,22 @@ void FASTCALL Render::BGCtrl(int index, BOOL flag)
 				}
 			}
 
-			// ƒf[ƒ^ƒAƒhƒŒƒX‚ğZo($EBE000,$EBC000)
+			// Calculate the data address ($EBE000/$EBC000)
 			area = (WORD*)render.sprmem;
 			area += 0x6000;
 			if (render.bgarea[i]) {
 				area += 0x1000;
 			}
 
-			// 64~64ƒ[ƒhƒRƒs[B$10000‚Ìƒrƒbƒg‚Íí‚É0
+			// Copy 64x64 words; bit $10000 is always 0
 			if (render.bgsize) {
-				// 16x16‚Í‚»‚Ì‚Ü‚Ü
+				// 16x16 can be used as-is
 				for (j=0; j<(64*64); j++) {
 					render.bgreg[i][j] = (DWORD)area[j];
 				}
 			}
 			else {
-				// 8x8‚ÍH•v‚ª•K—vBPCG(0-255)‚ğ>>2‚µAÁ‚¦‚½bit0,1‚ğbit17,18‚Ö
+				// 8x8 needs remapping: PCG(0-255)>>2 and move lost bits 0/1 to bits 17/18
 				for (j=0; j<(64*64); j++) {
 					low = (DWORD)area[j];
 					mid = low;
@@ -3128,14 +3128,14 @@ void FASTCALL Render::BGCtrl(int index, BOOL flag)
 				}
 			}
 
-			// bgall‚ÌƒZƒbƒg
+			// Set bgall
 			for (j=0; j<64; j++) {
 				render.bgall[i][j] = TRUE;
 			}
 		}
 	}
 
-	// ‚Ç‚Ì•ÏX‚Å‚àA768~512ˆÈŠO‚È‚çbgspmod‚ğã‚°‚é
+	// For any change, raise bgspmod unless in 768x512 mode
 	if (render.bgspflag) {
 		render.bgspdirty = TRUE;
 	}
@@ -3143,7 +3143,7 @@ void FASTCALL Render::BGCtrl(int index, BOOL flag)
 
 //---------------------------------------------------------------------------
 //
-//	BGƒƒ‚ƒŠ•ÏX
+//	BG memory change
 //
 //---------------------------------------------------------------------------
 void FASTCALL Render::BGMem(DWORD addr, WORD data)
@@ -3160,9 +3160,9 @@ void FASTCALL Render::BGMem(DWORD addr, WORD data)
 
 	ASSERT((addr >= 0xc000) && (addr < 0x10000));
 
-	// ƒy[ƒWƒ‹[ƒv
+	// Page loop
 	for (i=0; i<2; i++) {
-		// ŠY“–ƒy[ƒW‚Ìƒf[ƒ^ƒGƒŠƒA‚Æˆê’v‚µ‚Ä‚¢‚é‚©
+		// Check whether it matches the data area for this page
 		flag = FALSE;
 		if ((render.bgarea[i] == FALSE) && (addr < 0xe000)) {
 			flag = TRUE;
@@ -3174,13 +3174,13 @@ void FASTCALL Render::BGMem(DWORD addr, WORD data)
 			continue;
 		}
 
-		// ƒCƒ“ƒfƒbƒNƒX(<64x64)AƒŒƒWƒXƒ^ƒ|ƒCƒ“ƒ^æ“¾
+		// Get the index (<64x64) and register pointer
 		index = (int)(addr & 0x1fff);
 		index >>= 1;
 		ASSERT((index >= 0) && (index < 64*64));
 		pcgno = render.bgreg[i][index];
 
-		// ˆÈ‘O‚Ìpcguse‚ğÁ‚·
+		// Clear the previous pcguse entry
 		if (pcgno & 0x10000) {
 			pcgno &= 0xfff;
 			ASSERT(render.pcguse[pcgno] > 0);
@@ -3190,13 +3190,13 @@ void FASTCALL Render::BGMem(DWORD addr, WORD data)
 			render.pcgpal[pcgno]--;
 		}
 
-		// ƒRƒs[
+		// Copy
 		if (render.bgsize) {
-			// 16x16‚Í‚»‚Ì‚Ü‚Ü
+			// 16x16 can be used as-is
 			render.bgreg[i][index] = (DWORD)data;
 		}
 		else {
-			// 8x8‚ÍH•v‚ª•K—vBPCG(0-255)‚ğ>>2‚µAÁ‚¦‚½bit0,1‚ğbit17,18‚Ö
+			// 8x8 needs remapping: PCG(0-255)>>2 and move lost bits 0/1 to bits 17/18
 			low = (DWORD)data;
 			mid = low;
 			high = low;
@@ -3208,10 +3208,10 @@ void FASTCALL Render::BGMem(DWORD addr, WORD data)
 			render.bgreg[i][index] = (DWORD)(low | mid | high);
 		}
 
-		// bgall‚ğã‚°‚é
+		// Raise bgall
 		render.bgall[i][index >> 6] = TRUE;
 
-		// •\¦’†‚Å‚È‚¯‚ê‚ÎI—¹Bbgsize=1‚Åƒy[ƒW1‚Ìê‡‚àI—¹
+		// End unless displaymiddle is set; also end for page 1 when bgsize=1
 		if (!render.bgspflag || !render.bgdisp[i]) {
 			continue;
 		}
@@ -3219,7 +3219,7 @@ void FASTCALL Render::BGMem(DWORD addr, WORD data)
 			continue;
 		}
 
-		// ƒXƒNƒ[ƒ‹ˆÊ’u‚©‚çŒvZ‚µAbgspmod‚ğã‚°‚é
+		// Calculate from the scroll position and raise bgspmod
 		index >>= 6;
 		if (render.bgsize) {
 			// 16x16
@@ -3250,7 +3250,7 @@ void FASTCALL Render::BGMem(DWORD addr, WORD data)
 
 //---------------------------------------------------------------------------
 //
-//	PCGƒƒ‚ƒŠ•ÏX
+//	PCG memory change
 //
 //---------------------------------------------------------------------------
 void FASTCALL Render::PCGMem(DWORD addr)
@@ -3263,23 +3263,23 @@ void FASTCALL Render::PCGMem(DWORD addr)
 	ASSERT(addr < 0x10000);
 	ASSERT((addr & 1) == 0);
 
-	// ƒCƒ“ƒfƒbƒNƒX‚ğo‚·
+	// Get the index
 	addr &= 0x7fff;
 	index = (int)(addr >> 7);
 	ASSERT((index >= 0) && (index < 256));
 
-	// render.pcgready‚ğÁ‚·
+	// Clear render.pcgready
 	for (i=0; i<16; i++) {
 		render.pcgready[index + (i << 8)] = FALSE;
 	}
 
-	// render.pcguse‚ª>0‚È‚ç
+	// If render.pcguse > 0
 	for (i=0; i<16; i++) {
 		if (render.pcguse[index + (i << 8)] == 0) {
 			continue;
 		}
 
-		// d•û‚È‚¢‚Ì‚ÅABG/ƒXƒvƒ‰ƒCƒgÄ‡¬‚ğŒˆ’è
+		// Cannot avoid it, so recompute BG/sprite composition
 		render.bgspdirty = TRUE;
 		break;
 	}
@@ -3287,7 +3287,7 @@ void FASTCALL Render::PCGMem(DWORD addr)
 
 //---------------------------------------------------------------------------
 //
-//	PCGƒoƒbƒtƒ@æ“¾
+//	Get the PCG buffer
 //
 //---------------------------------------------------------------------------
 const DWORD* FASTCALL Render::GetPCGBuf() const
@@ -3300,7 +3300,7 @@ const DWORD* FASTCALL Render::GetPCGBuf() const
 
 //---------------------------------------------------------------------------
 //
-//	BG/ƒXƒvƒ‰ƒCƒgƒoƒbƒtƒ@æ“¾
+//	Get the BG/sprite buffer
 //
 //---------------------------------------------------------------------------
 const DWORD* FASTCALL Render::GetBGSpBuf() const
@@ -3313,7 +3313,7 @@ const DWORD* FASTCALL Render::GetBGSpBuf() const
 
 //---------------------------------------------------------------------------
 //
-//	BG/ƒXƒvƒ‰ƒCƒg
+//	BG/sprite
 //
 //---------------------------------------------------------------------------
 void FASTCALL Render::BGSprite(int raster)
@@ -3327,32 +3327,32 @@ void FASTCALL Render::BGSprite(int raster)
 	BYTE pri[512 + 16];
 	int x;
 
-	// ‰¡•‚à1024‚Ü‚ÅB‚±‚ê‚à‘å‘O’ñ
+	// Assume a width up to 1024; this is also a prerequisite
 	if (render.mixlen > 1024) return;
 
-	// ƒIƒtƒZƒbƒg‚ğZo
+	// Calculate the offset
 	offset = ((raster + render.bgsp_v) >> render.bgsp_rshift) << render.bgsp_lshift;
 	offset &= 1023;
 
-	// ƒtƒ‰ƒOƒ`ƒFƒbƒNAƒIƒtA‡¬w¦
+	// Check flags, offset, and the composition directive
 	if (!render.bgspmod[offset]) {
 		return;
 	}
 	render.bgspmod[offset] = FALSE;
 	render.mix[raster] = TRUE;
 
-	// ƒCƒ“ƒ^ƒŒ[ƒX‚Ì‚Æ‚«‚Í‹ôŠïƒ‰ƒXƒ^[ƒyƒA
+	// In interlace mode, pair even and odd rasters
 	if (render.mixmode == 1) {
 		render.mix[raster ^ 1] = TRUE;
 	}
 
-	// ‚Q“x“Ç‚İ‚Ìê‡‚Åƒmƒ“ƒCƒ“ƒ^ƒŒ[ƒX‚È‚ç‘OŒãƒ‰ƒXƒ^[‘ÎÛ
+	// For double-scanning in non-interlace mode, target the previous and next rasters
 	if (render.bgsp_mixmode == 2 && render.mixmode != 1) {
 		render.mix[(raster - 1) & 1023] = TRUE;
 		render.mix[(raster + 1) & 1023] = TRUE;
 	}
 
-	// ‚Q“x“Ç‚İ‚Ìê‡‚ÅƒCƒ“ƒ^ƒŒ[ƒX‚È‚ç‘OŒã3ƒ‰ƒXƒ^[‘ÎÛ
+	// For double-scanning in interlace mode, target the previous and next three rasters
 	if (render.bgsp_mixmode == 2 && render.mixmode == 1) {
 		render.mix[(raster - 3) & 1023] = TRUE;
 		render.mix[(raster - 2) & 1023] = TRUE;
@@ -3362,31 +3362,31 @@ void FASTCALL Render::BGSprite(int raster)
 		render.mix[(raster + 3) & 1023] = TRUE;
 	}
 
-	// ƒoƒbƒtƒ@ƒNƒŠƒA
-	// ‚±‚±‚ÅƒeƒLƒXƒgƒpƒŒƒbƒg0‚Å–„‚ß‚é(o‚½ƒcƒCLoading)
+	// Clear the buffer
+	// Fill here with text palette 0 (visible during loading)
 	buf = &render.bgspbuf[offset << 10];
 	RendClrSprite(buf, render.paldata[0x100],
 		render.mixlen + 16 > 1024 ? 1024 : render.mixlen + 16);
 
 	if (!render.bgspflag || !render.bgspdisp) {
-		// ”ñ•\¦‚È‚çI—¹
+		// End if not displayed
 		return;
 	}
 
-	// ƒXƒvƒ‰ƒCƒgŠÔ—Dæ“xƒoƒbƒtƒ@‚ğƒNƒŠƒA
+	// Clear the sprite priority buffer
 	memset(pri, 0xff, sizeof(pri));
 
-	// ˆê”ÔŒã‚ë‚É‚­‚é(PRW=1)ƒXƒvƒ‰ƒCƒg
+	// Sprites behind one layer (PRW=1)
 	reg = &render.spreg[127 << 2];
 	ptr = &render.spptr[127 << 10];
 	ptr += offset;
 	for (i=127; i>=0; i--) {
 		if (render.spuse[i]) {
-			// g—p’†
+			// Use the middle layer
 			if (reg[3] == 1) {
 				// PRW=1
 				if (*ptr) {
-					// •\¦
+					// Display
 					pcgno = reg[2] & 0xfff;
 					if (!render.pcgready[pcgno]) {
 						ASSERT(render.pcguse[pcgno] > 0);
@@ -3394,17 +3394,17 @@ void FASTCALL Render::BGSprite(int raster)
 						RendPCGNew(pcgno, render.sprmem, render.pcgbuf, render.paldata);
 					}
 
-					// ‡¬Šî€ˆÊ’u’²®
+					// Adjust the composition reference position
 					x = reg[0] - render.bgsp_h;
 					if (render.bgsp_h >= 0) {
-						// ¶‚É‚¸‚ê‚é
+						// Shift to the left
 						if (reg[0] <= 512) {
 							RendSprite(*ptr, buf, x, reg[2] & 0x4000, i, pri);
 						} else {
 							RendSpriteP(*ptr, buf, x, reg[2] & 0x4000, i, pri, 528 - reg[0]);
 						}
 					} else {
-						// ‰E‚É‚¸‚ê‚é
+						// Shift to the right
 						if (x <= 512) {
 							RendSprite(*ptr, buf - render.bgsp_h,
 								reg[0], reg[2] & 0x4000, i, pri - render.bgsp_h);
@@ -3424,27 +3424,27 @@ void FASTCALL Render::BGSprite(int raster)
 				}
 			}
 		}
-		// Ÿ‚ÌƒXƒvƒ‰ƒCƒg(SP0‚ª‚à‚Á‚Æ‚àè‘O)
+		// Next sprite (SP0 is the frontmost)
 		reg -= 4;
 		ptr -= 1024;
 	}
 
-	// BG1‚ğ•\¦
+	// Display BG1
 	if (render.bgdisp[1] && !render.bgsize) {
 		BG(1, offset, buf, TRUE);
 	}
 
-	// ’†ŠÔ‚É‚­‚é(PRW=2)ƒXƒvƒ‰ƒCƒg
+	// Sprites in the middle layer (PRW=2)
 	reg = &render.spreg[127 << 2];
 	ptr = &render.spptr[127 << 10];
 	ptr += offset;
 	for (i=127; i>=0; i--) {
 		if (render.spuse[i]) {
-			// g—p’†
+			// Use the middle layer
 			if (reg[3] == 2) {
 				// PRW=2
 				if (*ptr) {
-					// •\¦
+					// Display
 					pcgno = reg[2] & 0xfff;
 					if (!render.pcgready[pcgno]) {
 						ASSERT(render.pcguse[pcgno] > 0);
@@ -3452,17 +3452,17 @@ void FASTCALL Render::BGSprite(int raster)
 						RendPCGNew(pcgno, render.sprmem, render.pcgbuf, render.paldata);
 					}
 
-					// ‡¬Šî€ˆÊ’u’²®
+					// Adjust the composition reference position
 					x = reg[0] - render.bgsp_h;
 					if (render.bgsp_h >= 0) {
-						// ¶‚É‚¸‚ê‚é
+						// Shift to the left
 						if (reg[0] <= 512) {
 							RendSprite(*ptr, buf, x, reg[2] & 0x4000, i, pri);
 						} else {
 							RendSpriteP(*ptr, buf, x, reg[2] & 0x4000, i, pri, 528 - reg[0]);
 						}
 					} else {
-						// ‰E‚É‚¸‚ê‚é
+						// Shift to the right
 						if (x <= 512) {
 							RendSprite(*ptr, buf - render.bgsp_h,
 								reg[0], reg[2] & 0x4000, i, pri - render.bgsp_h);
@@ -3482,12 +3482,12 @@ void FASTCALL Render::BGSprite(int raster)
 				}
 			}
 		}
-		// Ÿ‚ÌƒXƒvƒ‰ƒCƒg(SP0‚ª‚à‚Á‚Æ‚àè‘O)
+		// Next sprite (SP0 is the frontmost)
 		reg -= 4;
 		ptr -= 1024;
 	}
 
-	// BG0‚ğ•\¦
+	// Display BG0
 	if (render.bgdisp[0]) {
 		if (render.bgdisp[1] && !render.bgsize) {
 			BG(0, offset, buf, FALSE);
@@ -3496,17 +3496,17 @@ void FASTCALL Render::BGSprite(int raster)
 		}
 	}
 
-	// è‘O‚É‚­‚é(PRW=3)ƒXƒvƒ‰ƒCƒg
+	// Sprites in the front layer (PRW=3)
 	reg = &render.spreg[127 << 2];
 	ptr = &render.spptr[127 << 10];
 	ptr += offset;
 	for (i=127; i>=0; i--) {
 		if (render.spuse[i]) {
-			// g—p’†
+			// Use the middle layer
 			if (reg[3] == 3) {
 				// PRW=3
 				if (*ptr) {
-					// •\¦
+					// Display
 					pcgno = reg[2] & 0xfff;
 					if (!render.pcgready[pcgno]) {
 						ASSERT(render.pcguse[pcgno] > 0);
@@ -3514,17 +3514,17 @@ void FASTCALL Render::BGSprite(int raster)
 						RendPCGNew(pcgno, render.sprmem, render.pcgbuf, render.paldata);
 					}
 
-					// ‡¬Šî€ˆÊ’u’²®
+					// Adjust the composition reference position
 					x = reg[0] - render.bgsp_h;
 					if (render.bgsp_h >= 0) {
-						// ¶‚É‚¸‚ê‚é
+						// Shift to the left
 						if (reg[0] <= 512) {
 							RendSprite(*ptr, buf, x, reg[2] & 0x4000, i, pri);
 						} else {
 							RendSpriteP(*ptr, buf, x, reg[2] & 0x4000, i, pri, 528 - reg[0]);
 						}
 					} else {
-						// ‰E‚É‚¸‚ê‚é
+						// Shift to the right
 						if (x <= 512) {
 							RendSprite(*ptr, buf - render.bgsp_h,
 								reg[0], reg[2] & 0x4000, i, pri - render.bgsp_h);
@@ -3544,7 +3544,7 @@ void FASTCALL Render::BGSprite(int raster)
 				}
 			}
 		}
-		// Ÿ‚ÌƒXƒvƒ‰ƒCƒg(SP0‚ª‚à‚Á‚Æ‚àè‘O)
+		// Next sprite (SP0 is the frontmost)
 		reg -= 4;
 		ptr -= 1024;
 	}
@@ -3567,39 +3567,39 @@ void FASTCALL Render::BG(int page, int offset, DWORD *buf, BOOL force)
 	ASSERT((offset >= 0) && (offset < 1024));
 	ASSERT(buf);
 
-	// ˆÊ’u’²®•ª‚Í•\¦‚µ‚È‚¢
+	// Do not display the position-adjustment area
 	y = offset;
 
-	// yƒuƒƒbƒN‚ğŠ„‚èo‚·
+	// Extract the y block
 	y = render.bgy[page] + offset;
 	if (render.bgsize) {
-		// 16x16ƒ‚[ƒh
+		// 16x16 mode
 		y &= (1024 - 1);
 		y >>= 4;
 	}
 	else {
-		// 8x8ƒ‚[ƒh
+		// 8x8 mode
 		y &= (512 - 1);
 		y >>= 3;
 	}
 	ASSERT((y >= 0) && (y < 64));
 
-	// bgall‚ªTRUE‚È‚çA‚»‚ÌyƒuƒƒbƒN‚Å•ÏXƒf[ƒ^‚ ‚è
+	// If bgall is TRUE, this y block contains changed data
 	if (render.bgall[page][y]) {
 		render.bgall[page][y] = FALSE;
 		BGBlock(page, y);
 	}
 
-	// •\¦
+	// Display
 	ptr = render.bgptr[page];
 	if (!render.bgsize) {
-		// 8x8‚Ì•\¦
+		// Draw 8x8
 		x = (render.bgx[page] + render.bgsp_h) & (512 - 1);
 		ptr += (((render.bgy[page] + offset) & (512 - 1)) << 6);
 
-		// Š„‚èØ‚ê‚é‚©ƒ`ƒFƒbƒN
+		// Check whether it fits evenly
 		if ((x & 7) == 0) {
-			// 8x8AŠ„‚èØ‚ê‚é
+			// 8x8, fits evenly
 			x >>= 3;
 			if (force) {
 				RendBG8F(ptr, buf, x, render.mixlen, render.pcgready,
@@ -3611,7 +3611,7 @@ void FASTCALL Render::BG(int page, int offset, DWORD *buf, BOOL force)
 			return;
 		}
 
-		// Å‰‚Ì”¼’[ƒuƒƒbƒN‚ğÀs
+		// Process the first partial block
 		rest = 8 - (x & 7);
 		ASSERT((rest > 0) && (rest < 8));
 		if (force) {
@@ -3622,7 +3622,7 @@ void FASTCALL Render::BG(int page, int offset, DWORD *buf, BOOL force)
 					render.sprmem, render.pcgbuf, render.paldata);
 		}
 
-		// —]‚è‚ğ’²‚×‚Ä8dot’PˆÊ•ª‚ğˆ—
+		// Check the remainder and process it in 8-dot units
 		len = render.mixlen - rest;
 		x += rest;
 		x &= (512 - 1);
@@ -3636,7 +3636,7 @@ void FASTCALL Render::BG(int page, int offset, DWORD *buf, BOOL force)
 				render.sprmem, render.pcgbuf, render.paldata);
 		}
 
-		// ÅŒã
+		// last
 		if (len & 7) {
 			x += (len & 0xfff8);
 			x &= (512 - 1);
@@ -3652,13 +3652,13 @@ void FASTCALL Render::BG(int page, int offset, DWORD *buf, BOOL force)
 		return;
 	}
 
-	// 16x16‚Ì•\¦
+	// Draw 16x16
 	x = (render.bgx[page] + render.bgsp_h) & (1024 - 1);
 	ptr += (((render.bgy[page] + offset) & (1024 - 1)) << 6);
 
-	// Š„‚èØ‚ê‚é‚©ƒ`ƒFƒbƒN
+	// Check whether it fits evenly
 	if ((x & 15) == 0) {
-		// 16x16AŠ„‚èØ‚ê‚é
+		// 16x16, fits evenly
 		x >>= 4;
 
 		if (force) {
@@ -3671,7 +3671,7 @@ void FASTCALL Render::BG(int page, int offset, DWORD *buf, BOOL force)
 		return;
 	}
 
-	// Å‰‚Ì”¼’[ƒuƒƒbƒN‚ğÀs
+	// Process the first partial block
 	rest = 16 - (x & 15);
 	ASSERT((rest > 0) && (rest < 16));
 	if (force) {
@@ -3682,7 +3682,7 @@ void FASTCALL Render::BG(int page, int offset, DWORD *buf, BOOL force)
 				render.sprmem, render.pcgbuf, render.paldata);
 	}
 
-	// —]‚è‚ğ’²‚×‚Ä16dot’PˆÊ•ª‚ğˆ—
+	// Check the remainder and process it in 16-dot units
 	len = render.mixlen - rest;
 	x += rest;
 	x &= (1024 - 1);
@@ -3695,7 +3695,7 @@ void FASTCALL Render::BG(int page, int offset, DWORD *buf, BOOL force)
 			render.sprmem, render.pcgbuf, render.paldata);
 	}
 
-	// ÅŒã
+	// last
 	if (len & 15) {
 		x += (len & 0xfff0);
 		x &= (1024 - 1);
@@ -3713,7 +3713,7 @@ void FASTCALL Render::BG(int page, int offset, DWORD *buf, BOOL force)
 
 //---------------------------------------------------------------------------
 //
-//	BG(’u’’b’NÆ)
+//	BG (horizontal block reference)
 //
 //---------------------------------------------------------------------------
 void FASTCALL Render::BGBlock(int page, int y)
@@ -3729,10 +3729,10 @@ void FASTCALL Render::BGBlock(int page, int y)
 	ASSERT((page == 0) || (page == 1));
 	ASSERT((y >= 0) && (y < 64));
 
-	// ƒŒƒWƒXƒ^ƒ|ƒCƒ“ƒ^‚ğ“¾‚é
+	// Get the register pointer
 	reg = &render.bgreg[page][y << 6];
 
-	// BGƒ|ƒCƒ“ƒ^‚ğ“¾‚é
+	// Get the BG pointer
 	ptr = render.bgptr[page];
 	if (render.bgsize) {
 		ptr += (y << 10);
@@ -3741,29 +3741,29 @@ void FASTCALL Render::BGBlock(int page, int y)
 		ptr += (y << 9);
 	}
 
-	// ƒ‹[ƒv
+	// loop
 	for (i=0; i<64; i++) {
-		// æ“¾
+		// get
 		bgdata = reg[i];
 
-		// $10000‚ª—§‚Á‚Ä‚¢‚ê‚ÎOK
+		// If $10000 is set, it is OK
 		if (bgdata & 0x10000) {
 			ptr += 1;
 			continue;
 		}
 
-		// $10000‚ğOR
+		// OR in $10000
 		reg[i] |= 0x10000;
 
-		// pcgno‚ğ“¾‚é
+		// Get the PCG number
 		pcgno = bgdata & 0xfff;
 
-		// ƒTƒCƒY•Ê
+		// By size
 		if (render.bgsize) {
 			// 16x16
 			pcgbuf = &render.pcgbuf[(pcgno << 8)];
 			if (bgdata & 0x8000) {
-				// ã‰º”½“]
+				// Vertical flip
 				pcgbuf += 0xf0;
 				for (j=0; j<16; j++) {
 					ptr->pcg = pcgbuf;
@@ -3773,7 +3773,7 @@ void FASTCALL Render::BGBlock(int page, int y)
 				}
 			}
 			else {
-				// ’Êí
+				// normal
 				for (j=0; j<16; j++) {
 					ptr->pcg = pcgbuf;
 					ptr->bg = bgdata;
@@ -3784,7 +3784,7 @@ void FASTCALL Render::BGBlock(int page, int y)
 			ptr -= 1024;
 		}
 		else {
-			// 8x8Bbit17,bit18‚ğl—¶‚·‚é
+			// Account for bits 17 and 18 in 8x8 mode
 			pcgbuf = &render.pcgbuf[(pcgno << 8)];
 			if (bgdata & 0x20000) {
 				pcgbuf += 0x80;
@@ -3794,7 +3794,7 @@ void FASTCALL Render::BGBlock(int page, int y)
 			}
 
 			if (bgdata & 0x8000) {
-				// ã‰º”½“]
+				// Vertical flip
 				pcgbuf += 0x70;
 				for (j=0; j<8; j++) {
 					ptr->pcg = pcgbuf;
@@ -3804,7 +3804,7 @@ void FASTCALL Render::BGBlock(int page, int y)
 				}
 			}
 			else {
-				// ’Êí
+				// normal
 				for (j=0; j<8; j++) {
 					ptr->pcg = pcgbuf;
 					ptr->bg = bgdata;
@@ -3815,32 +3815,32 @@ void FASTCALL Render::BGBlock(int page, int y)
 			ptr -= 512;
 		}
 
-		// “o˜^ˆ—(PCG)
+		// Registration processing (PCG)
 		render.pcguse[pcgno]++;
 		pcgno = (pcgno >> 8) & 0x0f;
 		render.pcgpal[pcgno]++;
 
-		// ƒ|ƒCƒ“ƒ^‚ği‚ß‚é
+		// Advance the pointer
 		ptr += 1;
 	}
 }
 
 //---------------------------------------------------------------------------
 //
-//	BG/ƒXƒvƒ‰ƒCƒgƒ`ƒFƒbƒN
+//	BG/sprite check
 //
 //---------------------------------------------------------------------------
 void FASTCALL Render::BGSpriteCheck(int raster)
 {
-	// ‚Q“x“Ç‚İ‚Í‹ô”ƒ‰ƒXƒ^[‚Ì‚İ(ƒRƒbƒgƒ“)
+	// Double-scanning uses even rasters only (Cotton)
 	if (render.mixmode == 2 && raster & 1) {
 		return;
 	}
 
-	// ƒtƒ‰ƒOƒIƒt
+	// Clear the flag
 	render.bgsp = FALSE;
 
-	// ƒXƒvƒ‰ƒCƒg•\¦Ø‘Ö‚¦ƒ`ƒFƒbƒN‚·‚é
+	// Check whether sprite display is enabled
 	if (sprite->IsDisplay()) {
 		if (!render.bgspdisp) {
 			render.bgspdisp = TRUE;
@@ -3854,15 +3854,15 @@ void FASTCALL Render::BGSpriteCheck(int raster)
 	}
 }
 
-//===========================================================================
+//=========================================================================
 //
-//	ƒŒƒ“ƒ_ƒ‰(‡¬•”)
+//	Renderer (composition section)
 //
-//===========================================================================
+//=========================================================================
 
 //---------------------------------------------------------------------------
 //
-//	‡¬
+//	composition
 //
 //---------------------------------------------------------------------------
 void FASTCALL Render::Mix(int raster, int xoffset)
@@ -3875,7 +3875,7 @@ void FASTCALL Render::Mix(int raster, int xoffset)
 	DWORD *ptr[4];
 	DWORD grpbuf[1024];
 
-	// ‡¬w¦‚ª–³‚¢ê‡AyƒI[ƒo[‚Ìê‡return
+	// If there is no composition directive and Y overflows, return
 	if (!render.mix[raster]) {
 		return;
 	}
@@ -3884,10 +3884,10 @@ void FASTCALL Render::Mix(int raster, int xoffset)
 		return;
 	}
 
-	// ‡¬’·‚ÌŒˆ’è
+	// Determine the composition length
 	mixlen = render.mixlen - (xoffset << 4);
 
-	// ‡¬‚µ‚È‚¢
+	// No composition
 	if (mixlen<=0) {
 		return;
 	}
@@ -3896,24 +3896,24 @@ void FASTCALL Render::Mix(int raster, int xoffset)
 	LOG1(Log::Normal, "‡¬ raster=%d", raster);
 #endif	// REND_LOG
 
-	// ƒtƒ‰ƒOOFF
-	// …•½•`‰æ“r’†‚Ì‘‚«Š·‚¦‚ÍŸ‰ñXV•K—v‚È‚Ì‚ÅOFF‚µ‚È‚¢
+	// flagOFF
+	// Do not turn it off; writes during horizontal drawing require an update next time
 	if (xoffset==0) {
 		render.mix[raster] = FALSE;
 	}
 
-	// ƒoƒbƒtƒ@‡¬ˆÊ’u
+	// Buffer composition position
 	mixy = raster;
 
-	// •\¦ü”g”15kHz‚ÅƒCƒ“ƒ^ƒŒ[ƒX‚Å–³‚¢
+	// 15 kHz and non-interlaced
  	if (render.mixmode != 1 && render.hres == 0) {
 		mixy <<= 1;
 	}
 
-	// ‚±‚Ìƒ‰ƒCƒ“‚ÍXV‚·‚é‰Â”\«—L‚è
+	// This line may need updating
 	render.draw[mixy] = TRUE;
 
-	// ‡¬ƒoƒbƒtƒ@ƒAƒhƒŒƒX‰Šú‰»
+	// Initialize the composition buffer address
 	mixbuf = &render.mixbuf[render.mixwidth * mixy];
 	mixbuf += (xoffset << 4);
 	mixflg = render.drawflag + (mixy << 6);
@@ -3921,12 +3921,12 @@ void FASTCALL Render::Mix(int raster, int xoffset)
 
 	switch (render.mixtype) {
 
-		// ƒ^ƒCƒv0(•\¦‚µ‚È‚¢)
+		// Type 0 (do not display)
 		case 0:
 			RendMix00(mixbuf, mixflg, mixlen);
 			break;
 
-		// ƒ^ƒCƒv1(ƒeƒLƒXƒg‚Ì‚İ)
+		// Type 1 (text only)
 		case 1:
 			y = *render.mixy[0];
 			y += (((raster + render.mixraster[0]) >> render.mixrshift[0]) << render.mixlshift[0]);
@@ -3937,7 +3937,7 @@ void FASTCALL Render::Mix(int raster, int xoffset)
 			RendMix01(mixbuf, ptr[0], mixflg, mixlen);
 			break;
 
-		// ƒ^ƒCƒv2(ƒXƒvƒ‰ƒCƒg‚Ì‚İ)
+		// Type 2 (sprite only)
 		case 2:
 			y = raster + render.mixraster[0];
 			y >>= render.mixrshift[0];
@@ -3950,11 +3950,11 @@ void FASTCALL Render::Mix(int raster, int xoffset)
 			RendMix01(mixbuf, ptr[0], mixflg, mixlen);
 			break;
 
-		// ƒ^ƒCƒv3(ƒOƒ‰ƒtƒBƒbƒN‚Ì‚İ)
+		// Type 3 (graphics only)
 		case 3:
 			ptr[2]=MixGrp(grpbuf, raster, xoffset, mixlen);
 
-			// ”¼“§–¾
+			// semi-transparent
 			if (vp->exon && vp->hp && vp->gt) {
 				RendMix01H(mixbuf, ptr[2], render.paldata[0x100], mixflg, mixlen);
 			} else {
@@ -3962,7 +3962,7 @@ void FASTCALL Render::Mix(int raster, int xoffset)
 			}
 			break;
 
-		// ƒ^ƒCƒv4(ƒeƒLƒXƒgAƒXƒvƒ‰ƒCƒg)
+		// Type 4 (text, sprite)
 		case 4:
 			y = *render.mixy[0];
 			y += (((raster + render.mixraster[0]) >> render.mixrshift[0]) << render.mixlshift[0]);
@@ -3979,7 +3979,7 @@ void FASTCALL Render::Mix(int raster, int xoffset)
 			RendMix02A(mixbuf, ptr[0], ptr[1], mixflg, mixlen);
 			break;
 
-		// ƒ^ƒCƒv5(ƒeƒLƒXƒg or ƒXƒvƒ‰ƒCƒg’†ŠÔ‚Ü‚½‚ÍŒã–ÊAƒOƒ‰ƒtƒBƒbƒN‘O–Ê)
+		// Type 5 (text or sprite middle/back layer, graphics front layer)
 		case 5:
 			y = *render.mixy[0];
 			y += (((raster + render.mixraster[0]) >> render.mixrshift[0]) << render.mixlshift[0]);
@@ -3990,15 +3990,15 @@ void FASTCALL Render::Mix(int raster, int xoffset)
 			ptr[2] = MixGrp(grpbuf, raster, xoffset, mixlen);
 
 			if (vp->exon && vp->hp && vp->gt) {
-				// ”¼“§–¾
+				// semi-transparent
 				RendMix02BH(mixbuf, ptr[2], ptr[0], mixflg, mixlen);
 			} else {
-				// ’Êí
+				// normal
 				RendMix02B(mixbuf, ptr[2], ptr[0], mixflg, mixlen);
 			}
 			break;
 
-		// ƒ^ƒCƒv6(ƒeƒLƒXƒg or ƒXƒvƒ‰ƒCƒg‘O–ÊAƒOƒ‰ƒtƒBƒbƒN’†ŠÔAŒã–Ê‚È‚µ)
+		// Type 6 (text or sprite front layer, graphics middle layer, no back layer)
 		case 6:
 			y = *render.mixy[0];
 			y += (((raster + render.mixraster[0]) >> render.mixrshift[0]) << render.mixlshift[0]);
@@ -4009,18 +4009,18 @@ void FASTCALL Render::Mix(int raster, int xoffset)
 			ptr[2] = MixGrp(grpbuf, raster, xoffset, mixlen);
 
 			if (vp->exon && vp->hp && vp->gt) {
-				// ”¼“§–¾
+				// semi-transparent
 				RendMix02CH(mixbuf, ptr[0], ptr[2], render.paldata[0x100], mixflg, mixlen);
 			} else if (vp->exon && !vp->hp) {
-				// “Áêƒvƒ‰ƒCƒIƒŠƒeƒB
+				// special priority
 				RendMix02CS(mixbuf, ptr[0], ptr[2], mixflg, mixlen);
 			} else {
-				// ’Êí
+				// normal
 				RendMix02C(mixbuf, ptr[0], ptr[2], mixflg, mixlen);
 			}
 			break;
 
-		// ƒ^ƒCƒv7(ƒeƒLƒXƒg or ƒXƒvƒ‰ƒCƒg‘O–Ê‚Ü‚½‚Í’†ŠÔAƒOƒ‰ƒtƒBƒbƒNŒã–Ê)
+		// Type 7 (text or sprite front/middle layer, graphics back layer)
 		case 7:
 			y = *render.mixy[0];
 			y += (((raster + render.mixraster[0]) >> render.mixrshift[0]) << render.mixlshift[0]);
@@ -4031,18 +4031,18 @@ void FASTCALL Render::Mix(int raster, int xoffset)
 			ptr[2] = MixGrp(grpbuf, raster, xoffset, mixlen);
 
 			if (vp->exon && vp->hp && vp->gt) {
-				// ”¼“§–¾
+				// semi-transparent
 				RendMix02DH(mixbuf, ptr[0], ptr[2], render.paldata[0x100], mixflg, mixlen);
 			} else if (vp->exon && !vp->hp) {
-				// “Áêƒvƒ‰ƒCƒIƒŠƒeƒB
+				// special priority
 				RendMix02DS(mixbuf, ptr[0], ptr[2], mixflg, mixlen);
 			} else {
-				// ’Êí
+				// normal
 				RendMix02D(mixbuf, ptr[0], ptr[2], mixflg, mixlen);
 			}
 			break;
 
-		// ƒ^ƒCƒv8(ƒeƒLƒXƒgAƒXƒvƒ‰ƒCƒgAƒOƒ‰ƒtƒBƒbƒN‘O–Ê)
+		// Type 8 (text, sprite, graphics front layer)
 		case 8:
 			y = *render.mixy[0];
 			y += (((raster + render.mixraster[0]) >> render.mixrshift[0]) << render.mixlshift[0]);
@@ -4059,15 +4059,15 @@ void FASTCALL Render::Mix(int raster, int xoffset)
 			ptr[2] = MixGrp(grpbuf, raster, xoffset, mixlen);
 
 			if (vp->exon && vp->hp && vp->gt) {
-				// ”¼“§–¾
+				// semi-transparent
 				RendMix03AH(mixbuf, ptr[2], ptr[0], ptr[1], mixflg, mixlen);
 			} else {
-				// ’Êí
+				// normal
 				RendMix03A(mixbuf, ptr[2], ptr[0], ptr[1], mixflg, mixlen);
 			}
 			break;
 
-		// ƒ^ƒCƒv9(ƒeƒLƒXƒgAƒXƒvƒ‰ƒCƒgAƒOƒ‰ƒtƒBƒbƒN’†ŠÔ)
+		// Type 9 (text, sprite, graphics middle layer)
 		case 9:
 			y = *render.mixy[0];
 			y += (((raster + render.mixraster[0]) >> render.mixrshift[0]) << render.mixlshift[0]);
@@ -4084,18 +4084,18 @@ void FASTCALL Render::Mix(int raster, int xoffset)
 			ptr[2] = MixGrp(grpbuf, raster, xoffset, mixlen);
 
 			if (vp->exon && vp->hp && vp->gt) {
-				// ”¼“§–¾
+				// semi-transparent
 				RendMix03BH(mixbuf, ptr[0], ptr[2], ptr[1], mixflg, mixlen);
 			} else if (vp->exon && !vp->hp) {
-				// “Áêƒvƒ‰ƒCƒIƒŠƒeƒB
+				// special priority
 				RendMix03BS(mixbuf, ptr[0], ptr[2], ptr[1], mixflg, mixlen);
 			} else {
-				// ’Êí
+				// normal
 				RendMix03B(mixbuf, ptr[0], ptr[2], ptr[1], mixflg, mixlen);
 			}
 			break;
 
-		// ƒ^ƒCƒv10(ƒeƒLƒXƒgAƒXƒvƒ‰ƒCƒgAƒOƒ‰ƒtƒBƒbƒNŒã–Ê)
+		// Type 10 (text, sprite, graphics back layer)
 		case 10:
 			y = *render.mixy[0];
 			y += (((raster + render.mixraster[0]) >> render.mixrshift[0]) << render.mixlshift[0]);
@@ -4112,40 +4112,40 @@ void FASTCALL Render::Mix(int raster, int xoffset)
 			ptr[2] = MixGrp(grpbuf, raster, xoffset, mixlen);
 
 			if (vp->exon && vp->hp && vp->gt) {
-				// ”¼“§–¾
+				// semi-transparent
 				RendMix03CH(mixbuf, ptr[0], ptr[1], ptr[2], render.paldata[0x100], mixflg, mixlen);
 			} else if (vp->exon && !vp->hp) {
-				// “Áêƒvƒ‰ƒCƒIƒŠƒeƒB
+				// special priority
 				RendMix03CS(mixbuf, ptr[0], ptr[1], ptr[2], mixflg, mixlen);
 			} else {
-				// ’Êí
+				// normal
 				RendMix03C(mixbuf, ptr[0], ptr[1], ptr[2], mixflg, mixlen);
 			}
 			break;
 
-		// ƒ^ƒCƒv11(ƒpƒŒƒbƒg‚O”¼“§–¾)
+		// Type 11 (palette 0 semi-transparent)
 		case 11:
 			ptr[2] = MixGrp(grpbuf, raster, xoffset, mixlen);
 			RendMixP0H(mixbuf, ptr[2], render.paldata[0x100], mixflg, mixlen);
 			break;
 
-		// ‚»‚Ì‘¼
+		// other
 		default:
 			ASSERT(FALSE);
 			break;
 	}
 
-	// •\¦ü”g”15kHz‚ÅƒCƒ“ƒ^ƒŒ[ƒX‚Å–³‚¢‚Æ‚«
+	// At 15 kHz when not interlaced
  	if (render.mixmode != 1 && render.hres == 0) {
 		if (render.scanline) {
-			// ƒXƒLƒƒƒ“ƒ‰ƒCƒ“•`‰æ
+			// Draw scanlines
 			memset(mixbuf + render.mixwidth, 0x00, render.mixlen << 2);
 		} else {
-			// ƒ‰ƒXƒ^[ƒRƒs[
+			// Raster copy
 			memcpy(mixbuf + render.mixwidth, mixbuf, render.mixlen << 2);
 		}
 
-		// ƒXƒLƒƒƒ“ƒ‰ƒCƒ“‚Ìƒ‰ƒXƒ^‚àƒtƒ‰ƒO‚ğİ’è
+		// Also set the flag for the scanline raster
 		memcpy(mixflg + 64, mixflg, (64 - xoffset) << 2);
 		render.draw[mixy + 1] = TRUE;
 	}
@@ -4153,7 +4153,7 @@ void FASTCALL Render::Mix(int raster, int xoffset)
 
 //---------------------------------------------------------------------------
 //
-//	ƒOƒ‰ƒtƒBƒbƒNƒX‡¬
+//	Graphics composition
 //
 //---------------------------------------------------------------------------
 DWORD* FASTCALL Render::MixGrp(DWORD *buf, int raster, int xoffset, int mixlen)
@@ -4169,19 +4169,19 @@ DWORD* FASTCALL Render::MixGrp(DWORD *buf, int raster, int xoffset, int mixlen)
 	ASSERT(buf);
 	ASSERT((raster >= 0) && (raster < render.mixheight));
 
-	// 0–Ê(‚ ‚è‚¦‚È‚¢)
+	// 0 planes (should never happen)
 	if (render.mixpage==0) {
 		ASSERT(FALSE);
 		return buf;
 	}
 
-	// ƒ[ƒN‰Šú‰»
+	// stateinitialize
 	mixpage = 0;
 	for (i=0; i<4; i++) {
 		map[i] = -1;
 	}
 
-	// ƒoƒbƒtƒ@ŒvZ
+	// Calculate the buffer
 	j = 0;
 	for (i=0; i<render.mixpage; i++) {
 		idx = i + 4;
@@ -4193,30 +4193,30 @@ DWORD* FASTCALL Render::MixGrp(DWORD *buf, int raster, int xoffset, int mixlen)
 		ptr[i] += (y << render.mixshift[idx]);
 		ptr[i] += (*render.mixx[idx] + (xoffset << 4)) & render.mixandx[idx];
 
-		// ÀÛ‚Ì•\¦ƒy[ƒW”‚ğƒJƒEƒ“ƒg
+		// Count the number of actually displayed pages
 		if (render.grppen[i]) {
 			mixpage++;
 			map[j++] = i;
 		}
 	}
 
-	// 0–Ê‡¬(‡¬‚µ‚È‚¢)
+	// 0-plane composition (no composition)
 	if (mixpage==0) {
 		return buf;
 	}
 
-	// 1–Ê‚Å1–Ê•\¦
+	// Display 1 page
 	if (render.mixpage == 1 && mixpage==1) {
 		memcpy(buf, ptr[map[0]], mixlen << 2);
 	}
 
-	// 2–ÊˆÈã
+	// 2 pages or more
 	if (render.mixpage >= 2) {
 
-		// ”¼“§–¾‚ğƒ`ƒFƒbƒN(2–ÊˆÈã‚Å‚©‚Âƒx[ƒXƒy[ƒW‚ª•\¦)
+		// Check semi-transparency (2+ pages with the base page displayed)
 		if (vp->exon && vp->hp && vp->gg && render.grppen[0]) {
 			if (render.grppen[1]) {
-				// ƒx[ƒX•\¦AƒZƒJƒ“ƒh•\¦
+				// Base display, second display
 				RendGrp02HBS(buf, ptr[0], ptr[1], mixlen);
 
 				if (mixpage==3) {
@@ -4227,8 +4227,8 @@ DWORD* FASTCALL Render::MixGrp(DWORD *buf, int raster, int xoffset, int mixlen)
 					RendGrp03(buf, buf, ptr[map[2]], ptr[map[3]], mixlen);
 				}
 			} else {
-				// ƒx[ƒX•\¦AƒZƒJƒ“ƒh”ñ•\¦
-				// ƒZƒJƒ“ƒhƒy[ƒW‚ª•\¦‚³‚ê‚Ä‚¢‚È‚¢ê‡‚Í”¼“§–¾‚Ì•”•ª‚Ì‚İ‡¬
+				// Base display, second hidden
+				// If the second page is hidden, compose only the semi-transparent area
 				RendGrp02HB(buf, ptr[0], ptr[1], mixlen);
 
 				if (mixpage==2) {
@@ -4241,41 +4241,41 @@ DWORD* FASTCALL Render::MixGrp(DWORD *buf, int raster, int xoffset, int mixlen)
 			}
 		} else {
 			if (mixpage==1) {
-				// 1–Ê•\¦
+				// Display 1 page
 				memcpy(buf, ptr[map[0]], mixlen << 2);
 			} else if (mixpage==2) {
-				// 2–Ê‡¬
+				// Compose 2 pages
 				RendGrp02(buf, ptr[map[0]], ptr[map[1]], mixlen);
 			} else if (mixpage==3) {
-				// 3–Ê‡¬
+				// Compose 3 pages
 				RendGrp03(buf, ptr[map[0]], ptr[map[1]], ptr[map[2]], mixlen);
 			} else {
-				// 4–Ê‡¬
+				// Compose 4 pages
 				RendGrp04(buf, ptr[map[0]], ptr[map[1]], ptr[map[2]], ptr[map[3]], mixlen);
 			}
 		}
 	}
 
-	// •Ô‹p
+	// return
 	return buf;
 }
 
 //---------------------------------------------------------------------------
 //
-//	‡¬ƒoƒbƒtƒ@æ“¾
+//	Get the composition buffer
 //
 //---------------------------------------------------------------------------
 const DWORD* FASTCALL Render::GetMixBuf() const
 {
 	ASSERT(this);
 
-	// NULL‚Ìê‡‚à‚ ‚è
+	// May also be NULL
 	return render.mixbuf;
 }
 
 //---------------------------------------------------------------------------
 //
-//	‡¬(‹­§)
+//	Composition (forced)
 //
 //---------------------------------------------------------------------------
 void FASTCALL Render::UpdateMixBuf()
@@ -4286,10 +4286,10 @@ void FASTCALL Render::UpdateMixBuf()
 
 	ASSERT(this);
 
-	// ƒCƒ“ƒ^ƒŒ[ƒX‚ÌƒXƒLƒƒƒ“ƒ‰ƒCƒ“‹ôŠïæ“¾
+	// Get the even/odd scanline for interlace mode
 	bScanEven = cp->v_scaneven;
 
-	// ƒCƒ“ƒ^ƒŒ[ƒX‚É”õ‚¦‚Ä‚Q‰ñ‡¬‚·‚é
+	// Compose twice in preparation for interlace mode
 	for (i=0; i<2; i++) {
 		Complete();
 		EnableAct(TRUE);
@@ -4314,7 +4314,7 @@ void FASTCALL Render::UpdateMixBuf()
 
 //---------------------------------------------------------------------------
 //
-//	ƒŒƒ“ƒ_ƒŠƒ“ƒO
+//	Rendering
 //
 //---------------------------------------------------------------------------
 
@@ -4500,7 +4500,7 @@ void FASTCALL Render::GVRAMFastClear()
 }
 void FASTCALL Render::Process(int raster, int xoffset)
 {
-	// ˆÀ‘Sô
+	// Safety measure
 	if (render.mixlen <= 0) {
 		return;
 	}
@@ -4513,7 +4513,7 @@ void FASTCALL Render::Process(int raster, int xoffset)
 		Video();
 	}
 
-	// ƒpƒŒƒbƒg
+	// Palette
 	if (render.palette) {
 #if defined(REND_LOG)
 		LOG0(Log::Normal, "ƒpƒŒƒbƒgˆ—");
@@ -4521,7 +4521,7 @@ void FASTCALL Render::Process(int raster, int xoffset)
 		Palette();
 	}
 
-	// ƒOƒ‰ƒtƒBƒbƒNƒXƒNƒ[ƒ‹ƒ`ƒFƒbƒN
+	// Check graphics scroll
 	if (render.grpscrl) {
 #if defined(REND_LOG)
 		LOG0(Log::Normal, "ƒOƒ‰ƒtƒBƒbƒNƒXƒNƒ[ƒ‹ƒ`ƒFƒbƒNˆ—");
@@ -4529,7 +4529,7 @@ void FASTCALL Render::Process(int raster, int xoffset)
 		GrpScrlCheck();
 	}
 
-	// BGƒXƒvƒ‰ƒCƒgƒ`ƒFƒbƒN
+	// Check BG/sprite
 	if (render.bgsp) {
 #if defined(REND_LOG)
 		LOG0(Log::Normal, "BG/ƒXƒvƒ‰ƒCƒgƒ`ƒFƒbƒNˆ—");
@@ -4537,35 +4537,35 @@ void FASTCALL Render::Process(int raster, int xoffset)
 		BGSpriteCheck(raster);
 	}
 
-	// ƒeƒLƒXƒgXV
+	// textupdate
 	if (render.textdirty) {
 		memset(render.textpal, TRUE, 1024);
 		render.textdirty = FALSE;
 	}
 
-	// ƒOƒ‰ƒtƒBƒbƒNXV
+	// graphicsupdate
 	if (render.grpdirty) {
 		memset(render.grppal, TRUE, 512 * 4);
 		render.grpdirty = FALSE;
 	}
 
-	// BGƒXƒvƒ‰ƒCƒgXV
+	// BGspriteupdate
 	if (render.bgspdirty) {
 		memset(render.bgspmod, TRUE, 1024);
 		render.bgspdirty = FALSE;
 	}
 
-	// ‡¬‘SXV
+	// Update the entire composition
 	if (render.mixdirty) {
 		memset(render.mix, TRUE, render.mixheight);
 		render.mixdirty = FALSE;
 	}
 
-	// ƒCƒ“ƒ^ƒŒ[ƒX‚È‚ç‹ô”‚ÆŠï”ƒ‰ƒXƒ^[‚ğˆêŠ‡‡¬
+	// If interlaced, bulk-compose even and odd rasters
 	if (render.mixmode == 1) {
 		raster <<= 1;
 		if (render.mixeven) {
-			// ‡¬Às(‹ô”ƒ‰ƒCƒ“)
+			// Run composition (even lines)
 			Text(raster);
 			Grp(0, raster);
 			Grp(1, raster);
@@ -4574,7 +4574,7 @@ void FASTCALL Render::Process(int raster, int xoffset)
 			BGSprite(raster);
 			Mix(raster, xoffset);
 
-			// ‡¬Às(Šï”ƒ‰ƒCƒ“)
+			// Run composition (odd lines)
 			raster++;
 			Text(raster);
 			Grp(0, raster);
@@ -4587,7 +4587,7 @@ void FASTCALL Render::Process(int raster, int xoffset)
 		return;
 	}
 
-	// ‡¬Às
+	// compositionexecute
 	Text(raster);
 	Grp(0, raster);
 	Grp(1, raster);

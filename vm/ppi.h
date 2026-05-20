@@ -2,7 +2,7 @@
 //
 //	X68000 EMULATOR "XM6"
 //
-//	Copyright (C) 2001-2006 ＰＩ．(ytanaka@ipc-tokai.or.jp)
+//	Copyright (C) 2001-2006 P.I. (ytanaka@ipc-tokai.or.jp)
 //	[ PPI(i8255A) ]
 //
 //---------------------------------------------------------------------------
@@ -12,486 +12,486 @@
 
 #include "device.h"
 
-//===========================================================================
+//=========================================================================
 //
 //	PPI
 //
-//===========================================================================
+//=========================================================================
 class PPI : public MemDevice
 {
 public:
-	// 定数定義
+	// Constant definitions
 	enum {
-		PortMax = 2,					// ポート最大数
-		AxisMax = 4,					// 軸最大数
-		ButtonMax = 8					// ボタン最大数
+		PortMax = 2,					// Maximum number of ports
+		AxisMax = 4,					// Maximum number of axes
+		ButtonMax = 8					// Maximum number of buttons
 	};
 
-	// ジョイスティックデータ定義
+	// Joystick data definition
 	typedef struct {
-		DWORD axis[AxisMax];				// 軸情報
-		BOOL button[ButtonMax];				// ボタン情報
+		DWORD axis[AxisMax];				// Axis info
+		BOOL button[ButtonMax];				// Button info
 	} joyinfo_t;
 
-	// 内部データ定義
+	// Internal data definition
 	typedef struct {
-		DWORD portc;					// ポートC
-		int type[PortMax];				// ジョイスティックタイプ
-		DWORD ctl[PortMax];				// ジョイスティックコントロール
-		joyinfo_t info[PortMax];		// ジョイスティック情報
+		DWORD portc;					// Port C
+		int type[PortMax];				// Joystick type
+		DWORD ctl[PortMax];				// Joystickcontrol
+		joyinfo_t info[PortMax];		// Joystickinfo
 	} ppi_t;
 
 public:
-	// 基本ファンクション
+	// Core functions
 	PPI(VM *p);
-										// コンストラクタ
+										// Constructor
 	BOOL FASTCALL Init();
-										// 初期化
+										// Initialize
 	void FASTCALL Cleanup();
-										// クリーンアップ
+										// Cleanup
 	void FASTCALL Reset();
-										// リセット
+										// Reset
 	BOOL FASTCALL Save(Fileio *fio, int ver);
-										// セーブ
+										// Save
 	BOOL FASTCALL Load(Fileio *fio, int ver);
-										// ロード
+										// Load
 	void FASTCALL ApplyCfg(const Config *config);
-										// 設定適用
+										// Apply settings
 #if defined(_DEBUG)
 	void FASTCALL AssertDiag() const;
-										// 診断
+										// Diagnostics
 #endif	// _DEBUG
 
-	// メモリデバイス
+	// Memory device
 	DWORD FASTCALL ReadByte(DWORD addr);
-										// バイト読み込み
+										// Byte read
 	DWORD FASTCALL ReadWord(DWORD addr);
-										// ワード読み込み
+										// Word read
 	void FASTCALL WriteByte(DWORD addr, DWORD data);
-										// バイト書き込み
+										// Byte write
 	void FASTCALL WriteWord(DWORD addr, DWORD data);
-										// ワード書き込み
+										// Word write
 	DWORD FASTCALL ReadOnly(DWORD addr) const;
-										// 読み込みのみ
+										// Read-only
 
-	// 外部API
+	// External API
 	void FASTCALL GetPPI(ppi_t *buffer);
-										// 内部データ取得
+										// Get internal data
 	void FASTCALL SetJoyInfo(int port, const joyinfo_t *info);
-										// ジョイスティック情報設定
+										// Set joystick info
 	const joyinfo_t* FASTCALL GetJoyInfo(int port) const;
-										// ジョイスティック情報取得
+										// Get joystick info
 	void FASTCALL SetJoyType(int port, int type);
 								// set joystick type
 	JoyDevice* FASTCALL CreateJoy(int port, int type);
-										// ジョイスティックデバイス作成
+										// Create joystick device
 
 private:
 	void FASTCALL SetPortC(DWORD data);
-										// ポートCセット
+										// Set Port C
 	ADPCM *adpcm;
 										// ADPCM
 	JoyDevice *joy[PortMax];
-										// ジョイスティック
+										// Joystick
 	ppi_t ppi;
-										// 内部データ
+										// Internal data
 };
 
-//===========================================================================
+//=========================================================================
 //
-//	ジョイスティックデバイス
+//	Joystickdevice
 //
-//===========================================================================
+//=========================================================================
 class JoyDevice
 {
 public:
-	// 基本ファンクション
+	// Core functions
 	JoyDevice(PPI *parent, int no);
-										// コンストラクタ
+										// Constructor
 	virtual ~JoyDevice();
-										// デストラクタ
+										// Destructor
 	DWORD FASTCALL GetID() const		{ return id; }
-										// ID取得
+										// IDget
 	DWORD FASTCALL GetType() const		{ return type; }
-										// タイプ取得
+										// Get the type
 	virtual void FASTCALL Reset();
-										// リセット
+										// Reset
 	virtual BOOL FASTCALL Save(Fileio *fio, int ver);
-										// セーブ
+										// Save
 	virtual BOOL FASTCALL Load(Fileio *fio, int ver);
-										// ロード
+										// Load
 
-	// アクセス
+	// Access
 	virtual DWORD FASTCALL ReadPort(DWORD ctl);
-										// ポート読み取り
+										// Port read
 	virtual DWORD FASTCALL ReadOnly(DWORD ctl) const;
-										// ポート読み取り(Read Only)
+										// Port read (read-only)
 	virtual void FASTCALL Control(DWORD ctl);
-										// コントロール
+										// Control
 
-	// キャッシュ
+	// Cache
 	void FASTCALL Notify()				{ changed = TRUE; }
-										// 親ポート変更通知
+										// Notify a parent port change
 	virtual void FASTCALL MakeData();
-										// データ作成
+										// Build data
 
-	// プロパティ
+	// Properties
 	int FASTCALL GetAxes() const		{ return axes; }
-										// 軸数取得
+										// Get the axis count
 	const char* FASTCALL GetAxisDesc(int axis) const;
-										// 軸表示取得
+										// Get the axis label
 	int FASTCALL GetButtons() const		{ return buttons; }
-										// ボタン数取得
+										// Get the button count
 	const char* FASTCALL GetButtonDesc(int button) const;
-										// ボタン表示取得
+										// Get the button label
 	BOOL FASTCALL IsAnalog() const		{ return analog; }
-										// アナログ・デジタル取得
+										// Get the analog/digital mode
 	int FASTCALL GetDatas() const		{ return datas; }
-										// データ数取得
+										// Get the data count
 
 protected:
 	DWORD type;
-										// タイプ
+										// Type
 	DWORD id;
 										// ID
 	PPI *ppi;
 										// PPI
 	int port;
-										// ポート番号
+										// Port number
 	int axes;
-										// 軸数
+										// Axis count
 	const char **axis_desc;
-										// 軸表示
+										// Axis label
 	int buttons;
-										// ボタン数
+										// Button count
 	const char **button_desc;
-										// ボタン表示
+										// Button label
 	BOOL analog;
-										// 種別(アナログ・デジタル)
+										// Kind (analog/digital)
 	DWORD *data;
-										// データ実体
+										// Data payload
 	int datas;
-										// データ数
+										// Data count
 	BOOL changed;
-										// ジョイスティック変更通知
+										// Joystickchangenotify
 };
 
-//===========================================================================
+//=========================================================================
 //
-//	ジョイスティック(ATARI標準)
+//	Joystick (ATARI standard)
 //
-//===========================================================================
+//=========================================================================
 class JoyAtari : public JoyDevice
 {
 public:
 	JoyAtari(PPI *parent, int no);
-										// コンストラクタ
+										// Constructor
 
 protected:
 	DWORD FASTCALL ReadOnly(DWORD ctl) const;
-										// ポート読み取り(Read Only)
+										// Port read (read-only)
 	void FASTCALL MakeData();
-										// データ作成
+										// Build data
 
 private:
 	static const char* AxisDescTable[];
-										// 軸表示テーブル
+										// Axis label table
 	static const char* ButtonDescTable[];
-										// ボタン表示テーブル
+										// Button label table
 };
 
-//===========================================================================
+//=========================================================================
 //
-//	ジョイスティック(ATARI標準+START/SELECT)
+//	Joystick (ATARI standard + START/SELECT)
 //
-//===========================================================================
+//=========================================================================
 class JoyASS : public JoyDevice
 {
 public:
 	JoyASS(PPI *parent, int no);
-										// コンストラクタ
+										// Constructor
 
 protected:
 	DWORD FASTCALL ReadOnly(DWORD ctl) const;
-										// ポート読み取り(Read Only)
+										// Port read (read-only)
 	void FASTCALL MakeData();
-										// データ作成
+										// Build data
 
 private:
 	static const char* AxisDescTable[];
-										// 軸表示テーブル
+										// Axis label table
 	static const char* ButtonDescTable[];
-										// ボタン表示テーブル
+										// Button label table
 };
 
-//===========================================================================
+//=========================================================================
 //
-//	ジョイスティック(サイバースティック・アナログ)
+//	Joystick (Cyber Stick, analog)
 //
-//===========================================================================
+//=========================================================================
 class JoyCyberA : public JoyDevice
 {
 public:
 	JoyCyberA(PPI *parent, int no);
-										// コンストラクタ
+										// Constructor
 
 protected:
 	void FASTCALL Reset();
-										// リセット
+										// Reset
 	DWORD FASTCALL ReadPort(DWORD ctl);
-										// ポート読み取り
+										// Port read
 	DWORD FASTCALL ReadOnly(DWORD ctl) const;
-										// ポート読み取り(Read Only)
+										// Port read (read-only)
 	void FASTCALL Control(DWORD ctl);
-										// コントロール
+										// Control
 	void FASTCALL MakeData();
-										// データ作成
+										// Build data
 	BOOL FASTCALL Save(Fileio *fio, int ver);
-										// セーブ
+										// Save
 	BOOL FASTCALL Load(Fileio *fio, int ver);
-										// ロード
+										// Load
 
 private:
 	DWORD seq;
-										// シーケンス
+										// Sequence
 	DWORD ctrl;
-										// 前回のコントロール(0 or 1)
+										// Previous control value (0 or 1)
 	DWORD hus;
-										// 判定用時間
+										// Time used for evaluation
 	Scheduler *scheduler;
-										// スケジューラ
+										// Scheduler
 	static const char* AxisDescTable[];
-										// 軸表示テーブル
+										// Axis label table
 	static const char* ButtonDescTable[];
-										// ボタン表示テーブル
+										// Button label table
 };
 
-//===========================================================================
+//=========================================================================
 //
-//	ジョイスティック(サイバースティック・デジタル)
+//	Joystick (Cyber Stick, digital)
 //
-//===========================================================================
+//=========================================================================
 class JoyCyberD : public JoyDevice
 {
 public:
 	JoyCyberD(PPI *parent, int no);
-										// コンストラクタ
+										// Constructor
 
 protected:
 	DWORD FASTCALL ReadOnly(DWORD ctl) const;
-										// ポート読み取り(Read Only)
+										// Port read (read-only)
 	void FASTCALL MakeData();
-										// データ作成
+										// Build data
 
 private:
 	static const char* AxisDescTable[];
-										// 軸表示テーブル
+										// Axis label table
 	static const char* ButtonDescTable[];
-										// ボタン表示テーブル
+										// Button label table
 };
 
-//===========================================================================
+//=========================================================================
 //
-//	ジョイスティック(MD3ボタン)
+//	Joystick (MD3 buttons)
 //
-//===========================================================================
+//=========================================================================
 class JoyMd3 : public JoyDevice
 {
 public:
 	JoyMd3(PPI *parent, int no);
-										// コンストラクタ
+										// Constructor
 
 protected:
 	DWORD FASTCALL ReadOnly(DWORD ctl) const;
-										// ポート読み取り(Read Only)
+										// Port read (read-only)
 	void FASTCALL MakeData();
-										// データ作成
+										// Build data
 
 private:
 	static const char* AxisDescTable[];
-										// 軸表示テーブル
+										// Axis label table
 	static const char* ButtonDescTable[];
-										// ボタン表示テーブル
+										// Button label table
 };
 
-//===========================================================================
+//=========================================================================
 //
-//	ジョイスティック(MD6ボタン)
+//	Joystick (MD6 buttons)
 //
-//===========================================================================
+//=========================================================================
 class JoyMd6 : public JoyDevice
 {
 public:
 	JoyMd6(PPI *parent, int no);
-										// コンストラクタ
+										// Constructor
 
 protected:
 	void FASTCALL Reset();
-										// リセット
+										// Reset
 	DWORD FASTCALL ReadOnly(DWORD ctl) const;
-										// ポート読み取り(Read Only)
+										// Port read (read-only)
 	void FASTCALL Control(DWORD ctl);
-										// コントロール
+										// Control
 	void FASTCALL MakeData();
-										// データ作成
+										// Build data
 	BOOL FASTCALL Save(Fileio *fio, int ver);
-										// セーブ
+										// Save
 	BOOL FASTCALL Load(Fileio *fio, int ver);
-										// ロード
+										// Load
 
 private:
 	DWORD seq;
-										// シーケンス
+										// Sequence
 	DWORD ctrl;
-										// 前回のコントロール(0 or 1)
+										// Previous control value (0 or 1)
 	DWORD hus;
-										// 判定用時間
+										// Time used for evaluation
 	Scheduler *scheduler;
-										// スケジューラ
+										// Scheduler
 	static const char* AxisDescTable[];
-										// 軸表示テーブル
+										// Axis label table
 	static const char* ButtonDescTable[];
-										// ボタン表示テーブル
+										// Button label table
 };
 
-//===========================================================================
+//=========================================================================
 //
-//	ジョイスティック(CPSF-SFC)
+//	Joystick (CPSF-SFC)
 //
-//===========================================================================
+//=========================================================================
 class JoyCpsf : public JoyDevice
 {
 public:
 	JoyCpsf(PPI *parent, int no);
-										// コンストラクタ
+										// Constructor
 
 protected:
 	DWORD FASTCALL ReadOnly(DWORD ctl) const;
-										// ポート読み取り(Read Only)
+										// Port read (read-only)
 	void FASTCALL MakeData();
-										// データ作成
+										// Build data
 
 private:
 	static const char* AxisDescTable[];
-										// 軸表示テーブル
+										// Axis label table
 	static const char* ButtonDescTable[];
-										// ボタン表示テーブル
+										// Button label table
 };
 
-//===========================================================================
+//=========================================================================
 //
-//	ジョイスティック(CPSF-MD)
+//	Joystick (CPSF-MD)
 //
-//===========================================================================
+//=========================================================================
 class JoyCpsfMd : public JoyDevice
 {
 public:
 	JoyCpsfMd(PPI *parent, int no);
-										// コンストラクタ
+										// Constructor
 
 protected:
 	DWORD FASTCALL ReadOnly(DWORD ctl) const;
-										// ポート読み取り(Read Only)
+										// Port read (read-only)
 	void FASTCALL MakeData();
-										// データ作成
+										// Build data
 
 private:
 	static const char* AxisDescTable[];
-										// 軸表示テーブル
+										// Axis label table
 	static const char* ButtonDescTable[];
-										// ボタン表示テーブル
+										// Button label table
 };
 
-//===========================================================================
+//=========================================================================
 //
-//	ジョイスティック(マジカルパッド)
+//	Joystick (Magical Pad)
 //
-//===========================================================================
+//=========================================================================
 class JoyMagical : public JoyDevice
 {
 public:
 	JoyMagical(PPI *parent, int no);
-										// コンストラクタ
+										// Constructor
 
 protected:
 	DWORD FASTCALL ReadOnly(DWORD ctl) const;
-										// ポート読み取り(Read Only)
+										// Port read (read-only)
 	void FASTCALL MakeData();
-										// データ作成
+										// Build data
 
 private:
 	static const char* AxisDescTable[];
-										// 軸表示テーブル
+										// Axis label table
 	static const char* ButtonDescTable[];
-										// ボタン表示テーブル
+										// Button label table
 };
 
-//===========================================================================
+//=========================================================================
 //
-//	ジョイスティック(XPD-1LR)
+//	Joystick (XPD-1LR)
 //
-//===========================================================================
+//=========================================================================
 class JoyLR : public JoyDevice
 {
 public:
 	JoyLR(PPI *parent, int no);
-										// コンストラクタ
+										// Constructor
 
 protected:
 	DWORD FASTCALL ReadOnly(DWORD ctl) const;
-										// ポート読み取り(Read Only)
+										// Port read (read-only)
 	void FASTCALL MakeData();
-										// データ作成
+										// Build data
 
 private:
 	static const char* AxisDescTable[];
-										// 軸表示テーブル
+										// Axis label table
 	static const char* ButtonDescTable[];
-										// ボタン表示テーブル
+										// Button label table
 };
 
-//===========================================================================
+//=========================================================================
 //
-//	ジョイスティック(パックランド専用パッド)
+//	Joystick (Pac-Land dedicated pad)
 //
-//===========================================================================
+//=========================================================================
 class JoyPacl : public JoyDevice
 {
 public:
 	JoyPacl(PPI *parent, int no);
-										// コンストラクタ
+										// Constructor
 
 protected:
 	DWORD FASTCALL ReadOnly(DWORD ctl) const;
-										// ポート読み取り(Read Only)
+										// Port read (read-only)
 	void FASTCALL MakeData();
-										// データ作成
+										// Build data
 
 private:
 	static const char* ButtonDescTable[];
-										// ボタン表示テーブル
+										// Button label table
 };
 
-//===========================================================================
+//=========================================================================
 //
-//	ジョイスティック(BM68専用コントローラ)
+//	Joystick (BM68 dedicated controller)
 //
-//===========================================================================
+//=========================================================================
 class JoyBM : public JoyDevice
 {
 public:
 	JoyBM(PPI *parent, int no);
-										// コンストラクタ
+										// Constructor
 
 protected:
 	DWORD FASTCALL ReadOnly(DWORD ctl) const;
-										// ポート読み取り(Read Only)
+										// Port read (read-only)
 	void FASTCALL MakeData();
-										// データ作成
+										// Build data
 
 private:
 	static const char* ButtonDescTable[];
-										// ボタン表示テーブル
+										// Button label table
 };
 
 #endif	// ppi_h
