@@ -151,6 +151,8 @@ static void DumpCRTC(FILE *fp, CRTC *crtc)
 		state.h_disp, state.v_disp, state.v_blank,
 		(unsigned long)state.v_count,
 		state.v_scan);
+	fprintf(fp, "  h_synctime=%d h_disptime=%d v_cycletime=%d v_blanktime=%d v_synctime=%d v_backtime=%d\r\n",
+		state.h_synctime, state.h_disptime, state.v_cycletime, state.v_blanktime, state.v_synctime, state.v_backtime);
 	fprintf(fp, "  tmem=%d gmem=%d siz=%08lX col=%08lX\r\n",
 		state.tmem, state.gmem,
 		(unsigned long)state.siz,
@@ -291,7 +293,6 @@ void CFrmWnd::OnOpen()
 void CFrmWnd::OnFastOpen()
 {
 	Filepath path;
-
 	if (!BuildQuickStatePath(path)) {
 		return;
 	}

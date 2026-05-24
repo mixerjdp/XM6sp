@@ -1,7 +1,9 @@
 # XM6 libretro bridge (Phase 2)
 
-This folder contains a libretro bridge implementation that uses
-`xm6core.dll` as backend.
+This folder contains the libretro bridge and its release build scripts.
+Current release builds are monolithic: the backend VM code is linked directly
+into the libretro DLL/SO, so the shipped core does not require a separate
+`xm6core.dll`.
 
 ## What Phase 2 includes
 
@@ -62,22 +64,21 @@ Output:
 
 - `xm6_libretro.dll`
 
+The repo release flow copies those outputs to:
+
+- `Release/xm6_libretro.dll`
+- `Release_x64/xm6_libretro.dll`
+
 ## Runtime requirements
 
-Place both files together in RetroArch `cores/`:
+Place the core file in RetroArch `cores/`:
 
 - `xm6_libretro.dll`
-- `xm6core.dll`
 
 Architecture must match:
 
-- `RetroArch Win32` + `xm6_libretro_win32.dll` + `xm6core.dll` (x86)
-- `RetroArch Win64` + `xm6_libretro_win64.dll` + `xm6core.dll` (x64)
-
-Current repo backend:
-
-- `main/Debug_DLL/xm6core.dll` is x86 (`machine 14C`), so it is compatible with
-  Win32 RetroArch only.
+- `RetroArch Win32` + `xm6_libretro.dll` built from `win32`
+- `RetroArch Win64` + `xm6_libretro.dll` built from `win64`
 
 BIOS files must be in RetroArch `system/` directory so the core can resolve:
 

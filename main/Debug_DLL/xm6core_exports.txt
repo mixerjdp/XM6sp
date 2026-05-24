@@ -1,0 +1,77 @@
+Microsoft (R) COFF/PE Dumper Version 11.00.50727.1
+Copyright (C) Microsoft Corporation.  All rights reserved.
+
+
+Dump of file main\Debug_DLL\xm6core.dll
+
+File Type: DLL
+
+  Section contains the following exports for xm6core.dll
+
+    00000000 characteristics
+    69AE8A05 time date stamp Mon Mar 09 02:51:17 2026
+        0.00 version
+           1 ordinal base
+          48 number of functions
+          48 number of names
+
+    ordinal hint RVA      name
+
+          1    0 00001406 xm6_audio_configure = @ILT+1025(_xm6_audio_configure)
+          2    1 00001FB9 xm6_audio_mix = @ILT+4020(_xm6_audio_mix)
+          3    2 00001C03 xm6_create = @ILT+3070(_xm6_create)
+          4    3 00003756 xm6_destroy = @ILT+10065(_xm6_destroy)
+          5    4 00001E6F xm6_diag_init_probe = @ILT+3690(_xm6_diag_init_probe)
+          6    5 00001EC9 xm6_eject_fdd = @ILT+3780(_xm6_eject_fdd)
+          7    6 00001E4C xm6_exec = @ILT+3655(_xm6_exec)
+          8    7 000032A1 xm6_exec_events_only = @ILT+8860(_xm6_exec_events_only)
+          9    8 0000362F xm6_exec_to_frame = @ILT+9770(_xm6_exec_to_frame)
+         10    9 0000397C xm6_fdd_get_name = @ILT+10615(_xm6_fdd_get_name)
+         11    A 00001762 xm6_fdd_is_inserted = @ILT+1885(_xm6_fdd_is_inserted)
+         12    B 0000111D xm6_get_main_ram = @ILT+280(_xm6_get_main_ram)
+         13    C 00002ECD xm6_get_power = @ILT+7880(_xm6_get_power)
+         14    D 0000210D xm6_get_power_switch = @ILT+4360(_xm6_get_power_switch)
+         15    E 00003A44 xm6_get_render_mode = @ILT+10815(_xm6_get_render_mode)
+         16    F 000019E7 xm6_get_version = @ILT+2530(_xm6_get_version)
+         17   10 00001F23 xm6_get_vm_version = @ILT+3870(_xm6_get_vm_version)
+         18   11 00002879 xm6_input_joy = @ILT+6260(_xm6_input_joy)
+         19   12 000027CA xm6_input_key = @ILT+6085(_xm6_input_key)
+         20   13 00001D11 xm6_input_mouse = @ILT+3340(_xm6_input_mouse)
+         21   14 000031B1 xm6_input_mouse_reset = @ILT+8620(_xm6_input_mouse_reset)
+         22   15 00003977 xm6_load_state = @ILT+10610(_xm6_load_state)
+         23   16 00002B94 xm6_load_state_mem = @ILT+7055(_xm6_load_state_mem)
+         24   17 000034E5 xm6_mount_fdd = @ILT+9440(_xm6_mount_fdd)
+         25   18 000011E5 xm6_mount_sasi_hdd = @ILT+480(_xm6_mount_sasi_hdd)
+         26   19 00002BA3 xm6_mount_scsi_hdd = @ILT+7070(_xm6_mount_scsi_hdd)
+         27   1A 000011F9 xm6_reset = @ILT+500(_xm6_reset)
+         28   1B 000039C7 xm6_save_state = @ILT+10690(_xm6_save_state)
+         29   1C 00002EAA xm6_save_state_mem = @ILT+7845(_xm6_save_state_mem)
+         30   1D 00001587 xm6_set_adpcm_volume = @ILT+1410(_xm6_set_adpcm_volume)
+         31   1E 000039F9 xm6_set_fast_floppy = @ILT+10740(_xm6_set_fast_floppy)
+         32   1F 00001C2B xm6_set_fm_volume = @ILT+3110(_xm6_set_fm_volume)
+         33   20 000027E8 xm6_set_joy_type = @ILT+6115(_xm6_set_joy_type)
+         34   21 00002C8E xm6_set_master_volume = @ILT+7305(_xm6_set_master_volume)
+         35   22 00003A2B xm6_set_message_callback = @ILT+10790(_xm6_set_message_callback)
+         36   23 00002D8D xm6_set_mouse_port = @ILT+7560(_xm6_set_mouse_port)
+         37   24 00002243 xm6_set_mouse_speed = @ILT+4670(_xm6_set_mouse_speed)
+         38   25 00002E73 xm6_set_mouse_swap = @ILT+7790(_xm6_set_mouse_swap)
+         39   26 00001E6A xm6_set_power = @ILT+3685(_xm6_set_power)
+         40   27 000012E9 xm6_set_power_switch = @ILT+740(_xm6_set_power_switch)
+         41   28 00002176 xm6_set_ram_size = @ILT+4465(_xm6_set_ram_size)
+         42   29 000029F0 xm6_set_render_mode = @ILT+6635(_xm6_set_render_mode)
+         43   2A 00001A8C xm6_set_system_clock = @ILT+2695(_xm6_set_system_clock)
+         44   2B 0000399A xm6_set_system_dir = @ILT+10645(_xm6_set_system_dir)
+         45   2C 000024C3 xm6_state_size = @ILT+5310(_xm6_state_size)
+         46   2D 0000147E xm6_video_attach_default_buffer = @ILT+1145(_xm6_video_attach_default_buffer)
+         47   2E 00001145 xm6_video_consume = @ILT+320(_xm6_video_consume)
+         48   2F 000010EB xm6_video_poll = @ILT+230(_xm6_video_poll)
+
+  Summary
+
+      11D000 .data
+        1000 .idata
+       5B000 .rdata
+       1A000 .reloc
+        1000 .rsrc
+       F1000 .text
+        9000 _RDATA

@@ -19,19 +19,12 @@ The smoke test can run in two modes:
    intended for interactive verification with video and sound.
 
 Smoke frame counts are based on the emulator CRTC display counter, not on a
-fixed 60 Hz timer. On X68000 software this means the scheduled frame numbers
-match visual/emulated frames, around the native system cadence.
-
+fixed 60 Hz timer.
 
 Basic Syntax
 ------------
 
 XM6.exe --smoke-savestate <disk-or-image> [options]
-
-Example:
-
-Start-Process -Wait -FilePath "C:\sw\XM62026\main\Release\XM6.exe" -ArgumentList @("--smoke-savestate","D:\Emulation\ROMs\X68000\Akazucha.dim","--smoke-visible","--smoke-run-frames","1800","--smoke-visible-hold-ms","30000","--smoke-joy-hold","A:900:60","--smoke-joy-hold","B:960:60")
-
 
 Required Option
 ---------------
@@ -41,22 +34,13 @@ Required Option
 Loads the given disk/image or savestate and runs the smoke scenario. It only
 saves a new quick savestate when --smoke-save-frame is supplied.
 
-Example:
-
---smoke-savestate "D:\Emulation\ROMs\X68000\Akazucha.dim"
-
-
 Mode Options
 ------------
 
 --smoke-visible
 
-Runs the smoke test using the visible MFC frontend. The window, scheduler,
-sound, and view are initialized normally before the visible smoke controller
-starts. Use this when you want to see and hear the result.
-
-Without --smoke-visible, the smoke test uses the headless path.
-
+Runs the smoke test using the visible MFC frontend. Without this option, the
+smoke test uses the headless path.
 
 Frame and Savestate Options
 ---------------------------
@@ -65,35 +49,16 @@ Frame and Savestate Options
 
 Runs until the specified CRTC/display frame count is reached.
 
-Example:
-
---smoke-run-frames 1800
-
-
 --smoke-save-frame <frames>
 
 Saves the quick savestate at the specified frame, then loads it back to
-validate that save/load works.
-
-Example:
-
---smoke-save-frame 500
-
-If --smoke-save-frame is not provided, no savestate is written and the
-quick-load validation is skipped.
-
+validate that save/load works. If this option is omitted, no savestate is
+written and the quick-load validation is skipped.
 
 --smoke-visible-hold-ms <milliseconds>
 
 Visible mode only. After the savestate save/load validation, keeps the MFC
 window open for the specified number of milliseconds before exiting.
-
-Example:
-
---smoke-visible-hold-ms 30000
-
-This keeps the window open for 30 seconds after the smoke scenario finishes.
-
 
 Input Scheduling
 ----------------
@@ -102,49 +67,39 @@ Inputs use the format:
 
 NAME:START_FRAME:DURATION_FRAMES
 
-START_FRAME and DURATION_FRAMES are real CRTC/display frames. For example,
-A:900:60 means press A at visual frame 900 and release it 60 frames later.
-
-
 Joystick Input
 --------------
 
 --smoke-joy-hold <button:start:duration>
 
-Schedules a joystick button hold.
-
 Supported button names:
 
 A
 B
+UP
+DOWN
+LEFT
+RIGHT
 
 Examples:
 
 --smoke-joy-hold A:900:60
 --smoke-joy-hold B:960:60
+--smoke-joy-hold LEFT:300:30
 
-When joystick smoke actions are used, the target joystick port is forced to
-Atari mode so local CPSF/MD joystick configuration cannot hide A/B presses
-from software expecting a standard X68000/Atari-style pad.
-
-By default, joystick actions use port 0.
-
-Port-qualified syntax is also supported:
+By default, joystick actions use port 0. Port-qualified syntax is also
+supported:
 
 --smoke-joy-hold 0:A:900:60
 --smoke-joy-hold 1:B:960:60
 
-Note: joystick smoke actions inject PPI joystick buttons. They do not
-automatically trigger the MFC physical-joystick-to-keyboard helper mapping
-that maps some real gamepad buttons to OPT/F keys.
-
+When joystick smoke actions are used, the target joystick port is forced to
+Atari mode.
 
 Keyboard Input
 --------------
 
 --smoke-key-hold <key:start:duration>
-
-Schedules a keyboard key hold.
 
 Supported key names include:
 
@@ -169,51 +124,23 @@ LEFT
 RIGHT
 0xNN
 
-Examples:
+Examples
+--------
 
---smoke-key-hold OPT2:900:60
---smoke-key-hold F1:900:60
---smoke-key-hold ENTER:300:20
---smoke-key-hold 0x73:900:60
+Visible smoke with Akazucha, press joystick A:
 
-Use keyboard actions when the software expects X68000 keyboard keys such as
-OPT1, OPT2, or function keys.
+Start-Process -Wait -FilePath "C:\sw\XM62026\main\Release\XM6.exe" -ArgumentList @("--smoke-savestate","D:\Emulation\ROMs\X68000\Akazucha.dim","--smoke-visible","--smoke-run-frames","300","--smoke-visible-hold-ms","500","--smoke-joy-hold","A:120:20")
 
-
-Practical Examples
-------------------
-
-Visible smoke with Akazucha, press joystick A then B:
-
-Start-Process -Wait -FilePath "C:\sw\XM62026\main\Release\XM6.exe" -ArgumentList @("--smoke-savestate","D:\Emulation\ROMs\X68000\Akazucha.dim","--smoke-visible","--smoke-run-frames","1800","--smoke-visible-hold-ms","30000","--smoke-joy-hold","A:900:60","--smoke-joy-hold","B:960:60")
-
-
-Visible smoke, press OPT2 at frame 500 for 60 frames:
-
-Start-Process -Wait -FilePath "C:\sw\XM62026\main\Release\XM6.exe" -ArgumentList @("--smoke-savestate","D:\Emulation\ROMs\X68000\Akazucha.dim","--smoke-visible","--smoke-run-frames","900","--smoke-visible-hold-ms","15000","--smoke-key-hold","OPT2:500:60")
-
-
-Visible smoke, save exactly at frame 500:
-
-Start-Process -Wait -FilePath "C:\sw\XM62026\main\Release\XM6.exe" -ArgumentList @("--smoke-savestate","D:\Emulation\ROMs\X68000\Akazucha.dim","--smoke-visible","--smoke-run-frames","900","--smoke-save-frame","500","--smoke-visible-hold-ms","15000")
-
-
-Headless smoke, run to frame 1000 without writing a savestate:
+Headless smoke:
 
 C:\sw\XM62026\main\Release\XM6.exe --smoke-savestate "D:\Emulation\ROMs\X68000\Akazucha.dim" --smoke-run-frames 1000
-
-
-Headless smoke, run to frame 1000 and validate a new savestate:
-
-C:\sw\XM62026\main\Release\XM6.exe --smoke-savestate "D:\Emulation\ROMs\X68000\Akazucha.dim" --smoke-run-frames 1000 --smoke-save-frame 1000
-
 
 Logs
 ----
 
 The smoke test writes a log to:
 
-C:\tmp2\xm6_smoke_savestate.log
+C:\tmp\xm6_smoke_savestate.log
 
 If that path is not available, it falls back to:
 
@@ -224,35 +151,13 @@ Typical successful visible smoke log lines:
 smoke-visible: early mount
 smoke-visible: controller active
 smoke-visible: first tick
-frame=55
-joy-port-atari=0
-parsed-actions=2
+parsed-actions=1
 joy-down=A
 joy-up=A
-joy-down=B
-joy-up=B
 quick-save begin
+render-mixbuf: sig=...
+render-validate-nonzero=...
 quick-save output exists
 quick-load prep begin
 quick-load sub begin
 smoke-visible: ok
-
-
-Notes and Caveats
------------------
-
-Use Start-Process -Wait when launching visible smoke from PowerShell. XM6.exe
-is a Windows GUI application, so calling it directly from PowerShell may return
-control to the prompt before the visible window exits.
-
-Example:
-
-Start-Process -Wait -FilePath "C:\sw\XM62026\main\Release\XM6.exe" -ArgumentList @("--smoke-savestate","D:\Emulation\ROMs\X68000\Akazucha.dim","--smoke-visible","--smoke-run-frames","1800")
-
-Joystick smoke actions are best for software that reads the joystick PPI.
-Keyboard smoke actions are best for software that expects X68000 keyboard
-keys such as OPT1, OPT2, F1, or F3.
-
-The visible smoke path intentionally starts after the MFC window, scheduler,
-sound, and draw view are initialized, so it should behave like a normal visible
-frontend run.

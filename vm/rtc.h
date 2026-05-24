@@ -2,7 +2,7 @@
 //
 //	X68000 EMULATOR "XM6"
 //
-//	Copyright (C) 2001-2006 ＰＩ．(ytanaka@ipc-tokai.or.jp)
+//	Copyright (C) 2001-2006 PI (ytanaka@ipc-tokai.or.jp)
 //	[ RTC(RP5C15) ]
 //
 //---------------------------------------------------------------------------
@@ -22,103 +22,103 @@ class RTC : public MemDevice
 {
 public:
 	typedef struct {
-		DWORD sec;						// 秒
-		DWORD min;						// 分
-		DWORD hour;						// 時間
-		DWORD week;						// 週の曜日
-		DWORD day;						// 日
-		DWORD month;					// 月
-		DWORD year;						// 年
-		BOOL carry;						// 秒キャリー
+		DWORD sec;						// second
+		DWORD min;						// minute
+		DWORD hour;						// hour
+		DWORD week;						// day of week
+		DWORD day;						// day
+		DWORD month;					// month
+		DWORD year;						// year
+		BOOL carry;						// second carry
 
-		BOOL timer_en;					// タイマー動作許可
-		BOOL alarm_en;					// アラーム動作許可
-		DWORD bank;						// バンク番号
-		DWORD test;						// TESTレジスタ
-		BOOL alarm_1hz;					// 1Hzパルス出力制御
-		BOOL alarm_16hz;				// 16Hzパルス出力制御
-		BOOL under_reset;				// 秒アンダーリセット
-		BOOL alarm_reset;				// アラームリセット
+		BOOL timer_en;					// timer enable
+		BOOL alarm_en;					// alarm enable
+		DWORD bank;						// bank number
+		DWORD test;						// TEST register
+		BOOL alarm_1hz;					// 1Hz pulse output enable
+		BOOL alarm_16hz;				// 16Hz pulse output enable
+		BOOL under_reset;				// timer reset
+		BOOL alarm_reset;				// alarm reset
 
-		DWORD clkout;					// CLKOUTレジスタ
-		BOOL adjust;					// アジャスト
+		DWORD clkout;					// CLKOUT register
+		BOOL adjust;					// adjust
 
-		DWORD alarm_min;				// 分
-		DWORD alarm_hour;				// 時間
-		DWORD alarm_week;				// 週の曜日
-		DWORD alarm_day;				// 日
+		DWORD alarm_min;				// minute
+		DWORD alarm_hour;				// hour
+		DWORD alarm_week;				// day of week
+		DWORD alarm_day;				// day
 
-		BOOL fullhour;					// 24時間フラグ
-		DWORD leap;						// 閏年カウンタ
+		BOOL fullhour;					// 24h flag
+		DWORD leap;						// leap year
 
-		BOOL signal_1hz;				// 1Hzシグナル(500msおきに変化)
-		BOOL signal_16hz;				// 16Hzシグナル(31.25msおきに変化)
-		DWORD signal_count;				// 16Hzカウンタ(0～15)
-		DWORD signal_blink;				// 点滅シグナル(781.25msおきに変化)
-		BOOL alarm;						// アラーム信号
+		BOOL signal_1hz;				// 1Hz signal (toggle every 500ms)
+		BOOL signal_16hz;				// 16Hz signal (toggle every 31.25ms)
+		DWORD signal_count;				// 16Hz counter (0~15)
+		DWORD signal_blink;				// blink signal (toggle every 781.25ms)
+		BOOL alarm;						// alarm signal
 		BOOL alarmout;					// ALARM OUT
 	} rtc_t;
 
 public:
-	// 基本ファンクション
+	// Basic functions
 	RTC(VM *p);
-										// コンストラクタ
+										// Constructor
 	BOOL FASTCALL Init();
-										// 初期化
+										// Init
 	void FASTCALL Cleanup();
-										// クリーンアップ
+										// Cleanup
 	void FASTCALL Reset();
-										// リセット
+										// Reset
 	BOOL FASTCALL Save(Fileio *fio, int ver);
-										// セーブ
+										// Save
 	BOOL FASTCALL Load(Fileio *fio, int ver);
-										// ロード
+										// Load
 	void FASTCALL ApplyCfg(const Config *config);
-										// 設定適用
+										// Apply config
 
-	// メモリデバイス
+	// Memory device
 	DWORD FASTCALL ReadByte(DWORD addr);
-										// バイト読み込み
+										// Byte read
 	DWORD FASTCALL ReadWord(DWORD addr);
-										// ワード読み込み
+										// Word read
 	void FASTCALL WriteByte(DWORD addr, DWORD data);
-										// バイト書き込み
+										// Byte write
 	void FASTCALL WriteWord(DWORD addr, DWORD data);
-										// ワード書き込み
+										// Word write
 	DWORD FASTCALL ReadOnly(DWORD addr) const;
-										// 読み込みのみ
+										// Read only
 
-	// 外部API
+	// External API
 	void FASTCALL GetRTC(rtc_t *buffer);
-										// 内部データ取得
+										// Get RTC data
 	BOOL FASTCALL Callback(Event *ev);
-										// イベントコールバック
+										// Event callback
 	BOOL FASTCALL GetTimerLED() const;
-										// タイマーLED取得
+										// Get timer LED
 	BOOL FASTCALL GetAlarmOut() const;
-										// ALARM信号取得
+										// Get ALARM signal
 	BOOL FASTCALL GetBlink(int drive) const;
-										// FDD用点滅信号取得
+										// Get FDD blink signal
 	void FASTCALL Adjust(BOOL alarm);
-										// 現在時刻を設定
+										// Current time set
 
 private:
 	void FASTCALL AlarmOut();
-										// ALARM信号出力
+										// Alarm signal output
 	void FASTCALL SecUp();
-										// 秒アップ
+										// Second up
 	void FASTCALL MinUp();
-										// 分アップ
+										// Minute up
 	void FASTCALL AlarmCheck();
-										// アラームチェック
+										// Alarm check
 	MFP *mfp;
 										// MFP
 	rtc_t rtc;
-										// 内部データ
+										// RTC data
 	Event event;
-										// イベント
+										// Event
 	static const DWORD DayTable[];
-										// 日付テーブル
+										// Day table
 };
 
 #endif	// rtc_h

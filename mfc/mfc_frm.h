@@ -1,4 +1,4 @@
-﻿//---------------------------------------------------------------------------
+//---------------------------------------------------------------------------
 //
 // X68000 Emulator "XM6"
 //
@@ -88,11 +88,11 @@ public:
 
 	void EnterBorderlessFullscreen();
 	void ExitBorderlessFullscreen();
+	void OnRenderFast();
+	void OnRenderFastUI(CCmdUI *pCmdUI);
 	void OnYmfm();
 	void OnYmfmUI(CCmdUI *pCmdUI);
 	void OnToggleRenderer();
-	void OnToggleRenderFastDummy();
-	void OnToggleRenderFastDummyUI(CCmdUI *pCmdUI);
 	void OnToggleVSync();
 	void OnToggleOSD();
 	void OnToggleShader();
@@ -586,12 +586,12 @@ private:
 	// Command handler subwindow
 	void FASTCALL UpdateStateFileName();
 										// Update savestate file name based on loaded media
-	BOOL FASTCALL BuildQuickStatePath(Filepath& path);
-										// Build quick savestate path
 	BOOL FASTCALL OnOpenSub(const Filepath& path);
 										// Open subwindow
 	BOOL FASTCALL OnOpenPrep(const Filepath& path, BOOL bWarning = TRUE);
 										// Open check
+	BOOL FASTCALL BuildQuickStatePath(Filepath& path);
+										// Build quick savestate path
 	void FASTCALL OnSaveSub(const Filepath& path);
 										// Save subwindow
 	void FASTCALL OnFDOpen(int nDrive);
@@ -731,4 +731,3 @@ private:
 
 #endif	// mfc_frm_h
 #endif	// _WIN32
-

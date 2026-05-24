@@ -293,9 +293,7 @@
 					RelativePath="..\vm\render.cpp">
 				</File>
 				<File
-				</File>
-				<File
-					RelativePath="..\vm\x68krender.cpp">
+					RelativePath="..\vm\renderfast_compositor.cpp">
 				</File>
 				<File
 					RelativePath="..\vm\rtc.cpp">

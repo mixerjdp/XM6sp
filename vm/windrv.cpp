@@ -60,7 +60,7 @@ void FASTCALL Human68k::namests_t::GetCopyPath(BYTE* szPath) const
 //	る18 + 3文字以上の長いファイル名の検索が不可能这样的话
 //	This is because the file kernel string conversion allows all files
 //	to be searched, and this is highly recommended
-//
+//	
 //
 //	When all files are opened, the directory entry is
 //	released and temporarily stopped.
@@ -689,7 +689,7 @@ BOOL FASTCALL Windrv::Save(Fileio *fio, int ver)
 	LOG(Log::Normal, "繧ｻ繝ｼ繝");
 	(void)fio;
 	(void)ver;
-
+	
 	return TRUE;
 }
 

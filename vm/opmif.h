@@ -2,7 +2,7 @@
 //
 //	X68000 EMULATOR "XM6"
 //
-//	Copyright (C) 2001-2006 ＰＩ．(ytanaka@ipc-tokai.or.jp)
+//	Copyright (C) 2001-2006 PI(ytanaka@ipc-tokai.or.jp)
 //	[ OPM(YM2151) ]
 //
 //---------------------------------------------------------------------------
@@ -21,98 +21,98 @@ namespace FM { class OPM; }
 class OPMIF : public MemDevice
 {
 public:
-	// 内部データ定義
+	// Internal data structure
 	typedef struct {
-		DWORD reg[0x100];				// レジスタ
-		DWORD key[8];					// キー情報
-		DWORD addr;						// セレクトアドレス
-		BOOL busy;						// BUSYフラグ
-		BOOL enable[2];					// タイマイネーブル
-		BOOL action[2];					// タイマ動作
-		BOOL interrupt[2];				// タイマ割り込み
-		DWORD time[2];					// タイマ時間
-		BOOL started;					// 開始フラグ
+		DWORD reg[0x100];				// Register
+		DWORD key[8];					// Key
+		DWORD addr;						// Current address
+		BOOL busy;						// BUSY flag
+		BOOL enable[2];					// Timer enable
+		BOOL action[2];					// Timer action
+		BOOL interrupt[2];				// Timer interrupt
+		DWORD time[2];					// Timer value
+		BOOL started;					// Start flag
 	} opm_t;
 
-	// バッファ管理定義
+	// Buffer management structure
 	typedef struct {
-		DWORD max;						// 最大数
-		DWORD num;						// 有効データ数
-		DWORD read;						// 読み取りポイント
-		DWORD write;					// 書き込みポイント
-		DWORD samples;					// 合成サンプル数
-		DWORD rate;						// 合成レート
-		DWORD under;					// アンダーラン
-		DWORD over;						// オーバーラン
-		BOOL sound;						// FM有効
+		DWORD max;						// Maximum
+		DWORD num;						// Valid data count
+		DWORD read;						// Read pointer
+		DWORD write;					// Write pointer
+		DWORD samples;					// Processed samples
+		DWORD rate;						// Sampling rate
+		DWORD under;					// Underflow count
+		DWORD over;						// Overflow count
+		BOOL sound;						// FM enable
 	} opmbuf_t;
 
 public:
-	// 基本ファンクション
+	// Basic member function
 	OPMIF(VM *p);
-										// コンストラクタ
+										// Constructor
 	BOOL FASTCALL Init();
-										// 初期化
+										// Initialize
 	void FASTCALL Cleanup();
-										// クリーンアップ
+										// Cleanup
 	void FASTCALL Reset();
-										// リセット
+										// Reset
 	BOOL FASTCALL Save(Fileio *fio, int ver);
-										// セーブ
+										// Save
 	BOOL FASTCALL Load(Fileio *fio, int ver);
-										// ロード
+										// Load
 	void FASTCALL ApplyCfg(const Config *config);
-										// 設定適用
+										// Apply config
 #if !defined(NDEBUG)
 	void FASTCALL AssertDiag() const;
-										// 診断
+										// Assert
 #endif	// NDEBUG
 
-	// メモリデバイス
+	// External device
 	DWORD FASTCALL ReadByte(DWORD addr);
-										// バイト読み込み
+										// Byte read
 	DWORD FASTCALL ReadWord(DWORD addr);
-										// ワード読み込み
+										// Word read
 	void FASTCALL WriteByte(DWORD addr, DWORD data);
-										// バイト書き込み
+										// Byte write
 	void FASTCALL WriteWord(DWORD addr, DWORD data);
-										// ワード書き込み
+										// Word write
 	DWORD FASTCALL ReadOnly(DWORD addr) const;
-										// 読み込みのみ
+										// Read only
 
-	// 外部API
+	// External API
 	void FASTCALL GetOPM(opm_t *buffer);
-										// 内部データ取得
+										// Get internal data
 	BOOL FASTCALL Callback(Event *ev);
-										// イベントコールバック
+										// Event callback
 	void FASTCALL Output(DWORD addr, DWORD data);
-										// レジスタ出力
+										// Register output
 	void FASTCALL SetEngine(FM::OPM *p);
-										// エンジン指定
+										// Engine specification
 	void FASTCALL InitBuf(DWORD rate);
-										// バッファ初期化
+										// Initialize buffer
 	DWORD FASTCALL ProcessBuf();
-										// バッファ処理
+										// Process buffer
 	void FASTCALL GetBuf(DWORD *buf, int samples);
-										// バッファより取得
+										// Get buffer
 	void FASTCALL GetBufInfo(opmbuf_t *buffer);
-										// バッファ情報を得る
+										// Get buffer info
 	void FASTCALL EnableFM(BOOL flag)	{ bufinfo.sound = flag; }
-										// FM音源有効
+										// FM sound enable
 	void FASTCALL ClrStarted()			{ opm.started = FALSE; }
-										// スタートフラグを降ろす
+										// Clear start flag
 	BOOL FASTCALL IsStarted() const		{ return opm.started; }
-										// スタートフラグ取得
+										// Get start flag
 
 private:
 	void FASTCALL CalcTimerA();
-										// タイマA算出
+										// Timer-A calculation
 	void FASTCALL CalcTimerB();
-										// タイマB算出
+										// Timer-B calculation
 	void FASTCALL CtrlTimer(DWORD data);
-										// タイマ制御
+										// Timer control
 	void FASTCALL CtrlCT(DWORD data);
-										// CT制御
+										// CT control
 	MFP *mfp;
 										// MFP
 	ADPCM *adpcm;
@@ -120,18 +120,18 @@ private:
 	FDD *fdd;
 										// FDD
 	opm_t opm;
-										// OPM内部データ
+										// OPM internal data
 	opmbuf_t bufinfo;
-										// バッファ情報
+										// Buffer info
 	Event event[2];
-										// タイマーイベント
+										// Timer event
 	FM::OPM *engine;
-										// 合成エンジン
+										// Sound engine
 	enum {
-		BufMax = 0x10000				// バッファサイズ
+		BufMax = 0x10000				// Buffer size
 	};
 	DWORD *opmbuf;
-										// 合成バッファ
+										// Sound buffer
 };
 
 #endif	// opmif_h

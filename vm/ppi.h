@@ -2,7 +2,7 @@
 //
 //	X68000 EMULATOR "XM6"
 //
-//	Copyright (C) 2001-2006 P.I. (ytanaka@ipc-tokai.or.jp)
+//	Copyright (C) 2001-2006 PI(ytanaka@ipc-tokai.or.jp)
 //	[ PPI(i8255A) ]
 //
 //---------------------------------------------------------------------------
@@ -12,37 +12,37 @@
 
 #include "device.h"
 
-//=========================================================================
+//===========================================================================
 //
 //	PPI
 //
-//=========================================================================
+//===========================================================================
 class PPI : public MemDevice
 {
 public:
-	// Constant definitions
+	// Constants
 	enum {
-		PortMax = 2,					// Maximum number of ports
-		AxisMax = 4,					// Maximum number of axes
-		ButtonMax = 8					// Maximum number of buttons
+		PortMax = 2,					// Number of ports
+		AxisMax = 4,					// Max axes
+		ButtonMax = 8					// Max buttons
 	};
 
-	// Joystick data definition
+	// Joystick device data structure
 	typedef struct {
-		DWORD axis[AxisMax];				// Axis info
-		BOOL button[ButtonMax];				// Button info
+		DWORD axis[AxisMax];				// Axis
+		BOOL button[ButtonMax];				// Button state
 	} joyinfo_t;
 
-	// Internal data definition
+	// Internal data structure
 	typedef struct {
-		DWORD portc;					// Port C
-		int type[PortMax];				// Joystick type
-		DWORD ctl[PortMax];				// Joystickcontrol
-		joyinfo_t info[PortMax];		// Joystickinfo
+		DWORD portc;					// PortC
+		int type[PortMax];				// Joystick device type
+		DWORD ctl[PortMax];				// Joystick device controller
+		joyinfo_t info[PortMax];		// Joystick state
 	} ppi_t;
 
 public:
-	// Core functions
+	// Basic member function
 	PPI(VM *p);
 										// Constructor
 	BOOL FASTCALL Init();
@@ -56,10 +56,10 @@ public:
 	BOOL FASTCALL Load(Fileio *fio, int ver);
 										// Load
 	void FASTCALL ApplyCfg(const Config *config);
-										// Apply settings
+										// Apply config
 #if defined(_DEBUG)
 	void FASTCALL AssertDiag() const;
-										// Diagnostics
+										// Assert
 #endif	// _DEBUG
 
 	// Memory device
@@ -72,15 +72,15 @@ public:
 	void FASTCALL WriteWord(DWORD addr, DWORD data);
 										// Word write
 	DWORD FASTCALL ReadOnly(DWORD addr) const;
-										// Read-only
+										// Read only access
 
 	// External API
 	void FASTCALL GetPPI(ppi_t *buffer);
 										// Get internal data
 	void FASTCALL SetJoyInfo(int port, const joyinfo_t *info);
-										// Set joystick info
+										// Joystick info set
 	const joyinfo_t* FASTCALL GetJoyInfo(int port) const;
-										// Get joystick info
+										// Joystick info get
 	void FASTCALL SetJoyType(int port, int type);
 								// set joystick type
 	JoyDevice* FASTCALL CreateJoy(int port, int type);
@@ -88,7 +88,7 @@ public:
 
 private:
 	void FASTCALL SetPortC(DWORD data);
-										// Set Port C
+										// PortC set
 	ADPCM *adpcm;
 										// ADPCM
 	JoyDevice *joy[PortMax];
@@ -97,23 +97,23 @@ private:
 										// Internal data
 };
 
-//=========================================================================
+//===========================================================================
 //
-//	Joystickdevice
+//	Joystick device
 //
-//=========================================================================
+//===========================================================================
 class JoyDevice
 {
 public:
-	// Core functions
+	// Basic member function
 	JoyDevice(PPI *parent, int no);
 										// Constructor
 	virtual ~JoyDevice();
 										// Destructor
 	DWORD FASTCALL GetID() const		{ return id; }
-										// IDget
+										// ID get
 	DWORD FASTCALL GetType() const		{ return type; }
-										// Get the type
+										// Type get
 	virtual void FASTCALL Reset();
 										// Reset
 	virtual BOOL FASTCALL Save(Fileio *fio, int ver);
@@ -125,29 +125,29 @@ public:
 	virtual DWORD FASTCALL ReadPort(DWORD ctl);
 										// Port read
 	virtual DWORD FASTCALL ReadOnly(DWORD ctl) const;
-										// Port read (read-only)
+										// Port read(Read Only)
 	virtual void FASTCALL Control(DWORD ctl);
 										// Control
 
-	// Cache
+	// Update
 	void FASTCALL Notify()				{ changed = TRUE; }
-										// Notify a parent port change
+										// Notify port change
 	virtual void FASTCALL MakeData();
-										// Build data
+										// Data create
 
 	// Properties
 	int FASTCALL GetAxes() const		{ return axes; }
-										// Get the axis count
+										// Axis count get
 	const char* FASTCALL GetAxisDesc(int axis) const;
-										// Get the axis label
+										// Axis desc get
 	int FASTCALL GetButtons() const		{ return buttons; }
-										// Get the button count
+										// Button count get
 	const char* FASTCALL GetButtonDesc(int button) const;
-										// Get the button label
+										// Button desc get
 	BOOL FASTCALL IsAnalog() const		{ return analog; }
-										// Get the analog/digital mode
+										// Analog/Digital get
 	int FASTCALL GetDatas() const		{ return datas; }
-										// Get the data count
+										// Data count get
 
 protected:
 	DWORD type;
@@ -161,26 +161,26 @@ protected:
 	int axes;
 										// Axis count
 	const char **axis_desc;
-										// Axis label
+										// Axis description
 	int buttons;
 										// Button count
 	const char **button_desc;
-										// Button label
+										// Button description
 	BOOL analog;
-										// Kind (analog/digital)
+										// Analog(Analog/Digital)
 	DWORD *data;
-										// Data payload
+										// Data buffer
 	int datas;
 										// Data count
 	BOOL changed;
-										// Joystickchangenotify
+										// Joystick change notification
 };
 
-//=========================================================================
+//===========================================================================
 //
-//	Joystick (ATARI standard)
+//	Joystick device(ATARI standard)
 //
-//=========================================================================
+//===========================================================================
 class JoyAtari : public JoyDevice
 {
 public:
@@ -189,22 +189,22 @@ public:
 
 protected:
 	DWORD FASTCALL ReadOnly(DWORD ctl) const;
-										// Port read (read-only)
+										// Port read(Read Only)
 	void FASTCALL MakeData();
-										// Build data
+										// Data create
 
 private:
 	static const char* AxisDescTable[];
-										// Axis label table
+										// Axis description table
 	static const char* ButtonDescTable[];
-										// Button label table
+										// Button description table
 };
 
-//=========================================================================
+//===========================================================================
 //
-//	Joystick (ATARI standard + START/SELECT)
+//	Joystick device(ATARI standard+START/SELECT)
 //
-//=========================================================================
+//===========================================================================
 class JoyASS : public JoyDevice
 {
 public:
@@ -213,22 +213,22 @@ public:
 
 protected:
 	DWORD FASTCALL ReadOnly(DWORD ctl) const;
-										// Port read (read-only)
+										// Port read(Read Only)
 	void FASTCALL MakeData();
-										// Build data
+										// Data create
 
 private:
 	static const char* AxisDescTable[];
-										// Axis label table
+										// Axis description table
 	static const char* ButtonDescTable[];
-										// Button label table
+										// Button description table
 };
 
-//=========================================================================
+//===========================================================================
 //
-//	Joystick (Cyber Stick, analog)
+//	Joystick device(CyberAdaptor, analog)
 //
-//=========================================================================
+//===========================================================================
 class JoyCyberA : public JoyDevice
 {
 public:
@@ -241,11 +241,11 @@ protected:
 	DWORD FASTCALL ReadPort(DWORD ctl);
 										// Port read
 	DWORD FASTCALL ReadOnly(DWORD ctl) const;
-										// Port read (read-only)
+										// Port read(Read Only)
 	void FASTCALL Control(DWORD ctl);
 										// Control
 	void FASTCALL MakeData();
-										// Build data
+										// Data create
 	BOOL FASTCALL Save(Fileio *fio, int ver);
 										// Save
 	BOOL FASTCALL Load(Fileio *fio, int ver);
@@ -255,22 +255,22 @@ private:
 	DWORD seq;
 										// Sequence
 	DWORD ctrl;
-										// Previous control value (0 or 1)
+										// External controller(0 or 1)
 	DWORD hus;
-										// Time used for evaluation
+										// Time used
 	Scheduler *scheduler;
 										// Scheduler
 	static const char* AxisDescTable[];
-										// Axis label table
+										// Axis description table
 	static const char* ButtonDescTable[];
-										// Button label table
+										// Button description table
 };
 
-//=========================================================================
+//===========================================================================
 //
-//	Joystick (Cyber Stick, digital)
+//	Joystick device(CyberAdaptor, digital)
 //
-//=========================================================================
+//===========================================================================
 class JoyCyberD : public JoyDevice
 {
 public:
@@ -279,22 +279,22 @@ public:
 
 protected:
 	DWORD FASTCALL ReadOnly(DWORD ctl) const;
-										// Port read (read-only)
+										// Port read(Read Only)
 	void FASTCALL MakeData();
-										// Build data
+										// Data create
 
 private:
 	static const char* AxisDescTable[];
-										// Axis label table
+										// Axis description table
 	static const char* ButtonDescTable[];
-										// Button label table
+										// Button description table
 };
 
-//=========================================================================
+//===========================================================================
 //
-//	Joystick (MD3 buttons)
+//	Joystick device(MD3 buttons)
 //
-//=========================================================================
+//===========================================================================
 class JoyMd3 : public JoyDevice
 {
 public:
@@ -303,22 +303,22 @@ public:
 
 protected:
 	DWORD FASTCALL ReadOnly(DWORD ctl) const;
-										// Port read (read-only)
+										// Port read(Read Only)
 	void FASTCALL MakeData();
-										// Build data
+										// Data create
 
 private:
 	static const char* AxisDescTable[];
-										// Axis label table
+										// Axis description table
 	static const char* ButtonDescTable[];
-										// Button label table
+										// Button description table
 };
 
-//=========================================================================
+//===========================================================================
 //
-//	Joystick (MD6 buttons)
+//	Joystick device(MD6 buttons)
 //
-//=========================================================================
+//===========================================================================
 class JoyMd6 : public JoyDevice
 {
 public:
@@ -329,11 +329,11 @@ protected:
 	void FASTCALL Reset();
 										// Reset
 	DWORD FASTCALL ReadOnly(DWORD ctl) const;
-										// Port read (read-only)
+										// Port read(Read Only)
 	void FASTCALL Control(DWORD ctl);
 										// Control
 	void FASTCALL MakeData();
-										// Build data
+										// Data create
 	BOOL FASTCALL Save(Fileio *fio, int ver);
 										// Save
 	BOOL FASTCALL Load(Fileio *fio, int ver);
@@ -343,22 +343,22 @@ private:
 	DWORD seq;
 										// Sequence
 	DWORD ctrl;
-										// Previous control value (0 or 1)
+										// External controller(0 or 1)
 	DWORD hus;
-										// Time used for evaluation
+										// Time used
 	Scheduler *scheduler;
 										// Scheduler
 	static const char* AxisDescTable[];
-										// Axis label table
+										// Axis description table
 	static const char* ButtonDescTable[];
-										// Button label table
+										// Button description table
 };
 
-//=========================================================================
+//===========================================================================
 //
-//	Joystick (CPSF-SFC)
+//	Joystick device(CPSF-SFC)
 //
-//=========================================================================
+//===========================================================================
 class JoyCpsf : public JoyDevice
 {
 public:
@@ -367,22 +367,22 @@ public:
 
 protected:
 	DWORD FASTCALL ReadOnly(DWORD ctl) const;
-										// Port read (read-only)
+										// Port read(Read Only)
 	void FASTCALL MakeData();
-										// Build data
+										// Data create
 
 private:
 	static const char* AxisDescTable[];
-										// Axis label table
+										// Axis description table
 	static const char* ButtonDescTable[];
-										// Button label table
+										// Button description table
 };
 
-//=========================================================================
+//===========================================================================
 //
-//	Joystick (CPSF-MD)
+//	Joystick device(CPSF-MD)
 //
-//=========================================================================
+//===========================================================================
 class JoyCpsfMd : public JoyDevice
 {
 public:
@@ -391,22 +391,22 @@ public:
 
 protected:
 	DWORD FASTCALL ReadOnly(DWORD ctl) const;
-										// Port read (read-only)
+										// Port read(Read Only)
 	void FASTCALL MakeData();
-										// Build data
+										// Data create
 
 private:
 	static const char* AxisDescTable[];
-										// Axis label table
+										// Axis description table
 	static const char* ButtonDescTable[];
-										// Button label table
+										// Button description table
 };
 
-//=========================================================================
+//===========================================================================
 //
-//	Joystick (Magical Pad)
+//	Joystick device(Magical pad)
 //
-//=========================================================================
+//===========================================================================
 class JoyMagical : public JoyDevice
 {
 public:
@@ -415,22 +415,22 @@ public:
 
 protected:
 	DWORD FASTCALL ReadOnly(DWORD ctl) const;
-										// Port read (read-only)
+										// Port read(Read Only)
 	void FASTCALL MakeData();
-										// Build data
+										// Data create
 
 private:
 	static const char* AxisDescTable[];
-										// Axis label table
+										// Axis description table
 	static const char* ButtonDescTable[];
-										// Button label table
+										// Button description table
 };
 
-//=========================================================================
+//===========================================================================
 //
-//	Joystick (XPD-1LR)
+//	Joystick device(XPD-1LR)
 //
-//=========================================================================
+//===========================================================================
 class JoyLR : public JoyDevice
 {
 public:
@@ -439,22 +439,22 @@ public:
 
 protected:
 	DWORD FASTCALL ReadOnly(DWORD ctl) const;
-										// Port read (read-only)
+										// Port read(Read Only)
 	void FASTCALL MakeData();
-										// Build data
+										// Data create
 
 private:
 	static const char* AxisDescTable[];
-										// Axis label table
+										// Axis description table
 	static const char* ButtonDescTable[];
-										// Button label table
+										// Button description table
 };
 
-//=========================================================================
+//===========================================================================
 //
-//	Joystick (Pac-Land dedicated pad)
+//	Joystick device(Pacl stick dedicated pad)
 //
-//=========================================================================
+//===========================================================================
 class JoyPacl : public JoyDevice
 {
 public:
@@ -463,20 +463,20 @@ public:
 
 protected:
 	DWORD FASTCALL ReadOnly(DWORD ctl) const;
-										// Port read (read-only)
+										// Port read(Read Only)
 	void FASTCALL MakeData();
-										// Build data
+										// Data create
 
 private:
 	static const char* ButtonDescTable[];
-										// Button label table
+										// Button description table
 };
 
-//=========================================================================
+//===========================================================================
 //
-//	Joystick (BM68 dedicated controller)
+//	Joystick device(BM68 dedicated controler)
 //
-//=========================================================================
+//===========================================================================
 class JoyBM : public JoyDevice
 {
 public:
@@ -485,13 +485,13 @@ public:
 
 protected:
 	DWORD FASTCALL ReadOnly(DWORD ctl) const;
-										// Port read (read-only)
+										// Port read(Read Only)
 	void FASTCALL MakeData();
-										// Build data
+										// Data create
 
 private:
 	static const char* ButtonDescTable[];
-										// Button label table
+										// Button description table
 };
 
 #endif	// ppi_h

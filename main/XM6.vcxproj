@@ -322,9 +322,9 @@
     <ClInclude Include="..\vm\os.h" />
     <ClInclude Include="..\vm\ppi.h" />
     <ClInclude Include="..\vm\printer.h" />
+    <ClInclude Include="..\vm\rend_soft.h" />
     <ClInclude Include="..\vm\render.h" />
     <ClInclude Include="..\vm\renderin.h" />
-    <ClInclude Include="..\vm\rend_soft.h" />
     <ClInclude Include="..\vm\rtc.h" />
     <ClInclude Include="..\vm\sasi.h" />
     <ClInclude Include="..\vm\scc.h" />

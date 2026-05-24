@@ -2,8 +2,8 @@
 //
 //	X68000 EMULATOR "XM6"
 //
-//	Copyright (C) 2001-2006 �o�h�D(ytanaka@ipc-tokai.or.jp)
-//	[ �X�^�e�B�b�NRAM ]
+//	Copyright (C) 2001-2006 PI (ytanaka@ipc-tokai.or.jp)
+//	[ SRAM ]
 //
 //---------------------------------------------------------------------------
 
@@ -23,27 +23,27 @@
 
 //===========================================================================
 //
-//	�X�^�e�B�b�NRAM
+//	SRAM
 //
 //===========================================================================
 //#define SRAM_LOG
 
 //---------------------------------------------------------------------------
 //
-//	�R���X�g���N�^
+//	Constructor
 //
 //---------------------------------------------------------------------------
 SRAM::SRAM(VM *p) : MemDevice(p)
 {
-	// �f�o�C�XID��������
+	// Device ID initialization
 	dev.id = MAKEID('S', 'R', 'A', 'M');
 	dev.desc = "Static RAM";
 
-	// �J�n�A�h���X�A�I���A�h���X
+	// Start address, end address
 	memdev.first = 0xed0000;
 	memdev.last = 0xedffff;
 
-	// ���̑�������
+	// Others initialization
 	sram_size = 16;
 	write_en = FALSE;
 	mem_sync = TRUE;
@@ -52,7 +52,7 @@ SRAM::SRAM(VM *p) : MemDevice(p)
 
 //---------------------------------------------------------------------------
 //
-//	������
+//	Initialization
 //
 //---------------------------------------------------------------------------
 BOOL FASTCALL SRAM::Init()
@@ -61,18 +61,18 @@ BOOL FASTCALL SRAM::Init()
 	int i;
 	BYTE data;
 
-	ASSERT(this);
+ASSERT(this);
 
-	// ��{�N���X
+	// Base class
 	if (!MemDevice::Init()) {
 		return FALSE;
 	}
 
-	// ������
+	// Initialization
 
-	ASSERT(this);
+ASSERT(this);
 
-	// {NX
+	// Init
 	if (!MemDevice::Init()) {
 		return FALSE;
 	}
@@ -80,12 +80,12 @@ BOOL FASTCALL SRAM::Init()
 	// 
 	memset(sram, 0xff, sizeof(sram));
 
-	// pX쐬
+	// Path create
 	sram_path.SysFile(Filepath::SRAM);
 
 #if defined(XM6_FORCE_DEFAULT_SRAM)
-	// libretro用: セッションの初回起動時のみデフォルトを適用してSRAM.DATを初期化
-	// 以降のリセット時などは以前の値を保持するため読込を試行する
+	// libretro: Apply default only on first session boot to initialize SRAM.DAT
+	// On subsequent resets, try to load previous values to maintain persistence
 	static bool session_initialized = false;
 	if (!session_initialized) {
 		memcpy(sram, kDefaultSramFile, sizeof(kDefaultSramFile));
@@ -93,7 +93,7 @@ BOOL FASTCALL SRAM::Init()
 		session_initialized = true;
 		LOG0(Log::Normal, "SRAM: Initial session initialization (Template applied)");
 	} else {
-		// リセット時は保存されている設定の復元を試みる
+		// On reset, try to restore saved settings
 		if (!fio.Load(sram_path, sram, sizeof(sram))) {
 			memcpy(sram, kDefaultSramFile, sizeof(kDefaultSramFile));
 			LOG0(Log::Warning, "SRAM: SRAM.DAT not found during reset, using defaults");
@@ -102,29 +102,29 @@ BOOL FASTCALL SRAM::Init()
 		}
 	}
 #else
-	// MFC用: SRAM.DATが存在すればその値を使用、存在しない場合のみデフォルトで初期化
+	// MFC: Use SRAM.DAT if exists, only initialize with default if not exists
 	if (!fio.Load(sram_path, sram, sizeof(sram))) {
 		memcpy(sram, kDefaultSramFile, sizeof(kDefaultSramFile));
 		fio.Save(sram_path, (void *)kDefaultSramFile, sizeof(kDefaultSramFile));
 	}
 #endif
 
-	// �G���f�B�A�����]
+	// Endian convert
 	for (i=0; i<sizeof(sram); i+=2) {
 		data = sram[i];
 		sram[i] = sram[i + 1];
 		sram[i + 1] = data;
 	}
 
-	// �ύX�Ȃ�
-	ASSERT(!changed);
+	// Not changed
+ASSERT(!changed);
 
 	return TRUE;
 }
 
 //---------------------------------------------------------------------------
 //
-//	�N���[���A�b�v
+//	Cleanup
 //
 //---------------------------------------------------------------------------
 void FASTCALL SRAM::Cleanup()
@@ -133,70 +133,70 @@ void FASTCALL SRAM::Cleanup()
 	int i;
 	BYTE data;
 
-	ASSERT(this);
+ASSERT(this);
 
-	// �ύX�����
+	// If changed
 	if (changed) {
-		// �G���f�B�A�����]
+		// Endian convert
 		for (i=0; i<sizeof(sram); i+=2) {
 			data = sram[i];
 			sram[i] = sram[i + 1];
 			sram[i + 1] = data;
 		}
 
-		// ��������
+		// Save
 		fio.Save(sram_path, sram, sram_size << 10);
 	}
 
-	// ��{�N���X��
+	// Base class
 	MemDevice::Cleanup();
 }
 
 //---------------------------------------------------------------------------
 //
-//	���Z�b�g
+//	Reset
 //
 //---------------------------------------------------------------------------
 void FASTCALL SRAM::Reset()
 {
-	ASSERT(this);
-	ASSERT_DIAG();
+ASSERT(this);
+ASSERT_DIAG();
 
-	LOG0(Log::Normal, "���Z�b�g");
+	LOG0(Log::Normal, "Reset");
 
-	// �������݋֎~�ɏ�����
+	// Write disable
 	write_en = FALSE;
 }
 
 //---------------------------------------------------------------------------
 //
-//	�Z�[�u
+//	Save
 //
 //---------------------------------------------------------------------------
 BOOL FASTCALL SRAM::Save(Fileio *fio, int /*ver*/)
 {
-	ASSERT(this);
-	ASSERT(fio);
-	ASSERT_DIAG();
+ASSERT(this);
+ASSERT(fio);
+ASSERT_DIAG();
 
-	LOG0(Log::Normal, "���[�h");
+	LOG0(Log::Normal, "Save");
 
-	// SRAM�T�C�Y
+	// SRAM size
 	if (!fio->Write(&sram_size, sizeof(sram_size))) {
 		return FALSE;
 	}
 
-	// SRAM�{��(64KB�܂Ƃ߂�)
+	// SRAM data (up to 64KB)
 	if (!fio->Write(&sram, sizeof(sram))) {
 		return FALSE;
 	}
 
-	// �������݋��t���O
+	// Write enable flag
 	if (!fio->Write(&write_en, sizeof(write_en))) {
 		return FALSE;
 	}
 
-	// �����t���O
+	// Memory sync flag
 	if (!fio->Write(&mem_sync, sizeof(mem_sync))) {
 		return FALSE;
 	}
@@ -206,20 +206,20 @@ BOOL FASTCALL SRAM::Save(Fileio *fio, int /*ver*/)
 
 //---------------------------------------------------------------------------
 //
-//	���[�h
+//	Load
 //
 //---------------------------------------------------------------------------
 BOOL FASTCALL SRAM::Load(Fileio *fio, int /*ver*/)
 {
 	BYTE *buf;
 
-	ASSERT(this);
-	ASSERT(fio);
-	ASSERT_DIAG();
+ASSERT(this);
+ASSERT(fio);
+ASSERT_DIAG();
 
-	LOG0(Log::Normal, "���[�h");
+	LOG0(Log::Normal, "Load");
 
-	// �o�b�t�@�m��
+	// Buffer allocation
 	try {
 		buf = new BYTE[sizeof(sram)];
 	}
@@ -230,34 +230,34 @@ BOOL FASTCALL SRAM::Load(Fileio *fio, int /*ver*/)
 		return FALSE;
 	}
 
-	// SRAM�T�C�Y
+	// SRAM size
 	if (!fio->Read(&sram_size, sizeof(sram_size))) {
 		delete[] buf;
 		return FALSE;
 	}
 
-	// SRAM�{��(64KB�܂Ƃ߂�)
+	// SRAM data (up to 64KB)
 	if (!fio->Read(buf, sizeof(sram))) {
 		delete[] buf;
 		return FALSE;
 	}
 
-	// ��r�Ɠ]��
+	// Compare and copy
 	if (memcmp(sram, buf, sizeof(sram)) != 0) {
 		memcpy(sram, buf, sizeof(sram));
 		changed = TRUE;
 	}
 
-	// ��Ƀo�b�t�@���
+	// Delete buffer
 	delete[] buf;
 	buf = NULL;
 
-	// �������݋��t���O
+	// Write enable flag
 	if (!fio->Read(&write_en, sizeof(write_en))) {
 		return FALSE;
 	}
 
-	// �����t���O
+	// Memory sync flag
 	if (!fio->Read(&mem_sync, sizeof(mem_sync))) {
 		return FALSE;
 	}
@@ -267,165 +267,165 @@ BOOL FASTCALL SRAM::Load(Fileio *fio, int /*ver*/)
 
 //---------------------------------------------------------------------------
 //
-//	�ݒ�K�p
+//	Apply configuration
 //
 //---------------------------------------------------------------------------
 void FASTCALL SRAM::ApplyCfg(const Config *config)
 {
-	ASSERT(this);
-	ASSERT(config);
-	ASSERT_DIAG();
+ASSERT(this);
+ASSERT(config);
+ASSERT_DIAG();
 
-	LOG0(Log::Normal, "�ݒ�K�p");
+	LOG0(Log::Normal, "Apply configuration");
 
-	// SRAM�T�C�Y
+	// SRAM size
 	if (config->sram_64k) {
 		sram_size = 64;
 #if defined(SRAM_LOG)
-		LOG0(Log::Detail, "�������T�C�Y 64KB");
+		LOG0(Log::Detail, "SRAM size 64KB");
 #endif	// SRAM_LOG
 	}
 	else {
 		sram_size = 16;
 	}
 
-	// �������X�C�b�`��������
+	// RAM sync setting change
 	mem_sync = config->ram_sramsync;
 }
 
 #if !defined(NDEBUG)
 //---------------------------------------------------------------------------
 //
-//	�f�f
+//	Assert
 //
 //---------------------------------------------------------------------------
 void FASTCALL SRAM::AssertDiag() const
 {
-	// ��{�N���X
+	// Base class
 	MemDevice::AssertDiag();
 
-	ASSERT(this);
-	ASSERT(GetID() == MAKEID('S', 'R', 'A', 'M'));
-	ASSERT(memdev.first == 0xed0000);
-	ASSERT(memdev.last == 0xedffff);
-	ASSERT((sram_size == 16) || (sram_size == 32) || (sram_size == 48) || (sram_size == 64));
-	ASSERT((write_en == TRUE) || (write_en == FALSE));
-	ASSERT((mem_sync == TRUE) || (mem_sync == FALSE));
-	ASSERT((changed == TRUE) || (changed == FALSE));
+ASSERT(this);
+ASSERT(GetID() == MAKEID('S', 'R', 'A', 'M'));
+ASSERT(memdev.first == 0xed0000);
+ASSERT(memdev.last == 0xedffff);
+ASSERT((sram_size == 16) || (sram_size == 32) || (sram_size == 48) || (sram_size == 64));
+ASSERT((write_en == TRUE) || (write_en == FALSE));
+ASSERT((mem_sync == TRUE) || (mem_sync == FALSE));
+ASSERT((changed == TRUE) || (changed == FALSE));
 }
 #endif	// NDEBUG
 
 //---------------------------------------------------------------------------
 //
-//	�o�C�g�ǂݍ���
+//	Byte read
 //
 //---------------------------------------------------------------------------
 DWORD FASTCALL SRAM::ReadByte(DWORD addr)
 {
 	DWORD size;
 
-	ASSERT(this);
-	ASSERT((addr >= memdev.first) && (addr <= memdev.last));
-	ASSERT_DIAG();
+ASSERT(this);
+ASSERT((addr >= memdev.first) && (addr <= memdev.last));
+ASSERT_DIAG();
 
-	// �I�t�Z�b�g�Z�o
+	// Offset calculate
 	addr -= memdev.first;
 	size = (DWORD)(sram_size << 10);
 
-	// �������`�F�b�N
+	// Size check
 	if (size <= addr) {
-		// �o�X�G���[
+		// Bus error
 		cpu->BusErr(memdev.first + addr, TRUE);
 		return 0xff;
 	}
 
-	// �E�F�C�g
+	// Wait
 	scheduler->Wait(1);
 
-	// �ǂݍ���(�G���f�B�A���𔽓]������)
+	// Read (with endian convert)
 	return (DWORD)sram[addr ^ 1];
 }
 
 //---------------------------------------------------------------------------
 //
-//	���[�h�ǂݍ���
+//	Word read
 //
 //---------------------------------------------------------------------------
 DWORD FASTCALL SRAM::ReadWord(DWORD addr)
 {
 	DWORD size;
 
-	ASSERT(this);
-	ASSERT((addr >= memdev.first) && (addr <= memdev.last));
-	ASSERT((addr & 1) == 0);
-	ASSERT_DIAG();
+ASSERT(this);
+ASSERT((addr >= memdev.first) && (addr <= memdev.last));
+ASSERT((addr & 1) == 0);
+ASSERT_DIAG();
 
-	// �I�t�Z�b�g�Z�o
+	// Offset calculate
 	addr -= memdev.first;
 	size = (DWORD)(sram_size << 10);
 
-	// �������`�F�b�N
+	// Size check
 	if (size <= addr) {
-		// �o�X�G���[
+		// Bus error
 		cpu->BusErr(memdev.first + addr, TRUE);
 		return 0xff;
 	}
 
-	// �E�F�C�g
+	// Wait
 	scheduler->Wait(1);
 
-	// �ǂݍ���(�G���f�B�A���ɒ���)
+	// Read (with endian)
 	return (DWORD)(*(WORD *)&sram[addr]);
 }
 
 //---------------------------------------------------------------------------
 //
-//	�o�C�g��������
+//	Byte write
 //
 //---------------------------------------------------------------------------
 void FASTCALL SRAM::WriteByte(DWORD addr, DWORD data)
 {
 	DWORD size;
 
-	ASSERT(this);
-	ASSERT((addr >= memdev.first) && (addr <= memdev.last));
-	ASSERT(data < 0x100);
-	ASSERT_DIAG();
+ASSERT(this);
+ASSERT((addr >= memdev.first) && (addr <= memdev.last));
+ASSERT(data < 0x100);
+ASSERT_DIAG();
 
-	// �I�t�Z�b�g�Z�o
+	// Offset calculate
 	addr -= memdev.first;
 	size = (DWORD)(sram_size << 10);
 
-	// �������`�F�b�N
+	// Size check
 	if (size <= addr) {
-		// �o�X�G���[
+		// Bus error
 		cpu->BusErr(memdev.first + addr, FALSE);
 		return;
 	}
 
-	// �������݉\�`�F�b�N
+	// Write enable check
 	if (!write_en) {
-		LOG1(Log::Warning, "�������݋֎~ $%06X", memdev.first + addr);
+		LOG1(Log::Warning, "Write disable $%06X", memdev.first + addr);
 		return;
 	}
 
-	// �E�F�C�g
+	// Wait
 	scheduler->Wait(1);
 
-	// �A�h���X$09��$00 or $10���������܂��ꍇ�A�������X�C�b�`�����X�V�ł���΃X�L�b�v������
-	// (���Z�b�g����Memory::Reset���珑�����܂�Ă��邽�߁A�㏑���ɂ��j���h��)
+	// If address $09 is $00 or $10 written, update memory switch can be skipped
+	// (Since Memory::Reset is called after reset, writing to this is ignored)
 	if ((addr == 0x09) && (data == 0x10)) {
 		if (cpu->GetPC() == 0xff03a8) {
 			if (mem_sync) {
-				LOG2(Log::Warning, "�X�C�b�`�ύX�}�� $%06X <- $%02X", memdev.first + addr, data);
+				LOG2(Log::Warning, "Memory switch change skip $%06X <- $%02X", memdev.first + addr, data);
 				return;
 			}
 		}
 	}
 
-	// ��������(�G���f�B�A���𔽓]������)
+	// Write (with endian convert)
 	if (addr < 0x100) {
-		LOG2(Log::Detail, "�������X�C�b�`�ύX $%06X <- $%02X", memdev.first + addr, data);
+		LOG2(Log::Detail, "Memory switch change $%06X <- $%02X", memdev.first + addr, data);
 	}
 	if (sram[addr ^ 1] != (BYTE)data) {
 		sram[addr ^ 1] = (BYTE)data;
@@ -435,42 +435,42 @@ void FASTCALL SRAM::WriteByte(DWORD addr, DWORD data)
 
 //---------------------------------------------------------------------------
 //
-//	���[�h��������
+//	Word write
 //
 //---------------------------------------------------------------------------
 void FASTCALL SRAM::WriteWord(DWORD addr, DWORD data)
 {
 	DWORD size;
 
-	ASSERT(this);
-	ASSERT((addr >= memdev.first) && (addr <= memdev.last));
-	ASSERT((addr & 1) == 0);
-	ASSERT(data < 0x10000);
-	ASSERT_DIAG();
+ASSERT(this);
+ASSERT((addr >= memdev.first) && (addr <= memdev.last));
+ASSERT((addr & 1) == 0);
+ASSERT(data < 0x10000);
+ASSERT_DIAG();
 
-	// �I�t�Z�b�g�Z�o
+	// Offset calculate
 	addr -= memdev.first;
 	size = (DWORD)(sram_size << 10);
 
-	// �������`�F�b�N
+	// Size check
 	if (size <= addr) {
-		// �o�X�G���[
+		// Bus error
 		cpu->BusErr(memdev.first + addr, FALSE);
 		return;
 	}
 
-	// �������݉\�`�F�b�N
+	// Write enable check
 	if (!write_en) {
-		LOG1(Log::Warning, "�������݋֎~ $%06X", memdev.first + addr);
+		LOG1(Log::Warning, "Write disable $%06X", memdev.first + addr);
 		return;
 	}
 
-	// �E�F�C�g
+	// Wait
 	scheduler->Wait(1);
 
-	// ��������(�G���f�B�A���ɒ���)
+	// Write (with endian)
 	if (addr < 0x100) {
-		LOG2(Log::Detail, "�������X�C�b�`�ύX $%06X <- $%04X", memdev.first + addr, data);
+		LOG2(Log::Detail, "Memory switch change $%06X <- $%04X", memdev.first + addr, data);
 	}
 	if (*(WORD *)&sram[addr] != (WORD)data) {
 		*(WORD *)&sram[addr] = (WORD)data;
@@ -480,89 +480,89 @@ void FASTCALL SRAM::WriteWord(DWORD addr, DWORD data)
 
 //---------------------------------------------------------------------------
 //
-//	�ǂݍ��݂̂�
+//	Read only
 //
 //---------------------------------------------------------------------------
 DWORD FASTCALL SRAM::ReadOnly(DWORD addr) const
 {
 	DWORD size;
 
-	ASSERT(this);
-	ASSERT((addr >= memdev.first) && (addr <= memdev.last));
-	ASSERT_DIAG();
+ASSERT(this);
+ASSERT((addr >= memdev.first) && (addr <= memdev.last));
+ASSERT_DIAG();
 
-	// �I�t�Z�b�g�Z�o
+	// Offset calculate
 	addr -= memdev.first;
 	size = (DWORD)(sram_size << 10);
 
-	// �������`�F�b�N
+	// Size check
 	if (size <= addr) {
 		return 0xff;
 	}
 
-	// �ǂݍ���(�G���f�B�A���𔽓]������)
+	// Read (with endian convert)
 	return (DWORD)sram[addr ^ 1];
 }
 
 //---------------------------------------------------------------------------
 //
-//	SRAM�A�h���X�擾
+//	Get SRAM address
 //
 //---------------------------------------------------------------------------
 const BYTE* FASTCALL SRAM::GetSRAM() const
 {
-	ASSERT(this);
-	ASSERT_DIAG();
+ASSERT(this);
+ASSERT_DIAG();
 
 	return sram;
 }
 
 //---------------------------------------------------------------------------
 //
-//	SRAM�T�C�Y�擾
+//	Get SRAM size
 //
 //---------------------------------------------------------------------------
 int FASTCALL SRAM::GetSize() const
 {
-	ASSERT(this);
-	ASSERT_DIAG();
+ASSERT(this);
+ASSERT_DIAG();
 
 	return sram_size;
 }
 
 //---------------------------------------------------------------------------
 //
-//	�������݋���
+//	Write enable
 //
 //---------------------------------------------------------------------------
 void FASTCALL SRAM::WriteEnable(BOOL enable)
 {
-	ASSERT(this);
-	ASSERT_DIAG();
+ASSERT(this);
+ASSERT_DIAG();
 
 	write_en = enable;
 
 	if (write_en) {
-		LOG0(Log::Detail, "SRAM�������݋���");
+		LOG0(Log::Detail, "SRAM write enable");
 	}
 	else {
-		LOG0(Log::Detail, "SRAM�������݋֎~");
+		LOG0(Log::Detail, "SRAM write disable");
 	}
 }
 
 //---------------------------------------------------------------------------
 //
-//	�������X�C�b�`�ݒ�
+//	Memory switch set
 //
 //---------------------------------------------------------------------------
 void FASTCALL SRAM::SetMemSw(DWORD offset, DWORD data)
 {
-	ASSERT(this);
-	ASSERT(offset < 0x100);
-	ASSERT(data < 0x100);
-	ASSERT_DIAG();
+ASSERT(this);
+ASSERT(offset < 0x100);
+ASSERT(data < 0x100);
+ASSERT_DIAG();
 
-	LOG2(Log::Detail, "�������X�C�b�`�ݒ� $%06X <- $%02X", memdev.first + offset, data);
+	LOG2(Log::Detail, "Memory switch set $%06X <- $%02X", memdev.first + offset, data);
 	if (sram[offset ^ 1] != (BYTE)data) {
 		sram[offset ^ 1] = (BYTE)data;
 		changed = TRUE;
@@ -571,43 +571,43 @@ void FASTCALL SRAM::SetMemSw(DWORD offset, DWORD data)
 
 //---------------------------------------------------------------------------
 //
-//	�������X�C�b�`�擾
+//	Memory switch get
 //
 //---------------------------------------------------------------------------
 DWORD FASTCALL SRAM::GetMemSw(DWORD offset) const
 {
-	ASSERT(this);
-	ASSERT(offset < 0x100);
-	ASSERT_DIAG();
+ASSERT(this);
+ASSERT(offset < 0x100);
+ASSERT_DIAG();
 
 	return (DWORD)sram[offset ^ 1];
 }
 
 //---------------------------------------------------------------------------
 //
-//	�N���J�E���^�X�V
+//	Boot counter update
 //
 //---------------------------------------------------------------------------
 void FASTCALL SRAM::UpdateBoot()
 {
 	WORD *ptr;
 
-	ASSERT(this);
-	ASSERT_DIAG();
+ASSERT(this);
+ASSERT_DIAG();
 
-	// ��ɕύX����
+	// Mark changed
 	changed = TRUE;
 
-	// �|�C���^�ݒ�($ED0044)
+	// Pointer set ($ED0044)
 	ptr = (WORD *)&sram[0x0044];
 
-	// �C���N�������g(Low)
+	// Increment counter (Low)
 	if (ptr[1] != 0xffff) {
 		ptr[1] = ptr[1] + 1;
 		return;
 	}
 
-	// �C���N�������g(High)
+	// Increment counter (High)
 	ptr[1] = 0x0000;
 	ptr[0] = ptr[0] + 1;
 }

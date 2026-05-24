@@ -1,4 +1,4 @@
-﻿//---------------------------------------------------------------------------
+//---------------------------------------------------------------------------
 //
 // X68000 Emulator "XM6"
 //
@@ -13,14 +13,13 @@
 #define mfc_draw_h
 
 #include "mfc_dx9.h"
-#include "render_interfaces.h"
 
 //===========================================================================
 //
 // Draw view
 //
 //===========================================================================
-class CDrawView : public CView, public IRenderTarget
+class CDrawView : public CView
 {
 public:
 	// Internal data definition
@@ -41,8 +40,6 @@ public:
 		int nRendHeight;				// Renderer height
 		int nRendHMul;					// Renderer horizontal scale
 		int nRendVMul;					// Renderer vertical scale
-		int nRendHRes;					// Renderer horizontal mode
-		int nRendMixMode;				// Renderer vertical mix mode
 		int nLeft;						// Left margin
 		int nTop;						// Top margin
 		int nWidth;						// BitBlt width
@@ -95,13 +92,6 @@ public:
 										// Get shader state
 	BOOL FASTCALL IsDX9Active() const;
 										// Check whether DX9 mode is active
-	void FASTCALL DrawLine() override;
-	void FASTCALL DrawFrame() override;
-										// Render target callbacks
-	BOOL FASTCALL SetRenderFastDummyEnabled(BOOL bEnable);
-										// Switch render fast dummy flag
-	BOOL FASTCALL IsRenderFastDummyEnabled() const;
-										// Get render fast dummy state
 	void FASTCALL ShowRenderStatusOSD(BOOL bVSync);
 										// Show active renderer and VSync state
 	void FASTCALL ResetFrameCounter();
@@ -184,7 +174,6 @@ protected:
 private:
 	void FASTCALL SetupBitmap();
 	void FASTCALL FinishFrame();
-	BOOL FASTCALL CopyPx68kFrameToBits(int *pWidth = NULL, int *pHeight = NULL, int *pPitch = NULL);
 	void FASTCALL DrawOSD(CDC *pDC);
 	void FASTCALL ShowOSD(LPCTSTR lpszText);
 										// Bitmap setup
@@ -201,7 +190,6 @@ private:
 	CDX9Renderer m_DX9Renderer;
 	BOOL m_bUseDX9;
 	volatile LONG m_lPresentPending;
-	BOOL m_bRenderFastDummy;
 
 	// Variables for the dedicated rendering thread
 	HANDLE m_hRenderEvent;
@@ -244,4 +232,3 @@ private:
 
 #endif	// mfc_draw_h
 #endif	// _WIN32
-

@@ -2,8 +2,8 @@
 //
 //	X68000 EMULATOR "XM6"
 //
-//	Copyright (C) 2001-2006 P.I. (ytanaka@ipc-tokai.or.jp)
-//	[ MFC Utility Tools ]
+//	Copyright (C) 2001-2006 �o�h�D(ytanaka@ipc-tokai.or.jp)
+//	[ MFC �⏕�c�[�� ]
 //
 //---------------------------------------------------------------------------
 
@@ -23,7 +23,7 @@
 
 //===========================================================================
 //
-//	Floppy disk image creation dialog
+//	�t���b�s�[�f�B�X�N�C���[�W�쐬�_�C�A���O
 //
 //===========================================================================
 
@@ -75,20 +75,20 @@ BOOL CFDIDlg::OnInitDialog()
 	CButton *pButton;
 	CEdit *pEdit;
 
-	// Base class
+	// ��{�N���X
 	CDialog::OnInitDialog();
 
-	// Select the file
+	// �t�@�C���𕷂�
 	if (!GetFile()) {
 		EndDialog(IDCANCEL);
 		return FALSE;
 	}
 
-	// Disk name
+	// Disk��
 	pEdit = (CEdit*)GetDlgItem(IDC_FDI_NAMEE);
 	ASSERT(pEdit);
 	if (m_dwType == 2) {
-		// Only when the first selected file is a D68 image
+		// �ŏ��̃t�@�C���I����D68���I�΂ꂽ�ꍇ�̂�
 		_tcscpy(m_szDiskName, _T("Default"));
 	}
 	pEdit->SetWindowText(m_szDiskName);
@@ -104,17 +104,17 @@ BOOL CFDIDlg::OnInitDialog()
 
 	// Drive
 	switch (m_nDrive) {
-		// Drive 0
+		// �h���C�u0
 		case 0:
 			pButton = (CButton*)GetDlgItem(IDC_FDI_DRIVE0);
 			break;
 
-		// Drive 1
+		// �h���C�u1
 		case 1:
 			pButton = (CButton*)GetDlgItem(IDC_FDI_DRIVE1);
 			break;
 
-		// Do not mount a drive
+		// Drive���Ȃ�
 		default:
 			pButton = (CButton*)GetDlgItem(IDC_FDI_NOTMOUNT);
 			break;
@@ -127,7 +127,7 @@ BOOL CFDIDlg::OnInitDialog()
 
 //---------------------------------------------------------------------------
 //
-//	Dialog OK
+//	�_�C�A���OOK
 //
 //---------------------------------------------------------------------------
 void CFDIDlg::OnOK()
@@ -135,20 +135,20 @@ void CFDIDlg::OnOK()
 	CButton *pButton;
 	CEdit *pEdit;
 
-	// Disk name
+	// Disk��
 	pEdit = (CEdit*)GetDlgItem(IDC_FDI_NAMEE);
 	ASSERT(pEdit);
 	pEdit->GetWindowText(m_szDiskName, sizeof(m_szDiskName));
 	if (m_dwType == 2) {
-		// D88 is limited to 16 characters
+		// D88��16�����܂�
 		m_szDiskName[16] = _T('\0');
 	}
 	else {
-		// DIM is limited to 59 characters
+		// DIM��59�����܂�
 		m_szDiskName[59] = _T('\0');
 	}
 
-	// Get data
+	// �f�[�^�擾
 	GetPhysical();
 	GetLogical();
 
@@ -165,18 +165,18 @@ void CFDIDlg::OnOK()
 		m_nDrive = 1;
 	}
 
-	// Base class
+	// ��{�N���X
 	CDialog::OnOK();
 }
 
 //---------------------------------------------------------------------------
 //
-//	Dialog cancel
+//	�_�C�A���O�L�����Z��
 //
 //---------------------------------------------------------------------------
 void CFDIDlg::OnCancel()
 {
-	// Base class
+	// ��{�N���X
 	CDialog::OnCancel();
 }
 
@@ -187,12 +187,12 @@ void CFDIDlg::OnCancel()
 //---------------------------------------------------------------------------
 void CFDIDlg::OnBrowse()
 {
-	// Delegate to helper
+	// �T�u�֐��ɔC����
 	if (!GetFile()) {
 		return;
 	}
 
-	// Update the UI
+	// UI�ݒ�
 	MaskName();
 	SetPhysical();
 	MaskPhysical();
@@ -202,7 +202,7 @@ void CFDIDlg::OnBrowse()
 
 //---------------------------------------------------------------------------
 //
-//	Disk name mask
+//	�f�B�X�N���}�X�N
 //
 //---------------------------------------------------------------------------
 void FASTCALL CFDIDlg::MaskName()
@@ -211,15 +211,15 @@ void FASTCALL CFDIDlg::MaskName()
 	CStatic *pStatic;
 	CString strStatic;
 
-	// Get the static text control
+	// �X�^�e�B�b�N�e�L�X�g�擾
 	pStatic = (CStatic*)GetDlgItem(IDC_FDI_NAMEL);
 	ASSERT(pStatic);
 
-	// Get the edit box
+	// �G�f�B�b�g�{�b�N�X�擾
 	pEdit = (CEdit*)GetDlgItem(IDC_FDI_NAMEE);
 	ASSERT(pEdit);
 
-	// Only for D68/D88 and DIM
+	// D68(D88)��DIM�̂݋���
 	switch (m_dwType) {
 		// 2HD,2DD,2HQ
 		case 0:
@@ -242,7 +242,7 @@ void FASTCALL CFDIDlg::MaskName()
 			pEdit->EnableWindow(TRUE);
 			break;
 
-		// Other (should never happen)
+		// ���̑�(���蓾�Ȃ�)
 		default:
 			ASSERT(FALSE);
 			break;
@@ -251,18 +251,18 @@ void FASTCALL CFDIDlg::MaskName()
 
 //---------------------------------------------------------------------------
 //
-	// Create format click
+	// Create�t�H�[�}�b�g�N���b�N
 //
 //---------------------------------------------------------------------------
 void CFDIDlg::OnPhysical()
 {
-	// Update the logical-format checkbox state in real time
+	// Logical format�`�F�b�N�{�b�N�X�̏�Ԃ����A���^�C���ɕς���
 	MaskLogical();
 }
 
 //---------------------------------------------------------------------------
 //
-	// Set create format
+	// Create�t�H�[�}�b�g�ݒ�
 //
 //---------------------------------------------------------------------------
 void FASTCALL CFDIDlg::SetPhysical()
@@ -270,30 +270,30 @@ void FASTCALL CFDIDlg::SetPhysical()
 	int i;
 	CButton *pButton;
 
-	// Control the format according to the type
+	// �^�C�v�ɂ��A�t�H�[�}�b�g�𐧌�
 	switch (m_dwType) {
 		// 2HD
 		case 0:
-			// 2HD only
+			// 2HD�̂�
 			m_dwPhysical = FDI_2HD;
 			break;
 
 		// 2DD
 		case 3:
-			// 2DD only
+			// 2DD�̂�
 			m_dwPhysical = FDI_2DD;
 			break;
 
 		// 2HQ
 		case 4:
-			// 2HQ only
+			// 2HQ�̂�
 			m_dwPhysical = FDI_2HQ;
 			break;
 	}
 
-	// Control the format according to the type (DIM)
+	// �^�C�v�ɂ��A�t�H�[�}�b�g�𐧌�(DIM)
 	if (m_dwType == 1) {
-		// DIM images do not allow OS-9 or 2DD
+		// DIM�C���[�W��OS-9,2DD�ȊO
 		if (m_dwPhysical == FDI_OS9) {
 			m_dwPhysical = FDI_2HD;
 		}
@@ -302,11 +302,11 @@ void FASTCALL CFDIDlg::SetPhysical()
 		}
 	}
 
-	// Get the button ID that matches the physical format
+	// Physical format�ɑΉ������{�^��ID���擾
 	for (i=0; i<8; i++) {
-		// Check whether the physical format matches
+		// Physical format����v���Ă��邩
 		if (IDTable[i * 2 + 0] == m_dwPhysical) {
-			// Check that button
+			// ���̃{�^�����`�F�b�N
 			pButton = (CButton*)GetDlgItem(IDTable[i * 2 + 1]);
 			ASSERT(pButton);
 			pButton->SetCheck(1);
@@ -317,7 +317,7 @@ void FASTCALL CFDIDlg::SetPhysical()
 
 //---------------------------------------------------------------------------
 //
-	// Get create format
+	// Create�t�H�[�}�b�g�擾
 //
 //---------------------------------------------------------------------------
 void FASTCALL CFDIDlg::GetPhysical()
@@ -326,11 +326,11 @@ void FASTCALL CFDIDlg::GetPhysical()
 	CButton *pButton;
 
 	for (i=0; i<8; i++) {
-		// Get the button
+		// �{�^���擾
 		pButton = (CButton*)GetDlgItem(IDTable[i * 2 + 1]);
 		ASSERT(pButton);
 
-		// If checked, store the value and finish
+		// �`�F�b�N����Ă���Βl��ݒ肵�ďI��
 		if (pButton->GetCheck() == 1) {
 			m_dwPhysical = IDTable[i * 2 + 0];
 			break;
@@ -340,7 +340,7 @@ void FASTCALL CFDIDlg::GetPhysical()
 
 //---------------------------------------------------------------------------
 //
-	// Mask create format
+	// Create�t�H�[�}�b�g�}�X�N
 //
 //---------------------------------------------------------------------------
 void FASTCALL CFDIDlg::MaskPhysical()
@@ -348,17 +348,17 @@ void FASTCALL CFDIDlg::MaskPhysical()
 	int i;
 	CButton *pButton;
 
-	// Loop through the radio buttons
+	// ���W�I�{�^�����[�v
 	for (i=0; i<8; i++) {
-		// Get the button
+		// �{�^���擾
 		pButton = (CButton*)GetDlgItem(IDTable[i * 2 + 1]);
 		ASSERT(pButton);
 
-		// By type
+		// �^�C�v��
 		switch (m_dwType) {
 			// 2HD
 			case 0:
-				// Allow only i=0 (2HD); disable the others
+				// i=0(2HD)�̂݋��A���̑��֎~
 				if (i == 0) {
 					pButton->EnableWindow(TRUE);
 				}
@@ -370,7 +370,7 @@ void FASTCALL CFDIDlg::MaskPhysical()
 
 			// DIM
 			case 1:
-				// Disable only i=6,7 (2DD, OS-9); allow the others
+				// i=6,7(2DD,OS-9)�̂݋֎~�A���̑�����
 				if (i < 6) {
 					pButton->EnableWindow(TRUE);
 				}
@@ -382,13 +382,13 @@ void FASTCALL CFDIDlg::MaskPhysical()
 
 			// D68
 			case 2:
-				// Allow all
+				// ���ׂċ���
 				pButton->EnableWindow(TRUE);
 				break;
 
 			// 2DD
 			case 3:
-				// Allow only i=6 (2DD); disable the others
+				// i=6(2DD)�̂݋��A���̑��֎~
 				if (i == 6) {
 					pButton->EnableWindow(TRUE);
 				}
@@ -400,7 +400,7 @@ void FASTCALL CFDIDlg::MaskPhysical()
 
 			// 2HQ
 			case 4:
-				// Allow only i=5 (2HQ); disable the others
+				// i=5(2HQ)�̂݋��A���̑��֎~
 				if (i == 5) {
 					pButton->EnableWindow(TRUE);
 				}
@@ -410,7 +410,7 @@ void FASTCALL CFDIDlg::MaskPhysical()
 				}
 				break;
 
-			// Other (should never happen)
+			// ���̑�(���肦�Ȃ�)
 			default:
 				ASSERT(FALSE);
 				break;
@@ -420,7 +420,7 @@ void FASTCALL CFDIDlg::MaskPhysical()
 
 //---------------------------------------------------------------------------
 //
-	// Create format table
+	// Create�t�H�[�}�b�g�e�[�u��
 //
 //---------------------------------------------------------------------------
 const DWORD CFDIDlg::IDTable[] = {
@@ -444,26 +444,26 @@ const DWORD CFDIDlg::IDTable[] = {
 
 //---------------------------------------------------------------------------
 //
-//	Set logical format
+//	�_���t�H�[�}�b�g�ݒ�
 //
 //---------------------------------------------------------------------------
 void FASTCALL CFDIDlg::SetLogical()
 {
 	CButton *pButton;
 
-	// Only MS-DOS style physical formats support logical formatting
+	// MS-DOS�n�̕����t�H�[�}�b�g�̂ݘ_���t�H�[�}�b�g�E
 	switch (m_dwPhysical) {
-		// Logical format is not available
+		// Logical format�ł��Ȃ�����
 		case FDI_OS9:
 			m_bLogical = FALSE;
 			break;
 
-		// Logical format is available
+		// Logical format�ł������
 		default:
 			break;
 	}
 
-	// Set the value
+	// �ݒ�
 	pButton = (CButton*)GetDlgItem(IDC_FDI_LOGC);
 	ASSERT(pButton);
 	if (m_bLogical) {
@@ -476,14 +476,14 @@ void FASTCALL CFDIDlg::SetLogical()
 
 //---------------------------------------------------------------------------
 //
-//	Get logical format
+//	�_���t�H�[�}�b�g�擾
 //
 //---------------------------------------------------------------------------
 void FASTCALL CFDIDlg::GetLogical()
 {
 	CButton *pButton;
 
-	// Get the value
+	// �擾
 	pButton = (CButton*)GetDlgItem(IDC_FDI_LOGC);
 	ASSERT(pButton);
 	if (pButton->GetCheck() == 1) {
@@ -496,7 +496,7 @@ void FASTCALL CFDIDlg::GetLogical()
 
 //---------------------------------------------------------------------------
 //
-//	Mask logical format
+//	�_���t�H�[�}�b�g�}�X�N
 //
 //---------------------------------------------------------------------------
 void FASTCALL CFDIDlg::MaskLogical()
@@ -504,30 +504,30 @@ void FASTCALL CFDIDlg::MaskLogical()
 	BOOL bEnable;
 	CButton *pButton;
 
-	// Logical format enabled
+	// Logical format�����
 	bEnable = TRUE;
 
-	// OS-9 does not support logical formatting
+	// OS-9�͘_���t�H�[�}�b�g�ł��Ȃ�
 	pButton = (CButton*)GetDlgItem(IDC_FDI_OS9);
 	ASSERT(pButton);
 	if (pButton->GetCheck() == 1) {
 		bEnable = FALSE;
 	}
 
-	// Get the logical-format checkbox
+	// Logical format�`�F�b�N�{�b�N�X���擾
 	pButton = (CButton*)GetDlgItem(IDC_FDI_LOGC);
 	ASSERT(pButton);
 
-	// Check whether the feature can be enabled
+	// Error\�t���O���`�F�b�N
 	if (bEnable) {
-		// Enable the button
+		// �{�^���L��
 		pButton->EnableWindow(TRUE);
 	}
 	else {
-		// Logical format is unavailable
+		// Logical format�Ȃ�
 		m_bLogical = FALSE;
 
-		// Clear the check and disable the button
+		// �`�F�b�N�������āA�{�^������
 		pButton->SetCheck(0);
 		pButton->EnableWindow(FALSE);
 	}
@@ -546,23 +546,23 @@ BOOL FASTCALL CFDIDlg::GetFile()
 	TCHAR szExt[_MAX_EXT];
 	CEdit *pEdit;
 
-	// Clear the error state
+	// Error��
 	m_szFileName[0] = _T('\0');
 
-	// Open the file-save dialog
+	// �t�@�C���Z�[�u�_�C�A���O
 	if (!::FileSaveDlg(this, m_szFileName, NULL, IDS_FDOPEN)) {
 		return FALSE;
 	}
 
-	// Set the file name
+	// File nameݒ�
 	pEdit = (CEdit*)GetDlgItem(IDC_FDI_FILEE);
 	ASSERT(pEdit);
 	pEdit->SetWindowText(m_szFileName);
 
-	// Split the path
+	// �p�X����
 	_tsplitpath(m_szFileName, szDrive, szDir, szFile, szExt);
 
-	// Determine the type from the extension
+	// �g���q����^�C�v������
 	if (_tcsnicmp(szExt, _T(".DIM"), 4) == 0) {
 		m_dwType = 1;
 		return TRUE;
@@ -584,14 +584,14 @@ BOOL FASTCALL CFDIDlg::GetFile()
 		return TRUE;
 	}
 
-	// If the type is unknown, default to 2HD
+	// Error��ł��Ȃ���΁A2HD
 	m_dwType = 0;
 	return TRUE;
 }
 
 //===========================================================================
 //
-//	Hard disk image creation dialog
+//	��e�ʃf�B�X�N�C���[�W�쐬�_�C�A���O
 //
 //===========================================================================
 
@@ -608,7 +608,7 @@ CDiskDlg::CDiskDlg(CWnd *pParent) : CDialog(IDD_DISKDLG, pParent)
 		m_nIDHelp = IDD_US_DISKDLG;
 	}
 
-	// Clear the member variables
+	// Member variables��
 	m_szPath[0] = _T('\0');
 	m_nType = -1;
 	m_bSucceed = FALSE;
@@ -645,16 +645,16 @@ BOOL CDiskDlg::OnInitDialog()
 	ASSERT(this);
 	ASSERT((m_nType >= 0) && (m_nType <= 2));
 
-	// Base class
+	// ��{�N���X
 	CDialog::OnInitDialog();
 
-	// Select the file
+	// �t�@�C���𕷂�
 	if (!GetFile()) {
 		EndDialog(IDCANCEL);
 		return FALSE;
 	}
 
-	// Set the dialog caption
+	// Valid�V�����ݒ�
 	GetWindowText(strCap);
 	switch (m_nType) {
 		// SASI-HD
@@ -669,7 +669,7 @@ BOOL CDiskDlg::OnInitDialog()
 		case 2:
 			strText = _T("SCSI MO");
 			break;
-		// Other (should never happen)
+		// ���̑�(���蓾�Ȃ�)
 		default:
 			ASSERT(FALSE);
 			break;
@@ -677,7 +677,7 @@ BOOL CDiskDlg::OnInitDialog()
 	strCap = strText + strCap;
 	SetWindowText(strCap);
 
-	// Configure the controls
+	// �R���g���[��������
 	switch (m_nType) {
 		// SASI-HD
 		case 0:
@@ -694,7 +694,7 @@ BOOL CDiskDlg::OnInitDialog()
 			CtrlMO();
 			break;
 
-		// Other (should never happen)
+		// ���̑�(���蓾�Ȃ�)
 		default:
 			ASSERT(FALSE);
 			break;
@@ -706,7 +706,7 @@ BOOL CDiskDlg::OnInitDialog()
 
 //---------------------------------------------------------------------------
 //
-//	SASI-HD controls
+//	SASI-HD �R���g���[��������
 //
 //---------------------------------------------------------------------------
 void FASTCALL CDiskDlg::CtrlSASI()
@@ -720,22 +720,22 @@ void FASTCALL CDiskDlg::CtrlSASI()
 
 	ASSERT(this);
 
-	// Hide all size, logical-format, and option controls
+	// Size�E�_���t�H�[�}�b�g�E�I�v�V���������ׂĉB��
 	for (i=0;; i++) {
-		// Check for the end of the table
+		// Exit�`�F�b�N
 		if (SASITable[i] == 0) {
 			break;
 		}
 
-		// Get the value
+		// �擾
 		pWnd = GetDlgItem(SASITable[i]);
 		ASSERT(pWnd);
 
-		// Hide
+		// �B��
 		pWnd->ShowWindow(SW_HIDE);
 	}
 
-	// Move the logical-format checkbox and check it
+	// Logical format�`�F�b�N�{�b�N�X���ړ��A�`�F�b�N�t����
 	pWnd = GetDlgItem(IDC_DISK_SIZEE);
 	ASSERT(pWnd);
 	pWnd->GetWindowRect(&rectDst);
@@ -749,7 +749,7 @@ void FASTCALL CDiskDlg::CtrlSASI()
 	pButton = (CButton*)pWnd;
 	pButton->SetCheck(1);
 
-	// Shrink the logical-format group box
+	// Logical format�O���[�v�{�b�N�X���k��
 	pWnd = GetDlgItem(IDC_DISK_SIZEG);
 	ASSERT(pWnd);
 	pWnd->GetClientRect(&rectDst);
@@ -759,7 +759,7 @@ void FASTCALL CDiskDlg::CtrlSASI()
 	pWnd->SetWindowPos(&wndTop, 0, 0, rectSrc.Width(), rectDst.Height(),
 								SWP_NOMOVE | SWP_NOZORDER);
 
-	// Get and initialize the size spin control (0 to 2)
+	// Size�X�s���R���g���[���擾�A�ݒ�(0����2)
 	pSpin = (CSpinButtonCtrl*)GetDlgItem(IDC_DISK_SIZES);
 	ASSERT(pSpin);
 	pSpin->SetRange(0, 2);
@@ -768,13 +768,13 @@ void FASTCALL CDiskDlg::CtrlSASI()
 	// NamenVScroll
 	OnVScroll(0, 2, NULL);
 
-	// Get the client rectangle for IDC_DISK_LOGG
+	// IDC_DISK_LOGG�̃N���C�A���g���W���擾
 	pWnd = GetDlgItem(IDC_DISK_LOGG);
 	ASSERT(pWnd);
 	pWnd->GetWindowRect(&rectSrc);
 	ScreenToClient(&rectSrc);
 
-	// Move the OK button
+	// OK�{�^���ړ�
 	pWnd = GetDlgItem(IDOK);
 	ASSERT(pWnd);
 	pWnd->GetWindowRect(&rectDst);
@@ -782,7 +782,7 @@ void FASTCALL CDiskDlg::CtrlSASI()
 	pWnd->SetWindowPos(&wndTop, rectDst.left, rectSrc.bottom + 10,
 						 0, 0, SWP_NOSIZE | SWP_NOZORDER);
 
-	// Move the Cancel button
+	// �L�����Z���{�^���ړ�
 	pWnd = GetDlgItem(IDCANCEL);
 	ASSERT(pWnd);
 	pWnd->GetWindowRect(&rectDst);
@@ -790,11 +790,11 @@ void FASTCALL CDiskDlg::CtrlSASI()
 	pWnd->SetWindowPos(&wndTop, rectDst.left, rectSrc.bottom + 10,
 						0, 0, SWP_NOSIZE | SWP_NOZORDER);
 
-	// Get the client rectangle
+	// Error�A�N���C�A���g���W���擾
 	pWnd->GetWindowRect(&rectDst);
 	ScreenToClient(&rectDst);
 
-	// Resize the entire window
+	// Window�S��
 	GetClientRect(&rectSrc);
 	rectSrc.bottom = rectSrc.top + rectDst.bottom + 10;
 	AdjustWindowRect(&rectSrc, GetStyle(), FALSE);
@@ -803,7 +803,7 @@ void FASTCALL CDiskDlg::CtrlSASI()
 
 //---------------------------------------------------------------------------
 //
-//	SCSI-HD controls
+//	SCSI-HD �R���g���[��������
 //
 //---------------------------------------------------------------------------
 void FASTCALL CDiskDlg::CtrlSCSI()
@@ -816,22 +816,22 @@ void FASTCALL CDiskDlg::CtrlSCSI()
 
 	ASSERT(this);
 
-	// Hide all size, logical-format, and option controls
+	// Size�E�_���t�H�[�}�b�g�E�I�v�V���������ׂĉB��
 	for (i=0;; i++) {
-		// Check for the end of the table
+		// Exit�`�F�b�N
 		if (SCSITable[i] == 0) {
 			break;
 		}
 
-		// Get the value
+		// �擾
 		pWnd = GetDlgItem(SCSITable[i]);
 		ASSERT(pWnd);
 
-		// Hide
+		// �B��
 		pWnd->ShowWindow(SW_HIDE);
 	}
 
-	// Get and initialize the size spin control (10 MB to 4095 MB)
+	// Size�X�s���R���g���[���擾�A�ݒ�(10MB����4095MB)
 	pSpin = (CSpinButtonCtrl*)GetDlgItem(IDC_DISK_SIZES);
 	ASSERT(pSpin);
 	pSpin->SetRange(10, 4095);
@@ -840,13 +840,13 @@ void FASTCALL CDiskDlg::CtrlSCSI()
 	// NamenVScroll
 	OnVScroll(0, 100, NULL);
 
-	// Get the client rectangle for IDC_DISK_SIZEG
+	// IDC_DISK_SIZEG�̃N���C�A���g���W���擾
 	pWnd = GetDlgItem(IDC_DISK_SIZEG);
 	ASSERT(pWnd);
 	pWnd->GetWindowRect(&rectSrc);
 	ScreenToClient(&rectSrc);
 
-	// Move the OK button
+	// OK�{�^���ړ�
 	pWnd = GetDlgItem(IDOK);
 	ASSERT(pWnd);
 	pWnd->GetWindowRect(&rectDst);
@@ -854,7 +854,7 @@ void FASTCALL CDiskDlg::CtrlSCSI()
 	pWnd->SetWindowPos(&wndTop, rectDst.left, rectSrc.bottom + 10,
 						 0, 0, SWP_NOSIZE | SWP_NOZORDER);
 
-	// Move the Cancel button
+	// �L�����Z���{�^���ړ�
 	pWnd = GetDlgItem(IDCANCEL);
 	ASSERT(pWnd);
 	pWnd->GetWindowRect(&rectDst);
@@ -862,11 +862,11 @@ void FASTCALL CDiskDlg::CtrlSCSI()
 	pWnd->SetWindowPos(&wndTop, rectDst.left, rectSrc.bottom + 10,
 						0, 0, SWP_NOSIZE | SWP_NOZORDER);
 
-	// Get the client rectangle
+	// Error�A�N���C�A���g���W���擾
 	pWnd->GetWindowRect(&rectDst);
 	ScreenToClient(&rectDst);
 
-	// Resize the entire window
+	// Window�S��
 	GetClientRect(&rectSrc);
 	rectSrc.bottom = rectSrc.top + rectDst.bottom + 10;
 	AdjustWindowRect(&rectSrc, GetStyle(), FALSE);
@@ -875,7 +875,7 @@ void FASTCALL CDiskDlg::CtrlSCSI()
 
 //---------------------------------------------------------------------------
 //
-//	SCSI-MO controls
+//	SCSI-MO �R���g���[��������
 //
 //---------------------------------------------------------------------------
 void FASTCALL CDiskDlg::CtrlMO()
@@ -886,22 +886,22 @@ void FASTCALL CDiskDlg::CtrlMO()
 
 	ASSERT(this);
 
-	// Hide unnecessary controls
+	// �s�v�ȃR���g���[�����B��
 	for (i=0;; i++) {
-		// Check for the end of the table
+		// Exit�`�F�b�N
 		if (MOTable[i] == 0) {
 			break;
 		}
 
-		// Get the value
+		// �擾
 		pWnd = GetDlgItem(MOTable[i]);
 		ASSERT(pWnd);
 
-		// Hide
+		// �B��
 		pWnd->ShowWindow(SW_HIDE);
 	}
 
-	// Default to 128 MB with IBM format selected
+	// 128MB�EIBM�t�H�[�}�b�g�Ƀ`�F�b�N������
 	pButton = (CButton*)GetDlgItem(IDC_DISK_SIZE128);
 	ASSERT(pButton);
 	pButton->SetCheck(1);
@@ -917,13 +917,13 @@ void FASTCALL CDiskDlg::CtrlMO()
 //---------------------------------------------------------------------------
 void CDiskDlg::OnBrowse()
 {
-	// Delegate to helper
+	// �T�u�֐��ɔC����
 	GetFile();
 }
 
 //---------------------------------------------------------------------------
 //
-//	Handle the size scrollbar
+//	�c�X�N���[��
 //
 //---------------------------------------------------------------------------
 void CDiskDlg::OnVScroll(UINT /*nSBCode*/, UINT nPos, CScrollBar* /*pBar*/)
@@ -932,11 +932,11 @@ void CDiskDlg::OnVScroll(UINT /*nSBCode*/, UINT nPos, CScrollBar* /*pBar*/)
 	CString strText;
 	CWnd *pWnd;
 
-	// Clear the error state
+	// Error��
 	ASSERT((nPos >= 0) && (nPos < 4096));
 	nSize = nPos;
 
-	// SASI-HD uses fixed size presets
+	// SASI-HD�͓��ʏ���
 	if (m_nType == 0) {
 		switch (nPos) {
 			// 10MB
@@ -954,17 +954,17 @@ void CDiskDlg::OnVScroll(UINT /*nSBCode*/, UINT nPos, CScrollBar* /*pBar*/)
 				nSize = 40;
 				break;
 
-			// Other (should never happen)
+			// ���̑�(���蓾�Ȃ�)
 			default:
 				ASSERT(FALSE);
 				break;
 		}
 	}
 
-	// Build the text
+	// �e�L�X�g�쐬
 	strText.Format(_T("%u"), nSize);
 
-	// Apply it to the edit control
+	// �o�f�B�E�B���h�E�֐ݒ�
 	pWnd = GetDlgItem(IDC_DISK_SIZEE);
 	ASSERT(pWnd);
 	pWnd->SetWindowText(strText);
@@ -972,9 +972,9 @@ void CDiskDlg::OnVScroll(UINT /*nSBCode*/, UINT nPos, CScrollBar* /*pBar*/)
 
 //---------------------------------------------------------------------------
 //
-//	MO size change
-//	For 128 MB, 230 MB, and 540 MB, choose between IBM and SHARP format
-//	  For 640 MB, only IBM format can be selected
+//	MO�T�C�Y�ύX
+//	��128MB,230MB,540MB��IBM�t�H�[�}�b�g��SHARP�t�H�[�}�b�g���I�ׂ邪
+//	  640MB��IBM�t�H�[�}�b�g�̂ݑI���\
 //
 //---------------------------------------------------------------------------
 void CDiskDlg::OnMOSize()
@@ -982,16 +982,16 @@ void CDiskDlg::OnMOSize()
 	BOOL bCheck;
 	CButton *pButton;
 
-	// No radio button is checked
+	// �`�F�b�N�Ȃ�
 	bCheck = FALSE;
 
-	// Get the 640 MO radio button
+	// 640MO���������W�I�{�^��
 	pButton = (CButton*)GetDlgItem(IDC_DISK_SIZE640);
 	ASSERT(pButton);
 
-	// Check whether it is selected
+	// �`�F�b�N����Ă��邩
 	if (pButton->GetCheck() != 0) {
-		// Disable SHARP format; if it was checked, clear that format
+		// SHARP�t�H�[�}�b�g���֎~���A�`�F�b�N����Ă���΃t�H�[�}�b�g������
 		pButton = (CButton*)GetDlgItem(IDC_DISK_LOGS);
 		ASSERT(pButton);
 		if (pButton->GetCheck() != 0) {
@@ -1000,7 +1000,7 @@ void CDiskDlg::OnMOSize()
 		}
 		pButton->EnableWindow(FALSE);
 
-		// If it was checked, switch to the allowed option
+		// �`�F�b�N����Ă���΋����ύX
 		if (bCheck) {
 			pButton = (CButton*)GetDlgItem(IDC_DISK_LOGN);
 			ASSERT(pButton);
@@ -1008,7 +1008,7 @@ void CDiskDlg::OnMOSize()
 		}
 	}
 	else {
-		// If it is not 640 MO, allow SHARP format again
+		// 640MO�ȊO�Ȃ̂ŁASHARP�t�H�[�}�b�g������
 		pButton = (CButton*)GetDlgItem(IDC_DISK_LOGS);
 		ASSERT(pButton);
 		pButton->EnableWindow(TRUE);
@@ -1027,39 +1027,39 @@ BOOL FASTCALL CDiskDlg::GetFile()
 
 	ASSERT(this);
 
-	// Clear the error state
+	// Error��
 	m_szPath[0] = _T('\0');
 
-	// By type
+	// �^�C�v��
 	switch (m_nType) {
-		// SASI hard disk
+		// SASI �n�[�h�f�B�X�N
 		case 0:
 			bFlag = ::FileSaveDlg(this, m_szPath, _T("hdf"), IDS_SASIOPEN);
 			break;
 
-		// SCSI hard disk
+		// SCSI �n�[�h�f�B�X�N
 		case 1:
 			bFlag = ::FileSaveDlg(this, m_szPath, _T("hds"), IDS_SCSIOPEN);
 			break;
 
-		// SCSI MO disk
+		// SCSI MO�f�B�X�N
 		case 2:
 			bFlag = ::FileSaveDlg(this, m_szPath, _T("mos"), IDS_MOOPEN);
 			break;
 
-		// Other (should never happen)
+		// ���̑�(���蓾�Ȃ�)
 		default:
 			ASSERT(FALSE);
 			bFlag = FALSE;
 			break;
 	}
 
-	// Check the return value
+	// ���ʕ]��
 	if (!bFlag) {
 		return FALSE;
 	}
 
-	// Set the file name
+	// File nameݒ�
 	pEdit = (CEdit*)GetDlgItem(IDC_DISK_FILEE);
 	ASSERT(pEdit);
 	pEdit->SetWindowText(m_szPath);
@@ -1077,27 +1077,27 @@ void CDiskDlg::OnOK()
 	Fileio fio;
 	CFrmWnd *pFrmWnd;
 
-	// If there is no file name, finish
+	// File name�Ȃ���ΏI��
 	if (_tcslen(m_szPath) == 0) {
-		// Base class
+		// ��{�N���X
 		CDialog::OnOK();
 		return;
 	}
 
-	// Try creating the file
+	// �t�@�C���쐬�����݂�
 	if (!fio.Open(m_szPath, Fileio::WriteOnly)) {
-		// Base class
+		// ��{�N���X
 		CDialog::OnOK();
 		return;
 	}
-	// Close it once
+	// ��U����
 	fio.Close();
 
-	// Stop the VM (resume is handled by the command handler)
+	// VM���~�߂�(��ԋL������эĊJ�̓R�}���h�n���h���ōs�Ȃ�)
 	pFrmWnd = (CFrmWnd*)GetParent();
 	pFrmWnd->GetScheduler()->Enable(FALSE);
 
-	// Dispatch by type
+	// �U�蕪��
 	switch (m_nType) {
 		// SASI-HD
 		case 0:
@@ -1114,19 +1114,19 @@ void CDiskDlg::OnOK()
 			CreateMO();
 			break;
 
-		// Other (should never happen)
+		// ���̑�(���蓾�Ȃ�)
 		default:
 			CDialog::OnOK();
 			return;
 	}
 
-	// Base class
+	// ��{�N���X
 	CDialog::OnOK();
 }
 
 //---------------------------------------------------------------------------
 //
-//	Create SASI-HD
+//	SASI-HD �쐬
 //
 //---------------------------------------------------------------------------
 void FASTCALL CDiskDlg::CreateSASI()
@@ -1137,10 +1137,10 @@ void FASTCALL CDiskDlg::CreateSASI()
 
 	ASSERT(this);
 
-	// Set the file name
+	// �t�@�C�����ݒ�
 	_tcscpy(dlg.m_szPath, m_szPath);
 
-	// Set the size
+	// Size�ݒ�
 	pSpin = (CSpinButtonCtrl*)GetDlgItem(IDC_DISK_SIZES);
 	switch (LOWORD(pSpin->GetPos())) {
 		// 10MB
@@ -1158,13 +1158,13 @@ void FASTCALL CDiskDlg::CreateSASI()
 			dlg.m_dwSize = 0x2793000;
 			break;
 
-		// Other (should never happen)
+		// ���̑�(���蓾�Ȃ�)
 		default:
 			ASSERT(FALSE);
 			return;
 	}
 
-	// Set logical format
+	// Logical format�ݒ�
 	pButton = (CButton*)GetDlgItem(IDC_DISK_LOGC);
 	ASSERT(pButton);
 	if (pButton->GetCheck() == 1) {
@@ -1174,17 +1174,17 @@ void FASTCALL CDiskDlg::CreateSASI()
 		dlg.m_nFormat = 0;
 	}
 
-	// Execute
+	// ���s
 	dlg.DoModal();
 
-	// Get the result
+	// ���ʎ擾
 	m_bSucceed = dlg.IsSucceeded();
 	m_bCancel = dlg.IsCanceled();
 }
 
 //---------------------------------------------------------------------------
 //
-//	Create SCSI-HD
+//	SCSI-HD �쐬
 //
 //---------------------------------------------------------------------------
 void FASTCALL CDiskDlg::CreateSCSI()
@@ -1196,7 +1196,7 @@ void FASTCALL CDiskDlg::CreateSCSI()
 
 	ASSERT(this);
 
-	// Pass the parameters
+	// Parameter��n��
 	_tcscpy(dlg.m_szPath, m_szPath);
 	pSpin = (CSpinButtonCtrl*)GetDlgItem(IDC_DISK_SIZES);
 	ASSERT(pSpin);
@@ -1204,23 +1204,23 @@ void FASTCALL CDiskDlg::CreateSCSI()
 	dwSize <<= 20;
 	dlg.m_dwSize = dwSize;
 
-	// Show a warning message when dwSize is 1017 MB or more
+	// dwSize��1017�ȏ�Ȃ�x�����b�Z�[�W
 	if (dwSize >= 0x3f900000) {
 		::GetMsg(IDS_SCHDSIZE, strWarn);
 		MessageBox(strWarn, NULL, MB_ICONINFORMATION | MB_OK);
 	}
 
-	// Execute
+	// ���s
 	dlg.DoModal();
 
-	// Get the result
+	// ���ʎ擾
 	m_bSucceed = dlg.IsSucceeded();
 	m_bCancel = dlg.IsCanceled();
 }
 
 //---------------------------------------------------------------------------
 //
-//	Create SCSI-MO
+//	SCSI-MO �쐬
 //
 //---------------------------------------------------------------------------
 void FASTCALL CDiskDlg::CreateMO()
@@ -1230,15 +1230,15 @@ void FASTCALL CDiskDlg::CreateMO()
 
 	ASSERT(this);
 
-	// Get the drive mount option
+	// Drive�I�v�V�������擾
 	pButton = (CButton*)GetDlgItem(IDC_DISK_MOUNTB);
 	ASSERT(pButton);
 	m_bMount = (BOOL)pButton->GetCheck();
 
-	// Pass the parameters (path)
+	// Parameter��n��(�p�X)
 	_tcscpy(dlg.m_szPath, m_szPath);
 
-	// Pass the parameters (media size)
+	// Parameter��n��(���f�B�A�T�C�Y)
 	pButton = (CButton*)GetDlgItem(IDC_DISK_SIZE128);
 	ASSERT(pButton);
 	if (pButton->GetCheck() == 1) {
@@ -1265,32 +1265,32 @@ void FASTCALL CDiskDlg::CreateMO()
 	}
 	ASSERT(dlg.m_dwSize > 0);
 
-	// Pass the parameters (logical format)
+	// Parameter��n��(�_���t�H�[�}�b�g)
 	dlg.m_nFormat = 0;
 	pButton = (CButton*)GetDlgItem(IDC_DISK_LOGI);
 	ASSERT(pButton);
 	if (pButton->GetCheck() == 1) {
-		// IBM format
+		// IBM�t�H�[�}�b�g
 		dlg.m_nFormat = 1;
 	}
 	pButton = (CButton*)GetDlgItem(IDC_DISK_LOGS);
 	ASSERT(pButton);
 	if (pButton->GetCheck() == 1) {
-		// SHARP format
+		// SHARP�t�H�[�}�b�g
 		dlg.m_nFormat = 2;
 	}
 
-	// Execute
+	// ���s
 	dlg.DoModal();
 
-	// Get the result
+	// ���ʎ擾
 	m_bSucceed = dlg.IsSucceeded();
 	m_bCancel = dlg.IsCanceled();
 }
 
 //---------------------------------------------------------------------------
 //
-//	SASI-HD ID table
+//	SASI-HD ID�e�[�u��
 //
 //---------------------------------------------------------------------------
 const UINT CDiskDlg::SASITable[] = {
@@ -1308,7 +1308,7 @@ const UINT CDiskDlg::SASITable[] = {
 
 //---------------------------------------------------------------------------
 //
-//	SCSI-HD ID table
+//	SCSI-HD ID�e�[�u��
 //
 //---------------------------------------------------------------------------
 const UINT CDiskDlg::SCSITable[] = {
@@ -1328,7 +1328,7 @@ const UINT CDiskDlg::SCSITable[] = {
 
 //---------------------------------------------------------------------------
 //
-//	SCSI-MO ID table
+//	SCSI-MO ID�e�[�u��
 //
 //---------------------------------------------------------------------------
 const UINT CDiskDlg::MOTable[] = {
@@ -1341,7 +1341,7 @@ const UINT CDiskDlg::MOTable[] = {
 
 //===========================================================================
 //
-//	Disk image creation dialog
+//	�f�B�X�N�C���[�W�쐬�_�C�A���O
 //
 //===========================================================================
 
@@ -1358,7 +1358,7 @@ CDiskMakeDlg::CDiskMakeDlg(CWnd *pParent) : CDialog(IDD_DMAKEDLG, pParent)
 		m_nIDHelp = IDD_US_DMAKEDLG;
 	}
 
-	// Clear the working state
+	// ���[�N���N���A
 	m_szPath[0] = _T('\0');
 	m_dwSize = 0;
 	m_nFormat = 0;
@@ -1397,10 +1397,10 @@ BOOL CDiskMakeDlg::OnInitDialog()
 	ASSERT(_tcslen(m_szPath) > 0);
 	ASSERT(m_dwSize > 0);
 
-	// Base class
+	// ��{�N���X
 	CDialog::OnInitDialog();
 
-	// Initialize the controls
+	// �R���g���[��������
 	pProgress = (CProgressCtrl*)GetDlgItem(IDC_DMAKE_PROGRESS);
 	ASSERT(pProgress);
 	pProgress->SetRange(0, 100);
@@ -1417,7 +1417,7 @@ BOOL CDiskMakeDlg::OnInitDialog()
 	}
 	pStatic->SetWindowText(strParcent);
 
-	// Allocate the work buffer
+	// ��ƃ��[�N���m��
 	try {
 		m_pBuffer = new BYTE[ 0x100000 ];
 	}
@@ -1430,17 +1430,17 @@ BOOL CDiskMakeDlg::OnInitDialog()
 		return FALSE;
 	}
 
-	// Clear the work buffer
+	// ��ƃ��[�N���N���A
 	memset(m_pBuffer, 0, 0x100000);
 
-	// Start the thread
+	// �X���b�h�𗧂Ă�
 	m_pThread = AfxBeginThread(ThreadFunc, this);
 	if (!m_pThread) {
 		EndDialog(IDOK);
 		return FALSE;
 	}
 
-	// Install the timer
+	// �^�C�}���C���X�g�[��
 	m_nTimerID = SetTimer(IDD_DMAKEDLG, 200, NULL);
 	if (!m_nTimerID) {
 		EndDialog(IDOK);
@@ -1452,38 +1452,38 @@ BOOL CDiskMakeDlg::OnInitDialog()
 
 //---------------------------------------------------------------------------
 //
-//	Dialog OK
+//	�_�C�A���OOK
 //
 //---------------------------------------------------------------------------
 void CDiskMakeDlg::OnOK()
 {
-	// Ignore the [ENTER] key here
+	// [ENTER]�ɂ��I����}��
 }
 
 //---------------------------------------------------------------------------
 //
-//	Dialog cancel
+//	�_�C�A���O�L�����Z��
 //
 //---------------------------------------------------------------------------
 void CDiskMakeDlg::OnCancel()
 {
-	// Raise the cancel flag
+	// �L�����Z���t���O���グ��
 	m_bCancel = TRUE;
 
-	// Base class
+	// ��{�N���X
 	CDialog::OnCancel();
 }
 
 //---------------------------------------------------------------------------
 //
-//	Destroy the dialog
+//	�_�C�A���O�폜
 //
 //---------------------------------------------------------------------------
 void CDiskMakeDlg::OnDestroy()
 {
 	// Thread termination
 	if (m_pThread) {
-		// Raise the thread flag and wait for termination
+		// �t���O���グ�A�I����҂�(������)
 		m_bThread = TRUE;
 		::WaitForSingleObject(m_pThread->m_hThread, INFINITE);
 		m_pThread = NULL;
@@ -1491,7 +1491,7 @@ void CDiskMakeDlg::OnDestroy()
 
 	// Timer stop
 	if (m_nTimerID) {
-		// Remove the timer
+		// �^�C�}�폜
 		KillTimer(m_nTimerID);
 		m_nTimerID = NULL;
 	}
@@ -1502,13 +1502,13 @@ void CDiskMakeDlg::OnDestroy()
 		m_pBuffer = NULL;
 	}
 
-	// Base class
+	// ��{�N���X
 	CDialog::OnDestroy();
 }
 
 //---------------------------------------------------------------------------
 //
-//	Timer handler
+//	�^�C�}
 //
 //---------------------------------------------------------------------------
 void CDiskMakeDlg::OnTimer(UINT /*nTimerID*/)
@@ -1520,26 +1520,26 @@ void CDiskMakeDlg::OnTimer(UINT /*nTimerID*/)
 	CStatic *pStatic;
 	CProgressCtrl *pProgress;
 
-	// Stop the timer temporarily
+	// �^�C�}������
 	KillTimer(m_nTimerID);
 	m_nTimerID = NULL;
 
-	// Get the current processed size
+	// ���݂̏������݃T�C�Y���擾(�N���e�B�J���Z�N�V����������)
 	m_CSection.Lock();
 	dwCurrent = m_dwCurrent;
 	m_CSection.Unlock();
 
-	// Calculate the percentage
+	// �p�[�Z���e�[�W�����
 	dwTemp = m_dwSize >> 16;
 	dwParcent = m_dwCurrent >> 16;
 	dwParcent = (dwParcent * 100) / dwTemp;
 
-	// Update only when the value changed
+	// ���݂ƈ�v���Ă��Ȃ���΍X�V
 	if (m_dwParcent != dwParcent) {
 		// Progress update
 		m_dwParcent = dwParcent;
 
-		// Build the progress text
+		// Error������
 		if (m_dwSize & 0xfffff) {
 			strParcent.Format(_T("%dMB / %d.%1dMB (%d%%)"),
 							dwCurrent >> 20,
@@ -1554,21 +1554,21 @@ void CDiskMakeDlg::OnTimer(UINT /*nTimerID*/)
 							dwParcent);
 		}
 
-		// Update the static text
+		// �X�^�e�B�b�N���X�V
 		pStatic = (CStatic*)GetDlgItem(IDC_DMAKE_STATIC);
 		ASSERT(pStatic);
 		pStatic->SetWindowText(strParcent);
 
-		// Update the progress bar
+		// �v���O���X���X�V
 		pProgress = (CProgressCtrl*)GetDlgItem(IDC_DMAKE_PROGRESS);
 		ASSERT(pProgress);
 		pProgress->SetPos(dwParcent);
 	}
 
-	// Restart the timer
+	// ���߂ă^�C�}��ݒ�
 	m_nTimerID = SetTimer(IDD_DMAKEDLG, 200, NULL);
 
-	// If the thread has finished, close the dialog
+	// �X���b�h���Ȃ��Ȃ��Ă���΁A�_�C�A���O���I��������
 	if (!m_pThread) {
 		EndDialog(IDOK);
 	}
@@ -1576,7 +1576,7 @@ void CDiskMakeDlg::OnTimer(UINT /*nTimerID*/)
 
 //---------------------------------------------------------------------------
 //
-//	Format
+//	�t�H�[�}�b�g
 //
 //---------------------------------------------------------------------------
 BOOL FASTCALL CDiskMakeDlg::Format()
@@ -1586,17 +1586,17 @@ BOOL FASTCALL CDiskMakeDlg::Format()
 
 //---------------------------------------------------------------------------
 //
-//	Thread entry point
+//	�X���b�h�֐�
 //
 //---------------------------------------------------------------------------
 UINT CDiskMakeDlg::ThreadFunc(LPVOID lpParam)
 {
 	CDiskMakeDlg *pDiskMakeDlg;
 
-	// Cast the parameter
+	// Parameter���L���X�g
 	pDiskMakeDlg = (CDiskMakeDlg*)lpParam;
 
-	// Call Run()
+	// Run���Ăяo��
 	pDiskMakeDlg->Run();
 
 	return 0;
@@ -1604,7 +1604,7 @@ UINT CDiskMakeDlg::ThreadFunc(LPVOID lpParam)
 
 //---------------------------------------------------------------------------
 //
-//	Thread main loop
+//	�X���b�h���C��
 //
 //---------------------------------------------------------------------------
 void FASTCALL CDiskMakeDlg::Run()
@@ -1617,21 +1617,21 @@ void FASTCALL CDiskMakeDlg::Run()
 	ASSERT(m_dwCurrent == 0);
 	ASSERT(m_pBuffer);
 
-	// Create the file
+	// �t�@�C���쐬
 	if (!fio.Open(m_szPath, Fileio::WriteOnly)) {
 		// Thread termination
 		m_pThread = NULL;
 		return;
 	}
 
-	// Main write loop
+	// Error���݃��[�v
 	while (m_dwCurrent < m_dwSize) {
-		// If the exit flag is set, abort
+		// Exit�t���O�ŁA�����I��
 		if (m_bThread) {
 			// File close
 			fio.Close();
 
-			// Delete the file
+			// File name��
 			::DeleteFile(m_szPath);
 
 			// Thread termination
@@ -1639,7 +1639,7 @@ void FASTCALL CDiskMakeDlg::Run()
 			return;
 		}
 
-		// Clamp the write size and write the buffer
+		// Size�����߂āA��������
 		dwUnit = m_dwSize - m_dwCurrent;
 		if (dwUnit > 0x100000) {
 			dwUnit = 0x100000;
@@ -1649,18 +1649,18 @@ void FASTCALL CDiskMakeDlg::Run()
 			continue;
 		}
 
-		// Update the current size
+		// Size�X�V(�N���e�B�J���Z�N�V����������)
 		m_CSection.Lock();
 		m_dwCurrent += dwUnit;
 		m_CSection.Unlock();
 	}
 
-	// Close the file after completion
+	// File name���������
 	fio.Close();
 
-	// Run the formatter
+	// �t�H�[�}�b�g
 	if (Format()) {
-		// Raise the success flag
+		// Error�t���O���グ��
 		m_bSucceed = TRUE;
 	}
 
@@ -1686,7 +1686,7 @@ CSASIMakeDlg::CSASIMakeDlg(CWnd *pParent) : CDiskMakeDlg(pParent)
 
 //---------------------------------------------------------------------------
 //
-//	Format
+//	�t�H�[�}�b�g
 //
 //---------------------------------------------------------------------------
 BOOL FASTCALL CSASIMakeDlg::Format()
@@ -1699,7 +1699,7 @@ BOOL FASTCALL CSASIMakeDlg::Format()
 	BYTE header[16];
 	BYTE fat[4];
 
-	// Initialize track-related values
+	// �g���b�N��������
 	dwTrack = 0;
 	dwFat = 0;
 	dwLast = 0;
@@ -1732,7 +1732,7 @@ BOOL FASTCALL CSASIMakeDlg::Format()
 	ASSERT(dwLast != 0);
 	ASSERT(dwDPB != 0);
 
-	// Build the header regardless of logical formatting
+	// �w�b�_�쐬(�_���t�H�[�}�b�g�̗L���ɂ�炸�A��������)
 	header[ 0] = 0x58;
 	header[ 1] = 0x36;
 	header[ 2] = 0x38;
@@ -1750,7 +1750,7 @@ BOOL FASTCALL CSASIMakeDlg::Format()
 	header[14] = (BYTE)(dwTrack >> 8);
 	header[15] = (BYTE)dwTrack;
 
-	// Write the header
+	// �w�b�_��������
 	if (!fio.Open(m_szPath, Fileio::ReadWrite)) {
 		return FALSE;
 	}
@@ -1761,13 +1761,13 @@ BOOL FASTCALL CSASIMakeDlg::Format()
 		return FALSE;
 	}
 
-	// If logical formatting is disabled, stop here
+	// Logical format���s��Ȃ��Ȃ�A�����܂�
 	if (m_nFormat == 0) {
 		fio.Close();
 		return TRUE;
 	}
 
-	// Write the menu
+	// �N�����j���[
 	if (!fio.Seek(0)) {
 		return FALSE;
 	}
@@ -1783,7 +1783,7 @@ BOOL FASTCALL CSASIMakeDlg::Format()
 		return FALSE;
 	}
 
-	// IPL patch (part of the DPB)
+	// IPL�C��(DPB�̈ꕔ)
 	fat[0] = (BYTE)(dwDPB >> 24);
 	fat[1] = (BYTE)(dwDPB >> 16);
 	fat[2] = (BYTE)(dwDPB >> 8);
@@ -1795,7 +1795,7 @@ BOOL FASTCALL CSASIMakeDlg::Format()
 		return FALSE;
 	}
 
-	// Create the partition table
+	// �p�[�e�B�V�����e�[�u���쐬
 	strcpy((char*)header, "Human68k");
 	header[ 9] = 0x00;
 	header[10] = 0x00;
@@ -1805,7 +1805,7 @@ BOOL FASTCALL CSASIMakeDlg::Format()
 	header[14] = (BYTE)(dwLast >> 8);
 	header[15] = (BYTE)dwLast;
 
-	// Write the partition table
+	// �p�[�e�B�V�����e�[�u����������
 	if (!fio.Seek(0x410)) {
 		return FALSE;
 	}
@@ -1813,13 +1813,13 @@ BOOL FASTCALL CSASIMakeDlg::Format()
 		return FALSE;
 	}
 
-	// Create the FAT
+	// FAT�쐬
 	fat[0] = 0xf8;
 	fat[1] = 0xff;
 	fat[2] = 0xff;
 	fat[3] = 0xff;
 
-	// FAT #1
+	// ��1FAT
 	if (!fio.Seek(0x2500)) {
 		return FALSE;
 	}
@@ -1827,7 +1827,7 @@ BOOL FASTCALL CSASIMakeDlg::Format()
 		return FALSE;
 	}
 
-	// FAT #2
+	// ��2FAT
 	if (!fio.Seek(dwFat)) {
 		return FALSE;
 	}
@@ -1835,7 +1835,7 @@ BOOL FASTCALL CSASIMakeDlg::Format()
 		return FALSE;
 	}
 
-	// Close
+	// �N���[�Y
 	fio.Close();
 
 	// Error
@@ -1972,7 +1972,7 @@ const BYTE CSASIMakeDlg::MENU[] = {
 //---------------------------------------------------------------------------
 //
 //	IPL
-//	Obtained from Format.x v2.31
+//	��Format.x v2.31���擾
 //
 //---------------------------------------------------------------------------
 const BYTE CSASIMakeDlg::IPL[] = {
@@ -2075,14 +2075,14 @@ CMOMakeDlg::CMOMakeDlg(CWnd *pParent) : CDiskMakeDlg(pParent)
 
 //---------------------------------------------------------------------------
 //
-//	Format
+//	�t�H�[�}�b�g
 //
 //---------------------------------------------------------------------------
 BOOL FASTCALL CMOMakeDlg::Format()
 {
 	ASSERT(this);
 
-	// Set the media type
+	// ���f�B�A�^�C�v�ݒ�
 	switch (m_dwSize) {
 		// 128MB
 		case 0x797f400:
@@ -2104,19 +2104,19 @@ BOOL FASTCALL CMOMakeDlg::Format()
 			m_nMedia = 3;
 			break;
 
-		// Other (should never happen)
+		// ���̑�(���蓾�Ȃ�)
 		default:
 			ASSERT(FALSE);
 			return TRUE;
 	}
 
-	// Dispatch by format
+	// �t�H�[�}�b�g
 	switch (m_nFormat) {
-		// IBM format
+		// IBM�t�H�[�}�b�g
 		case 1:
 			return FormatIBM();
 
-		// SHARP format
+		// SHARP�t�H�[�}�b�g
 		case 2:
 			return FormatSHARP();
 	}
@@ -2141,17 +2141,17 @@ BOOL FASTCALL CMOMakeDlg::FormatIBM()
 	// Create BPB data
 	MakeBPB(bpbData);
 
-	// Open the file
+	// �t�@�C���I�[�v��
 	if (!fio.Open(m_szPath, Fileio::ReadWrite)) {
 		return FALSE;
 	}
 
-	// Write the BPB
+	// Write BPB��
 	if (!fio.Write(bpbData, sizeof(bpbData))) {
 		return FALSE;
 	}
 
-	// Write the boot mark
+	// Write boot mark�
 	markData[0] = 0x55;
 	markData[1] = 0xaa;
 	if (!fio.Seek(0x1fe)) {
@@ -2163,13 +2163,13 @@ BOOL FASTCALL CMOMakeDlg::FormatIBM()
 		return FALSE;
 	}
 
-	// Loop through each FAT copy
+	// FAT�������݃��[�v
 	fatData[0] = bpbData[21];
 	fatData[1] = 0xff;
 	fatData[2] = 0xff;
 	fatData[3] = 0xff;
 	for (i=0; i<bpbData[16]; i++) {
-		// Calculate the FAT offset for this copy
+		// Calculate cluster offset(1FAT������Z�N�^���~FAT�C���f�b�N�X+�\��Z�N�^��)
 		dwOffset = bpbData[22];
 		dwOffset *= i;
 		dwOffset += bpbData[14];
@@ -2184,7 +2184,7 @@ BOOL FASTCALL CMOMakeDlg::FormatIBM()
 			dwOffset <<= 11;
 		}
 
-		// Write the FAT header
+		// FAT��������
 		if (!fio.Seek(dwOffset)) {
 			fio.Close();
 			return FALSE;
@@ -2214,7 +2214,7 @@ void FASTCALL CMOMakeDlg::MakeBPB(BYTE *pBPB)
 	ASSERT(this);
 	ASSERT(pBPB);
 
-	// Jump to boot (filler for the 80x86 loop)
+	// Jump to boot (filler for 80x86 loop)(80x86�̖������[�v�Ƃ���)
 	pBPB[0] = 0xeb;
 	pBPB[1] = 0xfe;
 	pBPB[2] = 0x90;
@@ -2232,107 +2232,107 @@ void FASTCALL CMOMakeDlg::MakeBPB(BYTE *pBPB)
 
 	// Bytes per sector
 	if (m_nMedia < 3) {
-		// 512 bytes per sector
+		// 512�o�C�g/�Z�N�^
 		pBPB[11] = 0x00;
 		pBPB[12] = 0x02;
 	}
 	else {
-		// 2048 bytes per sector
+		// 2048�o�C�g/�Z�N�^
 		pBPB[11] = 0x00;
 		pBPB[12] = 0x08;
 	}
 
-	// Sectors per cluster
+	// 1�N���X�^������̃Z�N�^��
 	switch (m_nMedia) {
-		// 128 MB: 4 sectors per cluster
+		// 128MB ... 4�Z�N�^/�N���X�^
 		case 0:
 			pBPB[13] = 0x04;
 			break;
-		// 230 MB: 8 sectors per cluster
+		// 230MB ... 8�Z�N�^/�N���X�^
 		case 1:
 			pBPB[13] = 0x08;
 			break;
-		// 540 MB: 16 sectors per cluster
+		// 540MB ... 16�Z�N�^/�N���X�^
 		case 2:
 			pBPB[13] = 0x10;
 			break;
-		// 640 MB: 8 sectors per cluster
+		// 640MB ... 8�Z�N�^/�N���X�^
 		case 3:
 			pBPB[13] = 0x08;
 			break;
 	}
 
-	// Reserved sectors (1 sector)
+	// �\��Z�N�^��(1�Z�N�^)
 	pBPB[14] = 0x01;
 	pBPB[15] = 0x00;
 
-	// Number of FATs (two copies)
+	// FAT��(��1,��2��2��)
 	pBPB[16] = 0x02;
 
-	// Root directory entries (512)
+	// ���[�g�f�B���N�g���̃G���g����(512)
 	pBPB[17] = 0x00;
 	pBPB[18] = 0x02;
 
-	// Total sectors (32-bit, so 16-bit field is 0)
+	// �_���Z�N�^��(32�r�b�g�Z�N�^�A�h���b�V���O�Ȃ̂�0)
 	pBPB[19] = 0x00;
 	pBPB[20] = 0x00;
 
-	// Media ID byte (F0)
+	// ���f�B�AID�o�C�g(F0)
 	pBPB[21] = 0xf0;
 
-	// Sectors per FAT
+	// 1FAT������̃Z�N�^��
 	switch (m_nMedia) {
-		// 128 MB: 243 sectors per FAT
+		// 128MB ... 243�Z�N�^/FAT
 		case 0:
 			pBPB[22] = 0xf3;
 			break;
-		// 230 MB: 218 sectors per FAT
+		// 230MB ... 218�Z�N�^/FAT
 		case 1:
 			pBPB[22] = 0xda;
 			break;
-		// 540 MB: 255 sectors per FAT
+		// 540MB ... 255�Z�N�^/FAT
 		case 2:
 			pBPB[22] = 0xff;
 			break;
-		// 640 MB: 38 sectors per FAT
+		// 640MB ... 38�Z�N�^/FAT
 		case 3:
 			pBPB[22] = 0x26;
 			break;
 	}
 	pBPB[23] = 0x00;
 
-	// Sectors per track
+	// �g���b�N������̃Z�N�^��
 	switch (m_nMedia) {
-		// 128 MB: 25 sectors per track
+		// 128MB ... 25�Z�N�^/�g���b�N
 		case 0:
 			pBPB[24] = 0x19;
 			break;
-		// 230 MB: 32 sectors per track
+		// 230MB ... 32�Z�N�^/�g���b�N
 		case 1:
 			pBPB[24] = 0x20;
 			break;
-		// 540 MB: 32 sectors per track
+		// 540MB ... 32�Z�N�^/�g���b�N
 		case 2:
 			pBPB[24] = 0x20;
 			break;
-		// 640 MB: 32 sectors per track
+		// 640MB ... 32�Z�N�^/�g���b�N
 		case 3:
 			pBPB[24] = 0x20;
 			break;
 	}
 	pBPB[25] = 0x00;
 
-	// Number of heads (1)
+	// �w�b�h��(1)
 	pBPB[26] = 0x01;
 	pBPB[27] = 0x00;
 
-	// Hidden sectors (0)
+	// �B���Z�N�^��(0)
 	pBPB[28] = 0x00;
 	pBPB[29] = 0x00;
 	pBPB[30] = 0x00;
 	pBPB[31] = 0x00;
 
-	// Total sectors (128 MB: 248826-1, 230 MB: 446325-1)
+	// �_���Z�N�^��(128MB��248826-1�Z�N�^�A230MB��446325-1�Z�N�^)
 	dwSectors = m_dwSize;
 	if (m_nMedia < 3) {
 		dwSectors >>= 9;
@@ -2346,26 +2346,26 @@ void FASTCALL CMOMakeDlg::MakeBPB(BYTE *pBPB)
 	pBPB[34] = (BYTE)(dwSectors >> 16);
 	pBPB[35] = 0x00;
 
-	// INT 13 drive number (C: 0x80)
+	// INT 13�h���C�u�ԍ�(C:0x80)
 	pBPB[36] = 0x80;
 
-	// Reserved
+	// �\��
 	pBPB[37] = 0x00;
 
-	// Extended boot signature (0x29)
+	// �g���u�[�g���ʃR�[�h(0x29)
 	pBPB[38] = 0x29;
 
-	// Volume serial number (+39, 40, 41, 42)
+	// �{�����[���V���A���ԍ�(+39, 40, 41, 42)
 	MakeSerial(&pBPB[39]);
 
-	// Volume label and file system
+	// �{�����[�����x���A�t�@�C���V�X�e��
 	strcpy((char*)(pBPB + 43), "NO NAME    FAT16  ");
 	pBPB[61] = 0x20;
 }
 
 //---------------------------------------------------------------------------
 //
-//	Create the volume serial number
+//	�{�����[���V���A���쐬
 //
 //---------------------------------------------------------------------------
 void FASTCALL CMOMakeDlg::MakeSerial(BYTE *pSerial)
@@ -2375,19 +2375,19 @@ void FASTCALL CMOMakeDlg::MakeSerial(BYTE *pSerial)
 	ASSERT(this);
 	ASSERT(pSerial);
 
-	// Get the current time
+	// ���ݎ��Ԃ��擾
 	::GetLocalTime(&st);
 
-	// Offset 3: current seconds
+	// �I�t�Z�b�g3 - �����̕b
 	pSerial[3] = (BYTE)st.wSecond;
 
-	// Offset 2: current day
+	// �I�t�Z�b�g2 - ���t�̓�
 	pSerial[2] = (BYTE)st.wDay;
 
-	// Offset 1: upper byte of the current year plus hour
+	// �I�t�Z�b�g1 - ����̏�ʃo�C�g�{��
 	pSerial[1] = (BYTE)((st.wYear >> 8) + st.wHour);
 
-	// Offset 0: lower byte of the current year plus minute
+	// �I�t�Z�b�g0 - ����̉��ʃo�C�g�{��
 	pSerial[0] = (BYTE)((st.wYear & 0xff) + st.wMinute);
 }
 
@@ -2408,10 +2408,10 @@ BOOL FASTCALL CMOMakeDlg::FormatSHARP()
 	ASSERT(this);
 	ASSERT(m_nMedia < 3);
 
-	// Clear the buffer
+	// Buffer release���
 	memset(buf, 0, sizeof(buf));
 
-	// SCSI header "X68SCSI1"
+	// SCSI�w�b�_"X68SCSI1"
 	strcpy((char*)buf, "X68SCSI1");
 	buf[8] = 0x02;
 	dwSectors = m_dwSize;
@@ -2423,7 +2423,7 @@ BOOL FASTCALL CMOMakeDlg::FormatSHARP()
 	buf[14] = 0x01;
 	buf[15] = 0x02;
 
-	// Formatter marker "XM6 version X.XX"
+	// �t�H�[�}�b�^�}�[�J"XM6 version X.XX"
 	::GetVM()->GetVersion(dwMajor, dwMinor);
 	strcpy((char*)&buf[0x10], "XM6 version ");
 	buf[28] = (BYTE)(dwMajor + '0');
@@ -2431,18 +2431,18 @@ BOOL FASTCALL CMOMakeDlg::FormatSHARP()
 	buf[30] = (BYTE)((dwMinor >> 4) + '0');
 	buf[31] = (BYTE)((dwMinor & 0x0f) + '0');
 
-	// Open the file
+	// �t�@�C���I�[�v��
 	if (!fio.Open(m_szPath, Fileio::ReadWrite)) {
 		return FALSE;
 	}
 
-	// Write the SCSI header and formatter marker
+	// SCSI�w�b�_+�t�H�[�}�b�^�}�[�J
 	if (!fio.Write(buf, 0x20)) {
 		fio.Close();
 		return FALSE;
 	}
 
-	// Write the SCSI menu
+	// SCSI���j���[
 	if (!fio.Seek(0x400)) {
 		fio.Close();
 		return FALSE;
@@ -2452,7 +2452,7 @@ BOOL FASTCALL CMOMakeDlg::FormatSHARP()
 		return FALSE;
 	}
 
-	// Write the partition table
+	// �p�[�e�B�V�����e�[�u��
 	switch (m_nMedia) {
 		// 128MB
 		case 0:
@@ -2476,7 +2476,7 @@ BOOL FASTCALL CMOMakeDlg::FormatSHARP()
 		return FALSE;
 	}
 
-	// Write the partition boot sector
+	// �p�[�e�B�V�����擪
 	switch (m_nMedia) {
 		// 128MB
 		case 0:
@@ -2520,7 +2520,7 @@ BOOL FASTCALL CMOMakeDlg::FormatSHARP()
 		return FALSE;
 	}
 
-	// Apply the IPL patch for each media size
+	// IPL�p�b�`(�e�ʂɂ��Ⴄ����)
 	memcpy(buf, IPL, 0x21);
 	switch (m_nMedia) {
 		// 128MB
@@ -2554,19 +2554,19 @@ BOOL FASTCALL CMOMakeDlg::FormatSHARP()
 		return FALSE;
 	}
 
-	// Write the rest of the IPL
+	// IPL�c��
 	if (!fio.Write(&IPL[0x21], (0x2c5 - 0x21))) {
 		fio.Close();
 		return FALSE;
 	}
 
-	// Create the FAT
+	// FAT�쐬
 	buf[0] = 0xf6;
 	buf[1] = 0xff;
 	buf[2] = 0xff;
 	buf[3] = 0xff;
 
-	// FAT #1
+	// ��1FAT
 	if (!fio.Seek(0x8400)) {
 		fio.Close();
 		return FALSE;
@@ -2576,7 +2576,7 @@ BOOL FASTCALL CMOMakeDlg::FormatSHARP()
 		return FALSE;
 	}
 
-	// FAT #2
+	// ��2FAT
 	dwOffset = (DWORD)buf[0x1d];
 	dwOffset <<= 10;
 	dwOffset += 0x8400;
@@ -2596,7 +2596,7 @@ BOOL FASTCALL CMOMakeDlg::FormatSHARP()
 
 //---------------------------------------------------------------------------
 //
-//	Partition table (SHARP format, 128 MB)
+//	�p�[�e�B�V�����e�[�u��(SHARP�t�H�[�}�b�g�A128MB)
 //
 //---------------------------------------------------------------------------
 const BYTE CMOMakeDlg::PartTable128[] = {
@@ -2608,7 +2608,7 @@ const BYTE CMOMakeDlg::PartTable128[] = {
 
 //---------------------------------------------------------------------------
 //
-//	Partition table (SHARP format, 230 MB)
+//	�p�[�e�B�V�����e�[�u��(SHARP�t�H�[�}�b�g�A230MB)
 //
 //---------------------------------------------------------------------------
 const BYTE CMOMakeDlg::PartTable230[] = {
@@ -2620,7 +2620,7 @@ const BYTE CMOMakeDlg::PartTable230[] = {
 
 //---------------------------------------------------------------------------
 //
-//	Partition table (SHARP format, 540 MB)
+//	�p�[�e�B�V�����e�[�u��(SHARP�t�H�[�}�b�g�A540MB)
 //
 //---------------------------------------------------------------------------
 const BYTE CMOMakeDlg::PartTable540[] = {
@@ -2632,7 +2632,7 @@ const BYTE CMOMakeDlg::PartTable540[] = {
 
 //---------------------------------------------------------------------------
 //
-//	Partition boot sector (SHARP format, 128 MB)
+//	�p�[�e�B�V�����擪(SHARP�t�H�[�}�b�g�A128MB)
 //
 //---------------------------------------------------------------------------
 const BYTE CMOMakeDlg::PartTop128[] = {
@@ -2642,7 +2642,7 @@ const BYTE CMOMakeDlg::PartTop128[] = {
 
 //---------------------------------------------------------------------------
 //
-//	Partition boot sector (SHARP format, 230 MB)
+//	�p�[�e�B�V�����擪(SHARP�t�H�[�}�b�g�A230MB)
 //
 //---------------------------------------------------------------------------
 const BYTE CMOMakeDlg::PartTop230[] = {
@@ -2652,7 +2652,7 @@ const BYTE CMOMakeDlg::PartTop230[] = {
 
 //---------------------------------------------------------------------------
 //
-//	Partition boot sector (SHARP format, 540 MB)
+//	�p�[�e�B�V�����擪(SHARP�t�H�[�}�b�g�A540MB)
 //
 //---------------------------------------------------------------------------
 const BYTE CMOMakeDlg::PartTop540[] = {
@@ -2662,8 +2662,8 @@ const BYTE CMOMakeDlg::PartTop540[] = {
 
 //---------------------------------------------------------------------------
 //
-//	SCSI menu
-//	Obtained from Format.x v2.31
+//	SCSI�N�����j���[
+//	��Format.x v2.31���擾
 //
 //---------------------------------------------------------------------------
 const BYTE CMOMakeDlg::SCSIMENU[] = {
@@ -2796,8 +2796,8 @@ const BYTE CMOMakeDlg::SCSIMENU[] = {
 
 //---------------------------------------------------------------------------
 //
-//	SCSI disk driver (SCHDISK) 1.04
-//	Obtained from Format.x v2.31
+//	SCSI�f�B�X�N�h���C�o(SCHDISK) 1.04
+//	��Format.x v2.31���擾
 //
 //---------------------------------------------------------------------------
 const BYTE CMOMakeDlg::SCHDISK[] = {
@@ -4014,7 +4014,7 @@ const BYTE CMOMakeDlg::SCSIIOCS[] = {
 //---------------------------------------------------------------------------
 //
 //	IPL
-//	Obtained from Format.x v2.31
+//	��Format.x v2.31���擾
 //
 //---------------------------------------------------------------------------
 const BYTE CMOMakeDlg::IPL[] = {
@@ -4150,10 +4150,10 @@ BOOL CTrapDlg::OnInitDialog()
 {
 	CSpinButtonCtrl *pSpin;
 
-	// Base class
+	// ��{�N���X
 	CDialog::OnInitDialog();
 
-	// Initialize the spin control
+	// �X�s���R���g���[��������
 	pSpin = (CSpinButtonCtrl*)GetDlgItem(IDC_TRAP_D0S);
 	ASSERT(pSpin);
 	pSpin->SetRange(0, 255);
@@ -4167,7 +4167,7 @@ BOOL CTrapDlg::OnInitDialog()
 
 //---------------------------------------------------------------------------
 //
-//	Handle the scrollbar
+//	�c�X�N���[��
 //
 //---------------------------------------------------------------------------
 void CTrapDlg::OnVScroll(UINT /*nSBCode*/, UINT nPos, CScrollBar* /*pBar*/)
@@ -4175,18 +4175,18 @@ void CTrapDlg::OnVScroll(UINT /*nSBCode*/, UINT nPos, CScrollBar* /*pBar*/)
 	CString strText;
 	CEdit *pEdit;
 
-	// Get the edit control
+	// �G�f�B�b�g�R���g���[���擾
 	pEdit = (CEdit*)GetDlgItem(IDC_TRAP_D0E);
 	ASSERT(pEdit);
 
-	// Format and set the text
+	// Error��t�H�[�}�b�g�A�ݒ�
 	strText.Format(_T("$%02X"), nPos);
 	pEdit->SetWindowText(strText);
 }
 
 //---------------------------------------------------------------------------
 //
-//	Dialog OK
+//	�_�C�A���OOK
 //
 //---------------------------------------------------------------------------
 void CTrapDlg::OnOK()
@@ -4198,7 +4198,7 @@ void CTrapDlg::OnOK()
 	ASSERT(pSpin);
 	m_dwCode = (DWORD)(LOWORD(pSpin->GetPos()));
 
-	// Base class
+	// ��{�N���X
 	CDialog::OnOK();
 }
 

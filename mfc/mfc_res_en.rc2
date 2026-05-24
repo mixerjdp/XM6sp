@@ -141,9 +141,8 @@ BEGIN
      MENUITEM "3.0x	2304x1536",         IDM_SCALE_300
  END
         MENUITEM "F&ull Screen\tAlt+Enter",     IDM_FULLSCREEN
-
+        MENUITEM "Render Fast",                 IDM_RENDER_FAST
         MENUITEM "&CRT Shader\tF9",             IDM_TOGGLE_SHADER
-        MENUITEM "Render Fast",        IDM_TOGGLE_RENDER_FAST_DUMMY
     END
     POPUP "&Debug"
     BEGIN
@@ -330,9 +329,8 @@ BEGIN
      MENUITEM "3.0x	2304x1536",         IDM_SCALE_300
  END
             MENUITEM "F&ull Screen\tAlt+Enter",     IDM_FULLSCREEN
-
+            MENUITEM "Render Fast",                 IDM_RENDER_FAST
             MENUITEM "&CRT Shader\tF9",             IDM_TOGGLE_SHADER
-            MENUITEM "Render Fast",        IDM_TOGGLE_RENDER_FAST_DUMMY
         END
         POPUP "&Debug"
         BEGIN
@@ -1746,4 +1744,3 @@ BEGIN
     IDS_US_SAVECLOSE        "%s is updated. Save?"
     IDS_US_PROCESSOR        "This processor is not supported.\nMMX and CMOV instructions are required."
 END
-

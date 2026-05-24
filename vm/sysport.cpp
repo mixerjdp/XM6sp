@@ -2,7 +2,7 @@
 //
 //	X68000 EMULATOR "XM6"
 //
-//	Copyright (C) 2001-2006 PI(ytanaka@ipc-tokai.or.jp)
+//	Copyright (C) 2001-2006 PI (ytanaka@ipc-tokai.or.jp)
 //	[ System Port ]
 //
 //---------------------------------------------------------------------------
@@ -35,7 +35,7 @@
 //---------------------------------------------------------------------------
 SysPort::SysPort(VM *p) : MemDevice(p)
 {
-	// Initialize device ID
+	// Device ID initialization
 	dev.id = MAKEID('S', 'Y', 'S', 'P');
 	dev.desc = "System (MESSIAH)";
 
@@ -43,7 +43,7 @@ SysPort::SysPort(VM *p) : MemDevice(p)
 	memdev.first = 0xe8e000;
 	memdev.last = 0xe8ffff;
 
-	// Clear all
+	// All clear
 	memset(&sysport, 0, sizeof(sysport));
 
 	// Objects
@@ -61,37 +61,37 @@ SysPort::SysPort(VM *p) : MemDevice(p)
 //---------------------------------------------------------------------------
 BOOL FASTCALL SysPort::Init()
 {
-	ASSERT(this);
+ASSERT(this);
 
 	// Base class
 	if (!MemDevice::Init()) {
 		return FALSE;
 	}
 
-	// Get memory
-	ASSERT(!memory);
+	// Memory get
+ASSERT(!memory);
 	memory = (Memory*)vm->SearchDevice(MAKEID('M', 'E', 'M', ' '));
-	ASSERT(memory);
+ASSERT(memory);
 
-	// Get SRAM
-	ASSERT(!sram);
+	// SRAM get
+ASSERT(!sram);
 	sram = (SRAM*)vm->SearchDevice(MAKEID('S', 'R', 'A', 'M'));
-	ASSERT(sram);
+ASSERT(sram);
 
-	// Get keyboard
-	ASSERT(!keyboard);
+	// Keyboard get
+ASSERT(!keyboard);
 	keyboard = (Keyboard*)vm->SearchDevice(MAKEID('K', 'E', 'Y', 'B'));
-	ASSERT(keyboard);
+ASSERT(keyboard);
 
-	// Get CRTC
-	ASSERT(!crtc);
+	// CRTC get
+ASSERT(!crtc);
 	crtc = (CRTC*)vm->SearchDevice(MAKEID('C', 'R', 'T', 'C'));
-	ASSERT(crtc);
+ASSERT(crtc);
 
-	// Get render
-	ASSERT(!render);
+	// Render get
+ASSERT(!render);
 	render = (Render*)vm->SearchDevice(MAKEID('R', 'E', 'N', 'D'));
-	ASSERT(render);
+ASSERT(render);
 
 	return TRUE;
 }
@@ -103,9 +103,9 @@ BOOL FASTCALL SysPort::Init()
 //---------------------------------------------------------------------------
 void FASTCALL SysPort::Cleanup()
 {
-	ASSERT(this);
+ASSERT(this);
 
-	// Call base class
+	// Base class
 	MemDevice::Cleanup();
 }
 
@@ -116,12 +116,12 @@ void FASTCALL SysPort::Cleanup()
 //---------------------------------------------------------------------------
 void FASTCALL SysPort::Reset()
 {
-	ASSERT(this);
-	ASSERT_DIAG();
+ASSERT(this);
+ASSERT_DIAG();
 
-	LOG0(Log::Normal, "Sysport - Reset");
+	LOG0(Log::Normal, "Reset");
 
-	// Reset configuration values
+	// Setting value reset
 	sysport.contrast = 0;
 	sysport.scope_3d = 0;
 	sysport.image_unit = 0;
@@ -138,19 +138,19 @@ BOOL FASTCALL SysPort::Save(Fileio *fio, int /*ver*/)
 {
 	size_t sz;
 
-	ASSERT(this);
-	ASSERT(fio);
-	ASSERT_DIAG();
+ASSERT(this);
+ASSERT(fio);
+ASSERT_DIAG();
 
-	LOG0(Log::Normal, "Sysport - Save");
+	LOG0(Log::Normal, "Save");
 
-	// Save size
+	// Size save
 	sz = sizeof(sysport_t);
 	if (!fio->Write(&sz, sizeof(sz))) {
 		return FALSE;
 	}
 
-	// Save body
+	// Data save
 	if (!fio->Write(&sysport, (int)sz)) {
 		return FALSE;
 	}
@@ -167,13 +167,13 @@ BOOL FASTCALL SysPort::Load(Fileio *fio, int /*ver*/)
 {
 	size_t sz;
 
-	ASSERT(this);
-	ASSERT(fio);
-	ASSERT_DIAG();
+ASSERT(this);
+ASSERT(fio);
+ASSERT_DIAG();
 
-	LOG0(Log::Normal, "Sysport - Load");
+	LOG0(Log::Normal, "Load");
 
-	// Load size, verify
+	// Size load, compare
 	if (!fio->Read(&sz, sizeof(sz))) {
 		return FALSE;
 	}
@@ -181,12 +181,12 @@ BOOL FASTCALL SysPort::Load(Fileio *fio, int /*ver*/)
 		return FALSE;
 	}
 
-	// Load body
+	// Data load
 	if (!fio->Read(&sysport, (int)sz)) {
 		return FALSE;
 	}
 
-	// Notify render
+	// Render notify
 	render->SetContrast(sysport.contrast);
 
 	return TRUE;
@@ -199,16 +199,16 @@ BOOL FASTCALL SysPort::Load(Fileio *fio, int /*ver*/)
 //---------------------------------------------------------------------------
 void FASTCALL SysPort::ApplyCfg(const Config* /*config*/)
 {
-	ASSERT(this);
-	ASSERT_DIAG();
+ASSERT(this);
+ASSERT_DIAG();
 
-	LOG0(Log::Normal, "Sysport - ApplyCfg");
+	LOG0(Log::Normal, "Apply configuration");
 }
 
 #if !defined(NDEBUG)
 //---------------------------------------------------------------------------
 //
-//	Diagnostic
+//	Assert
 //
 //---------------------------------------------------------------------------
 void FASTCALL SysPort::AssertDiag() const
@@ -216,43 +216,43 @@ void FASTCALL SysPort::AssertDiag() const
 	// Base class
 	MemDevice::AssertDiag();
 
-	ASSERT(this);
-	ASSERT(GetID() == MAKEID('S', 'Y', 'S', 'P'));
-	ASSERT(memdev.first == 0xe8e000);
-	ASSERT(memdev.last == 0xe8ffff);
-	ASSERT(memory);
-	ASSERT(memory->GetID() == MAKEID('M', 'E', 'M', ' '));
-	ASSERT(sram);
-	ASSERT(sram->GetID() == MAKEID('S', 'R', 'A', 'M'));
-	ASSERT(keyboard);
-	ASSERT(keyboard->GetID() == MAKEID('K', 'E', 'Y', 'B'));
-	ASSERT(crtc);
-	ASSERT(crtc->GetID() == MAKEID('C', 'R', 'T', 'C'));
-	ASSERT(sysport.contrast <= 0x0f);
-	ASSERT(sysport.scope_3d <= 0x03);
-	ASSERT(sysport.image_unit <= 0x1f);
-	ASSERT(sysport.power_count <= 0x03);
-	ASSERT(sysport.ver_count <= 0x03);
+ASSERT(this);
+ASSERT(GetID() == MAKEID('S', 'Y', 'S', 'P'));
+ASSERT(memdev.first == 0xe8e000);
+ASSERT(memdev.last == 0xe8ffff);
+ASSERT(memory);
+ASSERT(memory->GetID() == MAKEID('M', 'E', 'M', ' '));
+ASSERT(sram);
+ASSERT(sram->GetID() == MAKEID('S', 'R', 'A', 'M'));
+ASSERT(keyboard);
+ASSERT(keyboard->GetID() == MAKEID('K', 'E', 'Y', 'B'));
+ASSERT(crtc);
+ASSERT(crtc->GetID() == MAKEID('C', 'R', 'T', 'C'));
+ASSERT(sysport.contrast <= 0x0f);
+ASSERT(sysport.scope_3d <= 0x03);
+ASSERT(sysport.image_unit <= 0x1f);
+ASSERT(sysport.power_count <= 0x03);
+ASSERT(sysport.ver_count <= 0x03);
 }
 #endif	// NDEBUG
 
 //---------------------------------------------------------------------------
 //
-//	Read byte
+//	Byte read
 //
 //---------------------------------------------------------------------------
 DWORD FASTCALL SysPort::ReadByte(DWORD addr)
 {
 	DWORD data;
 
-	ASSERT(this);
-	ASSERT((addr >= memdev.first) && (addr <= memdev.last));
-	ASSERT_DIAG();
+ASSERT(this);
+ASSERT((addr >= memdev.first) && (addr <= memdev.last));
+ASSERT_DIAG();
 
-	// Decode only 4 bits
+	// 4bit only decode
 	addr &= 0x0f;
 
-	// Decode only odd bytes
+	// Even byte only decode
 	if ((addr & 1) == 0) {
 		return 0xff;
 	}
@@ -268,17 +268,17 @@ DWORD FASTCALL SysPort::ReadByte(DWORD addr)
 			data |= sysport.contrast;
 			return data;
 
-		// Display analog RGB / 3D scope
+		// Baud rate receive and 3D shift
 		case 1:
 			data = 0xf8;
 			data |= sysport.scope_3d;
 			return data;
 
-		// Image unit number
+		// Image unit select
 		case 2:
 			return 0xff;
 
-		// Keyboard connect / NMI reset / HRL
+		// Keyboard connect ENMI reset and HRL
 		case 3:
 			data = 0xf0;
 			if (keyboard->IsConnect()) {
@@ -289,24 +289,24 @@ DWORD FASTCALL SysPort::ReadByte(DWORD addr)
 			}
 			return data;
 
-		// ROM/DRAM wait number (X68030)
+		// ROM/DRAM wait (X68030)
 		case 4:
 			return 0xff;
 
-		// MPU type / clock
+		// MPU mode selection
 		case 5:
 			switch (memory->GetMemType()) {
-				// Standard / ACE / EXPERT / PRO / SUPER
+				// SASI/SCSI
 				case Memory::SASI:
 				case Memory::SCSIInt:
 				case Memory::SCSIExt:
-					// Standard port, so read 0xff
+					// SASI port so return 0xff
 					return 0xff;
 
-				// XVI / Compact
+				// XVI/Compact
 				case Memory::XVI:
 				case Memory::Compact:
-					// Inverted arrangement: upper 4 bits assigned to operating clock
+					// Real machine, so 4bit assign to clock
 					// 1111:10MHz
 					// 1110:16MHz
 					// 1101:20MHz
@@ -318,69 +318,69 @@ DWORD FASTCALL SysPort::ReadByte(DWORD addr)
 
 				// X68030
 				case Memory::X68030:
-					// Similarly, upper 4 bits assigned to MPU type
+					// Real, so 4bit assign to MPU mode
 					// 1111:68000
 					// 1110:68020
 					// 1101:68030
 					// 1100:68040
 					return 0xdc;
 
-				// Other (impossible)
+				// Others (invalid)
 				default:
 					ASSERT(FALSE);
 					break;
 			}
 			return 0xff;
 
-		// SRAM write control
+		// SRAM write enable
 		case 6:
-			// Version number (XM6 extension)
+			// Version register (XM6 original)
 			if (sysport.ver_count != 0) {
 				return GetVR();
 			}
 			return 0xff;
 
-		// Power switch
+		// POWER monitor
 		case 7:
 			return 0xff;
 	}
 
-	// Normally should not reach here
-	ASSERT(FALSE);
+	// Normal, other does not exist
+ASSERT(FALSE);
 	return 0xff;
 }
 
 //---------------------------------------------------------------------------
 //
-//	Read word
+//	Word read
 //
 //---------------------------------------------------------------------------
 DWORD FASTCALL SysPort::ReadWord(DWORD addr)
 {
-	ASSERT(this);
-	ASSERT((addr >= memdev.first) && (addr <= memdev.last));
-	ASSERT((addr & 1) == 0);
-	ASSERT_DIAG();
+ASSERT(this);
+ASSERT((addr >= memdev.first) && (addr <= memdev.last));
+ASSERT((addr & 1) == 0);
+ASSERT_DIAG();
 
 	return (0xff00 | ReadByte(addr + 1));
 }
 
 //---------------------------------------------------------------------------
 //
-//	Write byte
+//	Byte write
 //
 //---------------------------------------------------------------------------
 void FASTCALL SysPort::WriteByte(DWORD addr, DWORD data)
 {
-	ASSERT(this);
-	ASSERT((addr >= memdev.first) && (addr <= memdev.last));
-	ASSERT(data < 0x100);
-	ASSERT_DIAG();
+ASSERT(this);
+ASSERT((addr >= memdev.first) && (addr <= memdev.last));
+ASSERT(data < 0x100);
+ASSERT_DIAG();
 
-	// Decode only 4 bits
+	// 4bit only decode
 	addr &= 0x0f;
 
-	// Decode only odd bytes
+	// Even byte only decode
 	if ((addr & 1) == 0) {
 		return;
 	}
@@ -395,39 +395,39 @@ void FASTCALL SysPort::WriteByte(DWORD addr, DWORD data)
 			data &= 0x0f;
 			if (sysport.contrast != data) {
 #if defined(SYSPORT_LOG)
-				LOG1(Log::Normal, "WriteByte %d", data);
+				LOG1(Log::Normal, "Contrast setting %d", data);
 #endif	// SYSPORT_LOG
 
-				// Set if changed
+				// Changed setting
 				sysport.contrast = data;
 				render->SetContrast(data);
 			}
 			return;
 
-		// Display analog RGB / 3D scope
+		// Baud rate and 3D shift
 		case 1:
 			data &= 3;
 			if (sysport.scope_3d != data) {
 #if defined(SYSPORT_LOG)
-				LOG1(Log::Normal, "3D�X�R�[�v�ݒ� %d", data);
+				LOG1(Log::Normal, "3D shift setting %d", data);
 #endif	// SYSPORT_LOG
 
-				// Set if changed
+				// Changed setting
 				sysport.scope_3d = data;
 			}
 			return;
 
-		// Keyboard connect / NMI reset / HRL
+		// Keyboard connect ENMI reset and HRL
 		case 3:
 			if (data & 0x08) {
 #if defined(SYSPORT_LOG)
-				LOG0(Log::Normal, "�L�[�{�[�h����");
+				LOG0(Log::Normal, "Keyboard connect");
 #endif	// SYSPORT_LOG
 				keyboard->SendWait(FALSE);
 			}
 			else {
 #if defined(SYSPORT_LOG)
-				LOG0(Log::Normal, "�L�[�{�[�h�֎~");
+				LOG0(Log::Normal, "Keyboard disconnect");
 #endif	// SYSPORT_LOG
 				keyboard->SendWait(TRUE);
 			}
@@ -445,19 +445,19 @@ void FASTCALL SysPort::WriteByte(DWORD addr, DWORD data)
 			}
 			return;
 
-		// Image unit number
+		// Image unit select
 		case 4:
 #if defined(SYSPORT_LOG)
-			LOG1(Log::Normal, "�C���[�W���j�b�g���� $%02X", data & 0x1f);
+			LOG1(Log::Normal, "Image unit select $%02X", data & 0x1f);
 #endif	// SYSPORT_LOG
 			sysport.image_unit = data & 0x1f;
 			return;
 
-		// ROM/DRAM wait number
+		// ROM/DRAM wait
 		case 5:
 			return;
 
-		// SRAM write control
+		// SRAM write enable
 		case 6:
 			// SRAM write enable
 			if (data == 0x31) {
@@ -466,10 +466,10 @@ void FASTCALL SysPort::WriteByte(DWORD addr, DWORD data)
 			else {
 				sram->WriteEnable(FALSE);
 			}
-			// Version number (XM6 extension)
+			// Version register (XM6 original)
 			if (data == 'X') {
 #if defined(SYSPORT_LOG)
-				LOG0(Log::Normal, "XM6�o�[�W�����擾�J�n");
+				LOG0(Log::Normal, "XM6 version read start");
 #endif	// SYSPORT_LOG
 				sysport.ver_count = 1;
 			}
@@ -478,11 +478,11 @@ void FASTCALL SysPort::WriteByte(DWORD addr, DWORD data)
 			}
 			return;
 
-		// Power switch (turns off with sequence 00, 0F, 0F)
+		// Power save (00, 0F, 0F sequence to finish)
 		case 7:
 			data &= 0x0f;
 			switch (sysport.power_count) {
-				// No access
+				// Access none
 				case 0:
 					if (data == 0x00) {
 						sysport.power_count++;
@@ -506,7 +506,7 @@ void FASTCALL SysPort::WriteByte(DWORD addr, DWORD data)
 				case 2:
 					if (data == 0x0f) {
 						sysport.power_count++;
-						LOG0(Log::Normal, "�d��OFF");
+						LOG0(Log::Normal, "Power OFF");
 						vm->SetPower(FALSE);
 					}
 					else {
@@ -524,23 +524,23 @@ void FASTCALL SysPort::WriteByte(DWORD addr, DWORD data)
 			break;
 	}
 
-	// Normally should not reach here
-	ASSERT(FALSE);
+	// Normal, other does not exist
+ASSERT(FALSE);
 	return;
 }
 
 //---------------------------------------------------------------------------
 //
-//	Write word
+//	Word write
 //
 //---------------------------------------------------------------------------
 void FASTCALL SysPort::WriteWord(DWORD addr, DWORD data)
 {
-	ASSERT(this);
-	ASSERT((addr >= memdev.first) && (addr <= memdev.last));
-	ASSERT((addr & 1) == 0);
-	ASSERT(data < 0x10000);
-	ASSERT_DIAG();
+ASSERT(this);
+ASSERT((addr >= memdev.first) && (addr <= memdev.last));
+ASSERT((addr & 1) == 0);
+ASSERT(data < 0x10000);
+ASSERT_DIAG();
 
 	WriteByte(addr + 1, (BYTE)data);
 }
@@ -554,14 +554,14 @@ DWORD FASTCALL SysPort::ReadOnly(DWORD addr) const
 {
 	DWORD data;
 
-	ASSERT(this);
-	ASSERT((addr >= memdev.first) && (addr <= memdev.last));
-	ASSERT_DIAG();
+ASSERT(this);
+ASSERT((addr >= memdev.first) && (addr <= memdev.last));
+ASSERT_DIAG();
 
-	// Decode only 4 bits
+	// 4bit only decode
 	addr &= 0x0f;
 
-	// Decode only odd bytes
+	// Even byte only decode
 	if ((addr & 1) == 0) {
 		return 0xff;
 	}
@@ -573,17 +573,17 @@ DWORD FASTCALL SysPort::ReadOnly(DWORD addr) const
 			data |= sysport.contrast;
 			return data;
 
-		// Display analog RGB / 3D scope
+		// Baud rate receive and 3D shift
 		case 1:
 			data = 0xf8;
 			data |= sysport.scope_3d;
 			return data;
 
-		// Image unit number
+		// Image unit select
 		case 2:
 			return 0xff;
 
-		// Keyboard connect / NMI reset / HRL
+		// Keyboard connect ENMI reset and HRL
 		case 3:
 			data = 0xf0;
 			if (keyboard->IsConnect()) {
@@ -594,24 +594,24 @@ DWORD FASTCALL SysPort::ReadOnly(DWORD addr) const
 			}
 			return data;
 
-		// ROM/DRAM wait number (X68030)
+		// ROM/DRAM wait (X68030)
 		case 4:
 			return 0xff;
 
-		// MPU type / clock
+		// MPU mode selection
 		case 5:
 			switch (memory->GetMemType()) {
-				// Standard / ACE / EXPERT / PRO / SUPER
+				// SASI/SCSI
 				case Memory::SASI:
 				case Memory::SCSIInt:
 				case Memory::SCSIExt:
-					// Standard port, so read 0xff
+					// SASI port so return 0xff
 					return 0xff;
 
-				// XVI / Compact
+				// XVI/Compact
 				case Memory::XVI:
 				case Memory::Compact:
-					// Inverted arrangement: upper 4 bits assigned to operating clock
+					// Real machine, so 4bit assign to clock
 					// 1111:10MHz
 					// 1110:16MHz
 					// 1101:20MHz
@@ -623,25 +623,25 @@ DWORD FASTCALL SysPort::ReadOnly(DWORD addr) const
 
 				// X68030
 				case Memory::X68030:
-					// Similarly, upper 4 bits assigned to MPU type
+					// Real, so 4bit assign to MPU mode
 					// 1111:68000
 					// 1110:68020
 					// 1101:68030
 					// 1100:68040
 					return 0xdc;
 
-				// Other (impossible)
+				// Others (invalid)
 				default:
 					ASSERT(FALSE);
 					break;
 			}
 			return 0xff;
 
-		// SRAM write control
+		// SRAM write enable
 		case 6:
 			return 0xff;
 
-		// Power switch
+		// POWER monitor
 		case 7:
 			return 0xff;
 	}
@@ -651,7 +651,7 @@ DWORD FASTCALL SysPort::ReadOnly(DWORD addr) const
 
 //---------------------------------------------------------------------------
 //
-//	Version register readout
+//	Version register read
 //
 //---------------------------------------------------------------------------
 DWORD FASTCALL SysPort::GetVR()
@@ -659,11 +659,11 @@ DWORD FASTCALL SysPort::GetVR()
 	DWORD major;
 	DWORD minor;
 
-	ASSERT(this);
-	ASSERT_DIAG();
+ASSERT(this);
+ASSERT_DIAG();
 
 	switch (sysport.ver_count) {
-		// After writing 'X'
+		// 'X' write enable
 		case 1:
 			sysport.ver_count++;
 			return '6';
@@ -680,7 +680,7 @@ DWORD FASTCALL SysPort::GetVR()
 			sysport.ver_count = 0;
 			return minor;
 
-		// Other (impossible)
+		// Others (invalid)
 		default:
 			ASSERT(FALSE);
 			break;

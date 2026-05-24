@@ -1,4 +1,4 @@
-﻿//---------------------------------------------------------------------------
+//---------------------------------------------------------------------------
 //
 // X68000 Emulator "XM6"
 //
@@ -81,7 +81,6 @@ CDrawView::CDrawView()
 	m_pFrmWnd = NULL;
 	m_bUseDX9 = TRUE;
 	m_lPresentPending = 0;
-	m_bRenderFastDummy = FALSE;
 	m_hRenderEvent = CreateEvent(NULL, FALSE, FALSE, NULL);
 	m_hRenderExitEvent = CreateEvent(NULL, FALSE, FALSE, NULL);
 	m_hRenderAckEvent = CreateEvent(NULL, FALSE, FALSE, NULL);
@@ -125,8 +124,6 @@ CDrawView::CDrawView()
 	m_Info.nRendHeight = 0;
 	m_Info.nRendHMul = 0;
 	m_Info.nRendVMul = 0;
-	m_Info.nRendHRes = 0;
-	m_Info.nRendMixMode = 0;
 	m_Info.nLeft = 0;
 	m_Info.nTop = 0;
 	m_Info.nWidth = 0;
@@ -207,50 +204,6 @@ BOOL FASTCALL CDrawView::Init(CWnd *pParent, BOOL bShaderEnabled)
 	}
 
 	return TRUE;
-}
-
-//---------------------------------------------------------------------------
-//
-//	Render target callbacks
-//
-//---------------------------------------------------------------------------
-void FASTCALL CDrawView::DrawLine()
-{
-	if (!m_bEnable) {
-		return;
-	}
-	RequestPresent();
-}
-
-void FASTCALL CDrawView::DrawFrame()
-{
-	if (!m_bEnable) {
-		return;
-	}
-	RequestPresent();
-}
-
-BOOL FASTCALL CDrawView::SetRenderFastDummyEnabled(BOOL bEnable)
-{
-	Render *pRender;
-	BOOL bActive;
-
-	m_bRenderFastDummy = bEnable ? TRUE : FALSE;
-
-	pRender = m_Info.pRender;
-	if (!pRender) {
-		return m_bRenderFastDummy;
-	}
-
-	bActive = pRender->SetRenderFastDummyEnabled(m_bRenderFastDummy);
-	m_bRenderFastDummy = bActive;
-	RequestPresent();
-	return bActive;
-}
-
-BOOL FASTCALL CDrawView::IsRenderFastDummyEnabled() const
-{
-	return m_bRenderFastDummy;
 }
 
 //---------------------------------------------------------------------------
@@ -840,10 +793,11 @@ void FASTCALL CDrawView::SetupBitmap()
 	p = (BITMAPINFOHEADER*) new BYTE[sizeof(BITMAPINFOHEADER) + sizeof(RGBQUAD)];
 	memset(p, 0, sizeof(BITMAPINFOHEADER) + sizeof(RGBQUAD));
 
-	// XM6p keeps a full 1024x1024 composition surface regardless of
-	// the current window size; the visible view is clipped/scaled later.
-	m_Info.nBMPWidth = 1024;
-	m_Info.nBMPHeight = 1024;
+	// Create bitmap information
+	m_Info.nBMPWidth = rect.Width();
+
+	/* Bitmap height is set here */
+	m_Info.nBMPHeight = (rect.Height() < 512) ? 512 : rect.Height();
 	p->biSize = sizeof(BITMAPINFOHEADER);
 	p->biWidth = m_Info.nBMPWidth;
 	p->biHeight = -m_Info.nBMPHeight;
@@ -866,8 +820,6 @@ void FASTCALL CDrawView::SetupBitmap()
 	// Recalculate
 	m_Info.nRendHMul = -1;
 	m_Info.nRendVMul = -1;
-	m_Info.nRendHRes = -1;
-	m_Info.nRendMixMode = -1;
 	ReCalc(rect);
 }
 
@@ -893,15 +845,6 @@ void FASTCALL CDrawView::Enable(BOOL bEnable)
 			if (m_Info.pBits) {
 				m_Info.pRender->SetMixBuf(m_Info.pBits, m_Info.nBMPWidth, m_Info.nBMPHeight);
 			}
-		}
-		if (m_Info.pRender) {
-			m_Info.pRender->SetRenderTarget(this);
-			m_bRenderFastDummy = m_Info.pRender->SetRenderFastDummyEnabled(m_bRenderFastDummy);
-		}
-	}
-	else {
-		if (m_Info.pRender) {
-			m_Info.pRender->SetRenderTarget(NULL);
 		}
 	}
 
@@ -1266,11 +1209,9 @@ void FASTCALL CDrawView::RenderLoop()
 						CRect rect;
 						GetClientRect(&rect);
 						ReCalc(rect);
-						if (!CopyPx68kFrameToBits(&srcWidth, &srcHeight, &srcPitch)) {
-							srcWidth = m_Info.nWidth;
-							srcHeight = m_Info.nHeight;
-							srcPitch = m_Info.nBMPWidth;
-						}
+						srcWidth = m_Info.nWidth;
+						srcHeight = m_Info.nHeight;
+						srcPitch = m_Info.nBMPWidth;
 
 						if ((srcWidth > 0) && (srcHeight > 0) && (srcPitch >= srcWidth)) {
 							if (!m_pStagingBuffer || (m_nStagingWidth < srcWidth) || (m_nStagingHeight < srcHeight)) {
@@ -1340,7 +1281,6 @@ LRESULT CDrawView::OnPresentFrame(WPARAM /*wParam*/, LPARAM /*lParam*/)
 	if (m_bEnable && m_Info.hBitmap && m_Info.pWork && m_Info.pBits) {
 		CClientDC dc(this);
 		::LockVM();
-		CopyPx68kFrameToBits();
 		OnDraw(&dc);
 		::UnlockVM();
 	}
@@ -1368,14 +1308,6 @@ void FASTCALL CDrawView::FinishFrame()
 	m_Info.nBltRight = m_Info.nWidth - 1;
 	m_Info.nBltBottom = m_Info.nHeight - 1;
 	m_Info.bBltAll = FALSE;
-}
-
-BOOL FASTCALL CDrawView::CopyPx68kFrameToBits(int *pWidth, int *pHeight, int *pPitch)
-{
-	(void)pWidth;
-	(void)pHeight;
-	(void)pPitch;
-	return FALSE;
 }
 
 //---------------------------------------------------------------------------
@@ -1479,9 +1411,6 @@ void FASTCALL CDrawView::ApplyCfg(const Config *pConfig)
 	// Shader (CRT)
 	SetShaderEnabled(pConfig->render_shader);
 
-	// Render fast dummy
-	SetRenderFastDummyEnabled(pConfig->render_fast_dummy);
-
 	// Subwindow handling
 	pWnd = m_pSubWnd;
 	while (pWnd) {
@@ -1527,9 +1456,7 @@ void CDrawView::OnDraw(CDC *pDC)
 	}
 
 	// Recalculate
-	if (!CopyPx68kFrameToBits()) {
-		ReCalc(rect);
-	}
+	ReCalc(rect);
 
 	// Disconnect handling
 	if (::GetVM()->IsPower() != m_Info.bPower) {
@@ -1789,14 +1716,6 @@ void FASTCALL CDrawView::ReCalc(CRect& rect)
 		m_Info.nRendVMul = m_Info.pWork->v_mul;
 		flag = TRUE;
 	}
-	if (m_Info.nRendHRes != m_Info.pWork->hres) {
-		m_Info.nRendHRes = m_Info.pWork->hres;
-		flag = TRUE;
-	}
-	if (m_Info.nRendMixMode != m_Info.pWork->mixmode) {
-		m_Info.nRendMixMode = m_Info.pWork->mixmode;
-		flag = TRUE;
-	}
 	if (!flag) {
 		return;
 	}
@@ -1807,11 +1726,11 @@ void FASTCALL CDrawView::ReCalc(CRect& rect)
 		m_Info.nWidth = m_Info.nBMPWidth;
 	}
 	m_Info.nHeight = m_Info.nRendHeight;
-	if ((m_Info.pWork->mixmode != 1 && m_Info.pWork->hres == 0) ||
-		(m_Info.nRendVMul == 0)) {
+	if (m_Info.nRendVMul == 0) {
+		// 15 kHz interlacing handling
 		m_Info.nHeight <<= 1;
 	}
-	if (m_Info.nBMPHeight < m_Info.nHeight) {
+	if (m_Info.nBMPHeight < m_Info.nRendHeight) {
 		m_Info.nHeight = m_Info.nBMPHeight;
 	}
 
@@ -2360,4 +2279,3 @@ LPCTSTR FASTCALL CDrawView::GetWndClassName() const
 }
 
 #endif	// _WIN32
-

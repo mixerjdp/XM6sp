@@ -2,8 +2,7 @@
 //
 //	X68000 EMULATOR "XM6"
 //
-//	Copyright (C) 2001-2004 PI (ytanaka@ipc-tokai.or.jp)
-//	Copyright (C) 2010-2014 GIMONS
+//	Copyright (C) 2001-2004 Takashi Tanaka (ytanaka@ipc-tokai.or.jp)
 //	[ Sprite (CYNTHIA) ]
 //
 //---------------------------------------------------------------------------
@@ -21,11 +20,11 @@
 class Sprite : public MemDevice
 {
 public:
-	// Work data definition
+	// Sprite data structure
 	typedef struct {
 		BOOL connect;					// Access enable flag
 		BOOL disp;						// Display (wait) flag
-		BYTE *mem;						// Sprite memory
+		BYTE *mem;						// Sprite memory area
 		BYTE *pcg;						// Sprite PCG area
 
 		BOOL bg_on[2];					// BG display ON
@@ -34,30 +33,30 @@ public:
 		DWORD bg_scrly[2];				// BG scroll Y
 		BOOL bg_size;					// BG size
 
-		DWORD h_total;					// Horizontal total count
-		DWORD h_disp;					// Horizontal display count
-		DWORD v_disp;					// Vertical display count
+		DWORD h_total;					// Horizontal total
+		DWORD h_disp;					// Horizontal display
+		DWORD v_disp;					// Vertical display
 		BOOL lowres;					// 15kHz mode
 		DWORD h_res;					// Horizontal resolution
 		DWORD v_res;					// Vertical resolution
 	} sprite_t;
 
 public:
-	// Basic functions
+	// Constructor
 	Sprite(VM *p);
-										// Constructor
-	BOOL FASTCALL Init();
 										// Initialization
-	void FASTCALL Cleanup();
+	BOOL FASTCALL Init();
 										// Cleanup
-	void FASTCALL Reset();
+	void FASTCALL Cleanup();
 										// Reset
-	BOOL FASTCALL Save(Fileio *fio, int ver);
+	void FASTCALL Reset();
 										// Save
-	BOOL FASTCALL Load(Fileio *fio, int ver);
+	BOOL FASTCALL Save(Fileio *fio, int ver);
 										// Load
-	void FASTCALL ApplyCfg(const Config *config);
-										// Apply config
+	BOOL FASTCALL Load(Fileio *fio, int ver);
+										// Apply configuration
+	void FASTCALL ApplyCfg(const Config* config);
+
 
 	// Memory device
 	DWORD FASTCALL ReadByte(DWORD addr);
@@ -75,33 +74,25 @@ public:
 	void FASTCALL Connect(BOOL con)		{ spr.connect = con; }
 										// Connect
 	BOOL FASTCALL IsConnect() const		{ return spr.connect; }
-										// Get connection status
+										// Connect status get
 	BOOL FASTCALL IsDisplay() const		{ return spr.disp; }
-										// Get display status
+										// Display status get
 	void FASTCALL GetSprite(sprite_t *buffer) const;
-										// Get sprite data
+										// Sprite data get
 	const BYTE* FASTCALL GetMem() const;
-										// Get work area
+										// BG area get
 	const BYTE* FASTCALL GetPCG() const;
-										// Get PCG area
-	void FASTCALL HSync();
-										// H-Sync notification
+										// PCG area get
+
 private:
 	void FASTCALL Control(DWORD addr, DWORD ctrl);
 										// Control
-	void FASTCALL NotifyRender();
-	void FASTCALL NotifyPx68kBGWrite(DWORD addr, WORD data);
-										// Notify renderer
 	sprite_t spr;
-										// Work data
+										// Sprite data
 	Render *render;
-										// Renderer
+										// Render
 	BYTE *sprite;
 										// Sprite RAM (64KB)
-	DWORD sphsync[128];
-										// Sprite HSYNC schedule
-	DWORD bghsync;
-										// BG HSYNC schedule
 };
 
 #endif	// sprite_h

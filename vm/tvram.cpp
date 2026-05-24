@@ -2,7 +2,7 @@
 //
 //	X68000 EMULATOR "XM6"
 //
-//	Copyright (C) 2001-2006 P.I. (ytanaka@ipc-tokai.or.jp)
+//	Copyright (C) 2001-2006 PI (ytanaka@ipc-tokai.or.jp)
 //	[ Text VRAM ]
 //
 //---------------------------------------------------------------------------
@@ -30,14 +30,14 @@
 //---------------------------------------------------------------------------
 TVRAMHandler::TVRAMHandler(Render *rend, BYTE *mem)
 {
-	ASSERT(rend);
-	ASSERT(mem);
+ASSERT(rend);
+ASSERT(mem);
 
-	// Store
+	// Reference
 	render = rend;
 	tvram = mem;
 
-	// Initialize the state
+	// Structure initialization
 	multi = 0;
 	mask = 0;
 	rev = 0;
@@ -56,24 +56,6 @@ TVRAMHandler::TVRAMHandler(Render *rend, BYTE *mem)
 //	Constructor
 //
 //---------------------------------------------------------------------------
-void FASTCALL TVRAMHandler::NotifyPx68kTVRAMWrite(DWORD internal_addr, BYTE data)
-{
-	if (!render) {
-		return;
-	}
-	render->TVRAMWrite(0xe00000 + ((internal_addr & 0x7ffff) ^ 1), data);
-}
-
-void FASTCALL TVRAMHandler::NotifyPx68kTVRAMWord(DWORD addr, WORD data)
-{
-	if (!render) {
-		return;
-	}
-	addr &= 0x7fffe;
-	render->TVRAMWrite(0xe00000 + addr, (BYTE)((data >> 8) & 0xff));
-	render->TVRAMWrite(0xe00000 + addr + 1, (BYTE)(data & 0xff));
-}
-
 TVRAMNormal::TVRAMNormal(Render *rend, BYTE *mem) : TVRAMHandler(rend, mem)
 {
 }
@@ -85,14 +67,13 @@ TVRAMNormal::TVRAMNormal(Render *rend, BYTE *mem) : TVRAMHandler(rend, mem)
 //---------------------------------------------------------------------------
 void FASTCALL TVRAMNormal::WriteByte(DWORD addr, DWORD data)
 {
-	ASSERT(this);
-	ASSERT(addr < 0x80000);
-	ASSERT(data < 0x100);
+ASSERT(this);
+ASSERT(addr < 0x80000);
+ASSERT(data < 0x100);
 
 	if (tvram[addr] != data) {
 		tvram[addr] = (BYTE)data;
 		render->TextMem(addr);
-		NotifyPx68kTVRAMWrite(addr, (BYTE)data);
 	}
 }
 
@@ -103,14 +84,13 @@ void FASTCALL TVRAMNormal::WriteByte(DWORD addr, DWORD data)
 //---------------------------------------------------------------------------
 void FASTCALL TVRAMNormal::WriteWord(DWORD addr, DWORD data)
 {
-	ASSERT(this);
-	ASSERT(addr < 0x80000);
-	ASSERT(data < 0x10000);
+ASSERT(this);
+ASSERT(addr < 0x80000);
+ASSERT(data < 0x10000);
 
 	if ((DWORD)*(WORD*)(&tvram[addr]) != data) {
 		*(WORD*)(&tvram[addr]) = (WORD)data;
 		render->TextMem(addr);
-		NotifyPx68kTVRAMWord(addr, (WORD)data);
 	}
 }
 
@@ -138,24 +118,24 @@ void FASTCALL TVRAMMask::WriteByte(DWORD addr, DWORD data)
 {
 	DWORD mem;
 
-	ASSERT(this);
-	ASSERT(addr < 0x80000);
-	ASSERT(data < 0x100);
+ASSERT(this);
+ASSERT(addr < 0x80000);
+ASSERT(data < 0x100);
 
-	// With the mask, 1 means unchanged and 0 means modified
+	// mask is 1 does not change, 0 changes
 	mem = (DWORD)tvram[addr];
 	if (addr & 1) {
-		// On the 68000, even addresses use b15-b8
+		// At 68000, odd address uses b15-b8
 		mem &= maskh;
 		data &= revh;
 	}
 	else {
-		// On the 68000, odd addresses use b7-b0
+		// At 68000, even address uses b7-b0
 		mem &= mask;
 		data &= rev;
 	}
 
-	// Combine
+	// Merge
 	data |= mem;
 
 	// Write
@@ -174,16 +154,16 @@ void FASTCALL TVRAMMask::WriteWord(DWORD addr, DWORD data)
 {
 	DWORD mem;
 
-	ASSERT(this);
-	ASSERT(addr < 0x80000);
-	ASSERT(data < 0x10000);
+ASSERT(this);
+ASSERT(addr < 0x80000);
+ASSERT(data < 0x10000);
 
-	// With the mask, 1 means unchanged and 0 means modified
+	// mask is 1 does not change, 0 changes
 	mem = (DWORD)*(WORD*)(&tvram[addr]);
 	mem &= mask;
 	data &= rev;
 
-	// Combine
+	// Merge
 	data |= mem;
 
 	if ((DWORD)*(WORD*)(&tvram[addr]) != data) {
@@ -216,11 +196,11 @@ void FASTCALL TVRAMMulti::WriteByte(DWORD addr, DWORD data)
 {
 	BOOL flag;
 
-	ASSERT(this);
-	ASSERT(addr < 0x80000);
-	ASSERT(data < 0x100);
+ASSERT(this);
+ASSERT(addr < 0x80000);
+ASSERT(data < 0x100);
 
-	// Initialize
+	// Address mask
 	addr &= 0x1ffff;
 	flag = FALSE;
 
@@ -259,7 +239,7 @@ void FASTCALL TVRAMMulti::WriteByte(DWORD addr, DWORD data)
 		}
 	}
 
-	// Notify the renderer
+	// Render notify
 	if (flag) {
 		render->TextMem(addr);
 	}
@@ -274,11 +254,11 @@ void FASTCALL TVRAMMulti::WriteWord(DWORD addr, DWORD data)
 {
 	BOOL flag;
 
-	ASSERT(this);
-	ASSERT(addr < 0x80000);
-	ASSERT(data < 0x10000);
+ASSERT(this);
+ASSERT(addr < 0x80000);
+ASSERT(data < 0x10000);
 
-	// Initialize
+	// Address mask
 	addr &= 0x1fffe;
 	flag = FALSE;
 
@@ -317,7 +297,7 @@ void FASTCALL TVRAMMulti::WriteWord(DWORD addr, DWORD data)
 		}
 	}
 
-	// Notify the renderer
+	// Render notify
 	if (flag) {
 		render->TextMem(addr);
 	}
@@ -349,11 +329,11 @@ void FASTCALL TVRAMBoth::WriteByte(DWORD addr, DWORD data)
 	DWORD maskhl;
 	BOOL flag;
 
-	ASSERT(this);
-	ASSERT(addr < 0x80000);
-	ASSERT(data < 0x100);
+ASSERT(this);
+ASSERT(addr < 0x80000);
+ASSERT(data < 0x100);
 
-	// Determine even/odd first
+	// Odd/even difference is same as mask
 	if (addr & 1) {
 		maskhl = maskh;
 		data &= revh;
@@ -363,7 +343,7 @@ void FASTCALL TVRAMBoth::WriteByte(DWORD addr, DWORD data)
 		data &= rev;
 	}
 
-	// Initialize
+	// Address mask
 	addr &= 0x1ffff;
 	flag = FALSE;
 
@@ -418,7 +398,7 @@ void FASTCALL TVRAMBoth::WriteByte(DWORD addr, DWORD data)
 		}
 	}
 
-	// Notify the renderer
+	// Render notify
 	if (flag) {
 		render->TextMem(addr);
 	}
@@ -434,14 +414,14 @@ void FASTCALL TVRAMBoth::WriteWord(DWORD addr, DWORD data)
 	DWORD mem;
 	BOOL flag;
 
-	ASSERT(this);
-	ASSERT(addr < 0x80000);
-	ASSERT(data < 0x10000);
+ASSERT(this);
+ASSERT(addr < 0x80000);
+ASSERT(data < 0x10000);
 
-	// Mask the data first
+	// Data is masked
 	data &= rev;
 
-	// Initialize
+	// Address mask
 	addr &= 0x1fffe;
 	flag = FALSE;
 
@@ -496,7 +476,7 @@ void FASTCALL TVRAMBoth::WriteWord(DWORD addr, DWORD data)
 		}
 	}
 
-	// Notify the renderer
+	// Render notify
 	if (flag) {
 		render->TextMem(addr);
 	}
@@ -516,44 +496,44 @@ void FASTCALL TVRAMBoth::WriteWord(DWORD addr, DWORD data)
 //---------------------------------------------------------------------------
 TVRAM::TVRAM(VM *p) : MemDevice(p)
 {
-	// Initialize the device ID
+	// Device ID initialization
 	dev.id = MAKEID('T', 'V', 'R', 'M');
 	dev.desc = "Text VRAM";
 
-	// Start and end addresses
+	// Start address, end address
 	memdev.first = 0xe00000;
 	memdev.last = 0xe7ffff;
 
-	// Handler
+	// Handlers
 	normal = NULL;
 	mask = NULL;
 	multi = NULL;
 	both = NULL;
 
-	// Other
+	// Others
 	render = NULL;
 	tvram = NULL;
 }
 
 //---------------------------------------------------------------------------
 //
-//	Initialize
+//	Initialization
 //
 //---------------------------------------------------------------------------
 BOOL FASTCALL TVRAM::Init()
 {
-	ASSERT(this);
+ASSERT(this);
 
 	// Base class
 	if (!MemDevice::Init()) {
 		return FALSE;
 	}
 
-	// Get the renderer
+	// Render get
 	render = (Render*)vm->SearchDevice(MAKEID('R', 'E', 'N', 'D'));
-	ASSERT(render);
+ASSERT(render);
 
-	// Allocate and clear memory
+	// Memory allocation, initialization
 	try {
 		tvram = new BYTE[ 0x80000 ];
 	}
@@ -565,14 +545,14 @@ BOOL FASTCALL TVRAM::Init()
 	}
 	memset(tvram, 0, 0x80000);
 
-	// Create the handlers
+	// Handler create
 	normal = new TVRAMNormal(render, tvram);
 	mask = new TVRAMMask(render, tvram);
 	multi = new TVRAMMulti(render, tvram);
 	both = new TVRAMBoth(render, tvram);
 	handler = normal;
 
-	// Initialize the work area
+	// Structure initialization
 	tvdata.multi = 0;
 	tvdata.mask = 0;
 	tvdata.rev = 0xffffffff;
@@ -593,9 +573,9 @@ BOOL FASTCALL TVRAM::Init()
 //---------------------------------------------------------------------------
 void FASTCALL TVRAM::Cleanup()
 {
-	ASSERT(this);
+ASSERT(this);
 
-	// Delete the handlers
+	// Handler delete
 	if (both) {
 		delete both;
 		both = NULL;
@@ -614,11 +594,11 @@ void FASTCALL TVRAM::Cleanup()
 	}
 	handler = NULL;
 
-	// Release memory
+	// Memory release
 	delete[] tvram;
 	tvram = NULL;
 
-	// Return to the base class
+	// Base class
 	MemDevice::Cleanup();
 }
 
@@ -629,12 +609,12 @@ void FASTCALL TVRAM::Cleanup()
 //---------------------------------------------------------------------------
 void FASTCALL TVRAM::Reset()
 {
-	ASSERT(this);
-	ASSERT_DIAG();
+ASSERT(this);
+ASSERT_DIAG();
 
-	LOG0(Log::Normal, "リセット");
+	LOG0(Log::Normal, "Reset");
 
-	// Initialize the work area
+	// Structure initialization
 	tvdata.multi = 0;
 	tvdata.mask = 0;
 	tvdata.rev = 0xffffffff;
@@ -644,12 +624,12 @@ void FASTCALL TVRAM::Reset()
 	tvdata.dst = 0;
 	tvdata.plane = 0;
 
-	// Clear the access count
+	// Access count 0
 	tvcount = 0;
 
-	// Use the normal handler
+	// Handler is normal
 	handler = normal;
-	ASSERT(handler);
+ASSERT(handler);
 }
 
 //---------------------------------------------------------------------------
@@ -661,24 +641,24 @@ BOOL FASTCALL TVRAM::Save(Fileio *fio, int /*ver*/)
 {
 	size_t sz;
 
-	ASSERT(this);
-	ASSERT(fio);
-	ASSERT_DIAG();
+ASSERT(this);
+ASSERT(fio);
+ASSERT_DIAG();
 
-	LOG0(Log::Normal, "セーブ");
+	LOG0(Log::Normal, "Save");
 
-	// Save memory
+	// Memory save
 	if (!fio->Write(tvram, 0x80000)) {
 		return FALSE;
 	}
 
-	// Save the size
+	// Size save
 	sz = sizeof(tvram_t);
 	if (!fio->Write(&sz, sizeof(sz))) {
 		return FALSE;
 	}
 
-	// Save the payload
+	// Data save
 	if (!fio->Write(&tvdata, (int)sz)) {
 		return FALSE;
 	}
@@ -701,19 +681,19 @@ BOOL FASTCALL TVRAM::Load(Fileio *fio, int ver)
 	size_t sz;
 	DWORD addr;
 
-	ASSERT(this);
-	ASSERT(fio);
-	ASSERT(ver >= 0x0200);
-	ASSERT_DIAG();
+ASSERT(this);
+ASSERT(fio);
+ASSERT(ver >= 0x0200);
+ASSERT_DIAG();
 
-	LOG0(Log::Normal, "ロード");
+	LOG0(Log::Normal, "Load");
 
-	// Load memory
+	// Memory load
 	if (!fio->Read(tvram, 0x80000)) {
 		return FALSE;
 	}
 
-	// Load and verify the size
+	// Size load, compare
 	if (!fio->Read(&sz, sizeof(sz))) {
 		return FALSE;
 	}
@@ -721,7 +701,7 @@ BOOL FASTCALL TVRAM::Load(Fileio *fio, int ver)
 		return FALSE;
 	}
 
-	// Load the payload
+	// Data load
 	if (!fio->Read(&tvdata, (int)sz)) {
 		return FALSE;
 	}
@@ -734,12 +714,12 @@ BOOL FASTCALL TVRAM::Load(Fileio *fio, int ver)
 		}
 	}
 
-	// Notify the renderer
+	// Render notify
 	for(addr=0; addr<0x20000; addr++) {
 		render->TextMem(addr);
 	}
 
-	// Configure the handlers
+	// Handler setting
 	SelectHandler();
 
 	return TRUE;
@@ -747,21 +727,21 @@ BOOL FASTCALL TVRAM::Load(Fileio *fio, int ver)
 
 //---------------------------------------------------------------------------
 //
-//	Apply settings
+//	Apply configuration
 //
 //---------------------------------------------------------------------------
 void FASTCALL TVRAM::ApplyCfg(const Config* /*config*/)
 {
-	ASSERT(this);
-	ASSERT_DIAG();
+ASSERT(this);
+ASSERT_DIAG();
 
-	LOG0(Log::Normal, "設定適用");
+	LOG0(Log::Normal, "Apply configuration");
 }
 
 #if !defined(NDEBUG)
 //---------------------------------------------------------------------------
 //
-//	Diagnostics
+//	Assert
 //
 //---------------------------------------------------------------------------
 void FASTCALL TVRAM::AssertDiag() const
@@ -769,24 +749,24 @@ void FASTCALL TVRAM::AssertDiag() const
 	// Base class
 	MemDevice::AssertDiag();
 
-	ASSERT(this);
-	ASSERT(GetID() == MAKEID('T', 'V', 'R', 'M'));
-	ASSERT(memdev.first == 0xe00000);
-	ASSERT(memdev.last == 0xe7ffff);
-	ASSERT(tvram);
-	ASSERT(normal);
-	ASSERT(mask);
-	ASSERT(multi);
-	ASSERT(both);
-	ASSERT(handler);
-	ASSERT(tvdata.multi <= 0x1f);
-	ASSERT(tvdata.mask < 0x10000);
-	ASSERT(tvdata.rev >= 0xffff0000);
-	ASSERT(tvdata.maskh < 0x100);
-	ASSERT(tvdata.revh >= 0xffffff00);
-	ASSERT(tvdata.src < 0x100);
-	ASSERT(tvdata.dst < 0x100);
-	ASSERT(tvdata.plane <= 0x0f);
+ASSERT(this);
+ASSERT(GetID() == MAKEID('T', 'V', 'R', 'M'));
+ASSERT(memdev.first == 0xe00000);
+ASSERT(memdev.last == 0xe7ffff);
+ASSERT(tvram);
+ASSERT(normal);
+ASSERT(mask);
+ASSERT(multi);
+ASSERT(both);
+ASSERT(handler);
+ASSERT(tvdata.multi <= 0x1f);
+ASSERT(tvdata.mask < 0x10000);
+ASSERT(tvdata.rev >= 0xffff0000);
+ASSERT(tvdata.maskh < 0x100);
+ASSERT(tvdata.revh >= 0xffffff00);
+ASSERT(tvdata.src < 0x100);
+ASSERT(tvdata.dst < 0x100);
+ASSERT(tvdata.plane <= 0x0f);
 }
 #endif	// NDEBUG
 
@@ -797,9 +777,9 @@ void FASTCALL TVRAM::AssertDiag() const
 //---------------------------------------------------------------------------
 DWORD FASTCALL TVRAM::ReadByte(DWORD addr)
 {
-	ASSERT(this);
-	ASSERT((addr >= memdev.first) && (addr <= memdev.last));
-	ASSERT_DIAG();
+ASSERT(this);
+ASSERT((addr >= memdev.first) && (addr <= memdev.last));
+ASSERT_DIAG();
 
 	// Wait (0.75 wait)
 	tvcount++;
@@ -807,7 +787,7 @@ DWORD FASTCALL TVRAM::ReadByte(DWORD addr)
 		scheduler->Wait(1);
 	}
 
-	// Load with endianness reversed
+	// Endian convert and read
 	return (DWORD)tvram[(addr & 0x7ffff) ^ 1];
 }
 
@@ -818,10 +798,10 @@ DWORD FASTCALL TVRAM::ReadByte(DWORD addr)
 //---------------------------------------------------------------------------
 DWORD FASTCALL TVRAM::ReadWord(DWORD addr)
 {
-	ASSERT(this);
-	ASSERT((addr >= memdev.first) && (addr <= memdev.last));
-	ASSERT((addr & 1) == 0);
-	ASSERT_DIAG();
+ASSERT(this);
+ASSERT((addr >= memdev.first) && (addr <= memdev.last));
+ASSERT((addr & 1) == 0);
+ASSERT_DIAG();
 
 	// Wait (0.75 wait)
 	tvcount++;
@@ -840,10 +820,10 @@ DWORD FASTCALL TVRAM::ReadWord(DWORD addr)
 //---------------------------------------------------------------------------
 void FASTCALL TVRAM::WriteByte(DWORD addr, DWORD data)
 {
-	ASSERT(this);
-	ASSERT((addr >= memdev.first) && (addr <= memdev.last));
-	ASSERT(data < 0x100);
-	ASSERT_DIAG();
+ASSERT(this);
+ASSERT((addr >= memdev.first) && (addr <= memdev.last));
+ASSERT(data < 0x100);
+ASSERT_DIAG();
 
 	// Wait (0.75 wait)
 	tvcount++;
@@ -862,11 +842,11 @@ void FASTCALL TVRAM::WriteByte(DWORD addr, DWORD data)
 //---------------------------------------------------------------------------
 void FASTCALL TVRAM::WriteWord(DWORD addr, DWORD data)
 {
-	ASSERT(this);
-	ASSERT((addr >= memdev.first) && (addr <= memdev.last));
-	ASSERT((addr & 1) == 0);
-	ASSERT(data < 0x10000);
-	ASSERT_DIAG();
+ASSERT(this);
+ASSERT((addr >= memdev.first) && (addr <= memdev.last));
+ASSERT((addr & 1) == 0);
+ASSERT(data < 0x10000);
+ASSERT_DIAG();
 
 	// Wait (0.75 wait)
 	tvcount++;
@@ -880,16 +860,16 @@ void FASTCALL TVRAM::WriteWord(DWORD addr, DWORD data)
 
 //---------------------------------------------------------------------------
 //
-//	Read-only
+//	Read only
 //
 //---------------------------------------------------------------------------
 DWORD FASTCALL TVRAM::ReadOnly(DWORD addr) const
 {
-	ASSERT(this);
-	ASSERT((addr >= memdev.first) && (addr <= memdev.last));
-	ASSERT_DIAG();
+ASSERT(this);
+ASSERT((addr >= memdev.first) && (addr <= memdev.last));
+ASSERT_DIAG();
 
-	// Load with endianness reversed
+	// Endian convert and read
 	return tvram[(addr & 0x7ffff) ^ 1];
 }
 
@@ -900,85 +880,85 @@ DWORD FASTCALL TVRAM::ReadOnly(DWORD addr) const
 //---------------------------------------------------------------------------
 const BYTE* FASTCALL TVRAM::GetTVRAM() const
 {
-	ASSERT(this);
-	ASSERT_DIAG();
+ASSERT(this);
+ASSERT_DIAG();
 
 	return tvram;
 }
 
 //---------------------------------------------------------------------------
 //
-//	Set simultaneous writes
+//	Multi access setting
 //
 //---------------------------------------------------------------------------
 void FASTCALL TVRAM::SetMulti(DWORD data)
 {
-	ASSERT(this);
-	ASSERT(data <= 0x1f);
-	ASSERT_DIAG();
+ASSERT(this);
+ASSERT(data <= 0x1f);
+ASSERT_DIAG();
 
-	// Check for equality
+	// Equal check
 	if (tvdata.multi == data) {
 		return;
 	}
 
-	// Copy the data
+	// Data copy
 	tvdata.multi = data;
 
-	// Select the handler
+	// Handler select
 	SelectHandler();
 }
 
 //---------------------------------------------------------------------------
 //
-//	Set the access mask
+//	Access mask setting
 //
 //---------------------------------------------------------------------------
 void FASTCALL TVRAM::SetMask(DWORD data)
 {
-	ASSERT(this);
-	ASSERT(data < 0x10000);
-	ASSERT_DIAG();
+ASSERT(this);
+ASSERT(data < 0x10000);
+ASSERT_DIAG();
 
-	// Check for equality
+	// Equal check
 	if (tvdata.mask == data) {
 		return;
 	}
 
-	// Copy the data
+	// Data copy
 	tvdata.mask = data;
 	tvdata.rev = ~tvdata.mask;
 	tvdata.maskh = tvdata.mask >> 8;
 	tvdata.revh = ~tvdata.maskh;
 
-	// Select the handler
+	// Handler select
 	SelectHandler();
 }
 
 //---------------------------------------------------------------------------
 //
-//	Select the handler
+//	Handler select
 //
 //---------------------------------------------------------------------------
 void FASTCALL TVRAM::SelectHandler()
 {
-	ASSERT(this);
-	ASSERT_DIAG();
+ASSERT(this);
+ASSERT_DIAG();
 
 	// Normal
 	handler = normal;
 
-	// Check the multi flag
+	// Multi check
 	if (tvdata.multi != 0) {
-		// Whether it is combined with the mask
+		// Mask and multi
 		if (tvdata.mask != 0) {
 			// Both
 			handler = both;
 
-			// Set the multi data
+			// Multi data set
 			handler->multi = tvdata.multi;
 
-			// Set the mask data
+			// Mask data set
 			handler->mask = tvdata.mask;
 			handler->rev = tvdata.rev;
 			handler->maskh = tvdata.maskh;
@@ -988,18 +968,18 @@ void FASTCALL TVRAM::SelectHandler()
 			// Multi
 			handler = multi;
 
-			// Set the multi data
+			// Multi data set
 			handler->multi = tvdata.multi;
 		}
 		return;
 	}
 
-	// Check the mask flag
+	// Mask check
 	if (tvdata.mask != 0) {
 		// Mask
 		handler = mask;
 
-		// Set the mask data
+		// Mask data set
 		handler->mask = tvdata.mask;
 		handler->rev = tvdata.rev;
 		handler->maskh = tvdata.maskh;
@@ -1009,16 +989,16 @@ void FASTCALL TVRAM::SelectHandler()
 
 //---------------------------------------------------------------------------
 //
-//	Set raster copy
+//	Raster copy setting
 //
 //---------------------------------------------------------------------------
 void FASTCALL TVRAM::SetCopyRaster(DWORD src, DWORD dst, DWORD plane)
 {
-	ASSERT(this);
-	ASSERT(src < 0x100);
-	ASSERT(dst < 0x100);
-	ASSERT(plane <= 0x0f);
-	ASSERT_DIAG();
+ASSERT(this);
+ASSERT(src < 0x100);
+ASSERT(dst < 0x100);
+ASSERT(plane <= 0x0f);
+ASSERT_DIAG();
 
 	tvdata.src = src;
 	tvdata.dst = dst;
@@ -1027,13 +1007,13 @@ void FASTCALL TVRAM::SetCopyRaster(DWORD src, DWORD dst, DWORD plane)
 
 //---------------------------------------------------------------------------
 //
-//	Execute raster copy
+//	Raster copy execution
 //
 //---------------------------------------------------------------------------
 void FASTCALL TVRAM::RasterCopy()
 {
-	ASSERT(this);
-	ASSERT_DIAG();
+ASSERT(this);
+ASSERT_DIAG();
 #if 0
 	DWORD *p;
 	DWORD *q;
@@ -1041,12 +1021,12 @@ void FASTCALL TVRAM::RasterCopy()
 	int j;
 	DWORD plane;
 
-	// Initialize the pointer and plane
+	// Pointer, virtual address convert
 	p = (DWORD*)&tvram[tvdata.src << 9];
 	q = (DWORD*)&tvram[tvdata.dst << 9];
 	plane = tvdata.plane;
 
-	// Handle each plane separately
+	// Plane copy
 	for (i=0; i<4; i++) {
 		if (plane & 1) {
 			for (j=7; j>=0; j--) {
@@ -1077,14 +1057,14 @@ void FASTCALL TVRAM::RasterCopy()
 		plane >>= 1;
 	}
 
-	// Notify the renderer that the destination area was replaced
+	// To render, copy area notify to start rendering when finished
 	plane = tvdata.dst;
 	plane <<= 9;
 	for (i=0; i<0x200; i++) {
 		render->TextMem(plane + i);
 	}
 #endif
-	// Call the renderer
+	// Render notify
 	if (tvdata.plane != 0) {
 		render->TextCopy(tvdata.src, tvdata.dst, tvdata.plane);
 	}

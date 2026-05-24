@@ -2340,6 +2340,11 @@ void FASTCALL CInput::MakeJoy(BOOL bEnable)
 				ji[i].button[nButton] = TRUE;
 			}
 		}
+		for (nAxis=0; nAxis<PPI::AxisMax; nAxis++) {
+			if (m_bSmokeJoyAxisActive[i][nAxis]) {
+				ji[i].axis[nAxis] = m_dwSmokeJoyAxis[i][nAxis];
+			}
+		}
 	}
 
 	// Send to PPI
@@ -2347,6 +2352,7 @@ void FASTCALL CInput::MakeJoy(BOOL bEnable)
 		m_pPPI->SetJoyInfo(i, &ji[i]);
 	}
 }
+
 
 //---------------------------------------------------------------------------
 //
@@ -2379,12 +2385,15 @@ void FASTCALL CInput::SetSmokeJoyButton(int nPort, int nButton, BOOL bPressed)
 					return;
 				}
 			}
+			for (j=0; j<PPI::AxisMax; j++) {
+				if (m_bSmokeJoyAxisActive[i][j]) {
+					m_bSmokeJoyActive = TRUE;
+					return;
+				}
+			}
 		}
 	}
 }
-
-
-
 
 //---------------------------------------------------------------------------
 //
@@ -2427,6 +2436,8 @@ void FASTCALL CInput::SetSmokeJoyAxis(int nPort, int nAxis, BOOL bActive, DWORD 
 		}
 	}
 }
+
+
 
 //---------------------------------------------------------------------------
 //

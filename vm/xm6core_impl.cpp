@@ -24,9 +24,6 @@
 #include "render.h"
 #include "crtc.h"
 #include "vc.h"
-#include "tvram.h"
-#include "gvram.h"
-#include "sprite.h"
 #include "keyboard.h"
 #include "mouse.h"
 #include "fdd.h"
@@ -59,10 +56,10 @@
 //
 //---------------------------------------------------------------------------
 static const char XM6CORE_VERSION[] = "XM6 Core 2.06";
-static const unsigned int k_video_probe_frames_after_mode_change = 1u;
+static const unsigned int k_video_probe_frames_after_mode_change = 12u;
 
 #ifndef XM6CORE_ENABLE_VIDEO_PROBE_LOG
-#define XM6CORE_ENABLE_VIDEO_PROBE_LOG 1
+#define XM6CORE_ENABLE_VIDEO_PROBE_LOG 0
 #endif
 
 //---------------------------------------------------------------------------
@@ -176,11 +173,6 @@ struct XM6Context {
 	int px68k_lpf_prev_r;
 	int px68k_last_out_l;
 	int px68k_last_out_r;
-	unsigned int *px68k_video_xrgb;
-	unsigned int px68k_video_xrgb_capacity;
-	unsigned int px68k_video_probe_signature;
-	BOOL px68k_video_probe_has_signature;
-	unsigned int px68k_watchdog_frame_count;
 };
 
 #include "x68sound_adpcm_core.h"
@@ -216,216 +208,6 @@ static bool ensure_px68k_audio_ring(XM6Context *ctx);
 static void produce_px68k_audio(XM6Context *ctx, DWORD hus);
 static int configure_audio_backend(XM6Context *ctx, unsigned int sample_rate);
 static inline short saturate_s16(int value);
-static unsigned int hash_u32(unsigned int h, unsigned int v);
-static void emit_messagef(XM6Context *ctx, const char *format, ...);
-
-static inline unsigned int px68k_rgb565_to_xrgb8888(WORD color)
-{
-	const unsigned int r5 = (unsigned int)((color >> 11) & 0x1f);
-	const unsigned int g5 = (unsigned int)((color >> 6) & 0x1f);
-	const unsigned int b5 = (unsigned int)(color & 0x1f);
-	const unsigned int r8 = (r5 << 3) | (r5 >> 2);
-	const unsigned int g8 = (g5 << 3) | (g5 >> 2);
-	const unsigned int b8 = (b5 << 3) | (b5 >> 2);
-	return (r8 << 16) | (g8 << 8) | b8;
-}
-
-static bool ensure_px68k_video_xrgb_buffer(XM6Context *ctx, unsigned int pixels)
-{
-	unsigned int *new_buf;
-
-	if (!ctx || pixels == 0) {
-		return false;
-	}
-	if (ctx->px68k_video_xrgb && ctx->px68k_video_xrgb_capacity >= pixels) {
-		return true;
-	}
-
-	new_buf = new (std::nothrow) unsigned int[pixels];
-	if (!new_buf) {
-		return false;
-	}
-
-	delete[] ctx->px68k_video_xrgb;
-	ctx->px68k_video_xrgb = new_buf;
-	ctx->px68k_video_xrgb_capacity = pixels;
-	return true;
-}
-
-static unsigned int px68k_frame_signature(const WORD *src, unsigned int width, unsigned int height, unsigned int stride, unsigned int *out_nonzero)
-{
-	unsigned int signature = 2166136261u;
-	unsigned int nonzero = 0;
-
-	if (!src || width == 0 || height == 0 || stride < width) {
-		if (out_nonzero) {
-			*out_nonzero = 0;
-		}
-		return 0;
-	}
-
-	for (unsigned int y = 0; y < height; y += 16) {
-		const WORD *row = src + ((size_t)y * (size_t)stride);
-		for (unsigned int x = 0; x < width; x += 16) {
-			const unsigned int v = (unsigned int)row[x];
-			if (v != 0) {
-				nonzero++;
-			}
-			signature = hash_u32(signature, v);
-		}
-	}
-
-	signature = hash_u32(signature, width);
-	signature = hash_u32(signature, height);
-	signature = hash_u32(signature, nonzero);
-	if (out_nonzero) {
-		*out_nonzero = nonzero;
-	}
-	return signature;
-}
-
-static unsigned int sampled_byte_stats(const BYTE *src, unsigned int size, unsigned int step, unsigned int *out_nonzero)
-{
-	unsigned int signature = 2166136261u;
-	unsigned int nonzero = 0;
-
-	if (!src || size == 0) {
-		if (out_nonzero) {
-			*out_nonzero = 0;
-		}
-		return 0;
-	}
-	if (step == 0) {
-		step = 1;
-	}
-
-	for (unsigned int i = 0; i < size; i += step) {
-		const unsigned int v = (unsigned int)src[i];
-		if (v != 0) {
-			nonzero++;
-		}
-		signature = hash_u32(signature, v);
-	}
-
-	if (out_nonzero) {
-		*out_nonzero = nonzero;
-	}
-	return signature;
-}
-
-static unsigned int sampled_word_stats(const WORD *src, unsigned int count, unsigned int step, unsigned int *out_nonzero)
-{
-	unsigned int signature = 2166136261u;
-	unsigned int nonzero = 0;
-
-	if (!src || count == 0) {
-		if (out_nonzero) {
-			*out_nonzero = 0;
-		}
-		return 0;
-	}
-	if (step == 0) {
-		step = 1;
-	}
-
-	for (unsigned int i = 0; i < count; i += step) {
-		const unsigned int v = (unsigned int)src[i];
-		if (v != 0) {
-			nonzero++;
-		}
-		signature = hash_u32(signature, v);
-	}
-
-	if (out_nonzero) {
-		*out_nonzero = nonzero;
-	}
-	return signature;
-}
-
-static void emit_px68k_watchdog(
-	XM6Context *ctx,
-	const WORD *framebuffer,
-	unsigned int width,
-	unsigned int height,
-	unsigned int stride,
-	unsigned int fb_nonzero,
-	unsigned int fb_signature)
-{
-	const VC::vc_t *vc_state = NULL;
-	const CRTC::crtc_t *crtc_state = NULL;
-	const Px68kCrtcStateView *crtc_view = NULL;
-	const BYTE *tvram_bytes = NULL;
-	const BYTE *gvram_bytes = NULL;
-	const WORD *palette_words = NULL;
-	unsigned int tv_nonzero = 0;
-	unsigned int gv_nonzero = 0;
-	unsigned int pal_nonzero = 0;
-	unsigned int tv_sig = 0;
-	unsigned int gv_sig = 0;
-	unsigned int pal_sig = 0;
-
-	if (!ctx || !ctx->vm) {
-		return;
-	}
-
-	Device *dev = ctx->vm->SearchDevice(MAKEID('V', 'C', ' ', ' '));
-	if (dev && dev->GetID() == MAKEID('V', 'C', ' ', ' ')) {
-		VC *vc = static_cast<VC*>(dev);
-		vc_state = vc->GetWorkAddr();
-		palette_words = (const WORD*)vc->GetPalette();
-	}
-
-	dev = ctx->vm->SearchDevice(MAKEID('C', 'R', 'T', 'C'));
-	if (dev && dev->GetID() == MAKEID('C', 'R', 'T', 'C')) {
-		CRTC *crtc = static_cast<CRTC*>(dev);
-		crtc_state = crtc->GetWorkAddr();
-		crtc_view = crtc->GetPx68kStateView();
-	}
-
-	dev = ctx->vm->SearchDevice(MAKEID('T', 'V', 'R', 'M'));
-	if (dev && dev->GetID() == MAKEID('T', 'V', 'R', 'M')) {
-		TVRAM *tvram = static_cast<TVRAM*>(dev);
-		tvram_bytes = tvram->GetTVRAM();
-	}
-
-	dev = ctx->vm->SearchDevice(MAKEID('G', 'V', 'R', 'M'));
-	if (dev && dev->GetID() == MAKEID('G', 'V', 'R', 'M')) {
-		GVRAM *gvram = static_cast<GVRAM*>(dev);
-		gvram_bytes = gvram->GetGVRAM();
-	}
-
-	tv_sig = sampled_byte_stats(tvram_bytes, 0x80000u, 257u, &tv_nonzero);
-	gv_sig = sampled_byte_stats(gvram_bytes, 0x80000u, 509u, &gv_nonzero);
-	pal_sig = sampled_word_stats(palette_words, 512u, 1u, &pal_nonzero);
-
-	emit_messagef(ctx,
-		"[xm6-core] PX68k watchdog fb=%ux%u stride=%u fb_nonzero=%u fb_sig=%08X "
-		"vc0=%02X vc1=%02X%02X vc2=%02X%02X ton=%u gon=%u son=%u gs=%u%u%u%u "
-		"crtc=%dx%d v=%d/%d mode=%02X view=%ux%u vv=%u "
-		"tv_nonzero=%u tv_sig=%08X gv_nonzero=%u gv_sig=%08X pal_nonzero=%u pal_sig=%08X",
-		width, height, stride, fb_nonzero, fb_signature,
-		vc_state ? (unsigned int)(((vc_state->siz ? 0x04u : 0x00u) | (vc_state->col & 0x03u)) & 0xffu) : 0u,
-		vc_state ? (unsigned int)(vc_state->vr1h & 0xffu) : 0u,
-		vc_state ? (unsigned int)(vc_state->vr1l & 0xffu) : 0u,
-		vc_state ? (unsigned int)(vc_state->vr2h & 0xffu) : 0u,
-		vc_state ? (unsigned int)(vc_state->vr2l & 0xffu) : 0u,
-		(vc_state && vc_state->ton) ? 1u : 0u,
-		(vc_state && vc_state->gon) ? 1u : 0u,
-		(vc_state && vc_state->son) ? 1u : 0u,
-		(vc_state && vc_state->gs[3]) ? 1u : 0u,
-		(vc_state && vc_state->gs[2]) ? 1u : 0u,
-		(vc_state && vc_state->gs[1]) ? 1u : 0u,
-		(vc_state && vc_state->gs[0]) ? 1u : 0u,
-		crtc_state ? crtc_state->h_dots : 0,
-		crtc_state ? crtc_state->v_dots : 0,
-		crtc_state ? crtc_state->v_scan : 0,
-		crtc_state ? crtc_state->v_count : 0,
-		crtc_view ? (unsigned int)(crtc_view->state.mode & 0xffu) : 0u,
-		crtc_view ? (unsigned int)crtc_view->state.textdotx : 0u,
-		crtc_view ? (unsigned int)crtc_view->state.textdoty : 0u,
-		crtc_view ? (unsigned int)crtc_view->state.visible_vline : 0xffffffffu,
-		tv_nonzero, tv_sig, gv_nonzero, gv_sig, pal_nonzero, pal_sig);
-}
 
 static const unsigned int k_opm_clock_hz = 4000000u;
 
@@ -1320,25 +1102,6 @@ static unsigned int vc_gs_mask(const VC::vc_t *v)
 	return mask;
 }
 
-static unsigned int xm6_render_visible_height(const Render::render_t *r)
-{
-	if (!r || r->height <= 0) {
-		return 0;
-	}
-
-	unsigned int visible_h = (unsigned int)r->height;
-
-	if ((r->mixmode != 1 && r->hres == 0) || r->v_mul == 0) {
-		visible_h <<= 1;
-	}
-
-	if (r->mixheight > 0 && visible_h > (unsigned int)r->mixheight) {
-		visible_h = (unsigned int)r->mixheight;
-	}
-
-	return visible_h;
-}
-
 static void emit_video_probe_internal(XM6Context *ctx, const Render::render_t *r)
 {
 	if (!ctx || !r || !ctx->render) {
@@ -1402,6 +1165,14 @@ static void emit_video_probe_internal(XM6Context *ctx, const Render::render_t *r
 		ctx->video_probe_frames_remaining = k_video_probe_frames_after_mode_change;
 		ctx->video_probe_frame_index = 0;
 
+	/*	emit_messagef(ctx,
+			"[video-probe-int] core=xm6 mode-change raw=%ux%u hm=%u vm=%u low=%d mode=%s",
+			(unsigned int)r->width,
+			(unsigned int)r->height,
+			(unsigned int)r->h_mul,
+			(unsigned int)r->v_mul,
+			r->lowres ? 1 : 0,
+			(ctx->render->GetCompositorMode() == 1) ? "fast" : "original"); */
 	}
 
 	if (ctx->video_probe_frames_remaining == 0) {
@@ -1409,146 +1180,16 @@ static void emit_video_probe_internal(XM6Context *ctx, const Render::render_t *r
 	}
 
 #if XM6CORE_ENABLE_VIDEO_PROBE_LOG
-	const Px68kCrtcStateView *crtc_view = NULL;
-	const CRTC *crtc_dev = NULL;
-	const CRTC::crtc_t *crtc_work = NULL;
-	const Sprite *sprite_dev = NULL;
-	if (ctx->vm) {
-		Device *dev = ctx->vm->SearchDevice(MAKEID('C', 'R', 'T', 'C'));
-		if (dev && dev->GetID() == MAKEID('C', 'R', 'T', 'C')) {
-			crtc_dev = static_cast<const CRTC*>(dev);
-			crtc_view = crtc_dev->GetPx68kStateView();
-			crtc_work = crtc_dev->GetWorkAddr();
-		}
-		dev = ctx->vm->SearchDevice(MAKEID('S', 'P', 'R', ' '));
-		if (dev && dev->GetID() == MAKEID('S', 'P', 'R', ' ')) {
-			sprite_dev = static_cast<const Sprite*>(dev);
-		}
-	}
-	const unsigned int vstart = crtc_view ? (unsigned int)(crtc_view->state.vstart & 0x3ffu)
-		: (crtc_work ? ((((unsigned int)crtc_work->reg[0x0c] << 8) | (unsigned int)crtc_work->reg[0x0d]) & 0x3ffu) : 0u);
-	const unsigned int vend = crtc_view ? (unsigned int)(crtc_view->state.vend & 0x3ffu)
-		: (crtc_work ? ((((unsigned int)crtc_work->reg[0x0e] << 8) | (unsigned int)crtc_work->reg[0x0f]) & 0x3ffu) : 0u);
-	const unsigned int vstep = crtc_work ? (((crtc_work->reg[0x29] & 0x14) == 0x10) ? 1u : (((crtc_work->reg[0x29] & 0x14) == 0x04) ? 4u : 2u)) : 0u;
-	const unsigned int vscan = crtc_work ? (unsigned int)((crtc_work->v_scan >= 0) ? crtc_work->v_scan : 0) : 0u;
-	const unsigned int vdots = crtc_work ? (unsigned int)((crtc_work->v_dots >= 0) ? crtc_work->v_dots : 0) : 0u;
-	const unsigned int vcount = crtc_work ? (unsigned int)crtc_work->v_count : 0u;
-	const unsigned int vdisp = crtc_work ? (crtc_work->v_disp ? 1u : 0u) : 0u;
-	const unsigned int vblank = crtc_work ? (crtc_work->v_blank ? 1u : 0u) : 0u;
-	const unsigned int raster_count = crtc_work ? (unsigned int)crtc_work->raster_count : 0u;
-	const unsigned int crtc_vline_total = crtc_view ? (unsigned int)crtc_view->timing_view.crtc_vline_total : 0u;
-	const unsigned int crtc_vsync_high = crtc_view ? (unsigned int)crtc_view->timing_view.crtc_vsync_high : 0u;
-	const unsigned int crtc_intline = crtc_view ? (unsigned int)crtc_view->timing_view.crtc_intline : 0u;
-	const unsigned int crtc_vstep = crtc_view ? (unsigned int)crtc_view->timing_view.crtc_vstep : 0u;
-	const unsigned int crtc_mode = crtc_view ? (unsigned int)crtc_view->timing_view.crtc_mode : 0u;
-	const unsigned int crtc_fastclr = crtc_view ? (unsigned int)crtc_view->timing_view.crtc_fastclr : 0u;
-	const unsigned int visible_vline = (crtc_work && (crtc_work->v_scan >= 0) && (crtc_work->v_scan <= crtc_work->v_dots))
-		? (unsigned int)((((unsigned int)((crtc_work->v_scan > 0) ? (crtc_work->v_scan - 1) : 0)) * vstep) / 2u)
-		: 0xffffffffu;
-	const unsigned int textdoty = (vend > vstart) ? (((vend - vstart) * vstep) / 2u) : 0u;
-	unsigned int bg_vline = 0u;
-	unsigned int bg_reg_0f = 0u;
-	unsigned int bg_reg_11 = 0u;
-	unsigned int bg_on0 = 0u;
-	unsigned int bg_on1 = 0u;
-	unsigned int bg_size = 0u;
-	unsigned int bg_area0 = 0u;
-	unsigned int bg_area1 = 0u;
-	unsigned int bg_scrlx0 = 0u;
-	unsigned int bg_scrly0 = 0u;
-	unsigned int bg_scrlx1 = 0u;
-	unsigned int bg_scrly1 = 0u;
-	if (sprite_dev) {
-		Sprite::sprite_t spr;
-		sprite_dev->GetSprite(&spr);
-		bg_on0 = spr.bg_on[0] ? 1u : 0u;
-		bg_on1 = spr.bg_on[1] ? 1u : 0u;
-		bg_size = spr.bg_size ? 1u : 0u;
-		bg_area0 = spr.bg_area[0];
-		bg_area1 = spr.bg_area[1];
-		bg_scrlx0 = spr.bg_scrlx[0];
-		bg_scrly0 = spr.bg_scrly[0];
-		bg_scrlx1 = spr.bg_scrlx[1];
-		bg_scrly1 = spr.bg_scrly[1];
-		bg_reg_0f = (unsigned int)(spr.mem[0x800 + (0x0f ^ 1)] & 0xffu);
-		bg_reg_11 = (unsigned int)(spr.mem[0x800 + (0x11 ^ 1)] & 0xffu);
-		if (crtc_work) {
-			const unsigned int div = ((bg_reg_11 & 0x04u) != 0u) ? 1u : 2u;
-			bg_vline = (bg_reg_0f >= vstart) ? ((bg_reg_0f - vstart) / div) : 0u;
-			if ((vstart <= 2u) && (vend <= 2u) && (bg_vline >= 20u)) {
-				bg_vline -= 20u;
-			}
-		}
-	}
-	const char *mode_name = ctx->render->IsRenderFastDummyEnabled() ? "px68k" : "original";
-	static unsigned int transition_last_raw_w = 0u;
-	static unsigned int transition_last_raw_h = 0u;
-	if ((unsigned int)r->width != transition_last_raw_w || (unsigned int)r->height != transition_last_raw_h) {
-		const unsigned int sp0y = (unsigned int)(r->spreg[1] & 0x3ffu);
-		const unsigned int sp0ctrl = (unsigned int)(r->spreg[3] & 0xffu);
-
-		transition_last_raw_w = (unsigned int)r->width;
-		transition_last_raw_h = (unsigned int)r->height;
-
-		emit_messagef(ctx,
-			"[video-transition] core=xm6 mode=%s raw=%ux%u out=%ux%u hm=%u vm=%u low=%d grptype=%d mixpage=%d mixtype=%d bgsp=%d,%d vr2=%02X/%02X vis=%u textdot=%u vstart=%u vend=%u vstep=%u bgv=%u vscan=%u vdots=%u vcount=%u vdisp=%u vblank=%u rcount=%u c_vline_total=%u c_vsync_high=%u c_intline=%u c_vstep=%u c_mode=%u c_fastclr=%u sp0y=%u sp0ctrl=%u bgx0=%u bgy0=%u bg_on=%u,%u bg_size=%u bg_area=%u,%u bg_scrl=%u,%u/%u,%u bgreg0f=%u bgreg11=%u",
-			mode_name,
-			(unsigned int)r->width,
-			(unsigned int)r->height,
-			(unsigned int)r->width,
-			(unsigned int)r->height,
-			(unsigned int)r->h_mul,
-			(unsigned int)r->v_mul,
-			r->lowres ? 1 : 0,
-			r->grptype,
-			r->mixpage,
-			r->mixtype,
-			r->bgspflag ? 1 : 0,
-			r->bgspdisp ? 1 : 0,
-			vr2h,
-			vr2l,
-			visible_vline,
-			textdoty,
-			vstart,
-			vend,
-			vstep,
-			bg_vline,
-			vscan,
-			vdots,
-			vcount,
-			vdisp,
-			vblank,
-			raster_count,
-			crtc_vline_total,
-			crtc_vsync_high,
-			crtc_intline,
-			crtc_vstep,
-			crtc_mode,
-			crtc_fastclr,
-			sp0y,
-			sp0ctrl,
-			(unsigned int)r->bgx[0],
-			(unsigned int)r->bgy[0],
-			bg_on0,
-			bg_on1,
-			bg_size,
-			bg_area0,
-			bg_area1,
-			bg_scrlx0,
-			bg_scrly0,
-			bg_scrlx1,
-			bg_scrly1,
-			bg_reg_0f,
-			bg_reg_11);
-	}
 	emit_messagef(ctx,
-		"[video-probe-int] core=xm6 mode=%s raw=%ux%u hm=%u vm=%u low=%d grptype=%d mixpage=%d mixtype=%d pri=%u/%u/%u gp=%u,%u,%u,%u gs=%u,%u,%u,%u en=%u,%u,%u,%u grpen=%u,%u,%u,%u text=%d bgsp=%d,%d vr2=%02X/%02X vis=%u textdot=%u vstart=%u vend=%u vstep=%u bgv=%u vscan=%u vdots=%u vcount=%u vdisp=%u vblank=%u rcount=%u c_vline_total=%u c_vsync_high=%u c_intline=%u c_vstep=%u c_mode=%u c_fastclr=%u ffb=%u",
-		mode_name,
+		"[video-probe-int] core=xm6 frame=%u/%u raw=%ux%u hm=%u vm=%u low=%d mode=%s grptype=%d mixpage=%d mixtype=%d pri=%u/%u/%u gp=%u,%u,%u,%u gs=%u,%u,%u,%u en=%u,%u,%u,%u grpen=%u,%u,%u,%u text=%d bgsp=%d,%d vr2=%02X/%02X ffb=%u",
+		ctx->video_probe_frame_index + 1,
+		k_video_probe_frames_after_mode_change,
 		(unsigned int)r->width,
 		(unsigned int)r->height,
 		(unsigned int)r->h_mul,
 		(unsigned int)r->v_mul,
 		r->lowres ? 1 : 0,
+		(ctx->render->GetCompositorMode() == 1) ? "fast" : "original",
 		r->grptype,
 		r->mixpage,
 		r->mixtype,
@@ -1576,83 +1217,7 @@ static void emit_video_probe_internal(XM6Context *ctx, const Render::render_t *r
 		r->bgspdisp ? 1 : 0,
 		vr2h,
 		vr2l,
-		visible_vline,
-		textdoty,
-		vstart,
-		vend,
-		vstep,
-		bg_vline,
-		vscan,
-		vdots,
-		vcount,
-		vdisp,
-		vblank,
-		raster_count,
-		crtc_vline_total,
-		crtc_vsync_high,
-		crtc_intline,
-		crtc_vstep,
-		crtc_mode,
-		crtc_fastclr,
 		fast_fallback_count);
-
-	Render::fast_vertical_probe_snapshot_t fast_probe;
-	static const char *const fast_probe_labels[6] = {
-		"top0",
-		"top1",
-		"top2",
-		"bot0",
-		"bot1",
-		"bot2"
-	};
-	ctx->render->GetFastVerticalProbeSnapshot(&fast_probe);
-	if (fast_probe.valid) {
-		for (int probe_index = 0; probe_index < 6; ++probe_index) {
-			const Render::fast_vertical_probe_sample_t &sample = fast_probe.samples[probe_index];
-			if (!sample.valid) {
-				continue;
-			}
-
-			emit_messagef(ctx,
-				"[video-probe-fast] core=xm6 edge=%s frame=%ux%u mix=%ux%u framebgsp=%d,%d linebgsp=%d,%d sprite=%d slot=%d dst=%d src=%d pxv=%u spr=%d bg=%d lay=%d bgv=%d vlinebg=%d vis=%d bgon=%d bgopaq=%d gon=%d tron=%d pron=%d ton=%d vr2=%02X/%02X vscan=%d vdots=%d vcount=%u vblank=%d rcount=%d vstep=%d low=%d vmul=%d",
-				fast_probe_labels[probe_index],
-				(unsigned int)fast_probe.width,
-				(unsigned int)fast_probe.height,
-				(unsigned int)fast_probe.mixwidth,
-				(unsigned int)fast_probe.mixheight,
-				fast_probe.bgspflag ? 1 : 0,
-				fast_probe.bgspdisp ? 1 : 0,
-				sample.bgspflag ? 1 : 0,
-				sample.bgspdisp ? 1 : 0,
-				sample.sprite_enabled ? 1 : 0,
-				probe_index,
-				sample.dst_y,
-				sample.src_y,
-				(unsigned int)sample.px68k_vline,
-				sample.sprite_raster,
-				sample.bg_raster,
-				sample.layer_raster,
-				sample.bg_vline,
-				sample.vline_bg,
-				sample.visible ? 1 : 0,
-				sample.bg_on ? 1 : 0,
-				sample.bg_opaq ? 1 : 0,
-				sample.gon ? 1 : 0,
-				sample.tron ? 1 : 0,
-				sample.pron ? 1 : 0,
-				sample.ton ? 1 : 0,
-				sample.vr2h,
-				sample.vr2l,
-				sample.vscan,
-				sample.vdots,
-				sample.vcount,
-				sample.vblank ? 1 : 0,
-				sample.rcount,
-				sample.vstep,
-				sample.lowres ? 1 : 0,
-				sample.vmul);
-		}
-	}
 #endif
 
 	ctx->video_probe_frame_index++;
@@ -1797,7 +1362,7 @@ static void apply_default_runtime_config(XM6Context *ctx)
 	config->mouse_port = 0;
 	config->mouse_swap = FALSE;
 	config->mouse_mid = TRUE;
-	config->alt_raster = TRUE;
+	config->alt_raster = FALSE;
 
 	config->joy_type[0] = 1;
 	config->joy_type[1] = 0;
@@ -2035,11 +1600,6 @@ XM6CORE_API void XM6CORE_CALL xm6_destroy(XM6Handle handle)
 	delete[] ctx->px68k_ring;
 	ctx->px68k_ring = NULL;
 	ctx->px68k_ring_frames = 0;
-	delete[] ctx->px68k_video_xrgb;
-	ctx->px68k_video_xrgb = NULL;
-	ctx->px68k_video_xrgb_capacity = 0;
-	ctx->px68k_video_probe_signature = 0;
-	ctx->px68k_video_probe_has_signature = FALSE;
 
 	if (g_message_ctx == ctx) {
 		 g_message_ctx = NULL;
@@ -2234,7 +1794,7 @@ XM6CORE_API int XM6CORE_CALL xm6_exec_to_frame(XM6Handle handle)
 		total += CHUNK;
 
 		if (ctx->render->IsReady()) {
-				break;
+			break;
 		}
 	}
 
@@ -2691,7 +2251,7 @@ XM6CORE_API int XM6CORE_CALL xm6_video_poll(
 	}
 
 	unsigned int visible_w = (unsigned int)r->width;
-	unsigned int visible_h = xm6_render_visible_height(r);
+	unsigned int visible_h = (unsigned int)r->height;
 	unsigned int stride = (unsigned int)r->mixwidth;
 	unsigned int max_h = (unsigned int)r->mixheight;
 
@@ -2809,7 +2369,7 @@ XM6CORE_API int XM6CORE_CALL xm6_get_video_layout(
 	}
 
 	*out_width = (unsigned int)r->width;
-	*out_height = xm6_render_visible_height(r);
+	*out_height = (unsigned int)r->height;
 	*out_h_mul = h_mul;
 	*out_v_mul = v_mul;
 	*out_lowres = r->lowres ? 1 : 0;

@@ -12,11 +12,9 @@
 
 BOOL SmokeIsSaveStateCommand();
 BOOL SmokeIsVisibleCommand();
-BOOL SmokeIsPx68kVideoCommand(LPCTSTR lpszCmd);
 BOOL SmokeVisibleShouldPoll(DWORD dwNow);
 void SmokeLogLine(LPCTSTR msg);
 void SmokeLogFormat(LPCTSTR fmt, LPCTSTR value);
-void SmokeLogFormatDword(LPCTSTR fmt, DWORD value);
 BOOL SmokeReadOptionValue(LPCTSTR cmd, LPCTSTR opt, LPCTSTR *after, TCHAR *value, int valueCount);
 
 #endif	// mfc_smoke_h

@@ -28,18 +28,18 @@
 //---------------------------------------------------------------------------
 Neptune::Neptune(VM *p) : MemDevice(p)
 {
-	// Device ID initialization
+	// Device ID setting
 	dev.id = MAKEID('N', 'E', 'P', 'X');
 	dev.desc = "Neptune-X (DP8390)";
 
-	// Start address, end address
+	// Start address, End address
 	memdev.first = 0xece000;
 	memdev.last = 0xecffff;
 }
 
 //---------------------------------------------------------------------------
 //
-//	Initialization
+//	Initialize
 //
 //---------------------------------------------------------------------------
 BOOL FASTCALL Neptune::Init()
@@ -61,10 +61,10 @@ BOOL FASTCALL Neptune::Init()
 //---------------------------------------------------------------------------
 void FASTCALL Neptune::Cleanup()
 {
-	ASSERT(this);
+ ASSERT(this);
 
-	// Base class
-	MemDevice::Cleanup();
+ // Base class
+ MemDevice::Cleanup();
 }
 
 //---------------------------------------------------------------------------
@@ -74,10 +74,10 @@ void FASTCALL Neptune::Cleanup()
 //---------------------------------------------------------------------------
 void FASTCALL Neptune::Reset()
 {
-	ASSERT(this);
-	ASSERT_DIAG();
+ ASSERT(this);
+ ASSERT_DIAG();
 
-	LOG0(Log::Normal, "Reset");
+ LOG0(Log::Normal, "Reset");
 }
 
 //---------------------------------------------------------------------------
@@ -87,12 +87,12 @@ void FASTCALL Neptune::Reset()
 //---------------------------------------------------------------------------
 BOOL FASTCALL Neptune::Save(Fileio* /*fio*/, int /*ver*/)
 {
-	ASSERT(this);
-	ASSERT_DIAG();
+ ASSERT(this);
+ ASSERT_DIAG();
 
-	LOG0(Log::Normal, "Save");
+ LOG0(Log::Normal, "Save");
 
-	return TRUE;
+ return TRUE;
 }
 
 //---------------------------------------------------------------------------
@@ -102,12 +102,12 @@ BOOL FASTCALL Neptune::Save(Fileio* /*fio*/, int /*ver*/)
 //---------------------------------------------------------------------------
 BOOL FASTCALL Neptune::Load(Fileio* /*fio*/, int /*ver*/)
 {
-	ASSERT(this);
-	ASSERT_DIAG();
+ ASSERT(this);
+ ASSERT_DIAG();
 
-	LOG0(Log::Normal, "Load");
+ LOG0(Log::Normal, "Load");
 
-	return TRUE;
+ return TRUE;
 }
 
 //---------------------------------------------------------------------------
@@ -117,16 +117,16 @@ BOOL FASTCALL Neptune::Load(Fileio* /*fio*/, int /*ver*/)
 //---------------------------------------------------------------------------
 void FASTCALL Neptune::ApplyCfg(const Config* /*config*/)
 {
-	ASSERT(this);
-	ASSERT_DIAG();
+ ASSERT(this);
+ ASSERT_DIAG();
 
-	LOG0(Log::Normal, "Apply config");
+ LOG0(Log::Normal, "Apply config");
 }
 
 #if !defined(NDEBUG)
 //---------------------------------------------------------------------------
 //
-//	Diagnostic assertion
+//	Assert
 //
 //---------------------------------------------------------------------------
 void FASTCALL Neptune::AssertDiag() const
@@ -134,10 +134,10 @@ void FASTCALL Neptune::AssertDiag() const
 	// Base class
 	MemDevice::AssertDiag();
 
-	ASSERT(this);
-	ASSERT(GetID() == MAKEID('N', 'E', 'P', 'X'));
-	ASSERT(memdev.first == 0xece000);
-	ASSERT(memdev.last == 0xecffff);
+ ASSERT(this);
+ ASSERT(GetID() == MAKEID('N', 'E', 'P', 'X'));
+ ASSERT(memdev.first == 0xece000);
+ ASSERT(memdev.last == 0xecffff);
 }
 #endif	// NDEBUG
 
@@ -148,14 +148,14 @@ void FASTCALL Neptune::AssertDiag() const
 //---------------------------------------------------------------------------
 DWORD FASTCALL Neptune::ReadByte(DWORD addr)
 {
-	ASSERT(this);
-	ASSERT((addr >= memdev.first) && (addr <= memdev.last));
-	ASSERT_DIAG();
+ ASSERT(this);
+ ASSERT((addr >= memdev.first) && (addr <= memdev.last));
+ ASSERT_DIAG();
 
-	// Bus error
-		cpu->BusErr(addr, TRUE);
+ // Bus error
+ cpu->BusErr(addr, TRUE);
 
-	return 0xff;
+ return 0xff;
 }
 
 //---------------------------------------------------------------------------
@@ -165,12 +165,12 @@ DWORD FASTCALL Neptune::ReadByte(DWORD addr)
 //---------------------------------------------------------------------------
 DWORD FASTCALL Neptune::ReadWord(DWORD addr)
 {
-	ASSERT(this);
-	ASSERT((addr >= memdev.first) && (addr <= memdev.last));
-	ASSERT((addr & 1) == 0);
-	ASSERT_DIAG();
+ ASSERT(this);
+ ASSERT((addr >= memdev.first) && (addr <= memdev.last));
+ ASSERT((addr & 1) == 0);
+ ASSERT_DIAG();
 
-	return (0xff00 | ReadByte(addr + 1));
+ return (0xff00 | ReadByte(addr + 1));
 }
 
 //---------------------------------------------------------------------------
@@ -180,15 +180,15 @@ DWORD FASTCALL Neptune::ReadWord(DWORD addr)
 //---------------------------------------------------------------------------
 void FASTCALL Neptune::WriteByte(DWORD addr, DWORD data)
 {
-	ASSERT(this);
-	ASSERT((addr >= memdev.first) && (addr <= memdev.last));
-	ASSERT(data < 0x100);
-	ASSERT_DIAG();
+ ASSERT(this);
+ ASSERT((addr >= memdev.first) && (addr <= memdev.last));
+ ASSERT(data < 0x100);
+ ASSERT_DIAG();
 
-	printf("%d", data);
+ printf("%d", data);
 
-	// Bus error
-	cpu->BusErr(addr, FALSE);
+ // Bus error
+ cpu->BusErr(addr, FALSE);
 }
 
 //---------------------------------------------------------------------------
@@ -198,13 +198,13 @@ void FASTCALL Neptune::WriteByte(DWORD addr, DWORD data)
 //---------------------------------------------------------------------------
 void FASTCALL Neptune::WriteWord(DWORD addr, DWORD data)
 {
-	ASSERT(this);
-	ASSERT((addr >= memdev.first) && (addr <= memdev.last));
-	ASSERT((addr & 1) == 0);
-	ASSERT(data < 0x10000);
-	ASSERT_DIAG();
+ ASSERT(this);
+ ASSERT((addr >= memdev.first) && (addr <= memdev.last));
+ ASSERT((addr & 1) == 0);
+ ASSERT(data < 0x10000);
+ ASSERT_DIAG();
 
-	WriteByte(addr + 1, (BYTE)data);
+ WriteByte(addr + 1, (BYTE)data);
 }
 
 //---------------------------------------------------------------------------
@@ -214,11 +214,11 @@ void FASTCALL Neptune::WriteWord(DWORD addr, DWORD data)
 //---------------------------------------------------------------------------
 DWORD FASTCALL Neptune::ReadOnly(DWORD addr) const
 {
-	ASSERT(this);
-	ASSERT((addr >= memdev.first) && (addr <= memdev.last));
-	ASSERT_DIAG();
+ ASSERT(this);
+ ASSERT((addr >= memdev.first) && (addr <= memdev.last));
+ ASSERT_DIAG();
 
-	printf("%d", addr);
+ printf("%d", addr);
 
-	return 0xff;
+ return 0xff;
 }

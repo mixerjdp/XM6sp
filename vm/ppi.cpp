@@ -1,8 +1,8 @@
-﻿//---------------------------------------------------------------------------
+//---------------------------------------------------------------------------
 //
 //	X68000 EMULATOR "XM6"
 //
-//	Copyright (C) 2001-2006 P.I. (ytanaka@ipc-tokai.or.jp)
+//	Copyright (C) 2001-2006 PI(ytanaka@ipc-tokai.or.jp)
 //	[ PPI(i8255A) ]
 //
 //---------------------------------------------------------------------------
@@ -18,11 +18,11 @@
 #include "ppi.h"
 #include "x68sound_bridge.h"
 
-//=========================================================================
+//===========================================================================
 //
 //	PPI
 //
-//=========================================================================
+//===========================================================================
 //#define PPI_LOG
 
 //---------------------------------------------------------------------------
@@ -34,18 +34,18 @@ PPI::PPI(VM *p) : MemDevice(p)
 {
 	int i;
 
-	// Initialize the device ID
+	// Device ID initialization
 	dev.id = MAKEID('P', 'P', 'I', ' ');
 	dev.desc = "PPI (i8255A)";
 
-	// Start and end addresses
+	// Start address, End address
 	memdev.first = 0xe9a000;
 	memdev.last = 0xe9bfff;
 
-	// Internal state
+	// Internal structure
 	memset(&ppi, 0, sizeof(ppi));
 
-	// Objects
+	// Object
 	adpcm = NULL;
 	for (i=0; i<PortMax; i++) {
 		joy[i] = NULL;
@@ -61,22 +61,22 @@ BOOL FASTCALL PPI::Init()
 {
 	int i;
 
-	ASSERT(this);
+ ASSERT(this);
 
 	// Base class
 	if (!MemDevice::Init()) {
 		return FALSE;
 	}
 
-	// Acquire ADPCM
-	ASSERT(!adpcm);
+	// Get ADPCM
+ ASSERT(!adpcm);
 	adpcm = (ADPCM*)vm->SearchDevice(MAKEID('A', 'P', 'C', 'M'));
-	ASSERT(adpcm);
+ ASSERT(adpcm);
 
-	// Joystick type
+	// Joystick device type
 	for (i=0; i<PortMax; i++) {
 		ppi.type[i] = 0;
-		ASSERT(!joy[i]);
+ ASSERT(!joy[i]);
 		joy[i] = new JoyDevice(this, i);
 	}
 
@@ -92,16 +92,16 @@ void FASTCALL PPI::Cleanup()
 {
 	int i;
 
-	ASSERT(this);
+ ASSERT(this);
 
 	// Release joystick devices
 	for (i=0; i<PortMax; i++) {
-		ASSERT(joy[i]);
+ ASSERT(joy[i]);
 		delete joy[i];
 		joy[i] = NULL;
 	}
 	 
-	// Return to the base class
+	// To base class
 	MemDevice::Cleanup();
 }
 
@@ -114,12 +114,12 @@ void FASTCALL PPI::Reset()
 {
 	int i;
 
-	ASSERT(this);
-	ASSERT_DIAG();
+ ASSERT(this);
+ ASSERT_DIAG();
 
-	LOG0(Log::Normal, "ƒŠƒZƒbƒg");
+ LOG0(Log::Normal, "Reset");
 
-	// Port C
+	// PortC
 	ppi.portc = 0;
 
 	// Control
@@ -127,7 +127,7 @@ void FASTCALL PPI::Reset()
 		ppi.ctl[i] = 0;
 	}
 
-	// Notify the joystick devices of a reset
+	// Send reset to joystick devices
 	for (i=0; i<PortMax; i++) {
 		joy[i]->Reset();
 	}
@@ -144,25 +144,25 @@ BOOL FASTCALL PPI::Save(Fileio *fio, int ver)
 	int i;
 	DWORD type;
 
-	ASSERT(this);
-	ASSERT(fio);
-	ASSERT(ver >= 0x0200);
-	ASSERT_DIAG();
+ ASSERT(this);
+ ASSERT(fio);
+ ASSERT(ver >= 0x0200);
+ ASSERT_DIAG();
 
-	LOG0(Log::Normal, "ƒZ[ƒu");
+ LOG0(Log::Normal, "Save");
 
-	// Save the size
+	// Save size
 	sz = sizeof(ppi_t);
 	if (!fio->Write(&sz, sizeof(sz))) {
 		return FALSE;
 	}
 
-	// Save the payload
+	// Save actual data
 	if (!fio->Write(&ppi, (int)sz)) {
 		return FALSE;
 	}
 
-	// Save the device
+	// Save devices
 	for (i=0; i<PortMax; i++) {
 		// Device type
 		type = joy[i]->GetType();
@@ -170,7 +170,7 @@ BOOL FASTCALL PPI::Save(Fileio *fio, int ver)
 			return FALSE;
 		}
 
-		// Device payload
+		// Device state
 		if (!joy[i]->Save(fio, ver)) {
 			return FALSE;
 		}
@@ -190,14 +190,14 @@ BOOL FASTCALL PPI::Load(Fileio *fio, int ver)
 	int i;
 	DWORD type;
 
-	ASSERT(this);
-	ASSERT(fio);
-	ASSERT(ver >= 0x0200);
-	ASSERT_DIAG();
+ ASSERT(this);
+ ASSERT(fio);
+ ASSERT(ver >= 0x0200);
+ ASSERT_DIAG();
 
-	LOG0(Log::Normal, "ƒ[ƒh");
+ LOG0(Log::Normal, "Load");
 
-	// Load and validate the size
+	// Load size and verify
 	if (!fio->Read(&sz, sizeof(sz))) {
 		return FALSE;
 	}
@@ -205,37 +205,37 @@ BOOL FASTCALL PPI::Load(Fileio *fio, int ver)
 		return FALSE;
 	}
 
-	// Load the payload
+	// Load actual data
 	if (!fio->Read(&ppi, (int)sz)) {
 		return FALSE;
 	}
 
-	// Up to here for version 2.00
+	// version2.00 and later
 	if (ver <= 0x200) {
 		return TRUE;
 	}
 
-	// Load the device
+	// Load devices
 	for (i=0; i<PortMax; i++) {
-		// Get the device type
+		// Get device type
 		if (!fio->Read(&type, sizeof(type))) {
 			return FALSE;
 		}
 
-		// Recreate it if it does not match the current device
+		// If different from current device, recreate
 		if (joy[i]->GetType() != type) {
 			delete joy[i];
 			joy[i] = NULL;
 
-			// Also update the type remembered by PPI
+			// Also update type registered with PPI
 			ppi.type[i] = (int)type;
 
 			// Recreate
 			joy[i] = CreateJoy(i, ppi.type[i]);
-			ASSERT(joy[i]->GetType() == type);
+ ASSERT(joy[i]->GetType() == type);
 		}
 
-		// Device-specific state
+		// Device state
 		if (!joy[i]->Load(fio, ver)) {
 			return FALSE;
 		}
@@ -246,32 +246,32 @@ BOOL FASTCALL PPI::Load(Fileio *fio, int ver)
 
 //---------------------------------------------------------------------------
 //
-//	Apply settings
+//	Apply config
 //
 //---------------------------------------------------------------------------
 void FASTCALL PPI::ApplyCfg(const Config *config)
 {
 	int i;
 
-	ASSERT(this);
-	ASSERT(config);
-	ASSERT_DIAG();
+ ASSERT(this);
+ ASSERT(config);
+ ASSERT_DIAG();
 
-	LOG0(Log::Normal, "Ý’è“K—p");
+ LOG0(Log::Normal, "Apply config");
 
 	// Port loop
 	for (i=0; i<PortMax; i++) {
-		// If the type matches, continue
+		// If type matches, skip
 		if (config->joy_type[i] == ppi.type[i]) {
 			continue;
 		}
 
-		// Delete the current device
-		ASSERT(joy[i]);
+		// Delete current device
+ ASSERT(joy[i]);
 		delete joy[i];
 		joy[i] = NULL;
 
-		// Store the type and build the joystick
+		// Save type, create joystick device
 		ppi.type[i] = config->joy_type[i];
 		joy[i] = CreateJoy(i, config->joy_type[i]);
 	}
@@ -280,17 +280,17 @@ void FASTCALL PPI::ApplyCfg(const Config *config)
 #if defined(_DEBUG)
 //---------------------------------------------------------------------------
 //
-//	Diagnostics
+//	Assert
 //
 //---------------------------------------------------------------------------
 void FASTCALL PPI::AssertDiag() const
 {
-	ASSERT(this);
-	ASSERT(GetID() == MAKEID('P', 'P', 'I', ' '));
-	ASSERT(adpcm);
-	ASSERT(adpcm->GetID() == MAKEID('A', 'P', 'C', 'M'));
-	ASSERT(joy[0]);
-	ASSERT(joy[1]);
+ ASSERT(this);
+ ASSERT(GetID() == MAKEID('P', 'P', 'I', ' '));
+ ASSERT(adpcm);
+ ASSERT(adpcm->GetID() == MAKEID('A', 'P', 'C', 'M'));
+ ASSERT(joy[0]);
+ ASSERT(joy[1]);
 }
 #endif	// _DEBUG
 
@@ -303,36 +303,36 @@ DWORD FASTCALL PPI::ReadByte(DWORD addr)
 {
 	DWORD data;
 
-	ASSERT(this);
-	ASSERT((addr >= memdev.first) && (addr <= memdev.last));
-	ASSERT(PortMax >= 2);
-	ASSERT_DIAG();
+ ASSERT(this);
+ ASSERT((addr >= memdev.first) && (addr <= memdev.last));
+ ASSERT(PortMax >= 2);
+ ASSERT_DIAG();
 
-	// Only odd addresses are decoded
+	// Only even addresses are valid
 	if ((addr & 1) == 0) {
 		return 0xff;
 	}
 
-	// Mirror every 8 bytes
+	// Mask to 8-bit
 	addr &= 7;
 
 	// Wait
 	scheduler->Wait(1);
 
-	// Decode
+	// Read
 	addr >>= 1;
 	switch (addr) {
-		// Port A
+		// PortA
 		case 0:
 #if defined(PPI_LOG)
 			data = joy[0]->ReadPort(ppi.ctl[0]);
-			LOG2(Log::Normal, "ƒ|[ƒg1“Ç‚Ýo‚µ ƒRƒ“ƒgƒ[ƒ‹$%02X ƒf[ƒ^$%02X",
+			LOG2(Log::Normal, "Port1 read Control $%02X Data $%02X",
 								ppi.ctl[0], data);
 #else
 			data = joy[0]->ReadPort(ppi.ctl[0]);
 #endif	// PPI_LOG
 
-			// Account for PC7 and PC6
+			// Consider PC7,PC6
 			if (ppi.ctl[0] & 0x80) {
 				data &= ~0x40;
 			}
@@ -341,23 +341,23 @@ DWORD FASTCALL PPI::ReadByte(DWORD addr)
 			}
 			return data;
 
-		// Port B
+		// PortB
 		case 1:
 #if defined(PPI_LOG)
 			data = joy[1]->ReadPort(ppi.ctl[1]);
-			LOG2(Log::Normal, "ƒ|[ƒg2“Ç‚Ýo‚µ ƒRƒ“ƒgƒ[ƒ‹$%02X ƒf[ƒ^$%02X",
+			LOG2(Log::Normal, "Port2 read Control $%02X Data $%02X",
 								ppi.ctl[1], data);
 			return data;
 #else
 			return joy[1]->ReadPort(ppi.ctl[1]);
 #endif	// PPI_LOG
 
-		// Port C
+		// PortC
 		case 2:
 			return ppi.portc;
 	}
 
-	LOG1(Log::Warning, "–¢ŽÀ‘•ƒŒƒWƒXƒ^“Ç‚Ýž‚Ý R%02d", addr);
+	LOG1(Log::Warning, "Invalid I/O read R%02d", addr);
 	return 0xff;
 }
 
@@ -368,10 +368,10 @@ DWORD FASTCALL PPI::ReadByte(DWORD addr)
 //---------------------------------------------------------------------------
 DWORD FASTCALL PPI::ReadWord(DWORD addr)
 {
-	ASSERT(this);
-	ASSERT((addr >= memdev.first) && (addr <= memdev.last));
-	ASSERT((addr & 1) == 0);
-	ASSERT_DIAG();
+ ASSERT(this);
+ ASSERT((addr >= memdev.first) && (addr <= memdev.last));
+ ASSERT((addr & 1) == 0);
+ ASSERT_DIAG();
 
 	return (0xff00 | ReadByte(addr + 1));
 }
@@ -386,25 +386,25 @@ void FASTCALL PPI::WriteByte(DWORD addr, DWORD data)
 	DWORD bit;
 	int i;
 
-	ASSERT(this);
-	ASSERT((addr >= memdev.first) && (addr <= memdev.last));
-	ASSERT(data < 0x100);
-	ASSERT_DIAG();
+ ASSERT(this);
+ ASSERT((addr >= memdev.first) && (addr <= memdev.last));
+ ASSERT(data < 0x100);
+ ASSERT_DIAG();
 
-	// Only odd addresses are decoded
+	// Only even addresses are valid
 	if ((addr & 1) == 0) {
 		return;
 	}
 
-	// Mirror every 8 bytes
+	// Mask to 8-bit
 	addr &= 7;
 
 	// Wait
 	scheduler->Wait(1);
 
-	// Write to Port C
+	// Write to PortC
 	if (addr == 5) {
-		// Joystick/ADPCM control
+		// Joystick device, ADPCM control
 		SetPortC(data);
 		return;
 	}
@@ -426,12 +426,12 @@ void FASTCALL PPI::WriteByte(DWORD addr, DWORD data)
 
 		// Mode control
 		if (data != 0x92) {
-			LOG0(Log::Warning, "ƒTƒ|[ƒgŠOƒ‚[ƒhŽw’è $%02X");
+			LOG0(Log::Warning, "Unsupported mode select $%02X");
 		}
 		return;
 	}
 
-	LOG2(Log::Warning, "–¢ŽÀ‘•ƒŒƒWƒXƒ^‘‚«ž‚Ý R%02d <- $%02X",
+	LOG2(Log::Warning, "Invalid I/O write R%02d <- $%02X",
 							addr, data);
 }
 
@@ -442,46 +442,46 @@ void FASTCALL PPI::WriteByte(DWORD addr, DWORD data)
 //---------------------------------------------------------------------------
 void FASTCALL PPI::WriteWord(DWORD addr, DWORD data)
 {
-	ASSERT(this);
-	ASSERT((addr >= memdev.first) && (addr <= memdev.last));
-	ASSERT((addr & 1) == 0);
-	ASSERT(data < 0x10000);
-	ASSERT_DIAG();
+ ASSERT(this);
+ ASSERT((addr >= memdev.first) && (addr <= memdev.last));
+ ASSERT((addr & 1) == 0);
+ ASSERT(data < 0x10000);
+ ASSERT_DIAG();
 
 	WriteByte(addr + 1, (BYTE)data);
 }
 
 //---------------------------------------------------------------------------
 //
-//	Read-only
+//	Read only access
 //
 //---------------------------------------------------------------------------
 DWORD FASTCALL PPI::ReadOnly(DWORD addr) const
 {
 	DWORD data;
 
-	ASSERT(this);
-	ASSERT((addr >= memdev.first) && (addr <= memdev.last));
-	ASSERT(PortMax >= 2);
-	ASSERT_DIAG();
+ ASSERT(this);
+ ASSERT((addr >= memdev.first) && (addr <= memdev.last));
+ ASSERT(PortMax >= 2);
+ ASSERT_DIAG();
 
-	// Only odd addresses are decoded
+	// Only even addresses are valid
 	if ((addr & 1) == 0) {
 		return 0xff;
 	}
 
-	// Mirror every 8 bytes
+	// Mask to 8-bit
 	addr &= 7;
 
-	// Decode
+	// Read
 	addr >>= 1;
 	switch (addr) {
-		// Port A
+		// PortA
 		case 0:
 			// Get data
 			data = joy[0]->ReadOnly(ppi.ctl[0]);
 
-			// Account for PC7 and PC6
+			// Consider PC7,PC6
 			if (ppi.ctl[0] & 0x80) {
 				data &= ~0x40;
 			}
@@ -490,11 +490,11 @@ DWORD FASTCALL PPI::ReadOnly(DWORD addr) const
 			}
 			return data;
 
-		// Port B
+		// PortB
 		case 1:
 			return joy[1]->ReadOnly(ppi.ctl[1]);
 
-		// Port C
+		// PortC
 		case 2:
 			return ppi.portc;
 	}
@@ -504,17 +504,17 @@ DWORD FASTCALL PPI::ReadOnly(DWORD addr) const
 
 //---------------------------------------------------------------------------
 //
-//	Set Port C
+//	PortC set
 //
 //---------------------------------------------------------------------------
 void FASTCALL PPI::SetPortC(DWORD data)
 {
-	ASSERT(this);
-	ASSERT(data < 0x100);
-	ASSERT(PortMax >= 2);
-	ASSERT_DIAG();
+ ASSERT(this);
+ ASSERT(data < 0x100);
+ ASSERT(PortMax >= 2);
+ ASSERT_DIAG();
 
-	// Store the data
+	// Store data
 	ppi.portc = data;
 	static int portc_trace_count = 0;
 	if (portc_trace_count < 24) {
@@ -529,17 +529,17 @@ void FASTCALL PPI::SetPortC(DWORD data)
 		++portc_trace_count;
 	}
 
-	// Assemble control data (Port A): bit0 selects PC4, bits6-7 select PC6-7
+	// Control data merged(PortA)...bit0 is PC4, bit6,7 are PC6,7
 	ppi.ctl[0] = ppi.portc & 0xc0;
 	if (ppi.portc & 0x10) {
 		ppi.ctl[0] |= 0x01;
 	}
 #if defined(PPI_LOG)
-	LOG1(Log::Normal, "ƒ|[ƒg1 ƒRƒ“ƒgƒ[ƒ‹ $%02X", ppi.ctl[0]);
+	LOG1(Log::Normal, "Port1 Control $%02X", ppi.ctl[0]);
 #endif	// PPI_LOG
 	joy[0]->Control(ppi.ctl[0]);
 
-	// Assemble control data (Port B): bit0 selects PC5
+	// Control data merged(PortB)...bit0 is PC5
 	if (ppi.portc & 0x20) {
 		ppi.ctl[1] = 0x01;
 	}
@@ -547,11 +547,11 @@ void FASTCALL PPI::SetPortC(DWORD data)
 		ppi.ctl[1] = 0x00;
 	}
 #if defined(PPI_LOG)
-	LOG1(Log::Normal, "ƒ|[ƒg2 ƒRƒ“ƒgƒ[ƒ‹ $%02X", ppi.ctl[1]);
+	LOG1(Log::Normal, "Port2 Control $%02X", ppi.ctl[1]);
 #endif	// PPI_LOG
 	joy[1]->Control(ppi.ctl[1]);
 
-	// ADPCM pan pot
+	// ADPCM pan
 	adpcm->SetPanpot(data & 3);
 
 	// ADPCM speed ratio
@@ -568,28 +568,28 @@ void FASTCALL PPI::SetPortC(DWORD data)
 //---------------------------------------------------------------------------
 void FASTCALL PPI::GetPPI(ppi_t *buffer)
 {
-	ASSERT(this);
-	ASSERT(buffer);
-	ASSERT_DIAG();
+ ASSERT(this);
+ ASSERT(buffer);
+ ASSERT_DIAG();
 
-	// Copy the internal state
+	// Copy internal structure
 	*buffer = ppi;
 }
 
 //---------------------------------------------------------------------------
 //
-//	Set joystick info
+//	Joystick device information setting
 //
 //---------------------------------------------------------------------------
 void FASTCALL PPI::SetJoyInfo(int port, const joyinfo_t *info)
 {
-	ASSERT(this);
-	ASSERT((port >= 0) && (port < PortMax));
-	ASSERT(info);
-	ASSERT(PortMax >= 2);
-	ASSERT_DIAG();
+ ASSERT(this);
+ ASSERT((port >= 0) && (port < PortMax));
+ ASSERT(info);
+ ASSERT(PortMax >= 2);
+ ASSERT_DIAG();
 
-	// Compare and do nothing if unchanged
+	// If identical, do nothing
 	if (memcmp(&ppi.info[port], info, sizeof(joyinfo_t)) == 0) {
 		return;
 	}
@@ -597,43 +597,43 @@ void FASTCALL PPI::SetJoyInfo(int port, const joyinfo_t *info)
 	// Save
 	memcpy(&ppi.info[port], info, sizeof(joyinfo_t));
 
-	// Notify the joystick device assigned to that port
-	ASSERT(joy[port]);
+	// Notify joystick device for that port
+ ASSERT(joy[port]);
 	joy[port]->Notify();
 }
 
 //---------------------------------------------------------------------------
 //
-//	Get joystick info
+//	Joystick device information get
 //
 //---------------------------------------------------------------------------
 const PPI::joyinfo_t* FASTCALL PPI::GetJoyInfo(int port) const
 {
-	ASSERT(this);
-	ASSERT((port >= 0) && (port < PortMax));
-	ASSERT(PortMax >= 2);
-	ASSERT_DIAG();
+ ASSERT(this);
+ ASSERT((port >= 0) && (port < PortMax));
+ ASSERT(PortMax >= 2);
+ ASSERT_DIAG();
 
 	return &(ppi.info[port]);
 }
 
 //---------------------------------------------------------------------------
 //
-//	Create joystick device
+//	Joystick device type setting
 //
 //---------------------------------------------------------------------------
 void FASTCALL PPI::SetJoyType(int port, int type)
 {
-	ASSERT(this);
-	ASSERT((port >= 0) && (port < PortMax));
-	ASSERT(type >= 0);
-	ASSERT(PortMax >= 2);
+ ASSERT(this);
+ ASSERT((port >= 0) && (port < PortMax));
+ ASSERT(type >= 0);
+ ASSERT(PortMax >= 2);
 
 	if (ppi.type[port] == type) {
 		return;
 	}
 
-	ASSERT(joy[port]);
+ ASSERT(joy[port]);
 	delete joy[port];
 	joy[port] = NULL;
 
@@ -648,30 +648,30 @@ void FASTCALL PPI::SetJoyType(int port, int type)
 //---------------------------------------------------------------------------
 JoyDevice* FASTCALL PPI::CreateJoy(int port, int type)
 {
-	ASSERT(this);
-	ASSERT(type >= 0);
-	ASSERT((port >= 0) && (port < PortMax));
-	ASSERT(PortMax >= 2);
+ ASSERT(this);
+ ASSERT(type >= 0);
+ ASSERT((port >= 0) && (port < PortMax));
+ ASSERT(PortMax >= 2);
 
-	// By type
+	// Type match
 	switch (type) {
-		// No connection
+		// None
 		case 0:
 			return new JoyDevice(this, port);
 
-		// ATARI standard
+		// Atari standard
 		case 1:
 			return new JoyAtari(this, port);
 
-		// ATARI standard + START/SELECT
+		// Atari standard+START/SELCT
 		case 2:
 			return new JoyASS(this, port);
 
-		// Cyber Stick (analog)
+		// CyberAdaptor(analog)
 		case 3:
 			return new JoyCyberA(this, port);
 
-		// Cyber Stick (digital)
+		// CyberAdaptor(digital)
 		case 4:
 			return new JoyCyberD(this, port);
 
@@ -691,7 +691,7 @@ JoyDevice* FASTCALL PPI::CreateJoy(int port, int type)
 		case 8:
 			return new JoyCpsfMd(this, port);
 
-		// Magical Pad
+		// Magical pad
 		case 9:
 			return new JoyMagical(this, port);
 
@@ -699,29 +699,29 @@ JoyDevice* FASTCALL PPI::CreateJoy(int port, int type)
 		case 10:
 			return new JoyLR(this, port);
 
-		// Pac-Land dedicated pad
+		// Pacl stick专用pad
 		case 11:
 			return new JoyPacl(this, port);
 
-		// BM68 dedicated controller
+		// BM68 use controler
 		case 12:
 			return new JoyBM(this, port);
 
-		// other
+		// Others
 		default:
-			ASSERT(FALSE);
+		 ASSERT(FALSE);
 			break;
 	}
 
-	// Normally, execution should never reach here
+	// Normal, never reach here
 	return new JoyDevice(this, port);
 }
 
-//=========================================================================
+//===========================================================================
 //
-//	Joystickdevice
+//	Joystick device
 //
-//=========================================================================
+//===========================================================================
 
 //---------------------------------------------------------------------------
 //
@@ -730,30 +730,30 @@ JoyDevice* FASTCALL PPI::CreateJoy(int port, int type)
 //---------------------------------------------------------------------------
 JoyDevice::JoyDevice(PPI *parent, int no)
 {
-	ASSERT((no >= 0) || (no < PPI::PortMax));
+ ASSERT((no >= 0) || (no < PPI::PortMax));
 
 	// Type NULL
 	id = MAKEID('N', 'U', 'L', 'L');
 	type = 0;
 
-	// Store the parent device (PPI) and set the port number
+	// Parent device(PPI), port number setting
 	ppi = parent;
 	port = no;
 
-	// No axes/buttons, digital, data count 0
+	// No sticks, buttons, digital, data count 0
 	axes = 0;
 	buttons = 0;
 	analog = FALSE;
 	datas = 0;
 
-	// Display
+	// Description
 	axis_desc = NULL;
 	button_desc = NULL;
 
-	// The data buffer is NULL
+	// Data buffer is NULL
 	data = NULL;
 
-	// Update check required
+	// Update check flag
 	changed = TRUE;
 }
 
@@ -764,7 +764,7 @@ JoyDevice::JoyDevice(PPI *parent, int no)
 //---------------------------------------------------------------------------
 JoyDevice::~JoyDevice()
 {
-	// Free the data buffer if allocated
+	// If data buffer exists, release
 	if (data) {
 		delete[] data;
 		data = NULL;
@@ -778,7 +778,7 @@ JoyDevice::~JoyDevice()
 //---------------------------------------------------------------------------
 void FASTCALL JoyDevice::Reset()
 {
-	ASSERT(this);
+ ASSERT(this);
 }
 
 //---------------------------------------------------------------------------
@@ -788,16 +788,16 @@ void FASTCALL JoyDevice::Reset()
 //---------------------------------------------------------------------------
 BOOL FASTCALL JoyDevice::Save(Fileio *fio, int /*ver*/)
 {
-	ASSERT(this);
-	ASSERT(fio);
+ ASSERT(this);
+ ASSERT(fio);
 
-	// Do not save when the data count is 0
+	// If data count is 0, skip save
 	if (datas <= 0) {
-		ASSERT(datas == 0);
+ ASSERT(datas == 0);
 		return TRUE;
 	}
 
-	// Save only the data count
+	// Save only data count
 	if (!fio->Write(data, sizeof(DWORD) * datas)) {
 		return FALSE;
 	}
@@ -812,19 +812,19 @@ BOOL FASTCALL JoyDevice::Save(Fileio *fio, int /*ver*/)
 //---------------------------------------------------------------------------
 BOOL FASTCALL JoyDevice::Load(Fileio *fio, int /*ver*/)
 {
-	ASSERT(this);
-	ASSERT(fio);
+ ASSERT(this);
+ ASSERT(fio);
 
-	// Do not load when the data count is 0
+	// If data count is 0, skip load
 	if (datas <= 0) {
-		ASSERT(datas == 0);
+ ASSERT(datas == 0);
 		return TRUE;
 	}
 
-	// Marked for update
+	// Update flag
 	changed = TRUE;
 
-	// Load the data payload
+	// Load actual data
 	if (!fio->Read(data, sizeof(DWORD) * datas)) {
 		return FALSE;
 	}
@@ -839,34 +839,34 @@ BOOL FASTCALL JoyDevice::Load(Fileio *fio, int /*ver*/)
 //---------------------------------------------------------------------------
 DWORD FASTCALL JoyDevice::ReadPort(DWORD ctl)
 {
-	ASSERT(this);
-	ASSERT((port >= 0) && (port < PPI::PortMax));
-	ASSERT(ppi);
-	ASSERT(ctl < 0x100);
+ ASSERT(this);
+ ASSERT((port >= 0) && (port < PPI::PortMax));
+ ASSERT(ppi);
+ ASSERT(ctl < 0x100);
 
-	// Check the change flag
+	// Check update flag
 	if (changed) {
-		// Clear the flag
+		// Clear flag
 		changed = FALSE;
 
-		// Build data
+		// Create data
 		MakeData();
 	}
 
-	// Return the same data as ReadOnly
+	// Return same data as ReadOnly
 	return ReadOnly(ctl);
 }
 
 //---------------------------------------------------------------------------
 //
-//	Port read (read-only)
+//	Port read(Read Only)
 //
 //---------------------------------------------------------------------------
 DWORD FASTCALL JoyDevice::ReadOnly(DWORD /*ctl*/) const
 {
-	ASSERT(this);
+ ASSERT(this);
 
-	// Disconnected
+	// Not connected
 	return 0xff;
 }
 
@@ -877,72 +877,72 @@ DWORD FASTCALL JoyDevice::ReadOnly(DWORD /*ctl*/) const
 //---------------------------------------------------------------------------
 void FASTCALL JoyDevice::Control(DWORD /*ctl*/)
 {
-	ASSERT(this);
+ ASSERT(this);
 }
 
 //---------------------------------------------------------------------------
 //
-//	Build data
+//	Data create
 //
 //---------------------------------------------------------------------------
 void FASTCALL JoyDevice::MakeData()
 {
-	ASSERT(this);
+ ASSERT(this);
 }
 
 //---------------------------------------------------------------------------
 //
-//	Axis label
+//	Axis description
 //
 //---------------------------------------------------------------------------
 const char* FASTCALL JoyDevice::GetAxisDesc(int axis) const
 {
-	ASSERT(this);
-	ASSERT(axis >= 0);
+ ASSERT(this);
+ ASSERT(axis >= 0);
 
-	// Return NULL if the axis index is out of range
+	// If axis count exceeded, return NULL
 	if (axis >= axes) {
 		return NULL;
 	}
 
-	// Return NULL if there is no axis label table
+	// If axis description table is NULL, return NULL
 	if (!axis_desc) {
 		return NULL;
 	}
 
-	// Return the value from the axis label table
+	// Return from axis description table
 	return axis_desc[axis];
 }
 
 //---------------------------------------------------------------------------
 //
-//	Button label
+//	Button description
 //
 //---------------------------------------------------------------------------
 const char* FASTCALL JoyDevice::GetButtonDesc(int button) const
 {
-	ASSERT(this);
-	ASSERT(button >= 0);
+ ASSERT(this);
+ ASSERT(button >= 0);
 
-	// Return NULL if the button index is out of range
+	// If button count exceeded, return NULL
 	if (button >= buttons) {
 		return NULL;
 	}
 
-	// Return NULL if there is no button label table
+	// If button description table is NULL, return NULL
 	if (!button_desc) {
 		return NULL;
 	}
 
-	// Return the value from the button label table
+	// Return from button description table
 	return button_desc[button];
 }
 
-//=========================================================================
+//===========================================================================
 //
-//	Joystick (ATARI standard)
+//	Joystick device(ATARI standard)
 //
-//=========================================================================
+//===========================================================================
 
 //---------------------------------------------------------------------------
 //
@@ -955,44 +955,44 @@ JoyAtari::JoyAtari(PPI *parent, int no) : JoyDevice(parent, no)
 	id = MAKEID('A', 'T', 'A', 'R');
 	type = 1;
 
-	// 2 axes, 2 buttons, data count 1
+	// 2 axes 2 buttons, data count 1
 	axes = 2;
 	buttons = 2;
 	datas = 1;
 
-	// Display table
+	// Description table
 	axis_desc = AxisDescTable;
 	button_desc = ButtonDescTable;
 
-	// Allocate data buffer
+	// Data buffer allocation
 	data = new DWORD[datas];
 
-	// Set the initial data
+	// Initial data set
 	data[0] = 0xff;
 }
 
 //---------------------------------------------------------------------------
 //
-//	Port read (read-only)
+//	Port read(Read Only)
 //
 //---------------------------------------------------------------------------
 DWORD FASTCALL JoyAtari::ReadOnly(DWORD ctl) const
 {
-	ASSERT(this);
-	ASSERT(ctl < 0x100);
+ ASSERT(this);
+ ASSERT(ctl < 0x100);
 
 	// If PC4 is 1, return 0xff
 	if (ctl & 1) {
 		return 0xff;
 	}
 
-	// Return the prebuilt data
+	// Return created data
 	return data[0];
 }
 
 //---------------------------------------------------------------------------
 //
-//	Build data
+//	Data create
 //
 //---------------------------------------------------------------------------
 void FASTCALL JoyAtari::MakeData()
@@ -1000,8 +1000,8 @@ void FASTCALL JoyAtari::MakeData()
 	const PPI::joyinfo_t *info;
 	DWORD axis;
 
-	ASSERT(this);
-	ASSERT(ppi);
+ ASSERT(this);
+ ASSERT(ppi);
 
 	// Initialize data
 	info = ppi->GetJoyInfo(port);
@@ -1040,7 +1040,7 @@ void FASTCALL JoyAtari::MakeData()
 
 //---------------------------------------------------------------------------
 //
-//	Axis label table
+//	Axis description table
 //
 //---------------------------------------------------------------------------
 const char* JoyAtari::AxisDescTable[] = {
@@ -1050,7 +1050,7 @@ const char* JoyAtari::AxisDescTable[] = {
 
 //---------------------------------------------------------------------------
 //
-//	Button label table
+//	Button description table
 //
 //---------------------------------------------------------------------------
 const char* JoyAtari::ButtonDescTable[] = {
@@ -1058,11 +1058,11 @@ const char* JoyAtari::ButtonDescTable[] = {
 	"B"
 };
 
-//=========================================================================
+//===========================================================================
 //
-//	Joystick (ATARI standard + START/SELECT)
+//	Joystick device(ATARI standard+START/SELECT)
 //
-//=========================================================================
+//===========================================================================
 
 //---------------------------------------------------------------------------
 //
@@ -1075,44 +1075,44 @@ JoyASS::JoyASS(PPI *parent, int no) : JoyDevice(parent, no)
 	id = MAKEID('A', 'T', 'S', 'S');
 	type = 2;
 
-	// 2 axes, 4 buttons, data count 1
+	// 2 axes 4 buttons, data count 1
 	axes = 2;
 	buttons = 4;
 	datas = 1;
 
-	// Display table
+	// Description table
 	axis_desc = AxisDescTable;
 	button_desc = ButtonDescTable;
 
-	// Allocate data buffer
+	// Data buffer allocation
 	data = new DWORD[datas];
 
-	// Set the initial data
+	// Initial data set
 	data[0] = 0xff;
 }
 
 //---------------------------------------------------------------------------
 //
-//	Port read (read-only)
+//	Port read(Read Only)
 //
 //---------------------------------------------------------------------------
 DWORD FASTCALL JoyASS::ReadOnly(DWORD ctl) const
 {
-	ASSERT(this);
-	ASSERT(ctl < 0x100);
+ ASSERT(this);
+ ASSERT(ctl < 0x100);
 
 	// If PC4 is 1, return 0xff
 	if (ctl & 1) {
 		return 0xff;
 	}
 
-	// Return the prebuilt data
+	// Return created data
 	return data[0];
 }
 
 //---------------------------------------------------------------------------
 //
-//	Build data
+//	Data create
 //
 //---------------------------------------------------------------------------
 void FASTCALL JoyASS::MakeData()
@@ -1120,8 +1120,8 @@ void FASTCALL JoyASS::MakeData()
 	const PPI::joyinfo_t *info;
 	DWORD axis;
 
-	ASSERT(this);
-	ASSERT(ppi);
+ ASSERT(this);
+ ASSERT(ppi);
 
 	// Initialize data
 	info = ppi->GetJoyInfo(port);
@@ -1157,12 +1157,12 @@ void FASTCALL JoyASS::MakeData()
 		data[0] &= ~0x20;
 	}
 
-	// START (represented as Left+Right pressed together)
+	// START(Display as simultaneous left-right press)
 	if (info->button[2]) {
 		data[0] &= ~0x0c;
 	}
 
-	// SELECT (represented as Up+Down pressed together)
+	// SELECT(Display as simultaneous up-down press)
 	if (info->button[3]) {
 		data[0] &= ~0x03;
 	}
@@ -1170,7 +1170,7 @@ void FASTCALL JoyASS::MakeData()
 
 //---------------------------------------------------------------------------
 //
-//	Axis label table
+//	Axis description table
 //
 //---------------------------------------------------------------------------
 const char* JoyASS::AxisDescTable[] = {
@@ -1180,7 +1180,7 @@ const char* JoyASS::AxisDescTable[] = {
 
 //---------------------------------------------------------------------------
 //
-//	Button label table
+//	Button description table
 //
 //---------------------------------------------------------------------------
 const char* JoyASS::ButtonDescTable[] = {
@@ -1190,11 +1190,11 @@ const char* JoyASS::ButtonDescTable[] = {
 	"SELECT"
 };
 
-//=========================================================================
+//===========================================================================
 //
-//	Joystick (Cyber Stick, analog)
+//	Joystick device(CyberAdaptor, analog)
 //
-//=========================================================================
+//===========================================================================
 
 //---------------------------------------------------------------------------
 //
@@ -1209,22 +1209,22 @@ JoyCyberA::JoyCyberA(PPI *parent, int no) : JoyDevice(parent, no)
 	id = MAKEID('C', 'Y', 'B', 'A');
 	type = 3;
 
-	// 3 axes, 8 buttons, analog, data count 11
+	// 3 axes 8 buttons, analog, data count 11
 	axes = 3;
 	buttons = 8;
 	analog = TRUE;
 	datas = 12;
 
-	// Display table
+	// Description table
 	axis_desc = AxisDescTable;
 	button_desc = ButtonDescTable;
 
-	// Allocate data buffer
+	// Data buffer allocation
 	data = new DWORD[datas];
 
-	// Set the initial data
+	// Initial data set
 	for (i=0; i<12; i++) {
-		// ACK, L/H, buttons
+		// ACK,L/H, buttons
 		if (i & 1) {
 			data[i] = 0xbf;
 		}
@@ -1232,18 +1232,18 @@ JoyCyberA::JoyCyberA(PPI *parent, int no) : JoyDevice(parent, no)
 			data[i] = 0x9f;
 		}
 
-		// Use 0x7f as the center value
+		// Make trigger value 0x7f
 		if ((i >= 2) && (i <= 5)) {
-			// Set analog data H to 7
+			// Convert analog data H to 7
 			data[i] &= 0xf7;
 		}
 	}
 
-	// Get the scheduler
+	// Get scheduler
 	scheduler = (Scheduler*)ppi->GetVM()->SearchDevice(MAKEID('S', 'C', 'H', 'E'));
-	ASSERT(scheduler);
+ ASSERT(scheduler);
 
-	// Auto-reset (to handle controller hot-swapping)
+	// Auto reset(when controller is strangely swapped)
 	Reset();
 }
 
@@ -1254,19 +1254,19 @@ JoyCyberA::JoyCyberA(PPI *parent, int no) : JoyDevice(parent, no)
 //---------------------------------------------------------------------------
 void FASTCALL JoyCyberA::Reset()
 {
-	ASSERT(this);
-	ASSERT(scheduler);
+ ASSERT(this);
+ ASSERT(scheduler);
 
 	// Base class
 	JoyDevice::Reset();
 
-	// Initialize the sequence
+	// Sequence initialize
 	seq = 0;
 
-	// Control = 0
+	// Control 0
 	ctrl = 0;
 
-	// Store the time
+	// Time retention
 	hus = scheduler->GetTotalTime();
 }
 
@@ -1277,25 +1277,25 @@ void FASTCALL JoyCyberA::Reset()
 //---------------------------------------------------------------------------
 BOOL FASTCALL JoyCyberA::Save(Fileio *fio, int ver)
 {
-	ASSERT(this);
-	ASSERT(fio);
+ ASSERT(this);
+ ASSERT(fio);
 
 	// Base class
 	if (!JoyDevice::Save(fio, ver)) {
 		return FALSE;
 	}
 
-	// Save the sequence
+	// Save sequence
 	if (!fio->Write(&seq, sizeof(seq))) {
 		return FALSE;
 	}
 
-	// Save the control state
+	// Save control
 	if (!fio->Write(&ctrl, sizeof(ctrl))) {
 		return FALSE;
 	}
 
-	// Save the time
+	// Save time
 	if (!fio->Write(&hus, sizeof(hus))) {
 		return FALSE;
 	}
@@ -1310,25 +1310,25 @@ BOOL FASTCALL JoyCyberA::Save(Fileio *fio, int ver)
 //---------------------------------------------------------------------------
 BOOL FASTCALL JoyCyberA::Load(Fileio *fio, int ver)
 {
-	ASSERT(this);
-	ASSERT(fio);
+ ASSERT(this);
+ ASSERT(fio);
 
 	// Base class
 	if (!JoyDevice::Load(fio, ver)) {
 		return FALSE;
 	}
 
-	// Load the sequence
+	// Load sequence
 	if (!fio->Read(&seq, sizeof(seq))) {
 		return FALSE;
 	}
 
-	// Load the control state
+	// Load control
 	if (!fio->Read(&ctrl, sizeof(ctrl))) {
 		return FALSE;
 	}
 
-	// Load the time
+	// Load time
 	if (!fio->Read(&hus, sizeof(hus))) {
 		return FALSE;
 	}
@@ -1338,9 +1338,9 @@ BOOL FASTCALL JoyCyberA::Load(Fileio *fio, int ver)
 
 //---------------------------------------------------------------------------
 //
-//	Set the response speed (based on real hardware comparison)
-//	More precisely, after PC4 is raised first, there appears to be at least 100 us before PA4 b5->b6 falls
-//	but this level of timing nuance is not emulated
+//	Differential speed setting(Compared with other devices)
+//	*Strictly, PC4 must first be held then PA4's b5->b6 transition must take 100us or more
+//	  and there must be some input lag present, but this far no emulation
 //
 //---------------------------------------------------------------------------
 #define JOYCYBERA_CYCLE		108
@@ -1360,41 +1360,41 @@ DWORD FASTCALL JoyCyberA::ReadPort(DWORD ctl)
 		return 0xff;
 	}
 
-	// Sequence 12 or later is invalid
+	// Sequence 12 or higher is also invalid
 	if (seq >= 13) {
 		// Sequence 0
 		seq = 0;
 		return 0xff;
 	}
 
-	// Check the change flag
+	// Check update flag
 	if (changed) {
-		// Clear the flag
+		// Clear flag
 		changed = FALSE;
 
-		// Build data
+		// Create data
 		MakeData();
 	}
 
-	ASSERT((seq >= 1) && (seq <= 12));
+ ASSERT((seq >= 1) && (seq <= 12));
 
-	// Get the delta
+	// Get difference
 	diff = scheduler->GetTotalTime();
 	diff -= hus;
 
-	// Calculate from the delta
+	// Calculate from difference
 	if (diff >= JOYCYBERA_CYCLE) {
 		n = diff / JOYCYBERA_CYCLE;
 		diff %= JOYCYBERA_CYCLE;
 
-		// Reset the sequence
+		// Reset sequence
 		if ((seq & 1) == 0) {
 			seq--;
 		}
-		// Advance in steps of 2
+		// Advance by 2 units
 		seq += (2 * n);
 
-		// Adjust the time
+		// Adjust time
 		hus += (JOYCYBERA_CYCLE * n);
 
 		// +1
@@ -1403,14 +1403,14 @@ DWORD FASTCALL JoyCyberA::ReadPort(DWORD ctl)
 			seq++;
 		}
 
-		// Sequence overflow guard
+		// Sequence overflow handling
 		if (seq >= 13) {
 			seq = 0;
 			return 0xff;
 		}
 	}
 	if (diff >= (JOYCYBERA_CYCLE / 2)) {
-		// Set the latter half
+		// Later set
 		if (seq & 1) {
 			seq++;
 		}
@@ -1422,25 +1422,25 @@ DWORD FASTCALL JoyCyberA::ReadPort(DWORD ctl)
 
 //---------------------------------------------------------------------------
 //
-//	Port read (read-only)
+//	Port read(Read Only)
 //
 //---------------------------------------------------------------------------
 DWORD FASTCALL JoyCyberA::ReadOnly(DWORD /*ctl*/) const
 {
-	ASSERT(this);
+ ASSERT(this);
 
 	// Sequence 0 is invalid
 	if (seq == 0) {
 		return 0xff;
 	}
 
-	// Sequence 12 or later is invalid
+	// Sequence 12 or higher is also invalid
 	if (seq >= 13) {
 		return 0xff;
 	}
 
-	// Return data for the current sequence
-	ASSERT((seq >= 1) && (seq <= 12));
+	// Return data corresponding to sequence
+ ASSERT((seq >= 1) && (seq <= 12));
 	return data[seq - 1];
 }
 
@@ -1451,20 +1451,20 @@ DWORD FASTCALL JoyCyberA::ReadOnly(DWORD /*ctl*/) const
 //---------------------------------------------------------------------------
 void FASTCALL JoyCyberA::Control(DWORD ctl)
 {
-	ASSERT(this);
-	ASSERT(ctl < 0x100);
+ ASSERT(this);
+ ASSERT(ctl < 0x100);
 
-	// Sequence 0 (invalid) and sequence 11 or later
+	// Sequence 0(invalid) time and Sequence 11 or higher
 	if ((seq == 0) || (seq >= 11)) {
-		// Start the sequence on a 1->0 transition
+		// 1->0, sequence start
 		if (ctl) {
-			// Changed it to 1 this time
+			// Became 1 this time
 			ctrl = 1;
 		}
 		else {
-			// Changed it to 0 this time
+			// Became 0 this time
 			if (ctrl) {
-				// Falling edge from 1 to 0
+				// 1->0 transition
 				seq = 1;
 				hus = scheduler->GetTotalTime();
 			}
@@ -1473,25 +1473,25 @@ void FASTCALL JoyCyberA::Control(DWORD ctl)
 		return;
 	}
 
-	// From sequence 1 onward, only ACK is valid
+	// From sequence 1 or higher, only ACK valid
 	ctrl = ctl;
 	if (ctl) {
 		return;
 	}
 
-	// Has the effect of advancing the sequence by 2 steps
+	// Advance sequence by 2 units
 	if ((seq & 1) == 0) {
 		seq--;
 	}
 	seq += 2;
 
-	// Remember the time
+	// Retain time
 	hus = scheduler->GetTotalTime();
 }
 
 //---------------------------------------------------------------------------
 //
-//	Build data
+//	Data create
 //
 //---------------------------------------------------------------------------
 void FASTCALL JoyCyberA::MakeData()
@@ -1499,13 +1499,13 @@ void FASTCALL JoyCyberA::MakeData()
 	const PPI::joyinfo_t *info;
 	DWORD axis;
 
-	ASSERT(this);
-	ASSERT(ppi);
+ ASSERT(this);
+ ASSERT(ppi);
 
-	// Get joystick info
+	// Get joystick device information
 	info = ppi->GetJoyInfo(port);
 
-	// data[0]: Button A, Button B, Button C, Button D
+	// data[0]:ButtonA,ButtonB,ButtonC,ButtonD
 	data[0] |= 0x0f;
 	if (info->button[0]) {
 		data[0] &= ~0x08;
@@ -1520,7 +1520,7 @@ void FASTCALL JoyCyberA::MakeData()
 		data[0] &= ~0x01;
 	}
 
-	// data[1]: Button E1, Button E2, Button F, Button G
+	// data[1]:ButtonE1,ButtonE2,ButtonF,ButtonG
 	data[1] |= 0x0f;
 	if (info->button[4]) {
 		data[1] &= ~0x08;
@@ -1535,51 +1535,51 @@ void FASTCALL JoyCyberA::MakeData()
 		data[1] &= ~0x01;
 	}
 
-	// data[2]: 1H
+	// data[2]:1H
 	axis = info->axis[1];
 	axis = (axis + 0x800) >> 4;
 	data[2] &= 0xf0;
 	data[2] |= (axis >> 4);
 
-	// data[3]: 2H
+	// data[3]:2H
 	axis = info->axis[0];
 	axis = (axis + 0x800) >> 4;
 	data[3] &= 0xf0;
 	data[3] |= (axis >> 4);
 
-	// data[4]: 3H
+	// data[4]:3H
 	axis = info->axis[3];
 	axis = (axis + 0x800) >> 4;
 	data[4] &= 0xf0;
 	data[4] |= (axis >> 4);
 
-	// data[5]: 4H (reserved; 0 on real hardware)
+	// data[4]:4H(packed and zero by actual device)
 	data[5] &= 0xf0;
 
-	// data[6]: 1L
+	// data[6]:1L
 	axis = info->axis[1];
 	axis = (axis + 0x800) >> 4;
 	data[6] &= 0xf0;
 	data[6] |= (axis & 0x0f);
 
-	// data[7]: 2L
+	// data[7]:2L
 	axis = info->axis[0];
 	axis = (axis + 0x800) >> 4;
 	data[7] &= 0xf0;
 	data[7] |= (axis & 0x0f);
 
-	// data[8]: 3L
+	// data[8]:3L
 	axis = info->axis[3];
 	axis = (axis + 0x800) >> 4;
 	data[8] &= 0xf0;
 	data[8] |= (axis & 0x0f);
 
-	// data[9]: 4L (reserved; 0 on real hardware)
+	// data[9]:4L(packed and zero by actual device)
 	data[9] &= 0xf0;
 
-	// data[10]: A,B,A',B'
-	// A and B are lever-integrated mini-buttons; A' and B' are normal push buttons
-	// Treat them as lever-integrated mini-buttons (After Burner II)
+	// data[10]:A,B,A',B'
+	// A,B are digital buttons of player 1, A'B' are normal press buttons
+	// Treat as digital buttons of player 1(Analog stick II)
 	data[10] &= 0xf0;
 	data[10] |= 0x0f;
 	if (info->button[0]) {
@@ -1592,7 +1592,7 @@ void FASTCALL JoyCyberA::MakeData()
 
 //---------------------------------------------------------------------------
 //
-//	Axis label table
+//	Axis description table
 //
 //---------------------------------------------------------------------------
 const char* JoyCyberA::AxisDescTable[] = {
@@ -1603,7 +1603,7 @@ const char* JoyCyberA::AxisDescTable[] = {
 
 //---------------------------------------------------------------------------
 //
-//	Button label table
+//	Button description table
 //
 //---------------------------------------------------------------------------
 const char* JoyCyberA::ButtonDescTable[] = {
@@ -1617,11 +1617,11 @@ const char* JoyCyberA::ButtonDescTable[] = {
 	"SELECT"
 };
 
-//=========================================================================
+//===========================================================================
 //
-//	Joystick (Cyber Stick, digital)
+//	Joystick device(CyberAdaptor, digital)
 //
-//=========================================================================
+//===========================================================================
 
 //---------------------------------------------------------------------------
 //
@@ -1634,36 +1634,36 @@ JoyCyberD::JoyCyberD(PPI *parent, int no) : JoyDevice(parent, no)
 	id = MAKEID('C', 'Y', 'B', 'D');
 	type = 4;
 
-	// 3 axes, 6 buttons, data count 2
+	// 3 axes 6 buttons, data count 2
 	axes = 3;
 	buttons = 6;
 	datas = 2;
 
-	// Display table
+	// Description table
 	axis_desc = AxisDescTable;
 	button_desc = ButtonDescTable;
 
-	// Allocate data buffer
+	// Data buffer allocation
 	data = new DWORD[datas];
 
-	// Set the initial data
+	// Initial data set
 	data[0] = 0xff;
 	data[1] = 0xff;
 }
 
 //---------------------------------------------------------------------------
 //
-//	Port read (read-only)
+//	Port read(Read Only)
 //
 //---------------------------------------------------------------------------
 DWORD FASTCALL JoyCyberD::ReadOnly(DWORD ctl) const
 {
-	ASSERT(this);
-	ASSERT(ctl < 0x100);
-	ASSERT(data[0] < 0x100);
-	ASSERT(data[1] < 0x100);
+ ASSERT(this);
+ ASSERT(ctl < 0x100);
+ ASSERT(data[0] < 0x100);
+ ASSERT(data[1] < 0x100);
 
-	// Branch according to PC4
+	// Separated by PC4
 	if (ctl & 1) {
 		return data[1];
 	}
@@ -1674,7 +1674,7 @@ DWORD FASTCALL JoyCyberD::ReadOnly(DWORD ctl) const
 
 //---------------------------------------------------------------------------
 //
-//	Build data
+//	Data create
 //
 //---------------------------------------------------------------------------
 void FASTCALL JoyCyberD::MakeData()
@@ -1682,8 +1682,8 @@ void FASTCALL JoyCyberD::MakeData()
 	const PPI::joyinfo_t *info;
 	DWORD axis;
 
-	ASSERT(this);
-	ASSERT(ppi);
+ ASSERT(this);
+ ASSERT(ppi);
 
 	// Initialize data
 	info = ppi->GetJoyInfo(port);
@@ -1720,12 +1720,12 @@ void FASTCALL JoyCyberD::MakeData()
 		data[0] &= ~0x40;
 	}
 
-	// Throttle Up
+	// Stick Up
 	axis = info->axis[2];
 	if ((axis >= 0xfffff800) && (axis < 0xfffffc00)) {
 		data[1] &= ~0x01;
 	}
-	// Throttle Down
+	// Stick Down
 	if ((axis >= 0x00000400) && (axis < 0x00000800)) {
 		data[1] &= ~0x02;
 	}
@@ -1753,7 +1753,7 @@ void FASTCALL JoyCyberD::MakeData()
 
 //---------------------------------------------------------------------------
 //
-//	Axis label table
+//	Axis description table
 //
 //---------------------------------------------------------------------------
 const char* JoyCyberD::AxisDescTable[] = {
@@ -1764,7 +1764,7 @@ const char* JoyCyberD::AxisDescTable[] = {
 
 //---------------------------------------------------------------------------
 //
-//	Button label table
+//	Button description table
 //
 //---------------------------------------------------------------------------
 const char* JoyCyberD::ButtonDescTable[] = {
@@ -1776,11 +1776,11 @@ const char* JoyCyberD::ButtonDescTable[] = {
 	"E2"
 };
 
-//=========================================================================
+//===========================================================================
 //
-//	Joystick (MD3 buttons)
+//	Joystick device(MD3 buttons)
 //
-//=========================================================================
+//===========================================================================
 
 //---------------------------------------------------------------------------
 //
@@ -1793,36 +1793,36 @@ JoyMd3::JoyMd3(PPI *parent, int no) : JoyDevice(parent, no)
 	id = MAKEID('M', 'D', '3', 'B');
 	type = 5;
 
-	// 2 axes, 4 buttons, data count 2
+	// 2 axes 4 buttons, data count 2
 	axes = 2;
 	buttons = 4;
 	datas = 2;
 
-	// Display table
+	// Description table
 	axis_desc = AxisDescTable;
 	button_desc = ButtonDescTable;
 
-	// Allocate data buffer
+	// Data buffer allocation
 	data = new DWORD[datas];
 
-	// Set the initial data
+	// Initial data set
 	data[0] = 0xf3;
 	data[1] = 0xff;
 }
 
 //---------------------------------------------------------------------------
 //
-//	Port read (read-only)
+//	Port read(Read Only)
 //
 //---------------------------------------------------------------------------
 DWORD FASTCALL JoyMd3::ReadOnly(DWORD ctl) const
 {
-	ASSERT(this);
-	ASSERT(ctl < 0x100);
-	ASSERT(data[0] < 0x100);
-	ASSERT(data[1] < 0x100);
+ ASSERT(this);
+ ASSERT(ctl < 0x100);
+ ASSERT(data[0] < 0x100);
+ ASSERT(data[1] < 0x100);
 
-	// Branch according to PC4
+	// Separated by PC4
 	if (ctl & 1) {
 		return data[1];
 	}
@@ -1833,7 +1833,7 @@ DWORD FASTCALL JoyMd3::ReadOnly(DWORD ctl) const
 
 //---------------------------------------------------------------------------
 //
-//	Build data
+//	Data create
 //
 //---------------------------------------------------------------------------
 void FASTCALL JoyMd3::MakeData()
@@ -1841,8 +1841,8 @@ void FASTCALL JoyMd3::MakeData()
 	const PPI::joyinfo_t *info;
 	DWORD axis;
 
-	ASSERT(this);
-	ASSERT(ppi);
+ ASSERT(this);
+ ASSERT(ppi);
 
 	// Initialize data
 	info = ppi->GetJoyInfo(port);
@@ -1894,7 +1894,7 @@ void FASTCALL JoyMd3::MakeData()
 
 //---------------------------------------------------------------------------
 //
-//	Axis label table
+//	Axis description table
 //
 //---------------------------------------------------------------------------
 const char* JoyMd3::AxisDescTable[] = {
@@ -1904,7 +1904,7 @@ const char* JoyMd3::AxisDescTable[] = {
 
 //---------------------------------------------------------------------------
 //
-//	Button label table
+//	Button description table
 //
 //---------------------------------------------------------------------------
 const char* JoyMd3::ButtonDescTable[] = {
@@ -1914,11 +1914,11 @@ const char* JoyMd3::ButtonDescTable[] = {
 	"START"
 };
 
-//=========================================================================
+//===========================================================================
 //
-//	Joystick (MD6 buttons)
+//	Joystick device(MD6 buttons)
 //
-//=========================================================================
+//===========================================================================
 
 //---------------------------------------------------------------------------
 //
@@ -1931,30 +1931,30 @@ JoyMd6::JoyMd6(PPI *parent, int no) : JoyDevice(parent, no)
 	id = MAKEID('M', 'D', '6', 'B');
 	type = 6;
 
-	// 2 axes, 8 buttons, data count 3
+	// 2 axes 8 buttons, data count 3
 	axes = 2;
 	buttons = 8;
 	datas = 5;
 
-	// Display table
+	// Description table
 	axis_desc = AxisDescTable;
 	button_desc = ButtonDescTable;
 
-	// Allocate data buffer
+	// Data buffer allocation
 	data = new DWORD[datas];
 
-	// Set the initial data
+	// Initial data set
 	data[0] = 0xf3;
 	data[1] = 0xff;
 	data[2] = 0xf0;
 	data[3] = 0xff;
 	data[4] = 0xff;
 
-	// Get the scheduler
+	// Get scheduler
 	scheduler = (Scheduler*)ppi->GetVM()->SearchDevice(MAKEID('S', 'C', 'H', 'E'));
-	ASSERT(scheduler);
+ ASSERT(scheduler);
 
-	// Auto-reset (to handle controller hot-swapping)
+	// Auto reset(when controller is strangely swapped)
 	Reset();
 }
 
@@ -1965,13 +1965,13 @@ JoyMd6::JoyMd6(PPI *parent, int no) : JoyDevice(parent, no)
 //---------------------------------------------------------------------------
 void FASTCALL JoyMd6::Reset()
 {
-	ASSERT(this);
-	ASSERT(scheduler);
+ ASSERT(this);
+ ASSERT(scheduler);
 
 	// Base class
 	JoyDevice::Reset();
 
-	// Initialize the sequence, control, and time
+	// Sequence, Control, Time initialize
 	seq = 0;
 	ctrl = 0;
 	hus = scheduler->GetTotalTime();
@@ -1984,25 +1984,25 @@ void FASTCALL JoyMd6::Reset()
 //---------------------------------------------------------------------------
 BOOL FASTCALL JoyMd6::Save(Fileio *fio, int ver)
 {
-	ASSERT(this);
-	ASSERT(fio);
+ ASSERT(this);
+ ASSERT(fio);
 
 	// Base class
 	if (!JoyDevice::Save(fio, ver)) {
 		return FALSE;
 	}
 
-	// Save the sequence
+	// Save sequence
 	if (!fio->Write(&seq, sizeof(seq))) {
 		return FALSE;
 	}
 
-	// Save the control state
+	// Save control
 	if (!fio->Write(&ctrl, sizeof(ctrl))) {
 		return FALSE;
 	}
 
-	// Save the time
+	// Save time
 	if (!fio->Write(&hus, sizeof(hus))) {
 		return FALSE;
 	}
@@ -2017,25 +2017,25 @@ BOOL FASTCALL JoyMd6::Save(Fileio *fio, int ver)
 //---------------------------------------------------------------------------
 BOOL FASTCALL JoyMd6::Load(Fileio *fio, int ver)
 {
-	ASSERT(this);
-	ASSERT(fio);
+ ASSERT(this);
+ ASSERT(fio);
 
 	// Base class
 	if (!JoyDevice::Load(fio, ver)) {
 		return FALSE;
 	}
 
-	// Load the sequence
+	// Load sequence
 	if (!fio->Read(&seq, sizeof(seq))) {
 		return FALSE;
 	}
 
-	// Load the control state
+	// Load control
 	if (!fio->Read(&ctrl, sizeof(ctrl))) {
 		return FALSE;
 	}
 
-	// Load the time
+	// Load time
 	if (!fio->Read(&hus, sizeof(hus))) {
 		return FALSE;
 	}
@@ -2045,59 +2045,59 @@ BOOL FASTCALL JoyMd6::Load(Fileio *fio, int ver)
 
 //---------------------------------------------------------------------------
 //
-//	Port read (read-only)
+//	Port read(Read Only)
 //
 //---------------------------------------------------------------------------
 DWORD FASTCALL JoyMd6::ReadOnly(DWORD /*ctl*/) const
 {
-	ASSERT(this);
-	ASSERT(data[0] < 0x100);
-	ASSERT(data[1] < 0x100);
-	ASSERT(data[2] < 0x100);
-	ASSERT(data[3] < 0x100);
-	ASSERT(data[4] < 0x100);
+ ASSERT(this);
+ ASSERT(data[0] < 0x100);
+ ASSERT(data[1] < 0x100);
+ ASSERT(data[2] < 0x100);
+ ASSERT(data[3] < 0x100);
+ ASSERT(data[4] < 0x100);
 
-	// By sequence
+	// Sequence match
 	switch (seq) {
-		// Initial state, CTL=0
+		// Initial state CTL=0
 		case 0:
 			return data[0];
 
-		// First cycle, CTL=1
+		// First round CTL=1
 		case 1:
 			return data[1];
 
-		// First cycle, CTL=0
+		// First round CTL=0
 		case 2:
 			return data[0];
 
-		// Second cycle, CTL=1
+		// Second round CTL=1
 		case 3:
 			return data[1];
 
-		// After 6-button detection, CTL=0
+		// After 6B decided CTL=0
 		case 4:
 			return data[2];
 
-		// After 6-button detection, CTL=1
+		// After 6B decided CTL=1
 		case 5:
 			return data[3];
 
-		// After 6-button detection, CTL=0
+		// After 6B decided CTL=0
 		case 6:
 			return data[4];
 
-		// After 6-button detection, CTL=1
+		// After 6B decided CTL=1
 		case 7:
 			return data[1];
 
-		// After 6-button detection, CTL=0
+		// After 6B decided CTL=0
 		case 8:
 			return data[0];
 
-		// Other (should never happen)
+		// Others(invalid)
 		default:
-			ASSERT(FALSE);
+		 ASSERT(FALSE);
 			break;
 	}
 
@@ -2113,17 +2113,17 @@ void FASTCALL JoyMd6::Control(DWORD ctl)
 {
 	DWORD diff;
 
-	ASSERT(this);
-	ASSERT(ctl < 0x100);
+ ASSERT(this);
+ ASSERT(ctl < 0x100);
 
-	// Only bit0 is needed
+	// Only bit0 needed
 	ctl &= 0x01;
 
 	// Always update
 	ctrl = ctl;
 
-	// If seq >= 3, check whether 1.8 ms (3600 hus) has elapsed since the previous activation
-	// If so, reset to seq=0 or seq=1 (Jotei Senki V4)
+	// If seq >= 3, check if 1.8ms(3600hus) has passed since last activation
+	// If passed, reset to seq=0 or seq=1(4 button pad V4)
 	if (seq >= 3) {
 		diff = scheduler->GetTotalTime();
 		diff -= hus;
@@ -2141,93 +2141,93 @@ void FASTCALL JoyMd6::Control(DWORD ctl)
 	}
 
 	switch (seq) {
-		// Out-of-sequence, CTL=0
+		// Sequence outside CTL=0
 		case 0:
-			// If 1, move to sequence 1 and store the time
+			// If 1, sequence 1 and time retention
 			if (ctl) {
 				seq = 1;
 				hus = scheduler->GetTotalTime();
 			}
 			break;
 
-		// After the first 1, CTL=1
+		// After first 1 CTL=1
 		case 1:
-			// If 0, move to sequence 2
+			// If 0, sequence 2
 			if (!ctl) {
 				seq = 2;
 			}
 			break;
 
-		// After 1->0, CTL=0
+		// After 1->0 CTL=0
 		case 2:
-			// If 1, check the elapsed time
+			// If 1, time check
 			if (ctl) {
 				diff = scheduler->GetTotalTime();
 				diff -= hus;
 				if (diff <= 2200) {
-					// If 1.1 ms (2200 hus) or less, advance to the next sequence (6-button read)
+					// If 1.1ms(2200hus) or less, go to next sequence(6B read)
 					seq = 3;
 				}
 				else {
-					// If enough time has passed, treat it the same as sequence 1 (3-button read)
+					// If timing is off, sequence 1 and time retention(3B read)
 					seq = 1;
 					hus = scheduler->GetTotalTime();
 				}
 			}
 			break;
 
-		// After 6-button detection, CTL=1
+		// After 6B decided CTL=1
 		case 3:
 			if (!ctl) {
 				seq = 4;
 			}
 			break;
 
-		// After 6-button detection, CTL=0
+		// After 6B decided CTL=0
 		case 4:
 			if (ctl) {
 				seq = 5;
 			}
 			break;
 
-		// After 6-button detection, CTL=1
+		// After 6B decided CTL=1
 		case 5:
 			if (!ctl) {
 				seq = 6;
 			}
 			break;
 
-		// After 6-button detection, CTL=0
+		// After 6B decided CTL=0
 		case 6:
 			if (ctl) {
 				seq = 7;
 			}
 			break;
 
-		// Wait 1.8 ms
+		// 1.8ms wait
 		case 7:
 			if (!ctl) {
 				seq = 8;
 			}
 			break;
 
-		// Wait 1.8 ms
+		// 1.8ms wait
 		case 8:
 			if (ctl) {
 				seq = 7;
 			}
 			break;
 
-		// Other (should never happen)
+		// Others(invalid)
 		default:
-			ASSERT(FALSE);
+		 ASSERT(FALSE);
 			break;
 	}
 }
 
 //---------------------------------------------------------------------------
 //
-//	Build data
+//	Data create
 //
 //---------------------------------------------------------------------------
 void FASTCALL JoyMd6::MakeData()
@@ -2235,8 +2235,8 @@ void FASTCALL JoyMd6::MakeData()
 	const PPI::joyinfo_t *info;
 	DWORD axis;
 
-	ASSERT(this);
-	ASSERT(ppi);
+ ASSERT(this);
+ ASSERT(ppi);
 
 	// Initialize data
 	info = ppi->GetJoyInfo(port);
@@ -2272,67 +2272,67 @@ void FASTCALL JoyMd6::MakeData()
 		data[4] &= ~0x08;
 	}
 
-	// Button B (data[1], data[3], data[4])
+	// Button B(data[1], data[3], data[4])
 	if (info->button[1]) {
-		// 3-button compatibility
+		// 3B punch
 		data[1] &= ~0x20;
 
-		// (Jotei Senki V4)
+		// (4 button pad V4)
 		data[3] &= ~0x20;
 
-		// (SFII' patch)
+		// (SFII'patch)
 		data[4] &= ~0x40;
 	}
 
-	// Button C (data[1], data[3])
+	// Button C(data[1], data[3])
 	if (info->button[2]) {
-		// 3-button compatibility
+		// 3B punch
 		data[1] &= ~0x40;
 
-		// (SFII' patch)
+		// (SFII'patch)
 		data[3] &= ~0x20;
 
-		// (Jotei Senki V4)
+		// (4 button pad V4)
 		data[3] &= ~0x40;
 	}
 
-	// Button A (data[0], data[2], data[4])
+	// Button A(data[0], data[2], data[4])
 	if (info->button[0]) {
-		// 3-button compatibility
+		// 3B punch
 		data[0] &= ~0x20;
 
-		// 6-button marker
+		// 6B punch
 		data[2] &= ~0x20;
 
-		// (SFII' patch)
+		// (SFII'patch)
 		data[4] &= ~0x20;
 	}
 
-	// Start button (data[0], data[2])
+	// Start button(data[0], data[2])
 	if (info->button[6]) {
-		// 3-button compatibility
+		// 3B punch
 		data[0] &= ~0x40;
 
-		// 6-button marker
+		// 6B punch
 		data[2] &= ~0x40;
 	}
 
-	// Button X (data[3])
+	// Button X(data[3])
 	if (info->button[3]) {
 		data[3] &= ~0x04;
 	}
 
-	// Button Y (data[3])
+	// Button Y(data[3])
 	if (info->button[4]) {
 		data[3] &= ~0x02;
 	}
 
-	// Button Z (data[3])
+	// Button Z(data[3])
 	if (info->button[5]) {
 		data[3] &= ~0x01;
 	}
 
-	// MODE button (data[3])
+	// MODE button(data[3])
 	if (info->button[7]) {
 		data[3] &= ~0x08;
 	}
@@ -2340,7 +2340,7 @@ void FASTCALL JoyMd6::MakeData()
 
 //---------------------------------------------------------------------------
 //
-//	Axis label table
+//	Axis description table
 //
 //---------------------------------------------------------------------------
 const char* JoyMd6::AxisDescTable[] = {
@@ -2350,7 +2350,7 @@ const char* JoyMd6::AxisDescTable[] = {
 
 //---------------------------------------------------------------------------
 //
-//	Button label table
+//	Button description table
 //
 //---------------------------------------------------------------------------
 const char* JoyMd6::ButtonDescTable[] = {
@@ -2364,11 +2364,11 @@ const char* JoyMd6::ButtonDescTable[] = {
 	"MODE"
 };
 
-//=========================================================================
+//===========================================================================
 //
-//	Joystick (CPSF-SFC)
+//	Joystick device(CPSF-SFC)
 //
-//=========================================================================
+//===========================================================================
 
 //---------------------------------------------------------------------------
 //
@@ -2381,36 +2381,36 @@ JoyCpsf::JoyCpsf(PPI *parent, int no) : JoyDevice(parent, no)
 	id = MAKEID('C', 'P', 'S', 'F');
 	type = 7;
 
-	// 2 axes, 8 buttons, data count 2
+	// 2 axes 8 buttons, data count 2
 	axes = 2;
 	buttons = 8;
 	datas = 2;
 
-	// Display table
+	// Description table
 	axis_desc = AxisDescTable;
 	button_desc = ButtonDescTable;
 
-	// Allocate data buffer
+	// Data buffer allocation
 	data = new DWORD[datas];
 
-	// Set the initial data
+	// Initial data set
 	data[0] = 0xff;
 	data[1] = 0xff;
 }
 
 //---------------------------------------------------------------------------
 //
-//	Port read (read-only)
+//	Port read(Read Only)
 //
 //---------------------------------------------------------------------------
 DWORD FASTCALL JoyCpsf::ReadOnly(DWORD ctl) const
 {
-	ASSERT(this);
-	ASSERT(ctl < 0x100);
-	ASSERT(data[0] < 0x100);
-	ASSERT(data[1] < 0x100);
+ ASSERT(this);
+ ASSERT(ctl < 0x100);
+ ASSERT(data[0] < 0x100);
+ ASSERT(data[1] < 0x100);
 
-	// Branch according to PC4
+	// Separated by PC4
 	if (ctl & 1) {
 		return data[1];
 	}
@@ -2421,7 +2421,7 @@ DWORD FASTCALL JoyCpsf::ReadOnly(DWORD ctl) const
 
 //---------------------------------------------------------------------------
 //
-//	Build data
+//	Data create
 //
 //---------------------------------------------------------------------------
 void FASTCALL JoyCpsf::MakeData()
@@ -2429,8 +2429,8 @@ void FASTCALL JoyCpsf::MakeData()
 	const PPI::joyinfo_t *info;
 	DWORD axis;
 
-	ASSERT(this);
-	ASSERT(ppi);
+ ASSERT(this);
+ ASSERT(ppi);
 
 	// Initialize data
 	info = ppi->GetJoyInfo(port);
@@ -2496,27 +2496,27 @@ void FASTCALL JoyCpsf::MakeData()
 		data[0] &= ~0x20;
 	}
 
-	// Button B
+// Button B
 	if (info->button[1]) {
 		data[0] &= ~0x40;
 	}
 
-	// Button C
+// Button C
 	if (info->button[2]) {
 		data[1] &= ~0x20;
 	}
 
-	// Button X
+// Button X
 	if (info->button[3]) {
 		data[1] &= ~0x04;
 	}
 
-	// Button Y
+// Button Y
 	if (info->button[4]) {
 		data[1] &= ~0x02;
 	}
 
-	// Button Z
+// Button Z
 	if (info->button[5]) {
 		data[1] &= ~0x01;
 	}
@@ -2529,7 +2529,7 @@ void FASTCALL JoyCpsf::MakeData()
 		data[1] &= ~0x40;
 	}
 
-	// SELECT button
+	// Select button
 	if (info->button[7]) {
 		data[1] &= ~0x08;
 	}
@@ -2537,7 +2537,7 @@ void FASTCALL JoyCpsf::MakeData()
 
 //---------------------------------------------------------------------------
 //
-//	Axis label table
+//	Axis description table
 //
 //---------------------------------------------------------------------------
 const char* JoyCpsf::AxisDescTable[] = {
@@ -2547,7 +2547,7 @@ const char* JoyCpsf::AxisDescTable[] = {
 
 //---------------------------------------------------------------------------
 //
-//	Button label table
+//	Button description table
 //
 //---------------------------------------------------------------------------
 const char* JoyCpsf::ButtonDescTable[] = {
@@ -2562,11 +2562,11 @@ const char* JoyCpsf::ButtonDescTable[] = {
 	"ALT"
 };
 
-//=========================================================================
+//===========================================================================
 //
-//	Joystick (CPSF-MD)
+//	Joystick device(CPSF-MD)
 //
-//=========================================================================
+//===========================================================================
 
 //---------------------------------------------------------------------------
 //
@@ -2579,36 +2579,36 @@ JoyCpsfMd::JoyCpsfMd(PPI *parent, int no) : JoyDevice(parent, no)
 	id = MAKEID('C', 'P', 'S', 'M');
 	type = 8;
 
-	// 2 axes, 8 buttons, data count 2
+	// 2 axes 8 buttons, data count 2
 	axes = 2;
 	buttons = 8;
 	datas = 2;
 
-	// Display table
+	// Description table
 	axis_desc = AxisDescTable;
 	button_desc = ButtonDescTable;
 
-	// Allocate data buffer
+	// Data buffer allocation
 	data = new DWORD[datas];
 
-	// Set the initial data
+	// Initial data set
 	data[0] = 0xff;
 	data[1] = 0xff;
 }
 
 //---------------------------------------------------------------------------
 //
-//	Port read (read-only)
+//	Port read(Read Only)
 //
 //---------------------------------------------------------------------------
 DWORD FASTCALL JoyCpsfMd::ReadOnly(DWORD ctl) const
 {
-	ASSERT(this);
-	ASSERT(ctl < 0x100);
-	ASSERT(data[0] < 0x100);
-	ASSERT(data[1] < 0x100);
+ ASSERT(this);
+ ASSERT(ctl < 0x100);
+ ASSERT(data[0] < 0x100);
+ ASSERT(data[1] < 0x100);
 
-	// Branch according to PC4
+	// Separated by PC4
 	if (ctl & 1) {
 		return data[1];
 	}
@@ -2619,7 +2619,7 @@ DWORD FASTCALL JoyCpsfMd::ReadOnly(DWORD ctl) const
 
 //---------------------------------------------------------------------------
 //
-//	Build data
+//	Data create
 //
 //---------------------------------------------------------------------------
 void FASTCALL JoyCpsfMd::MakeData()
@@ -2627,8 +2627,8 @@ void FASTCALL JoyCpsfMd::MakeData()
 	const PPI::joyinfo_t *info;
 	DWORD axis;
 
-	ASSERT(this);
-	ASSERT(ppi);
+ ASSERT(this);
+ ASSERT(ppi);
 
 	// Initialize data
 	info = ppi->GetJoyInfo(port);
@@ -2698,7 +2698,7 @@ void FASTCALL JoyCpsfMd::MakeData()
 
 //---------------------------------------------------------------------------
 //
-//	Axis label table
+//	Axis description table
 //
 //---------------------------------------------------------------------------
 const char* JoyCpsfMd::AxisDescTable[] = {
@@ -2708,7 +2708,7 @@ const char* JoyCpsfMd::AxisDescTable[] = {
 
 //---------------------------------------------------------------------------
 //
-//	Button label table
+//	Button description table
 //
 //---------------------------------------------------------------------------
 const char* JoyCpsfMd::ButtonDescTable[] = {
@@ -2722,11 +2722,11 @@ const char* JoyCpsfMd::ButtonDescTable[] = {
 	"MODE"
 };
 
-//=========================================================================
+//===========================================================================
 //
-//	Joystick (Magical Pad)
+//	Joystick device(Magical pad)
 //
-//=========================================================================
+//===========================================================================
 
 //---------------------------------------------------------------------------
 //
@@ -2739,36 +2739,36 @@ JoyMagical::JoyMagical(PPI *parent, int no) : JoyDevice(parent, no)
 	id = MAKEID('M', 'A', 'G', 'I');
 	type = 9;
 
-	// 2 axes, 6 buttons, data count 2
+	// 2 axes 6 buttons, data count 2
 	axes = 2;
 	buttons = 6;
 	datas = 2;
 
-	// Display table
+	// Description table
 	axis_desc = AxisDescTable;
 	button_desc = ButtonDescTable;
 
-	// Allocate data buffer
+	// Data buffer allocation
 	data = new DWORD[datas];
 
-	// Set the initial data
+	// Initial data set
 	data[0] = 0xff;
 	data[1] = 0xfc;
 }
 
 //---------------------------------------------------------------------------
 //
-//	Port read (read-only)
+//	Port read(Read Only)
 //
 //---------------------------------------------------------------------------
 DWORD FASTCALL JoyMagical::ReadOnly(DWORD ctl) const
 {
-	ASSERT(this);
-	ASSERT(ctl < 0x100);
-	ASSERT(data[0] < 0x100);
-	ASSERT(data[1] < 0x100);
+ ASSERT(this);
+ ASSERT(ctl < 0x100);
+ ASSERT(data[0] < 0x100);
+ ASSERT(data[1] < 0x100);
 
-	// Branch according to PC4
+	// Separated by PC4
 	if (ctl & 1) {
 		return data[1];
 	}
@@ -2779,7 +2779,7 @@ DWORD FASTCALL JoyMagical::ReadOnly(DWORD ctl) const
 
 //---------------------------------------------------------------------------
 //
-//	Build data
+//	Data create
 //
 //---------------------------------------------------------------------------
 void FASTCALL JoyMagical::MakeData()
@@ -2787,8 +2787,8 @@ void FASTCALL JoyMagical::MakeData()
 	const PPI::joyinfo_t *info;
 	DWORD axis;
 
-	ASSERT(this);
-	ASSERT(ppi);
+ ASSERT(this);
+ ASSERT(ppi);
 
 	// Initialize data
 	info = ppi->GetJoyInfo(port);
@@ -2848,7 +2848,7 @@ void FASTCALL JoyMagical::MakeData()
 
 //---------------------------------------------------------------------------
 //
-//	Axis label table
+//	Axis description table
 //
 //---------------------------------------------------------------------------
 const char* JoyMagical::AxisDescTable[] = {
@@ -2858,7 +2858,7 @@ const char* JoyMagical::AxisDescTable[] = {
 
 //---------------------------------------------------------------------------
 //
-//	Button label table
+//	Button description table
 //
 //---------------------------------------------------------------------------
 const char* JoyMagical::ButtonDescTable[] = {
@@ -2870,11 +2870,11 @@ const char* JoyMagical::ButtonDescTable[] = {
 	"L"
 };
 
-//=========================================================================
+//===========================================================================
 //
-//	Joystick (XPD-1LR)
+//	Joystick device(XPD-1LR)
 //
-//=========================================================================
+//===========================================================================
 
 //---------------------------------------------------------------------------
 //
@@ -2887,36 +2887,36 @@ JoyLR::JoyLR(PPI *parent, int no) : JoyDevice(parent, no)
 	id = MAKEID('X', 'P', 'L', 'R');
 	type = 10;
 
-	// 4 axes, 2 buttons, data count 2
+	// 4 axes 2 buttons, data count 2
 	axes = 4;
 	buttons = 2;
 	datas = 2;
 
-	// Display table
+	// Description table
 	axis_desc = AxisDescTable;
 	button_desc = ButtonDescTable;
 
-	// Allocate data buffer
+	// Data buffer allocation
 	data = new DWORD[datas];
 
-	// Set the initial data
+	// Initial data set
 	data[0] = 0xff;
 	data[1] = 0xff;
 }
 
 //---------------------------------------------------------------------------
 //
-//	Port read (read-only)
+//	Port read(Read Only)
 //
 //---------------------------------------------------------------------------
 DWORD FASTCALL JoyLR::ReadOnly(DWORD ctl) const
 {
-	ASSERT(this);
-	ASSERT(ctl < 0x100);
-	ASSERT(data[0] < 0x100);
-	ASSERT(data[1] < 0x100);
+ ASSERT(this);
+ ASSERT(ctl < 0x100);
+ ASSERT(data[0] < 0x100);
+ ASSERT(data[1] < 0x100);
 
-	// Branch according to PC4
+	// Separated by PC4
 	if (ctl & 1) {
 		return data[1];
 	}
@@ -2927,7 +2927,7 @@ DWORD FASTCALL JoyLR::ReadOnly(DWORD ctl) const
 
 //---------------------------------------------------------------------------
 //
-//	Build data
+//	Data create
 //
 //---------------------------------------------------------------------------
 void FASTCALL JoyLR::MakeData()
@@ -2935,8 +2935,8 @@ void FASTCALL JoyLR::MakeData()
 	const PPI::joyinfo_t *info;
 	DWORD axis;
 
-	ASSERT(this);
-	ASSERT(ppi);
+ ASSERT(this);
+ ASSERT(ppi);
 
 	// Initialize data
 	info = ppi->GetJoyInfo(port);
@@ -2983,12 +2983,12 @@ void FASTCALL JoyLR::MakeData()
 		data[0] &= ~0x02;
 	}
 
-	// Right side Left
+	// Left side Left
 	axis = info->axis[0];
 	if ((axis >= 0xfffff800) && (axis < 0xfffffc00)) {
 		data[0] &= ~0x04;
 	}
-	// Right side Right
+	// Left side Right
 	if ((axis >= 0x00000400) && (axis < 0x00000800)) {
 		data[0] &= ~0x08;
 	}
@@ -3006,7 +3006,7 @@ void FASTCALL JoyLR::MakeData()
 
 //---------------------------------------------------------------------------
 //
-//	Axis label table
+//	Axis description table
 //
 //---------------------------------------------------------------------------
 const char* JoyLR::AxisDescTable[] = {
@@ -3018,7 +3018,7 @@ const char* JoyLR::AxisDescTable[] = {
 
 //---------------------------------------------------------------------------
 //
-//	Button label table
+//	Button description table
 //
 //---------------------------------------------------------------------------
 const char* JoyLR::ButtonDescTable[] = {
@@ -3026,11 +3026,11 @@ const char* JoyLR::ButtonDescTable[] = {
 	"B"
 };
 
-//=========================================================================
+//===========================================================================
 //
-//	Joystick (Pac-Land dedicated pad)
+//	Joystick device(Pacl stick dedicated pad)
 //
-//=========================================================================
+//===========================================================================
 
 //---------------------------------------------------------------------------
 //
@@ -3043,68 +3043,68 @@ JoyPacl::JoyPacl(PPI *parent, int no) : JoyDevice(parent, no)
 	id = MAKEID('P', 'A', 'C', 'L');
 	type = 11;
 
-	// 0 axes, 3 buttons, data count 1
+	// 0 axes 3 buttons, data count 1
 	axes = 0;
 	buttons = 3;
 	datas = 1;
 
-	// Display table
+	// Description table
 	button_desc = ButtonDescTable;
 
-	// Allocate data buffer
+	// Data buffer allocation
 	data = new DWORD[datas];
 
-	// Set the initial data
+	// Initial data set
 	data[0] = 0xff;
 }
 
 //---------------------------------------------------------------------------
 //
-//	Port read (read-only)
+//	Port read(Read Only)
 //
 //---------------------------------------------------------------------------
 DWORD FASTCALL JoyPacl::ReadOnly(DWORD ctl) const
 {
-	ASSERT(this);
-	ASSERT(ctl < 0x100);
-	ASSERT(data[0] < 0x100);
+ ASSERT(this);
+ ASSERT(ctl < 0x100);
+ ASSERT(data[0] < 0x100);
 
 	// If PC4 is 1, return 0xff
 	if (ctl & 1) {
 		return 0xff;
 	}
 
-	// Return the prebuilt data
+	// Return created data
 	return data[0];
 }
 
 //---------------------------------------------------------------------------
 //
-//	Build data
+//	Data create
 //
 //---------------------------------------------------------------------------
 void FASTCALL JoyPacl::MakeData()
 {
 	const PPI::joyinfo_t *info;
 
-	ASSERT(this);
-	ASSERT(ppi);
+ ASSERT(this);
+ ASSERT(ppi);
 
 	// Initialize data
 	info = ppi->GetJoyInfo(port);
 	data[0] = 0xff;
 
-	// Button A (Left)
+	// Button A(Left)
 	if (info->button[0]) {
 		data[0] &= ~0x04;
 	}
 
-	// Button B (Jump)
+	// Button B(Jump)
 	if (info->button[1]) {
 		data[0] &= ~0x20;
 	}
 
-	// Button C (Right)
+	// Button C(Right)
 	if (info->button[2]) {
 		data[0] &= ~0x08;
 	}
@@ -3112,7 +3112,7 @@ void FASTCALL JoyPacl::MakeData()
 
 //---------------------------------------------------------------------------
 //
-//	Button label table
+//	Button description table
 //
 //---------------------------------------------------------------------------
 const char* JoyPacl::ButtonDescTable[] = {
@@ -3121,11 +3121,11 @@ const char* JoyPacl::ButtonDescTable[] = {
 	"Right",
 };
 
-//=========================================================================
+//===========================================================================
 //
-//	Joystick (BM68 dedicated controller)
+//	Joystick device(BM68 dedicated controler)
 //
-//=========================================================================
+//===========================================================================
 
 //---------------------------------------------------------------------------
 //
@@ -3138,83 +3138,83 @@ JoyBM::JoyBM(PPI *parent, int no) : JoyDevice(parent, no)
 	id = MAKEID('B', 'M', '6', '8');
 	type = 12;
 
-	// 0 axes, 6 buttons, data count 1
+	// 0 axes 6 buttons, data count 1
 	axes = 0;
 	buttons = 6;
 	datas = 1;
 
-	// Display table
+	// Description table
 	button_desc = ButtonDescTable;
 
-	// Allocate data buffer
+	// Data buffer allocation
 	data = new DWORD[datas];
 
-	// Set the initial data
+	// Initial data set
 	data[0] = 0xff;
 }
 
 //---------------------------------------------------------------------------
 //
-//	Port read (read-only)
+//	Port read(Read Only)
 //
 //---------------------------------------------------------------------------
 DWORD FASTCALL JoyBM::ReadOnly(DWORD ctl) const
 {
-	ASSERT(this);
-	ASSERT(ctl < 0x100);
-	ASSERT(data[0] < 0x100);
+ ASSERT(this);
+ ASSERT(ctl < 0x100);
+ ASSERT(data[0] < 0x100);
 
 	// If PC4 is 1, return 0xff
 	if (ctl & 1) {
 		return 0xff;
 	}
 
-	// Return the prebuilt data
+	// Return created data
 	return data[0];
 }
 
 //---------------------------------------------------------------------------
 //
-//	Build data
+//	Data create
 //
 //---------------------------------------------------------------------------
 void FASTCALL JoyBM::MakeData()
 {
 	const PPI::joyinfo_t *info;
 
-	ASSERT(this);
-	ASSERT(ppi);
+ ASSERT(this);
+ ASSERT(ppi);
 
 	// Initialize data
 	info = ppi->GetJoyInfo(port);
 	data[0] = 0xff;
 
-	// Button 1 (C)
+	// Button 1(C)
 	if (info->button[0]) {
 		data[0] &= ~0x08;
 	}
 
-	// Button 2 (C+,D-)
+	// Button 2(C+,D-)
 	if (info->button[1]) {
 		data[0] &= ~0x04;
 	}
 
-	// Button 3 (D)
+	// Button 3(D)
 	if (info->button[2]) {
 		data[0] &= ~0x40;
 	}
 
-	// Button 4 (D+,E-)
+	// Button 4(D+,E-)
 	if (info->button[3]) {
 		data[0] &= ~0x20;
 	}
 
-	// Button 5 (E)
+	// Button 5(E)
 	if (info->button[4]) {
 		data[0] &= ~0x02;
 	}
 
-	// Button F (Hat)
+	// Button F(Hat)
 	if (info->button[5]) {
 		data[0] &= ~0x01;
 	}
@@ -3222,7 +3222,7 @@ void FASTCALL JoyBM::MakeData()
 
 //---------------------------------------------------------------------------
 //
-//	Button label table
+//	Button description table
 //
 //---------------------------------------------------------------------------
 const char* JoyBM::ButtonDescTable[] = {
@@ -3233,4 +3233,3 @@ const char* JoyBM::ButtonDescTable[] = {
 	"E",
 	"HiHat"
 };
-

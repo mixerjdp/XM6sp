@@ -299,7 +299,7 @@ public:
 	void FASTCALL WriteByte(DWORD addr, DWORD data);
 										// Byte write
 	DWORD FASTCALL ReadOnly(DWORD addr) const;
-										//
+										// 
 
 // External API
 	void FASTCALL SetFileSys(FileSys *fs);

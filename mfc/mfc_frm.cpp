@@ -1,4 +1,4 @@
-﻿//---------------------------------------------------------------------------
+//---------------------------------------------------------------------------
 //
 //	X68000 EMULATOR "XM6"
 //
@@ -21,11 +21,7 @@
 #include "fdc.h"
 #include "fdi.h"
 #include "render.h"
-#include "crtc.h"
-#include "vc.h"
-#include "sprite.h"
 #include "keyboard.h"
-#include "ppi.h"
 #include "mfc_frm.h"
 #include "mfc_draw.h"
 #include "mfc_res.h"
@@ -81,6 +77,7 @@ static void FASTCALL VMHostMessageCallback(const TCHAR* message, void *user)
 #define SHCNRF_InterruptLevel			0x0001
 #define SHCNRF_ShellLevel				0x0002
 #define SHCNRF_NewDelivery				0x8000
+
 //---------------------------------------------------------------------------
 //
 //	Constructor
@@ -338,11 +335,11 @@ BEGIN_MESSAGE_MAP(CFrmWnd, CFrameWnd)
 	ON_COMMAND(IDM_REFRESH, OnRefresh)
 	ON_COMMAND(IDM_FULLSCREEN, OnFullScreen)
 	ON_UPDATE_COMMAND_UI(IDM_FULLSCREEN, OnFullScreenUI)
+	ON_COMMAND(IDM_RENDER_FAST, OnRenderFast)
+	ON_UPDATE_COMMAND_UI(IDM_RENDER_FAST, OnRenderFastUI)
 	ON_COMMAND(IDM_YMFM, OnYmfm)
 	ON_UPDATE_COMMAND_UI(IDM_YMFM, OnYmfmUI)
 	ON_COMMAND(IDM_TOGGLE_RENDERER, OnToggleRenderer)
-	ON_COMMAND(IDM_TOGGLE_RENDER_FAST_DUMMY, OnToggleRenderFastDummy)
-	ON_UPDATE_COMMAND_UI(IDM_TOGGLE_RENDER_FAST_DUMMY, OnToggleRenderFastDummyUI)
 	ON_COMMAND(IDM_TOGGLE_OSD, OnToggleOSD)
 	ON_COMMAND(IDM_TOGGLE_VSYNC, OnToggleVSync)
 	ON_COMMAND(IDM_TOGGLE_SHADER, OnToggleShader)
@@ -564,7 +561,6 @@ BOOL FASTCALL CFrmWnd::InitChild()
 	else {
 		// Early startup path: config component is not created yet.
 		config.render_shader = FALSE;
-		config.render_fast_dummy = FALSE;
 	}
 
 	// Create view with the initial shader state
@@ -688,8 +684,7 @@ void FASTCALL CFrmWnd::InitPos(BOOL bStart)
 
 
 	/* Set main-window size and fullscreen size here */
-	// Match XM6p's 1.0x base draw area. 768x512 clips modes that need the
-	// original CRT emulation margins (for example high-res HDF titles).
+	// 768x512 is treated as the 1.0x base size.
 	rect.left = 0;
 	rect.top = 0;
 
@@ -701,8 +696,8 @@ void FASTCALL CFrmWnd::InitPos(BOOL bStart)
 	}
 	else /* In windowed mode, 1024x768 is used */
 	{
-		rect.right = (824 * scalePercent) / 100;
-		rect.bottom = (580 * scalePercent) / 100;
+		rect.right = (768 * scalePercent) / 100;
+		rect.bottom = (512 * scalePercent) / 100;
 	}
 	::AdjustWindowRectEx(&rect, GetView()->GetStyle(), FALSE, GetView()->GetExStyle());
 	m_StatusBar.GetWindowRect(&rectStatus);
@@ -1162,8 +1157,6 @@ BOOL FASTCALL CFrmWnd::InitCmdSub(int nDrive, LPCTSTR lpszPath)
 
 //---------------------------------------------------------------------------
 //
-//---------------------------------------------------------------------------
-//
 //	Save components
 //	Scheduler is stopped, but CSound and CInput keep running.
 //
@@ -1419,19 +1412,11 @@ LONG CFrmWnd::OnKick(UINT /*uParam*/, LONG /*lParam*/)
 	BOOL bFullScreen;
 	BOOL bSmokeSaveState;
 	BOOL bSmokeVisible;
-	BOOL bSmokePx68kVideo;
-
-	bSmokeSaveState = SmokeIsSaveStateCommand();
-	bSmokeVisible = SmokeIsVisibleCommand();
-	bSmokePx68kVideo = SmokeIsPx68kVideoCommand(A2T(AfxGetApp()->m_lpCmdLine));
 
 	// Handle startup errors first
 	switch (m_nStatus) {
 		// VM initialization error
 		case 1:
-			if (bSmokeSaveState) {
-				::ExitProcess(1);
-			}
 			::GetMsg(IDS_INIT_VMERR, strMsg);
 			MessageBox(strMsg, NULL, MB_ICONSTOP | MB_OK);
 			PostMessage(WM_CLOSE, 0, 0);
@@ -1439,9 +1424,6 @@ LONG CFrmWnd::OnKick(UINT /*uParam*/, LONG /*lParam*/)
 
 		// Component initialization error
 		case 2:
-			if (bSmokeSaveState) {
-				::ExitProcess(1);
-			}
 			::GetMsg(IDS_INIT_COMERR, strMsg);
 			MessageBox(strMsg, NULL, MB_ICONSTOP | MB_OK);
 			PostMessage(WM_CLOSE, 0, 0);
@@ -1454,9 +1436,6 @@ LONG CFrmWnd::OnKick(UINT /*uParam*/, LONG /*lParam*/)
 	pMemory = (Memory*)::GetVM()->SearchDevice(MAKEID('M', 'E', 'M', ' '));
 	ASSERT(pMemory);
 	if (!pMemory->CheckIPL()) {
-		if (bSmokeSaveState) {
-			::ExitProcess(1);
-		}
 		::GetMsg(IDS_INIT_IPLERR, strMsg);
 		if (MessageBox(strMsg, NULL, MB_ICONSTOP | MB_YESNO | MB_DEFBUTTON2) != IDYES) {
 			PostMessage(WM_CLOSE, 0, 0);
@@ -1464,9 +1443,6 @@ LONG CFrmWnd::OnKick(UINT /*uParam*/, LONG /*lParam*/)
 		}
 	}
 	if (!pMemory->CheckCG()) {
-		if (bSmokeSaveState) {
-			::ExitProcess(1);
-		}
 		::GetMsg(IDS_INIT_CGERR, strMsg);
 		if (MessageBox(strMsg, NULL, MB_ICONSTOP | MB_YESNO | MB_DEFBUTTON2) != IDYES) {
 			PostMessage(WM_CLOSE, 0, 0);
@@ -1507,6 +1483,9 @@ LONG CFrmWnd::OnKick(UINT /*uParam*/, LONG /*lParam*/)
 
 	lpszCmd = AfxGetApp()->m_lpCmdLine;
 	lpszCommand = A2T(lpszCmd);
+
+	bSmokeSaveState = SmokeIsSaveStateCommand();
+	bSmokeVisible = SmokeIsVisibleCommand();
 	if (bSmokeSaveState && !bSmokeVisible) {
 		BOOL bSmoke = SmokeSaveState(lpszCommand);
 		::ExitProcess(bSmoke ? 0 : 1);
@@ -1530,7 +1509,7 @@ LONG CFrmWnd::OnKick(UINT /*uParam*/, LONG /*lParam*/)
 		InitCmd(szSmokeDisk);
 		SmokeLogLine(_T("smoke-visible: early mount complete"));
 	}
-	else if (!bSmokeSaveState) {
+	else {
 		RestoreDiskState();
 	}
 
@@ -1552,25 +1531,6 @@ LONG CFrmWnd::OnKick(UINT /*uParam*/, LONG /*lParam*/)
 		PostMessage(WM_COMMAND, IDM_FULLSCREEN);
 	}
 
-	if (bSmokeSaveState && bSmokePx68kVideo) {
-		BOOL bActive = FALSE;
-		::LockVM();
-		if (m_pDrawView) {
-			bActive = m_pDrawView->SetRenderFastDummyEnabled(TRUE);
-		}
-		::UnlockVM();
-		SmokeLogFormatDword(_T("px68k-video-forced=%lu"), bActive ? 1 : 0);
-		if (!bActive) {
-			::ExitProcess(1);
-		}
-	}
-
-	if (bSmokeSaveState && bSmokeVisible) {
-		if (!SmokeStartVisible(lpszCommand)) {
-			::ExitProcess(1);
-		}
-	}
-
 	pComponent = m_pFirstComponent;
 	while (pComponent) {
 		if (pComponent->GetID() == MAKEID('S', 'C', 'H', 'E')) {
@@ -1590,9 +1550,11 @@ LONG CFrmWnd::OnKick(UINT /*uParam*/, LONG /*lParam*/)
 
 	::UnlockVM();
 	if (bSmokeSaveState && bSmokeVisible) {
+		if (!SmokeStartVisible(lpszCommand)) {
+			::ExitProcess(1);
+		}
 		SmokeLogLine(_T("smoke-visible: bootstrap unlocked"));
 	}
-
 	// Main loop
 	DWORD dwStartTick = ::GetTickCount();
 	BOOL bAutoResetDone = FALSE;
@@ -1940,7 +1902,6 @@ void CFrmWnd::SaveFrameWnd()
 	// Shader state
 	if (m_pDrawView) {
 		config.render_shader = m_pDrawView->IsShaderEnabled();
-		config.render_fast_dummy = m_pDrawView->IsRenderFastDummyEnabled();
 	}
 
 	// Store updated config
@@ -3418,6 +3379,61 @@ CConfig* FASTCALL CFrmWnd::GetConfig() const
 //	Toggle Renderer (DX9/GDI)
 //
 //---------------------------------------------------------------------------
+void CFrmWnd::OnRenderFast()
+{
+	Render *pRender;
+	int nMode;
+	CString info;
+	Config config;
+
+	pRender = (Render*)::GetVM()->SearchDevice(MAKEID('R', 'E', 'N', 'D'));
+	if (!pRender) {
+		return;
+	}
+
+	nMode = (pRender->GetCompositorMode() == Render::compositor_fast) ?
+		Render::compositor_original : Render::compositor_fast;
+	if (!pRender->SetCompositorMode(nMode)) {
+		return;
+	}
+
+	pRender->Complete();
+	if (m_pDrawView) {
+		m_pDrawView->Refresh();
+	}
+
+	GetConfig()->GetConfig(&config);
+	config.alt_raster = (nMode == Render::compositor_fast) ? TRUE : FALSE;
+	GetConfig()->SetConfig(&config);
+
+	::LockVM();
+	::GetVM()->ApplyCfg(&config);
+	::UnlockVM();
+
+	info.Format(_T("Render Fast: %s"),
+		(nMode == Render::compositor_fast) ? _T("ON") : _T("OFF"));
+	SetInfo(info);
+}
+
+void CFrmWnd::OnRenderFastUI(CCmdUI *pCmdUI)
+{
+	Render *pRender;
+
+	if (!pCmdUI) {
+		return;
+	}
+
+	pRender = (Render*)::GetVM()->SearchDevice(MAKEID('R', 'E', 'N', 'D'));
+	if (!pRender) {
+		pCmdUI->Enable(FALSE);
+		pCmdUI->SetCheck(0);
+		return;
+	}
+
+	pCmdUI->Enable(TRUE);
+	pCmdUI->SetCheck((pRender->GetCompositorMode() == Render::compositor_fast) ? 1 : 0);
+}
+
 void CFrmWnd::OnYmfm()
 {
 	CSound *pSound;
@@ -3461,42 +3477,6 @@ void CFrmWnd::OnToggleRenderer()
 {
 	if (m_pDrawView) {
 		m_pDrawView->ToggleRenderer();
-	}
-}
-
-void CFrmWnd::OnToggleRenderFastDummy()
-{
-	if (!m_pDrawView) {
-		return;
-	}
-
-	::LockVM();
-	BOOL bEnabled = m_pDrawView->SetRenderFastDummyEnabled(!m_pDrawView->IsRenderFastDummyEnabled());
-	::UnlockVM();
-
-	Config config;
-	GetConfig()->GetConfig(&config);
-	config.render_fast_dummy = bEnabled;
-	GetConfig()->SetConfig(&config);
-
-	CString info;
-	info.Format(_T("Render Fast: %s"), bEnabled ? _T("ON") : _T("OFF"));
-	SetInfo(info);
-}
-
-void CFrmWnd::OnToggleRenderFastDummyUI(CCmdUI *pCmdUI)
-{
-	if (!pCmdUI) {
-		return;
-	}
-
-	if (m_pDrawView) {
-		pCmdUI->Enable(TRUE);
-		pCmdUI->SetCheck(m_pDrawView->IsRenderFastDummyEnabled() ? 1 : 0);
-	}
-	else {
-		pCmdUI->Enable(FALSE);
-		pCmdUI->SetCheck(0);
 	}
 }
 
@@ -3606,4 +3586,3 @@ void CFrmWnd::OnToggleShaderUI(CCmdUI *pCmdUI)
 		}
 	}
 }
-

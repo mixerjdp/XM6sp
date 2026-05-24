@@ -93,15 +93,21 @@ static int musashi_wait_cycles = 0;
 
 // Pending wait cycles that have been requested by Scheduler::Wait()
 // but have not yet been pushed into Musashi's remaining timeslice.
+// This intentionally coalesces many tiny waits into fewer adjustments
+// so we are less granular than the current immediate path.
 static int musashi_wait_pending = 0;
 
 // Render mode gate for timing behavior.
+// Original uses batching/flush tuning; Fast keeps legacy immediate timing.
 static int musashi_render_mode = 0;
+
+// Flush Musashi timeslice adjustments in small batches instead of
+// on every single Wait() call.
+static const int MUSASHI_WAIT_QUANTUM = 60;
 
 static bool UseWaitBatching(void)
 {
-	(void)musashi_render_mode;
-	return false;
+	return musashi_render_mode == 0;
 }
 
 static void FlushPendingWaitTimeslice(bool force)
@@ -112,7 +118,7 @@ static void FlushPendingWaitTimeslice(bool force)
 	if (musashi_wait_pending <= 0) {
 		return;
 	}
-	if (!UseWaitBatching() || force) {
+	if (!UseWaitBatching() || force || musashi_wait_pending >= MUSASHI_WAIT_QUANTUM) {
 		m68k_modify_timeslice(-musashi_wait_pending);
 		musashi_wait_cycles += musashi_wait_pending;
 		musashi_wait_pending = 0;
@@ -433,9 +439,6 @@ void musashi_adjust_timeslice(int cycles)
 			}
 		}
 		else {
-			if (cycles < 0) {
-				musashi_wait_cycles += -cycles;
-			}
 			m68k_modify_timeslice(cycles);
 		}
 	}

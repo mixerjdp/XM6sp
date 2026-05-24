@@ -18,8 +18,4 @@
 
 #include "win_compat.h"
 
-#ifndef UNREFERENCED_PARAMETER
-#define UNREFERENCED_PARAMETER(P) (void)(P)
-#endif
-
 #endif	// os_h

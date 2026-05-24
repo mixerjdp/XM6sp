@@ -2,8 +2,8 @@
 //
 //	X68000 EMULATOR "XM6"
 //
-//	Copyright (C) 2001-2006 ＰＩ．(ytanaka@ipc-tokai.or.jp)
-//	[ プリンタ ]
+//	Copyright (C) 2001-2006 PI(ytanaka@ipc-tokai.or.jp)
+//	[ Printer ]
 //
 //---------------------------------------------------------------------------
 
@@ -19,56 +19,56 @@
 
 //===========================================================================
 //
-//	プリンタ
+//	Printer
 //
 //===========================================================================
 //#define PRINTER_LOG
 
 //---------------------------------------------------------------------------
 //
-//	コンストラクタ
+//	Constructor
 //
 //---------------------------------------------------------------------------
 Printer::Printer(VM *p) : MemDevice(p)
 {
-	// デバイスIDを初期化
+	// Device ID setting
 	dev.id = MAKEID('P', 'R', 'N', ' ');
 	dev.desc = "Printer";
 
-	// 開始アドレス、終了アドレス
+	// Start/End address
 	memdev.first = 0xe8c000;
 	memdev.last = 0xe8dfff;
 
-	// その他
+	// Others
 	iosc = NULL;
 	sync = NULL;
 }
 
 //---------------------------------------------------------------------------
 //
-//	初期化
+//	Initialize
 //
 //---------------------------------------------------------------------------
 BOOL FASTCALL Printer::Init()
 {
 	ASSERT(this);
 
-	// 基本クラス
+	// Base class
 	if (!MemDevice::Init()) {
 		return FALSE;
 	}
 
-	// IOSCを取得
+	// Get IOSC
 	iosc = (IOSC*)vm->SearchDevice(MAKEID('I', 'O', 'S', 'C'));
-	ASSERT(iosc);
+ ASSERT(iosc);
 
-	// Sync作成
+	// Create Sync
 	sync = new Sync;
 
-	// 接続しない
+	// Not connected
 	printer.connect = FALSE;
 
-	// バッファをクリア
+	// Clear buffer
 	sync->Lock();
 	printer.read = 0;
 	printer.write = 0;
@@ -80,71 +80,71 @@ BOOL FASTCALL Printer::Init()
 
 //---------------------------------------------------------------------------
 //
-//	クリーンアップ
+//	Cleanup
 //
 //---------------------------------------------------------------------------
 void FASTCALL Printer::Cleanup()
 {
-	ASSERT(this);
+ ASSERT(this);
 
-	// Sync削除
+	// Delete Sync
 	if (sync) {
 		delete sync;
 		sync = NULL;
 	}
 
-	// 基本クラスへ
+	// Base class cleanup
 	MemDevice::Cleanup();
 }
 
 //---------------------------------------------------------------------------
 //
-//	リセット
+//	Reset
 //
 //---------------------------------------------------------------------------
 void FASTCALL Printer::Reset()
 {
-	ASSERT(this);
+ ASSERT(this);
 
-	LOG0(Log::Normal, "リセット");
+	LOG0(Log::Normal, "Reset");
 
-	// ストローブ(負論理)
+	// Strobe (initial value)
 	printer.strobe = FALSE;
 
-	// レディ(正論理)
+	// Ready (initial value)
 	if (printer.connect) {
-		// 接続されていればREADY
+		// If connected, READY
 		printer.ready = TRUE;
 	}
 	else {
-		// 非接続ならBUSY
+		// If not connected, BUSY
 		printer.ready = FALSE;
 	}
 
-	// 割り込み無し
+	// Interrupt clear
 	iosc->IntPRT(FALSE);
 }
 
 //---------------------------------------------------------------------------
 //
-//	セーブ
+//	Save
 //
 //---------------------------------------------------------------------------
 BOOL FASTCALL Printer::Save(Fileio *fio, int /* ver */)
 {
 	size_t sz;
 
-	ASSERT(this);
-	ASSERT(fio);
-	LOG0(Log::Normal, "セーブ");
+ ASSERT(this);
+ ASSERT(fio);
+	LOG0(Log::Normal, "Save");
 
-	// サイズをセーブ
+	// Size save
 	sz = sizeof(printer_t);
 	if (!fio->Write(&sz, (int)sizeof(sz))) {
 		return FALSE;
 	}
 
-	// 実体をセーブ
+	// Data save
 	if (!fio->Write(&printer, (int)sz)) {
 		return FALSE;
 	}
@@ -154,18 +154,18 @@ BOOL FASTCALL Printer::Save(Fileio *fio, int /* ver */)
 
 //---------------------------------------------------------------------------
 //
-//	ロード
+//	Load
 //
 //---------------------------------------------------------------------------
 BOOL FASTCALL Printer::Load(Fileio *fio, int /* ver */)
 {
 	size_t sz;
 
-	ASSERT(this);
-	ASSERT(fio);
-	LOG0(Log::Normal, "ロード");
+ ASSERT(this);
+ ASSERT(fio);
+	LOG0(Log::Normal, "Load");
 
-	// サイズをロード、照合
+	// Size load and check
 	if (!fio->Read(&sz, sizeof(sz))) {
 		return FALSE;
 	}
@@ -173,7 +173,7 @@ BOOL FASTCALL Printer::Load(Fileio *fio, int /* ver */)
 		return FALSE;
 	}
 
-	// 実体をロード
+	// Data load
 	if (!fio->Read(&printer, (int)sz)) {
 		return FALSE;
 	}
@@ -183,117 +183,117 @@ BOOL FASTCALL Printer::Load(Fileio *fio, int /* ver */)
 
 //---------------------------------------------------------------------------
 //
-//	設定適用
+//	Apply config
 //
 //---------------------------------------------------------------------------
 void FASTCALL Printer::ApplyCfg(const Config* /*config*/)
 {
-	ASSERT(this);
-	LOG0(Log::Normal, "設定適用");
+ ASSERT(this);
+	LOG0(Log::Normal, "Apply config");
 
-	// 設定変更時、コンポーネントからConnect()が呼ばれるので、READYが変わる
+	// Config change triggers Connect(), which changes READY
 }
 
 //---------------------------------------------------------------------------
 //
-//	バイト読み込み
+//	Byte read
 //
 //---------------------------------------------------------------------------
 DWORD FASTCALL Printer::ReadByte(DWORD /*addr*/)
 {
-	ASSERT(this);
+ ASSERT(this);
 
-	// 常に0xff(Write Onlyのため)
+	// Returns 0xff (Write Only register)
 	return 0xff;
 }
 
 //---------------------------------------------------------------------------
 //
-//	ワード読み込み
+//	Word read
 //
 //---------------------------------------------------------------------------
 DWORD FASTCALL Printer::ReadWord(DWORD /*addr*/)
 {
-	ASSERT(this);
+ ASSERT(this);
 
-	// 常に0xff(Write Onlyのため)
+	// Returns 0xff (Write Only register)
 	return 0xff;
 }
 
 //---------------------------------------------------------------------------
 //
-//	バイト書き込み
+//	Byte write
 //
 //---------------------------------------------------------------------------
 void FASTCALL Printer::WriteByte(DWORD addr, DWORD data)
 {
-	ASSERT(this);
-	ASSERT((addr >= memdev.first) && (addr <= memdev.last));
+ ASSERT(this);
+ ASSERT((addr >= memdev.first) && (addr <= memdev.last));
 
-	ASSERT(printer.num <= BufMax);
-	ASSERT(printer.read < BufMax);
-	ASSERT(printer.write < BufMax);
+ ASSERT(printer.num <= BufMax);
+ ASSERT(printer.read < BufMax);
+ ASSERT(printer.write < BufMax);
 
-	// 4バイト単位でループ(予想。WriteOnlyポートのため不明)
+	// 4-byte unit loop (Note: WriteOnly port, invalid address)
 	addr &= 0x03;
 
-	// デコード
+	// Decode
 	switch (addr) {
-		// $E8C001 出力データ
+		// $E8C001 printer data
 		case 1:
 			printer.data = (BYTE)data;
 			break;
 
-		// $E8C003 ストローブ
+		// $E8C003 strobe
 		case 3:
-			// ストローブは0(TRUE)→1(FALSE)への変化で効力をもつ
+			// Strobe change from 0(TRUE) to 1(FALSE) triggers output
 			if ((data & 1) == 0) {
 #if defined(PRINTER_LOG)
-				LOG0(Log::Normal, "ストローブ 0(TRUE)");
+				LOG0(Log::Normal, "Strobe 0(TRUE)");
 #endif	// PRINTER_LOG
 				printer.strobe = TRUE;
 				break;
 			}
 
-			// ストローブがTRUEでなければ、ここまで
+			// If strobe is not TRUE, do nothing
 			if (!printer.strobe) {
 				break;
 			}
 
-			// ストローブをFALSEに
+			// Strobe becomes FALSE
 			printer.strobe = FALSE;
 #if defined(PRINTER_LOG)
-			LOG0(Log::Normal, "ストローブ 1(FALSE)");
+			LOG0(Log::Normal, "Strobe 1(FALSE)");
 #endif	// PRINTER_LOG
 
-			// 接続されていなければ、ここまで
+			// If not connected, do nothing
 			if (!printer.connect) {
 				break;
 			}
 
-			// ここでデータをラッチ
+			// Output data to buffer
 #if defined(PRINTER_LOG)
-			LOG1(Log::Normal, "データ確定 $%02X", printer.data);
+			LOG1(Log::Normal, "Data send $%02X", printer.data);
 #endif	// PRINTER_LOG
 
 			sync->Lock();
-			// データ挿入
+			// Buffer write
 			printer.buf[printer.write] = printer.data;
 			printer.write = (printer.write + 1) & (BufMax - 1);
 			printer.num++;
 
-			// ウェイト制御が入るため、バッファは溢れないはず
+			// Buffer overflow warning, buffer is full
 			if (printer.num > BufMax) {
 				ASSERT(FALSE);
-				LOG0(Log::Warning, "出力バッファオーバーフロー");
+				LOG0(Log::Warning, "Printer buffer overflow");
 				printer.num = BufMax;
 			}
 			sync->Unlock();
 
-			// READYを落とす
+			// Set READY
 			printer.ready = FALSE;
 
-			// 割り込み無し
+			// Interrupt clear
 			iosc->IntPRT(FALSE);
 			break;
 	}
@@ -301,120 +301,120 @@ void FASTCALL Printer::WriteByte(DWORD addr, DWORD data)
 
 //---------------------------------------------------------------------------
 //
-//	ワード書き込み
+//	Word write
 //
 //---------------------------------------------------------------------------
 void FASTCALL Printer::WriteWord(DWORD addr, DWORD data)
 {
-	ASSERT(this);
-	ASSERT((addr >= memdev.first) && (addr <= memdev.last));
-	ASSERT((addr & 1) == 0);
+ ASSERT(this);
+ ASSERT((addr >= memdev.first) && (addr <= memdev.last));
+ ASSERT((addr & 1) == 0);
 
 	WriteByte(addr + 1, (BYTE)data);
 }
 
 //---------------------------------------------------------------------------
 //
-//	読み込みのみ
+//	Read only
 //
 //---------------------------------------------------------------------------
 DWORD FASTCALL Printer::ReadOnly(DWORD /*addr*/) const
 {
-	ASSERT(this);
+ ASSERT(this);
 
-	// 常に0xff(Write Onlyのため)
+	// Returns 0xff (Write Only register)
 	return 0xff;
 }
 
 //---------------------------------------------------------------------------
 //
-//	H-Sync通知
+//	H-Sync notification
 //
 //---------------------------------------------------------------------------
 void FASTCALL Printer::HSync()
 {
-	ASSERT(this);
+ ASSERT(this);
 
-	// レディがFALSE(データ転送中)でなければ関係なし
+	// If not ready (data transmission), do nothing
 	if (printer.ready) {
 		return;
 	}
 
-	// 接続されていなければ
+	// If not connected, exit
 	if (!printer.connect) {
-		// printer.readyはFALSEのまま
+		// printer.ready is already FALSE
 		return;
 	}
 
-	// バッファが一杯なら、次まで引き延ばす
+	// Buffer full, try again next time
 	if (printer.num == BufMax) {
 #if defined(PRINTER_LOG)
-	LOG0(Log::Normal, "バッファフルのためウェイト");
+	LOG0(Log::Normal, "Buffer full, wait");
 #endif	// PRINTER_LOG
 		return;
 	}
 
 #if defined(PRINTER_LOG)
-	LOG0(Log::Normal, "データ送信完了、READY");
+	LOG0(Log::Normal, "Data transmission READY");
 #endif	// PRINTER_LOG
 
-	// レディ状態
+	// Set ready
 	printer.ready = TRUE;
 
-	// 割り込み設定
+	// Interrupt set
 	iosc->IntPRT(TRUE);
 }
 
 //---------------------------------------------------------------------------
 //
-//	内部データ取得
+//	Get printer data
 //
 //---------------------------------------------------------------------------
 void FASTCALL Printer::GetPrinter(printer_t *buffer) const
 {
-	ASSERT(this);
-	ASSERT(buffer);
+ ASSERT(this);
+ ASSERT(buffer);
 
-	// 内部ワークをコピー
+	// Copy structure
 	*buffer = printer;
 }
 
 //---------------------------------------------------------------------------
 //
-//	接続
+//	Connect
 //
 //---------------------------------------------------------------------------
 void FASTCALL Printer::Connect(BOOL flag)
 {
-	ASSERT(this);
-	ASSERT(printer.num <= BufMax);
-	ASSERT(printer.read < BufMax);
-	ASSERT(printer.write < BufMax);
+ ASSERT(this);
+ ASSERT(printer.num <= BufMax);
+ ASSERT(printer.read < BufMax);
+ ASSERT(printer.write < BufMax);
 
-	// 一致していれば何もしない
+	// If already connected, do nothing
 	if (printer.connect == flag) {
 		return;
 	}
 
-	// 設定
+	// Set
 	printer.connect = flag;
 #if defined(PRINTER_LOG)
 	if (printer.connect) {
-		LOG0(Log::Normal, "プリンタ接続");
+		LOG0(Log::Normal, "Printer connect");
 	}
 	else {
-		LOG0(Log::Normal, "プリンタ切断");
+		LOG0(Log::Normal, "Printer disconnect");
 	}
 #endif	// PRINTER_LOG
 
-	// FALSEにするなら、レディ下ろす
+	// If FALSE, clear ready
 	if (!printer.connect) {
 		printer.ready = FALSE;
 		iosc->IntPRT(FALSE);
 		return;
 	}
 
-	// TRUEにするなら、次のHSYNCでレディ上げる
+	// If TRUE, clear buffer at next HSYNC to set ready
 	sync->Lock();
 	printer.read = 0;
 	printer.write = 0;
@@ -424,34 +424,34 @@ void FASTCALL Printer::Connect(BOOL flag)
 
 //---------------------------------------------------------------------------
 //
-//	先頭データ取得
+//	Get first data
 //
 //---------------------------------------------------------------------------
 BOOL FASTCALL Printer::GetData(BYTE *ptr)
 {
-	ASSERT(this);
-	ASSERT(ptr);
-	ASSERT(printer.num <= BufMax);
-	ASSERT(printer.read < BufMax);
-	ASSERT(printer.write < BufMax);
+ ASSERT(this);
+ ASSERT(ptr);
+ ASSERT(printer.num <= BufMax);
+ ASSERT(printer.read < BufMax);
+ ASSERT(printer.write < BufMax);
 
-	// ロック
+	// Lock
 	sync->Lock();
 
-	// データがなければFALSE
+	// If no data, return FALSE
 	if (printer.num == 0) {
 		sync->Unlock();
 		return FALSE;
 	}
 
-	// データ取得
+	// Get data
 	*ptr = printer.buf[printer.read];
 
-	// 次へ
+	// Increment
 	printer.read = (printer.read + 1) & (BufMax - 1);
 	printer.num--;
 
-	// アンロック
+	// Unlock
 	sync->Unlock();
 	return TRUE;
 }

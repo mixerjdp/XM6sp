@@ -2,337 +2,214 @@
 //
 //	X68000 EMULATOR "XM6"
 //
-//	Copyright (C) 2001,2002 P.I. (ytanaka@ipc-tokai.or.jp)
-//	Copyright (C) 2010-2014 GIMONS
-//	[ Renderer ]
+//	Copyright (C) 2001,2002 PI (ytanaka@ipc-tokai.or.jp)
+//	[ Video ]
 //
 //---------------------------------------------------------------------------
 
-#ifndef render_h
+#if !defined(render_h)
 #define render_h
 
 #include "device.h"
-#include "crtc.h"
-#include "vc.h"
-#include "rend_asm.h"
-#include "px68k_crtc_port.h"
 
-class GVRAM;
-class TVRAM;
-
-//=========================================================================
+//===========================================================================
 //
-//	Renderer
+//	Video
 //
-//=========================================================================
+//===========================================================================
 class Render : public Device
 {
 public:
-	// PX68k coexistence API
-	enum compositor_mode_t {
-		compositor_original = 0,
-		compositor_fast = 1,
-	};
+		enum compositor_mode_t {
+			compositor_original = 0,
+			compositor_fast = 1
+		};
 
+	// Render work area structure
 	typedef struct {
-		BOOL valid;
-		int dst_y;
-		int src_y;
-		DWORD px68k_vline;
-		int sprite_raster;
-		int bg_raster;
-		int layer_raster;
-		int bg_vline;
-		int vline_bg;
-		BOOL visible;
-		BOOL bg_on;
-		BOOL bg_opaq;
-		BOOL sprite_enabled;
-		BOOL bgspflag;
-		BOOL bgspdisp;
-		BOOL gon;
-		BOOL tron;
-		BOOL pron;
-		BOOL ton;
-		BYTE vr2h;
-		BYTE vr2l;
-		int vscan;
-		int vdots;
-		DWORD vcount;
-		BOOL vblank;
-		int rcount;
-		int vstep;
-		int mixlen;
-		BOOL lowres;
-		int vmul;
-	} fast_vertical_probe_sample_t;
-
-	typedef struct {
-		BOOL valid;
-		int width;
-		int h_mul;							// X multiplier
-		int height;
-		int v_mul;							// Y multiplier
-		int mixwidth;
-		int mixheight;
-		int mixpage;
-		int mixtype;
-		BOOL lowres;
-		BOOL bgspflag;
-		BOOL bgspdisp;
-		int sample_count;
-		fast_vertical_probe_sample_t samples[6];
-	} fast_vertical_probe_snapshot_t;
-
-	// Internal data definition
-	typedef struct {
-		// Overall control
-		BOOL act;						// Whether composition is active
-		BOOL enable;					// Composition enabled
-		int count;						// Scheduler integration counter
-		BOOL ready;						// Whether rendering is ready
-		int first;						// First unprocessed raster
-		int last;						// Last display raster
+		// General state
+		BOOL act;						// �E��E��E��E��E��E��E�Ă��E�邩
+		BOOL enable;					// �E��E��E��E��E��E��E��E�
+		int count;						// �E�X�E�P�E�W�E��E��E�[�E��E��E�A�E�g�E�J�E�E�E��E��E�^
+		BOOL ready;						// �E�`�E�揀�E��E��E�ł��E�Ă��E�邩
+		int first;						// �E��E��E��E��E��E��E��E��E�X�E�^
+		int last;						// �E�\�E��E��E�I�E��E��E��E��E�X�E�^
 
 		// CRTC
-		BOOL crtc;						// CRTC change flag
-		int width;						// X-direction dot count (256+)
-		int h_mul;							// X multiplier
-		int height;						// Y-direction dot count (256+)
-		int v_mul;							// Y multiplier
-		BOOL siz;						// Actual screen size
-		BOOL lowres;					// 15 kHz flag
-		int hres;						// Horizontal frequency mode (0:15 kHz, 1:24 kHz, 2:31 kHz)
-		int hd;							// Horizontal dot count
-		int vd;							// Vertical dot count
-		BOOL hrl;						// HRL (system port)
-
-		// For CRT emulation
-		int h_disp;						// Horizontal display width
-		int v_disp;						// Vertical display width
-		int h_total;					// Horizontal sync width
-		int v_total;					// Vertical sync width
-		int h_pulse;					// Horizontal pulse width
-		int v_pulse;					// Vertical pulse width
-		int h_start;					// Horizontal draw position
-		int v_start;					// Vertical draw position
-		BOOL scanline;					// Scanline mode
+		BOOL crtc;						// CRTC�E�ύX�E�t�E��E��E�O
+		int width;						// X�E��E��E��E��E�h�E�b�E�g�E��E�(256�E�`)
+		int h_mul;						// X�E��E��E��E��E�{�E��E�(1,2)
+		int height;						// Y�E��E��E��E��E�h�E�b�E�g�E��E�(256�E�`)
+		int v_mul;						// Y�E��E��E��E��E�{�E��E�(0,1,2)
+		BOOL lowres;					// 15kHz�E�t�E��E��E�O
 
 		// VC
-		BOOL vc;						// VC change flag
+		BOOL vc;						// VC�E�ύX�E�t�E��E��E�O
 
-		// composition
-		BYTE mix[1024];					// Composition flag (line)
-		DWORD *mixbuf;					// Composition buffer
-		DWORD *mixptr[8];				// Composition pointer
-		DWORD mixshift[8];				// Composition pointer Y shift
-		DWORD mixand[8];
-		DWORD mixrshift[8];				// Composition pointer Y shift (right)
-		DWORD mixlshift[8];				// Composition pointer Y shift (left)
-		DWORD *mixx[8];					// Composition pointer X scroll pointer
-		DWORD *mixy[8];					// Composition pointer Y scroll pointer
-		DWORD mixandx[8];				// Composition pointer scroll AND mask (X)
-		DWORD mixandy[8];				// Composition pointer scroll AND mask (Y)
-		DWORD mixraster[8];				// Composition pointer raster position adjustment
-		int mixmap[3];					// Composition map
-		int mixtype;					// Composition type
-		int mixpage;					// Composited graphics page count
-		int mixwidth;					// Composition buffer width
-		int mixheight;					// Composition buffer height
-		int mixlen;						// Composition processing length (X direction)
-		int mixmode;					// Composition mode (0: non-interlace, 1: interlace, 2: double read)
-		BOOL mixeven;					// Interlace composition even/odd state
-		int sp;							// Priority (sprites)
-		int gr;							// Priority (graphics)
-		int tx;							// Priority (text)
-		BOOL mixdirty;					// Composition dirty flag
+		// �E��E��E��E�
+		BOOL mix[1024];					// �E��E��E��E��E�t�E��E��E�O(�E��E��E�C�E��E�)
+		DWORD *mixbuf;					// �E��E��E��E��E�o�E�b�E�t�E�@
+		DWORD *mixptr[8];				// �E��E��E��E��E�|�E�C�E��E��E�^
+		DWORD mixshift[8];				// �E��E��E��E��E�|�E�C�E��E��E�^�E��E�Y�E�V�E�t�E�g
+		DWORD *mixx[8];					// �E��E��E��E��E�|�E�C�E��E��E�^�E��E�X�E�X�E�N�E��E��E�[�E��E��E�|�E�C�E��E��E�^
+		DWORD *mixy[8];					// �E��E��E��E��E�|�E�C�E��E��E�^�E��E�Y�E�X�E�N�E��E��E�[�E��E��E�|�E�C�E��E��E�^
+		DWORD mixand[8];				// �E��E��E��E��E�|�E�C�E��E��E�^�E�̃X�E�N�E��E��E�[�E��E�AND�E�l
+		int mixmap[3];					// �E��E��E��E��E�}�E�b�E�v
+		int mixtype;					// �E��E��E��E��E�^�E�C�E�v
+		int mixpage;					// �E��E��E��E��E�O�E��E��E�t�E�B�E�b�E�N�E�y�E�[�E�W�E��E�
+		int mixwidth;					// �E��E��E��E��E�o�E�b�E�t�E�@�E��E�
+		int mixheight;					// �E��E��E��E��E�o�E�b�E�t�E�@�E��E��E��E�
+		int mixlen;						// �E��E��E��E��E��E��E��E��E��E��E��E��E��E�(x�E��E��E��E�)
 
 		// Draw
-		BOOL draw[1024];				// Draw flag (line)
-		BOOL *drawflag;					// Draw flag (16 dots)
+		BOOL draw[1024];				// �E�`�E��E�t�E��E��E�O(�E��E��E�C�E��E�)
+		BOOL *drawflag;					// �E�`�E��E�t�E��E��E�O(16dot)
 
-		// Contrast
-		BOOL contrast;					// Contrast change flag
-		int contlevel;					// Contrast (configured level)
-		int contvalue;					// Contrast (current value)
-		DWORD conttime;					// Time when contrast was last changed
+		// �E�R�E��E��E�g�E��E��E�X�E�g
+		BOOL contrast;					// �E�R�E��E��E�g�E��E��E�X�E�g�E�ύX�E�t�E��E��E�O
+		int contlevel;					// �E�R�E��E��E�g�E��E��E�X�E�g
 
 		// Palette
-		BOOL palette;					// Palette change flag
-		BYTE palmod[0x200];				// Palette change flag
-		DWORD *palbuf;					// Palette buffer
-		DWORD *palptr;					// Palette pointer
-		const WORD *palvc;				// Palette VC pointer
-		DWORD paldata[0x200];			// Palette data
-		BYTE pal64k[0x200];				// Converted palette data
-
-		// palette(semi-transparent, special priority)
-		DWORD paldataGB[0x100];			// Palette data (GVRAM-selected: base page)
-		DWORD paldataGS[0x100];			// Palette data (GVRAM-selected: second page)
-		DWORD paldataPB[0x100];			// Palette data (palette-selected: base page)
-		DWORD paldataPS[0x100];			// Palette data (palette-selected: second page)
+		BOOL palette;					// �E�p�E��E��E�b�E�g�E�ύX�E�t�E��E��E�O
+		BOOL palmod[0x200];				// �E�p�E��E��E�b�E�g�E�ύX�E�t�E��E��E�O
+		DWORD *palbuf;					// �E�p�E��E��E�b�E�g�E�o�E�b�E�t�E�@
+		DWORD *palptr;					// �E�p�E��E��E�b�E�g�E�|�E�C�E��E��E�^
+		const WORD *palvc;				// �E�p�E��E��E�b�E�gVC�E�|�E�C�E��E��E�^
+		DWORD paldata[0x200];			// �E�p�E��E��E�b�E�g�E�f�E�[�E�^
+		BYTE pal64k[0x200];				// �E�p�E��E��E�b�E�g�E�f�E�[�E�^�E�ό`
 
 		// Text VRAM
-		BOOL texten;					// Text display flag
-		BYTE textpal[1024];				// Text palette flag
-		BOOL textmod[1024];				// Text update flag (line)
-		BOOL *textflag;					// Text update flag (32 dots)
-		BYTE *textbuf;					// Text buffer (before palette)
-		DWORD *textout;					// Text buffer (after palette)
-		const BYTE *texttv;				// Text TVRAM pointer
-		DWORD textx;					// Text scroll X
-		DWORD texty;					// Text scroll Y
-		BOOL textdirty;					// Text dirty flag
+		BOOL texten;					// �E�e�E�L�E�X�E�g�E�\�E��E��E�t�E��E��E�O
+		BOOL textpal[1024];				// �E�e�E�L�E�X�E�g�E�p�E��E��E�b�E�g�E�t�E��E��E�O
+		BOOL textmod[1024];				// �E�e�E�L�E�X�E�g�E�X�E�V�E�t�E��E��E�O(�E��E��E�C�E��E�)
+		BOOL *textflag;					// �E�e�E�L�E�X�E�g�E�X�E�V�E�t�E��E��E�O(32dot)
+		BYTE *textbuf;					// �E�e�E�L�E�X�E�g�E�o�E�b�E�t�E�@(�E�p�E��E��E�b�E�g�E�O)
+		DWORD *textout;					// �E�e�E�L�E�X�E�g�E�o�E�b�E�t�E�@(�E�p�E��E��E�b�E�g�E��E�)
+		const BYTE *texttv;				// �E�e�E�L�E�X�E�gTVRAM�E�|�E�C�E��E��E�^
+		DWORD textx;					// �E�e�E�L�E�X�E�g�E�X�E�N�E��E��E�[�E��E�X
+		DWORD texty;					// �E�e�E�L�E�X�E�g�E�X�E�N�E��E��E�[�E��E�Y
 
-		// Graphics VRAM
-		int grptype;					// Graphics type (0-4)
-		BYTE grppal[2048];				// Graphics palette flag
-		BOOL grpmod[2048];				// Graphics update flag (line)
-		BOOL *grpflag;					// Graphics update flag (16 dots)
-		DWORD *grpbuf[4];				// Graphics block buffer
-		const BYTE* grpgv;				// Graphics GVRAM pointer
-		BOOL grpscrl;					// Graphics scroll update flag
-		DWORD grpx[4];					// Graphics block scroll X
-		DWORD grpy[4];					// Graphics block scroll Y
-		int grpdx[4];					// Graphics block scroll X delta
-		int grpdy[4];					// Graphics block scroll Y delta
-		BOOL grppen[4];					// Graphics page enable flag
-		BOOL grpen[4];					// Graphics enable mirror
-		BOOL grpben[4];					// Graphics block enable flag
-		BOOL grpnorm[4];				// Preferred graphics page flag
-		BOOL grpdirty;					// Graphics dirty flag
+		// Graphic VRAM
+		int grptype;					// �E�O�E��E��E�t�E�B�E�b�E�N�E�^�E�C�E�v(0�E�`4)
+		BOOL grpen[4];					// �E�O�E��E��E�t�E�B�E�b�E�N�E�u�E��E��E�b�E�N�E�\�E��E��E�t�E��E��E�O
+		BOOL grppal[2048];				// �E�O�E��E��E�t�E�B�E�b�E�N�E�p�E��E��E�b�E�g�E�t�E��E��E�O
+		BOOL grpmod[2048];				// �E�O�E��E��E�t�E�B�E�b�E�N�E�X�E�V�E�t�E��E��E�O(�E��E��E�C�E��E�)
+		BOOL *grpflag;					// �E�O�E��E��E�t�E�B�E�b�E�N�E�X�E�V�E�t�E��E��E�O(16dot)
+		DWORD *grpbuf[4];				// �E�O�E��E��E�t�E�B�E�b�E�N�E�u�E��E��E�b�E�N�E�o�E�b�E�t�E�@
+		const BYTE* grpgv;				// �E�O�E��E��E�t�E�B�E�b�E�NGVRAM�E�|�E�C�E��E��E�^
+		DWORD grpx[4];					// �E�O�E��E��E�t�E�B�E�b�E�N�E�u�E��E��E�b�E�N�E�X�E�N�E��E��E�[�E��E�X
+		DWORD grpy[4];					// �E�O�E��E��E�t�E�B�E�b�E�N�E�u�E��E��E�b�E�N�E�X�E�N�E��E��E�[�E��E�Y
 
 		// PCG
-		BOOL pcgready[256 * 16];		// PCG ready flag
-		DWORD pcguse[256 * 16];			// PCG in-use count
-		DWORD pcgpal[16];				// PCG palette usage count
-		DWORD *pcgbuf;					// PCG buffer
-		const BYTE* sprmem;				// Sprite memory
+		BOOL pcgready[256 * 16];		// PCG�E��E��E��E�OK�E�t�E��E��E�O
+		DWORD pcguse[256 * 16];			// PCG�E�g�E�p�E��E��E�J�E�E�E��E��E�g
+		DWORD pcgpal[16];				// PCG�E�p�E��E��E�b�E�g�E�g�E�p�E�J�E�E�E��E��E�g
+		DWORD *pcgbuf;					// PCG�E�o�E�b�E�t�E�@
+		const BYTE* sprmem;				// �E�X�E�v�E��E��E�C�E�g�E��E��E��E��E��E�
 
-		// sprite
-		DWORD **spptr;					// Sprite pointer buffer
-		DWORD spreg[0x200];				// Saved sprite registers
-		BOOL spuse[128];				// Sprite in-use flag
+		// �E�X�E�v�E��E��E�C�E�g
+		DWORD **spptr;					// �E�X�E�v�E��E��E�C�E�g�E�|�E�C�E��E��E�^�E�o�E�b�E�t�E�@
+		DWORD spreg[0x200];				// �E�X�E�v�E��E��E�C�E�g�E��E��E�W�E�X�E�^�E�ۑ�
+		BOOL spuse[128];				// �E�X�E�v�E��E��E�C�E�g�E�g�E�p�E��E��E�t�E��E��E�O
 
 		// BG
-		DWORD bgreg[2][64 * 64];		// BG register + change flag ($10000)
-		BOOL bgall[2][64];				// BG change flag (per block)
-		BOOL bgdisp[2];					// BG display flag
-		BOOL bgarea[2];					// BG display area
-		BOOL bgsize;					// BG display size (16 dots = TRUE)
-		bgdata_t *bgptr[2];				// BG pointer + data
-		BOOL bgmod[2][1024];			// BG update flag
-		DWORD bgx[2];					// BG scroll (X)
-		DWORD bgy[2];					// BG scroll (Y)
+		DWORD bgreg[2][64 * 64];		// BG�E��E��E�W�E�X�E�^�E�{�E�ύX�E�t�E��E��E�O($10000)
+		BOOL bgall[2][64];				// BG�E�ύX�E�t�E��E��E�O(�E�u�E��E��E�b�E�N�E�P�E��E�)
+		BOOL bgdisp[2];					// BG�E�\�E��E��E�t�E��E��E�O
+		BOOL bgarea[2];					// BG�E�\�E��E��E�G�E��E��E�A
+		BOOL bgsize;					// BG�E�\�E��E��E�T�E�C�E�Y(16dot=TRUE)
+		DWORD **bgptr[2];				// BG�E�|�E�C�E��E��E�^+�E�f�E�[�E�^
+		BOOL bgmod[2][1024];			// BG�E�X�E�V�E�t�E��E��E�O
+		DWORD bgx[2];					// BG�E�X�E�N�E��E��E�[�E��E�(X)
+		DWORD bgy[2];					// BG�E�X�E�N�E��E��E�[�E��E�(Y)
 
-		// BG/sprite composition
-		BOOL bgsp;						// BG/sprite change flag
-		BOOL bgspflag;					// BG/sprite display flag
-		BOOL bgspdisp;					// BG/sprite CPU/video flag
-		BYTE bgspmod[1024];				// BG/sprite update flag
-		DWORD *bgspbuf;					// BG/sprite buffer
-		int bgsp_h;						// BG/sprite horizontal position adjustment
-		int bgsp_v;						// BG/sprite vertical position adjustment
-		BOOL bgsp_lowres;				// BG/sprite 15 kHz flag
-		DWORD bgsp_vres;				// BG/sprite vertical resolution
-		int bgsp_mixmode;				// BG/sprite composition mode (0: non-interlace, 1: interlace, 2: double read)
-		int bgsp_rshift;				// BG/sprite raster shift amount (right)
-		int bgsp_lshift;				// BG/sprite raster shift amount (left)
-		BOOL bgspdirty;					// BG/sprite dirty flag
+		// BG/Sprite combined
+		BOOL bgspflag;					// BG/�E�X�E�v�E��E��E�C�E�g�E�\�E��E��E�t�E��E��E�O
+		BOOL bgspdisp;					// BG/�E�X�E�v�E��E��E�C�E�gCPU/Video�E�t�E��E��E�O
+		BOOL bgspmod[512];				// BG/�E�X�E�v�E��E��E�C�E�g�E�X�E�V�E�t�E��E��E�O
+		DWORD *bgspbuf;					// BG/�E�X�E�v�E��E��E�C�E�g�E�o�E�b�E�t�E�@
+		DWORD fast_bg_linebuf[1024];
+		WORD fast_bg_pribuf[1024];
+		BYTE fast_text_trflag[1024];
+		DWORD fast_grp_linebuf[1024];
+		DWORD fast_grp_linebuf_sp[1024];
+		DWORD fast_grp_linebuf_sp2[1024];
+		BOOL fast_grp_linebuf_sp_tr[1024];
 		DWORD fast_stamp_counter;
 		DWORD fast_mix_stamp[1024];
 		DWORD fast_mix_done[1024];
 		DWORD fast_bg_stamp[512];
 		DWORD fast_bg_done[512];
-		DWORD zero;						// Scroll dummy (0)
+		DWORD zero;						// �E�X�E�N�E��E��E�[�E��E��E�_�E�~�E�[(0)
 	} render_t;
 
-public:
-	// Core functions
-	explicit Render(VM* p);
-										///< Constructor
+	// �E��E�{�E�t�E�@�E��E��E�N�E�V�E��E��E��E�
+	Render(VM *p);
+										// �E�R�E��E��E�X�E�g�E��E��E�N�E�^
 	BOOL FASTCALL Init();
-										// Initialize
+										// �E��E��E��E��E��E�
 	void FASTCALL Cleanup();
-										// Cleanup
+										// �E�N�E��E��E�[�E��E��E�A�E�b�E�v
 	void FASTCALL Reset();
-										// Reset
+										// �E��E��E�Z�E�b�E�g
 	BOOL FASTCALL Save(Fileio *fio, int ver);
-										// Save
+										// �E�Z�E�[�E�u
 	BOOL FASTCALL Load(Fileio *fio, int ver);
-										// Load
+										// �E��E��E�[�E�h
 	void FASTCALL ApplyCfg(const Config *config);
-										// Apply settings
+										// �E�ݒ�K�E�p
 
-	// External API (control)
+	// Render API (Constructor/Destructor)
 	void FASTCALL EnableAct(BOOL enable){ render.enable = enable; }
-										// Composition enabled
+										// Rendering enable
 	BOOL FASTCALL IsActive() const		{ return render.act; }
-										// Whether active
+										// Is active
 	BOOL FASTCALL IsReady() const		{ return (BOOL)(render.count > 0); }
-										// Get render-ready state
 	void FASTCALL Complete()			{ render.count = 0; }
-										// Rendering complete
-	void FASTCALL StartFrame();
-										// Frame start (V-DISP)
-	void FASTCALL EndFrame();
-										// Frame end (V-BLANK)
-	void FASTCALL HSync(int raster, int xoffset);
-	void FASTCALL HSync(int raster)		{ HSync(raster, 0); }
-										// Horizontal sync (through raster processing)
-	void FASTCALL SetMixBuf(DWORD *buf, int width, int height);
-										// Set the composition buffer
-	void FASTCALL UpdateMixBuf();
-										// Force a composition buffer update
-	render_t* FASTCALL GetWorkAddr() 	{ return &render; }
-	const render_t* FASTCALL GetWorkAddr() const { return &render; }
-	void FASTCALL SetRenderTarget(void*) {}
-										// MFC render target compatibility hook
-										// Get the work address
-#if XM6_RENDER_SYNC == 2
-	void FASTCALL SetScheduler(class CScheduler* pScheduler) { m_pScheduler = pScheduler; }
-										///< Attach scheduler
-#endif	// XM6_RENDER_SYNC == 2
-
-	// External API (display)
-	void FASTCALL SetCRTC();
-										// Set CRTC
-	void FASTCALL SetVC();
-										// Set VC
-	void FASTCALL SetContrast(int cont, BOOL immediate = FALSE);
-										// Set contrast
-	int FASTCALL GetContrast() const;
 	void FASTCALL SetTransparencyEnabled(BOOL enabled)	{ transparency_enabled = enabled ? TRUE : FALSE; }
 	BOOL FASTCALL IsTransparencyEnabled() const		{ return transparency_enabled; }
 	void FASTCALL SetOriginalBG0RenderEnabled(BOOL enabled)	{ original_bg0_render_enabled = enabled ? TRUE : FALSE; }
 	BOOL FASTCALL IsOriginalBG0RenderEnabled() const		{ return original_bg0_render_enabled; }
 	BOOL FASTCALL SetCompositorMode(int mode);
 	int FASTCALL GetCompositorMode() const		{ return compositor_mode; }
-	DWORD FASTCALL GetFastFallbackCount() const	{ return 0; }
-	void FASTCALL GetFastVerticalProbeSnapshot(fast_vertical_probe_snapshot_t *out) const;
-	BOOL FASTCALL SetRenderFastDummyEnabled(BOOL enable);
-	BOOL FASTCALL IsRenderFastDummyEnabled() const	{ return render_fast_dummy_enabled; }
-	const Px68kCrtcHost* FASTCALL GetPx68kCrtcHost() const;
-	void FASTCALL CachePx68kStateView(const Px68kCrtcStateView *view);
+	DWORD FASTCALL GetFastFallbackCount() const	{ return fast_fallback_count; }
+	void FASTCALL StartFrame();
+										// Frame start (V-DISP)
+	void FASTCALL EndFrame();
+										// Frame end (V-BLANK)
+	void FASTCALL HSync(int raster);
+										// Horizontal sync (raster until end)
+	void FASTCALL SetMixBuf(DWORD *buf, int width, int height);
+										// Mix buffer set
+	render_t* FASTCALL GetWorkAddr() 	{ return &render; }
+										// Get work address
+
+	// Render API (Device)
+	void FASTCALL SetCRTC();
+										// CRTC reset
+	void FASTCALL SetVC();
+										// VC reset
 	void FASTCALL ForceRecompose();
-										// Get contrast
+	void FASTCALL SetContrast(int cont);
+										// Contrast setting
+	int FASTCALL GetContrast() const;
+										// Contrast get
 	void FASTCALL SetPalette(int index);
-										// Set palette
+										// Palette setting
 	const DWORD* FASTCALL GetPalette() const;
-										// Get the palette buffer
+										// Palette buffer get
 	void FASTCALL TextMem(DWORD addr);
 										// Text VRAM change
 	void FASTCALL TextScrl(DWORD x, DWORD y);
 										// Text scroll change
 	void FASTCALL TextCopy(DWORD src, DWORD dst, DWORD plane);
-										// Raster copy
+										// Text copy
 	void FASTCALL GrpMem(DWORD addr, DWORD block);
-										// Graphics VRAM change
+										// Graphic VRAM change
 	void FASTCALL GrpAll(DWORD line, DWORD block);
-										// Graphics VRAM change
+										// Graphic VRAM change
 	void FASTCALL GrpScrl(int block, DWORD x, DWORD y);
-										// Set graphics scroll
-	void FASTCALL SpriteReg(DWORD addr, DWORD data[]);
+										// Graphic scroll change
 	void FASTCALL SpriteReg(DWORD addr, DWORD data);
 										// Sprite register change
 	void FASTCALL BGScrl(int page, DWORD x, DWORD y);
@@ -342,92 +219,65 @@ public:
 	void FASTCALL BGMem(DWORD addr, WORD data);
 										// BG change
 	void FASTCALL PCGMem(DWORD addr);
-	void FASTCALL SpriteBGWrite(DWORD addr, BYTE data);
-	BYTE FASTCALL TVRAMRead(DWORD addr);
-	void FASTCALL TVRAMWrite(DWORD addr, BYTE data);
-	BYTE FASTCALL GVRAMRead(DWORD addr);
-	void FASTCALL GVRAMWrite(DWORD addr, BYTE data);
-	BYTE FASTCALL BGRead(DWORD addr);
-	void FASTCALL CRTCRegWrite(DWORD addr, BYTE data);
-	BYTE FASTCALL CRTCRegRead(DWORD addr);
-	BYTE FASTCALL VCtrlRead(DWORD addr);
-	void FASTCALL VCtrlWrite(DWORD addr, BYTE data);
-	void FASTCALL GVRAMFastClear();
 										// PCG change
+
 	const DWORD* FASTCALL GetTextBuf() const;
-										// Get the text buffer
+										// Text buffer get
 	const DWORD* FASTCALL GetGrpBuf(int index) const;
-										// Get the graphics buffer
+										// Graphic buffer get
 	const DWORD* FASTCALL GetPCGBuf() const;
-										// Get the PCG buffer
+										// PCG buffer get
 	const DWORD* FASTCALL GetBGSpBuf() const;
-										// Get the BG/sprite buffer
+										// BG/Sprite buffer get
 	const DWORD* FASTCALL GetMixBuf() const;
-	const CRTC* FASTCALL GetCRTCDevice() const { return crtc; }
-	const VC* FASTCALL GetVCDevice() const { return vc; }
-	const TVRAM* FASTCALL GetTVRAMDevice() const;
-	const GVRAM* FASTCALL GetGVRAMDevice() const;
-	const Sprite* FASTCALL GetSpriteDevice() const { return sprite; }
-										// Get the composition buffer
+										// Mix buffer get
 
 private:
 	class Backend;
 	void FASTCALL StartFrameOriginal();
+	void FASTCALL StartFrameFast();
 	void FASTCALL EndFrameOriginal();
-	void FASTCALL HSyncOriginal(int raster, int xoffset = 0);
+	void FASTCALL EndFrameFast();
+	void FASTCALL HSyncOriginal(int raster);
+	void FASTCALL HSyncFast(int raster);
 	void FASTCALL SetCRTCOriginal();
+	void FASTCALL SetCRTCFast();
 	void FASTCALL SetVCOriginal();
-	void FASTCALL Process(int raster, int xoffset);
-										// Rendering
-	void FASTCALL Crtc();
-										// CRTC processing
-	static const DWORD HDispTable[16];
-										// Raster misalignment validation table
+	void FASTCALL SetVCFast();
+	void FASTCALL InvalidateFrame();
+	void FASTCALL InvalidateAll();
+	void FASTCALL Process();
+	void FASTCALL ProcessFast();
+										// Video internal operation
 	void FASTCALL Video();
-										// VC processing
+	void FASTCALL VideoFastPX68K();
+										// VC process
+	void FASTCALL SetupGrp(int first);
+										// Graphic reset setup
 	void FASTCALL Contrast();
-										// Contrast processing
+										// Contrast operation
 	void FASTCALL Palette();
-										// Palette processing
+	void FASTCALL PaletteFastPX68K();
+										// Palette operation
 	void FASTCALL MakePalette();
-										// Build the palette
+										// Make palette
 	DWORD FASTCALL ConvPalette(int color, int ratio);
 										// Color conversion
-	BOOL FASTCALL TextConv(int offset);
-										// Text conversion
 	void FASTCALL Text(int raster);
+	void FASTCALL TextFastPX68K(int raster);
 										// Text
-	void FASTCALL GrpScrlCheck();
-										// Graphics scroll check processing
-	void FASTCALL GrpDispCheck();
-										// Graphics display-layout check processing
-	BYTE* FASTCALL MixGVRAM(BYTE *buf, int gd, int offset);
-										// GVRAM buffer composition
-	void FASTCALL Grp(int gd, int raster);
-										// Graphics
+	void FASTCALL Grp(int block, int raster);
+										// Graphic
 	void FASTCALL SpriteReset();
-										// Reset sprites
+										// Sprite register reset
 	void FASTCALL BGSprite(int raster);
-										// BG/sprite
+										// BG/Sprite
 	void FASTCALL BG(int page, int raster, DWORD *buf, BOOL force);
 										// BG
 	void FASTCALL BGBlock(int page, int y);
-										// BG (horizontal blocks)
-	void FASTCALL BGSpriteCheck(int raster);
-										// BG/sprite check
-	void FASTCALL Mix(int raster, int xoffset);
-										// composition
-	DWORD* FASTCALL MixGrp(DWORD *buf, int raster, int xoffset, int mixlen);
-										// Composition (graphics)
-	void FASTCALL HSyncFast(int raster);
-	void FASTCALL StartFrameFast();
-	void FASTCALL EndFrameFast();
-	void FASTCALL SetCRTCFast();
-	void FASTCALL SetVCFast();
-	void FASTCALL VideoFastPX68K();
-	void FASTCALL PaletteFastPX68K();
-	void FASTCALL TextFastPX68K(int raster);
-	void FASTCALL ProcessFast();
+										// BG (block unit)
+	void FASTCALL Mix(int offset);
+										// Mix
 	void FASTCALL MixFast(int y);
 	void FASTCALL MixFastLine(int dst_y, int src_y);
 	void FASTCALL FastBuildBGLinePX(int sprite_raster, int bg_raster, BOOL ton, int tx_pri, int sp_pri, DWORD *bg_line, BYTE *bg_flag, WORD *bg_pri, BOOL *active, BOOL *bg_opaq);
@@ -435,33 +285,27 @@ private:
 	void FASTCALL FastDrawBGPageLinePX(int page, int raster, BOOL gd, DWORD *bg_line, BYTE *bg_flag, WORD *bg_pri, BOOL *active);
 	void FASTCALL FastMixGrp(int y, DWORD *grp, DWORD *grp_sp, DWORD *grp_sp2,
 		BOOL *grp_sp_tr, BOOL *gon, BOOL *tron, BOOL *pron);
-	void FASTCALL InvalidateFrame();
-	void FASTCALL ApplyPendingCompositorMode();
+	void FASTCALL MixGrp(int y, DWORD *buf);
+										// Mix (graphic)
 	CRTC *crtc;
 										// CRTC
-	const CRTC::crtc_t *cp;
-										// CRTC work address
 	VC *vc;
 										// VC
-	const VC::vc_t *vp;
-										// VC work address
 	Sprite *sprite;
-	Px68kCrtcHost px68k_crtc_host;
-	Px68kCrtcStateView px68k_crtc_state_cache;
-	BOOL render_fast_dummy_enabled;
-	BOOL transparency_enabled;
-	BOOL original_bg0_render_enabled;
-	int compositor_mode;
+										// Sprite
 	Backend *backend;
 	Backend *backend_original;
 	Backend *backend_fast;
-										// sprite
-#if XM6_RENDER_SYNC == 2
-	class CScheduler* m_pScheduler;
-										///< Scheduler
-#endif	// XM6_RENDER_SYNC == 2
+	int compositor_mode;
+	DWORD *palbuf_original;
+	DWORD *palbuf_fast;
+	DWORD fast_fallback_count;
+	BOOL transparency_enabled;
+	BOOL original_bg0_render_enabled;
 	render_t render;
-										// Internal data
+										// Render data
+	BOOL cmov;
+										// CMOV available flag
 };
 
 #endif	// render_h

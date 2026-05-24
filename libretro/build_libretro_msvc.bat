@@ -49,14 +49,15 @@ if exist "%X68SOUND_SRC%\X68Sound.cpp" (
   set INCLUDES=%INCLUDES% /I%X68SOUND_SRC%
   set X68SOUND_SOURCES=%X68SOUND_SRC%\X68Sound.cpp
 )
-set OBJDIR=build_%ARCH%
 set COMMONFLAGS=/nologo /LD /O2 /MT /EHsc /std:c++14 /wd4018 /wd4244 /wd4267 /wd4996
-set COMMONFLAGS=%COMMONFLAGS% /Zi /FS /Fd"%OBJDIR%\xm6_libretro_%ARCH%.pdb"
+set COMMONFLAGS=%COMMONFLAGS% /Zi /FS
+set LINKFLAGS=/link /OUT:%OUT% /OPT:REF /OPT:ICF /DEBUG:FULL /PDB:%~dp0\%RELEASE_DIR%\xm6_libretro.pdb winmm.lib
+set OBJDIR=build_%ARCH%
+set PDBFILE=%OBJDIR%\xm6_libretro_%ARCH%.pdb
+
+set COMMONFLAGS=%COMMONFLAGS% /Fd"%PDBFILE%"
 
 if not exist "%OBJDIR%" mkdir "%OBJDIR%"
-if not exist "%RELEASE_DIR%" mkdir "%RELEASE_DIR%"
-
-set LINKFLAGS=/link /OUT:%OUT% /OPT:REF /OPT:ICF /DEBUG:FULL /PDB:%~dp0\%RELEASE_DIR%\xm6_libretro.pdb winmm.lib
 
 set SOURCES=^
   xm6_libretro.cpp ^
